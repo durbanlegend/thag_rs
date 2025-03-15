@@ -79,9 +79,9 @@ impl Drop for TerminalStateGuard {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::detect_color_support;
+/// use thag_rs::terminal::detect_term_capabilities;
 ///
-/// let support = detect_color_support();
+/// let support = detect_term_capabilities();
 /// println!("Terminal color support: {:?}", support);
 /// ```
 #[must_use]

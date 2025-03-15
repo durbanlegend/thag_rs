@@ -1366,7 +1366,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 if matches {
                     *filter_stats.entry(pattern).or_insert(0) += 1;
                 }
-                matches
+                !matches
             })
         })
         .cloned()

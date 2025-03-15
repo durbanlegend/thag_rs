@@ -1,6 +1,5 @@
 use crate::{static_lazy, ProfileError};
 use chrono::Local;
-use memory_stats::memory_stats;
 use once_cell::sync::Lazy;
 use std::{
     collections::{HashMap, HashSet},
@@ -15,8 +14,10 @@ use std::{
     time::Instant,
 };
 
-// use std::fs::OpenOptions;
-// use std::io::Write;
+#[cfg(feature = "memory_profiling")]
+#[global_allocator]
+static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
+    re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
 
 // #[cfg(feature = "profiling")]
 use backtrace::Backtrace;
@@ -208,6 +209,9 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
         .map_err(|_| ProfileError::General("Failed to acquire profiling mutex".into()))?;
 
     if enabled {
+        #[cfg(feature = "memory_profiling")]
+        re_memory::accounting_allocator::set_tracking_callstacks(true);
+
         set_profile_type(profile_type);
 
         let Ok(now) = u64::try_from(
@@ -376,10 +380,10 @@ impl ProfileType {
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
-    initial_memory: Option<usize>, // For memory delta
-    path: Vec<String>,             // Full call stack (only profiled functions)
-    custom_name: Option<String>,   // Custom section name when provided via profile!("name") macro
-                                   // _not_send: PhantomData<*const ()>, // Makes Profile !Send
+    // initial_memory: Option<usize>, // For memory delta
+    path: Vec<String>,           // Full call stack (only profiled functions)
+    custom_name: Option<String>, // Custom section name when provided via profile!("name") macro
+    registered_name: String,
 }
 
 impl Profile {
@@ -537,12 +541,20 @@ impl Profile {
         // Try allowing overrides
         let profile_type = requested_type;
 
-        let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            // Get initial memory snapshot
-            memory_stats().map(|stats| stats.physical_mem)
-        } else {
-            None
-        };
+        #[cfg(not(feature = "memory_profiling"))]
+        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            eprintln!("Memory profiling requested but the 'memory_profiling' feature is not enabled. Only time will be profiled.");
+        }
+
+        // let initial_memory = None;
+
+        // #[cfg(feature = "memory_profiling")]
+        // let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+        //     // Get initial memory snapshot
+        //     memory_stats().map(|stats| stats.physical_mem)
+        // } else {
+        //     None
+        // };
 
         // Determine if we should keep the custom name
         let custom_name = name.and_then(|n| {
@@ -581,9 +593,10 @@ impl Profile {
             // name,
             profile_type,
             start: Some(Instant::now()),
-            initial_memory,
+            // initial_memory,
             path,
             custom_name,
+            registered_name: fn_name.to_string(),
             // _not_send: PhantomData,
         })
     }
@@ -683,7 +696,7 @@ impl Profile {
         Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
     }
 
-    #[cfg(feature = "profiling")]
+    #[cfg(feature = "memory_profiling")]
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
             // Keep this as it's a business logic check
@@ -723,7 +736,7 @@ impl Profile {
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
 
-    #[cfg(feature = "profiling")]
+    #[cfg(feature = "memory_profiling")]
     fn record_memory_change(&self, delta: usize) -> ProfileResult<()> {
         if delta == 0 {
             return Ok(());
@@ -732,9 +745,9 @@ impl Profile {
         // Record allocation
         self.write_memory_event_with_op(delta, '+')?;
 
-        // Record corresponding deallocation
-        // Store both events atomically to maintain pairing
-        self.write_memory_event_with_op(delta, '-')?;
+        // // Record corresponding deallocation
+        // // Store both events atomically to maintain pairing
+        // self.write_memory_event_with_op(delta, '-')?;
 
         Ok(())
     }
@@ -761,21 +774,82 @@ impl Drop for Profile {
         }
 
         // Handle memory profiling
+        #[cfg(feature = "memory_profiling")]
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-            if let Some(initial) = self.initial_memory {
-                if let Some(stats) = memory_stats() {
-                    let final_memory = stats.physical_mem;
-                    let delta = final_memory.saturating_sub(initial);
+            if let Some(tracking_stats) = re_memory::accounting_allocator::tracking_stats() {
+                let total_bytes = tracking_stats
+                    .top_callstacks
+                    .into_iter()
+                    .filter_map(|cs| {
+                        // Convert the backtrace to a string we can analyze
+                        let backtrace_str = format!("{}", cs.readable_backtrace);
 
-                    if delta > 0 {
-                        let _ = self.record_memory_change(delta);
-                    }
+                        // Check if any lines in the backtrace contain our target identifiers
+                        let is_relevant = backtrace_contains_any(
+                            &backtrace_str,
+                            &[
+                                &self.registered_name,
+                                // "thag_profiler::", // Your profiler code
+                                // Add other identifying strings that indicate "your code"
+                            ],
+                        );
+
+                        if is_relevant {
+                            // This allocation is related to our profile
+                            Some(cs.stochastic_rate * cs.extant.size)
+                        } else {
+                            None
+                        }
+                    })
+                    .sum();
+
+                if total_bytes > 0 {
+                    let _ = self.record_memory_change(total_bytes);
                 }
             }
         }
     }
 }
 
+// Helper function to check if a backtrace contains any of the specified patterns
+#[cfg(feature = "memory_profiling")]
+fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
+    // Split the backtrace into lines for easier processing
+    let lines = backtrace.lines();
+
+    // Check if any line contains any of our patterns
+    for line in lines {
+        for &pattern in patterns {
+            if line.contains(pattern) {
+                // eprintln!("Backtrace contains pattern: {pattern}, line: {line}");
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+// More sophisticated helper function to check if a backtrace contains any of the specified patterns
+// #[cfg(feature = "memory_profiling")]
+// fn backtrace_contains_any_sophisticated(backtrace: &str, patterns: &[&str]) -> bool {
+//     let lines = backtrace.lines();
+
+//     for line in lines {
+//         // Skip lines that don't look like function references
+//         if !line.contains(" at ") && !line.trim().starts_with(|c: char| c.is_ascii_digit() || c == ' ') {
+//             continue;
+//         }
+
+//         for &pattern in patterns {
+//             if line.contains(pattern) {
+//                 return true;
+//             }
+//         }
+//     }
+
+//     false
+// }
 #[cfg(feature = "profiling")]
 pub struct ProfileSection {
     pub profile: Option<Profile>,
@@ -992,20 +1066,6 @@ fn clean_function_name(demangled: &str) -> String {
 pub enum MemoryError {
     StatsUnavailable,
     DeltaCalculationFailed,
-}
-
-#[allow(dead_code)]
-fn get_memory_delta(initial: usize) -> Result<usize, MemoryError> {
-    memory_stats()
-        .ok_or(MemoryError::StatsUnavailable)
-        .and_then(|stats| {
-            let final_memory = stats.physical_mem;
-            if final_memory >= initial {
-                Ok(final_memory - initial)
-            } else {
-                Err(MemoryError::DeltaCalculationFailed)
-            }
-        })
 }
 
 /// Profile a section of code with customizable options

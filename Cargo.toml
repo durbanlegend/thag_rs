@@ -175,7 +175,7 @@ default = ["full", "simplelog"] # Full features with simplelog
 debug-logs = []
 nightly = []
 format_snippet = []
-profiling = ["thag_profiler/profiling", "thag_proc_macros/profiling"]
+profiling = ["thag_profiler/fullprofiling", "thag_proc_macros/profiling"]
 
 # Feature dependency tree:
 #

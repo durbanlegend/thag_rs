@@ -14,21 +14,21 @@ use std::{
     time::Instant,
 };
 
-#[cfg(feature = "memory_profiling")]
+#[cfg(feature = "full_profiling")]
 #[global_allocator]
 static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
     re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 use backtrace::Backtrace;
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 use crate::ProfileResult;
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 use rustc_demangle::demangle;
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 use std::{
     convert::Into,
     fs::OpenOptions,
@@ -39,19 +39,19 @@ use std::{
 };
 
 // Single atomic for runtime profiling state
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
 // Mutex to protect profiling state changes
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 
 // Compile-time feature check - always use the runtime state in tests
-#[cfg(all(feature = "profiling", not(test)))]
+#[cfg(all(feature = "time_profiling", not(test)))]
 const PROFILING_FEATURE: bool = true;
 
 #[allow(dead_code)]
-#[cfg(all(feature = "profiling", test))]
+#[cfg(all(feature = "time_profiling", test))]
 const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
@@ -60,7 +60,7 @@ static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Mem
 static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
         let script_path = std::env::current_exe()
@@ -80,17 +80,17 @@ static_lazy! {
 }
 
 // File handles
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 static_lazy! {
     TimeProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 static START_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
@@ -108,7 +108,7 @@ struct ProfileFilePaths {
 ///
 /// # Errors
 /// Returns a `ProfileError` if the mutex lock fails
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) -> ProfileResult<()> {
     *file
         .lock()
@@ -129,7 +129,7 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 ///
 /// # Errors
 /// Returns a `ProfileError` if any file operations fail
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     let paths = ProfilePaths::get();
 
@@ -169,7 +169,7 @@ pub fn get_global_profile_type() -> ProfileType {
     }
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn set_profile_type(profile_type: ProfileType) {
     let value = match profile_type {
         ProfileType::Time => 1,
@@ -197,7 +197,7 @@ fn set_profile_type(profile_type: ProfileType) {
 /// - Time value conversion fails
 /// - File operations fail
 /// - Mutex operations fail
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResult<()> {
     // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
     let _guard = PROFILING_MUTEX
@@ -205,7 +205,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
         .map_err(|_| ProfileError::General("Failed to acquire profiling mutex".into()))?;
 
     if enabled {
-        #[cfg(feature = "memory_profiling")]
+        #[cfg(feature = "full_profiling")]
         re_memory::accounting_allocator::set_tracking_callstacks(true);
 
         set_profile_type(profile_type);
@@ -233,7 +233,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
 ///
 /// # Errors
 /// None
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 pub const fn enable_profiling(
     _enabled: bool,
     _profile_type: ProfileType,
@@ -243,12 +243,12 @@ pub const fn enable_profiling(
 }
 
 /// Disable profiling and reset the profiling stack.
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn disable_profiling() {
     let _ = enable_profiling(false, ProfileType::Both);
 }
 
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 pub const fn disable_profiling() {
     // No-op implementation
 }
@@ -268,7 +268,7 @@ pub const fn disable_profiling() {
 ///
 /// # Errors
 /// Returns a `ProfileError` if file creation or writing fails
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> {
     let mut file = OpenOptions::new()
         .create(true)
@@ -301,12 +301,12 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> 
 /// `true` if profiling is enabled, `false` otherwise
 #[inline(always)]
 #[allow(clippy::inline_always)]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn is_profiling_enabled() -> bool {
     // eprintln!(
-    //     r#"cfg!(test)={}, cfg(feature = "profiling")={}"#,
+    //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
     //     cfg!(test),
-    //     cfg!(feature = "profiling")
+    //     cfg!(feature = "time_profiling")
     // );
     // In test mode, only use the runtime state to allow enable/disable testing
     #[cfg(test)]
@@ -330,23 +330,23 @@ pub fn is_profiling_enabled() -> bool {
 /// `true` if profiling state is enabled, `false` otherwise
 #[inline(always)]
 #[allow(clippy::inline_always)]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn is_profiling_state_enabled() -> bool {
     // eprintln!(
-    //     r#"cfg!(test)={}, cfg(feature = "profiling")={}"#,
+    //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
     //     cfg!(test),
-    //     cfg!(feature = "profiling")
+    //     cfg!(feature = "time_profiling")
     // );
     PROFILING_STATE.load(Ordering::SeqCst)
 }
 
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 #[must_use]
 pub const fn is_profiling_enabled() -> bool {
     false
 }
 
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 #[must_use]
 pub const fn is_profiling_state_enabled() -> bool {
     false
@@ -558,14 +558,14 @@ impl Profile {
         // Try allowing overrides
         let profile_type = requested_type;
 
-        #[cfg(not(feature = "memory_profiling"))]
+        #[cfg(not(feature = "full_profiling"))]
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            eprintln!("Memory profiling requested but the 'memory_profiling' feature is not enabled. Only time will be profiled.");
+            eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
         // let initial_memory = None;
 
-        // #[cfg(feature = "memory_profiling")]
+        // #[cfg(feature = "full_profiling")]
         // let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
         //     // Get initial memory snapshot
         //     memory_stats().map(|stats| stats.physical_mem)
@@ -634,7 +634,7 @@ impl Profile {
     /// * The mutex lock fails
     /// * File operations fail
     /// * Writing to the file fails
-    #[cfg(feature = "profiling")]
+    #[cfg(feature = "time_profiling")]
     fn write_profile_event(
         path: &str,
         file: &Mutex<Option<BufWriter<File>>>,
@@ -668,7 +668,7 @@ impl Profile {
     ///
     /// # Errors
     /// Returns a `ProfileError` if writing to the profile file fails
-    #[cfg(feature = "profiling")]
+    #[cfg(feature = "time_profiling")]
     fn write_time_event(&self, duration: std::time::Duration) -> ProfileResult<()> {
         // Profile must exist and profiling must be enabled if we got here
         // Only keep the business logic checks
@@ -714,7 +714,7 @@ impl Profile {
     }
 
     // TODO remov op as redundant
-    #[cfg(feature = "memory_profiling")]
+    #[cfg(feature = "full_profiling")]
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
             // Keep this as it's a business logic check
@@ -754,7 +754,7 @@ impl Profile {
         Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
     }
 
-    #[cfg(feature = "memory_profiling")]
+    #[cfg(feature = "full_profiling")]
     fn record_memory_change(&self, delta: usize) -> ProfileResult<()> {
         if delta == 0 {
             return Ok(());
@@ -776,7 +776,7 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
     extract_fn_only(fn_name_str).unwrap_or_else(|| fn_name_str.to_string())
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
         // println!("In drop for Profile {:?}", self);
@@ -792,7 +792,7 @@ impl Drop for Profile {
         }
 
         // Handle memory profiling
-        #[cfg(feature = "memory_profiling")]
+        #[cfg(feature = "full_profiling")]
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
             if let Some(tracking_stats) = re_memory::accounting_allocator::tracking_stats() {
                 let total_bytes = tracking_stats
@@ -830,7 +830,7 @@ impl Drop for Profile {
 }
 
 // Helper function to check if a backtrace contains any of the specified patterns
-#[cfg(feature = "memory_profiling")]
+#[cfg(feature = "full_profiling")]
 fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
     // Split the backtrace into lines for easier processing
     let lines = backtrace.lines();
@@ -849,7 +849,7 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 }
 
 // More sophisticated helper function to check if a backtrace contains any of the specified patterns
-// #[cfg(feature = "memory_profiling")]
+// #[cfg(feature = "full_profiling")]
 // fn backtrace_contains_any_sophisticated(backtrace: &str, patterns: &[&str]) -> bool {
 //     let lines = backtrace.lines();
 
@@ -868,12 +868,12 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 
 //     false
 // }
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub struct ProfileSection {
     pub profile: Option<Profile>,
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 impl ProfileSection {
     #[must_use]
     pub fn new(name: Option<&str>) -> Self {
@@ -898,10 +898,10 @@ impl ProfileSection {
 }
 
 // Dummy implementation when profiling is disabled
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 pub struct ProfileSection;
 
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 impl ProfileSection {
     #[must_use]
     pub const fn new(_name: Option<&str>) -> Self {
@@ -952,7 +952,7 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
 }
 
 // Extract the class::method part from a fully qualified function name
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 fn extract_class_method(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last two components
     // eprintln!("Extracting class::method from {}", qualified_name);
@@ -969,13 +969,13 @@ fn extract_class_method(qualified_name: &str) -> Option<String> {
 }
 
 // Extract just the base function name from a fully qualified function name
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 fn extract_fn_only(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last component
     qualified_name.split("::").last().map(ToString::to_string)
 }
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
     // First, filter out standard library infrastructure we don't care about
     let filtered_frames: Vec<String> = raw_frames
@@ -1049,7 +1049,7 @@ fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
     cleaned_frames
 }
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 fn clean_function_name(demangled: &str) -> String {
     // Remove hash suffixes and closure markers
     let mut clean_name = demangled.to_string();
@@ -1106,7 +1106,7 @@ pub enum MemoryError {
 /// let section = profile!(method, both, async);
 /// ```
 #[macro_export]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 macro_rules! profile {
     // profile!(name)
     ($name:expr) => {
@@ -1174,7 +1174,7 @@ macro_rules! profile {
 }
 
 // No-op implementation for when profiling is disabled
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 #[macro_export]
 macro_rules! profile {
     // The implementations are all identical for the no-op version
@@ -1389,7 +1389,7 @@ pub fn is_test_mode_active() -> bool {
     TEST_MODE_ACTIVE.load(Ordering::SeqCst)
 }
 
-#[cfg(all(test, feature = "profiling"))]
+#[cfg(all(test, feature = "time_profiling"))]
 /// Force sets the profiling state for testing purposes
 /// This is only available in test mode with the profiling feature enabled
 pub fn force_set_profiling_state(enabled: bool) {

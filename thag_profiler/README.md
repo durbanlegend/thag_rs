@@ -7,7 +7,18 @@ an estimated 20-30% runtime overhead.
 
 - **Zero-cost abstraction**: No runtime overhead when profiling is disabled
 - **Time and memory profiling**: Track execution time or memory usage, or both.
-Note: the optional `full_profiling` feature uses the `re_memory` crate's global allocator. This is incompatible with specifying your own global allocator.
+Notes:
+
+Memory profiling (the optional `full_profiling` feature) uses the `re_memory` crate's global allocator.
+
+1. This is incompatible with specifying your own global allocator.
+
+2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies
+
+You will get an error: "fatal runtime error: the global allocator may not use TLS with destructors".
+
+For instance this is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
+
 - **Function and section profiling**: Profile entire functions or specific code sections
 - **Async support**: Seamlessly works with async code
 - **Automatic instrumentation**: Tools to add and remove profiling code without losing comments or formatting (but verify!)

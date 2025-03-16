@@ -20,9 +20,9 @@ strum = { version = "0.27.1", features = ["derive", "phf"] }
 thag_proc_macros = { path = "../thag_proc_macros" }
 
 [dev-dependencies]
-async-std = "1.13.0"
 regex = "1.11.1"
 serial_test = { version = "3.2.0", features = ["file_locks"] }
+smol = "2.0.2"
 tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
 
 [features]

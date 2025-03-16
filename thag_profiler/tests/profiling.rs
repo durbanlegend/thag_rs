@@ -13,19 +13,19 @@ use thag_profiler::{
     ProfileType,
 };
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 use std::panic;
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 use thag_profiler::profile;
 
 // Static mutex for test synchronization
 static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 struct TestGuard;
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 impl Drop for TestGuard {
     fn drop(&mut self) {
         let _ = enable_profiling(false, ProfileType::Time);
@@ -58,7 +58,7 @@ fn setup_test() -> MutexGuard<'static, ()> {
     guard
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn run_test<T>(test: T) -> ()
 where
     T: FnOnce() + panic::UnwindSafe,
@@ -101,7 +101,7 @@ where
 // Basic profiling tests
 
 #[test]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn test_profiling_profile_creation() {
     // Get lock and reset state
     let _guard = setup_test();
@@ -124,7 +124,7 @@ fn test_profiling_profile_creation() {
 }
 
 #[test]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn test_profiling_nested_profile_sections() {
     // Get lock and reset state
     let _guard = setup_test();
@@ -181,16 +181,16 @@ fn test_profiling_profiled_attribute() {
 // Async profiling tests
 
 // Using direct macro approach for consistency
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 async fn async_profiled_function() -> u32 {
     let _section = thag_profiler::profile!("async_profiled_function", async);
     // Simulate some async work
-    async_std::task::sleep(Duration::from_millis(10)).await;
+    smol::Timer::after(Duration::from_millis(500)).await;
     84
 }
 
 #[test]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn test_profiling_async_profiled_function() {
     // Get lock and reset state
     let _guard = setup_test();
@@ -203,7 +203,7 @@ fn test_profiling_async_profiled_function() {
 
     run_test(|| {
         // Run the async function
-        let runtime = async_std::task::block_on(async { async_profiled_function().await });
+        let runtime = smol::block_on(async { async_profiled_function().await });
 
         assert_eq!(runtime, 84);
     });
@@ -212,7 +212,7 @@ fn test_profiling_async_profiled_function() {
 // macro tests
 
 #[test]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn test_profiling_profile_macro() {
     // Get lock and reset state
     let _guard = setup_test();
@@ -244,7 +244,7 @@ fn test_profiling_profile_macro() {
 // Test enabling/disabling profiling
 
 #[test]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn test_profiling_create_section() {
     // Get lock and reset state
     let _guard = setup_test();
@@ -274,8 +274,8 @@ fn test_profiling_create_section() {
 // Memory profiling test
 
 #[test]
-#[cfg(feature = "profiling")]
-fn test_profiling_memory_profiling() {
+#[cfg(feature = "time_profiling")]
+fn test_profiling_full_profiling() {
     // Get lock and reset state
     let _guard = setup_test();
 
@@ -312,7 +312,7 @@ fn test_profiling_memory_profiling() {
 // Thread-safety test
 
 #[test]
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn test_profiling_profile_section_thread_safety() {
     // Get lock and reset state
     let _guard = setup_test();

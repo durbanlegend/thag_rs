@@ -55,9 +55,9 @@ mod feature_tests {
     fn test_profiling_feature_flag_behavior() {
         // This test verifies the behavior of profiling features
 
-        #[cfg(feature = "profiling")]
+        #[cfg(feature = "time_profiling")]
         {
-            // When compiled with the "profiling" feature but profiling is disabled at runtime,
+            // When compiled with the "time_profiling" feature but profiling is disabled at runtime,
             // is_profiling_enabled() should return false in test mode due to our special handling
             assert!(!is_profiling_enabled(),
                 "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
@@ -74,9 +74,9 @@ mod feature_tests {
             crate::profiling::force_set_profiling_state(false);
         }
 
-        #[cfg(not(feature = "profiling"))]
+        #[cfg(not(feature = "time_profiling"))]
         {
-            // When compiled without the "profiling" feature, is_profiling_enabled() should always return false
+            // When compiled without the "time_profiling" feature, is_profiling_enabled() should always return false
             assert!(
                 !is_profiling_enabled(),
                 "Without profiling feature, is_profiling_enabled() should always return false"
@@ -85,10 +85,10 @@ mod feature_tests {
     }
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub const PROFILING_ENABLED: bool = true;
 
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 pub const PROFILING_ENABLED: bool = false;
 
 #[macro_export]

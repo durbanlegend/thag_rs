@@ -6,7 +6,7 @@ select = []
 async = ["futures-sink", "futures-core"]
 eventual-fairness = ["select", "nanorand"]
 default = ["async", "select", "eventual-fairness"]
-profiling = ["thag_profiler/profiling"]
+profiling = ["thag_profiler/full_profiling"]
 
 [dependencies]
 async-std = { version = "1.13.0", features = ["attributes"] }

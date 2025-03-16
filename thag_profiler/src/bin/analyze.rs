@@ -174,10 +174,10 @@ fn analyze_single_time_profile() -> ProfileResult<()> {
 
             loop {
                 let options = vec![
-                    "Show Detailed Execution Timeline (Flamechart)",
-                    "...Filter Detailed Functions (Recursive or Exact Match)",
                     "Show Aggregated Execution Timeline (Flamegraph)",
                     "...Filter Aggregated Functions (Recursive or Exact Match)",
+                    "Show Detailed Execution Timeline (Flamechart)",
+                    "...Filter Detailed Functions (Recursive or Exact Match)",
                     "Show Statistics",
                     "Back to Profile Selection",
                 ];
@@ -188,19 +188,19 @@ fn analyze_single_time_profile() -> ProfileResult<()> {
 
                 match action {
                     "Back to Profile Selection" => break,
-                    "Show Detailed Execution Timeline (Flamechart)" => {
-                        generate_time_flamegraph(&processed, true)?
-                    }
-                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
-                        let filtered = filter_functions(&processed)?;
-                        generate_time_flamegraph(&filtered, true)?;
-                    }
                     "Show Aggregated Execution Timeline (Flamegraph)" => {
                         generate_time_flamegraph(&processed, false)?
                     }
                     "...Filter Aggregated Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamegraph(&filtered, false)?;
+                    }
+                    "Show Detailed Execution Timeline (Flamechart)" => {
+                        generate_time_flamegraph(&processed, true)?
+                    }
+                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
+                        let filtered = filter_functions(&processed)?;
+                        generate_time_flamegraph(&filtered, true)?;
                     }
                     "Show Statistics" => {
                         show_statistics(&stats, &processed);

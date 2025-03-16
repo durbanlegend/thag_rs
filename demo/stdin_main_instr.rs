@@ -8,9 +8,9 @@ regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.219"
 serde_json = "1.0.132"
-thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["profiling"] }
-# thag_profiler = { version = "0.1", features = ["profiling"] }
-# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["profiling"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
+# thag_profiler = { version = "0.1", features = ["full_profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core" ,"tui", "simplelog"] }
 tui-textarea = { version = "0.6", features = ["search"] }

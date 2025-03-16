@@ -12,8 +12,6 @@
          while COLORTERM=xterm-truecolor is appropriate in addition. TERM seems to be more general-purpose from various
          reads, while COLORTERM seems to be more specific to color support, as the name also implies."
          https://github.com/microsoft/terminal/issues/11057
-- [ ]  Conversion of Gogh themes
-- [ ]  Update profiling instrumentation and doc comments.
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.
@@ -21,8 +19,6 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
-- [ ]  profile attribute macro: don't instrument if feature is disabled.
-- [ ]  Make a tool installation script?
 - [ ]  TODO remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
 
 ## Medium Priority
@@ -125,16 +121,13 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 
 
 ## Low Priority
-- [ ]  Debug Firestorm double invocation.
 - [ ]  Add additional popular crates
 - [ ]  Paste event in Windows slow or not happening?
 - [ ]  How to insert line feed from keyboard to split line in reedline. (Supposedly shift+enter)
 - [ ]  "edit" crate - how to reconfigure editors dynamically - instructions unclear.
 - [ ]  Clap aliases not working in REPL.
-- [ ]  How to navigate reedline history entry by entry instead of line by line.
-- [ ]  See if with...(nu_resolve_style) methods of repl.rs can maybe use a closure to prevent lazy-static from triggering prematurely. Maybe add terminal test?
 - [ ]  Simple demo https server
-- [ ]  Trim dependencies, e.g. regex
+- [ ]  Conversion of Gogh themes
 
 ## Ideas / Future Enhancements
 - [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.

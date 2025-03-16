@@ -35,8 +35,10 @@ analyze-tool = [
     "serde_json",
 ]
 default = []
-memory_profiling = ["profiling", "re_memory"] # Enhanced
-profiling = ["thag_proc_macros/profiling"] # Enable profiling in proc macros too
+full_profiling = ["time_profiling", "re_memory"] # Enhanced
+time_profiling = [
+    "thag_proc_macros/profiling",
+] # Enable profiling in proc macros too
 tools = ["analyze-tool", "instrument-tool"] # Enable all tools
 instrument-tool = [
     "ra_ap_syntax",

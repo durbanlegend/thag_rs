@@ -15,12 +15,14 @@ use std::{
     time::Instant,
 };
 
+#[cfg(feature = "time_profiling")]
+use std::sync::OnceLock;
+
 #[cfg(feature = "full_profiling")]
 #[global_allocator]
 static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
     re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
 
-// #[cfg(feature = "time_profiling")]
 use backtrace::Backtrace;
 
 #[cfg(feature = "time_profiling")]
@@ -155,6 +157,89 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
     Ok(())
 }
 
+#[cfg(feature = "time_profiling")]
+fn get_time_path() -> ProfileResult<&'static str> {
+    struct TimePathHolder;
+    impl TimePathHolder {
+        fn get() -> ProfileResult<&'static str> {
+            static PATH_RESULT: OnceLock<Result<String, ProfileError>> = OnceLock::new();
+
+            let result = PATH_RESULT.get_or_init(|| {
+                let paths = ProfilePaths::get();
+                let config = ProfileConfig::get();
+
+                let path = if let Some(dir) = &config.output_dir {
+                    let dir_path = PathBuf::from(dir);
+                    if !dir_path.exists() {
+                        match std::fs::create_dir_all(&dir_path) {
+                            Ok(()) => {}
+                            Err(e) => return Err(ProfileError::from(e)),
+                        }
+                    }
+
+                    let time_file =
+                        dir_path.join(paths.time.split('/').last().unwrap_or(&paths.time));
+                    time_file.to_string_lossy().to_string()
+                } else {
+                    paths.time.clone()
+                };
+
+                Ok(path)
+            });
+
+            // Convert to static reference
+            match result {
+                Ok(s) => Ok(Box::leak(s.clone().into_boxed_str())),
+                Err(e) => Err(e.clone()),
+            }
+        }
+    }
+
+    TimePathHolder::get()
+}
+
+#[cfg(feature = "time_profiling")]
+fn get_memory_path() -> ProfileResult<&'static str> {
+    struct MemoryPathHolder;
+    impl MemoryPathHolder {
+        fn get() -> ProfileResult<&'static str> {
+            static PATH_RESULT: OnceLock<Result<String, ProfileError>> = OnceLock::new();
+
+            let result = PATH_RESULT.get_or_init(|| {
+                let paths = ProfilePaths::get();
+                let config = ProfileConfig::get();
+
+                let path = if let Some(dir) = &config.output_dir {
+                    let dir_path = PathBuf::from(dir);
+                    if !dir_path.exists() {
+                        match std::fs::create_dir_all(&dir_path) {
+                            Ok(()) => {}
+                            Err(e) => return Err(ProfileError::from(e)),
+                        }
+                    }
+
+                    let memory_file =
+                        dir_path.join(paths.memory.split('/').last().unwrap_or(&paths.memory));
+
+                    memory_file.to_string_lossy().to_string()
+                } else {
+                    paths.memory.clone()
+                };
+
+                Ok(path)
+            });
+
+            // Convert to static reference
+            match result {
+                Ok(s) => Ok(Box::leak(s.clone().into_boxed_str())),
+                Err(e) => Err(e.clone()),
+            }
+        }
+    }
+
+    MemoryPathHolder::get()
+}
+
 /// Initializes profile files based on the specified profile type.
 ///
 /// This function handles the initialization sequence for both profiling files:
@@ -169,39 +254,24 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 /// Returns a `ProfileError` if any file operations fail
 #[cfg(feature = "time_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
-    let paths = ProfilePaths::get();
-    let config = ProfileConfig::get();
-
-    // Determine the output paths
-    let (time_path, memory_path) = if let Some(dir) = &config.output_dir {
-        let dir_path = PathBuf::from(dir);
-        if !dir_path.exists() {
-            std::fs::create_dir_all(&dir_path)?;
-        }
-
-        let time_file = dir_path.join(paths.time.split('/').last().unwrap_or(&paths.time));
-        let memory_file = dir_path.join(paths.memory.split('/').last().unwrap_or(&paths.memory));
-
-        (
-            time_file.to_string_lossy().to_string(),
-            memory_file.to_string_lossy().to_string(),
-        )
-    } else {
-        (paths.time.clone(), paths.memory.clone())
-    };
-
     match profile_type {
         ProfileType::Time => {
+            let time_path = get_time_path()?;
             TimeProfileFile::init();
             reset_profile_file(TimeProfileFile::get(), "time")?;
             initialize_profile_file(&time_path, "Time Profile")?;
+            eprintln!("Time profile will be written to {time_path}");
         }
         ProfileType::Memory => {
+            let memory_path = get_memory_path()?;
             MemoryProfileFile::init();
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
             initialize_profile_file(&memory_path, "Memory Profile")?;
+            eprintln!("Memory profile will be written to {memory_path}");
         }
         ProfileType::Both => {
+            let time_path = get_time_path()?;
+            let memory_path = get_memory_path()?;
             // Initialize all files
             TimeProfileFile::init();
             MemoryProfileFile::init();
@@ -213,6 +283,9 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             // Initialize all files with headers
             initialize_profile_file(&time_path, "Time Profile")?;
             initialize_profile_file(&memory_path, "Memory Profile")?;
+
+            eprintln!("Time profile will be written to {time_path}");
+            eprintln!("Memory profile will be written to {memory_path}");
         }
     }
     Ok(())
@@ -380,9 +453,6 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> 
     )?;
     writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
     writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
-    if path.ends_with("alloc.log") {
-        writeln!(file, "# Format: operation|size")?;
-    }
     writeln!(file)?;
 
     Ok(())
@@ -817,8 +887,9 @@ impl Profile {
         let stack_str = stack_with_custom_name.join(";");
         let entry = format!("{stack_str} {micros}");
 
-        let paths = ProfilePaths::get();
-        Self::write_profile_event(&paths.time, TimeProfileFile::get(), &entry)
+        // let paths = ProfilePaths::get();
+        let time_path = get_time_path()?;
+        Self::write_profile_event(time_path, TimeProfileFile::get(), &entry)
     }
 
     // TODO remov op as redundant
@@ -858,8 +929,9 @@ impl Profile {
         let stack_str = stack_with_custom_name.join(";");
         let entry = format!("{stack_str} {op}{delta}");
 
-        let paths = ProfilePaths::get();
-        Self::write_profile_event(&paths.memory, MemoryProfileFile::get(), &entry)
+        // let paths = ProfilePaths::get();
+        let memory_path = get_memory_path()?;
+        Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
     }
 
     #[cfg(feature = "full_profiling")]

@@ -1,10 +1,10 @@
 use std::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ProfileError {
     General(String),
     InvalidSection(String),
-    Io(std::io::Error),
+    Io(String),
 }
 
 impl std::fmt::Display for ProfileError {
@@ -20,16 +20,16 @@ impl std::fmt::Display for ProfileError {
 impl std::error::Error for ProfileError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::General(_e) => Some(self),
-            Self::InvalidSection(_e) => Some(self),
-            Self::Io(e) => Some(e),
+            Self::General(_e) => None,
+            Self::InvalidSection(_e) => None,
+            Self::Io(_e) => None,
         }
     }
 }
 
 impl From<std::io::Error> for ProfileError {
     fn from(err: std::io::Error) -> Self {
-        Self::Io(err)
+        Self::Io(err.to_string())
     }
 }
 

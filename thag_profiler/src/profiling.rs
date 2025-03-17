@@ -1,8 +1,9 @@
-use crate::{static_lazy, ProfileError};
+use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use std::{
     collections::{HashMap, HashSet},
+    env,
     fs::File,
     io::BufWriter,
     ops::Deref,
@@ -55,6 +56,43 @@ const PROFILING_FEATURE: bool = true;
 const PROFILING_FEATURE: bool = false;
 
 static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+
+static_lazy! {
+    ProfileConfig: ProfileConfiguration = {
+        let env_profile = env::var("THAG_PROFILE")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .unwrap_or(0);
+
+        let env_profile_type = env::var("THAG_PROFILE_TYPE")
+            .ok()
+            .map(|v| v.to_lowercase())
+            .and_then(|v| ProfileType::from_str(&v))
+            .unwrap_or({
+                if cfg!(feature = "full_profiling") {
+                    ProfileType::Both
+                } else {
+                    ProfileType::Time
+                }
+            });
+
+        let env_profile_dir = env::var("THAG_PROFILE_DIR").ok();
+
+        ProfileConfiguration {
+            enabled: env_profile > 0,
+            profile_type: env_profile_type,
+            output_dir: env_profile_dir,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+struct ProfileConfiguration {
+    enabled: bool,
+    profile_type: ProfileType,
+    output_dir: Option<String>,
+}
 
 // Global registry of profiled functions
 static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
@@ -132,17 +170,36 @@ fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) ->
 #[cfg(feature = "time_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     let paths = ProfilePaths::get();
+    let config = ProfileConfig::get();
+
+    // Determine the output paths
+    let (time_path, memory_path) = if let Some(dir) = &config.output_dir {
+        let dir_path = PathBuf::from(dir);
+        if !dir_path.exists() {
+            std::fs::create_dir_all(&dir_path)?;
+        }
+
+        let time_file = dir_path.join(paths.time.split('/').last().unwrap_or(&paths.time));
+        let memory_file = dir_path.join(paths.memory.split('/').last().unwrap_or(&paths.memory));
+
+        (
+            time_file.to_string_lossy().to_string(),
+            memory_file.to_string_lossy().to_string(),
+        )
+    } else {
+        (paths.time.clone(), paths.memory.clone())
+    };
 
     match profile_type {
         ProfileType::Time => {
             TimeProfileFile::init();
             reset_profile_file(TimeProfileFile::get(), "time")?;
-            initialize_profile_file(&paths.time, "Time Profile")?;
+            initialize_profile_file(&time_path, "Time Profile")?;
         }
         ProfileType::Memory => {
             MemoryProfileFile::init();
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            initialize_profile_file(&paths.memory, "Memory Profile")?;
+            initialize_profile_file(&memory_path, "Memory Profile")?;
         }
         ProfileType::Both => {
             // Initialize all files
@@ -154,19 +211,39 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
 
             // Initialize all files with headers
-            initialize_profile_file(&paths.time, "Time Profile")?;
-            initialize_profile_file(&paths.memory, "Memory Profile")?;
+            initialize_profile_file(&time_path, "Time Profile")?;
+            initialize_profile_file(&memory_path, "Memory Profile")?;
         }
     }
     Ok(())
 }
 
+/// Returns the global profile type.
+///
+/// # Panics
+///
+/// Panics if `enable_profiling` fails.
+// Modify get_global_profile_type to use the config:
 pub fn get_global_profile_type() -> ProfileType {
-    match PROFILE_TYPE.load(Ordering::SeqCst) {
-        2 => ProfileType::Memory,
-        3 => ProfileType::Both,
-        _ => ProfileType::Time,
-    }
+    // eprintln!("profile_type={profile_type:?}");
+
+    lazy_static_var!(ProfileType, deref, {
+        let profile_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
+            2 => ProfileType::Memory,
+            3 => ProfileType::Both,
+            _ => {
+                // Then check environment variables
+                ProfileConfig::get().profile_type
+            }
+        };
+        enable_profiling(true, profile_type).expect("Failed to enable profiling");
+        if profile_type == ProfileType::Memory {
+            eprintln!("Memory profiling enabled");
+        } else if profile_type == ProfileType::Both {
+            eprintln!("Both time and memory profiling enabled");
+        }
+        profile_type
+    })
 }
 
 #[cfg(feature = "time_profiling")]
@@ -204,11 +281,31 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
         .lock()
         .map_err(|_| ProfileError::General("Failed to acquire profiling mutex".into()))?;
 
+    // Check if the operation is a no-op due to environment settings
+    let config = ProfileConfig::get();
+    if !enabled && config.enabled {
+        // If trying to disable but env var says enabled, log a warning but continue
+        // (environment settings take precedence)
+        println!(
+            "Warning: Attempt to disable profiling overridden by THAG_PROFILE environment variable"
+        );
+        return Ok(());
+    }
+
     if enabled {
         #[cfg(feature = "full_profiling")]
         re_memory::accounting_allocator::set_tracking_callstacks(true);
 
-        set_profile_type(profile_type);
+        // Respect environment variable for profile type if one wasn't explicitly provided
+        let final_profile_type = if profile_type == ProfileType::Time
+            && matches!(config.profile_type, ProfileType::Memory | ProfileType::Both)
+        {
+            config.profile_type
+        } else {
+            profile_type
+        };
+
+        set_profile_type(final_profile_type);
 
         let Ok(now) = u64::try_from(
             SystemTime::now()
@@ -220,12 +317,11 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
         };
         START_TIME.store(now, Ordering::SeqCst);
 
-        initialize_profile_files(profile_type)?;
+        initialize_profile_files(final_profile_type)?;
     }
 
     // Whether enabling or disabling, set the state
     PROFILING_STATE.store(enabled, Ordering::SeqCst);
-    // eprintln!("enable_profiling set PROFILING_STATE to {enabled}");
     Ok(())
 }
 
@@ -373,6 +469,7 @@ impl ProfileType {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
@@ -420,7 +517,7 @@ impl Profile {
             return None;
         }
 
-        // eprintln!("Current function/section: {name}");
+        // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
 
         // Get the current backtrace
         let mut current_backtrace = Backtrace::new_unresolved();
@@ -436,8 +533,8 @@ impl Profile {
         let mut raw_frames: Vec<String> = Vec::new();
 
         // If this is a method, we'll capture the calling class
-        let mut maybe_method_name: Option<String> = None;
-        let mut maybe_function_name: Option<String> = None;
+        let mut maybe_qualified_name: Option<String> = None;
+        let mut maybe_bare_name: Option<String> = None;
         let mut first_frame_after_profile = false;
 
         for frame in Backtrace::frames(&current_backtrace) {
@@ -464,10 +561,15 @@ impl Profile {
                             let cleaned = clean_function_name(&demangled);
                             // eprintln!("cleaned name: {cleaned:?}");
                             if is_method {
-                                maybe_method_name = extract_class_method(&cleaned);
+                                maybe_qualified_name = extract_class_method(&cleaned);
                                 // eprintln!("class_method name: {maybe_method_name:?}");
                             } else {
-                                maybe_function_name = extract_fn_only(&cleaned);
+                                maybe_bare_name = extract_fn_only(&cleaned);
+                                if let Some(ref bare_name) = maybe_bare_name {
+                                    if bare_name.as_str() == "new" {
+                                        maybe_qualified_name = extract_class_method(&cleaned);
+                                    }
+                                }
                             }
                         }
 
@@ -491,8 +593,8 @@ impl Profile {
         }
 
         // Register this function
-        let fn_name = maybe_method_name.as_ref().map_or(
-            maybe_function_name
+        let fn_name = maybe_qualified_name.as_ref().map_or(
+            maybe_bare_name
                 .as_ref()
                 .map_or_else(|| name.unwrap_or("unknown"), Deref::deref),
             Deref::deref,
@@ -545,7 +647,13 @@ impl Profile {
         let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
-            _ => ProfileType::Time, // default
+            _ => {
+                if cfg!(feature = "full_profiling") {
+                    ProfileType::Both
+                } else {
+                    ProfileType::Time
+                }
+            } // default
         };
 
         // // Use the more comprehensive of the two types
@@ -580,7 +688,7 @@ impl Profile {
             }
 
             // For methods (with Class::method syntax), check if custom name matches just the method part
-            if let Some(method_name) = &maybe_method_name {
+            if let Some(method_name) = &maybe_qualified_name {
                 // Extract the method part after the last ::
                 if let Some(pos) = method_name.rfind("::") {
                     let method_part = &method_name[(pos + 2)..];
@@ -591,7 +699,7 @@ impl Profile {
                 }
             }
             // For regular functions, check if custom name matches the entire function name
-            else if let Some(function_name) = &maybe_function_name {
+            else if let Some(function_name) = &maybe_bare_name {
                 if n == function_name {
                     return None;
                 }
@@ -792,8 +900,9 @@ impl Drop for Profile {
         }
 
         // Handle memory profiling
-        #[cfg(feature = "full_profiling")]
+        // #[cfg(feature = "full_profiling")]
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+            // eprintln!("In drop for Profile {self:?} with memory profiling");
             if let Some(tracking_stats) = re_memory::accounting_allocator::tracking_stats() {
                 let total_bytes = tracking_stats
                     .top_callstacks
@@ -812,6 +921,7 @@ impl Drop for Profile {
                             ],
                         );
 
+                        // eprintln!("is_relevant: {is_relevant}");
                         if is_relevant {
                             // This allocation is related to our profile
                             Some(cs.stochastic_rate * cs.extant.size)
@@ -822,6 +932,7 @@ impl Drop for Profile {
                     .sum();
 
                 if total_bytes > 0 {
+                    // eprintln!("Memory change detected: {total_bytes} bytes");
                     let _ = self.record_memory_change(total_bytes);
                 }
             }
@@ -877,10 +988,12 @@ pub struct ProfileSection {
 impl ProfileSection {
     #[must_use]
     pub fn new(name: Option<&str>) -> Self {
+        let profile_type = get_global_profile_type();
+        // eprintln!("profile_type={profile_type:?}");
         Self {
             profile: Profile::new(
                 name,
-                get_global_profile_type(),
+                profile_type,
                 false, // is_async
                 false, // is_method
             ),
@@ -951,7 +1064,7 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
         .and_then(|registry| registry.get(name).cloned())
 }
 
-// Extract the class::method part from a fully qualified function name
+// Extract the class::method part from a fully qualified function name or <pattern>::new.
 // #[cfg(feature = "time_profiling")]
 fn extract_class_method(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last two components
@@ -1367,15 +1480,15 @@ impl ProfileStats {
 /// This function is primarily intended for test and debugging use.
 #[cfg(any(test, debug_assertions))]
 pub fn dump_profiled_functions() -> Vec<(String, String)> {
-    if let Ok(registry) = PROFILED_FUNCTIONS.lock() {
-        registry
-            .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect()
-    } else {
-        // If we can't lock the registry, return an empty vector
-        Vec::new()
-    }
+    PROFILED_FUNCTIONS.lock().map_or_else(
+        |_| vec![],
+        |registry| {
+            registry
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect()
+        },
+    )
 }
 
 #[cfg(test)]

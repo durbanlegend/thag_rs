@@ -177,6 +177,7 @@ fn enable_virtual_terminal_processing() -> bool {
     profile!("enable_virtual_terminal_processing");
     lazy_static_fn!(
         bool,
+        deref
         unsafe {
             let handle = GetStdHandle(STD_OUTPUT_HANDLE);
             if handle != INVALID_HANDLE_VALUE {
@@ -195,8 +196,8 @@ fn enable_virtual_terminal_processing() -> bool {
             }
             // Return false if enabling VT failed
             false
-        },
-        deref
+        }
+
     )
 }
 

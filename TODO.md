@@ -19,7 +19,9 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
-- [ ]  TODO remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
+- [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
+- [ ]  Worked example - e.g. syn as dependency.
+- [ ]  Fix and document use of `THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=$TMPDIR cargo run demo/syn_dump_syntax.rs -- demo/hello_main.rs
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.

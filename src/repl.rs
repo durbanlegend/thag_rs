@@ -466,7 +466,7 @@ pub fn run_repl(
     let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
 
     // Determine the length of the longest key description for padding
-    let max_key_len = lazy_static_var!(usize, get_max_key_len(formatted_bindings), deref);
+    let max_key_len = lazy_static_var!(usize, deref, get_max_key_len(formatted_bindings));
     // eprintln!("max_key_len={max_key_len}");
 
     loop {
@@ -924,38 +924,34 @@ fn format_bindings(
 #[profiled]
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     // Calculate max command len for padding
-    lazy_static_var!(
-        usize,
-        {
-            // Determine the length of the longest command for padding
-            // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
-            let style = get_subhead_style();
-            let max_cmd_len = reedline_events
-                .iter()
-                .map(|reedline_event| {
-                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                        edit_cmds
-                            .iter()
-                            .map(|cmd| {
-                                let key_desc = style.paint(format!("{cmd:?}"));
-                                key_desc.len()
-                            })
-                            .max()
-                            .unwrap_or(0)
-                    } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                        let event_desc = style.paint(format!("{reedline_event:?}"));
-                        event_desc.len()
-                    } else {
-                        0
-                    }
-                })
-                .max()
-                .unwrap_or(0);
-            // Add 2 bytes of padding
-            max_cmd_len + 2
-        },
-        deref
-    )
+    lazy_static_var!(usize, deref, {
+        // Determine the length of the longest command for padding
+        // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+        let style = get_subhead_style();
+        let max_cmd_len = reedline_events
+            .iter()
+            .map(|reedline_event| {
+                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                    edit_cmds
+                        .iter()
+                        .map(|cmd| {
+                            let key_desc = style.paint(format!("{cmd:?}"));
+                            key_desc.len()
+                        })
+                        .max()
+                        .unwrap_or(0)
+                } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                    let event_desc = style.paint(format!("{reedline_event:?}"));
+                    event_desc.len()
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        // Add 2 bytes of padding
+        max_cmd_len + 2
+    })
 }
 
 #[profiled]

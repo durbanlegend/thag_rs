@@ -1,8 +1,9 @@
-/*[toml]
-[dependencies]
-ra_ap_syntax = "0.0.261"
-*/
-
+/// Parse and display the `rust-analyzer` (not `syn`) format syntax tree of a Rust source file.
+///
+/// Assumes the input is a valid Rust program and that its Rust edition is 2021
+///
+//# Purpose: examine a `ra_ap_syntax` syntax tree.
+//# Categories: AST, crates, technique
 use ra_ap_syntax::ast::{HasModuleItem, Item};
 use ra_ap_syntax::{AstNode, Edition, SourceFile};
 use std::io::Read;
@@ -18,14 +19,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let parse = SourceFile::parse(&content, Edition::Edition2021);
     let file = parse.tree();
 
-    eprintln!("file={file:#?}");
+    println!("file={file:#?}");
 
     let item = file
         .items()
         .filter(|item| !matches!(item, Item::Use(_)))
         .take(1)
         .next();
-    eprintln!("item={item:#?}");
+    // println!("item={item:#?}");
 
     Ok(())
 }

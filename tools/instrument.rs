@@ -131,6 +131,9 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             let maybe_visibility = function.visibility();
             let maybe_async_token = function.async_token();
             let maybe_unsafe_token = function.unsafe_token();
+            if let Some(ref unsafe_token) = maybe_unsafe_token {
+                eprintln!("unsafe_token: {unsafe_token}");
+            }
             let target_token = if let Some(visibility) = maybe_visibility {
                 if let Some(pub_token) = visibility.pub_token() {
                     pub_token
@@ -148,7 +151,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             } else {
                 fn_token
             };
-            // eprintln!("target_token: {target_token:?}");
+            eprintln!("fn_name={fn_name:?}, target_token: {target_token}");
             let function_syntax: &SyntaxNode = function.syntax();
             if function.body().is_some()
                 && !function_syntax.descendants_with_tokens().any(|it| {

@@ -1,4 +1,4 @@
-//! # thag_profiler
+//! # `thag_profiler`
 //!
 //! A performance profiling library for Rust applications.
 //!
@@ -43,7 +43,9 @@ use std::fmt::Display;
 // Re-exports
 pub use {
     errors::{ProfileError, ProfileResult},
-    profiling::{get_global_profile_type, Profile, ProfileSection, ProfileType},
+    profiling::{
+        get_global_profile_type, is_profiling_enabled, Profile, ProfileSection, ProfileType,
+    },
     thag_proc_macros::{enable_profiling, profiled},
 };
 
@@ -90,6 +92,30 @@ pub const PROFILING_ENABLED: bool = true;
 
 #[cfg(not(feature = "time_profiling"))]
 pub const PROFILING_ENABLED: bool = false;
+
+/// Lazy-static variable generator.
+///
+/// Syntax:
+/// ```Rust
+/// let my_var = lazy_static_var!(<T>, expr<T>) // for static ref
+/// // or
+/// let my_var = lazy_static_var!(<T>, deref, expr<T>) // for Deref value (not guaranteed)
+/// ```
+///
+/// NB: In order to avoid fighting the compiler, it is not recommended to make `my_var` uppercase.
+#[macro_export]
+macro_rules! lazy_static_var {
+    ($type:ty, deref, $init_fn:expr) => {{
+        use std::sync::OnceLock;
+        static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
+        *GENERIC_LAZY.get_or_init(|| $init_fn)
+    }};
+    ($type:ty, $init_fn:expr) => {{
+        use std::sync::OnceLock;
+        static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
+        GENERIC_LAZY.get_or_init(|| $init_fn)
+    }};
+}
 
 #[macro_export]
 #[doc(hidden)] // Makes it not appear in documentation

@@ -82,13 +82,13 @@ macro_rules! debug_log {
 /// ```Rust
 /// let my_var = lazy_static_var!(<T>, expr<T>) // for static ref
 /// // or
-/// let my_var = lazy_static_var!(<T>, expr<T>, deref) // for Deref value (not guaranteed)
+/// let my_var = lazy_static_var!(<T>, deref, expr<T>) // for Deref value (not guaranteed)
 /// ```
 ///
 /// NB: In order to avoid fighting the compiler, it is not recommended to make `my_var` uppercase.
 #[macro_export]
 macro_rules! lazy_static_var {
-    ($type:ty, $init_fn:expr, deref) => {{
+    ($type:ty, deref, $init_fn:expr) => {{
         use std::sync::OnceLock;
         static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
         *GENERIC_LAZY.get_or_init(|| $init_fn)

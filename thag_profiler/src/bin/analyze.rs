@@ -240,10 +240,10 @@ fn analyze_memory_profiles() -> ProfileResult<()> {
 
             loop {
                 let options = vec![
-                    "Show Detailed Memory Profile (Flamechart)",
-                    "...Filter Detailed Functions (Recursive or Exact Match)",
                     "Show Aggregated Memory Profile (Flamegraph)",
                     "...Filter Aggregated Functions (Recursive or Exact Match)",
+                    "Show Detailed Memory Profile (Flamechart)",
+                    "...Filter Detailed Functions (Recursive or Exact Match)",
                     "Show Memory Statistics",
                     "Show Allocation Size Distribution",
                     "Back to Profile Selection",
@@ -256,19 +256,6 @@ fn analyze_memory_profiles() -> ProfileResult<()> {
 
                 match selection {
                     "Back to Profile Selection" => break,
-                    "Show Detailed Memory Profile (Flamechart)" => {
-                        generate_memory_flamegraph(&processed, true)
-                            .map_or_else(|e| println!("{e}"), |()| {})
-                    }
-                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
-                        filter_memory_patterns(&processed).map_or_else(
-                            |e| println!("{e}"),
-                            |filtered| {
-                                generate_memory_flamegraph(&filtered, true)
-                                    .map_or_else(|e| println!("{e}"), |()| {});
-                            },
-                        );
-                    }
                     "Show Aggregated Memory Profile (Flamegraph)" => {
                         generate_memory_flamegraph(&processed, false)
                             .map_or_else(|e| println!("{e}"), |()| {})
@@ -278,6 +265,19 @@ fn analyze_memory_profiles() -> ProfileResult<()> {
                             |e| println!("{e}"),
                             |filtered| {
                                 generate_memory_flamegraph(&filtered, false)
+                                    .map_or_else(|e| println!("{e}"), |()| {});
+                            },
+                        );
+                    }
+                    "Show Detailed Memory Profile (Flamechart)" => {
+                        generate_memory_flamegraph(&processed, true)
+                            .map_or_else(|e| println!("{e}"), |()| {})
+                    }
+                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
+                        filter_memory_patterns(&processed).map_or_else(
+                            |e| println!("{e}"),
+                            |filtered| {
+                                generate_memory_flamegraph(&filtered, true)
                                     .map_or_else(|e| println!("{e}"), |()| {});
                             },
                         );

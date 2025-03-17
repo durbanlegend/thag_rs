@@ -553,14 +553,14 @@ impl FileDialog<'_> {
 fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
     lazy_static_var!(
         (u16, u16),
+        deref,
         mappings
             .iter()
             .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
                 let key_len = row.keys.len().try_into().unwrap();
                 let desc_len = row.desc.len().try_into().unwrap();
                 (max_key.max(key_len), max_desc.max(desc_len))
-            }),
-        deref
+            })
     )
 }
 

@@ -1,29 +1,33 @@
 # thag_profiler
 
 A straightforward, lightweight profiling library for Rust applications that provides time profiling with minimal overhead, and memory profiling with
-an estimated 20-30% runtime overhead.
+more substantial runtime overhead.
 
 ## Features
 
 - **Zero-cost abstraction**: No runtime overhead when profiling is disabled
+
 - **Time and memory profiling**: Track execution time or memory usage, or both.
-Notes:
 
-Memory profiling (the optional `full_profiling` feature) uses the `re_memory` crate's global allocator.
+    **Notes:**
 
-1. This is incompatible with specifying your own global allocator.
+    Memory profiling (the optional `full_profiling` feature) uses the `re_memory` crate's global allocator.
 
-2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies
+    1. This is incompatible with specifying your own global allocator.
 
-You will get an error: "fatal runtime error: the global allocator may not use TLS with destructors".
+    2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies. You will get an error: "fatal runtime error: the global allocator may not use TLS with destructors".
 
-For instance this is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
+        For instance this is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
 
-- **Function and section profiling**: Profile entire functions or specific code sections
-- **Async support**: Seamlessly works with async code
-- **Automatic instrumentation**: Tools to add and remove profiling code without losing comments or formatting (but verify!)
-- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks, do before-and-after comparisons
-- **Cross-platform**: Works on all platforms supported by Rust
+- **Function and section profiling**: Profile entire functions or specific code sections, down to single instructions.
+
+- **Async support**: Seamlessly works with async code.
+
+- **Automatic instrumentation**: Tools to quickly add and remove profiling annotations without losing comments or formatting (but verify!).
+
+- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks, do before-and-after comparisons.
+
+- **Cross-platform**: Works on all platforms supported by Rust.
 
 ## Installation
 
@@ -49,7 +53,7 @@ cargo install thag_profiler --features=tools
 
 # Or install individual tools
 cargo install thag_profiler --features=instrument-tool --bin thag-instrument
-cargo install thag_profiler --features=remove-tool --bin thag-remove
+cargo install thag_profiler --features=instrument-tool --bin thag-remove
 cargo install thag_profiler --features=analyze-tool --bin thag-analyze
 ```
 
@@ -166,7 +170,7 @@ In standard Cargo projects, the same options apply, only directly in Cargo.toml:
 **2. Enable directly in the dependency**:
    ```toml
    [dependencies]
-   thag_profiler = { version = "0.1", features = ["time_profiling"] }
+   thag_profiler = { version = "0.1", features = ["full_profiling"] }
    ```
 
 #### In code
@@ -429,7 +433,7 @@ to use a different analysis tool like `valgrind` or `heaptrack`, you can disable
 downgrading to the `time_profiling` feature.
 
 **Note:** Memory profiling is about memory analysis, not about speed. `thag_profiler` memory profiling has distinctly higher overhead than time profiling and will
-noticeably affect performance. In my testing I've found the effect to be about a 20-30% increase in run time.
+noticeably affect performance.
 It's recommended to use it selectively for occasional health checks and targeted investigations in development rather than leave it enabled indefinitely.
 
 ### Profile Output
@@ -479,7 +483,8 @@ thag-remove 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumen
 
 * Do not redirect the output back to your source file in the same command! Trust Thag!
 
-* In the case of thag-remove, you may need to remove the relevant imports manually.
+* In the case of `thag-remove`, you may need to remove the relevant imports manually.
+`thag-remove` may leave the occasional trailing space and one or two blank lines at the very top of the file.
 
 * Compare the original and instrumented files to ensure correctness, especially if
 you're using a custom edition.
@@ -550,9 +555,13 @@ For the memory flamechart, it adheres to `inferno`'s memory-optimized color sche
 ## Best Practices
 
 **1. Profile representative workloads**: Make sure your test cases represent real-world usage
+
 **2. Focus on hot paths**: Look for the widest blocks in your flamechart - these are your performance bottlenecks
+
 **3. Compare before/after**: Always compare profiles before and after optimization
+
 **4. Watch for memory bloat**: Use memory profiling to identify excessive allocations
+
 **5. Verify changes**: Always verify automated changes with a diff tool
 
 ## Testing with Profiled Code
@@ -577,8 +586,11 @@ This is important because `thag_profiler` maintains some global state that isn't
 ### Common Issues
 
 **1. Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory
-**2. Test failures**: TODO confirm: Profiled tests must use the `#[serial]` attribute
+
+**2. Test failures**: Profiled tests must use the `#[serial]` attribute
+
 **3. Performance impact**: Memory profiling adds some overhead
+
 **4. File redirect issues**: Never redirect output from the instrumentation tools back to the input file
 
 ### Inspecting Profile Files

@@ -127,6 +127,14 @@ fn validate_memory_events(events: &[MemoryEvent]) -> Result<(), String> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() != 2 {
+        return Err("Usage: analyze <directory>".to_string().into());
+    }
+
+    // Directory for .folded files
+    let dir_path = PathBuf::from(args[1].clone());
+
     // Ensure profiling is disabled for the analyzer
     // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
     profiling::disable_profiling();
@@ -143,10 +151,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match analysis_type {
             "Exit" => break,
-            "Time Profile - Single" => analyze_single_time_profile()?,
-            "Time Profile - Differential" => analyze_differential_profiles(ProfileType::Time)?,
-            "Memory Profile - Single" => analyze_memory_profiles()?,
-            "Memory Profile - Differential" => analyze_differential_profiles(ProfileType::Memory)?,
+            "Time Profile - Single" => analyze_single_time_profile(&dir_path)?,
+            "Time Profile - Differential" => {
+                analyze_differential_profiles(&dir_path, ProfileType::Time)?
+            }
+            "Memory Profile - Single" => analyze_memory_profiles(&dir_path)?,
+            "Memory Profile - Differential" => {
+                analyze_differential_profiles(&dir_path, ProfileType::Memory)?
+            }
             _ => println!("Invalid selection"),
         }
 
@@ -157,9 +169,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn analyze_single_time_profile() -> ProfileResult<()> {
+fn analyze_single_time_profile(dir_path: &PathBuf) -> ProfileResult<()> {
     // Get time profile files (exclude memory profiles)
-    let profile_groups = group_profile_files(|f| !f.contains("-memory"))?;
+    let profile_groups = group_profile_files(dir_path, |f| !f.contains("-memory"))?;
 
     if profile_groups.is_empty() {
         println!("No time profile files found.");
@@ -216,17 +228,20 @@ fn analyze_single_time_profile() -> ProfileResult<()> {
     }
 }
 
-fn analyze_differential_profiles(profile_type: ProfileType) -> ProfileResult<()> {
+fn analyze_differential_profiles(
+    dir_path: &PathBuf,
+    profile_type: ProfileType,
+) -> ProfileResult<()> {
     let filter = |filename: &str| match profile_type {
         ProfileType::Time => !filename.contains("-memory"),
         ProfileType::Memory => filename.contains("-memory"),
     };
-    let (before, after) = select_profile_files(filter)?;
+    let (before, after) = select_profile_files(dir_path, filter)?;
     generate_differential_flamegraph(profile_type, &before, &after)
 }
 
-fn analyze_memory_profiles() -> ProfileResult<()> {
-    let profile_groups = group_profile_files(|f| f.contains("-memory"))?;
+fn analyze_memory_profiles(dir_path: &PathBuf) -> ProfileResult<()> {
+    let profile_groups = group_profile_files(dir_path, |f| f.contains("-memory"))?;
 
     if profile_groups.is_empty() {
         println!("No memory profile files found.");
@@ -724,9 +739,10 @@ fn select_time_color_scheme() -> ProfileResult<Palette> {
 }
 
 fn group_profile_files<T: Fn(&str) -> bool>(
+    dir_path: &PathBuf,
     filter: T,
 ) -> ProfileResult<Vec<(String, Vec<PathBuf>)>> {
-    let all_groups = collect_profile_files(&filter)?;
+    let all_groups = collect_profile_files(dir_path, &filter)?;
     let mut current_filter = String::new();
 
     loop {
@@ -829,13 +845,13 @@ fn group_profile_files<T: Fn(&str) -> bool>(
 
 // Helper function to collect all profile files matching the initial filter
 fn collect_profile_files<T: Fn(&str) -> bool>(
+    dir_path: &PathBuf,
     filter: &T,
 ) -> ProfileResult<Vec<(String, Vec<PathBuf>)>> {
     let mut groups: HashMap<String, Vec<PathBuf>> = HashMap::new();
 
     // Use file_navigator to get the directory and list .folded files
-    let dir = std::env::current_dir()?;
-    for entry in (dir.read_dir()?).flatten() {
+    for entry in (dir_path.read_dir()?).flatten() {
         let path = entry.path();
         if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
             if path.extension().and_then(|e| e.to_str()) == Some("folded") && filter(filename) {
@@ -862,8 +878,11 @@ fn collect_profile_files<T: Fn(&str) -> bool>(
     Ok(result)
 }
 
-fn select_profile_files<T: Fn(&str) -> bool>(filter: T) -> ProfileResult<(PathBuf, PathBuf)> {
-    let groups = group_profile_files(filter)?;
+fn select_profile_files<T: Fn(&str) -> bool>(
+    dir_path: &PathBuf,
+    filter: T,
+) -> ProfileResult<(PathBuf, PathBuf)> {
+    let groups = group_profile_files(dir_path, filter)?;
 
     if groups.is_empty() {
         return Err(ProfileError::General("No profile files found".to_string()));

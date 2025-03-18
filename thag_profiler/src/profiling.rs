@@ -19,6 +19,9 @@ use std::{
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
+#[cfg(feature = "full_profiling")]
+use crate::task_allocator::get_allocator;
+
 // #[cfg(feature = "full_profiling")]
 // #[global_allocator]
 // static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
@@ -762,53 +765,50 @@ impl Profile {
         //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
+        // Create a basic profile structure that works for all configurations
         #[cfg(not(feature = "full_profiling"))]
         let profile = Self {
-            // id,
-            // name,
             profile_type,
             start: Some(Instant::now()),
-            // initial_memory,
             path,
             custom_name,
             registered_name: fn_name.to_string(),
-            // _not_send: PhantomData,
         };
 
+        // For full profiling, we need to handle memory task and guard creation
         #[cfg(feature = "full_profiling")]
-        let memory_task = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            Some(create_memory_task())
-        } else {
-            None
-        };
+        let profile = {
+            // First, determine if we need memory profiling
+            if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+                // Create a task to track memory usage
+                let task = create_memory_task();
 
-        // #[cfg(not(feature = "full_profiling"))]
-        // let memory_task = None;
+                // Create an owned TaskGuard directly from the task ID
+                // This avoids the 'static lifetime requirement
+                let guard_result = create_memory_guard(task.id());
 
-        // Setup memory task context if memory profiling is requested
-        #[cfg(feature = "full_profiling")]
-        let profile = Self {
-            // id,
-            // name,
-            profile_type,
-            start: Some(Instant::now()),
-            // initial_memory,
-            path,
-            custom_name,
-            registered_name: fn_name.to_string(),
-            memory_task,
-            memory_guard: None,
-        };
-
-        // Then activate the guard afterward (this avoids the self-reference issue)
-        #[cfg(feature = "full_profiling")]
-        let profile = if let Some(ref task) = profile.memory_task {
-            // Create a new profile with the guard
-            let mut new_profile = profile;
-            new_profile.memory_guard = task.enter().ok();
-            new_profile
-        } else {
-            profile
+                // Create the profile with necessary components
+                Self {
+                    profile_type,
+                    start: Some(Instant::now()),
+                    path,
+                    custom_name,
+                    registered_name: fn_name.to_string(),
+                    memory_task: Some(task),
+                    memory_guard: guard_result.ok(),
+                }
+            } else {
+                // No memory profiling needed
+                Self {
+                    profile_type,
+                    start: Some(Instant::now()),
+                    path,
+                    custom_name,
+                    registered_name: fn_name.to_string(),
+                    memory_task: None,
+                    memory_guard: None,
+                }
+            }
         };
 
         Some(profile)
@@ -966,6 +966,23 @@ impl Profile {
         // self.write_memory_event_with_op(delta, '-')?;
 
         Ok(())
+    }
+}
+
+/// Creates a standalone memory guard that activates the given task ID
+#[cfg(feature = "full_profiling")]
+pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard<'static>, String> {
+    // Get the allocator
+    let allocator = get_allocator();
+
+    // Enter the task
+    match allocator.enter_task(task_id) {
+        Ok(()) => {
+            // Create a guard that's tied to the allocator directly,
+            // not to a specific TaskMemoryContext
+            Ok(TaskGuard { task_id, allocator })
+        }
+        Err(e) => Err(e),
     }
 }
 

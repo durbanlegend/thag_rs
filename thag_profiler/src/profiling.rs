@@ -629,7 +629,7 @@ impl Profile {
                             let demangled = demangle(&name_str);
                             // Clean the demangled name
                             let cleaned = clean_function_name(demangled.to_string().as_str());
-                            // eprintln!("name_str: {name_str}; cleaned name: {cleaned:?}");
+                            eprintln!("name_str: {name_str}; cleaned name: {cleaned:?}");
                             if is_method {
                                 maybe_qualified_name = extract_class_method(&cleaned);
                                 // eprintln!("class_method name: {maybe_method_name:?}");
@@ -976,7 +976,7 @@ impl Drop for Profile {
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
             // eprintln!("In drop for Profile {self:?} with memory profiling");
             if let Some(tracking_stats) = re_memory::accounting_allocator::tracking_stats() {
-                let total_bytes = tracking_stats
+                let matching_callstacks: Vec<_> = tracking_stats
                     .top_callstacks
                     .into_iter()
                     .filter_map(|cs| {
@@ -1001,7 +1001,20 @@ impl Drop for Profile {
                             None
                         }
                     })
-                    .sum();
+                    .collect();
+
+                let total_bytes = if matching_callstacks.is_empty() {
+                    0
+                } else {
+                    eprintln!(
+                        "self.registered_name={}, matching_callstacks={matching_callstacks:?}",
+                        self.registered_name
+                    );
+                    // Calculate average and round to nearest usize
+                    (matching_callstacks.iter().sum::<usize>() as f64
+                        / matching_callstacks.len() as f64)
+                        .round() as usize
+                };
 
                 if total_bytes > 0 {
                     // eprintln!("Memory change detected: {total_bytes} bytes");

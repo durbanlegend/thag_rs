@@ -31,10 +31,14 @@ pub struct TaskAwareAllocator<A: GlobalAlloc> {
 
     /// Counter for generating unique task IDs
     next_task_id: AtomicUsize,
-
-    /// Registry of allocations organized by task
-    registry: Mutex<AllocationRegistry>,
 }
+
+#[cfg(feature = "full_profiling")]
+static REGISTRY: Mutex<AllocationRegistry> = Mutex::new(AllocationRegistry {
+    task_allocations: HashMap::new(),
+    address_to_task: HashMap::new(),
+    current_task_id: None,
+});
 
 /// Task context for tracking allocations
 #[cfg(feature = "full_profiling")]
@@ -42,21 +46,6 @@ pub struct TaskAwareAllocator<A: GlobalAlloc> {
 pub struct TaskMemoryContext {
     task_id: usize,
     allocator: &'static TaskAwareAllocator<System>,
-}
-
-impl<A: GlobalAlloc> TaskAwareAllocator<A> {
-    /// Creates a new task-aware allocator
-    pub fn new(inner: A) -> Self {
-        Self {
-            inner,
-            next_task_id: AtomicUsize::new(1), // Start at 1, reserve 0 for "untracked"
-            registry: Mutex::new(AllocationRegistry {
-                task_allocations: HashMap::new(),
-                address_to_task: HashMap::new(),
-                current_task_id: None,
-            }),
-        }
-    }
 }
 
 // Implement specific methods for the System allocator version
@@ -75,95 +64,147 @@ impl TaskAwareAllocator<System> {
             allocator: self,
         }
     }
-}
 
-impl<A: GlobalAlloc> TaskAwareAllocator<A> {
-    /// Get memory usage statistics for a specific task
-    pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        let registry = self.registry.lock().unwrap();
-
+    // When getting the registry, initialize it if needed
+    fn get_registry(&self) -> std::sync::MutexGuard<'static, Option<AllocationRegistry>> {
+        let mut registry = REGISTRY.lock().unwrap();
+        if registry.is_none() {
+            *registry = Some(AllocationRegistry {
+                task_allocations: HashMap::new(),
+                address_to_task: HashMap::new(),
+                current_task_id: None,
+            });
+        }
         registry
-            .task_allocations
-            .get(&task_id)
-            .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
+    }
+
+    pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
+        let registry = self.get_registry();
+
+        if let Some(reg) = registry.as_ref() {
+            reg.task_allocations
+                .get(&task_id)
+                .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
+        } else {
+            None
+        }
     }
 
     /// Enter a task context - all allocations will be attributed to this task
     pub fn enter_task(&self, task_id: usize) -> Result<(), String> {
-        let mut registry = self.registry.lock().unwrap();
+        let mut registry = self.get_registry();
 
-        if registry.current_task_id.is_some() {
-            // Already in a task context
-            return Err("Already in a task context".to_string());
+        if let Some(reg) = registry.as_mut() {
+            if reg.current_task_id.is_some() {
+                // Already in a task context
+                return Err("Already in a task context".to_string());
+            }
+
+            reg.current_task_id = Some(task_id);
         }
 
-        registry.current_task_id = Some(task_id);
         Ok(())
     }
 
     /// Exit the current task context
-    fn exit_task(&self) -> Result<(), String> {
-        let mut registry = self.registry.lock().unwrap();
+    pub fn exit_task(&self) -> Result<(), String> {
+        let mut registry = self.get_registry();
 
-        if registry.current_task_id.is_none() {
-            // Not in a task context
-            return Err("Not in a task context".to_string());
+        if let Some(reg) = registry.as_mut() {
+            if reg.current_task_id.is_none() {
+                // Not in a task context
+                return Err("Not in a task context".to_string());
+            }
+
+            reg.current_task_id = None;
         }
 
-        registry.current_task_id = None;
         Ok(())
     }
 
     /// Record an allocation for the current task (if any)
     fn record_alloc(&self, ptr: *mut u8, layout: Layout) {
-        let mut registry = self.registry.lock().unwrap();
+        let mut registry = self.get_registry();
 
-        if let Some(task_id) = registry.current_task_id {
-            let address = ptr as usize;
-            let size = layout.size();
+        if let Some(reg) = registry.as_mut() {
+            if let Some(task_id) = reg.current_task_id {
+                let address = ptr as usize;
+                let size = layout.size();
 
-            // Record in task's allocation list
-            if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                allocations.push((address, size));
+                // Record in task's allocation list
+                if let Some(allocations) = reg.task_allocations.get_mut(&task_id) {
+                    allocations.push((address, size));
+                }
+
+                // Map address back to task for deallocation
+                reg.address_to_task.insert(address, task_id);
             }
-
-            // Map address back to task for deallocation
-            registry.address_to_task.insert(address, task_id);
         }
     }
 
     /// Record a deallocation, removing it from the task's allocation list
     fn record_dealloc(&self, ptr: *mut u8) {
-        let mut registry = self.registry.lock().unwrap();
+        let mut registry = self.get_registry();
         let address = ptr as usize;
 
-        // Find which task owns this allocation
-        if let Some(task_id) = registry.address_to_task.remove(&address) {
-            // Remove from task's allocation list
-            if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                if let Some(index) = allocations.iter().position(|(addr, _)| *addr == address) {
-                    allocations.swap_remove(index);
+        if let Some(reg) = registry.as_mut() {
+            if let Some(task_id) = reg.address_to_task.remove(&address) {
+                // Remove from task's allocation list
+                if let Some(allocations) = reg.task_allocations.get_mut(&task_id) {
+                    if let Some(index) = allocations.iter().position(|(addr, _)| *addr == address) {
+                        allocations.swap_remove(index);
+                    }
                 }
             }
         }
     }
 }
 
-// Implement the GlobalAlloc trait
+// Provide non-functional implementations for the generic case
+#[cfg(not(feature = "full_profiling"))]
+impl<A: GlobalAlloc> TaskAwareAllocator<A> {
+    pub fn get_task_memory_usage(&self, _task_id: usize) -> Option<usize> {
+        None
+    }
+
+    pub fn enter_task(&self, _task_id: usize) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn exit_task(&self) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn record_alloc(&self, _ptr: *mut u8, _layout: Layout) {
+        // No-op when profiling is disabled
+    }
+
+    fn record_dealloc(&self, _ptr: *mut u8) {
+        // No-op when profiling is disabled
+    }
+}
+
+// Implement the GlobalAlloc trait for both cases
 unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = self.inner.alloc(layout);
 
-        if !ptr.is_null() {
-            self.record_alloc(ptr, layout);
+        #[cfg(feature = "full_profiling")]
+        if !ptr.is_null() && std::any::TypeId::of::<A>() == std::any::TypeId::of::<System>() {
+            // Safety: This is safe because we've checked the type is System
+            let this = unsafe { std::mem::transmute::<&Self, &TaskAwareAllocator<System>>(self) };
+            this.record_alloc(ptr, layout);
         }
 
         ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        if !ptr.is_null() {
-            self.record_dealloc(ptr);
+        #[cfg(feature = "full_profiling")]
+        if !ptr.is_null() && std::any::TypeId::of::<A>() == std::any::TypeId::of::<System>() {
+            // Safety: This is safe because we've checked the type is System
+            let this = unsafe { std::mem::transmute::<&Self, &TaskAwareAllocator<System>>(self) };
+            this.record_dealloc(ptr);
         }
 
         self.inner.dealloc(ptr, layout);
@@ -240,25 +281,11 @@ impl TaskMemoryContext {
     }
 }
 
-// Use static initialization that works with non-const HashMap::new
 #[cfg(feature = "full_profiling")]
 #[global_allocator]
-static ALLOCATOR: TaskAwareAllocator<System> = {
-    extern crate std;
-    use std::alloc::System;
-    use std::sync::atomic::AtomicUsize;
-    use std::sync::Mutex;
-
-    TaskAwareAllocator {
-        inner: System,
-        next_task_id: AtomicUsize::new(1),
-        // Empty registry that will be initialized at runtime
-        registry: Mutex::new(AllocationRegistry {
-            task_allocations: HashMap::new(),
-            address_to_task: HashMap::new(),
-            current_task_id: None,
-        }),
-    }
+static ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator {
+    inner: System,
+    next_task_id: AtomicUsize::new(1),
 };
 
 // Helper to get the allocator instance

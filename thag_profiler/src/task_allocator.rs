@@ -1,18 +1,14 @@
-//! Task-aware memory allocator for profiling.
-//!
-//! This module provides a memory allocator that tracks allocations by logical tasks
-//! rather than threads, making it suitable for async code profiling.
+//\! Task-aware memory allocator for profiling.
+//\!
+//\! This module provides a memory allocator that tracks allocations by logical tasks
+//\! rather than threads, making it suitable for async code profiling.
 
 use std::alloc::System;
 use std::alloc::{GlobalAlloc, Layout};
 use std::collections::HashMap;
-// use std::ptr::NonNull;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
-// use std::sync::LazyLock;
 use std::sync::Mutex;
-use std::sync::OnceLock;
-// use std::sync::MutexGuard;
 
 /// A thread-safe storage for task-specific allocation tracking
 #[derive(Debug)]
@@ -42,7 +38,7 @@ pub struct TaskAwareAllocator<A: GlobalAlloc> {
 
 /// Task context for tracking allocations
 #[cfg(feature = "full_profiling")]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TaskMemoryContext {
     task_id: usize,
     allocator: &'static TaskAwareAllocator<System>,
@@ -61,9 +57,12 @@ impl<A: GlobalAlloc> TaskAwareAllocator<A> {
             }),
         }
     }
+}
 
+// Implement specific methods for the System allocator version
+#[cfg(feature = "full_profiling")]
+impl TaskAwareAllocator<System> {
     /// Creates a new task context for tracking memory
-    #[cfg(feature = "full_profiling")]
     pub fn create_task_context(&'static self) -> TaskMemoryContext {
         let task_id = self.next_task_id.fetch_add(1, Ordering::SeqCst);
 
@@ -73,10 +72,12 @@ impl<A: GlobalAlloc> TaskAwareAllocator<A> {
 
         TaskMemoryContext {
             task_id,
-            allocator: unsafe { std::mem::transmute(self) }, // This is safe because we only use this with System
+            allocator: self,
         }
     }
+}
 
+impl<A: GlobalAlloc> TaskAwareAllocator<A> {
     /// Get memory usage statistics for a specific task
     pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
         let registry = self.registry.lock().unwrap();
@@ -84,16 +85,16 @@ impl<A: GlobalAlloc> TaskAwareAllocator<A> {
         registry
             .task_allocations
             .get(&task_id)
-            .map(|allocations| allocations.iter().map(|(_, size)| size).sum())
+            .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
     }
 
     /// Enter a task context - all allocations will be attributed to this task
-    fn enter_task(&self, task_id: usize) -> Result<(), ()> {
+    pub fn enter_task(&self, task_id: usize) -> Result<(), String> {
         let mut registry = self.registry.lock().unwrap();
 
         if registry.current_task_id.is_some() {
             // Already in a task context
-            return Err(());
+            return Err("Already in a task context".to_string());
         }
 
         registry.current_task_id = Some(task_id);
@@ -101,12 +102,12 @@ impl<A: GlobalAlloc> TaskAwareAllocator<A> {
     }
 
     /// Exit the current task context
-    fn exit_task(&self) -> Result<(), ()> {
+    fn exit_task(&self) -> Result<(), String> {
         let mut registry = self.registry.lock().unwrap();
 
         if registry.current_task_id.is_none() {
             // Not in a task context
-            return Err(());
+            return Err("Not in a task context".to_string());
         }
 
         registry.current_task_id = None;
@@ -172,10 +173,13 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 #[cfg(feature = "full_profiling")]
 impl TaskMemoryContext {
     /// Activates this task context for memory tracking
-    pub fn enter(&self) -> Result<TaskGuard, ()> {
+    pub fn enter(&self) -> Result<TaskGuard, String> {
         match self.allocator.enter_task(self.task_id) {
-            Ok(()) => Ok(TaskGuard { context: self }),
-            Err(()) => Err(()),
+            Ok(()) => Ok(TaskGuard {
+                task_id: self.task_id,
+                allocator: self.allocator,
+            }),
+            Err(e) => Err(e),
         }
     }
 
@@ -192,56 +196,85 @@ impl TaskMemoryContext {
 
 // Provide a dummy TaskMemoryContext type for when full_profiling is disabled
 #[cfg(not(feature = "full_profiling"))]
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TaskMemoryContext;
 
 /// RAII guard for task context
 #[cfg(feature = "full_profiling")]
 #[derive(Debug)]
 pub struct TaskGuard<'a> {
-    context: &'a TaskMemoryContext,
+    task_id: usize,
+    allocator: &'a TaskAwareAllocator<System>,
 }
 
 #[cfg(not(feature = "full_profiling"))]
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TaskGuard;
 
 #[cfg(feature = "full_profiling")]
 impl<'a> Drop for TaskGuard<'a> {
     fn drop(&mut self) {
-        let _ = self.context.allocator.exit_task();
+        let _ = self.allocator.exit_task();
     }
 }
 
-// Global allocator instance using OnceLock
-#[cfg(feature = "full_profiling")]
-static GLOBAL_ALLOCATOR: OnceLock<TaskAwareAllocator<System>> = OnceLock::new();
+// Implement basic methods for the no-op TaskMemoryContext
+#[cfg(not(feature = "full_profiling"))]
+impl TaskMemoryContext {
+    /// No-op implementation that returns a dummy guard
+    #[must_use]
+    pub fn enter(&self) -> Result<TaskGuard, String> {
+        Ok(TaskGuard)
+    }
 
-// Only define the global allocator if using full profiling
+    /// Returns a dummy ID (0) when profiling is disabled
+    #[must_use]
+    pub const fn id(&self) -> usize {
+        0
+    }
+
+    /// Always returns None when profiling is disabled
+    #[must_use]
+    pub const fn memory_usage(&self) -> Option<usize> {
+        None
+    }
+}
+
+// Use static initialization that works with non-const HashMap::new
 #[cfg(feature = "full_profiling")]
 #[global_allocator]
-static ALLOCATOR: &TaskAwareAllocator<System> = {
-    let allocator = GLOBAL_ALLOCATOR.get_or_init(|| TaskAwareAllocator::new(System));
-    allocator
+static ALLOCATOR: TaskAwareAllocator<System> = {
+    extern crate std;
+    use std::alloc::System;
+    use std::sync::atomic::AtomicUsize;
+    use std::sync::Mutex;
+
+    TaskAwareAllocator {
+        inner: System,
+        next_task_id: AtomicUsize::new(1),
+        // Empty registry that will be initialized at runtime
+        registry: Mutex::new(AllocationRegistry {
+            task_allocations: HashMap::new(),
+            address_to_task: HashMap::new(),
+            current_task_id: None,
+        }),
+    }
 };
 
 // Helper to get the allocator instance
 #[cfg(feature = "full_profiling")]
-fn get_allocator() -> &'static TaskAwareAllocator<System> {
-    GLOBAL_ALLOCATOR.get_or_init(|| TaskAwareAllocator::new(System))
+pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
+    &ALLOCATOR
 }
 
 /// Creates a new task context for memory tracking.
 #[cfg(feature = "full_profiling")]
 pub fn create_memory_task() -> TaskMemoryContext {
-    // ALLOCATOR.create_task_context()
     get_allocator().create_task_context()
 }
 
 /// No-op version when profiling is disabled.
 #[cfg(not(feature = "full_profiling"))]
-pub fn create_memory_task() -> () {
-    ()
+pub fn create_memory_task() -> TaskMemoryContext {
+    TaskMemoryContext
 }
-
-// Additional helper functions as needed

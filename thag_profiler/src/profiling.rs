@@ -1,3 +1,4 @@
+use crate::task_allocator::{create_memory_task, TaskGuard, TaskMemoryContext};
 use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -18,10 +19,10 @@ use std::{
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
-#[cfg(feature = "full_profiling")]
-#[global_allocator]
-static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
-    re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
+// #[cfg(feature = "full_profiling")]
+// #[global_allocator]
+// static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
+//     re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
 
 use backtrace::Backtrace;
 
@@ -543,10 +544,13 @@ impl ProfileType {
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
-    // initial_memory: Option<usize>, // For memory delta
     path: Vec<String>,           // Full call stack (only profiled functions)
     custom_name: Option<String>, // Custom section name when provided via profile!("name") macro
     registered_name: String,
+    #[cfg(feature = "full_profiling")]
+    memory_task: Option<TaskMemoryContext>,
+    #[cfg(feature = "full_profiling")]
+    memory_guard: Option<TaskGuard<'static>>,
 }
 
 impl Profile {
@@ -726,16 +730,6 @@ impl Profile {
             eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
-        // let initial_memory = None;
-
-        // #[cfg(feature = "full_profiling")]
-        // let initial_memory = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-        //     // Get initial memory snapshot
-        //     memory_stats().map(|stats| stats.physical_mem)
-        // } else {
-        //     None
-        // };
-
         // Determine if we should keep the custom name
         let custom_name = name.and_then(|n| {
             if n.is_empty() {
@@ -768,7 +762,8 @@ impl Profile {
         //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
-        Some(Self {
+        #[cfg(not(feature = "full_profiling"))]
+        let profile = Self {
             // id,
             // name,
             profile_type,
@@ -778,7 +773,45 @@ impl Profile {
             custom_name,
             registered_name: fn_name.to_string(),
             // _not_send: PhantomData,
-        })
+        };
+
+        #[cfg(feature = "full_profiling")]
+        let memory_task = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            Some(create_memory_task())
+        } else {
+            None
+        };
+
+        // #[cfg(not(feature = "full_profiling"))]
+        // let memory_task = None;
+
+        // Setup memory task context if memory profiling is requested
+        #[cfg(feature = "full_profiling")]
+        let profile = Self {
+            // id,
+            // name,
+            profile_type,
+            start: Some(Instant::now()),
+            // initial_memory,
+            path,
+            custom_name,
+            registered_name: fn_name.to_string(),
+            memory_task,
+            memory_guard: None,
+        };
+
+        // Then activate the guard afterward (this avoids the self-reference issue)
+        #[cfg(feature = "full_profiling")]
+        let profile = if let Some(ref task) = profile.memory_task {
+            // Create a new profile with the guard
+            let mut new_profile = profile;
+            new_profile.memory_guard = task.enter().ok();
+            new_profile
+        } else {
+            profile
+        };
+
+        Some(profile)
     }
 
     /// Writes a profiling event to the specified profile file.

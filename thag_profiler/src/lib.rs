@@ -37,6 +37,7 @@
 //! ```
 mod errors;
 pub mod profiling;
+mod task_allocator;
 
 use std::fmt::Display;
 
@@ -47,6 +48,7 @@ pub use {
         get_global_profile_type, is_profiling_enabled, Profile, ProfileSection, ProfileType,
     },
     thag_proc_macros::{enable_profiling, profiled},
+    // Only re-export what users need from task_allocator
 };
 
 #[cfg(test)]

@@ -970,6 +970,10 @@ impl Profile {
 }
 
 /// Creates a standalone memory guard that activates the given task ID
+///
+/// # Errors
+///
+/// This function will bubble up any error from `TaskAwareAllocator::enter_task`.
 #[cfg(feature = "full_profiling")]
 pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard<'static>, String> {
     // Get the allocator
@@ -980,7 +984,7 @@ pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard<'static>, String>
         Ok(()) => {
             // Create a guard that's tied to the allocator directly,
             // not to a specific TaskMemoryContext
-            Ok(TaskGuard { task_id, allocator })
+            Ok(TaskGuard::new(task_id, allocator))
         }
         Err(e) => Err(e),
     }

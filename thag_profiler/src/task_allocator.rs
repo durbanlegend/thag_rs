@@ -224,10 +224,7 @@ impl TaskMemoryContext {
     /// Activates this task context for memory tracking
     pub fn enter(&self) -> Result<TaskGuard, String> {
         match self.allocator.enter_task(self.task_id) {
-            Ok(()) => Ok(TaskGuard {
-                task_id: self.task_id,
-                allocator: self.allocator,
-            }),
+            Ok(()) => Ok(TaskGuard::new(self.task_id, self.allocator)),
             Err(e) => Err(e),
         }
     }
@@ -252,8 +249,15 @@ pub struct TaskMemoryContext;
 #[cfg(feature = "full_profiling")]
 #[derive(Debug)]
 pub struct TaskGuard<'a> {
-    pub task_id: usize,
-    pub allocator: &'a TaskAwareAllocator<System>,
+    task_id: usize,
+    allocator: &'a TaskAwareAllocator<System>,
+}
+
+#[cfg(feature = "full_profiling")]
+impl<'a> TaskGuard<'a> {
+    pub fn new(task_id: usize, allocator: &'a TaskAwareAllocator<System>) -> Self {
+        Self { task_id, allocator }
+    }
 }
 
 #[cfg(not(feature = "full_profiling"))]

@@ -259,14 +259,14 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             let time_path = get_time_path()?;
             TimeProfileFile::init();
             reset_profile_file(TimeProfileFile::get(), "time")?;
-            initialize_profile_file(&time_path, "Time Profile")?;
+            initialize_profile_file(time_path, "Time Profile")?;
             eprintln!("Time profile will be written to {time_path}");
         }
         ProfileType::Memory => {
             let memory_path = get_memory_path()?;
             MemoryProfileFile::init();
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            initialize_profile_file(&memory_path, "Memory Profile")?;
+            initialize_profile_file(memory_path, "Memory Profile")?;
             eprintln!("Memory profile will be written to {memory_path}");
         }
         ProfileType::Both => {
@@ -281,8 +281,8 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             reset_profile_file(MemoryProfileFile::get(), "memory")?;
 
             // Initialize all files with headers
-            initialize_profile_file(&time_path, "Time Profile")?;
-            initialize_profile_file(&memory_path, "Memory Profile")?;
+            initialize_profile_file(time_path, "Time Profile")?;
+            initialize_profile_file(memory_path, "Memory Profile")?;
 
             eprintln!("Time profile will be written to {time_path}");
             eprintln!("Memory profile will be written to {memory_path}");
@@ -488,8 +488,8 @@ pub fn is_profiling_enabled() -> bool {
 /// Checks if profiling state is currently enabled.
 ///
 /// This is used in integration testing to determine whether profiling
-/// operations should be performed. We us this function because we don't
-/// want to check PROFILING_FEATURE, which is always true when testing with
+/// operations should be performed. We use this function because we don't
+/// want to check `PROFILING_FEATURE`, which is always true when testing with
 /// feature=profiling. It's atomic and thread-safe.
 ///
 /// # Returns
@@ -626,10 +626,10 @@ impl Profile {
                         // then we can extract the class name
                         if first_frame_after_profile {
                             first_frame_after_profile = false;
-                            let demangled = demangle(&name_str).to_string();
+                            let demangled = demangle(&name_str);
                             // Clean the demangled name
-                            let cleaned = clean_function_name(&demangled);
-                            // eprintln!("cleaned name: {cleaned:?}");
+                            let cleaned = clean_function_name(demangled.to_string().as_str());
+                            // eprintln!("name_str: {name_str}; cleaned name: {cleaned:?}");
                             if is_method {
                                 maybe_qualified_name = extract_class_method(&cleaned);
                                 // eprintln!("class_method name: {maybe_method_name:?}");
@@ -1007,8 +1007,8 @@ impl Drop for Profile {
                     // eprintln!("Memory change detected: {total_bytes} bytes");
                     let _ = self.record_memory_change(total_bytes);
                 }
-            }
-        }
+            } // tracking stats
+        } // memory
     }
 }
 

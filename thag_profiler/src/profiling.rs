@@ -2,7 +2,7 @@ use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     env,
     fs::File,
     io::BufWriter,
@@ -603,8 +603,9 @@ impl Profile {
         let mut raw_frames: Vec<String> = Vec::new();
 
         // If this is a method, we'll capture the calling class
-        let mut maybe_qualified_name: Option<String> = None;
-        let mut maybe_bare_name: Option<String> = None;
+        let mut maybe_cleaned_name: Option<String> = None;
+        let maybe_qualified_name: Option<String> = None;
+        let maybe_bare_name: Option<String> = None;
         let mut first_frame_after_profile = false;
 
         for frame in Backtrace::frames(&current_backtrace) {
@@ -628,19 +629,9 @@ impl Profile {
                             first_frame_after_profile = false;
                             let demangled = demangle(&name_str);
                             // Clean the demangled name
-                            let cleaned = clean_function_name(demangled.to_string().as_str());
-                            eprintln!("name_str: {name_str}; cleaned name: {cleaned:?}");
-                            if is_method {
-                                maybe_qualified_name = extract_class_method(&cleaned);
-                                // eprintln!("class_method name: {maybe_method_name:?}");
-                            } else {
-                                maybe_bare_name = extract_fn_only(&cleaned);
-                                if let Some(ref bare_name) = maybe_bare_name {
-                                    if bare_name.as_str() == "new" {
-                                        maybe_qualified_name = extract_class_method(&cleaned);
-                                    }
-                                }
-                            }
+                            let cleaned_name = clean_function_name(demangled.to_string().as_str());
+                            // eprintln!("name_str: {name_str}; cleaned name: {cleaned_name:?}");
+                            maybe_cleaned_name = Some(cleaned_name);
                         }
 
                         // Skip tokio::runtime functions
@@ -663,12 +654,9 @@ impl Profile {
         }
 
         // Register this function
-        let fn_name = maybe_qualified_name.as_ref().map_or(
-            maybe_bare_name
-                .as_ref()
-                .map_or_else(|| name.unwrap_or("unknown"), Deref::deref),
-            Deref::deref,
-        );
+        let fn_name = maybe_cleaned_name
+            .as_ref()
+            .map_or_else(|| name.unwrap_or("unknown"), Deref::deref);
         let desc_fn_name = if is_async {
             format!("async::{fn_name}")
         } else {
@@ -686,15 +674,12 @@ impl Profile {
 
         // Add self and ancestors that are profiled functions
         for fn_name_str in cleaned_stack {
-            let maybe_class_name = extract_class_method(&fn_name_str);
-            if let Some(class_name) = maybe_class_name {
-                // eprintln!("Class name: {}", class_name);
-                if let Some(name) = get_reg_desc_name(&class_name) {
-                    // eprintln!("Registered desc name: {}", name);
-                    path.push(name);
-                    continue;
-                }
+            if let Some(name) = get_reg_desc_name(&fn_name_str) {
+                // eprintln!("Registered desc name: {}", name);
+                path.push(name);
+                continue;
             }
+            // }
             let key = get_fn_desc_name(&fn_name_str);
             // eprintln!("Function desc name: {}", key);
             if let Some(name) = get_reg_desc_name(&key) {
@@ -951,6 +936,31 @@ impl Profile {
     }
 }
 
+// Global thread-safe BTreeSet
+static GLOBAL_CALL_STACK_ENTRIES: Lazy<Mutex<BTreeSet<String>>> =
+    Lazy::new(|| Mutex::new(BTreeSet::new()));
+
+/// Prints all entries in the global `BTreeSet`.
+/// Entries are printed in sorted order (alphabetically).
+pub fn print_all_call_stack_entries() {
+    match GLOBAL_CALL_STACK_ENTRIES.lock() {
+        Ok(parts) => {
+            println!("All entries in the global set (sorted):");
+            if parts.is_empty() {
+                println!("  (empty set)");
+            } else {
+                for part in parts.iter() {
+                    println!("  {part}");
+                }
+            }
+            println!("Total entries: {}", parts.len());
+        }
+        Err(e) => {
+            eprintln!("Error accessing the global set: {e:?}");
+        }
+    }
+}
+
 fn get_fn_desc_name(fn_name_str: &String) -> String {
     // extract_fn_only(fn_name_str).map_or_else(|| fn_name_str.to_string(), |fn_only| fn_only)
     extract_fn_only(fn_name_str).unwrap_or_else(|| fn_name_str.to_string())
@@ -976,12 +986,26 @@ impl Drop for Profile {
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
             // eprintln!("In drop for Profile {self:?} with memory profiling");
             if let Some(tracking_stats) = re_memory::accounting_allocator::tracking_stats() {
-                let matching_callstacks: Vec<_> = tracking_stats
+                let mut relevant_sizes: Vec<_> = tracking_stats
                     .top_callstacks
                     .into_iter()
                     .filter_map(|cs| {
                         // Convert the backtrace to a string we can analyze
                         let backtrace_str = format!("{}", cs.readable_backtrace);
+
+                        // for line in backtrace_str
+                        //     .lines()
+                        //     .map(str::trim)
+                        //     .filter(|line| !line.starts_with("at "))
+                        // {
+                        //     // Skip leading spaces and find content after number and colon
+                        //     let split_once = line.trim_start().split_once(": ");
+                        //     let actual_content = split_once.map_or(line, |(_, content)| content);
+                        //     GLOBAL_CALL_STACK_ENTRIES
+                        //         .lock()
+                        //         .unwrap()
+                        //         .insert(actual_content.to_string());
+                        // }
 
                         // Check if any lines in the backtrace contain our target identifiers
                         let is_relevant = backtrace_contains_any(
@@ -1003,22 +1027,35 @@ impl Drop for Profile {
                     })
                     .collect();
 
-                let total_bytes = if matching_callstacks.is_empty() {
-                    0
+                // Calculate median or use appropriate fallback
+                let memory_bytes = if relevant_sizes.is_empty() {
+                    0 // No relevant allocations found
                 } else {
-                    eprintln!(
-                        "self.registered_name={}, matching_callstacks={matching_callstacks:?}",
-                        self.registered_name
-                    );
-                    // Calculate average and round to nearest usize
-                    (matching_callstacks.iter().sum::<usize>() as f64
-                        / matching_callstacks.len() as f64)
-                        .round() as usize
+                    // Sort the sizes to find median
+                    relevant_sizes.sort_unstable();
+
+                    if relevant_sizes.len() == 1 {
+                        // If only one element, use it directly
+                        relevant_sizes[0]
+                    } else {
+                        // Find true median (handles both even and odd lengths)
+                        let mid = relevant_sizes.len() / 2;
+                        if relevant_sizes.len() % 2 == 0 {
+                            // Even number of elements: average the two middle values
+                            (relevant_sizes[mid - 1] + relevant_sizes[mid]) / 2
+                        } else {
+                            // Odd number of elements: use middle value
+                            relevant_sizes[mid]
+                        }
+                    }
                 };
 
-                if total_bytes > 0 {
-                    // eprintln!("Memory change detected: {total_bytes} bytes");
-                    let _ = self.record_memory_change(total_bytes);
+                if memory_bytes > 0 {
+                    // eprintln!(
+                    //     "Memory change detected for {}: {memory_bytes} bytes",
+                    //     self.registered_name
+                    // );
+                    let _ = self.record_memory_change(memory_bytes);
                 }
             } // tracking stats
         } // memory
@@ -1147,23 +1184,6 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
         .lock()
         .ok()
         .and_then(|registry| registry.get(name).cloned())
-}
-
-// Extract the class::method part from a fully qualified function name or <pattern>::new.
-// #[cfg(feature = "time_profiling")]
-fn extract_class_method(qualified_name: &str) -> Option<String> {
-    // Split by :: and get the last two components
-    // eprintln!("Extracting class::method from {}", qualified_name);
-    let parts: Vec<&str> = qualified_name.split("::").collect();
-    if parts.len() >= 2 {
-        let class = parts[parts.len() - 2];
-        let method = parts[parts.len() - 1];
-        // eprintln!("Returning `{class}::{method}`");
-        Some(format!("{class}::{method}"))
-    } else {
-        // eprintln!("Returning `None`");
-        None
-    }
 }
 
 // Extract just the base function name from a fully qualified function name
@@ -1704,20 +1724,6 @@ mod tests {
         // Test with multiple colons
         let name = "module::::func";
         assert_eq!(clean_function_name(name), "module::func");
-    }
-
-    #[test]
-    fn test_profiling_extract_class_method() {
-        // Test with class::method
-        let name = "module::Class::method";
-        assert_eq!(
-            extract_class_method(name),
-            Some("Class::method".to_string())
-        );
-
-        // Test with no class
-        let name = "function";
-        assert_eq!(extract_class_method(name), None);
     }
 
     #[test]

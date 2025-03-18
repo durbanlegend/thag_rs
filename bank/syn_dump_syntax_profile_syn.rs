@@ -80,6 +80,7 @@ impl Display for Error {
     }
 }
 
+// #[thag_profiler::enable_profiling]
 fn main() {
     eprintln!(
         "is_profiling_enabled()? {}, get_global_profile_type(): {:?}",
@@ -90,6 +91,7 @@ fn main() {
         let _ = writeln!(io::stderr(), "{}", error);
         process::exit(1);
     }
+    // thag_profiler::profiling::print_all_call_stack_entries();
 }
 
 fn try_main() -> Result<(), Error> {

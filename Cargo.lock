@@ -2287,14 +2287,14 @@ dependencies = [
 
 [[package]]
 name = "reedline"
-version = "0.37.0"
+version = "0.39.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9834765acaa2deedf29197f2da3d309801683beb20e25775bc0249f97a7b9a74"
+checksum = "dd4728ee71d2aa3a364ee64470d1aa64b3f0467b2d28b73df15259d005dec64a"
 dependencies = [
  "chrono",
  "crossterm 0.28.1",
  "fd-lock",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "nu-ansi-term",
  "serde",
  "strip-ansi-escapes",

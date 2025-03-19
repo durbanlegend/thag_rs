@@ -1,4 +1,3 @@
-use crate::dbg_removed;
 use crate::task_allocator::{create_memory_task, TaskGuard, TaskMemoryContext};
 use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
@@ -778,21 +777,18 @@ impl Profile {
 
         // For full profiling, we need to handle memory task and guard creation
         #[cfg(feature = "full_profiling")]
-        dbg_removed!();
         let profile = {
             // First, determine if we need memory profiling
             if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-                dbg_removed!();
                 // Create a task to track memory usage
                 let task = create_memory_task();
 
-                dbg_removed!(task.id());
                 // Create an owned TaskGuard directly from the task ID
                 // This avoids the 'static lifetime requirement
                 let guard_result = create_memory_guard(task.id());
                 match &guard_result {
-                    Ok(_) => println!("Memory guard successfully created for task {}", task.id()),
-                    Err(e) => println!("Failed to create memory guard: {}", e),
+                    Ok(_) => (),
+                    Err(e) => println!("Failed to create memory guard: {e}"),
                 }
 
                 // Create the profile with necessary components
@@ -807,7 +803,6 @@ impl Profile {
                 }
             } else {
                 // No memory profiling needed
-                dbg_removed!();
                 Self {
                     profile_type,
                     start: Some(Instant::now()),
@@ -819,8 +814,6 @@ impl Profile {
                 }
             }
         };
-        dbg_removed!("Exiting new");
-        // dbg_removed!(&profile.memory_task);
 
         Some(profile)
     }
@@ -976,7 +969,6 @@ impl Profile {
         // // Store both events atomically to maintain pairing
         // self.write_memory_event_with_op(delta, '-')?;
 
-        dbg_removed!();
         Ok(())
     }
 }
@@ -1029,26 +1021,28 @@ impl Drop for Profile {
         // Handle memory profiling
         #[cfg(feature = "full_profiling")]
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-            eprintln!("In drop for Profile with memory profiling: {self:?}");
+            eprintln!(
+                "In drop for Profile with memory profiling: {}",
+                self.registered_name
+            );
             // First drop the guard to exit the task context
             self.memory_guard = None;
-            dbg_removed!();
             // Now get memory usage from our task
             if let Some(ref task) = self.memory_task {
                 if let Some(memory_usage) = task.memory_usage() {
-                    eprintln!("memory_usage={memory_usage}");
+                    // eprintln!("memory_usage={memory_usage}");
                     if memory_usage > 0 {
                         let _ = self.record_memory_change(memory_usage);
                     }
                 }
             }
         }
-        dbg_removed!();
     }
 }
 
 // Helper function to check if a backtrace contains any of the specified patterns
 #[cfg(feature = "full_profiling")]
+#[allow(dead_code)]
 fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
     // Split the backtrace into lines for easier processing
     let lines = backtrace.lines();

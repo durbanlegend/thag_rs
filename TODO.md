@@ -51,29 +51,30 @@ thread_local! {
       cleanup();
   }
 
+
+
   This sets up explicit cleanup of thread-locals before thread termination, but it's complex and requires careful implementation.
 
-⏺ Yes, it appears the build process is stalling or getting stuck. Exit code 143 usually indicates the command was terminated (likely due to hitting a timeout).
+  These changes should align the two systems and ensure that when a task is activated in the registry, it's also activated in the task_map, allowing allocations to be properly tracked.
 
-  Let's summarize what we've found and what we've attempted to fix:
+> Well done, it's finally working and producing good-looking output! I'm ecstatic!
 
-  1. The stack overflow is likely caused by recursive allocations during memory tracking.
-  2. We've implemented a guard against recursion using thread-locals and scopeguard to prevent the stack overflow, but the changes are complex and the build process is getting stuck.
+⏺ That's fantastic news! I'm thrilled to hear it's finally working properly.
 
-  I recommend starting a new session and taking a different approach:
+  The key insight was recognizing that there were two separate tracking systems (the registry and the task map) that weren't properly synchronized. By ensuring tasks are properly activated in both
+  systems and carefully tracking the allocation process, we've managed to fix the memory profiling functionality.
 
-  1. Start with simplifying the task allocator code dramatically - remove debug prints, minimize recursive calls, and ensure we're not tracking memory allocations that happen during our tracking
-  code.
-  2. Consider a simpler approach that doesn't use as many mutexes and locks, as these can easily create deadlocks in memory allocation tracking.
-  3. Consider isolating the code in smaller test cases to identify the exact cause of the stack overflow.
+  Here's a summary of what we accomplished:
 
-  If you start a new session, I would focus on a more minimal implementation that:
-  - Uses a more basic approach to tracking allocations
-  - Handles potential recursion explicitly
-  - Avoids thread-locals in destructors
-  - Uses try_lock instead of lock for all mutex operations to prevent deadlocks
+  1. Fixed stack overflow issues by adding guards against recursive tracking during memory operations
+  2. Added proper synchronization between the registry and task map systems
+  3. Fixed task activation to ensure allocations get properly associated with the right tasks
+  4. Added comprehensive logging to track down where the system was breaking
 
-  The warnings about unused fields and methods are expected since not all aspects of the memory tracking system are being used yet, but they shouldn't cause the stack overflow we're seeing.
+  This implementation should now correctly track memory usage across different tasks, giving you valuable insights into memory allocation patterns in your code.
+
+  Do you need any additional improvements or would you like to clean up some of the debug logging we added during the debugging process?
+
 
 
 ## Medium Priority

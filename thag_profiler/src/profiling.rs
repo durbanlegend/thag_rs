@@ -20,7 +20,10 @@ use std::{
 use std::sync::OnceLock;
 
 #[cfg(feature = "full_profiling")]
-use crate::task_allocator::get_allocator;
+use crate::task_allocator::create_memory_guard;
+
+// #[cfg(feature = "full_profiling")]
+// use crate::task_allocator::get_allocator;
 
 // #[cfg(feature = "full_profiling")]
 // #[global_allocator]
@@ -370,9 +373,6 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
     }
 
     if enabled {
-        #[cfg(feature = "full_profiling")]
-        re_memory::accounting_allocator::set_tracking_callstacks(true);
-
         // Respect environment variable for profile type if one wasn't explicitly provided
         let final_profile_type = if profile_type == ProfileType::Time
             && matches!(config.profile_type, ProfileType::Memory | ProfileType::Both)
@@ -777,15 +777,19 @@ impl Profile {
 
         // For full profiling, we need to handle memory task and guard creation
         #[cfg(feature = "full_profiling")]
+        dbg!();
         let profile = {
             // First, determine if we need memory profiling
             if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+                dbg!();
                 // Create a task to track memory usage
                 let task = create_memory_task();
 
+                dbg!(task.id());
                 // Create an owned TaskGuard directly from the task ID
                 // This avoids the 'static lifetime requirement
                 let guard_result = create_memory_guard(task.id());
+                dbg!();
 
                 // Create the profile with necessary components
                 Self {
@@ -799,6 +803,7 @@ impl Profile {
                 }
             } else {
                 // No memory profiling needed
+                dbg!();
                 Self {
                     profile_type,
                     start: Some(Instant::now()),
@@ -810,6 +815,8 @@ impl Profile {
                 }
             }
         };
+        dbg!("Exiting new");
+        dbg!(&profile.memory_task);
 
         Some(profile)
     }
@@ -910,7 +917,7 @@ impl Profile {
         Self::write_profile_event(time_path, TimeProfileFile::get(), &entry)
     }
 
-    // TODO remov op as redundant
+    // TODO remove op as redundant
     #[cfg(feature = "full_profiling")]
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
@@ -965,28 +972,8 @@ impl Profile {
         // // Store both events atomically to maintain pairing
         // self.write_memory_event_with_op(delta, '-')?;
 
+        dbg!();
         Ok(())
-    }
-}
-
-/// Creates a standalone memory guard that activates the given task ID
-///
-/// # Errors
-///
-/// This function will bubble up any error from `TaskAwareAllocator::enter_task`.
-#[cfg(feature = "full_profiling")]
-pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard<'static>, String> {
-    // Get the allocator
-    let allocator = get_allocator();
-
-    // Enter the task
-    match allocator.enter_task(task_id) {
-        Ok(()) => {
-            // Create a guard that's tied to the allocator directly,
-            // not to a specific TaskMemoryContext
-            Ok(TaskGuard::new(task_id, allocator))
-        }
-        Err(e) => Err(e),
     }
 }
 
@@ -1023,7 +1010,7 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 #[cfg(feature = "time_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        // println!("In drop for Profile {:?}", self);
+        println!("In drop for Profile {:?}", self);
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
             match self.profile_type {
@@ -1036,83 +1023,23 @@ impl Drop for Profile {
         }
 
         // Handle memory profiling
-        // #[cfg(feature = "full_profiling")]
+        #[cfg(feature = "full_profiling")]
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
             // eprintln!("In drop for Profile {self:?} with memory profiling");
-            if let Some(tracking_stats) = re_memory::accounting_allocator::tracking_stats() {
-                let mut relevant_sizes: Vec<_> = tracking_stats
-                    .top_callstacks
-                    .into_iter()
-                    .filter_map(|cs| {
-                        // Convert the backtrace to a string we can analyze
-                        let backtrace_str = format!("{}", cs.readable_backtrace);
-
-                        // for line in backtrace_str
-                        //     .lines()
-                        //     .map(str::trim)
-                        //     .filter(|line| !line.starts_with("at "))
-                        // {
-                        //     // Skip leading spaces and find content after number and colon
-                        //     let split_once = line.trim_start().split_once(": ");
-                        //     let actual_content = split_once.map_or(line, |(_, content)| content);
-                        //     GLOBAL_CALL_STACK_ENTRIES
-                        //         .lock()
-                        //         .unwrap()
-                        //         .insert(actual_content.to_string());
-                        // }
-
-                        // Check if any lines in the backtrace contain our target identifiers
-                        let is_relevant = backtrace_contains_any(
-                            &backtrace_str,
-                            &[
-                                &self.registered_name,
-                                // "thag_profiler::", // Your profiler code
-                                // Add other identifying strings that indicate "your code"
-                            ],
-                        );
-
-                        // eprintln!("is_relevant: {is_relevant}");
-                        if is_relevant {
-                            // This allocation is related to our profile
-                            Some(cs.stochastic_rate * cs.extant.size)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-
-                // Calculate median or use appropriate fallback
-                let memory_bytes = if relevant_sizes.is_empty() {
-                    0 // No relevant allocations found
-                } else {
-                    // Sort the sizes to find median
-                    relevant_sizes.sort_unstable();
-
-                    if relevant_sizes.len() == 1 {
-                        // If only one element, use it directly
-                        relevant_sizes[0]
-                    } else {
-                        // Find true median (handles both even and odd lengths)
-                        let mid = relevant_sizes.len() / 2;
-                        if relevant_sizes.len() % 2 == 0 {
-                            // Even number of elements: average the two middle values
-                            (relevant_sizes[mid - 1] + relevant_sizes[mid]) / 2
-                        } else {
-                            // Odd number of elements: use middle value
-                            relevant_sizes[mid]
-                        }
+            // First drop the guard to exit the task context
+            self.memory_guard = None;
+            dbg!();
+            // Now get memory usage from our task
+            if let Some(ref task) = self.memory_task {
+                if let Some(memory_usage) = task.memory_usage() {
+                    dbg!(memory_usage);
+                    if memory_usage > 0 {
+                        let _ = self.record_memory_change(memory_usage);
                     }
-                };
-
-                if memory_bytes > 0 {
-                    // eprintln!(
-                    //     "Memory change detected for {}: {memory_bytes} bytes",
-                    //     self.registered_name
-                    // );
-                    let _ = self.record_memory_change(memory_bytes);
                 }
-            } // tracking stats
-        } // memory
+            }
+        }
+        dbg!(&self.memory_task);
     }
 }
 

@@ -792,6 +792,12 @@ impl Profile {
                     Err(e) => println!("Failed to create memory guard: {e}"),
                 }
 
+                println!(
+                    "NEW PROFILE: Task {} created for {:?}",
+                    task.id(),
+                    path.join("::")
+                );
+
                 // Create the profile with necessary components
                 Self {
                     profile_type,
@@ -1036,6 +1042,18 @@ impl Drop for Profile {
                         let _ = self.record_memory_change(memory_usage);
                     }
                 }
+            }
+            if let Some(memory_usage) = self
+                .memory_task
+                .as_ref()
+                .and_then(super::task_allocator::TaskMemoryContext::memory_usage)
+            {
+                println!(
+                    "DROP PROFILE: Task {} for {:?} used {} bytes",
+                    self.memory_task.as_ref().unwrap().id(),
+                    self.path.join("::"),
+                    memory_usage
+                );
             }
         }
     }

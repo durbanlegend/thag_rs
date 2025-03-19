@@ -31,6 +31,37 @@ struct AllocationRegistry {
 }
 
 #[cfg(feature = "full_profiling")]
+impl AllocationRegistry {
+    // Helper method to add to AllocationRegistry or wherever appropriate
+    #[allow(dead_code)]
+    pub fn log_status(&self) {
+        println!("REGISTRY STATUS:");
+        println!("  Active threads: {}", self.thread_task_stacks.len());
+
+        for (thread_id, stack) in &self.thread_task_stacks {
+            println!(
+                "  Thread {:?}: {} tasks - {:?}",
+                thread_id,
+                stack.len(),
+                stack
+            );
+        }
+
+        println!("  Tracked tasks: {}", self.task_allocations.len());
+
+        for (task_id, allocs) in &self.task_allocations {
+            let total = allocs.iter().map(|(_, size)| *size).sum::<usize>();
+            println!(
+                "    Task {}: {} allocations, {} bytes total",
+                task_id,
+                allocs.len(),
+                total
+            );
+        }
+    }
+}
+
+#[cfg(feature = "full_profiling")]
 static REGISTRY: LazyLock<Mutex<AllocationRegistry>> = LazyLock::new(|| {
     Mutex::new(AllocationRegistry {
         thread_task_stacks: HashMap::new(),
@@ -68,7 +99,7 @@ impl TaskAwareAllocator<System> {
             task_map.insert(
                 task_id,
                 TaskData {
-                    allocations: Vec::new(),
+                    // allocations: Vec::new(),
                     active: false,
                 },
             );
@@ -85,6 +116,7 @@ impl TaskAwareAllocator<System> {
         }
     }
 
+    #[allow(clippy::unused_self)]
     pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
         REGISTRY.lock().map_or(None, |registry| {
             registry
@@ -94,6 +126,7 @@ impl TaskAwareAllocator<System> {
         })
     }
 
+    #[allow(clippy::unused_self)]
     pub fn enter_task(&self, task_id: usize) -> Result<(), String> {
         let thread_id = thread::current().id();
 
@@ -106,14 +139,18 @@ impl TaskAwareAllocator<System> {
                 // Push this task onto the stack
                 task_stack.push(task_id);
 
+                // println!("ENTER: Thread {:?} task stack: {:?}", thread_id, task_stack);
+
                 // Initialize allocation tracking if needed
                 registry.task_allocations.entry(task_id).or_default();
 
+                // registry.log_status();
                 Ok(())
             },
         )
     }
 
+    #[allow(clippy::unused_self)]
     pub fn exit_task(&self, task_id: usize) -> Result<(), String> {
         let thread_id = thread::current().id();
 
@@ -125,6 +162,8 @@ impl TaskAwareAllocator<System> {
                     if top_task == task_id {
                         // Pop our task off the stack
                         task_stack.pop();
+
+                        // println!("EXIT: Thread {:?} task stack: {:?}", thread_id, task_stack);
 
                         // If stack is now empty, remove it
                         if task_stack.is_empty() {
@@ -192,6 +231,18 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                                 .or_insert_with(Vec::new)
                                 .push((address, size));
 
+                            // // Temp display to verify allocations
+                            // // Count total memory for this task
+                            // let task_total = registry.task_allocations[&top_task_id]
+                            //     .iter()
+                            //     .map(|(_, s)| *s)
+                            //     .sum::<usize>();
+
+                            // println!(
+                            //     "ALLOC: Task {} +{} bytes (total: {} bytes)",
+                            //     top_task_id, size, task_total
+                            // );
+
                             // Map address to task for deallocation
                             registry.address_to_task.insert(address, top_task_id);
                         }
@@ -233,12 +284,31 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 // Record deallocation
                 if let Ok(mut registry) = REGISTRY.try_lock() {
                     if let Some(task_id) = registry.address_to_task.remove(&address) {
+                        // // Get size before removing
+                        // let size = registry
+                        //     .task_allocations
+                        //     .get(&task_id)
+                        //     .and_then(|allocs| {
+                        //         allocs
+                        //             .iter()
+                        //             .find(|(addr, _)| *addr == address)
+                        //             .map(|(_, size)| *size)
+                        //     })
+                        //     .unwrap_or(0);
+
                         // Remove from task's allocation list
                         if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
                             if let Some(pos) =
                                 allocations.iter().position(|(addr, _)| *addr == address)
                             {
                                 allocations.swap_remove(pos);
+
+                                // // Temp display: Report total after removal
+                                // let task_total = allocations.iter().map(|(_, s)| *s).sum::<usize>();
+                                // println!(
+                                //     "DEALLOC: Task {} -{} bytes (total: {} bytes)",
+                                //     task_id, size, task_total
+                                // );
                             }
                         }
                     }
@@ -259,8 +329,7 @@ impl TaskMemoryContext {
 
     /// Gets current memory usage for this task
     pub fn memory_usage(&self) -> Option<usize> {
-        let allocator = get_allocator();
-        allocator.get_task_memory_usage(self.task_id)
+        self.allocator.get_task_memory_usage(self.task_id)
     }
 }
 
@@ -284,6 +353,11 @@ pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard, String> {
         Ok(()) => {
             // Create a guard that's tied to this thread and task
             let task_guard = TaskGuard::new(task_id);
+            println!(
+                "GUARD CREATED: Task {} on thread {:?}",
+                task_id,
+                thread::current().id()
+            );
             Ok(task_guard)
         }
         Err(e) => Err(e),
@@ -301,7 +375,7 @@ struct TaskState {
 // Per-task data
 #[cfg(feature = "full_profiling")]
 struct TaskData {
-    allocations: Vec<(usize, usize)>,
+    // allocations: Vec<(usize, usize)>,
     active: bool,
 }
 
@@ -336,9 +410,6 @@ pub struct TaskGuard;
 #[cfg(feature = "full_profiling")]
 impl Drop for TaskGuard {
     fn drop(&mut self) {
-        // Only pop our task from our thread's stack
-        let thread_id = thread::current().id();
-
         // Try to exit task cleanly
         if let Err(e) = get_allocator().exit_task(self.task_id) {
             // Just log errors, don't panic in drop
@@ -351,6 +422,11 @@ impl Drop for TaskGuard {
                 data.active = false;
             }
         }
+        println!(
+            "GUARD DROPPED: Task {} on thread {:?}",
+            self.task_id,
+            thread::current().id()
+        );
     }
 }
 

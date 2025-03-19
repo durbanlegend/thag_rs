@@ -5,17 +5,17 @@
 //! rather than threads, making it suitable for async code profiling.
 
 use std::alloc::{GlobalAlloc, Layout};
-use std::collections::HashMap;
-use std::sync::atomic::AtomicUsize;
-use std::sync::LazyLock;
-use std::sync::Mutex;
-use std::thread::{self, ThreadId};
 
 #[cfg(feature = "full_profiling")]
-use std::alloc::System;
-
-#[cfg(feature = "full_profiling")]
-use std::sync::atomic::Ordering;
+use std::{
+    alloc::System,
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        LazyLock, Mutex,
+    },
+    thread::{self, ThreadId},
+};
 
 #[derive(Debug)]
 #[cfg(feature = "full_profiling")]
@@ -86,39 +86,32 @@ impl TaskAwareAllocator<System> {
     }
 
     pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        if let Ok(registry) = REGISTRY.lock() {
+        REGISTRY.lock().map_or(None, |registry| {
             registry
                 .task_allocations
                 .get(&task_id)
                 .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
-        } else {
-            None
-        }
+        })
     }
 
     pub fn enter_task(&self, task_id: usize) -> Result<(), String> {
         let thread_id = thread::current().id();
 
-        if let Ok(mut registry) = REGISTRY.lock() {
-            // Get or create task stack for this thread
-            let task_stack = registry
-                .thread_task_stacks
-                .entry(thread_id)
-                .or_insert_with(Vec::new);
+        REGISTRY.lock().map_or_else(
+            |_| Err("Failed to lock registry".to_string()),
+            |mut registry| {
+                // Get or create task stack for this thread
+                let task_stack = registry.thread_task_stacks.entry(thread_id).or_default();
 
-            // Push this task onto the stack
-            task_stack.push(task_id);
+                // Push this task onto the stack
+                task_stack.push(task_id);
 
-            // Initialize allocation tracking if needed
-            registry
-                .task_allocations
-                .entry(task_id)
-                .or_insert_with(Vec::new);
+                // Initialize allocation tracking if needed
+                registry.task_allocations.entry(task_id).or_default();
 
-            Ok(())
-        } else {
-            Err("Failed to lock registry".to_string())
-        }
+                Ok(())
+            },
+        )
     }
 
     pub fn exit_task(&self, task_id: usize) -> Result<(), String> {
@@ -139,12 +132,11 @@ impl TaskAwareAllocator<System> {
                         }
 
                         return Ok(());
-                    } else {
-                        return Err(format!(
-                            "Task stack corruption: trying to exit task {} but {} is on top",
-                            task_id, top_task
-                        ));
                     }
+                    return Err(format!(
+                        "Task stack corruption: trying to exit task {} but {} is on top",
+                        task_id, top_task
+                    ));
                 }
             }
 
@@ -154,25 +146,6 @@ impl TaskAwareAllocator<System> {
         }
     }
 }
-
-// Provide non-functional implementations for the generic case
-#[cfg(not(feature = "full_profiling"))]
-impl<A: GlobalAlloc> TaskAwareAllocator<A> {
-    pub fn get_task_memory_usage(&self, _task_id: usize) -> Option<usize> {
-        None
-    }
-
-    pub fn enter_task(&self, _task_id: usize) -> Result<(), String> {
-        Ok(())
-    }
-}
-
-// // Implement the GlobalAlloc trait for both cases
-// #[cfg(feature = "full_profiling")]
-// thread_local! {
-//     // Track whether we're currently inside an allocation operation
-//     static INSIDE_ALLOCATION: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
-// }
 
 unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
@@ -317,6 +290,7 @@ pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard, String> {
     }
 }
 // Task tracking state
+#[cfg(feature = "full_profiling")]
 struct TaskState {
     // Maps task IDs to their tracking state
     task_map: Mutex<HashMap<usize, TaskData>>,
@@ -325,12 +299,14 @@ struct TaskState {
 }
 
 // Per-task data
+#[cfg(feature = "full_profiling")]
 struct TaskData {
     allocations: Vec<(usize, usize)>,
     active: bool,
 }
 
 // Global task state
+#[cfg(feature = "full_profiling")]
 static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
     // println!("Initializing TASK_STATE with next_task_id = 1");
     TaskState {
@@ -338,10 +314,6 @@ static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
         next_task_id: AtomicUsize::new(1),
     }
 });
-
-// Global mapping of addresses to task IDs
-static ADDRESS_MAP: LazyLock<Mutex<HashMap<usize, usize>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 // To handle active task tracking, instead of thread-locals, we'll use task-specific techniques
 #[cfg(feature = "full_profiling")]
@@ -382,28 +354,6 @@ impl Drop for TaskGuard {
     }
 }
 
-// Implement basic methods for the no-op TaskMemoryContext
-#[cfg(not(feature = "full_profiling"))]
-impl TaskMemoryContext {
-    /// No-op implementation that returns a dummy guard
-    #[must_use]
-    pub fn enter(&self) -> Result<TaskGuard, String> {
-        Ok(TaskGuard)
-    }
-
-    /// Returns a dummy ID (0) when profiling is disabled
-    #[must_use]
-    pub const fn id(&self) -> usize {
-        0
-    }
-
-    /// Always returns None when profiling is disabled
-    #[must_use]
-    pub const fn memory_usage(&self) -> Option<usize> {
-        None
-    }
-}
-
 #[cfg(feature = "full_profiling")]
 #[global_allocator]
 static ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator { inner: System };
@@ -419,10 +369,4 @@ pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
 pub fn create_memory_task() -> TaskMemoryContext {
     let allocator = get_allocator();
     allocator.create_task_context()
-}
-
-/// No-op version when profiling is disabled.
-#[cfg(not(feature = "full_profiling"))]
-pub fn create_memory_task() -> TaskMemoryContext {
-    TaskMemoryContext
 }

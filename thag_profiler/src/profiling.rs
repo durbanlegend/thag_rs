@@ -1,4 +1,3 @@
-use crate::task_allocator::{create_memory_task, TaskGuard, TaskMemoryContext};
 use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -20,7 +19,9 @@ use std::{
 use std::sync::OnceLock;
 
 #[cfg(feature = "full_profiling")]
-use crate::task_allocator::create_memory_guard;
+use crate::task_allocator::{
+    create_memory_guard, create_memory_task, TaskGuard, TaskMemoryContext,
+};
 
 // #[cfg(feature = "full_profiling")]
 // use crate::task_allocator::get_allocator;

@@ -265,30 +265,34 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let address = ptr as usize;
                 let size = layout.size();
 
-                // Find active tasks
-                if let Ok(mut task_map) = TASK_STATE.task_map.try_lock() {
-                    let mut found_active = false;
-                    // Find the first active task
-                    for (&task_id, data) in task_map.iter_mut() {
-                        if data.active {
-                            found_active = true;
-                            println!(
-                                "Recording allocation of {} bytes for task {}",
-                                size, task_id
-                            );
-                            // Record allocation for this task
-                            data.allocations.push((address, size));
+                // Check if we have an active task in the registry
+                if let Ok(registry) = REGISTRY.try_lock() {
+                    if let Some(task_id) = registry.current_task_id {
+                        println!(
+                            "Found active task {} in registry when allocating {} bytes",
+                            task_id, size
+                        );
 
-                            // Map address to task
-                            if let Ok(mut addr_map) = ADDRESS_MAP.try_lock() {
-                                addr_map.insert(address, task_id);
+                        // Record in task map
+                        if let Ok(mut task_map) = TASK_STATE.task_map.try_lock() {
+                            if let Some(data) = task_map.get_mut(&task_id) {
+                                // Record allocation for this task
+                                data.allocations.push((address, size));
+                                println!(
+                                    "Recorded allocation of {} bytes for task {}",
+                                    size, task_id
+                                );
+
+                                // Map address to task
+                                if let Ok(mut addr_map) = ADDRESS_MAP.try_lock() {
+                                    addr_map.insert(address, task_id);
+                                }
+                            } else {
+                                println!("Task {} not found in task_map when allocating", task_id);
                             }
-
-                            break;
                         }
-                    }
-                    if !found_active {
-                        println!("No active tasks found when allocating {} bytes", size);
+                    } else {
+                        println!("No active task in registry when allocating {} bytes", size);
                     }
                 }
             }
@@ -402,11 +406,23 @@ pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard, String> {
     // Get the allocator
     let allocator = get_allocator();
 
-    // Enter the task
+    // Enter the task in the registry
     match allocator.enter_task(task_id) {
         Ok(()) => {
-            // Create a guard that's tied to the allocator directly,
-            // not to a specific TaskMemoryContext
+            // Also mark task as active in task map
+            if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+                if let Some(data) = task_map.get_mut(&task_id) {
+                    data.active = true;
+                    println!("Task {} marked as active in task_map", task_id);
+                } else {
+                    println!(
+                        "Warning: Task {} not found in task_map when creating guard",
+                        task_id
+                    );
+                }
+            }
+
+            // Create a guard that's tied to the allocator directly
             let task_guard = TaskGuard::new(task_id);
             println!("Successfully created TaskGuard for task {}", task_id);
             Ok(task_guard)

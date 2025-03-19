@@ -2924,6 +2924,7 @@ dependencies = [
  "ra_ap_syntax",
  "regex",
  "rustc-demangle",
+ "scopeguard",
  "serde",
  "serde_json",
  "serial_test",

@@ -25,6 +25,57 @@
 - [ ]  Try cloning re_memory and maybe add the latest /identifying entry as its own field.
 - [ ]  Fix registration for generics - maybe try entire cleaned name.
 
+thread_local! {
+      static THREAD_DATA: RefCell<ThreadData> = RefCell::new(ThreadData::new());
+  }
+
+  fn cleanup() {
+      // Safe code to flush thread-local data to global state before thread exit
+      THREAD_DATA.with(|data| {
+          let mut data = data.borrow_mut();
+          // Save data to global state
+          // Clear thread data
+      });
+  }
+
+  // Register cleanup function at the beginning
+  #[ctor::ctor]
+  fn init() {
+      // Register cleanup with libc's atexit
+      unsafe {
+          libc::atexit(cleanup_handler);
+      }
+  }
+
+  extern "C" fn cleanup_handler() {
+      cleanup();
+  }
+
+  This sets up explicit cleanup of thread-locals before thread termination, but it's complex and requires careful implementation.
+
+⏺ Yes, it appears the build process is stalling or getting stuck. Exit code 143 usually indicates the command was terminated (likely due to hitting a timeout).
+
+  Let's summarize what we've found and what we've attempted to fix:
+
+  1. The stack overflow is likely caused by recursive allocations during memory tracking.
+  2. We've implemented a guard against recursion using thread-locals and scopeguard to prevent the stack overflow, but the changes are complex and the build process is getting stuck.
+
+  I recommend starting a new session and taking a different approach:
+
+  1. Start with simplifying the task allocator code dramatically - remove debug prints, minimize recursive calls, and ensure we're not tracking memory allocations that happen during our tracking
+  code.
+  2. Consider a simpler approach that doesn't use as many mutexes and locks, as these can easily create deadlocks in memory allocation tracking.
+  3. Consider isolating the code in smaller test cases to identify the exact cause of the stack overflow.
+
+  If you start a new session, I would focus on a more minimal implementation that:
+  - Uses a more basic approach to tracking allocations
+  - Handles potential recursion explicitly
+  - Avoids thread-locals in destructors
+  - Uses try_lock instead of lock for all mutex operations to prevent deadlocks
+
+  The warnings about unused fields and methods are expected since not all aspects of the memory tracking system are being used yet, but they shouldn't cause the stack overflow we're seeing.
+
+
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
 - [ ]  Consider releasing a copy of repl.rs as a demo script.

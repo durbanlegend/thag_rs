@@ -13,6 +13,18 @@ use std::sync::Mutex;
 #[cfg(feature = "full_profiling")]
 use std::sync::LazyLock;
 
+// Disable debug prints that were causing stack overflow
+#[macro_export]
+macro_rules! dbg_removed {
+    () => {};
+    ($val:expr $(,)?) => {
+        { $val }
+    };
+    ($($val:expr),+ $(,)?) => {
+        ($($val),+)
+    };
+}
+
 /// A thread-safe storage for task-specific allocation tracking
 #[derive(Debug)]
 struct AllocationRegistry {
@@ -64,30 +76,22 @@ thread_local! {
 impl TaskAwareAllocator<System> {
     /// Creates a new task context for tracking memory
     pub fn create_task_context(&'static self) -> TaskMemoryContext {
-        dbg!();
-        let task_id = self.next_task_id.fetch_add(1, Ordering::SeqCst);
-        dbg!();
+        let task_id = TASK_STATE.next_task_id.fetch_add(1, Ordering::SeqCst);
+        println!("Creating task context for task {}", task_id);
 
-        // // Initialize tracking for this task
-        // if let Ok(mut registry) = REGISTRY.lock() {
-        //     registry.task_allocations.insert(task_id, Vec::new());
-        // }
-
-        // Create Vec outside the lock scope
-        let empty_vec = Vec::new();
-
-        // Temporarily disable allocation tracking to prevent recursion
-        INSIDE_ALLOCATION.with(|flag| *flag.borrow_mut() = true);
-
-        // Now lock and modify registry
-        if let Ok(mut registry) = REGISTRY.lock() {
-            registry.task_allocations.insert(task_id, empty_vec);
+        // Initialize task data
+        if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+            task_map.insert(
+                task_id,
+                TaskData {
+                    allocations: Vec::new(),
+                    active: false,
+                },
+            );
+            println!("Initialized task data for task {}, active=false", task_id);
+        } else {
+            println!("Failed to lock task_map when creating task {}", task_id);
         }
-
-        // Re-enable allocation tracking
-        INSIDE_ALLOCATION.with(|flag| *flag.borrow_mut() = false);
-
-        dbg!();
 
         TaskMemoryContext {
             task_id,
@@ -96,26 +100,35 @@ impl TaskAwareAllocator<System> {
     }
 
     pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        dbg!();
-        match REGISTRY.lock() {
-            Ok(registry) => {
-                dbg!();
-                registry
-                    .task_allocations
-                    .get(&task_id)
-                    .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
+        println!("Getting memory usage for task {}", task_id);
+        let result = if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+            if let Some(data) = task_map.get(&task_id) {
+                let total = data.allocations.iter().map(|(_, size)| *size).sum();
+                println!(
+                    "Task {} has {} allocations totaling {} bytes",
+                    task_id,
+                    data.allocations.len(),
+                    total
+                );
+                Some(total)
+            } else {
+                println!("Task {} not found in task_map", task_id);
+                None
             }
-            Err(_) => None,
-        }
+        } else {
+            println!("Failed to lock task_map when querying task {}", task_id);
+            None
+        };
+        result
     }
 
     pub fn enter_task(&self, task_id: usize) -> Result<(), String> {
-        dbg!();
+        dbg_removed!();
         match REGISTRY.lock() {
             Ok(mut registry) => {
-                dbg!();
+                dbg_removed!();
                 if registry.current_task_id.is_some() {
-                    dbg!();
+                    dbg_removed!();
                     // Already in a task context
                     eprintln!(
                         "Already in a task context for task {:?}",
@@ -125,7 +138,7 @@ impl TaskAwareAllocator<System> {
                 }
 
                 registry.current_task_id = Some(task_id);
-                dbg!();
+                dbg_removed!();
                 Ok(())
             }
             Err(_) => Err("Failed to lock registry".to_string()),
@@ -133,7 +146,7 @@ impl TaskAwareAllocator<System> {
     }
 
     pub fn exit_task(&self) -> Result<(), String> {
-        dbg!();
+        dbg_removed!();
         match REGISTRY.lock() {
             Ok(mut registry) => {
                 if registry.current_task_id.is_none() {
@@ -142,7 +155,7 @@ impl TaskAwareAllocator<System> {
                 }
 
                 registry.current_task_id = None;
-                dbg!();
+                dbg_removed!();
                 Ok(())
             }
             Err(_) => Err("Failed to lock registry".to_string()),
@@ -150,9 +163,9 @@ impl TaskAwareAllocator<System> {
     }
 
     fn record_alloc(&self, ptr: *mut u8, layout: Layout) {
-        dbg!();
+        dbg_removed!();
         if let Ok(mut registry) = REGISTRY.lock() {
-            dbg!();
+            dbg_removed!();
             if let Some(task_id) = registry.current_task_id {
                 let address = ptr as usize;
                 let size = layout.size();
@@ -161,7 +174,7 @@ impl TaskAwareAllocator<System> {
                 if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
                     allocations.push((address, size));
                 }
-                dbg!();
+                dbg_removed!();
 
                 // Map address back to task for deallocation
                 registry.address_to_task.insert(address, task_id);
@@ -170,7 +183,7 @@ impl TaskAwareAllocator<System> {
     }
 
     fn record_dealloc(&self, ptr: *mut u8) {
-        dbg!();
+        dbg_removed!();
         if let Ok(mut registry) = REGISTRY.lock() {
             let address = ptr as usize;
 
@@ -182,9 +195,9 @@ impl TaskAwareAllocator<System> {
                     }
                 }
             }
-            dbg!();
+            dbg_removed!();
         }
-        dbg!();
+        dbg_removed!();
     }
 }
 
@@ -216,7 +229,7 @@ impl<A: GlobalAlloc> TaskAwareAllocator<A> {
 #[cfg(feature = "full_profiling")]
 thread_local! {
     // Track whether we're currently inside an allocation operation
-    static INSIDE_ALLOCATION: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
+    static INSIDE_ALLOCATION: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
 }
 
 unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
@@ -225,37 +238,59 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Check if we're already tracking an allocation to prevent recursion
-            let should_record = INSIDE_ALLOCATION.with(|inside| {
-                if *inside.borrow() {
-                    false // Already tracking, skip to prevent recursion
+            // Prevent recursion during allocation tracking
+            thread_local! {
+                static TRACKING_ALLOCATION: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
+            }
+
+            let should_track = TRACKING_ALLOCATION.with(|tracking| {
+                // If we're already tracking an allocation, don't track this one to prevent recursion
+                if *tracking.borrow() {
+                    false
                 } else {
-                    *inside.borrow_mut() = true; // Mark that we're tracking
+                    *tracking.borrow_mut() = true;
                     true
                 }
             });
 
-            if should_record {
-                // Record the allocation
-                if let Ok(mut registry) = REGISTRY.lock() {
-                    if let Some(task_id) = registry.current_task_id {
-                        let address = ptr as usize;
-                        let size = layout.size();
+            if should_track {
+                // Execute tracking code and reset flag afterward
+                let _guard = scopeguard::guard((), |_| {
+                    TRACKING_ALLOCATION.with(|tracking| {
+                        *tracking.borrow_mut() = false;
+                    });
+                });
 
-                        // Record in task's allocation list
-                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                            allocations.push((address, size));
+                // Record allocation
+                let address = ptr as usize;
+                let size = layout.size();
+
+                // Find active tasks
+                if let Ok(mut task_map) = TASK_STATE.task_map.try_lock() {
+                    let mut found_active = false;
+                    // Find the first active task
+                    for (&task_id, data) in task_map.iter_mut() {
+                        if data.active {
+                            found_active = true;
+                            println!(
+                                "Recording allocation of {} bytes for task {}",
+                                size, task_id
+                            );
+                            // Record allocation for this task
+                            data.allocations.push((address, size));
+
+                            // Map address to task
+                            if let Ok(mut addr_map) = ADDRESS_MAP.try_lock() {
+                                addr_map.insert(address, task_id);
+                            }
+
+                            break;
                         }
-
-                        // Map address back to task for deallocation
-                        registry.address_to_task.insert(address, task_id);
+                    }
+                    if !found_active {
+                        println!("No active tasks found when allocating {} bytes", size);
                     }
                 }
-
-                // Reset the tracking flag
-                INSIDE_ALLOCATION.with(|inside| {
-                    *inside.borrow_mut() = false;
-                });
             }
         }
 
@@ -265,37 +300,47 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Similar guard for deallocation
-            let should_record = INSIDE_ALLOCATION.with(|inside| {
-                if *inside.borrow() {
+            // Prevent recursion during deallocation tracking
+            thread_local! {
+                static TRACKING_DEALLOCATION: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
+            }
+
+            let should_track = TRACKING_DEALLOCATION.with(|tracking| {
+                if *tracking.borrow() {
                     false
                 } else {
-                    *inside.borrow_mut() = true;
+                    *tracking.borrow_mut() = true;
                     true
                 }
             });
 
-            if should_record {
-                // Dealloc using REGISTRY directly
-                if let Ok(mut registry) = REGISTRY.lock() {
-                    let address = ptr as usize;
+            if should_track {
+                // Execute tracking code and reset flag afterward
+                let _guard = scopeguard::guard((), |_| {
+                    TRACKING_DEALLOCATION.with(|tracking| {
+                        *tracking.borrow_mut() = false;
+                    });
+                });
 
-                    if let Some(task_id) = registry.address_to_task.remove(&address) {
+                let address = ptr as usize;
+
+                // Find which task owns this allocation
+                if let Ok(mut addr_map) = ADDRESS_MAP.try_lock() {
+                    if let Some(task_id) = addr_map.remove(&address) {
                         // Remove from task's allocation list
-                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                            if let Some(index) =
-                                allocations.iter().position(|(addr, _)| *addr == address)
-                            {
-                                allocations.swap_remove(index);
+                        if let Ok(mut task_map) = TASK_STATE.task_map.try_lock() {
+                            if let Some(data) = task_map.get_mut(&task_id) {
+                                if let Some(index) = data
+                                    .allocations
+                                    .iter()
+                                    .position(|(addr, _)| *addr == address)
+                                {
+                                    data.allocations.swap_remove(index);
+                                }
                             }
                         }
                     }
                 }
-
-                // Reset the tracking flag
-                INSIDE_ALLOCATION.with(|inside| {
-                    *inside.borrow_mut() = false;
-                });
             }
         }
 
@@ -307,10 +352,25 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 impl TaskMemoryContext {
     /// Activates this task context for memory tracking
     pub fn enter(&self) -> Result<TaskGuard, String> {
-        match self.allocator.enter_task(self.task_id) {
-            Ok(()) => Ok(TaskGuard::new(self.task_id, self.allocator)),
-            Err(e) => Err(e),
+        // Mark task as active
+        if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+            if let Some(data) = task_map.get_mut(&self.task_id) {
+                if data.active {
+                    println!("Task {} is already active", self.task_id);
+                    return Err("Task is already active".to_string());
+                }
+                data.active = true;
+                println!("Task {} marked as active", self.task_id);
+                return Ok(TaskGuard {
+                    task_id: self.task_id,
+                });
+            } else {
+                println!("Task {} not found in task_map", self.task_id);
+            }
+        } else {
+            println!("Failed to lock task_map");
         }
+        Err("Task not found".to_string())
     }
 
     /// Gets the unique ID for this task
@@ -335,39 +395,64 @@ pub struct TaskMemoryContext;
 ///
 /// This function will bubble up any error from `TaskAwareAllocator::enter_task`.
 #[cfg(feature = "full_profiling")]
-pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard<'static>, String> {
-    dbg!();
+pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard, String> {
+    // Reset any lingering task contexts first
+    reset_task_registry();
+
     // Get the allocator
     let allocator = get_allocator();
-
-    dbg!();
 
     // Enter the task
     match allocator.enter_task(task_id) {
         Ok(()) => {
-            dbg!();
             // Create a guard that's tied to the allocator directly,
             // not to a specific TaskMemoryContext
-            let task_guard = TaskGuard::new(task_id, allocator);
-            dbg!();
+            let task_guard = TaskGuard::new(task_id);
+            println!("Successfully created TaskGuard for task {}", task_id);
             Ok(task_guard)
         }
         Err(e) => Err(e),
     }
 }
 
-/// RAII guard for task context
+// Task tracking state
+struct TaskState {
+    // Maps task IDs to their tracking state
+    task_map: Mutex<HashMap<usize, TaskData>>,
+    // Counter for generating task IDs
+    next_task_id: AtomicUsize,
+}
+
+// Per-task data
+struct TaskData {
+    allocations: Vec<(usize, usize)>,
+    active: bool,
+}
+
+// Global task state
+static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
+    println!("Initializing TASK_STATE with next_task_id = 1");
+    TaskState {
+        task_map: Mutex::new(HashMap::new()),
+        next_task_id: AtomicUsize::new(1),
+    }
+});
+
+// Global mapping of addresses to task IDs
+static ADDRESS_MAP: LazyLock<Mutex<HashMap<usize, usize>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+// To handle active task tracking, instead of thread-locals, we'll use task-specific techniques
 #[cfg(feature = "full_profiling")]
 #[derive(Debug)]
-pub struct TaskGuard<'a> {
+pub struct TaskGuard {
     task_id: usize,
-    allocator: &'a TaskAwareAllocator<System>,
 }
 
 #[cfg(feature = "full_profiling")]
-impl<'a> TaskGuard<'a> {
-    pub const fn new(task_id: usize, allocator: &'a TaskAwareAllocator<System>) -> Self {
-        Self { task_id, allocator }
+impl TaskGuard {
+    pub const fn new(task_id: usize) -> Self {
+        Self { task_id }
     }
 }
 
@@ -376,9 +461,23 @@ impl<'a> TaskGuard<'a> {
 pub struct TaskGuard;
 
 #[cfg(feature = "full_profiling")]
-impl Drop for TaskGuard<'_> {
+impl Drop for TaskGuard {
     fn drop(&mut self) {
-        let _ = self.allocator.exit_task();
+        println!("Dropping TaskGuard for task {}", self.task_id);
+        // Always reset the registry to ensure we don't leave lingering tasks
+        reset_task_registry();
+
+        // Also mark task as inactive in the task map
+        if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+            if let Some(data) = task_map.get_mut(&self.task_id) {
+                data.active = false;
+                println!("TaskGuard: Task {} marked as inactive", self.task_id);
+            } else {
+                println!("TaskGuard: Task {} not found in task_map", self.task_id);
+            }
+        } else {
+            println!("TaskGuard: Failed to lock task_map");
+        }
     }
 }
 
@@ -414,16 +513,16 @@ static ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator {
 // Helper to get the allocator instance
 #[cfg(feature = "full_profiling")]
 pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
-    dbg!();
+    dbg_removed!();
     &ALLOCATOR
 }
 
 /// Creates a new task context for memory tracking.
 #[cfg(feature = "full_profiling")]
 pub fn create_memory_task() -> TaskMemoryContext {
-    dbg!();
+    dbg_removed!();
     let allocator = get_allocator();
-    dbg!();
+    dbg_removed!();
     allocator.create_task_context()
 }
 
@@ -431,4 +530,18 @@ pub fn create_memory_task() -> TaskMemoryContext {
 #[cfg(not(feature = "full_profiling"))]
 pub fn create_memory_task() -> TaskMemoryContext {
     TaskMemoryContext
+}
+
+#[cfg(feature = "full_profiling")]
+pub fn reset_task_registry() {
+    // Clear any existing task contexts
+    if let Ok(mut registry) = REGISTRY.lock() {
+        println!(
+            "Resetting task registry, was: {:?}",
+            registry.current_task_id
+        );
+        registry.current_task_id = None;
+    } else {
+        println!("Failed to lock registry for reset");
+    }
 }

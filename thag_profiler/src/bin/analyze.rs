@@ -335,7 +335,8 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
         "Execution Timeline Flamegraph (Aggregated)".to_string()
     };
     opts.subtitle = Some(format!(
-        "Started: {}",
+        "{}  Started:  {}",
+        profile.subtitle,
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
     ));
     // opts.notes = profile.subtitle.clone();
@@ -442,7 +443,7 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
     println!("\n{}", profile.title);
     println!("{}", profile.subtitle);
     println!(
-        "Started: {}",
+        "\nStarted: {}",
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
     );
     println!("\nFunction Statistics Ranked by Calls:");
@@ -993,6 +994,11 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
 
     let mut processed = ProcessedProfile::default();
     // let start_time: std::option::Option<DateTime<Local>> = None;
+    processed.subtitle = path
+        .file_name()
+        .ok_or::<ProfileError>(ProfileError::General("Failed to get file name".to_string()))?
+        .to_string_lossy()
+        .to_string();
 
     // Determine profile type from first non-empty line
     for line in &lines {
@@ -1071,10 +1077,10 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
             let mut current_memory = 0u64;
 
             for memory_event in &processed.memory_events {
-                eprintln!(
-                    "memory_data.bytes_allocated = {}; size = {}",
-                    memory_data.bytes_allocated, memory_event.delta
-                );
+                // eprintln!(
+                //     "memory_data.bytes_allocated = {}; size = {}",
+                //     memory_data.bytes_allocated, memory_event.delta
+                // );
 
                 current_memory += memory_event.delta as u64;
                 memory_data.bytes_allocated += memory_event.delta as u64;
@@ -1154,11 +1160,10 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         "Memory Profile Flamegraph (Aggregated)".to_string()
     };
     opts.subtitle = Some(format!(
-        "{}\nStarted: {}\nTotal Bytes Alloc: {} Dealloc: {} Peak: {}",
+        "{}  Started: {}  Total Bytes Alloc: {} Peak: {}",
         profile.subtitle,
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
         thousands(memory_data.bytes_allocated),
-        thousands(memory_data.bytes_deallocated),
         thousands(memory_data.peak_memory),
     ));
     opts.colors = Palette::Basic(BasicPalette::Mem);

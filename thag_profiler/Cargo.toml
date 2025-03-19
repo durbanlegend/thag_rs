@@ -35,7 +35,7 @@ analyze-tool = [
     "ra-ap-rustc_lexer",
     "serde_json",
 ]
-default = ["full_profiling"]
+default = []
 full_profiling = ["time_profiling"] # Enhanced
 time_profiling = [
     "thag_proc_macros/profiling",

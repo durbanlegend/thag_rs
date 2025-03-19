@@ -4,23 +4,24 @@
 //! This module provides a memory allocator that tracks allocations by logical tasks
 //! rather than threads, making it suitable for async code profiling.
 
-use std::alloc::System;
 use std::alloc::{GlobalAlloc, Layout};
 use std::collections::HashMap;
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
-use std::sync::Mutex;
-
-#[cfg(feature = "full_profiling")]
 use std::sync::LazyLock;
-
-/// A thread-safe storage for task-specific allocation tracking
+use std::sync::Mutex;
 use std::thread::{self, ThreadId};
 
+#[cfg(feature = "full_profiling")]
+use std::alloc::System;
+
+#[cfg(feature = "full_profiling")]
+use std::sync::atomic::Ordering;
+
 #[derive(Debug)]
+#[cfg(feature = "full_profiling")]
 struct AllocationRegistry {
-    // Thread ID -> Task ID mapping
-    thread_tasks: HashMap<ThreadId, usize>,
+    // Thread ID -> Stack of active task IDs (most recent on top)
+    thread_task_stacks: HashMap<ThreadId, Vec<usize>>,
 
     // Task ID -> Allocations mapping
     task_allocations: HashMap<usize, Vec<(usize, usize)>>,
@@ -28,6 +29,15 @@ struct AllocationRegistry {
     // Address -> Task ID mapping for deallocations
     address_to_task: HashMap<usize, usize>,
 }
+
+#[cfg(feature = "full_profiling")]
+static REGISTRY: LazyLock<Mutex<AllocationRegistry>> = LazyLock::new(|| {
+    Mutex::new(AllocationRegistry {
+        thread_task_stacks: HashMap::new(),
+        task_allocations: HashMap::new(),
+        address_to_task: HashMap::new(),
+    })
+});
 
 /// Task-aware allocator that tracks memory usage per task ID
 #[derive(Debug)]
@@ -45,21 +55,6 @@ pub struct TaskMemoryContext {
     task_id: usize,
     allocator: &'static TaskAwareAllocator<System>,
 }
-
-#[cfg(feature = "full_profiling")]
-static REGISTRY: LazyLock<Mutex<AllocationRegistry>> = LazyLock::new(|| {
-    Mutex::new(AllocationRegistry {
-        thread_tasks: HashMap::new(),
-        task_allocations: HashMap::new(),
-        address_to_task: HashMap::new(),
-    })
-});
-
-// #[cfg(feature = "full_profiling")]
-// thread_local! {
-//     // Track whether we're currently holding the registry lock
-//     static HOLDING_REGISTRY_LOCK: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
-// }
 
 // Define registry-specific methods for System allocator
 #[cfg(feature = "full_profiling")]
@@ -105,13 +100,21 @@ impl TaskAwareAllocator<System> {
         let thread_id = thread::current().id();
 
         if let Ok(mut registry) = REGISTRY.lock() {
-            // Check if this thread already has an active task
-            if registry.thread_tasks.contains_key(&thread_id) {
-                return Err(format!("Thread {:?} already has an active task", thread_id));
-            }
+            // Get or create task stack for this thread
+            let task_stack = registry
+                .thread_task_stacks
+                .entry(thread_id)
+                .or_insert_with(Vec::new);
 
-            // Activate task for this thread
-            registry.thread_tasks.insert(thread_id, task_id);
+            // Push this task onto the stack
+            task_stack.push(task_id);
+
+            // Initialize allocation tracking if needed
+            registry
+                .task_allocations
+                .entry(task_id)
+                .or_insert_with(Vec::new);
+
             Ok(())
         } else {
             Err("Failed to lock registry".to_string())
@@ -122,18 +125,30 @@ impl TaskAwareAllocator<System> {
         let thread_id = thread::current().id();
 
         if let Ok(mut registry) = REGISTRY.lock() {
-            // Only remove if the thread is running the specified task
-            if let Some(&active_id) = registry.thread_tasks.get(&thread_id) {
-                if active_id == task_id {
-                    registry.thread_tasks.remove(&thread_id);
-                    return Ok(());
+            // Get stack for this thread
+            if let Some(task_stack) = registry.thread_task_stacks.get_mut(&thread_id) {
+                // Check if our task is on top of the stack
+                if let Some(&top_task) = task_stack.last() {
+                    if top_task == task_id {
+                        // Pop our task off the stack
+                        task_stack.pop();
+
+                        // If stack is now empty, remove it
+                        if task_stack.is_empty() {
+                            registry.thread_task_stacks.remove(&thread_id);
+                        }
+
+                        return Ok(());
+                    } else {
+                        return Err(format!(
+                            "Task stack corruption: trying to exit task {} but {} is on top",
+                            task_id, top_task
+                        ));
+                    }
                 }
-                return Err(format!(
-                    "Thread {:?} is running task {} not {}",
-                    thread_id, active_id, task_id
-                ));
             }
-            Err(format!("Thread {:?} has no active task", thread_id))
+
+            Err(format!("Thread {:?} has no active tasks", thread_id))
         } else {
             Err("Failed to lock registry".to_string())
         }
@@ -192,18 +207,21 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let size = layout.size();
                 let thread_id = thread::current().id();
 
-                // Get current thread's task ID from registry
+                // Get current thread's active task stack
                 if let Ok(mut registry) = REGISTRY.try_lock() {
-                    if let Some(&task_id) = registry.thread_tasks.get(&thread_id) {
-                        // Record in task's allocation list
-                        registry
-                            .task_allocations
-                            .entry(task_id)
-                            .or_insert_with(Vec::new)
-                            .push((address, size));
+                    if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
+                        // Attribute to the topmost task on the stack
+                        if let Some(&top_task_id) = task_stack.last() {
+                            // Record allocation for this task
+                            registry
+                                .task_allocations
+                                .entry(top_task_id)
+                                .or_insert_with(Vec::new)
+                                .push((address, size));
 
-                        // Map address to task
-                        registry.address_to_task.insert(address, task_id);
+                            // Map address to task for deallocation
+                            registry.address_to_task.insert(address, top_task_id);
+                        }
                     }
                 }
             }
@@ -346,16 +364,13 @@ pub struct TaskGuard;
 #[cfg(feature = "full_profiling")]
 impl Drop for TaskGuard {
     fn drop(&mut self) {
-        // Only deactivate this specific task on this thread
+        // Only pop our task from our thread's stack
         let thread_id = thread::current().id();
 
-        if let Ok(mut registry) = REGISTRY.lock() {
-            // Only remove if it matches our task on our thread
-            if let Some(&active_id) = registry.thread_tasks.get(&thread_id) {
-                if active_id == self.task_id {
-                    registry.thread_tasks.remove(&thread_id);
-                }
-            }
+        // Try to exit task cleanly
+        if let Err(e) = get_allocator().exit_task(self.task_id) {
+            // Just log errors, don't panic in drop
+            eprintln!("Error exiting task {}: {}", self.task_id, e);
         }
 
         // Also update the task's active status

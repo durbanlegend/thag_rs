@@ -6,7 +6,6 @@ use std::{
     env,
     fs::File,
     io::BufWriter,
-    ops::Deref,
     path::PathBuf,
     sync::{
         atomic::{AtomicU8, Ordering},
@@ -20,7 +19,7 @@ use std::sync::OnceLock;
 
 #[cfg(feature = "full_profiling")]
 use crate::task_allocator::{
-    create_memory_guard, create_memory_task, register_task_path, TaskGuard, TaskMemoryContext,
+    self, create_memory_guard, create_memory_task, register_task_path, TaskGuard, TaskMemoryContext,
 };
 
 // #[cfg(feature = "full_profiling")]
@@ -598,75 +597,22 @@ impl Profile {
         }
 
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+        let start_pattern = "Profile::new";
 
-        // Get the current backtrace
-        let mut current_backtrace = Backtrace::new_unresolved();
-        current_backtrace.resolve();
+        let raw_frames = extract_raw_frames(start_pattern);
 
-        // if name == Some("new") {
-        //     eprintln!("Current backtrace: {current_backtrace:?}");
-        // }
+        // Process the collected frames to collapse patterns and clean up
+        let cleaned_stack = clean_stack_trace(&raw_frames);
+        // eprintln!("cleaned_stack={cleaned_stack:?}");
 
-        let mut is_within_target_range = false;
+        let path = extract_path(&cleaned_stack);
 
-        // First, collect all relevant frames
-        let mut raw_frames: Vec<String> = Vec::new();
-
-        // If this is a method, we'll capture the calling class
-        let mut maybe_cleaned_name: Option<String> = None;
-        let maybe_qualified_name: Option<String> = None;
-        let maybe_bare_name: Option<String> = None;
-        let mut first_frame_after_profile = false;
-
-        for frame in Backtrace::frames(&current_backtrace) {
-            for symbol in frame.symbols() {
-                if let Some(name) = symbol.name() {
-                    let name_str = name.to_string();
-                    // eprintln!("Symbol name: {name_str}");
-
-                    // Check if we've reached the start condition
-                    if !is_within_target_range && name_str.contains("Profile::new") {
-                        is_within_target_range = true;
-                        first_frame_after_profile = true;
-                        continue;
-                    }
-
-                    // Collect frames within our target range
-                    if is_within_target_range {
-                        // If this is the first frame after Profile::new and it's a method,
-                        // then we can extract the class name
-                        if first_frame_after_profile {
-                            first_frame_after_profile = false;
-                            let demangled = demangle(&name_str);
-                            // Clean the demangled name
-                            let cleaned_name = clean_function_name(demangled.to_string().as_str());
-                            // eprintln!("name_str: {name_str}; cleaned name: {cleaned_name:?}");
-                            maybe_cleaned_name = Some(cleaned_name);
-                        }
-
-                        // Skip tokio::runtime functions
-                        if name_str.starts_with("tokio::") {
-                            continue;
-                        }
-
-                        // Demangle the symbol
-                        let demangled = demangle(&name_str).to_string();
-                        raw_frames.push(demangled);
-
-                        // Check if we've reached the end condition
-                        if name_str.contains("std::sys::backtrace::__rust_begin_short_backtrace") {
-                            is_within_target_range = false;
-                            break;
-                        }
-                    }
-                }
-            }
+        if cleaned_stack.is_empty() {
+            eprint!("Empty cleaned stack found from raw_frames={raw_frames:#?}");
+            return None;
         }
-
         // Register this function
-        let fn_name = maybe_cleaned_name
-            .as_ref()
-            .map_or_else(|| name.unwrap_or("unknown"), Deref::deref);
+        let fn_name = &cleaned_stack[0];
         let desc_fn_name = if is_async {
             format!("async::{fn_name}")
         } else {
@@ -674,32 +620,6 @@ impl Profile {
         };
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
         register_profiled_function(fn_name, desc_fn_name);
-
-        // Process the collected frames to collapse patterns and clean up
-        let cleaned_stack = clean_stack_trace(raw_frames);
-        // eprintln!("cleaned_stack={cleaned_stack:?}");
-
-        // Filter to only profiled functions
-        let mut path: Vec<String> = Vec::new();
-
-        // Add self and ancestors that are profiled functions
-        for fn_name_str in cleaned_stack {
-            if let Some(name) = get_reg_desc_name(&fn_name_str) {
-                // eprintln!("Registered desc name: {}", name);
-                path.push(name);
-                continue;
-            }
-            // }
-            let key = get_fn_desc_name(&fn_name_str);
-            // eprintln!("Function desc name: {}", key);
-            if let Some(name) = get_reg_desc_name(&key) {
-                // eprintln!("Registered desc name: {}", name);
-                path.push(name);
-            }
-        }
-
-        // Reverse the path so it goes from root caller to current function
-        path.reverse();
 
         // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
         #[cfg(test)]
@@ -737,31 +657,7 @@ impl Profile {
         }
 
         // Determine if we should keep the custom name
-        let custom_name = name.and_then(|n| {
-            if n.is_empty() {
-                return None; // Empty names are never useful
-            }
-
-            // For methods (with Class::method syntax), check if custom name matches just the method part
-            if let Some(method_name) = &maybe_qualified_name {
-                // Extract the method part after the last ::
-                if let Some(pos) = method_name.rfind("::") {
-                    let method_part = &method_name[(pos + 2)..];
-                    // Don't use custom name if it exactly matches just the method part
-                    if n == method_part {
-                        return None;
-                    }
-                }
-            }
-            // For regular functions, check if custom name matches the entire function name
-            else if let Some(function_name) = &maybe_bare_name {
-                if n == function_name {
-                    return None;
-                }
-            }
-            // If we get here, the custom name adds value, so keep it
-            Some(n.to_string())
-        });
+        let custom_name = name.map(str::to_string);
 
         // Debug output can be turned back on if needed for troubleshooting
         // println!(
@@ -789,17 +685,19 @@ impl Profile {
 
                 // Create an owned TaskGuard directly from the task ID
                 // This avoids the 'static lifetime requirement
-                let guard_result = create_memory_guard(task.id());
+                let task_id = task.id();
+                let guard_result = create_memory_guard(task_id);
                 match &guard_result {
                     Ok(_) => (),
                     Err(e) => println!("Failed to create memory guard: {e}"),
                 }
 
                 println!(
-                    "NEW PROFILE: Task {} created for {:?}",
-                    task.id(),
+                    "NEW PROFILE: Task {task_id} created for {:?}",
                     path.join("::")
                 );
+
+                task_allocator::activate_profile(task_id);
 
                 // Create the profile with necessary components
                 Self {
@@ -824,7 +722,6 @@ impl Profile {
                 }
             }
         };
-
         Some(profile)
     }
 
@@ -981,6 +878,80 @@ impl Profile {
 
         Ok(())
     }
+}
+
+#[must_use]
+pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
+    // Filter to only profiled functions
+    let mut path: Vec<String> = Vec::new();
+
+    // Add self and ancestors that are profiled functions
+    for fn_name_str in cleaned_stack {
+        if let Some(name) = get_reg_desc_name(fn_name_str) {
+            // eprintln!("Registered desc name: {}", name);
+            path.push(name);
+            continue;
+        }
+        // }
+        let key = get_fn_desc_name(fn_name_str);
+        // eprintln!("Function desc name: {}", key);
+        if let Some(name) = get_reg_desc_name(&key) {
+            // eprintln!("Registered desc name: {}", name);
+            path.push(name);
+        }
+    }
+
+    // Reverse the path so it goes from root caller to current function
+    path.reverse();
+    path
+}
+
+#[must_use]
+pub fn extract_raw_frames(start_pattern: &str) -> Vec<String> {
+    // Get the current backtrace
+    let mut is_within_target_range = false;
+    let mut current_backtrace = Backtrace::new_unresolved();
+    current_backtrace.resolve();
+
+    // First, collect all relevant frames
+    let mut raw_frames: Vec<String> = Vec::new();
+
+    // If this is a method, we'll capture the calling class
+
+    for frame in Backtrace::frames(&current_backtrace) {
+        for symbol in frame.symbols() {
+            if let Some(name) = symbol.name() {
+                let name_str = name.to_string();
+                // eprintln!("Symbol name: {name_str}");
+
+                // Check if we've reached the start condition
+                if !is_within_target_range && name_str.contains(start_pattern) {
+                    is_within_target_range = true;
+                    // first_frame_after_profile = true;
+                    continue;
+                }
+
+                // Collect frames within our target range
+                if is_within_target_range {
+                    // Skip tokio::runtime functions
+                    if name_str.starts_with("tokio::") {
+                        continue;
+                    }
+
+                    // Demangle the symbol
+                    let demangled = demangle(&name_str).to_string();
+                    raw_frames.push(demangled);
+
+                    // Check if we've reached the end condition
+                    if name_str.contains("std::sys::backtrace::__rust_begin_short_backtrace") {
+                        is_within_target_range = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    raw_frames
 }
 
 // Global thread-safe BTreeSet
@@ -1195,16 +1166,18 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
 }
 
 // #[cfg(feature = "time_profiling")]
-fn clean_stack_trace(raw_frames: Vec<String>) -> Vec<String> {
+#[must_use]
+pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
     // First, filter out standard library infrastructure we don't care about
     let filtered_frames: Vec<String> = raw_frames
-        .into_iter()
+        .iter()
         .filter(|frame| {
             !frame.contains("core::ops::function::FnOnce::call_once")
                 && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
                 && !frame.contains("std::rt::lang_start")
                 && !frame.contains("std::panicking")
         })
+        .cloned()
         .collect();
 
     // These are patterns we want to remove from the stack

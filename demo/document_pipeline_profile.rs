@@ -289,7 +289,6 @@ async fn main() -> io::Result<()> {
 
     println!("Reports written successfully");
 
-    thag_profiler::profiling::print_all_call_stack_entries();
 
     Ok(())
 }

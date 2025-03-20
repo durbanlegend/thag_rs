@@ -7,9 +7,12 @@
 use std::alloc::{GlobalAlloc, Layout};
 
 #[cfg(feature = "full_profiling")]
+use crate::profiling::{clean_stack_trace, extract_path, extract_raw_frames};
+
+#[cfg(feature = "full_profiling")]
 use std::{
     alloc::System,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
     sync::{
         atomic::{AtomicUsize, Ordering},
         LazyLock, Mutex,
@@ -17,11 +20,18 @@ use std::{
     thread::{self, ThreadId},
 };
 
-use backtrace::Backtrace;
+#[cfg(feature = "full_profiling")]
+const MINIMUM_TRACKED_SIZE: usize = 1024;
+
+// #[cfg(feature = "full_profiling")]
+// use backtrace::Backtrace;
 
 #[derive(Debug)]
 #[cfg(feature = "full_profiling")]
 struct AllocationRegistry {
+    // Task ID
+    active_profiles: BTreeSet<usize>,
+
     // Thread ID -> Stack of active task IDs (most recent on top)
     thread_task_stacks: HashMap<ThreadId, Vec<usize>>,
 
@@ -66,6 +76,7 @@ impl AllocationRegistry {
 #[cfg(feature = "full_profiling")]
 static REGISTRY: LazyLock<Mutex<AllocationRegistry>> = LazyLock::new(|| {
     Mutex::new(AllocationRegistry {
+        active_profiles: BTreeSet::new(),
         thread_task_stacks: HashMap::new(),
         task_allocations: HashMap::new(),
         address_to_task: HashMap::new(),
@@ -216,11 +227,28 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
             if should_track {
                 // Execute tracking code and reset flag afterward
+                // eprintln!("{:#?}", backtrace::Backtrace::new());
+
                 let _guard = scopeguard::guard((), |()| {
                     TRACKING_ALLOCATION.with(|tracking| {
                         *tracking.borrow_mut() = false;
                     });
                 });
+
+                let use_backtrace = layout.size() >= MINIMUM_TRACKED_SIZE;
+                let maybe_path = if use_backtrace {
+                    let start_pattern = "::TaskAwareAllocator";
+
+                    let raw_frames = extract_raw_frames(start_pattern);
+
+                    // Process the collected frames to collapse patterns and clean up
+                    let cleaned_stack = clean_stack_trace(&raw_frames);
+                    // eprintln!("cleaned_stack={cleaned_stack:?}");
+
+                    Some(extract_path(&cleaned_stack))
+                } else {
+                    None
+                };
 
                 // Record allocation
                 let address = ptr as usize;
@@ -230,31 +258,41 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 // println!("{:#?}", backtrace::Backtrace::new());
                 // Get current thread's active task stack
                 if let Ok(mut registry) = REGISTRY.try_lock() {
-                    if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
-                        // Attribute to the topmost task on the stack
-                        if let Some(&top_task_id) = task_stack.last() {
-                            // Record allocation for this task
-                            registry
-                                .task_allocations
-                                .entry(top_task_id)
-                                .or_insert_with(Vec::new)
-                                .push((address, size));
+                    let maybe_task_id = if use_backtrace {
+                        maybe_path.and_then(|path| find_matching_profile(&path, &registry))
+                    } else {
+                        None
+                    };
+                    let maybe_task_id = if maybe_task_id.is_some() {
+                        maybe_task_id
+                    } else if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
+                        // Attribute to the topmost task on the stack, if available
+                        task_stack.last().copied()
+                    } else {
+                        None
+                    };
+                    if let Some(task_id) = maybe_task_id {
+                        // Record allocation for this task
+                        registry
+                            .task_allocations
+                            .entry(task_id)
+                            .or_default()
+                            .push((address, size));
 
-                            // // Temp display to verify allocations
-                            // // Count total memory for this task
-                            // let task_total = registry.task_allocations[&top_task_id]
-                            //     .iter()
-                            //     .map(|(_, s)| *s)
-                            //     .sum::<usize>();
+                        // // Temp display to verify allocations
+                        // // Count total memory for this task
+                        // let task_total = registry.task_allocations[&top_task_id]
+                        //     .iter()
+                        //     .map(|(_, s)| *s)
+                        //     .sum::<usize>();
 
-                            // println!(
-                            //     "ALLOC: Task {} +{} bytes (total: {} bytes)",
-                            //     top_task_id, size, task_total
-                            // );
+                        // println!(
+                        //     "ALLOC: Task {} +{} bytes (total: {} bytes)",
+                        //     top_task_id, size, task_total
+                        // );
 
-                            // Map address to task for deallocation
-                            registry.address_to_task.insert(address, top_task_id);
-                        }
+                        // Map address to task for deallocation
+                        registry.address_to_task.insert(address, task_id);
                     }
                 }
             }
@@ -431,6 +469,7 @@ impl Drop for TaskGuard {
                 data.active = false;
             }
         }
+        deactivate_profile(self.task_id);
         println!(
             "GUARD DROPPED: Task {} on thread {:?}",
             self.task_id,
@@ -485,6 +524,7 @@ pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
 }
 
 // 4. Function to dump the entire registry
+#[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn dump_task_path_registry() {
     if let Ok(registry) = TASK_PATH_REGISTRY.lock() {
@@ -501,6 +541,7 @@ pub fn dump_task_path_registry() {
 }
 
 // 5. Utility function to look up and print a specific task's path
+#[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn print_task_path(task_id: usize) {
     match lookup_task_path(task_id) {
@@ -544,4 +585,75 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
         }
     }
     println!("=============================");
+}
+
+// Helper function to find the best matching profile
+#[cfg(feature = "full_profiling")]
+fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> Option<usize> {
+    // Get active profiles with their call stacks
+    // let active_profiles = registry
+    //     .active_profiles
+    //     .iter()
+    //     .filter(|(_, is_active)| **is_active)
+    //     .map(|(task_id, _)| *task_id)
+    //     .collect::<Vec<_>>();
+
+    if registry.active_profiles.is_empty() {
+        return None;
+    }
+
+    // If we have task path information, use it for matching
+    if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
+        // For each active profile, compute a similarity score
+        let mut best_match = None;
+        let mut best_score = 0;
+
+        for task_id in registry.active_profiles.iter().rev() {
+            if let Some(task_path) = path_registry.get(task_id) {
+                let score = compute_similarity(task_path, path);
+                if score > best_score {
+                    best_score = score;
+                    best_match = Some(task_id);
+                }
+            }
+        }
+
+        return best_match.copied();
+    }
+
+    // Fallback: Return the most recently activated profile
+    registry.active_profiles.last().copied()
+}
+
+// Compute similarity between a task path and backtrace frames
+#[cfg(feature = "full_profiling")]
+fn compute_similarity(task_path: &[String], backtrace_frames: &[String]) -> usize {
+    let mut score = 0;
+
+    // Count how many functions in the task path appear in the backtrace
+    for path_func in task_path {
+        if backtrace_frames
+            .iter()
+            .any(|frame| frame.contains(path_func))
+        {
+            score += 1;
+        }
+    }
+    score
+}
+
+// When creating a profile:
+#[cfg(feature = "full_profiling")]
+pub fn activate_profile(task_id: usize) {
+    if let Ok(mut registry) = REGISTRY.lock() {
+        registry.active_profiles.insert(task_id);
+    }
+}
+
+// When dropping a profile:
+#[cfg(feature = "full_profiling")]
+pub fn deactivate_profile(task_id: usize) {
+    if let Ok(mut registry) = REGISTRY.lock() {
+        registry.active_profiles.remove(&task_id);
+    }
 }

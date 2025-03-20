@@ -20,7 +20,7 @@ use std::sync::OnceLock;
 
 #[cfg(feature = "full_profiling")]
 use crate::task_allocator::{
-    create_memory_guard, create_memory_task, TaskGuard, TaskMemoryContext,
+    create_memory_guard, create_memory_task, register_task_path, TaskGuard, TaskMemoryContext,
 };
 
 // #[cfg(feature = "full_profiling")]
@@ -48,6 +48,8 @@ use std::{
     sync::atomic::{AtomicBool, AtomicU64},
     time::SystemTime,
 };
+
+// use super::task_allocator::TaskMemoryContext;
 
 // Single atomic for runtime profiling state
 #[cfg(feature = "time_profiling")]
@@ -206,7 +208,7 @@ fn get_time_path() -> ProfileResult<&'static str> {
     TimePathHolder::get()
 }
 
-#[cfg(feature = "time_profiling")]
+#[cfg(feature = "full_profiling")]
 fn get_memory_path() -> ProfileResult<&'static str> {
     struct MemoryPathHolder;
     impl MemoryPathHolder {
@@ -783,6 +785,7 @@ impl Profile {
             if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
                 // Create a task to track memory usage
                 let task = create_memory_task();
+                register_task_path(task.id(), path.clone());
 
                 // Create an owned TaskGuard directly from the task ID
                 // This avoids the 'static lifetime requirement
@@ -1046,7 +1049,7 @@ impl Drop for Profile {
             if let Some(memory_usage) = self
                 .memory_task
                 .as_ref()
-                .and_then(super::task_allocator::TaskMemoryContext::memory_usage)
+                .and_then(TaskMemoryContext::memory_usage)
             {
                 println!(
                     "DROP PROFILE: Task {} for {:?} used {} bytes",

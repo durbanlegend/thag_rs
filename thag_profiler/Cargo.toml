@@ -37,9 +37,10 @@ analyze-tool = [
 ]
 default = []
 full_profiling = ["time_profiling"] # Enhanced
-time_profiling = [
-    "thag_proc_macros/profiling",
-] # Enable profiling in proc macros too
+time_profiling = []
+# time_profiling = [
+#     "thag_proc_macros/profiling",
+# ] # Enable profiling in proc macros too
 tools = ["analyze-tool", "instrument-tool"] # Enable all tools
 instrument-tool = [
     "ra_ap_syntax",

@@ -9,13 +9,15 @@ use std::alloc::{GlobalAlloc, Layout};
 #[cfg(feature = "full_profiling")]
 use std::{
     alloc::System,
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::{
         atomic::{AtomicUsize, Ordering},
         LazyLock, Mutex,
     },
     thread::{self, ThreadId},
 };
+
+use backtrace::Backtrace;
 
 #[derive(Debug)]
 #[cfg(feature = "full_profiling")]
@@ -172,6 +174,12 @@ impl TaskAwareAllocator<System> {
 
                         return Ok(());
                     }
+                    println!(
+                        "Task conflict detected between {} and {}",
+                        task_id, top_task
+                    );
+                    compare_task_paths(task_id, top_task);
+
                     return Err(format!(
                         "Task stack corruption: trying to exit task {} but {} is on top",
                         task_id, top_task
@@ -219,6 +227,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let size = layout.size();
                 let thread_id = thread::current().id();
 
+                // println!("{:#?}", backtrace::Backtrace::new());
                 // Get current thread's active task stack
                 if let Ok(mut registry) = REGISTRY.try_lock() {
                     if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
@@ -445,4 +454,94 @@ pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
 pub fn create_memory_task() -> TaskMemoryContext {
     let allocator = get_allocator();
     allocator.create_task_context()
+}
+
+// Task Path Registry for debugging
+// 1. Declare the registry
+#[cfg(feature = "full_profiling")]
+static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
+    LazyLock::new(|| Mutex::new(BTreeMap::new()));
+
+// 2. Function to add a task's path to the registry
+#[cfg(feature = "full_profiling")]
+pub fn register_task_path(task_id: usize, path: Vec<String>) {
+    if let Ok(mut registry) = TASK_PATH_REGISTRY.lock() {
+        registry.insert(task_id, path);
+    } else {
+        eprintln!(
+            "Failed to lock task path registry when registering task {}",
+            task_id
+        );
+    }
+}
+
+// 3. Function to look up a task's path by ID
+#[cfg(feature = "full_profiling")]
+pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
+    TASK_PATH_REGISTRY
+        .lock()
+        .ok()
+        .and_then(|registry| registry.get(&task_id).cloned())
+}
+
+// 4. Function to dump the entire registry
+#[cfg(feature = "full_profiling")]
+pub fn dump_task_path_registry() {
+    if let Ok(registry) = TASK_PATH_REGISTRY.lock() {
+        println!("==== TASK PATH REGISTRY DUMP ====");
+        println!("Total registered tasks: {}", registry.len());
+
+        for (task_id, path) in registry.iter() {
+            println!("Task {}: {}", task_id, path.join("::"));
+        }
+        println!("=================================");
+    } else {
+        eprintln!("Failed to lock task path registry for dumping");
+    }
+}
+
+// 5. Utility function to look up and print a specific task's path
+#[cfg(feature = "full_profiling")]
+pub fn print_task_path(task_id: usize) {
+    match lookup_task_path(task_id) {
+        Some(path) => println!("Task {} path: {}", task_id, path.join("::")),
+        None => println!("No path registered for task {}", task_id),
+    }
+}
+
+// 6. Utility to compare two tasks' paths
+#[cfg(feature = "full_profiling")]
+pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
+    let path1 = lookup_task_path(task_id1);
+    let path2 = lookup_task_path(task_id2);
+
+    println!("==== TASK PATH COMPARISON ====");
+    match (path1, path2) {
+        (Some(p1), Some(p2)) => {
+            println!("Task {}: {}", task_id1, p1.join("::"));
+            println!("Task {}: {}", task_id2, p2.join("::"));
+
+            // Find common prefix
+            let common_len = p1.iter().zip(p2.iter()).take_while(|(a, b)| a == b).count();
+
+            if common_len > 0 {
+                println!("Common prefix: {}", p1[..common_len].join("::"));
+                println!("Diverges at: {}", common_len);
+            } else {
+                println!("No common prefix");
+            }
+        }
+        (Some(p1), None) => {
+            println!("Task {}: {}", task_id1, p1.join("::"));
+            println!("Task {}: No path registered", task_id2);
+        }
+        (None, Some(p2)) => {
+            println!("Task {}: No path registered", task_id1);
+            println!("Task {}: {}", task_id2, p2.join("::"));
+        }
+        (None, None) => {
+            println!("No paths registered for either task");
+        }
+    }
+    println!("=============================");
 }

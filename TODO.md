@@ -75,6 +75,219 @@ thread_local! {
 
   Do you need any additional improvements or would you like to clean up some of the debug logging we added during the debugging process?
 
+I need to understand the implications better. In option 1, it seems we're still relying on threads, but we can't. In option 3, the proposal seems to be to mis-attribute allocations to unrelated     │
+│   tasks, in which case what's the point of "profiling", since we're only pretending to profile. AFAICS, option 2 matches my line of thinking better. I really have no interest in what thread a task    │
+│   runs in per se, so if tracking threads doesn't help, why bother with it. Why can't we assign a globally unique identifier to
+
+Thank you, now can you please do the same for option 3 (vs 2). I think the limitations of 1 are just too much.                                                                                        │
+I know this may be crazy and/or slow, but I've managed to display a backtrace in the alloc method, even though I expected it would probably fail trying to allocate memory. Now in Profile::new we    │
+│   already use a backtrace to build a callstack
+
+What every Profile can store:
+- Its thread ID
+- Its call stack
+- Its parent call stack
+- Its unique next-sequential task ID
+
+What the registry can store:
+- The list of active task_ids and their corresponding call stacks
+
+What the allocator can access:
+- The current backtrace
+
+
+> I know this may be crazy and/or slow, but I've managed to display a backtrace in the alloc method, even though I expected it would probably fail trying to allocate memory. If this is reliable we
+  could build the calling call stack from this backtrace just as we do in Profile::new. We could also maintain in the registry all active Profiles by task_id, with their call stacks. So in theory, for
+  every memory allocation over a certain "worthwhile" size, we could narrow the caller down to the active Profiles with matching call stacks, and allocate it e.g. at random or to the newest.
+  Apart from that idea, your latest suggestion sounds worth trying.
+
+⏺ Using a backtrace in the allocation method is an ingenious approach! It's unconventional but potentially very powerful for this specific use case. Let's explore this idea:
+
+  Using Backtraces for Allocation Attribution
+
+  Here's how we could implement your backtrace-based approach:
+
+  unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+      let ptr = self.inner.alloc(layout);
+
+      #[cfg(feature = "full_profiling")]
+      if !ptr.is_null() {
+          // Skip small allocations for performance
+          if layout.size() >= MINIMUM_TRACKED_SIZE {
+              // Prevent recursion during allocation tracking
+              thread_local! {
+                  static TRACKING_ALLOCATION: std::cell::RefCell<bool> =
+                      std::cell::RefCell::new(false);
+              }
+
+              let should_track = TRACKING_ALLOCATION.with(|tracking| {
+                  if *tracking.borrow() {
+                      false
+                  } else {
+                      *tracking.borrow_mut() = true;
+                      true
+                  }
+              });
+
+              if should_track {
+                  // Get backtrace
+                  let bt = Backtrace::new();
+                  let backtrace_string = format!("{:?}", bt);
+
+                  // Create a scopeguard to reset the tracking flag
+                  let _guard = scopeguard::guard((), |_| {
+                      TRACKING_ALLOCATION.with(|tracking| {
+                          *tracking.borrow_mut() = false;
+                      });
+                  });
+
+                  // Record allocation with backtrace
+                  let address = ptr as usize;
+                  let size = layout.size();
+
+                  if let Ok(mut registry) = REGISTRY.try_lock() {
+                      // Find best matching profile by comparing backtraces
+                      let matching_task_id = find_matching_profile(&backtrace_string, &registry);
+
+                      if let Some(task_id) = matching_task_id {
+                          // Record allocation for this task
+                          registry.task_allocations
+                              .entry(task_id)
+                              .or_default()
+                              .push((address, size));
+
+                          // Map address to task
+                          registry.address_to_task.insert(address, task_id);
+                      }
+                  }
+              }
+          }
+      }
+
+      ptr
+  }
+
+  // Helper function to find the best matching profile
+  fn find_matching_profile(backtrace: &str, registry: &AllocationRegistry) -> Option<usize> {
+      // Get active profiles with their call stacks
+      let active_profiles = registry.active_profiles
+          .iter()
+          .filter(|(_, is_active)| **is_active)
+          .map(|(task_id, _)| *task_id)
+          .collect::<Vec<_>>();
+
+      if active_profiles.is_empty() {
+          return None;
+      }
+
+      // If we have task path information, use it for matching
+      if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
+          // Create a simplified backtrace path
+          let backtrace_frames = extract_frames_from_backtrace(backtrace);
+
+          // For each active profile, compute a similarity score
+          let mut best_match = None;
+          let mut best_score = 0;
+
+          for task_id in active_profiles {
+              if let Some(task_path) = path_registry.get(&task_id) {
+                  let score = compute_similarity(task_path, &backtrace_frames);
+                  if score > best_score {
+                      best_score = score;
+                      best_match = Some(task_id);
+                  }
+              }
+          }
+
+          return best_match;
+      }
+
+      // Fallback: Return the most recently activated profile
+      active_profiles.last().copied()
+  }
+
+  // Extract function names from a backtrace
+  fn extract_frames_from_backtrace(backtrace: &str) -> Vec<String> {
+      let mut frames = Vec::new();
+
+      for line in backtrace.lines() {
+          if let Some(func_name) = extract_function_name(line) {
+              frames.push(func_name);
+          }
+      }
+
+      frames
+  }
+
+  // Compute similarity between a task path and backtrace frames
+  fn compute_similarity(task_path: &[String], backtrace_frames: &[String]) -> usize {
+      let mut score = 0;
+
+      // Count how many functions in the task path appear in the backtrace
+      for path_func in task_path {
+          if backtrace_frames.iter().any(|frame| frame.contains(path_func)) {
+              score += 1;
+          }
+      }
+
+      score
+  }
+
+  Registry of Active Profiles
+
+  To support this, we'd need to maintain an active profiles registry:
+
+  #[derive(Debug)]
+  struct AllocationRegistry {
+      // Task ID -> Active state mapping
+      active_profiles: HashMap<usize, bool>,
+
+      // Task ID -> Allocations mapping
+      task_allocations: HashMap<usize, Vec<(usize, usize)>>,
+
+      // Address -> Task ID mapping for deallocations
+      address_to_task: HashMap<usize, usize>,
+  }
+
+  // When creating a profile:
+  pub fn activate_profile(task_id: usize) {
+      if let Ok(mut registry) = REGISTRY.lock() {
+          registry.active_profiles.insert(task_id, true);
+      }
+  }
+
+  // When dropping a profile:
+  pub fn deactivate_profile(task_id: usize) {
+      if let Ok(mut registry) = REGISTRY.lock() {
+          registry.active_profiles.insert(task_id, false);
+      }
+  }
+
+  Performance Considerations
+
+  This approach has some potential performance implications:
+
+  1. Creating backtraces is relatively expensive
+  2. String processing and matching is CPU-intensive
+  3. For small allocations, the overhead might exceed the value of tracking
+
+  To mitigate this:
+
+  1. Only track allocations above a certain size threshold
+  2. Consider caching backtrace processing results
+  3. Use a sampling approach for high-allocation-frequency code
+
+  Benefits
+
+  Despite the performance considerations, this approach has significant advantages:
+
+  1. Works correctly even in complex async environments
+  2. Doesn't rely on thread identity or task-local storage
+  3. Can attribute allocations to the most semantically appropriate profile
+  4. Is fundamentally resilient to task switching and thread migration
+
+  I think this could be a very powerful approach, especially if performance concerns are addressed. It's certainly worth exploring further!
+
 
 
 ## Medium Priority

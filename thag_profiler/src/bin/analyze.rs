@@ -1152,7 +1152,14 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         .as_ref()
         .ok_or_else(|| ProfileError::General("No memory statistics available".to_string()))?;
 
-    let output = File::create("memory-flamechart.svg")?;
+    let svg = if as_chart {
+        ""memory-flamechart.svg"
+    } else {
+        ""memory-flamegraph.svg"
+    };
+
+    let output = File::create(svg)?;
+
     let mut opts = Options::default();
     opts.title = if as_chart {
         "Memory Profile Flamechart (Individual)".to_string()
@@ -1177,9 +1184,9 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         output,
     )?;
 
-    enhance_svg_accessibility("memory-flamechart.svg")?;
+    enhance_svg_accessibility(svg)?;
     println!("Memory flame chart generated: memory-flamechart.svg");
-    open_in_browser("memory-flamechart.svg").map_err(|e| ProfileError::General(e.to_string()))?;
+    open_in_browser(svg).map_err(|e| ProfileError::General(e.to_string()))?;
     Ok(())
 }
 

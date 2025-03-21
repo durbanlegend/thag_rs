@@ -35,9 +35,6 @@ use backtrace::Backtrace;
 #[cfg(feature = "time_profiling")]
 use crate::ProfileResult;
 
-// #[cfg(feature = "time_profiling")]
-use rustc_demangle::demangle;
-
 #[cfg(feature = "time_profiling")]
 use std::{
     convert::Into,
@@ -599,7 +596,7 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        let cleaned_stack = extract_raw_frames(start_pattern);
+        let cleaned_stack = extract_callstack(start_pattern);
 
         // Process the collected frames to collapse patterns and clean up
         // let cleaned_stack = clean_stack_trace(&raw_frames);
@@ -890,9 +887,9 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 
     // Add self and ancestors that are profiled functions
     for fn_name_str in cleaned_stack {
-        eprintln!("fn_name_str={}", fn_name_str);
+        // eprintln!("fn_name_str={}", fn_name_str);
         if let Some(name) = get_reg_desc_name(fn_name_str) {
-            eprintln!("Registered desc name: {}", name);
+            // eprintln!("Registered desc name: {}", name);
             path.push(name);
             continue;
         }
@@ -910,16 +907,15 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
     path
 }
 
-// TODO rename to extract_path
 #[must_use]
-pub fn extract_raw_frames(start_pattern: &str) -> Vec<String> {
+pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
     // Get the current backtrace
     // let mut is_within_target_range = false;
     let mut current_backtrace = Backtrace::new_unresolved();
     current_backtrace.resolve();
 
     // First, collect all relevant frames
-    let raw_frames: Vec<String> = Backtrace::frames(&current_backtrace)
+    let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
         .iter()
         .flat_map(|frame| frame.symbols())
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
@@ -961,8 +957,8 @@ pub fn extract_raw_frames(start_pattern: &str) -> Vec<String> {
         })
         // .map(|(_, name)| name.clone())
         .collect();
-    eprintln!("Raw frames: {:#?}", raw_frames);
-    raw_frames
+    // eprintln!("Callstack: {:#?}", callstack);
+    callstack
 }
 
 // Global thread-safe BTreeSet

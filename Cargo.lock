@@ -2928,7 +2928,6 @@ dependencies = [
  "ra-ap-rustc_lexer 0.100.0",
  "ra_ap_syntax",
  "regex",
- "rustc-demangle",
  "scopeguard",
  "serde",
  "serde_json",

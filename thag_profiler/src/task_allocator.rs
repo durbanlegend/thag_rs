@@ -108,7 +108,7 @@ impl TaskAwareAllocator<System> {
         let task_id = TASK_STATE.next_task_id.fetch_add(1, Ordering::SeqCst);
 
         // Initialize task data
-        if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+        if let Ok(mut task_map) = TASK_STATE.task_map.try_lock() {
             task_map.insert(
                 task_id,
                 TaskData {
@@ -116,11 +116,21 @@ impl TaskAwareAllocator<System> {
                     active: false,
                 },
             );
+        } else {
+            eprintln!(
+                "Failed to lock TASK_STATE to initialize task data: {}",
+                task_id
+            );
         }
 
         // Also initialize in registry
-        if let Ok(mut registry) = REGISTRY.lock() {
+        if let Ok(mut registry) = REGISTRY.try_lock() {
             registry.task_allocations.insert(task_id, Vec::new());
+        } else {
+            eprintln!(
+                "Failed to lock registry to initialize task data: {}",
+                task_id
+            );
         }
 
         TaskMemoryContext {
@@ -131,7 +141,7 @@ impl TaskAwareAllocator<System> {
 
     #[allow(clippy::unused_self)]
     pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        REGISTRY.lock().map_or(None, |registry| {
+        REGISTRY.try_lock().map_or(None, |registry| {
             registry
                 .task_allocations
                 .get(&task_id)
@@ -143,7 +153,7 @@ impl TaskAwareAllocator<System> {
     pub fn enter_task(&self, task_id: usize) -> Result<(), String> {
         let thread_id = thread::current().id();
 
-        REGISTRY.lock().map_or_else(
+        REGISTRY.try_lock().map_or_else(
             |_| Err("Failed to lock registry".to_string()),
             |mut registry| {
                 // Get or create task stack for this thread
@@ -170,37 +180,29 @@ impl TaskAwareAllocator<System> {
         if let Ok(mut registry) = REGISTRY.lock() {
             // Get stack for this thread
             if let Some(task_stack) = registry.thread_task_stacks.get_mut(&thread_id) {
-                // Check if our task is on top of the stack
-                if let Some(&top_task) = task_stack.last() {
-                    if top_task == task_id {
-                        // Pop our task off the stack
-                        task_stack.pop();
+                // Find the task in the stack (not just at the top)
+                if let Some(position) = task_stack.iter().position(|&id| id == task_id) {
+                    // Remove this specific task from the stack
+                    task_stack.remove(position);
 
-                        // println!("EXIT: Thread {:?} task stack: {:?}", thread_id, task_stack);
-
-                        // If stack is now empty, remove it
-                        if task_stack.is_empty() {
-                            registry.thread_task_stacks.remove(&thread_id);
-                        }
-
-                        return Ok(());
+                    // If stack is now empty, remove it
+                    if task_stack.is_empty() {
+                        registry.thread_task_stacks.remove(&thread_id);
                     }
-                    println!(
-                        "Task conflict detected between {} and {}",
-                        task_id, top_task
-                    );
-                    compare_task_paths(task_id, top_task);
 
-                    return Err(format!(
-                        "Task stack corruption: trying to exit task {} but {} is on top",
-                        task_id, top_task
-                    ));
+                    return Ok(());
                 }
+
+                // Task wasn't in the stack at all
+                return Err(format!(
+                    "Task {} not found in thread {:?} stack",
+                    task_id, thread_id
+                ));
             }
 
             Err(format!("Thread {:?} has no active tasks", thread_id))
         } else {
-            Err("Failed to lock registry".to_string())
+            Err("Failed to lock registry to remove task".to_string())
         }
     }
 }
@@ -294,6 +296,9 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         // Map address to task for deallocation
                         registry.address_to_task.insert(address, task_id);
                     }
+                } else {
+                    // Handle error or log issue
+                    eprintln!("Could not lock registry to record {size} byte allocation");
                 }
             }
         }
@@ -359,6 +364,8 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                             }
                         }
                     }
+                    // } else {
+                    //     eprintln!("Could not lock registry to record deallocation");
                 }
             }
         }
@@ -464,11 +471,14 @@ impl Drop for TaskGuard {
         }
 
         // Also update the task's active status
-        if let Ok(mut task_map) = TASK_STATE.task_map.lock() {
+        if let Ok(mut task_map) = TASK_STATE.task_map.try_lock() {
             if let Some(data) = task_map.get_mut(&self.task_id) {
                 data.active = false;
             }
+        } else {
+            eprintln!("Failed to lock task map to deactivate task");
         }
+
         deactivate_profile(self.task_id);
         println!(
             "GUARD DROPPED: Task {} on thread {:?}",
@@ -504,7 +514,7 @@ static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
 // 2. Function to add a task's path to the registry
 #[cfg(feature = "full_profiling")]
 pub fn register_task_path(task_id: usize, path: Vec<String>) {
-    if let Ok(mut registry) = TASK_PATH_REGISTRY.lock() {
+    if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
         registry.insert(task_id, path);
     } else {
         eprintln!(
@@ -518,7 +528,7 @@ pub fn register_task_path(task_id: usize, path: Vec<String>) {
 #[cfg(feature = "full_profiling")]
 pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
     TASK_PATH_REGISTRY
-        .lock()
+        .try_lock()
         .ok()
         .and_then(|registry| registry.get(&task_id).cloned())
 }
@@ -527,7 +537,7 @@ pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
 #[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn dump_task_path_registry() {
-    if let Ok(registry) = TASK_PATH_REGISTRY.lock() {
+    if let Ok(registry) = TASK_PATH_REGISTRY.try_lock() {
         println!("==== TASK PATH REGISTRY DUMP ====");
         println!("Total registered tasks: {}", registry.len());
 
@@ -551,6 +561,7 @@ pub fn print_task_path(task_id: usize) {
 }
 
 // 6. Utility to compare two tasks' paths
+#[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
     let path1 = lookup_task_path(task_id1);
@@ -645,15 +656,19 @@ fn compute_similarity(task_path: &[String], backtrace_frames: &[String]) -> usiz
 // When creating a profile:
 #[cfg(feature = "full_profiling")]
 pub fn activate_profile(task_id: usize) {
-    if let Ok(mut registry) = REGISTRY.lock() {
+    if let Ok(mut registry) = REGISTRY.try_lock() {
         registry.active_profiles.insert(task_id);
+    } else {
+        eprintln!("Failed to lock registry to activate profile: {}", task_id);
     }
 }
 
 // When dropping a profile:
 #[cfg(feature = "full_profiling")]
 pub fn deactivate_profile(task_id: usize) {
-    if let Ok(mut registry) = REGISTRY.lock() {
+    if let Ok(mut registry) = REGISTRY.try_lock() {
         registry.active_profiles.remove(&task_id);
+    } else {
+        eprintln!("Failed to lock registry activate profile: {}", task_id);
     }
 }

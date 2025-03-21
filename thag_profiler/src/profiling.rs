@@ -605,8 +605,6 @@ impl Profile {
         let cleaned_stack = clean_stack_trace(&raw_frames);
         // eprintln!("cleaned_stack={cleaned_stack:?}");
 
-        let path = extract_path(&cleaned_stack);
-
         if cleaned_stack.is_empty() {
             eprint!("Empty cleaned stack found from raw_frames={raw_frames:#?}");
             return None;
@@ -620,6 +618,8 @@ impl Profile {
         };
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
         register_profiled_function(fn_name, desc_fn_name);
+
+        let path = extract_path(&cleaned_stack);
 
         // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
         #[cfg(test)]
@@ -696,6 +696,9 @@ impl Profile {
                     "NEW PROFILE: Task {task_id} created for {:?}",
                     path.join("::")
                 );
+                if path.join("::").is_empty() {
+                    println!("Path is empty: cleaned stack=\n{cleaned_stack:#?}");
+                }
 
                 task_allocator::activate_profile(task_id);
 

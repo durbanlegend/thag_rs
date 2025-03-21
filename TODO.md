@@ -25,6 +25,7 @@
 - [ ]  Try cloning re_memory and maybe add the latest /identifying entry as its own field.
 - [ ]  Fix registration for generics - maybe try entire cleaned name.
 - [ ]  Debug memory profiler hanging on `syn` example.
+- [ ]  profile_type arg on enable_profiling now redundant
 
 thread_local! {
       static THREAD_DATA: RefCell<ThreadData> = RefCell::new(ThreadData::new());

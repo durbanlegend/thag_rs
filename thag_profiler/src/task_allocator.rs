@@ -6,8 +6,11 @@
 
 use std::alloc::{GlobalAlloc, Layout};
 
-#[cfg(feature = "full_profiling")]
-use crate::profiling::{clean_stack_trace, extract_path, extract_raw_frames};
+// #[cfg(feature = "full_profiling")]
+// use crate::profiling::{clean_stack_trace, extract_path, extract_raw_frames};
+
+// #[cfg(feature = "full_profiling")]
+// use okaoka::MultiAllocator;
 
 #[cfg(feature = "full_profiling")]
 use std::{
@@ -22,9 +25,6 @@ use std::{
 
 #[cfg(feature = "full_profiling")]
 const MINIMUM_TRACKED_SIZE: usize = 64;
-
-// #[cfg(feature = "full_profiling")]
-// use backtrace::Backtrace;
 
 #[derive(Debug)]
 #[cfg(feature = "full_profiling")]
@@ -222,129 +222,52 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // 1. First, check if this allocation is worth tracking at all
-            if layout.size() < MINIMUM_TRACKED_SIZE {
-                eprintln!("Skipping tiny allocation completely");
-                return ptr; // Skip tiny allocations completely
-            }
-
-            // 2. Thread-local depth tracking - MUST BE OUTSIDE any conditional blocks
-            thread_local! {
-                static ALLOCATION_DEPTH: std::cell::RefCell<usize> = std::cell::RefCell::new(0);
-            }
-
-            let depth = ALLOCATION_DEPTH.with(|d| {
-                let current = *d.borrow();
-                *d.borrow_mut() += 1;
-                current
-            });
-
-            // eprintln!("depth={depth}");
-
-            // Always create the depth guard to ensure we decrement
-            let _depth_guard = scopeguard::guard((), |_| {
-                ALLOCATION_DEPTH.with(|d| {
-                    let current = *d.borrow();
-                    if current > 0 {
-                        *d.borrow_mut() -= 1;
-                    }
-                });
-            });
-
-            // 3. Check depth to avoid deep recursion
-            if depth > 2 {
-                eprintln!("depth> 2, returning ptr");
-                // Allow minimal nesting but avoid deep recursion
-                return ptr;
-            }
-
-            // 4. Recursion prevention for the tracking logic itself
-            thread_local! {
-                static TRACKING_ALLOCATION: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
-            }
-
-            let should_track = TRACKING_ALLOCATION.with(|tracking| {
-                if *tracking.borrow() {
-                    false
-                } else {
-                    *tracking.borrow_mut() = true;
-                    true
+            // Skip small allocations and be extra careful about recursion
+            const MINIMUM_TRACKED_SIZE: usize = 64;
+            if layout.size() >= MINIMUM_TRACKED_SIZE {
+                thread_local! {
+                    static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
                 }
-            });
 
-            if !should_track {
-                eprintln!("!should_track, returning ptr");
-                return ptr;
-            }
-
-            // Create tracking guard - this MUST be created if we set the flag
-            let _tracking_guard = scopeguard::guard((), |_| {
-                TRACKING_ALLOCATION.with(|tracking| {
-                    *tracking.borrow_mut() = false;
+                let already_tracking = IN_TRACKING.with(|flag| {
+                    let value = flag.get();
+                    if !value {
+                        flag.set(true);
+                    }
+                    value
                 });
-            });
 
-            // 5. For depth 0 (root allocations), use backtrace
-            //    For depth 1-2 (shallow allocations), use fast path
-            let task_id = if depth == 0 {
-                eprintln!("Using backtrace");
-                // Root allocation - use backtrace for best accuracy
-                let start_pattern = "::TaskAwareAllocator";
-                let raw_frames = extract_raw_frames(start_pattern);
+                if !already_tracking {
+                    // Create guard for cleanup
+                    struct Guard;
+                    impl Drop for Guard {
+                        fn drop(&mut self) {
+                            IN_TRACKING.with(|flag| flag.set(false));
+                        }
+                    }
+                    let _guard = Guard;
 
-                // Skip if we're in find_matching_profile
-                if raw_frames
-                    .iter()
-                    .any(|frame| frame.contains("find_matching_profile"))
-                {
-                    eprintln!("Don't track allocations from our own matching function");
-                    0 // Don't track allocations from our own matching function
-                } else {
-                    // Process the collected frames
-                    let cleaned_stack = clean_stack_trace(&raw_frames);
-                    let path = extract_path(&cleaned_stack);
+                    // Minimal allocation tracking for diagnostics
+                    let address = ptr as usize;
+                    let size = layout.size();
+                    let thread_id = std::thread::current().id();
 
-                    // Try to get registry without blocking
+                    // Try to record the allocation, but don't capture backtraces yet
                     if let Ok(registry) = REGISTRY.try_lock() {
-                        eprintln!("Calling find_matching_profile");
-                        find_matching_profile(&path, &registry)
-                    } else {
-                        0 // Skip if registry is locked
+                        if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
+                            if let Some(&task_id) = task_stack.last() {
+                                if let Ok(mut registry) = REGISTRY.try_lock() {
+                                    registry
+                                        .task_allocations
+                                        .entry(task_id)
+                                        .or_default()
+                                        .push((address, size));
+
+                                    registry.address_to_task.insert(address, task_id);
+                                }
+                            }
+                        }
                     }
-                }
-            } else {
-                // Non-root allocation - use fast path
-                eprintln!("Non-root allocation - use fast path");
-                let thread_id = thread::current().id();
-
-                // Try to get registry without blocking
-                if let Ok(registry) = REGISTRY.try_lock() {
-                    if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
-                        *task_stack.last().unwrap_or(&0)
-                    } else {
-                        0
-                    }
-                } else {
-                    0 // Skip if registry is locked
-                }
-            };
-
-            // 6. Record the allocation if we found a task
-            eprintln!("Record the allocation if we found a task");
-            if task_id != 0 {
-                eprintln!("...we found a task");
-                let address = ptr as usize;
-                let size = layout.size();
-
-                // Try to record without blocking
-                if let Ok(mut registry) = REGISTRY.try_lock() {
-                    registry
-                        .task_allocations
-                        .entry(task_id)
-                        .or_default()
-                        .push((address, size));
-
-                    registry.address_to_task.insert(address, task_id);
                 }
             }
         }
@@ -355,26 +278,22 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Prevent recursion during deallocation tracking
+            // Similar recursion prevention as in alloc
             thread_local! {
-                static TRACKING_DEALLOCATION: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
+                static IN_TRACKING: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
             }
 
-            let should_track = TRACKING_DEALLOCATION.with(|tracking| {
-                if *tracking.borrow() {
-                    false
-                } else {
-                    *tracking.borrow_mut() = true;
-                    true
+            let already_tracking = IN_TRACKING.with(|flag| {
+                let value = *flag.borrow();
+                if !value {
+                    *flag.borrow_mut() = true;
                 }
+                value
             });
 
-            if should_track {
-                // Execute tracking code and reset flag afterward
+            if !already_tracking {
                 let _guard = scopeguard::guard((), |()| {
-                    TRACKING_DEALLOCATION.with(|tracking| {
-                        *tracking.borrow_mut() = false;
-                    });
+                    IN_TRACKING.with(|flag| *flag.borrow_mut() = false);
                 });
 
                 let address = ptr as usize;
@@ -541,13 +460,13 @@ impl Drop for TaskGuard {
 }
 
 #[cfg(feature = "full_profiling")]
-#[global_allocator]
-static ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator { inner: System };
+// #[global_allocator]
+static TASK_AWARE_ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator { inner: System };
 
 // Helper to get the allocator instance
 #[cfg(feature = "full_profiling")]
 pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
-    &ALLOCATOR
+    &TASK_AWARE_ALLOCATOR
 }
 
 /// Creates a new task context for memory tracking.
@@ -656,20 +575,6 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
 // Helper function to find the best matching profile
 #[cfg(feature = "full_profiling")]
 fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usize {
-    // Get active profiles with their call stacks
-    // let active_profiles = registry
-    //     .active_profiles
-    //     .iter()
-    //     .filter(|(_, is_active)| **is_active)
-    //     .map(|(task_id, _)| *task_id)
-    //     .collect::<Vec<_>>();
-
-    if registry.active_profiles.is_empty() {
-        return 0;
-    }
-
-    // If we have task path information, use it for matching
-    eprintln!("About to try_lock TASK_PATH_REGISTRY for find_matching_profile");
     if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
         eprintln!("...success!");
         // For each active profile, compute a similarity score
@@ -685,7 +590,6 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
                 }
             }
         }
-
         eprintln!("...returning best match");
         return best_match;
     }
@@ -697,15 +601,12 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
 
 // Compute similarity between a task path and backtrace frames
 #[cfg(feature = "full_profiling")]
-fn compute_similarity(task_path: &[String], backtrace_frames: &[String]) -> usize {
+fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     let mut score = 0;
 
     // Count how many functions in the task path appear in the backtrace
     for path_func in task_path {
-        if backtrace_frames
-            .iter()
-            .any(|frame| frame.contains(path_func))
-        {
+        if reg_path.iter().any(|frame| frame.contains(path_func)) {
             score += 1;
         }
     }
@@ -733,3 +634,120 @@ pub fn deactivate_profile(task_id: usize) {
         eprintln!("Failed to lock registry activate profile: {}", task_id);
     }
 }
+
+// #[cfg(feature = "full_profiling")]
+// pub fn init_allocator_system() {
+//     // This is just to ensure the MultiAllocator is initialized
+//     // The actual setup happens through the #[global_allocator] attribute
+
+//     MultiAllocator::get_current_tag();
+// }
+
+// Setup for okaoka
+#[cfg(feature = "full_profiling")]
+okaoka::set_multi_global_allocator! {
+    MultiAllocator, // Name of our allocator facade
+    AllocatorTag,   // Name of our allocator tag enum
+    Default => TaskAwareAllocatorWrapper,  // Our profiling allocator
+    System => System,          // Standard system allocator for backtraces
+}
+
+// Wrapper to expose our TaskAwareAllocator to okaoka
+#[cfg(feature = "full_profiling")]
+struct TaskAwareAllocatorWrapper;
+
+#[cfg(feature = "full_profiling")]
+unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
+    unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
+        // Use the static allocator instance
+        TASK_AWARE_ALLOCATOR.alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: std::alloc::Layout) {
+        TASK_AWARE_ALLOCATOR.dealloc(ptr, layout);
+    }
+}
+
+/// Initialize memory profiling.
+/// This is called by the main init_profiling function.
+#[cfg(feature = "full_profiling")]
+pub fn initialize_memory_profiling() {
+    // Initialize any memory profiling state
+    println!("Memory profiling initialized");
+}
+
+/// Finalize memory profiling and write out data.
+/// This is called by the main finalize_profiling function.
+#[cfg(feature = "full_profiling")]
+pub fn finalize_memory_profiling() {
+    // Write out memory profiling data
+    if let Ok(registry) = REGISTRY.try_lock() {
+        write_memory_profile_data(&registry);
+    }
+}
+
+/// Write memory profiling data to a file
+#[cfg(feature = "full_profiling")]
+fn write_memory_profile_data(registry: &AllocationRegistry) {
+    // Logic to write out memory usage data to memory.folded file
+    // ...
+}
+
+// #[cfg(feature = "full_profiling")]
+// mod backtrace_utils {
+//     use std::alloc::{GlobalAlloc, Layout, System};
+//     use std::cell::RefCell;
+
+//     // Thread-local flag to prevent recursion
+//     thread_local! {
+//         static IN_BACKTRACE: RefCell<bool> = RefCell::new(false);
+//     }
+
+//     // Function to capture backtrace safely
+//     pub fn capture_backtrace() -> Option<String> {
+//         // Check if we're already capturing to prevent recursion
+//         let already_capturing = IN_BACKTRACE.with(|flag| {
+//             let value = *flag.borrow();
+//             if !value {
+//                 *flag.borrow_mut() = true;
+//                 false // Not already capturing
+//             } else {
+//                 true // Already capturing
+//             }
+//         });
+
+//         if already_capturing {
+//             return None;
+//         }
+
+//         // Set up cleanup guard
+//         struct Guard;
+//         impl Drop for Guard {
+//             fn drop(&mut self) {
+//                 IN_BACKTRACE.with(|flag| *flag.borrow_mut() = false);
+//             }
+//         }
+//         let _guard = Guard;
+
+//         // Use direct approach without any fancy allocation tracking
+//         // This may still cause recursive allocation, but we guard against infinite recursion
+//         let backtrace = backtrace::Backtrace::new();
+//         Some(format!("{:?}", backtrace))
+//     }
+
+//     // Process a backtrace to find the appropriate task
+//     pub fn find_task_for_backtrace(backtrace: &str) -> usize {
+//         // To be implemented - for now just return 0 (no task)
+//         0
+//     }
+// }
+
+// // Re-export for public use
+// #[cfg(feature = "full_profiling")]
+// pub use backtrace_utils::capture_backtrace;
+
+// // No-op version when profiling is disabled
+// #[cfg(not(feature = "full_profiling"))]
+// pub fn capture_backtrace() -> Option<String> {
+//     None
+// }

@@ -177,3 +177,44 @@ pub fn thousands<T: Display>(n: T) -> String {
         .unwrap()
         .join(",")
 }
+
+/// Initialize the profiling system.
+/// This should be called at the start of your program to set up profiling.
+#[cfg(feature = "time_profiling")]
+pub fn init_profiling() {
+    use crate::profiling::{enable_profiling, ProfileType};
+
+    // Determine profile type based on features
+    #[cfg(feature = "full_profiling")]
+    let profile_type = ProfileType::Both;
+
+    #[cfg(not(feature = "full_profiling"))]
+    let profile_type = ProfileType::Time;
+
+    // Enable profiling
+    enable_profiling(true, profile_type).expect("Failed to enable profiling");
+}
+
+/// Finalize profiling and write out data files.
+/// This should be called at the end of your program.
+#[cfg(feature = "time_profiling")]
+pub fn finalize_profiling() {
+    use crate::profiling::{enable_profiling, ProfileType};
+
+    // Determine profile type based on features
+    #[cfg(feature = "full_profiling")]
+    let profile_type = ProfileType::Both;
+
+    #[cfg(not(feature = "full_profiling"))]
+    let profile_type = ProfileType::Time;
+
+    // Disable profiling, which will finalize and write data
+    enable_profiling(false, profile_type).expect("Failed to finalize profiling");
+}
+
+// Provide no-op versions when profiling is disabled
+#[cfg(not(feature = "time_profiling"))]
+pub fn init_profiling() {}
+
+#[cfg(not(feature = "time_profiling"))]
+pub fn finalize_profiling() {}

@@ -6,8 +6,8 @@
 
 use std::alloc::{GlobalAlloc, Layout};
 
-// #[cfg(feature = "full_profiling")]
-// use crate::profiling::{clean_stack_trace, extract_path, extract_raw_frames};
+#[cfg(feature = "full_profiling")]
+use crate::profiling::{clean_stack_trace, extract_path, extract_raw_frames};
 
 // #[cfg(feature = "full_profiling")]
 // use okaoka::MultiAllocator;
@@ -24,7 +24,7 @@ use std::{
 };
 
 #[cfg(feature = "full_profiling")]
-const MINIMUM_TRACKED_SIZE: usize = 64;
+const MINIMUM_TRACKED_SIZE: usize = 1024;
 
 #[derive(Debug)]
 #[cfg(feature = "full_profiling")]
@@ -222,9 +222,9 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Skip small allocations and be extra careful about recursion
-            const MINIMUM_TRACKED_SIZE: usize = 64;
+            // Skip small allocations
             if layout.size() >= MINIMUM_TRACKED_SIZE {
+                // Simple recursion prevention
                 thread_local! {
                     static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
                 }
@@ -247,25 +247,66 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     }
                     let _guard = Guard;
 
-                    // Minimal allocation tracking for diagnostics
-                    let address = ptr as usize;
-                    let size = layout.size();
-                    let thread_id = std::thread::current().id();
+                    // Get backtrace without recursion
+                    eprintln!("Attempting backtrace");
+                    // Use a different allocator for backtrace operations
+                    let mut task_id = 0;
+                    MultiAllocator::with(AllocatorTag::System, || {
+                        // Now we can safely use backtrace without recursion!
+                        // let start_pattern = "TaskAwareAllocator";
+                        let start_pattern = "Profile::new";
 
-                    // Try to record the allocation, but don't capture backtraces yet
-                    if let Ok(registry) = REGISTRY.try_lock() {
-                        if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
-                            if let Some(&task_id) = task_stack.last() {
-                                if let Ok(mut registry) = REGISTRY.try_lock() {
-                                    registry
-                                        .task_allocations
-                                        .entry(task_id)
-                                        .or_default()
-                                        .push((address, size));
+                        eprintln!("Calling extract_raw_frames");
+                        let cleaned_stack = extract_raw_frames(start_pattern);
 
-                                    registry.address_to_task.insert(address, task_id);
-                                }
+                        // Skip if we're in find_matching_profile
+                        if cleaned_stack
+                            .iter()
+                            .any(|frame| frame.contains("find_matching_profile"))
+                        {
+                            eprintln!(
+                                r#"Found "find_matching_profile" - shouldn't be found in this allocator - recursive"#
+                            );
+                            return;
+                        }
+
+                        // // Process the collected frames
+                        // eprintln!("Calling clean_stack_trace");
+                        // let cleaned_stack = clean_stack_trace(&raw_frames);
+                        // eprintln÷!("Calling extract_path");
+                        let path = extract_path(&cleaned_stack);
+                        eprintln!("path={path:#?}");
+
+                        // Try to get task ID from registry
+                        // Try to get registry without blocking
+                        task_id = if let Ok(registry) = REGISTRY.try_lock() {
+                            find_matching_profile(&path, &registry)
+                        } else if let Ok(registry) = REGISTRY.try_lock() {
+                            if let Some(task_stack) =
+                                registry.thread_task_stacks.get(&thread::current().id())
+                            {
+                                *task_stack.last().unwrap_or(&0)
+                            } else {
+                                0
                             }
+                        } else {
+                            0
+                        };
+                    });
+
+                    // Record allocation if task found
+                    if task_id > 0 {
+                        let address = ptr as usize;
+                        let size = layout.size();
+
+                        if let Ok(mut registry) = REGISTRY.try_lock() {
+                            registry
+                                .task_allocations
+                                .entry(task_id)
+                                .or_default()
+                                .push((address, size));
+
+                            registry.address_to_task.insert(address, task_id);
                         }
                     }
                 }

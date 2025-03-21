@@ -599,14 +599,14 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        let raw_frames = extract_raw_frames(start_pattern);
+        let cleaned_stack = extract_raw_frames(start_pattern);
 
         // Process the collected frames to collapse patterns and clean up
-        let cleaned_stack = clean_stack_trace(&raw_frames);
+        // let cleaned_stack = clean_stack_trace(&raw_frames);
         // eprintln!("cleaned_stack={cleaned_stack:?}");
 
         if cleaned_stack.is_empty() {
-            eprint!("Empty cleaned stack found from raw_frames={raw_frames:#?}");
+            eprint!("Empty cleaned stack found");
             return None;
         }
         // Register this function
@@ -890,8 +890,9 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 
     // Add self and ancestors that are profiled functions
     for fn_name_str in cleaned_stack {
+        eprintln!("fn_name_str={}", fn_name_str);
         if let Some(name) = get_reg_desc_name(fn_name_str) {
-            // eprintln!("Registered desc name: {}", name);
+            eprintln!("Registered desc name: {}", name);
             path.push(name);
             continue;
         }
@@ -909,51 +910,58 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
     path
 }
 
+// TODO rename to extract_path
 #[must_use]
 pub fn extract_raw_frames(start_pattern: &str) -> Vec<String> {
     // Get the current backtrace
-    let mut is_within_target_range = false;
+    // let mut is_within_target_range = false;
     let mut current_backtrace = Backtrace::new_unresolved();
     current_backtrace.resolve();
 
     // First, collect all relevant frames
-    let mut raw_frames: Vec<String> = Vec::new();
-
-    // If this is a method, we'll capture the calling class
-
-    for frame in Backtrace::frames(&current_backtrace) {
-        for symbol in frame.symbols() {
-            if let Some(name) = symbol.name() {
-                let name_str = name.to_string();
-                // eprintln!("Symbol name: {name_str}");
-
-                // Check if we've reached the start condition
-                if !is_within_target_range && name_str.contains(start_pattern) {
-                    is_within_target_range = true;
-                    // first_frame_after_profile = true;
-                    continue;
-                }
-
-                // Collect frames within our target range
-                if is_within_target_range {
-                    // Skip tokio::runtime functions
-                    if name_str.starts_with("tokio::") {
-                        continue;
-                    }
-
-                    // Demangle the symbol
-                    let demangled = demangle(&name_str).to_string();
-                    raw_frames.push(demangled);
-
-                    // Check if we've reached the end condition
-                    if name_str.contains("std::sys::backtrace::__rust_begin_short_backtrace") {
-                        is_within_target_range = false;
-                        break;
-                    }
-                }
+    let raw_frames: Vec<String> = Backtrace::frames(&current_backtrace)
+        .iter()
+        .flat_map(|frame| frame.symbols())
+        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        // .inspect(|name| eprintln!("Symbol name: {}", name))
+        // // TODO out
+        // .inspect(|name| {
+        //     if name.contains("find_matching_profile") {
+        //         eprintln!(
+        //             r#"***** Should not find: "find_matching_profile" in TaskAwareAllocator"#
+        //         );
+        //     }
+        // })
+        .scan(false, |is_within_target_range, name| {
+            if !*is_within_target_range && name.contains(start_pattern) {
+                *is_within_target_range = true;
             }
-        }
-    }
+            Some((*is_within_target_range, name))
+        })
+        .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
+        .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
+        .filter(|(_, name)| !name.starts_with("tokio::"))
+        .filter(|(_, name)| {
+            !name.contains("core::ops::function::FnOnce::call_once")
+                && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+                && !name.contains("std::rt::lang_start")
+                && !name.contains("std::panicking")
+        })
+        .filter(|(_, name)| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
+        .map(|(_, name)| -> String {
+            if let Some(hash_pos) = name.rfind("::h") {
+                if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+                    name[..hash_pos].to_string()
+                } else {
+                    name
+                }
+            } else {
+                name
+            }
+        })
+        // .map(|(_, name)| name.clone())
+        .collect();
+    eprintln!("Raw frames: {:#?}", raw_frames);
     raw_frames
 }
 
@@ -1149,14 +1157,14 @@ pub fn register_profiled_function(name: &str, desc_name: String) {
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
     PROFILED_FUNCTIONS
-        .lock()
+        .try_lock()
         .is_ok_and(|registry| registry.contains_key(name))
 }
 
 // Get the descriptive name of a profiled function
 pub fn get_reg_desc_name(name: &str) -> Option<String> {
     PROFILED_FUNCTIONS
-        .lock()
+        .try_lock()
         .ok()
         .and_then(|registry| registry.get(name).cloned())
 }
@@ -1169,6 +1177,7 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
 }
 
 // #[cfg(feature = "time_profiling")]
+// TODO out: redundant
 #[must_use]
 pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
     // First, filter out standard library infrastructure we don't care about
@@ -1183,21 +1192,9 @@ pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
         .cloned()
         .collect();
 
-    // These are patterns we want to remove from the stack
-    let scaffolding_patterns: Vec<&str> = vec![
-        "::main::",
-        "::poll::",
-        "::poll_next_unpin",
-        "alloc::",
-        "core::",
-        "<F as core::future::future::Future>::poll",
-        "FuturesOrdered<Fut>",
-        "FuturesUnordered<Fut>",
-        "Profile::new",
-        "ProfiledFuture",
-        // "{{closure}}::{{closure}}",
-    ];
+    eprintln!("filtered_frames={:#?}", filtered_frames);
 
+    // These are patterns we want to remove from the stack
     // Create a new cleaned stack, filtering out scaffolding
     let mut cleaned_frames = Vec::new();
     let mut i = 0;
@@ -1208,7 +1205,7 @@ pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
         let current_frame = &filtered_frames[i];
 
         // Check if this is scaffolding we want to skip
-        let is_scaffolding = scaffolding_patterns
+        let is_scaffolding = SCAFFOLDING_PATTERNS
             .iter()
             .any(|pattern| current_frame.contains(pattern));
 
@@ -1243,6 +1240,19 @@ pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
 
     cleaned_frames
 }
+
+const SCAFFOLDING_PATTERNS: &[&str] = &[
+    "::main::",
+    "::poll::",
+    "::poll_next_unpin",
+    "alloc::",
+    "core::",
+    "<F as core::future::future::Future>::poll",
+    "FuturesOrdered<Fut>",
+    "FuturesUnordered<Fut>",
+    "Profile::new",
+    "ProfiledFuture",
+];
 
 // #[cfg(feature = "time_profiling")]
 fn clean_function_name(demangled: &str) -> String {
@@ -1562,7 +1572,7 @@ impl ProfileStats {
 /// This function is primarily intended for test and debugging use.
 #[cfg(any(test, debug_assertions))]
 pub fn dump_profiled_functions() -> Vec<(String, String)> {
-    PROFILED_FUNCTIONS.lock().map_or_else(
+    PROFILED_FUNCTIONS.try_lock().map_or_else(
         |_| vec![],
         |registry| {
             registry

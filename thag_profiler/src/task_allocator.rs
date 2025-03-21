@@ -21,7 +21,7 @@ use std::{
 };
 
 #[cfg(feature = "full_profiling")]
-const MINIMUM_TRACKED_SIZE: usize = 1024;
+const MINIMUM_TRACKED_SIZE: usize = 64;
 
 // #[cfg(feature = "full_profiling")]
 // use backtrace::Backtrace;
@@ -222,9 +222,41 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Prevent recursion during allocation tracking
+            // 1. First, check if this allocation is worth tracking at all
+            if layout.size() < MINIMUM_TRACKED_SIZE {
+                return ptr; // Skip tiny allocations completely
+            }
+
+            // 2. Thread-local depth tracking - MUST BE OUTSIDE any conditional blocks
             thread_local! {
-                static TRACKING_ALLOCATION: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
+                static ALLOCATION_DEPTH: std::cell::RefCell<usize> = std::cell::RefCell::new(0);
+            }
+
+            let depth = ALLOCATION_DEPTH.with(|d| {
+                let current = *d.borrow();
+                *d.borrow_mut() += 1;
+                current
+            });
+
+            // Always create the depth guard to ensure we decrement
+            let _depth_guard = scopeguard::guard((), |_| {
+                ALLOCATION_DEPTH.with(|d| {
+                    let current = *d.borrow();
+                    if current > 0 {
+                        *d.borrow_mut() -= 1;
+                    }
+                });
+            });
+
+            // 3. Check depth to avoid deep recursion
+            if depth > 2 {
+                // Allow minimal nesting but avoid deep recursion
+                return ptr;
+            }
+
+            // 4. Recursion prevention for the tracking logic itself
+            thread_local! {
+                static TRACKING_ALLOCATION: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
             }
 
             let should_track = TRACKING_ALLOCATION.with(|tracking| {
@@ -236,111 +268,72 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 }
             });
 
-            if should_track {
-                // Execute tracking code and reset flag afterward
-                // eprintln!("{:#?}", backtrace::Backtrace::new());
+            if !should_track {
+                return ptr;
+            }
 
-                let _guard = scopeguard::guard((), |()| {
-                    TRACKING_ALLOCATION.with(|tracking| {
-                        *tracking.borrow_mut() = false;
-                    });
+            // Create tracking guard - this MUST be created if we set the flag
+            let _tracking_guard = scopeguard::guard((), |_| {
+                TRACKING_ALLOCATION.with(|tracking| {
+                    *tracking.borrow_mut() = false;
                 });
+            });
 
-                let mut use_backtrace = layout.size() >= MINIMUM_TRACKED_SIZE;
-                let maybe_path = if use_backtrace {
-                    let start_pattern = "::TaskAwareAllocator";
+            // 5. For depth 0 (root allocations), use backtrace
+            //    For depth 1-2 (shallow allocations), use fast path
+            let task_id = if depth == 0 {
+                // Root allocation - use backtrace for best accuracy
+                let start_pattern = "::TaskAwareAllocator";
+                let raw_frames = extract_raw_frames(start_pattern);
 
-                    let raw_frames = extract_raw_frames(start_pattern);
-                    let mut found = false;
-                    for frame in &raw_frames {
-                        if frame.contains("find_matching_profile") {
-                            found = true;
-                            use_backtrace = false;
-                            break;
-                        }
-                    }
-
-                    if found {
-                        None
-                    } else {
-                        // Process the collected frames to collapse patterns and clean up
-                        let cleaned_stack = clean_stack_trace(&raw_frames);
-                        // eprintln!("cleaned_stack={cleaned_stack:?}");
-
-                        Some(extract_path(&cleaned_stack))
-                    }
+                // Skip if we're in find_matching_profile
+                if raw_frames
+                    .iter()
+                    .any(|frame| frame.contains("find_matching_profile"))
+                {
+                    0 // Don't track allocations from our own matching function
                 } else {
-                    None
-                };
+                    // Process the collected frames
+                    let cleaned_stack = clean_stack_trace(&raw_frames);
+                    let path = extract_path(&cleaned_stack);
 
-                // Record allocation
-                let address = ptr as usize;
-                let size = layout.size();
+                    // Try to get registry without blocking
+                    if let Ok(registry) = REGISTRY.try_lock() {
+                        find_matching_profile(&path, &registry)
+                    } else {
+                        0 // Skip if registry is locked
+                    }
+                }
+            } else {
+                // Non-root allocation - use fast path
                 let thread_id = thread::current().id();
 
-                // println!("{:#?}", backtrace::Backtrace::new());
-                // Get current thread's active task stack
-                // eprintln!("About to try_lock registry to record allocation");
-                if let Ok(mut registry) = REGISTRY.try_lock() {
-                    // eprintln!("...success!");
-                    let task_id = if use_backtrace {
-                        maybe_path.map_or(0, |path| find_matching_profile(&path, &registry))
-                    } else {
-                        0
-                    };
-                    let task_id = if task_id != 0 {
-                        task_id
-                    } else if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
-                        // Attribute to the topmost task on the stack, if available
+                // Try to get registry without blocking
+                if let Ok(registry) = REGISTRY.try_lock() {
+                    if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
                         *task_stack.last().unwrap_or(&0)
                     } else {
                         0
-                    };
-                    // eprintln!("task_id={}", task_id);
-                    if task_id != 0 {
-                        // Record allocation for this task
-                        registry
-                            .task_allocations
-                            .entry(task_id)
-                            .or_default()
-                            .push((address, size));
-
-                        // // Temp display to verify allocations
-                        // // Count total memory for this task
-                        // let task_total = registry.task_allocations[&top_task_id]
-                        //     .iter()
-                        //     .map(|(_, s)| *s)
-                        //     .sum::<usize>();
-
-                        // println!(
-                        //     "ALLOC: Task {} +{} bytes (total: {} bytes)",
-                        //     top_task_id, size, task_total
-                        // );
-
-                        // Map address to task for deallocation
-                        registry.address_to_task.insert(address, task_id);
-                        // eprintln!("...alloc done!");
                     }
                 } else {
-                    // Handle error or log issue
-                    // eprintln!("Could not lock registry to record {size} byte allocation");
-                    // Diagnose the issue with a backtrace - this works.
-                    // let maybe_path = if !use_backtrace {
-                    //     let start_pattern = "::TaskAwareAllocator";
+                    0 // Skip if registry is locked
+                }
+            };
 
-                    //     let raw_frames = extract_raw_frames(start_pattern);
+            // 6. Record the allocation if we found a task
+            if task_id != 0 {
+                let address = ptr as usize;
+                let size = layout.size();
 
-                    //     // Process the collected frames to collapse patterns and clean up
-                    //     let cleaned_stack = clean_stack_trace(&raw_frames);
-                    //     // eprintln!("cleaned_stack={cleaned_stack:?}");
+                // Try to record without blocking
+                if let Ok(mut registry) = REGISTRY.try_lock() {
+                    registry
+                        .task_allocations
+                        .entry(task_id)
+                        .or_default()
+                        .push((address, size));
 
-                    //     Some(extract_path(&cleaned_stack))
-                    // } else {
-                    //     maybe_path
-                    // };
-                    // if let Some(path) = maybe_path {
-                    //     eprintln!("..for:\n{path:#?}");
-                    // }
+                    registry.address_to_task.insert(address, task_id);
                 }
             }
         }

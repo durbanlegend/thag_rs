@@ -224,6 +224,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
         if !ptr.is_null() {
             // 1. First, check if this allocation is worth tracking at all
             if layout.size() < MINIMUM_TRACKED_SIZE {
+                eprintln!("Skipping tiny allocation completely");
                 return ptr; // Skip tiny allocations completely
             }
 
@@ -238,6 +239,8 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 current
             });
 
+            // eprintln!("depth={depth}");
+
             // Always create the depth guard to ensure we decrement
             let _depth_guard = scopeguard::guard((), |_| {
                 ALLOCATION_DEPTH.with(|d| {
@@ -250,6 +253,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
             // 3. Check depth to avoid deep recursion
             if depth > 2 {
+                eprintln!("depth> 2, returning ptr");
                 // Allow minimal nesting but avoid deep recursion
                 return ptr;
             }
@@ -269,6 +273,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
             });
 
             if !should_track {
+                eprintln!("!should_track, returning ptr");
                 return ptr;
             }
 
@@ -282,6 +287,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
             // 5. For depth 0 (root allocations), use backtrace
             //    For depth 1-2 (shallow allocations), use fast path
             let task_id = if depth == 0 {
+                eprintln!("Using backtrace");
                 // Root allocation - use backtrace for best accuracy
                 let start_pattern = "::TaskAwareAllocator";
                 let raw_frames = extract_raw_frames(start_pattern);
@@ -291,6 +297,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     .iter()
                     .any(|frame| frame.contains("find_matching_profile"))
                 {
+                    eprintln!("Don't track allocations from our own matching function");
                     0 // Don't track allocations from our own matching function
                 } else {
                     // Process the collected frames
@@ -299,6 +306,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
                     // Try to get registry without blocking
                     if let Ok(registry) = REGISTRY.try_lock() {
+                        eprintln!("Calling find_matching_profile");
                         find_matching_profile(&path, &registry)
                     } else {
                         0 // Skip if registry is locked
@@ -306,6 +314,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 }
             } else {
                 // Non-root allocation - use fast path
+                eprintln!("Non-root allocation - use fast path");
                 let thread_id = thread::current().id();
 
                 // Try to get registry without blocking
@@ -321,7 +330,9 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
             };
 
             // 6. Record the allocation if we found a task
+            eprintln!("Record the allocation if we found a task");
             if task_id != 0 {
+                eprintln!("...we found a task");
                 let address = ptr as usize;
                 let size = layout.size();
 

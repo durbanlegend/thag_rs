@@ -218,9 +218,29 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
         let ptr = self.inner.alloc(layout);
 
         #[cfg(feature = "full_profiling")]
+        fn find_latest() -> usize {
+            // Assign small allocations to latest task
+            let thread_id = std::thread::current().id();
+
+            if let Ok(registry) = REGISTRY.try_lock() {
+                if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
+                    if let Some(&task_id) = task_stack.last() {
+                        task_id
+                    } else {
+                        0
+                    }
+                } else {
+                    0
+                }
+            } else {
+                0
+            }
+        }
+
+        #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
             // Skip small allocations
-            if layout.size() >= MINIMUM_TRACKED_SIZE {
+            let task_id = if layout.size() >= MINIMUM_TRACKED_SIZE {
                 // Simple recursion prevention
                 thread_local! {
                     static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
@@ -234,7 +254,10 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     value
                 });
 
-                if !already_tracking {
+                if already_tracking {
+                    eprintln!("Already tracking, i.e. recursion");
+                    find_latest()
+                } else {
                     // Create guard for cleanup
                     struct Guard;
                     impl Drop for Guard {
@@ -245,7 +268,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     let _guard = Guard;
 
                     // Get backtrace without recursion
-                    eprintln!("Attempting backtrace");
+                    // eprintln!("Attempting backtrace");
                     // Use a different allocator for backtrace operations
                     let mut task_id = 0;
                     MultiAllocator::with(AllocatorTag::System, || {
@@ -253,59 +276,85 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         // let start_pattern = "TaskAwareAllocator";
                         let start_pattern = "Profile::new";
 
-                        eprintln!("Calling extract_callstack");
+                        // eprintln!("Calling extract_callstack");
                         let cleaned_stack = extract_callstack(start_pattern);
-
-                        // Skip if we're in find_matching_profile
-                        if cleaned_stack
-                            .iter()
-                            .any(|frame| frame.contains("find_matching_profile"))
-                        {
+                        if cleaned_stack.is_empty() {
                             eprintln!(
-                                r#"Found "find_matching_profile" - shouldn't be found in this allocator - recursive"#
+                                "Empty cleaned_stack for backtrace\n{:#?}",
+                                backtrace::Backtrace::new()
                             );
-                            return;
-                        }
-
-                        // eprintln÷!("Calling extract_path");
-                        let path = extract_path(&cleaned_stack);
-                        // eprintln!("path={path:#?}");
-
-                        // Try to get task ID from registry
-                        // Try to get registry without blocking
-                        task_id = if let Ok(registry) = REGISTRY.try_lock() {
-                            find_matching_profile(&path, &registry)
-                        } else if let Ok(registry) = REGISTRY.try_lock() {
-                            if let Some(task_stack) =
-                                registry.thread_task_stacks.get(&thread::current().id())
-                            {
-                                *task_stack.last().unwrap_or(&0)
-                            } else {
-                                0
-                            }
+                            task_id = find_latest();
                         } else {
-                            0
-                        };
-                    });
+                            // Make sure the use of a separate allocator is working.
+                            assert!(!cleaned_stack
+                                .iter()
+                                .any(|frame| frame.contains("find_matching_profile")));
 
-                    // Record allocation if task found
-                    if task_id > 0 {
-                        let address = ptr as usize;
-                        let size = layout.size();
+                            // Make sure the use of a separate allocator is working.
+                            assert!(!cleaned_stack
+                                .iter()
+                                .any(|frame| frame.contains("find_matching_profile")));
 
-                        if let Ok(mut registry) = REGISTRY.try_lock() {
-                            registry
-                                .task_allocations
-                                .entry(task_id)
-                                .or_default()
-                                .push((address, size));
+                            // eprintln!("Calling extract_path");
+                            let path = extract_path(&cleaned_stack);
+                            if path.is_empty() {
+                                eprintln!(
+                                    "...path is empty for thread {:?}, &cleaned_stack:\n{:#?}",
+                                    thread::current().id(),
+                                    cleaned_stack
+                                );
+                                task_id = find_latest();
+                            } else {
+                                // eprintln!("path={path:#?}");
 
-                            registry.address_to_task.insert(address, task_id);
+                                // Try to get task ID from registry
+                                // Try to get registry without blocking
+                                task_id = if let Ok(registry) = REGISTRY.try_lock() {
+                                    find_matching_profile(&path, &registry)
+                                } else {
+                                    eprintln!("Falling back to find_latest because failed to acquire registry lock");
+                                    find_latest()
+                                };
+                            }
                         }
-                    }
+                    });
+                    task_id
+
+                    // // Record allocation if task found
+                    // if task_id > 0 {
+                    //     let address = ptr as usize;
+                    //     let size = layout.size();
+
+                    //     if let Ok(mut registry) = REGISTRY.try_lock() {
+                    //         registry
+                    //             .task_allocations
+                    //             .entry(task_id)
+                    //             .or_default()
+                    //             .push((address, size));
+
+                    //         registry.address_to_task.insert(address, task_id);
+                    //     }
+                    // }
                 }
             } else {
-                // TODO assign small allocations to latest task
+                find_latest()
+            };
+
+            // Record allocation if task found
+            let address = ptr as usize;
+            let size = layout.size();
+            if let Ok(mut registry) = REGISTRY.try_lock() {
+                registry
+                    .task_allocations
+                    .entry(task_id)
+                    .or_default()
+                    .push((address, size));
+
+                registry.address_to_task.insert(address, task_id);
+            } else {
+                // Handle the case when the registry is not available
+                // For example, log an error or panic
+                eprintln!("Failed to record alloc of {size} in registry");
             }
         }
 
@@ -613,21 +662,31 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
 #[cfg(feature = "full_profiling")]
 fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usize {
     if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
-        eprintln!("...success!");
+        // eprintln!("...success!");
         // For each active profile, compute a similarity score
         let mut best_match = 0;
         let mut best_score = 0;
 
+        let mut score = 0;
         for task_id in registry.active_profiles.iter().rev() {
             if let Some(task_path) = path_registry.get(task_id) {
-                let score = compute_similarity(task_path, path);
+                score = compute_similarity(task_path, path);
                 if score > best_score {
                     best_score = score;
                     best_match = *task_id;
                 }
             }
         }
-        eprintln!("...returning best match");
+        if score == path.len() {
+            eprintln!("...returning best match with perfect score of {}", score);
+        } else {
+            eprintln!(
+                "...returning best match with imperfect score of {} vs path.len() = {} for path:\n{}",
+                score,
+                path.len(),
+                path.join(" -> ")
+            );
+        }
         return best_match;
     }
 
@@ -642,8 +701,15 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     let score = task_path
         .iter()
         .zip(reg_path.iter())
+        // .inspect(|(path_func, frame)| {
+        //     eprintln!("Comparing {} with {}", path_func, frame);
+        // })
         .filter(|(path_func, frame)| frame == path_func)
         .count();
+    // eprintln!(
+    //     "score = {score} for path of length {}:\n{task_path:#?}",
+    //     task_path.len(),
+    // );
 
     score
 }

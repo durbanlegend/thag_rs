@@ -919,21 +919,18 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
         .iter()
         .flat_map(|frame| frame.symbols())
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        // .inspect(|name| eprintln!("Symbol name: {}", name))
-        // // TODO out
-        // .inspect(|name| {
-        //     if name.contains("find_matching_profile") {
-        //         eprintln!(
-        //             r#"***** Should not find: "find_matching_profile" in TaskAwareAllocator"#
-        //         );
-        //     }
-        // })
         .scan(false, |is_within_target_range, name| {
             if !*is_within_target_range && name.contains(start_pattern) {
                 *is_within_target_range = true;
             }
             Some((*is_within_target_range, name))
         })
+        // .inspect(|(is_within_target_range, name)| {
+        //     println!(
+        //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
+        //         name
+        //     );
+        // })
         .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
         .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
         .filter(|(_, name)| !name.starts_with("tokio::"))

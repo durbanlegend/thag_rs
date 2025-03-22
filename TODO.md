@@ -26,6 +26,9 @@
 - [ ]  Fix registration for generics - maybe try entire cleaned name.
 - [ ]  Debug memory profiler hanging on `syn` example.
 - [ ]  profile_type arg on enable_profiling now redundant
+- [ ]  Repeated try_lock if first try fails?
+- [ ]  Try stripping closures to register and track them under their enclosing function names.
+- [ ]  Try doing meta work in task_allocator in system allocator.
 
 thread_local! {
       static THREAD_DATA: RefCell<ThreadData> = RefCell::new(ThreadData::new());

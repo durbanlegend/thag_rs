@@ -608,42 +608,22 @@ impl Profile {
         }
         // Register this function
         let fn_name = &cleaned_stack[0];
-        let desc_fn_name = if is_async {
-            format!("async::{fn_name}")
-        } else {
-            fn_name.to_string()
-        };
+
+        // Temporarily remove async additions to debug matching
+        // let desc_fn_name = if is_async {
+        //     format!("async::{fn_name}")
+        // } else {
+        //     fn_name.to_string()
+        // };
+        let desc_fn_name = fn_name.to_string();
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
+        eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
         register_profiled_function(fn_name, desc_fn_name);
 
         let path = extract_path(&cleaned_stack);
-
-        // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
-        #[cfg(test)]
-        if is_test_mode_active() {
-            // If this is from an attribute in a test, don't create a profile
-            // Our safe wrapper will handle profiling instead
-            return None;
+        if path.is_empty() {
+            println!("Path is empty: fn_name={fn_name}, cleaned stack={cleaned_stack:?}");
         }
-
-        let global_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
-            2 => ProfileType::Memory,
-            3 => ProfileType::Both,
-            _ => {
-                if cfg!(feature = "full_profiling") {
-                    ProfileType::Both
-                } else {
-                    ProfileType::Time
-                }
-            } // default
-        };
-
-        // // Use the more comprehensive of the two types
-        // let profile_type = match (requested_type, global_type) {
-        //     (ProfileType::Both, _) | (_, ProfileType::Both) => ProfileType::Both,
-        //     (ProfileType::Memory, _) | (_, ProfileType::Memory) => ProfileType::Memory,
-        //     _ => ProfileType::Time,
-        // };
 
         // Try allowing overrides
         let profile_type = requested_type;
@@ -651,6 +631,26 @@ impl Profile {
         #[cfg(not(feature = "full_profiling"))]
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+        }
+
+        // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
+        // memory allocations in the profile setup itself in this method.
+        #[cfg(feature = "full_profiling")]
+        let maybe_task = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            // Create a task to track memory usage
+            let task = create_memory_task();
+            register_task_path(task.id(), path.clone());
+            Some(task)
+        } else {
+            return None;
+        };
+
+        // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
+        #[cfg(test)]
+        if is_test_mode_active() {
+            // If this is from an attribute in a test, don't create a profile
+            // Our safe wrapper will handle profiling instead
+            return None;
         }
 
         // Determine if we should keep the custom name
@@ -676,12 +676,13 @@ impl Profile {
         let profile = {
             // First, determine if we need memory profiling
             if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-                // Create a task to track memory usage
-                let task = create_memory_task();
-                register_task_path(task.id(), path.clone());
+                // // Create a task to track memory usage
+                // let task = create_memory_task();
+                // register_task_path(task.id(), path.clone());
 
                 // Create an owned TaskGuard directly from the task ID
                 // This avoids the 'static lifetime requirement
+                let task = maybe_task.expect("Memory profiling logic error unwrapping task");
                 let task_id = task.id();
                 let guard_result = create_memory_guard(task_id);
                 match &guard_result {
@@ -689,15 +690,16 @@ impl Profile {
                     Err(e) => println!("Failed to create memory guard: {e}"),
                 }
 
+                // Merged into `create_task_context -> create_memory_task` much earlier
+                // task_allocator::activate_profile(task_id);
+
                 println!(
                     "NEW PROFILE: Task {task_id} created for {:?}",
                     path.join("::")
                 );
-                if path.join("::").is_empty() {
-                    println!("Path is empty: cleaned stack=\n{cleaned_stack:#?}");
-                }
-
-                task_allocator::activate_profile(task_id);
+                // if path.join("::").is_empty() {
+                //     println!("Path is empty: cleaned stack=\n{cleaned_stack:?}");
+                // }
 
                 // Create the profile with necessary components
                 Self {
@@ -893,13 +895,14 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
             path.push(name);
             continue;
         }
+
+        // Async prefixes temp out to simplify debugging
+        // let key = get_fn_desc_name(fn_name_str);
+        // // eprintln!("Function desc name: {}", key);
+        // if let Some(name) = get_reg_desc_name(&key) {
+        //     // eprintln!("Registered desc name: {}", name);
+        //     path.push(name);
         // }
-        let key = get_fn_desc_name(fn_name_str);
-        // eprintln!("Function desc name: {}", key);
-        if let Some(name) = get_reg_desc_name(&key) {
-            // eprintln!("Registered desc name: {}", name);
-            path.push(name);
-        }
     }
 
     // Reverse the path so it goes from root caller to current function
@@ -913,6 +916,7 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
     // let mut is_within_target_range = false;
     let mut current_backtrace = Backtrace::new_unresolved();
     current_backtrace.resolve();
+    let mut already_seen = HashSet::new();
 
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
@@ -952,9 +956,23 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
                 name
             }
         })
+        .map(|name| {
+            // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+            clean_function_name(name)
+        })
+        .filter(|name| {
+            // Skip duplicate function calls (helps with the {{closure}} pattern)
+            if already_seen.contains(name.as_str()) {
+                false
+            } else {
+                already_seen.insert(name.clone());
+                true
+            }
+        })
         // .map(|(_, name)| name.clone())
         .collect();
-    // eprintln!("Callstack: {:#?}", callstack);
+    eprintln!("Callstack: {:#?}", callstack);
+    // eprintln!("already_seen: {:#?}", already_seen);
     callstack
 }
 
@@ -1208,7 +1226,12 @@ pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
         }
 
         // Clean the function name
-        let clean_name = clean_function_name(current_frame);
+        let clean_name = {
+            // Remove hash suffixes and closure markers
+            let clean_name = current_frame.to_string();
+
+            clean_function_name(clean_name)
+        };
 
         // Handle main function special case
         if clean_name.ends_with("::main") || clean_name == "main" {
@@ -1248,10 +1271,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 ];
 
 // #[cfg(feature = "time_profiling")]
-fn clean_function_name(demangled: &str) -> String {
-    // Remove hash suffixes and closure markers
-    let mut clean_name = demangled.to_string();
-
+fn clean_function_name(mut clean_name: String) -> String {
     // Find and remove hash suffixes (::h followed by hex digits)
     // from the last path segment
     if let Some(hash_pos) = clean_name.rfind("::h") {
@@ -1264,7 +1284,7 @@ fn clean_function_name(demangled: &str) -> String {
     }
 
     // Remove closure markers
-    clean_name = clean_name.replace("{{closure}}", "");
+    clean_name = clean_name.replace("::{{closure}}", "");
 
     // Clean up any double colons that might be left
     while clean_name.contains("::::") {
@@ -1690,19 +1710,19 @@ mod tests {
     #[test]
     fn test_profiling_clean_function_name() {
         // Test with hash suffix
-        let name = "module::func::h1234abcd";
+        let name = "module::func::h1234abcd".to_string();
         assert_eq!(clean_function_name(name), "module::func");
 
         // Test with closure
-        let name = "module::func{{closure}}";
+        let name = "module::func{{closure}}".to_string();
         assert_eq!(clean_function_name(name), "module::func");
 
         // Test with both
-        let name = "module::func{{closure}}::h1234abcd";
+        let name = "module::func{{closure}}::h1234abcd".to_string();
         assert_eq!(clean_function_name(name), "module::func");
 
         // Test with multiple colons
-        let name = "module::::func";
+        let name = "module::::func".to_string();
         assert_eq!(clean_function_name(name), "module::func");
     }
 

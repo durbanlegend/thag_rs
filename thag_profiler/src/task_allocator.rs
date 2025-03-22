@@ -4,7 +4,10 @@
 //! This module provides a memory allocator that tracks allocations by logical tasks
 //! rather than threads, making it suitable for async code profiling.
 
-use std::alloc::{GlobalAlloc, Layout};
+use std::{
+    alloc::{GlobalAlloc, Layout},
+    time::Duration,
+};
 
 #[cfg(feature = "full_profiling")]
 use crate::profiling::{extract_callstack, extract_path};
@@ -124,6 +127,7 @@ impl TaskAwareAllocator<System> {
         // eprintln!("About to try_lock registry to initialize task data");
         if let Ok(mut registry) = REGISTRY.try_lock() {
             registry.task_allocations.insert(task_id, Vec::new());
+            registry.active_profiles.insert(task_id);
         } else {
             eprintln!(
                 "Failed to lock registry to initialize task data: {}",
@@ -279,10 +283,11 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         // eprintln!("Calling extract_callstack");
                         let cleaned_stack = extract_callstack(start_pattern);
                         if cleaned_stack.is_empty() {
-                            eprintln!(
-                                "Empty cleaned_stack for backtrace\n{:#?}",
-                                backtrace::Backtrace::new()
-                            );
+                            // eprintln!(
+                            //     "Empty cleaned_stack for backtrace\n{:#?}",
+                            //     backtrace::Backtrace::new()
+                            // );
+                            eprintln!("Empty cleaned_stack");
                             task_id = find_latest();
                         } else {
                             // Make sure the use of a separate allocator is working.
@@ -343,18 +348,28 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
             // Record allocation if task found
             let address = ptr as usize;
             let size = layout.size();
-            if let Ok(mut registry) = REGISTRY.try_lock() {
-                registry
-                    .task_allocations
-                    .entry(task_id)
-                    .or_default()
-                    .push((address, size));
+            let mut success = false;
+            const MAX_ATTEMPTS: u8 = 5;
+            const RETRY_WAIT: Duration = Duration::from_millis(10);
+            for _ in 0..MAX_ATTEMPTS {
+                if let Ok(mut registry) = REGISTRY.try_lock() {
+                    registry
+                        .task_allocations
+                        .entry(task_id)
+                        .or_default()
+                        .push((address, size));
 
-                registry.address_to_task.insert(address, task_id);
-            } else {
-                // Handle the case when the registry is not available
-                // For example, log an error or panic
-                eprintln!("Failed to record alloc of {size} in registry");
+                    registry.address_to_task.insert(address, task_id);
+                    success = true;
+                    break;
+                } else {
+                    thread::sleep(RETRY_WAIT);
+                }
+            }
+            if !success {
+                eprintln!(
+                    "Failed to record alloc of {size} in registry despite {MAX_ATTEMPTS} attempts"
+                );
             }
         }
 
@@ -470,6 +485,7 @@ pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard, String> {
         Err(e) => Err(e),
     }
 }
+
 // Task tracking state
 #[cfg(feature = "full_profiling")]
 struct TaskState {
@@ -536,7 +552,9 @@ impl Drop for TaskGuard {
             eprintln!("Failed to lock task map to deactivate task");
         }
 
+        remove_task_path(self.task_id);
         deactivate_profile(self.task_id);
+
         println!(
             "GUARD DROPPED: Task {} on thread {:?}",
             self.task_id,
@@ -563,12 +581,12 @@ pub fn create_memory_task() -> TaskMemoryContext {
 }
 
 // Task Path Registry for debugging
-// 1. Declare the registry
+// 1. Declare the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
 static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(BTreeMap::new()));
 
-// 2. Function to add a task's path to the registry
+// 2. Function to add a task's path to the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
 pub fn register_task_path(task_id: usize, path: Vec<String>) {
     // eprintln!("About to try_lock TASK_PATH_REGISTRY for register_task_path");
@@ -576,7 +594,7 @@ pub fn register_task_path(task_id: usize, path: Vec<String>) {
         registry.insert(task_id, path);
     } else {
         eprintln!(
-            "Failed to lock task path registry when registering task {}",
+            "Failed to lock task path registry to registertask {}",
             task_id
         );
     }
@@ -658,6 +676,19 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
     println!("=============================");
 }
 
+// 7. Function to remove an entry from the TASK_PATH_REGISTRY
+#[cfg(feature = "full_profiling")]
+pub fn remove_task_path(task_id: usize) {
+    if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
+        registry.remove(&task_id);
+    } else {
+        eprintln!(
+            "Failed to lock task path registry to remove task {}",
+            task_id
+        );
+    }
+}
+
 // Helper function to find the best matching profile
 #[cfg(feature = "full_profiling")]
 fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usize {
@@ -666,26 +697,44 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
         // For each active profile, compute a similarity score
         let mut best_match = 0;
         let mut best_score = 0;
+        let path_len = path.len();
 
         let mut score = 0;
         for task_id in registry.active_profiles.iter().rev() {
-            if let Some(task_path) = path_registry.get(task_id) {
-                score = compute_similarity(task_path, path);
-                if score > best_score {
+            if let Some(reg_path) = path_registry.get(task_id) {
+                score = compute_similarity(path, reg_path);
+                eprintln!(
+                    "...scored {score} checking task {} with path {:?}",
+                    task_id,
+                    reg_path.join(" -> ")
+                );
+                if score > best_score || score == path_len {
                     best_score = score;
                     best_match = *task_id;
                 }
+                if score == path_len {
+                    break;
+                }
             }
         }
-        if score == path.len() {
+        if best_score == path.len() {
             eprintln!("...returning best match with perfect score of {}", score);
         } else {
             eprintln!(
                 "...returning best match with imperfect score of {} vs path.len() = {} for path:\n{}",
-                score,
+                best_score,
                 path.len(),
                 path.join(" -> ")
             );
+            println!("==== TASK PATH REGISTRY DUMP ====");
+            println!("Total registered tasks: {}", path_registry.len());
+
+            for (task_id, path) in path_registry.iter() {
+                println!("Task {}: {}", task_id, path.join(" -> "));
+            }
+            println!("=================================");
+
+            println!("registry.active_profiles={:#?}", registry.active_profiles);
         }
         return best_match;
     }
@@ -698,32 +747,75 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
 // Compute similarity between a task path and backtrace frames
 #[cfg(feature = "full_profiling")]
 fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
+    if task_path.is_empty() || reg_path.is_empty() {
+        eprintln!("task_path.is_empty() || reg_path.is_empty()");
+        return 0;
+    }
+
     let score = task_path
         .iter()
         .zip(reg_path.iter())
-        // .inspect(|(path_func, frame)| {
-        //     eprintln!("Comparing {} with {}", path_func, frame);
-        // })
+        .inspect(|(path_func, frame)| {
+            eprintln!("Comparing [{}]\n          [{}]", path_func, frame);
+        })
         .filter(|(path_func, frame)| frame == path_func)
+        // .inspect(|(path_func, frame)| {
+        //     let matched = frame == path_func;
+        //     eprintln!("frame == path_func? {}", matched);
+        //     if matched {
+        //         score += 1;
+        //     }
+        // })
         .count();
-    // eprintln!(
-    //     "score = {score} for path of length {}:\n{task_path:#?}",
-    //     task_path.len(),
-    // );
+
+    eprintln!("score={score}");
+    if score == 0 {
+        eprintln!("score = {score} for path of length {}", task_path.len(),);
+        // let diff = create_side_by_side_diff(&task_path.join("->"), &reg_path.join("->"), 80);
+        // println!("{diff}");
+        println!("{}\n{}", task_path.join("->"), reg_path.join("->"));
+    }
 
     score
 }
 
-// When creating a profile:
-#[cfg(feature = "full_profiling")]
-pub fn activate_profile(task_id: usize) {
-    // eprintln!("About to try_lock registry for activate_profile");
-    if let Ok(mut registry) = REGISTRY.try_lock() {
-        registry.active_profiles.insert(task_id);
-    } else {
-        eprintln!("Failed to lock registry to activate profile: {}", task_id);
-    }
-}
+// fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
+//     if task_path.is_empty() || reg_path.is_empty() {
+//         return 0;
+//     }
+
+//     let score = task_path
+//         .iter()
+//         .zip(reg_path.iter())
+//         .inspect(|(path_func, frame)| {
+//             eprintln!("Comparing [{}]\n          [{}]", path_func, frame);
+//         })
+//         .filter(|(path_func, frame)| frame.eq(path_func))
+//         .inspect(|(path_func, frame)| {
+//             eprintln!("frame == path_func? {}", frame.eq(path_func));
+//         })
+//         .count();
+//     if score == 0 {
+//         eprintln!("score = {score} for path of length {}", task_path.len(),);
+//         // let diff = create_side_by_side_diff(&task_path.join("->"), &reg_path.join("->"), 80);
+//         // println!("{diff}");
+//         println!("{}\n{}", task_path.join("->"), reg_path.join("->"));
+//     }
+
+//     score
+// }
+
+// Merged into fn create_task_context
+// // When creating a profile:
+// #[cfg(feature = "full_profiling")]
+// pub fn activate_profile(task_id: usize) {
+//     // eprintln!("About to try_lock registry for activate_profile");
+//     if let Ok(mut registry) = REGISTRY.try_lock() {
+//         registry.active_profiles.insert(task_id);
+//     } else {
+//         eprintln!("Failed to lock registry to activate profile: {}", task_id);
+//     }
+// }
 
 // When dropping a profile:
 #[cfg(feature = "full_profiling")]

@@ -193,6 +193,8 @@ pub fn init_profiling() {
 
     // Enable profiling
     enable_profiling(true, profile_type).expect("Failed to enable profiling");
+
+    task_allocator::initialize_memory_profiling();
 }
 
 /// Finalize profiling and write out data files.
@@ -210,6 +212,8 @@ pub fn finalize_profiling() {
 
     // Disable profiling, which will finalize and write data
     enable_profiling(false, profile_type).expect("Failed to finalize profiling");
+
+    task_allocator::finalize_memory_profiling();
 }
 
 // Provide no-op versions when profiling is disabled

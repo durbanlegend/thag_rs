@@ -21,6 +21,7 @@ serde_json = { version = "1.0.140", optional = true }
 strum = { version = "0.27.1", features = ["derive", "phf"] }
 thag_proc_macros = { path = "../thag_proc_macros" }
 scopeguard = "1.2.0"
+crossbeam = "0.8.4"
 
 [dev-dependencies]
 regex = "1.11.1"

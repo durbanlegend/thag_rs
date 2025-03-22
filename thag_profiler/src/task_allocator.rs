@@ -6,7 +6,8 @@
 
 use std::{
     alloc::{GlobalAlloc, Layout},
-    time::Duration,
+    // collections::HashSet,
+    // time::Duration,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -44,33 +45,33 @@ struct AllocationRegistry {
 
 #[cfg(feature = "full_profiling")]
 impl AllocationRegistry {
-    // Helper method to add to AllocationRegistry or wherever appropriate
-    #[allow(dead_code)]
-    pub fn log_status(&self) {
-        println!("REGISTRY STATUS:");
-        println!("  Active threads: {}", self.thread_task_stacks.len());
+    // // Helper method to add to AllocationRegistry or wherever appropriate
+    // #[allow(dead_code)]
+    // pub fn log_status(&self) {
+    //     println!("REGISTRY STATUS:");
+    //     println!("  Active threads: {}", self.thread_task_stacks.len());
 
-        for (thread_id, stack) in &self.thread_task_stacks {
-            println!(
-                "  Thread {:?}: {} tasks - {:?}",
-                thread_id,
-                stack.len(),
-                stack
-            );
-        }
+    //     for (thread_id, stack) in &self.thread_task_stacks {
+    //         println!(
+    //             "  Thread {:?}: {} tasks - {:?}",
+    //             thread_id,
+    //             stack.len(),
+    //             stack
+    //         );
+    //     }
 
-        println!("  Tracked tasks: {}", self.task_allocations.len());
+    //     println!("  Tracked tasks: {}", self.task_allocations.len());
 
-        for (task_id, allocs) in &self.task_allocations {
-            let total = allocs.iter().map(|(_, size)| *size).sum::<usize>();
-            println!(
-                "    Task {}: {} allocations, {} bytes total",
-                task_id,
-                allocs.len(),
-                total
-            );
-        }
-    }
+    //     for (task_id, allocs) in &self.task_allocations {
+    //         let total = allocs.iter().map(|(_, size)| *size).sum::<usize>();
+    //         println!(
+    //             "    Task {}: {} allocations, {} bytes total",
+    //             task_id,
+    //             allocs.len(),
+    //             total
+    //         );
+    //     }
+    // }
 }
 
 #[cfg(feature = "full_profiling")]
@@ -125,15 +126,16 @@ impl TaskAwareAllocator<System> {
 
         // Also initialize in registry
         // eprintln!("About to try_lock registry to initialize task data");
-        if let Ok(mut registry) = REGISTRY.try_lock() {
-            registry.task_allocations.insert(task_id, Vec::new());
-            registry.active_profiles.insert(task_id);
-        } else {
-            eprintln!(
-                "Failed to lock registry to initialize task data: {}",
-                task_id
-            );
-        }
+        // if let Ok(mut registry) = REGISTRY.try_lock() {
+        //     registry.task_allocations.insert(task_id, Vec::new());
+        //     registry.active_profiles.insert(task_id);
+        // } else {
+        //     eprintln!(
+        //         "Failed to lock registry to initialize task data: {}",
+        //         task_id
+        //     );
+        // }
+        activate_task(task_id);
 
         TaskMemoryContext {
             task_id,
@@ -143,13 +145,19 @@ impl TaskAwareAllocator<System> {
 
     #[allow(clippy::unused_self)]
     pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        // eprintln!("About to try_lock registry to get task memory usage");
-        REGISTRY.try_lock().map_or(None, |registry| {
-            registry
-                .task_allocations
-                .get(&task_id)
-                .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
-        })
+        // // eprintln!("About to try_lock registry to get task memory usage");
+        // REGISTRY.try_lock().map_or(None, |registry| {
+        //     registry
+        //         .task_allocations
+        //         .get(&task_id)
+        //         .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
+        // })
+        let maybe_task_allocations = get_task_allocations(task_id);
+        if let Some(task_allocations) = maybe_task_allocations {
+            Some(task_allocations.iter().map(|(_, size)| *size).sum())
+        } else {
+            None
+        }
     }
 
     #[allow(clippy::unused_self)]
@@ -157,26 +165,27 @@ impl TaskAwareAllocator<System> {
         // eprintln!("Entering task {}", task_id);
         let thread_id = thread::current().id();
 
-        // eprintln!("About to try_lock registry to enter task {}", task_id);
-        REGISTRY.try_lock().map_or_else(
-            |_| Err("Failed to lock registry".to_string()),
-            |mut registry| {
-                // Get or create task stack for this thread
-                let task_stack = registry.thread_task_stacks.entry(thread_id).or_default();
+        push_task_to_stack(thread_id, task_id);
+        Ok(())
+        // REGISTRY.try_lock().map_or_else(
+        //     |_| Err("Failed to lock registry".to_string()),
+        //     |mut registry| {
+        //         // Get or create task stack for this thread
+        //         let task_stack = registry.thread_task_stacks.entry(thread_id).or_default();
 
-                // Push this task onto the stack
-                task_stack.push(task_id);
+        //         // Push this task onto the stack
+        //         task_stack.push(task_id);
 
-                // println!("ENTER: Thread {:?} task stack: {:?}", thread_id, task_stack);
+        //         // println!("ENTER: Thread {:?} task stack: {:?}", thread_id, task_stack);
 
-                // Initialize allocation tracking if needed
-                registry.task_allocations.entry(task_id).or_default();
+        //         // Initialize allocation tracking if needed
+        //         registry.task_allocations.entry(task_id).or_default();
 
-                // registry.log_status();
-                eprintln!("...Entered task {}", task_id);
-                Ok(())
-            },
-        )
+        //         // registry.log_status();
+        //         eprintln!("...Entered task {}", task_id);
+        //         Ok(())
+        //     },
+        // )
     }
 
     #[allow(clippy::unused_self)]
@@ -184,36 +193,38 @@ impl TaskAwareAllocator<System> {
         // eprintln!("Exiting task {}", task_id);
         let thread_id = thread::current().id();
 
+        pop_task_from_stack(thread_id, task_id);
+        Ok(())
         // eprintln!("About to try_lock registry to exit task {}", task_id);
-        if let Ok(mut registry) = REGISTRY.lock() {
-            // Get stack for this thread
-            if let Some(task_stack) = registry.thread_task_stacks.get_mut(&thread_id) {
-                // Find the task in the stack (not just at the top)
-                if let Some(position) = task_stack.iter().position(|&id| id == task_id) {
-                    // Remove this specific task from the stack
-                    task_stack.remove(position);
+        // if let Ok(mut registry) = REGISTRY.lock() {
+        //     // Get stack for this thread
+        //     if let Some(task_stack) = registry.thread_task_stacks.get_mut(&thread_id) {
+        //         // Find the task in the stack (not just at the top)
+        //         if let Some(position) = task_stack.iter().position(|&id| id == task_id) {
+        //             // Remove this specific task from the stack
+        //             task_stack.remove(position);
 
-                    // If stack is now empty, remove it
-                    if task_stack.is_empty() {
-                        registry.thread_task_stacks.remove(&thread_id);
-                    }
+        //             // If stack is now empty, remove it
+        //             if task_stack.is_empty() {
+        //                 registry.thread_task_stacks.remove(&thread_id);
+        //             }
 
-                    return Ok(());
-                }
+        //             return Ok(());
+        //         }
 
-                // Task wasn't in the stack at all
-                return Err(format!(
-                    "Task {} not found in thread {:?} stack",
-                    task_id, thread_id
-                ));
-            }
+        //         // Task wasn't in the stack at all
+        //         return Err(format!(
+        //             "Task {} not found in thread {:?} stack",
+        //             task_id, thread_id
+        //         ));
+        //     }
 
-            eprintln!("...Exited task {}", task_id);
-            Err(format!("Thread {:?} has no active tasks", thread_id))
-        } else {
-            eprintln!("...Exited task {}", task_id);
-            Err("Failed to lock registry to remove task".to_string())
-        }
+        //     eprintln!("...Exited task {}", task_id);
+        //     Err(format!("Thread {:?} has no active tasks", thread_id))
+        // } else {
+        //     eprintln!("...Exited task {}", task_id);
+        //     Err("Failed to lock registry to remove task".to_string())
+        // }
     }
 }
 
@@ -226,28 +237,33 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
             // Assign small allocations to latest task
             let thread_id = std::thread::current().id();
 
-            if let Ok(registry) = REGISTRY.try_lock() {
-                if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
-                    if let Some(&task_id) = task_stack.last() {
-                        task_id
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                }
+            let task_stack = query_tasks_for_thread(thread_id);
+            if let Some(&task_id) = task_stack.last() {
+                task_id
             } else {
                 0
             }
+            // if let Ok(registry) = REGISTRY.try_lock() {
+            //     if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
+            //         if let Some(&task_id) = task_stack.last() {
+            //             task_id
+            //         } else {
+            //             0
+            //         }
+            //     } else {
+            //         0
+            //     }
+            // } else {
+            //     0
+            // }
         }
 
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Skip small allocations
             let task_id = if layout.size() >= MINIMUM_TRACKED_SIZE {
                 // Simple recursion prevention
                 thread_local! {
-                    static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
+                    static IN_TRACKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
                 }
 
                 let already_tracking = IN_TRACKING.with(|flag| {
@@ -312,17 +328,21 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                             } else {
                                 // eprintln!("path={path:#?}");
 
+                                task_id = find_matching_profile(&path);
                                 // Try to get task ID from registry
-                                // Try to get registry without blocking
-                                task_id = if let Ok(registry) = REGISTRY.try_lock() {
-                                    find_matching_profile(&path, &registry)
-                                } else {
-                                    eprintln!("Falling back to find_latest because failed to acquire registry lock");
-                                    find_latest()
-                                };
+                                // task_id = if let Ok(registry) = REGISTRY.try_lock() {
+                                //     find_matching_profile(&path, &registry)
+                                // } else {
+                                //     eprintln!("Falling back to find_latest because failed to acquire registry lock");
+                                //     find_latest()
+                                // };
                             }
                         }
                     });
+                    eprintln!(
+                        "alloc found task id {task_id} for allocation of {} bytes",
+                        layout.size()
+                    );
                     task_id
 
                     // // Record allocation if task found
@@ -345,31 +365,11 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 find_latest()
             };
 
-            // Record allocation if task found
-            let address = ptr as usize;
-            let size = layout.size();
-            let mut success = false;
-            const MAX_ATTEMPTS: u8 = 5;
-            const RETRY_WAIT: Duration = Duration::from_millis(10);
-            for _ in 0..MAX_ATTEMPTS {
-                if let Ok(mut registry) = REGISTRY.try_lock() {
-                    registry
-                        .task_allocations
-                        .entry(task_id)
-                        .or_default()
-                        .push((address, size));
-
-                    registry.address_to_task.insert(address, task_id);
-                    success = true;
-                    break;
-                } else {
-                    thread::sleep(RETRY_WAIT);
-                }
-            }
-            if !success {
-                eprintln!(
-                    "Failed to record alloc of {size} in registry despite {MAX_ATTEMPTS} attempts"
-                );
+            // Use the background processor to record the allocation
+            if task_id > 0 {
+                let address = ptr as usize;
+                let size = layout.size();
+                record_allocation(task_id, address, size);
             }
         }
 
@@ -381,7 +381,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
         if !ptr.is_null() {
             // Similar recursion prevention as in alloc
             thread_local! {
-                static IN_TRACKING: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
+                static IN_TRACKING: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
             }
 
             let already_tracking = IN_TRACKING.with(|flag| {
@@ -400,41 +400,45 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let address = ptr as usize;
 
                 // Record deallocation
+                // Send deallocation notification to registry processor
+                let _ = REGISTRY_CHANNEL
+                    .0
+                    .try_send(RegistryMessage::RecordDeallocation { address });
                 // println!("About to try_lock registry for deallocation");
-                if let Ok(mut registry) = REGISTRY.try_lock() {
-                    // eprintln!("...success!");
-                    if let Some(task_id) = registry.address_to_task.remove(&address) {
-                        // // Get size before removing
-                        // let size = registry
-                        //     .task_allocations
-                        //     .get(&task_id)
-                        //     .and_then(|allocs| {
-                        //         allocs
-                        //             .iter()
-                        //             .find(|(addr, _)| *addr == address)
-                        //             .map(|(_, size)| *size)
-                        //     })
-                        //     .unwrap_or(0);
+                // if let Ok(mut registry) = REGISTRY.try_lock() {
+                //     // eprintln!("...success!");
+                //     if let Some(task_id) = registry.address_to_task.remove(&address) {
+                //         // // Get size before removing
+                //         // let size = registry
+                //         //     .task_allocations
+                //         //     .get(&task_id)
+                //         //     .and_then(|allocs| {
+                //         //         allocs
+                //         //             .iter()
+                //         //             .find(|(addr, _)| *addr == address)
+                //         //             .map(|(_, size)| *size)
+                //         //     })
+                //         //     .unwrap_or(0);
 
-                        // Remove from task's allocation list
-                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                            if let Some(pos) =
-                                allocations.iter().position(|(addr, _)| *addr == address)
-                            {
-                                allocations.swap_remove(pos);
+                //         // // Remove from task's allocation list
+                //         // if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
+                //         //     if let Some(pos) =
+                //         //         allocations.iter().position(|(addr, _)| *addr == address)
+                //         //     {
+                //         //         allocations.swap_remove(pos);
 
-                                // // Temp display: Report total after removal
-                                // let task_total = allocations.iter().map(|(_, s)| *s).sum::<usize>();
-                                // println!(
-                                //     "DEALLOC: Task {} -{} bytes (total: {} bytes)",
-                                //     task_id, size, task_total
-                                // );
-                            }
-                        }
-                    }
-                } else {
-                    // eprintln!("Could not lock registry to record deallocation");
-                }
+                //         //         // // Temp display: Report total after removal
+                //         //         // let task_total = allocations.iter().map(|(_, s)| *s).sum::<usize>();
+                //         //         // println!(
+                //         //         //     "DEALLOC: Task {} -{} bytes (total: {} bytes)",
+                //         //         //     task_id, size, task_total
+                //         //         // );
+                //         //     }
+                //         // }
+                //     }
+                // } else {
+                //     // eprintln!("Could not lock registry to record deallocation");
+                // }
             }
         }
 
@@ -534,10 +538,17 @@ pub struct TaskGuard;
 impl Drop for TaskGuard {
     fn drop(&mut self) {
         // Try to exit task cleanly
-        if let Err(e) = get_allocator().exit_task(self.task_id) {
-            // Just log errors, don't panic in drop
-            eprintln!("Error exiting task {}: {}", self.task_id, e);
-        }
+        // if let Err(e) = get_allocator().exit_task(self.task_id) {
+        //     // Just log errors, don't panic in drop
+        //     eprintln!("Error exiting task {}: {}", self.task_id, e);
+        // }
+        // Send deactivation message via channel
+        // let _ = REGISTRY_CHANNEL
+        //     .0
+        //     .try_send(RegistryMessage::DeactivateTask {
+        //         task_id: self.task_id,
+        //     });
+        deactivate_task(self.task_id);
 
         // Also update the task's active status
         // eprintln!(
@@ -553,7 +564,7 @@ impl Drop for TaskGuard {
         }
 
         remove_task_path(self.task_id);
-        deactivate_profile(self.task_id);
+        // deactivate_profile(self.task_id);
 
         println!(
             "GUARD DROPPED: Task {} on thread {:?}",
@@ -691,7 +702,7 @@ pub fn remove_task_path(task_id: usize) {
 
 // Helper function to find the best matching profile
 #[cfg(feature = "full_profiling")]
-fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usize {
+fn find_matching_profile(path: &[String]) -> usize {
     if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
         // eprintln!("...success!");
         // For each active profile, compute a similarity score
@@ -700,7 +711,9 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
         let path_len = path.len();
 
         let mut score = 0;
-        for task_id in registry.active_profiles.iter().rev() {
+        let active_profiles = query_active_profiles();
+        eprintln!("...active profiles: {:?}", active_profiles);
+        for task_id in active_profiles.iter().rev() {
             if let Some(reg_path) = path_registry.get(task_id) {
                 score = compute_similarity(path, reg_path);
                 eprintln!(
@@ -718,7 +731,7 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
             }
         }
         if best_score == path.len() {
-            eprintln!("...returning best match with perfect score of {}", score);
+            // eprintln!("...returning best match with perfect score of {}", score);
         } else {
             eprintln!(
                 "...returning best match with imperfect score of {} vs path.len() = {} for path:\n{}",
@@ -734,14 +747,16 @@ fn find_matching_profile(path: &[String], registry: &AllocationRegistry) -> usiz
             }
             println!("=================================");
 
-            println!("registry.active_profiles={:#?}", registry.active_profiles);
+            println!("registry.active_profiles={:#?}", active_profiles);
         }
         return best_match;
     }
 
     // Fallback: Return the most recently activated profile
     eprintln!("...returning fallback: most recently activated profile");
-    *registry.active_profiles.last().unwrap_or(&0)
+    // *registry.active_profiles.last().unwrap_or(&0)
+
+    get_last_active_profile()
 }
 
 // Compute similarity between a task path and backtrace frames
@@ -817,16 +832,16 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 //     }
 // }
 
-// When dropping a profile:
-#[cfg(feature = "full_profiling")]
-pub fn deactivate_profile(task_id: usize) {
-    // eprintln!("About to try_lock registry for deactivate_profile");
-    if let Ok(mut registry) = REGISTRY.try_lock() {
-        registry.active_profiles.remove(&task_id);
-    } else {
-        eprintln!("Failed to lock registry activate profile: {}", task_id);
-    }
-}
+// // When dropping a profile:
+// #[cfg(feature = "full_profiling")]
+// pub fn deactivate_profile(task_id: usize) {
+//     // eprintln!("About to try_lock registry for deactivate_profile");
+//     if let Ok(mut registry) = REGISTRY.try_lock() {
+//         registry.active_profiles.remove(&task_id);
+//     } else {
+//         eprintln!("Failed to lock registry activate profile: {}", task_id);
+//     }
+// }
 
 // #[cfg(feature = "full_profiling")]
 // pub fn init_allocator_system() {
@@ -865,8 +880,10 @@ unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
 /// This is called by the main init_profiling function.
 #[cfg(feature = "full_profiling")]
 pub fn initialize_memory_profiling() {
-    // Initialize any memory profiling state
-    println!("Memory profiling initialized");
+    // Initialize the registry processor
+    initialize_registry_processor();
+
+    println!("Memory profiling initialized with background registry processor");
 }
 
 /// Finalize memory profiling and write out data.
@@ -944,3 +961,342 @@ fn write_memory_profile_data(_registry: &AllocationRegistry) {
 // pub fn capture_backtrace() -> Option<String> {
 //     None
 // }
+
+// Message types for registry operations
+#[derive(Debug)]
+enum RegistryMessage {
+    // Active profiles operations
+    ActivateTask {
+        task_id: usize,
+    },
+    DeactivateTask {
+        task_id: usize,
+    },
+
+    // Thread task stack operations
+    PushTaskToStack {
+        thread_id: ThreadId,
+        task_id: usize,
+    },
+    PopTaskFromStack {
+        thread_id: ThreadId,
+        task_id: usize,
+    },
+
+    // Allocation tracking
+    RecordAllocation {
+        task_id: usize,
+        address: usize,
+        size: usize,
+    },
+    RecordDeallocation {
+        address: usize,
+    },
+
+    // Control messages
+    Flush,
+    QueryTasksForThread {
+        thread_id: ThreadId,
+        response: channel::Sender<Vec<usize>>,
+    },
+    QueryActiveProfiles {
+        response: channel::Sender<Vec<usize>>,
+    },
+    QueryTaskAllocations {
+        task_id: usize,
+        response: channel::Sender<Option<Vec<(usize, usize)>>>,
+    },
+}
+
+// Global channel for registry updates
+use crossbeam::channel;
+use once_cell::sync::Lazy;
+
+static REGISTRY_CHANNEL: once_cell::sync::Lazy<(
+    channel::Sender<RegistryMessage>,
+    channel::Receiver<RegistryMessage>,
+)> = Lazy::new(|| {
+    let (sender, receiver) = channel::unbounded();
+    (sender, receiver)
+});
+
+// Initialize processor thread (call this during startup)
+pub fn initialize_registry_processor() {
+    let receiver = REGISTRY_CHANNEL.1.clone();
+
+    std::thread::Builder::new()
+        .name("memory-profiler-registry".to_string())
+        .spawn(move || {
+            registry_processor_thread(receiver);
+        })
+        .expect("Failed to spawn registry processor thread");
+}
+
+// Background thread for processing registry messages
+fn registry_processor_thread(receiver: channel::Receiver<RegistryMessage>) {
+    const BATCH_SIZE: usize = 100;
+    const PROCESS_INTERVAL_MS: u64 = 5;
+
+    let mut messages = Vec::with_capacity(BATCH_SIZE);
+
+    loop {
+        // Collect messages with timeout
+        let deadline =
+            std::time::Instant::now() + std::time::Duration::from_millis(PROCESS_INTERVAL_MS);
+
+        while std::time::Instant::now() < deadline {
+            match receiver.try_recv() {
+                Ok(msg) => {
+                    // Handle synchronous query messages immediately
+                    match &msg {
+                        RegistryMessage::QueryTasksForThread {
+                            thread_id,
+                            response,
+                        } => {
+                            let tasks = query_tasks_for_thread(*thread_id);
+                            let _ = response.send(tasks);
+                            continue; // Don't add to batch
+                        }
+                        RegistryMessage::QueryActiveProfiles { response } => {
+                            let profiles = query_active_profiles();
+                            let _ = response.send(profiles);
+                            continue; // Don't add to batch
+                        }
+                        RegistryMessage::QueryTaskAllocations { task_id, response } => {
+                            let allocs = query_task_allocations(*task_id);
+                            let _ = response.send(allocs);
+                            continue; // Don't add to batch
+                        }
+                        RegistryMessage::Flush => {
+                            messages.push(msg);
+                            break; // Process immediately
+                        }
+                        _ => {
+                            messages.push(msg);
+                            if messages.len() >= BATCH_SIZE {
+                                break; // Process when batch is full
+                            }
+                        }
+                    }
+                }
+                Err(channel::TryRecvError::Empty) => {
+                    break; // No more messages for now
+                }
+                Err(channel::TryRecvError::Disconnected) => {
+                    return; // Channel closed - exit thread
+                }
+            }
+        }
+
+        // Process any collected messages
+        if !messages.is_empty() {
+            process_registry_messages(&messages);
+            messages.clear();
+        }
+    }
+}
+
+// Process a batch of registry messages
+// Helper functions for synchronous queries
+fn query_tasks_for_thread(thread_id: ThreadId) -> Vec<usize> {
+    if let Ok(registry) = REGISTRY.try_lock() {
+        if let Some(task_stack) = registry.thread_task_stacks.get(&thread_id) {
+            return task_stack.clone();
+        }
+    }
+    Vec::new()
+}
+
+fn query_active_profiles() -> Vec<usize> {
+    if let Ok(registry) = REGISTRY.try_lock() {
+        return registry.active_profiles.iter().copied().collect();
+    }
+    Vec::new()
+}
+
+fn query_task_allocations(task_id: usize) -> Option<Vec<(usize, usize)>> {
+    if let Ok(registry) = REGISTRY.try_lock() {
+        return registry.task_allocations.get(&task_id).cloned();
+    }
+    None
+}
+
+// Process a batch of registry messages
+// Process a batch of registry messages
+fn process_registry_messages(messages: &[RegistryMessage]) {
+    // Try to acquire registry lock once for the batch
+    if let Ok(mut registry) = REGISTRY.lock() {
+        for msg in messages {
+            match msg {
+                RegistryMessage::ActivateTask { task_id } => {
+                    registry.active_profiles.insert(*task_id);
+                }
+                RegistryMessage::DeactivateTask { task_id } => {
+                    registry.active_profiles.remove(task_id);
+                }
+                RegistryMessage::PushTaskToStack { thread_id, task_id } => {
+                    let task_stack = registry.thread_task_stacks.entry(*thread_id).or_default();
+                    task_stack.push(*task_id);
+                }
+                RegistryMessage::PopTaskFromStack { thread_id, task_id } => {
+                    // First, check if we need to remove the task
+                    let mut should_remove_stack = false;
+
+                    if let Some(task_stack) = registry.thread_task_stacks.get_mut(thread_id) {
+                        if let Some(pos) = task_stack.iter().position(|&id| id == *task_id) {
+                            task_stack.remove(pos);
+                        }
+
+                        // Check if stack is now empty
+                        should_remove_stack = task_stack.is_empty();
+                    }
+
+                    // Now remove the stack if needed
+                    if should_remove_stack {
+                        registry.thread_task_stacks.remove(thread_id);
+                    }
+                }
+                RegistryMessage::RecordAllocation {
+                    task_id,
+                    address,
+                    size,
+                } => {
+                    // Record in task's allocation list
+                    registry
+                        .task_allocations
+                        .entry(*task_id)
+                        .or_default()
+                        .push((*address, *size));
+
+                    // Map address to task for deallocation
+                    registry.address_to_task.insert(*address, *task_id);
+                }
+                RegistryMessage::RecordDeallocation { address } => {
+                    if let Some(task_id) = registry.address_to_task.remove(address) {
+                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
+                            if let Some(pos) =
+                                allocations.iter().position(|(addr, _)| *addr == *address)
+                            {
+                                allocations.swap_remove(pos);
+                            }
+                        }
+                    }
+                }
+                RegistryMessage::Flush => {
+                    // Just a trigger for processing, no specific action needed
+                }
+                // Query messages are handled separately
+                RegistryMessage::QueryTasksForThread { .. }
+                | RegistryMessage::QueryActiveProfiles { .. }
+                | RegistryMessage::QueryTaskAllocations { .. } => {
+                    // These are handled synchronously before batching
+                }
+            }
+        }
+    }
+}
+
+// Helper functions for sending messages to the registry
+
+// Add task to active profiles
+pub fn activate_task(task_id: usize) {
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::ActivateTask { task_id });
+}
+
+// Remove task from active profiles
+pub fn deactivate_task(task_id: usize) {
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::DeactivateTask { task_id });
+}
+
+// Add task to thread's stack
+pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::PushTaskToStack { thread_id, task_id });
+}
+
+// Remove task from thread's stack
+pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::PopTaskFromStack { thread_id, task_id });
+}
+
+// Record memory allocation
+pub fn record_allocation(task_id: usize, address: usize, size: usize) {
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::RecordAllocation {
+            task_id,
+            address,
+            size,
+        });
+}
+
+// Record memory deallocation
+pub fn record_deallocation(address: usize) {
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::RecordDeallocation { address });
+}
+
+// Get tasks for a thread (synchronous)
+pub fn get_tasks_for_thread(thread_id: ThreadId) -> Vec<usize> {
+    let (sender, receiver) = channel::bounded(1);
+
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::QueryTasksForThread {
+            thread_id,
+            response: sender,
+        });
+
+    // Wait for response with timeout
+    match receiver.recv_timeout(std::time::Duration::from_millis(5)) {
+        Ok(tasks) => tasks,
+        Err(_) => Vec::new(), // Fallback on timeout
+    }
+}
+
+// Get active profiles (synchronous)
+pub fn get_active_profiles() -> Vec<usize> {
+    let (sender, receiver) = channel::bounded(1);
+
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::QueryActiveProfiles { response: sender });
+
+    // Wait for response with timeout
+    match receiver.recv_timeout(std::time::Duration::from_millis(5)) {
+        Ok(profiles) => profiles,
+        Err(_) => Vec::new(), // Fallback on timeout
+    }
+}
+
+// Get task allocations (synchronous)
+pub fn get_task_allocations(task_id: usize) -> Option<Vec<(usize, usize)>> {
+    let (sender, receiver) = channel::bounded(1);
+
+    let _ = REGISTRY_CHANNEL
+        .0
+        .try_send(RegistryMessage::QueryTaskAllocations {
+            task_id,
+            response: sender,
+        });
+
+    // Wait for response with timeout
+    match receiver.recv_timeout(std::time::Duration::from_millis(5)) {
+        Ok(allocations) => allocations,
+        Err(_) => None, // Fallback on timeout
+    }
+}
+
+// Get last active profile
+pub fn get_last_active_profile() -> usize {
+    let profiles = get_active_profiles();
+    profiles.last().copied().unwrap_or(0)
+}

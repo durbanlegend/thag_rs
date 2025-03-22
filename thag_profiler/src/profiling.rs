@@ -1,4 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
 use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -20,7 +19,7 @@ use std::sync::OnceLock;
 
 #[cfg(feature = "full_profiling")]
 use crate::task_allocator::{
-    create_memory_guard, create_memory_task, register_task_path, TaskGuard, TaskMemoryContext,
+    self, create_memory_guard, create_memory_task, register_task_path, TaskGuard, TaskMemoryContext,
 };
 
 // #[cfg(feature = "full_profiling")]
@@ -31,7 +30,7 @@ use crate::task_allocator::{
 // static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
 //     re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
 
-use backtrace::{Backtrace, BacktraceFrame};
+use backtrace::Backtrace;
 
 #[cfg(feature = "time_profiling")]
 use crate::ProfileResult;
@@ -922,7 +921,7 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
         .iter()
-        .flat_map(BacktraceFrame::symbols)
+        .flat_map(|frame| frame.symbols())
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .scan(false, |is_within_target_range, name| {
             if !*is_within_target_range && name.contains(start_pattern) {

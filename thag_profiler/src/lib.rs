@@ -180,6 +180,10 @@ pub fn thousands<T: Display>(n: T) -> String {
 
 /// Initialize the profiling system.
 /// This should be called at the start of your program to set up profiling.
+///
+/// # Panics
+///
+/// This function panics if profiling cannot be enabled.
 #[cfg(feature = "time_profiling")]
 pub fn init_profiling() {
     use crate::profiling::{enable_profiling, ProfileType};
@@ -199,6 +203,10 @@ pub fn init_profiling() {
 
 /// Finalize profiling and write out data files.
 /// This should be called at the end of your program.
+///
+/// # Panics
+///
+/// This function panics if profiling cannot be enabled.
 #[cfg(feature = "time_profiling")]
 pub fn finalize_profiling() {
     use crate::profiling::{enable_profiling, ProfileType};

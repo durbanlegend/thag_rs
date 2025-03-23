@@ -1,11 +1,4 @@
-use crate::{
-    lazy_static_var, static_lazy,
-    task_allocator::{
-        activate_task, extract_path_with_system_alloc, get_task_memory_usage, push_task_to_stack,
-        run_with_system_alloc, TASK_PATH_REGISTRY,
-    },
-    ProfileError,
-};
+use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use std::{
@@ -18,15 +11,17 @@ use std::{
         atomic::{AtomicU8, Ordering},
         Mutex,
     },
-    thread,
     time::Instant,
 };
 
-#[cfg(feature = "time_profiling")]
-use std::sync::OnceLock;
+#[cfg(feature = "full_profiling")]
+use crate::task_allocator::{
+    activate_task, create_memory_task, extract_path_with_system_alloc, get_task_memory_usage,
+    push_task_to_stack, run_with_system_alloc, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+};
 
 #[cfg(feature = "full_profiling")]
-use crate::task_allocator::{create_memory_task, TaskGuard, TaskMemoryContext};
+use std::thread;
 
 // #[cfg(feature = "full_profiling")]
 // use crate::task_allocator::get_allocator;
@@ -47,7 +42,10 @@ use std::{
     fs::OpenOptions,
     io::Write,
     // path::PathBuf,
-    sync::atomic::{AtomicBool, AtomicU64},
+    sync::{
+        atomic::{AtomicBool, AtomicU64},
+        OnceLock,
+    },
     time::SystemTime,
 };
 
@@ -210,6 +208,11 @@ fn get_time_path() -> ProfileResult<&'static str> {
     TimePathHolder::get()
 }
 
+/// Get the path to the memory.folded output file.
+///
+/// # Errors
+///
+/// This function will bubble up any filesystem errors that occur trying to create the directory.
 #[cfg(feature = "full_profiling")]
 pub fn get_memory_path() -> ProfileResult<&'static str> {
     struct MemoryPathHolder;
@@ -552,7 +555,7 @@ impl ProfileType {
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
-    path: Vec<String>,           // Full call stack (only profiled functions)
+    path: Vec<String>,
     custom_name: Option<String>, // Custom section name when provided via profile!("name") macro
     registered_name: String,
     #[cfg(feature = "full_profiling")]
@@ -631,9 +634,13 @@ impl Profile {
         // };
         let desc_fn_name = fn_name.to_string();
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-        eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+        // eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
         register_profiled_function(fn_name, desc_fn_name);
 
+        #[cfg(not(feature = "full_profiling"))]
+        let path = extract_path(&cleaned_stack);
+
+        #[cfg(feature = "full_profiling")]
         let path = extract_path_with_system_alloc(&cleaned_stack);
 
         // Try allowing overrides
@@ -654,73 +661,85 @@ impl Profile {
 
         // Create a basic profile structure that works for all configurations
         #[cfg(not(feature = "full_profiling"))]
-        let profile = Self {
-            profile_type,
-            start: Some(Instant::now()),
-            path,
-            custom_name,
-            registered_name: fn_name.to_string(),
-        };
+        {
+            if let ProfileType::Memory = profile_type {
+                eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            }
 
-        if !matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            return Some(Self {
+            Some(Self {
                 profile_type,
                 start: Some(Instant::now()),
-                path,
-                custom_name,
+                path: path.clone(),
+                custom_name: custom_name.clone(),
                 registered_name: fn_name.to_string(),
+                #[cfg(feature = "full_profiling")]
                 memory_task: None,
+                #[cfg(feature = "full_profiling")]
                 memory_guard: None,
-            });
+            })
         }
 
         // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
         // memory allocations in the profile setup itself in this method.
         #[cfg(feature = "full_profiling")]
-        // Create a task to track memory usage
-        // Create a memory task and activate it
-        let memory_task = create_memory_task();
-        let task_id = memory_task.id();
+        {
+            if profile_type == ProfileType::Time {
+                eprintln!("Memory profiling enabled but only time profiling will be profiled as requested.");
+                return Some(Self {
+                    profile_type,
+                    start: Some(Instant::now()),
+                    path,
+                    custom_name,
+                    registered_name: fn_name.to_string(),
+                    memory_task: None,
+                    memory_guard: None,
+                });
+            }
 
-        // Register task path
-        run_with_system_alloc(|| {
-            if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
+            // Create a task to track memory usage
+            // Create a memory task and activate it
+            let memory_task = create_memory_task();
+            let task_id = memory_task.id();
+
+            // Register task path
+            run_with_system_alloc(|| {
+                let mut registry = TASK_PATH_REGISTRY.lock();
                 registry.insert(task_id, path.clone());
-            }
-        });
+            });
 
-        // Activate the task
-        activate_task(task_id);
+            // Activate the task
+            activate_task(task_id);
 
-        // Add to thread stack
-        push_task_to_stack(thread::current().id(), task_id);
+            // Add to thread stack
+            push_task_to_stack(thread::current().id(), task_id);
 
-        run_with_system_alloc(|| {
-            println!(
-                "NEW PROFILE: Task {task_id} created for {:?}",
-                path.join("::")
-            )
-        });
+            run_with_system_alloc(|| {
+                println!(
+                    "NEW PROFILE: Task {task_id} created for {:?}",
+                    path.join("::")
+                );
+            });
 
-        // Create memory guard
-        // let mut memory_guard;
-        // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
-        // let memory_guard = *memory_guard;
-        let memory_guard = TaskGuard::new(task_id);
+            // Create memory guard
+            // let mut memory_guard;
+            // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
+            // let memory_guard = *memory_guard;
+            let memory_guard = TaskGuard::new(task_id);
 
-        let profile = {
-            // Create the profile with necessary components
-            Self {
-                profile_type,
-                start: Some(Instant::now()),
-                path,
-                custom_name,
-                registered_name: fn_name.to_string(),
-                memory_task: Some(memory_task),
-                memory_guard: Some(memory_guard),
-            }
-        };
-        Some(profile)
+            let profile = {
+                // Create the profile with necessary components
+                Self {
+                    profile_type,
+                    start: Some(Instant::now()),
+                    path,
+                    custom_name,
+                    registered_name: fn_name.to_string(),
+                    memory_task: Some(memory_task),
+                    memory_guard: Some(memory_guard),
+                }
+            };
+            Some(profile)
+        }
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -759,7 +778,7 @@ impl Profile {
             writeln!(writer, "{entry}")?;
             writer.flush()?;
         }
-        println!("Wrote entry {entry}");
+        // println!("Wrote entry {entry}");
         drop(guard);
         Ok(())
     }
@@ -879,6 +898,7 @@ impl Profile {
     }
 
     /// Get the memory usage for this profile's task
+    #[must_use]
     pub fn memory_usage(&self) -> Option<usize> {
         #[cfg(feature = "full_profiling")]
         {
@@ -933,7 +953,7 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
         .iter()
-        .flat_map(|frame| frame.symbols())
+        .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .scan(false, |is_within_target_range, name| {
             if !*is_within_target_range && name.contains(start_pattern) {
@@ -983,7 +1003,7 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
         })
         // .map(|(_, name)| name.clone())
         .collect();
-    eprintln!("Callstack: {:#?}", callstack);
+    // eprintln!("Callstack: {:#?}", callstack);
     // eprintln!("already_seen: {:#?}", already_seen);
     callstack
 }
@@ -1013,6 +1033,7 @@ pub fn print_all_call_stack_entries() {
     }
 }
 
+#[allow(dead_code)]
 fn get_fn_desc_name(fn_name_str: &String) -> String {
     // extract_fn_only(fn_name_str).map_or_else(|| fn_name_str.to_string(), |fn_only| fn_only)
     extract_fn_only(fn_name_str).unwrap_or_else(|| fn_name_str.to_string())
@@ -1215,7 +1236,7 @@ pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
         .cloned()
         .collect();
 
-    eprintln!("filtered_frames={:#?}", filtered_frames);
+    eprintln!("filtered_frames={filtered_frames:#?}");
 
     // These are patterns we want to remove from the stack
     // Create a new cleaned stack, filtering out scaffolding

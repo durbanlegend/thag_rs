@@ -69,3 +69,4 @@ task_allocator_fixed.rs
 thag_profiler/src/profiling_20250323.rs
 thag_profiler/src/task_allocator_20250323.rs
 thag_profiler/src/task_allocator_20250323_no_output.rs
+memory-flamegraph.svg

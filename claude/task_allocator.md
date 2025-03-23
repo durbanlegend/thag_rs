@@ -2045,3 +2045,51 @@ file:///usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.mjs:341
   Current Code Status
 
   The code now successfully captures backtraces without recursion but still has issues with tracking allocations reliably in highly concurrent environments.
+
+
+
+⏺ Let me explain the modifications I've made to fix the thread-local storage (TLS) access error:
+
+  The Issue
+
+  The error occurs in tokio worker threads when they're being destroyed. Thread destruction happens in a specific order, and when a thread is shutting down, its thread-local variables are dropped. If
+   your code tries to access a TLS value that's already been destroyed, you get the error:
+
+  cannot access a Thread Local Storage value during or after destruction: AccessError
+
+  The Solution
+
+  I've implemented multiple safety mechanisms to prevent thread-local access during thread destruction:
+
+  1. Thread destruction detection: Added thread-local flags to detect when a thread is shutting down
+  2. Safe TLS access: Using std::panic::catch_unwind to safely handle TLS access errors
+  3. Early bailout: Skipping TLS operations when a thread is marked as destructing
+  4. Multiple key functions protected: Added safety to record_allocation, record_deallocation, process_pending_allocations, and all registry operations
+
+  The modified code ensures:
+  - TLS access is skipped during thread destruction
+  - All threads mark themselves as "destructing" when they encounter a TLS access error
+  - Memory tracking safely shuts down when a thread is terminating
+
+  Key Changes
+
+  1. Added thread-destruction detection with thread-local flags
+  2. Added catch_unwind for safe TLS access
+  3. Made record_deallocation prioritize safety over completeness
+  4. Improved TaskGuard::drop to check thread state before cleanup
+  5. Protected all registry-accessing functions with similar safety checks
+
+  This approach is better than other solutions we discussed (like using channels or lock-free data structures) because:
+  1. It's minimal and focused on the root cause
+  2. It doesn't introduce new dependencies
+  3. It works with the existing architecture
+
+  Testing
+
+  These changes should be tested with tokio-based applications focusing on:
+  1. Normal runtime shutdown scenarios
+  2. Panic situations in tokio threads
+  3. Abrupt application termination
+  4. High-frequency allocations in async code
+
+  The fixes gracefully disable tracking during thread destruction instead of trying to force operations that would fail.

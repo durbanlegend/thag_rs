@@ -1153,9 +1153,9 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         .ok_or_else(|| ProfileError::General("No memory statistics available".to_string()))?;
 
     let svg = if as_chart {
-        ""memory-flamechart.svg"
+        "memory-flamechart.svg"
     } else {
-        ""memory-flamegraph.svg"
+        "memory-flamegraph.svg"
     };
 
     let output = File::create(svg)?;

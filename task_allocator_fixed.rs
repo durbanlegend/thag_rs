@@ -164,8 +164,7 @@ static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
 // ---------- Public Registry API ----------
 
 #[cfg(feature = "full_profiling")]
-static SKIP_THREAD_TLS_ACCESS: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
+static SKIP_THREAD_TLS_ACCESS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Add a task to active profiles
 #[cfg(feature = "full_profiling")]
@@ -398,7 +397,7 @@ pub fn record_allocation(task_id: usize, address: usize, size: usize) {
             ALLOCATION_BUFFER.with(|buffer| {
                 let mut allocs = buffer.borrow_mut();
                 allocs.push((tid, addr, sz));
-
+                
                 // Check if buffer is getting full
                 allocs.len() >= 50
             })
@@ -409,7 +408,7 @@ pub fn record_allocation(task_id: usize, address: usize, size: usize) {
                     process_pending_allocations();
                 }
                 true
-            }
+            },
             Err(_) => {
                 // TLS access failed, mark global skip flag
                 SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -417,7 +416,7 @@ pub fn record_allocation(task_id: usize, address: usize, size: usize) {
             }
         }
     }
-
+    
     // Execute in system allocator context
     MultiAllocator::with(AllocatorTag::System, || {
         try_add_allocation(task_id, address, size);
@@ -439,7 +438,7 @@ pub fn record_deallocation(address: usize) {
             DEALLOCATION_BUFFER.with(|buffer| {
                 let mut deallocs = buffer.borrow_mut();
                 deallocs.push(addr);
-
+                
                 // Check if buffer is getting full
                 deallocs.len() >= 50
             })
@@ -450,7 +449,7 @@ pub fn record_deallocation(address: usize) {
                     process_pending_allocations();
                 }
                 true
-            }
+            },
             Err(_) => {
                 // TLS access failed, mark global skip flag
                 SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
@@ -458,7 +457,7 @@ pub fn record_deallocation(address: usize) {
             }
         }
     }
-
+    
     // Execute in system allocator context
     MultiAllocator::with(AllocatorTag::System, || {
         try_add_deallocation(address);
@@ -520,9 +519,7 @@ pub fn process_pending_allocations() {
                     for address in deallocations {
                         if let Some(task_id) = registry.address_to_task.remove(&address) {
                             if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                                if let Some(pos) =
-                                    allocations.iter().position(|(addr, _)| *addr == address)
-                                {
+                                if let Some(pos) = allocations.iter().position(|(addr, _)| *addr == address) {
                                     allocations.swap_remove(pos);
                                 }
                             }
@@ -686,15 +683,14 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     // Get backtrace without recursion
                     // eprintln!("Attempting backtrace");
                     // Use a different allocator for backtrace operations
-                    let mut task_id = Box::new(0);
-                    MultiAllocator::with(AllocatorTag::System, || {
+                    let task_id = MultiAllocator::with(AllocatorTag::System, || {
                         // Now we can safely use backtrace without recursion!
                         // let start_pattern = "TaskAwareAllocator";
                         let start_pattern = "Profile::new";
 
                         // eprintln!("Calling extract_callstack");
                         let cleaned_stack = extract_callstack(start_pattern);
-                        let tid = if cleaned_stack.is_empty() {
+                        if cleaned_stack.is_empty() {
                             // eprintln!(
                             //     "Empty cleaned_stack for backtrace\n{:#?}",
                             //     backtrace::Backtrace::new()
@@ -721,10 +717,8 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
                                 find_matching_profile(&path)
                             }
-                        };
-                        task_id = Box::new(tid);
+                        }
                     });
-                    let task_id = *task_id;
 
                     // Record allocation if task found
                     // Use okaoka to avoid recursive allocations
@@ -1142,23 +1136,23 @@ fn find_matching_profile(path: &[String]) -> usize {
                 }
             }
             if best_score == path.len() {
-                eprintln!("...returning best match with 100% score of {}", score);
+                eprintln!("...returning best match with perfect score of {}", score);
             } else {
                 eprintln!(
-                    "...returning best match with ancestor score of {} vs path.len() = {} for path:\n{}",
+                    "...returning best match with imperfect score of {} vs path.len() = {} for path:\n{}",
                     best_score,
                     path.len(),
                     path.join(" -> ")
                 );
-                // println!("==== TASK PATH REGISTRY DUMP ====");
-                // println!("Total registered tasks: {}", path_registry.len());
+                println!("==== TASK PATH REGISTRY DUMP ====");
+                println!("Total registered tasks: {}", path_registry.len());
 
-                // for (task_id, path) in path_registry.iter() {
-                //     println!("Task {}: {}", task_id, path.join(" -> "));
-                // }
-                // println!("=================================");
+                for (task_id, path) in path_registry.iter() {
+                    println!("Task {}: {}", task_id, path.join(" -> "));
+                }
+                println!("=================================");
 
-                // println!("Active tasks={:#?}", get_active_tasks());
+                println!("Active tasks={:#?}", get_active_tasks());
             }
             best_match
         } else {

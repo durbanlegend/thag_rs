@@ -26,9 +26,7 @@ use std::{
 use std::sync::OnceLock;
 
 #[cfg(feature = "full_profiling")]
-use crate::task_allocator::{
-    self, create_memory_guard, create_memory_task, register_task_path, TaskGuard, TaskMemoryContext,
-};
+use crate::task_allocator::{create_memory_task, TaskGuard, TaskMemoryContext};
 
 // #[cfg(feature = "full_profiling")]
 // use crate::task_allocator::get_allocator;

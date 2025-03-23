@@ -1,17 +1,3 @@
-// Copyright 2023-2025 Don Ferguson
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #![allow(clippy::uninlined_format_args)]
 //! Task-aware memory allocator for profiling.
 //!
@@ -163,222 +149,105 @@ static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
 
 // ---------- Public Registry API ----------
 
-#[cfg(feature = "full_profiling")]
-static SKIP_THREAD_TLS_ACCESS: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
-
 /// Add a task to active profiles
 #[cfg(feature = "full_profiling")]
 pub fn activate_task(task_id: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
-                registry.activate_task(task_id);
-            }
-        })
+    MultiAllocator::with(AllocatorTag::System, || {
+        if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
+            registry.activate_task(task_id);
+        }
     });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
 }
 
 /// Remove a task from active profiles
 #[cfg(feature = "full_profiling")]
 pub fn deactivate_task(task_id: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
+    MultiAllocator::with(AllocatorTag::System, || {
+        // Process any pending allocations before deactivating
+        process_pending_allocations();
 
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        MultiAllocator::with(AllocatorTag::System, || {
-            // Process any pending allocations before deactivating
-            process_pending_allocations();
-
-            if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
-                registry.deactivate_task(task_id);
-            }
-        })
+        if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
+            registry.deactivate_task(task_id);
+        }
     });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
 }
 
 /// Get the memory usage for a specific task
 #[cfg(feature = "full_profiling")]
 pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return None;
-    }
-
     // Process any pending allocations first
     process_pending_allocations();
 
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        let mut memory_usage = None;
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(registry) = ALLOC_REGISTRY.try_lock() {
-                memory_usage = registry.get_task_memory_usage(task_id);
-            }
-        });
-        memory_usage
-    });
-
-    // If TLS access failed, mark global skip flag and return None
-    match result {
-        Ok(memory_usage) => memory_usage,
-        Err(_) => {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-            None
-        }
+    if let Ok(registry) = ALLOC_REGISTRY.try_lock() {
+        registry.get_task_memory_usage(task_id)
+    } else {
+        None
     }
 }
 
 /// Add a task to a thread's stack
 #[cfg(feature = "full_profiling")]
 pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
-                registry.push_task_to_stack(thread_id, task_id);
-            }
-        })
+    MultiAllocator::with(AllocatorTag::System, || {
+        if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
+            registry.push_task_to_stack(thread_id, task_id);
+        }
     });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
 }
 
 /// Remove a task from a thread's stack
 #[cfg(feature = "full_profiling")]
 pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
-                registry.pop_task_from_stack(thread_id, task_id);
-            }
-        })
+    MultiAllocator::with(AllocatorTag::System, || {
+        if let Ok(mut registry) = PROFILE_REGISTRY.try_lock() {
+            registry.pop_task_from_stack(thread_id, task_id);
+        }
     });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
 }
 
 /// Get active tasks
 #[cfg(feature = "full_profiling")]
 pub fn get_active_tasks() -> Vec<usize> {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return Vec::new();
-    }
-
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        let mut active_tasks = Vec::new();
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(registry) = PROFILE_REGISTRY.try_lock() {
-                active_tasks = registry.get_active_tasks();
-            }
-        });
-        active_tasks
-    });
-
-    // If TLS access failed, mark global skip flag and return empty Vec
-    match result {
-        Ok(active_tasks) => active_tasks,
-        Err(_) => {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+    let mut active_tasks = Box::new(vec![]);
+    MultiAllocator::with(AllocatorTag::System, || {
+        let active = if let Ok(registry) = PROFILE_REGISTRY.try_lock() {
+            registry.get_active_tasks()
+        } else {
             Vec::new()
-        }
-    }
+        };
+        active_tasks = Box::new(active)
+    });
+    *active_tasks
 }
 
 /// Get the last active task
 #[cfg(feature = "full_profiling")]
 pub fn get_last_active_task() -> Option<usize> {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return None;
-    }
-
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        let mut last_active_task = None;
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(registry) = PROFILE_REGISTRY.try_lock() {
-                last_active_task = registry.get_last_active_task();
-            }
-        });
-        last_active_task
-    });
-
-    // If TLS access failed, mark global skip flag and return None
-    match result {
-        Ok(last_active_task) => last_active_task,
-        Err(_) => {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+    let mut last_active_task: Box<Option<usize>> = Box::new(None);
+    MultiAllocator::with(AllocatorTag::System, || {
+        let last_active = if let Ok(registry) = PROFILE_REGISTRY.try_lock() {
+            registry.get_last_active_task()
+        } else {
             None
-        }
-    }
+        };
+        last_active_task = Box::new(last_active)
+    });
+    *last_active_task
 }
 
 /// Get the top task for a thread
 #[cfg(feature = "full_profiling")]
 pub fn get_top_task_for_thread(thread_id: ThreadId) -> Option<usize> {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return None;
-    }
-
-    // Use a one-time catch_unwind to safely handle panic from TLS access
-    let result = std::panic::catch_unwind(|| {
-        let mut top_task = None;
-        MultiAllocator::with(AllocatorTag::System, || {
-            if let Ok(registry) = PROFILE_REGISTRY.try_lock() {
-                top_task = registry.get_top_task_for_thread(thread_id);
-            }
-        });
-        top_task
-    });
-
-    // If TLS access failed, mark global skip flag and return None
-    match result {
-        Ok(top_task) => top_task,
-        Err(_) => {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+    let mut top_task_for_thread: Box<Option<usize>> = Box::new(None);
+    MultiAllocator::with(AllocatorTag::System, || {
+        let top_task = if let Ok(registry) = PROFILE_REGISTRY.try_lock() {
+            registry.get_top_task_for_thread(thread_id)
+        } else {
             None
-        }
-    }
+        };
+        top_task_for_thread = Box::new(top_task);
+    });
+    *top_task_for_thread
 }
 
 // ---------- Allocation Tracking ----------
@@ -386,153 +255,111 @@ pub fn get_top_task_for_thread(thread_id: ThreadId) -> Option<usize> {
 /// Record a memory allocation in the thread-local buffer
 #[cfg(feature = "full_profiling")]
 pub fn record_allocation(task_id: usize, address: usize, size: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Function to safely try to add an allocation to the buffer
-    fn try_add_allocation(tid: usize, addr: usize, sz: usize) -> bool {
-        match std::panic::catch_unwind(|| {
-            // Try to access thread-local buffer and add allocation
-            ALLOCATION_BUFFER.with(|buffer| {
-                let mut allocs = buffer.borrow_mut();
-                allocs.push((tid, addr, sz));
-
-                // Check if buffer is getting full
-                allocs.len() >= 50
-            })
-        }) {
-            Ok(should_process) => {
-                // If buffer is full, process pending allocations
-                if should_process {
-                    process_pending_allocations();
-                }
-                true
-            }
-            Err(_) => {
-                // TLS access failed, mark global skip flag
-                SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-                false
-            }
-        }
-    }
-
-    // Execute in system allocator context
     MultiAllocator::with(AllocatorTag::System, || {
-        try_add_allocation(task_id, address, size);
+        let result = ALLOCATION_BUFFER.try_with(|buffer| {
+            let mut allocs = buffer.borrow_mut();
+            allocs.push((task_id, address, size));
+
+            // Process if buffer is getting full
+            if allocs.len() >= 50 {
+                // Drop mutable borrow before processing
+                drop(allocs);
+                process_pending_allocations();
+            }
+        });
+        if let Err(err) = result {
+            eprintln!("Error recording allocation: {}", err);
+        }
     });
 }
 
 /// Record a memory deallocation in the thread-local buffer
 #[cfg(feature = "full_profiling")]
 pub fn record_deallocation(address: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Function to safely try to add a deallocation to the buffer
-    fn try_add_deallocation(addr: usize) -> bool {
-        match std::panic::catch_unwind(|| {
-            // Try to access thread-local buffer and add deallocation
-            DEALLOCATION_BUFFER.with(|buffer| {
-                let mut deallocs = buffer.borrow_mut();
-                deallocs.push(addr);
-
-                // Check if buffer is getting full
-                deallocs.len() >= 50
-            })
-        }) {
-            Ok(should_process) => {
-                // If buffer is full, process pending deallocations
-                if should_process {
-                    process_pending_allocations();
-                }
-                true
-            }
-            Err(_) => {
-                // TLS access failed, mark global skip flag
-                SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-                false
-            }
-        }
-    }
-
-    // Execute in system allocator context
     MultiAllocator::with(AllocatorTag::System, || {
-        try_add_deallocation(address);
+        let result = DEALLOCATION_BUFFER.try_with(|buffer| {
+            let mut deallocs = buffer.borrow_mut();
+            deallocs.push(address);
+
+            // Process if buffer is getting full
+            if deallocs.len() >= 50 {
+                // Drop mutable borrow before processing
+                drop(deallocs);
+                process_pending_allocations();
+            }
+        });
+        if let Err(err) = result {
+            eprintln!("Error recording deallocation: {}", err);
+        }
     });
 }
 
 /// Process pending allocations and deallocations
 #[cfg(feature = "full_profiling")]
 pub fn process_pending_allocations() {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
+    use std::thread::AccessError;
 
     MultiAllocator::with(AllocatorTag::System, || {
-        // Try to process allocations
-        let alloc_result = std::panic::catch_unwind(|| {
-            ALLOCATION_BUFFER.with(|buffer| {
-                let mut allocs = buffer.borrow_mut();
-                let result = std::mem::take(&mut *allocs);
-                result
-            })
+        // Process allocations
+        let result = ALLOCATION_BUFFER.try_with(|buffer| {
+            let mut allocs = buffer.borrow_mut();
+            let allocs_clone = allocs.clone();
+            allocs.clear();
+            allocs_clone
         });
 
-        // Process allocations if successful
-        if let Ok(allocations) = alloc_result {
-            if !allocations.is_empty() {
-                if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
-                    for (task_id, address, size) in allocations {
-                        registry
-                            .task_allocations
-                            .entry(task_id)
-                            .or_default()
-                            .push((address, size));
+        match result {
+            Ok(allocations) => {
+                if !allocations.is_empty() {
+                    if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
+                        for (task_id, address, size) in allocations {
+                            registry
+                                .task_allocations
+                                .entry(task_id)
+                                .or_default()
+                                .push((address, size));
 
-                        registry.address_to_task.insert(address, task_id);
+                            registry.address_to_task.insert(address, task_id);
+                        }
                     }
                 }
             }
-        } else {
-            // TLS access failed, mark global skip flag
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-            return;
+            Err(err) => {
+                eprintln!("Error processing pending allocations: {}", err);
+            }
         }
 
-        // Try to process deallocations
-        let dealloc_result = std::panic::catch_unwind(|| {
-            DEALLOCATION_BUFFER.with(|buffer| {
-                let mut deallocs = buffer.borrow_mut();
-                let result = std::mem::take(&mut *deallocs);
-                result
-            })
+        // Process deallocations
+        let result: Result<Vec<usize>, AccessError> = DEALLOCATION_BUFFER.try_with(|buffer| {
+            let mut deallocs = buffer.borrow_mut();
+            let deallocs_clone = deallocs.clone();
+            deallocs.clear();
+            deallocs_clone
         });
 
-        // Process deallocations if successful
-        if let Ok(deallocations) = dealloc_result {
-            if !deallocations.is_empty() {
-                if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
-                    for address in deallocations {
-                        if let Some(task_id) = registry.address_to_task.remove(&address) {
-                            if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                                if let Some(pos) =
-                                    allocations.iter().position(|(addr, _)| *addr == address)
+        match result {
+            Ok(deallocations) => {
+                if !deallocations.is_empty() {
+                    if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
+                        for address in deallocations {
+                            if let Some(task_id) = registry.address_to_task.remove(&address) {
+                                if let Some(allocations) =
+                                    registry.task_allocations.get_mut(&task_id)
                                 {
-                                    allocations.swap_remove(pos);
+                                    if let Some(pos) =
+                                        allocations.iter().position(|(addr, _)| *addr == address)
+                                    {
+                                        allocations.swap_remove(pos);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        } else {
-            // TLS access failed, mark global skip flag
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+            Err(err) => {
+                eprintln!("Error processing pending deallocations: {}", err);
+            }
         }
     });
 }
@@ -641,103 +468,88 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Skip if thread TLS access is globally disabled
-            if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-                return ptr;
-            }
-
             // Skip small allocations
             if layout.size() >= MINIMUM_TRACKED_SIZE {
                 // Simple recursion prevention
                 thread_local! {
-                    static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
+                    static IN_TRACKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
                 }
 
-                // Let's get the current tracking state safely
-                let already_tracking = match std::panic::catch_unwind(|| {
-                    IN_TRACKING.with(|flag| {
-                        let value = flag.get();
-                        if !value {
-                            flag.set(true);
-                        }
-                        value
-                    })
-                }) {
-                    Ok(tracking) => tracking,
-                    Err(_) => {
-                        // TLS access failed, mark global skip flag
-                        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-                        return ptr;
+                // let already_tracking = IN_TRACKING.with(|flag| {
+                //     let value = flag.get();
+                //     if !value {
+                //         flag.set(true);
+                //     }
+                //     value
+                // });
+
+                // if already_tracking {
+                //     eprintln!("Already tracking, i.e. recursion");
+                //     get_last_active_task()
+                // } else {
+                // Create guard for cleanup
+                struct Guard;
+                impl Drop for Guard {
+                    fn drop(&mut self) {
+                        let _ = IN_TRACKING.try_with(|flag| flag.set(false));
                     }
-                };
+                }
+                let _guard = Guard;
 
-                if !already_tracking {
-                    // Create guard for cleanup
-                    struct Guard;
-                    impl Drop for Guard {
-                        fn drop(&mut self) {
-                            let _ = std::panic::catch_unwind(|| {
-                                IN_TRACKING.with(|flag| flag.set(false));
-                            });
-                        }
-                    }
-                    let _guard = Guard;
+                // Get backtrace without recursion
+                // eprintln!("Attempting backtrace");
+                // Use a different allocator for backtrace operations
+                let mut task_id = 0;
+                MultiAllocator::with(AllocatorTag::System, || {
+                    // Now we can safely use backtrace without recursion!
+                    // let start_pattern = "TaskAwareAllocator";
+                    let start_pattern = "Profile::new";
 
-                    // Get backtrace without recursion
-                    // eprintln!("Attempting backtrace");
-                    // Use a different allocator for backtrace operations
-                    let mut task_id = Box::new(0);
-                    MultiAllocator::with(AllocatorTag::System, || {
-                        // Now we can safely use backtrace without recursion!
-                        // let start_pattern = "TaskAwareAllocator";
-                        let start_pattern = "Profile::new";
+                    // eprintln!("Calling extract_callstack");
+                    let cleaned_stack = extract_callstack(start_pattern);
+                    if cleaned_stack.is_empty() {
+                        // eprintln!(
+                        //     "Empty cleaned_stack for backtrace\n{:#?}",
+                        //     backtrace::Backtrace::new()
+                        // );
+                        eprintln!("Empty cleaned_stack");
+                        task_id = get_last_active_task().unwrap_or(0);
+                    } else {
+                        // Make sure the use of a separate allocator is working.
+                        assert!(!cleaned_stack
+                            .iter()
+                            .any(|frame| frame.contains("find_matching_profile")));
 
-                        // eprintln!("Calling extract_callstack");
-                        let cleaned_stack = extract_callstack(start_pattern);
-                        let tid = if cleaned_stack.is_empty() {
-                            // eprintln!(
-                            //     "Empty cleaned_stack for backtrace\n{:#?}",
-                            //     backtrace::Backtrace::new()
-                            // );
-                            eprintln!("Empty cleaned_stack");
-                            get_last_active_task().unwrap_or(0)
+                        // eprintln!("Calling extract_path");
+                        let path = extract_path(&cleaned_stack);
+                        if path.is_empty() {
+                            eprintln!(
+                                "...path is empty for thread {:?}, &cleaned_stack:\n{:#?}",
+                                thread::current().id(),
+                                cleaned_stack
+                            );
+                            task_id = get_last_active_task().unwrap_or(0);
                         } else {
-                            // Make sure the use of a separate allocator is working.
-                            assert!(!cleaned_stack
-                                .iter()
-                                .any(|frame| frame.contains("find_matching_profile")));
+                            // eprintln!("path={path:#?}");
 
-                            // eprintln!("Calling extract_path");
-                            let path = extract_path(&cleaned_stack);
-                            if path.is_empty() {
-                                eprintln!(
-                                    "...path is empty for thread {:?}, &cleaned_stack:\n{:#?}",
-                                    thread::current().id(),
-                                    cleaned_stack
-                                );
-                                get_last_active_task().unwrap_or(0)
-                            } else {
-                                // eprintln!("path={path:#?}");
-
-                                find_matching_profile(&path)
-                            }
-                        };
-                        task_id = Box::new(tid);
-                    });
-                    let task_id = *task_id;
-
-                    // Record allocation if task found
-                    // Use okaoka to avoid recursive allocations
-                    if task_id > 0 {
-                        MultiAllocator::with(AllocatorTag::System, || {
-                            let address = ptr as usize;
-                            let size = layout.size();
-
-                            // Record in thread-local buffer
-                            record_allocation(task_id, address, size);
-                        });
+                            task_id = find_matching_profile(&path);
+                        }
                     }
-                }
+                });
+
+                // Record allocation if task found
+                // Use okaoka to avoid recursive allocations
+                MultiAllocator::with(AllocatorTag::System, || {
+                    if task_id > 0 {
+                        let address = ptr as usize;
+                        let size = layout.size();
+
+                        // Record in thread-local buffer
+                        record_allocation(task_id, address, size);
+                    }
+                });
+            } else {
+                eprintln!("ignoring allocation of {} bytes", layout.size());
             }
         }
 
@@ -747,53 +559,43 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
-            // Skip if thread TLS access is globally disabled
-            if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-                self.inner.dealloc(ptr, layout);
-                return;
-            }
-
             // Similar recursion prevention as in alloc
             thread_local! {
-                static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
+                static IN_TRACKING: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
             }
 
-            // Let's get the current tracking state safely
-            let already_tracking = match std::panic::catch_unwind(|| {
-                IN_TRACKING.with(|flag| {
-                    let value = flag.get();
-                    if !value {
-                        flag.set(true);
-                    }
-                    value
-                })
-            }) {
-                Ok(tracking) => tracking,
-                Err(_) => {
-                    // TLS access failed, mark global skip flag
-                    SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-                    self.inner.dealloc(ptr, layout);
-                    return;
+            // let already_tracking = IN_TRACKING.with(|flag| {
+            let result = IN_TRACKING.try_with(|flag| {
+                let value = *flag.borrow();
+                if !value {
+                    *flag.borrow_mut() = true;
                 }
-            };
+                value
+            });
 
-            if !already_tracking {
-                // Setup guard
-                struct Guard;
-                impl Drop for Guard {
-                    fn drop(&mut self) {
-                        let _ = std::panic::catch_unwind(|| {
-                            IN_TRACKING.with(|flag| flag.set(false));
+            match result {
+                Ok(already_tracking) => {
+                    if !already_tracking {
+                        // Setup guard
+                        struct Guard;
+                        impl Drop for Guard {
+                            fn drop(&mut self) {
+                                IN_TRACKING.with(|flag| *flag.borrow_mut() = false);
+                            }
+                        }
+                        let _guard = Guard;
+
+                        // Record deallocation
+                        // Use okaoka to avoid recursive allocations
+                        MultiAllocator::with(AllocatorTag::System, || {
+                            let address = ptr as usize;
+
+                            // Record in thread-local buffer
+                            record_deallocation(address);
                         });
                     }
                 }
-                let _guard = Guard;
-
-                // Record deallocation using safer mechanism
-                MultiAllocator::with(AllocatorTag::System, || {
-                    let address = ptr as usize;
-                    record_deallocation(address);
-                });
+                Err(err) => eprintln!("Failed to record deallocation: {err}"),
             }
         }
 
@@ -892,32 +694,33 @@ pub struct TaskGuard;
 #[cfg(feature = "full_profiling")]
 impl Drop for TaskGuard {
     fn drop(&mut self) {
-        // Skip if thread TLS access is globally disabled
-        if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-            return;
-        }
+        MultiAllocator::with(AllocatorTag::System, || {
+            // Process pending allocations before removing the task
+            process_pending_allocations();
 
-        // Use a one-time catch_unwind to safely handle TLS access during drop
-        let result = std::panic::catch_unwind(|| {
-            MultiAllocator::with(AllocatorTag::System, || {
-                // Process pending allocations before removing the task
-                process_pending_allocations();
+            // // Remove from active profiles
+            // deactivate_task(self.task_id);
 
-                // Remove from active profiles
-                deactivate_task(self.task_id);
+            // // Remove from thread stack
+            // pop_task_from_stack(thread::current().id(), self.task_id);
 
-                // Remove from thread stack
-                pop_task_from_stack(thread::current().id(), self.task_id);
+            // Get the thread ID before spawning a new thread
+            let thread_id = thread::current().id();
+            // First, clone the task ID so we can use it in the spawned thread
+            let task_id = self.task_id;
 
-                // Remove from task path registry
-                remove_task_path(self.task_id);
-            })
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(2));
+                MultiAllocator::with(AllocatorTag::System, || {
+                    deactivate_task(task_id);
+                });
+
+                std::thread::sleep(std::time::Duration::from_secs(2));
+                MultiAllocator::with(AllocatorTag::System, || {
+                    pop_task_from_stack(thread_id, task_id);
+                });
+            });
         });
-
-        // If TLS access failed, mark global skip flag
-        if result.is_err() {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-        }
     }
 }
 
@@ -926,6 +729,7 @@ pub fn run_with_system_alloc(closure: impl Fn()) {
 }
 
 #[cfg(feature = "full_profiling")]
+// #[global_allocator]
 static TASK_AWARE_ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator { inner: System };
 
 // Helper to get the allocator instance
@@ -950,85 +754,42 @@ pub static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
 // 2. Function to add a task's path to the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
 pub fn register_task_path(task_id: usize, path: Vec<String>) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
-            registry.insert(task_id, path);
-        } else {
-            eprintln!(
-                "Failed to lock task path registry to register task {}",
-                task_id
-            );
-        }
-    });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+    // eprintln!("About to try_lock TASK_PATH_REGISTRY for register_task_path");
+    if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
+        registry.insert(task_id, path);
+    } else {
+        eprintln!(
+            "Failed to lock task path registry to registertask {}",
+            task_id
+        );
     }
 }
 
 // 3. Function to look up a task's path by ID
 #[cfg(feature = "full_profiling")]
 pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return None;
-    }
-
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        TASK_PATH_REGISTRY
-            .try_lock()
-            .ok()
-            .and_then(|registry| registry.get(&task_id).cloned())
-    });
-
-    // If TLS access failed, mark global skip flag and return None
-    match result {
-        Ok(path) => path,
-        Err(_) => {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-            None
-        }
-    }
+    // eprintln!("About to try_lock TASK_PATH_REGISTRY for lookup_task_path");
+    TASK_PATH_REGISTRY
+        .try_lock()
+        .ok()
+        .and_then(|registry| registry.get(&task_id).cloned())
 }
 
 // 4. Function to dump the entire registry
 #[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn dump_task_path_registry() {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
+    // eprintln!("About to try_lock TASK_PATH_REGISTRY for dump_task_path_registry");
+    if let Ok(registry) = TASK_PATH_REGISTRY.try_lock() {
         println!("==== TASK PATH REGISTRY DUMP ====");
-        println!("Registry access disabled due to thread shutdown");
-        println!("=================================");
-        return;
-    }
+        println!("Total registered tasks: {}", registry.len());
 
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        if let Ok(registry) = TASK_PATH_REGISTRY.try_lock() {
-            println!("==== TASK PATH REGISTRY DUMP ====");
-            println!("Total registered tasks: {}", registry.len());
-
-            for (task_id, path) in registry.iter() {
-                println!("Task {}: {}", task_id, path.join("::"));
-            }
-            println!("=================================");
-        } else {
-            eprintln!("Failed to lock task path registry for dumping");
+        for (task_id, path) in registry.iter() {
+            println!("Task {}: {}", task_id, path.join("::"));
         }
-    });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+        println!("=================================");
+    } else {
+        eprintln!("Failed to lock task path registry for dumping");
     }
 }
 
@@ -1083,99 +844,69 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
 // 7. Function to remove an entry from the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
 pub fn remove_task_path(task_id: usize) {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return;
-    }
-
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
-            registry.remove(&task_id);
-        } else {
-            eprintln!(
-                "Failed to lock task path registry to remove task {}",
-                task_id
-            );
-        }
-    });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
+    if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
+        registry.remove(&task_id);
+    } else {
+        eprintln!(
+            "Failed to lock task path registry to remove task {}",
+            task_id
+        );
     }
 }
 
 // Helper function to find the best matching profile
 #[cfg(feature = "full_profiling")]
 fn find_matching_profile(path: &[String]) -> usize {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        return 0;
-    }
+    if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
+        // eprintln!("...success!");
+        // For each active profile, compute a similarity score
+        let mut best_match = 0;
+        let mut best_score = 0;
+        let path_len = path.len();
 
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
-            // eprintln!("...success!");
-            // For each active profile, compute a similarity score
-            let mut best_match = 0;
-            let mut best_score = 0;
-            let path_len = path.len();
-
-            let mut score = 0;
-            for task_id in get_active_tasks().iter().rev() {
-                if let Some(reg_path) = path_registry.get(task_id) {
-                    score = compute_similarity(path, reg_path);
-                    eprintln!(
-                        "...scored {score} checking task {} with path {:?}",
-                        task_id,
-                        reg_path.join(" -> ")
-                    );
-                    if score > best_score || score == path_len {
-                        best_score = score;
-                        best_match = *task_id;
-                    }
-                    if score == path_len {
-                        break;
-                    }
+        let mut score = 0;
+        for task_id in get_active_tasks().iter().rev() {
+            if let Some(reg_path) = path_registry.get(task_id) {
+                score = compute_similarity(path, reg_path);
+                eprintln!(
+                    "...scored {score} checking task {} with path {:?}",
+                    task_id,
+                    reg_path.join(" -> ")
+                );
+                if score > best_score || score == path_len {
+                    best_score = score;
+                    best_match = *task_id;
+                }
+                if score == path_len {
+                    break;
                 }
             }
-            if best_score == path.len() {
-                eprintln!("...returning best match with 100% score of {}", score);
-            } else {
-                eprintln!(
-                    "...returning best match with ancestor score of {} vs path.len() = {} for path:\n{}",
-                    best_score,
-                    path.len(),
-                    path.join(" -> ")
-                );
-                // println!("==== TASK PATH REGISTRY DUMP ====");
-                // println!("Total registered tasks: {}", path_registry.len());
-
-                // for (task_id, path) in path_registry.iter() {
-                //     println!("Task {}: {}", task_id, path.join(" -> "));
-                // }
-                // println!("=================================");
-
-                // println!("Active tasks={:#?}", get_active_tasks());
-            }
-            best_match
+        }
+        if best_score == path.len() {
+            eprintln!("...returning best match with perfect score of {}", score);
         } else {
-            // Fallback: Return the most recently activated profile
-            eprintln!("...returning fallback: most recently activated profile");
-            get_last_active_task().unwrap_or(0)
-        }
-    });
+            eprintln!(
+                "...returning best match with imperfect score of {} vs path.len() = {} for path:\n{}",
+                best_score,
+                path.len(),
+                path.join(" -> ")
+            );
+            println!("==== TASK PATH REGISTRY DUMP ====");
+            println!("Total registered tasks: {}", path_registry.len());
 
-    // If TLS access failed, mark global skip flag and return 0
-    match result {
-        Ok(best_match) => best_match,
-        Err(_) => {
-            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-            0
+            for (task_id, path) in path_registry.iter() {
+                println!("Task {}: {}", task_id, path.join(" -> "));
+            }
+            println!("=================================");
+
+            println!("Active tasks={:#?}", get_active_tasks());
         }
+        return best_match;
     }
+
+    // Fallback: Return the most recently activated profile
+    eprintln!("...returning fallback: most recently activated profile");
+    get_last_active_task().unwrap_or(0)
 }
 
 // Compute similarity between a task path and backtrace frames
@@ -1212,6 +943,18 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 
     score
 }
+
+// Merged into fn create_task_context
+// // When creating a profile:
+// #[cfg(feature = "full_profiling")]
+// pub fn activate_profile(task_id: usize) {
+//     // eprintln!("About to try_lock registry for activate_profile");
+//     if let Ok(mut registry) = REGISTRY.try_lock() {
+//         registry.active_profiles.insert(task_id);
+//     } else {
+//         eprintln!("Failed to lock registry to activate profile: {}", task_id);
+//     }
+// }
 
 // When dropping a profile:
 #[cfg(feature = "full_profiling")]
@@ -1272,28 +1015,13 @@ pub fn initialize_memory_profiling() {
 /// This is called by the main finalize_profiling function.
 #[cfg(feature = "full_profiling")]
 pub fn finalize_memory_profiling() {
-    // Skip if thread TLS access is globally disabled
-    if SKIP_THREAD_TLS_ACCESS.load(std::sync::atomic::Ordering::Relaxed) {
-        println!("Memory profiling finalization skipped due to TLS access issues");
-        return;
-    }
+    MultiAllocator::with(AllocatorTag::System, || {
+        // Process any pending allocations
+        process_pending_allocations();
 
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        MultiAllocator::with(AllocatorTag::System, || {
-            // Process any pending allocations
-            process_pending_allocations();
-
-            // Write memory profile data
-            write_memory_profile_data();
-        })
+        // Write memory profile data
+        write_memory_profile_data();
     });
-
-    // If TLS access failed, log the error
-    if result.is_err() {
-        println!("Memory profiling finalization failed due to TLS access error");
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
 }
 
 /// Write memory profile data to a file

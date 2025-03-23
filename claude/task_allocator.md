@@ -2093,3 +2093,68 @@ file:///usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.mjs:341
   4. High-frequency allocations in async code
 
   The fixes gracefully disable tracking during thread destruction instead of trying to force operations that would fail.
+
+ I've created a fixed version of the file at /Users/donf/projects/thag_rs/task_allocator_fixed.rs.
+
+  To apply it, please run:
+  cp /Users/donf/projects/thag_rs/task_allocator_fixed.rs /Users/donf/projects/thag_rs/thag_profiler/src/task_allocator.rs
+
+  The main changes I made:
+
+  1. Added a global atomic flag SKIP_THREAD_TLS_ACCESS that gets set when any TLS access fails
+  2. Redesigned all TLS access to be protected with std::panic::catch_unwind
+  3. Each function first checks the global flag before attempting TLS access
+  4. Rewrote allocation and deallocation tracking to be more robust
+  5. Protected all registry operations with fail-safe mechanisms
+  6. Made sure the code continues to work even if TLS access fails
+
+  This approach is more robust than the previous one because:
+  1. It has a global atomic flag that doesn't rely on TLS
+  2. Functions check the flag as their first operation
+  3. Each TLS access is protected by catch_unwind
+  4. All recursive TLS operations are avoided
+
+⏺ Conversation Summary: Thread-Local Storage Safety in Rust Profiler
+
+  Problem Identified
+
+  We've been debugging a thread-local storage (TLS) access error in the thag_rs profiling system:
+  cannot access a Thread Local Storage value during or after destruction: AccessError
+  This error occurs during tokio worker thread shutdown when memory deallocations trigger access to thread-locals that have already been destroyed.
+
+  Diagnosis
+
+  - The error occurs in task_allocator.rs, specifically around line 403 in the record_deallocation function
+  - The issue happens because memory deallocations during thread shutdown try to access TLS variables
+  - The call stack shows this happens in tokio runtime workers as they're being destroyed
+  - Our previous attempts at fixing the issue were insufficient
+
+  Solution Approach
+
+  We implemented a robust solution with these key components:
+  1. Global atomic flag SKIP_THREAD_TLS_ACCESS to bypass TLS operations during thread shutdown
+  2. Protected all TLS access with std::panic::catch_unwind to safely handle failures
+  3. Made functions check the global flag before attempting TLS access
+  4. Simplified allocation record keeping to be more fault-tolerant
+
+  Specific Changes
+
+  - Added global atomic flag to track thread destruction state
+  - Redesigned allocation/deallocation record functions with better error handling
+  - Fixed process_pending_allocations to avoid TLS panics
+  - Protected all profile registry operations against TLS failure
+  - Created a safer TaskGuard::drop implementation
+
+  File Worked On
+
+  - Main file: /Users/donf/projects/thag_rs/thag_profiler/src/task_allocator.rs
+  - Created a fixed version at: /Users/donf/projects/thag_rs/task_allocator_fixed.rs
+
+  Next Steps
+
+  1. Apply the fixed version: cp /Users/donf/projects/thag_rs/task_allocator_fixed.rs /Users/donf/projects/thag_rs/thag_profiler/src/task_allocator.rs
+  2. Test the implementation with the demo programs like document_pipeline_profile.rs
+  3. Verify that tokio thread shutdown no longer causes TLS panics
+  4. Consider implementing more debugging output to confirm when the safety mechanisms are triggered
+
+  The solution uses a global atomic flag combined with std::panic::catch_unwind to safely detect thread destruction and skip TLS operations when necessary.

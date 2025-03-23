@@ -759,6 +759,7 @@ impl Profile {
             writeln!(writer, "{entry}")?;
             writer.flush()?;
         }
+        println!("Wrote entry {entry}");
         drop(guard);
         Ok(())
     }

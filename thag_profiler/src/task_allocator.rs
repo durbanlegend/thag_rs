@@ -256,7 +256,7 @@ pub fn get_top_task_for_thread(thread_id: ThreadId) -> Option<usize> {
 #[cfg(feature = "full_profiling")]
 pub fn record_allocation(task_id: usize, address: usize, size: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
-        let result = ALLOCATION_BUFFER.try_with(|buffer| {
+        ALLOCATION_BUFFER.with(|buffer| {
             let mut allocs = buffer.borrow_mut();
             allocs.push((task_id, address, size));
 
@@ -267,9 +267,6 @@ pub fn record_allocation(task_id: usize, address: usize, size: usize) {
                 process_pending_allocations();
             }
         });
-        if let Err(err) = result {
-            eprintln!("Error recording allocation: {}", err);
-        }
     });
 }
 
@@ -277,7 +274,7 @@ pub fn record_allocation(task_id: usize, address: usize, size: usize) {
 #[cfg(feature = "full_profiling")]
 pub fn record_deallocation(address: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
-        let result = DEALLOCATION_BUFFER.try_with(|buffer| {
+        DEALLOCATION_BUFFER.with(|buffer| {
             let mut deallocs = buffer.borrow_mut();
             deallocs.push(address);
 
@@ -288,77 +285,56 @@ pub fn record_deallocation(address: usize) {
                 process_pending_allocations();
             }
         });
-        if let Err(err) = result {
-            eprintln!("Error recording deallocation: {}", err);
-        }
     });
 }
 
 /// Process pending allocations and deallocations
 #[cfg(feature = "full_profiling")]
 pub fn process_pending_allocations() {
-    use std::thread::AccessError;
-
     MultiAllocator::with(AllocatorTag::System, || {
         // Process allocations
-        let result = ALLOCATION_BUFFER.try_with(|buffer| {
+        let allocations: Vec<(usize, usize, usize)> = ALLOCATION_BUFFER.with(|buffer| {
             let mut allocs = buffer.borrow_mut();
-            let allocs_clone = allocs.clone();
+            let result = allocs.clone();
             allocs.clear();
-            allocs_clone
+            result
         });
 
-        match result {
-            Ok(allocations) => {
-                if !allocations.is_empty() {
-                    if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
-                        for (task_id, address, size) in allocations {
-                            registry
-                                .task_allocations
-                                .entry(task_id)
-                                .or_default()
-                                .push((address, size));
+        if !allocations.is_empty() {
+            if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
+                for (task_id, address, size) in allocations {
+                    registry
+                        .task_allocations
+                        .entry(task_id)
+                        .or_default()
+                        .push((address, size));
 
-                            registry.address_to_task.insert(address, task_id);
-                        }
-                    }
+                    registry.address_to_task.insert(address, task_id);
                 }
-            }
-            Err(err) => {
-                eprintln!("Error processing pending allocations: {}", err);
             }
         }
 
         // Process deallocations
-        let result: Result<Vec<usize>, AccessError> = DEALLOCATION_BUFFER.try_with(|buffer| {
+        let deallocations: Vec<usize> = DEALLOCATION_BUFFER.with(|buffer| {
             let mut deallocs = buffer.borrow_mut();
-            let deallocs_clone = deallocs.clone();
+            let result = deallocs.clone();
             deallocs.clear();
-            deallocs_clone
+            result
         });
 
-        match result {
-            Ok(deallocations) => {
-                if !deallocations.is_empty() {
-                    if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
-                        for address in deallocations {
-                            if let Some(task_id) = registry.address_to_task.remove(&address) {
-                                if let Some(allocations) =
-                                    registry.task_allocations.get_mut(&task_id)
-                                {
-                                    if let Some(pos) =
-                                        allocations.iter().position(|(addr, _)| *addr == address)
-                                    {
-                                        allocations.swap_remove(pos);
-                                    }
-                                }
+        if !deallocations.is_empty() {
+            if let Ok(mut registry) = ALLOC_REGISTRY.try_lock() {
+                for address in deallocations {
+                    if let Some(task_id) = registry.address_to_task.remove(&address) {
+                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
+                            if let Some(pos) =
+                                allocations.iter().position(|(addr, _)| *addr == address)
+                            {
+                                allocations.swap_remove(pos);
                             }
                         }
                     }
                 }
-            }
-            Err(err) => {
-                eprintln!("Error processing pending deallocations: {}", err);
             }
         }
     });
@@ -491,7 +467,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 struct Guard;
                 impl Drop for Guard {
                     fn drop(&mut self) {
-                        let _ = IN_TRACKING.try_with(|flag| flag.set(false));
+                        IN_TRACKING.with(|flag| flag.set(false));
                     }
                 }
                 let _guard = Guard;
@@ -561,11 +537,10 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
         if !ptr.is_null() {
             // Similar recursion prevention as in alloc
             thread_local! {
-                static IN_TRACKING: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
+                static IN_TRACKING: std::cell::RefCell<bool> = std::cell::RefCell::new(false);
             }
 
-            // let already_tracking = IN_TRACKING.with(|flag| {
-            let result = IN_TRACKING.try_with(|flag| {
+            let already_tracking = IN_TRACKING.with(|flag| {
                 let value = *flag.borrow();
                 if !value {
                     *flag.borrow_mut() = true;
@@ -573,29 +548,24 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 value
             });
 
-            match result {
-                Ok(already_tracking) => {
-                    if !already_tracking {
-                        // Setup guard
-                        struct Guard;
-                        impl Drop for Guard {
-                            fn drop(&mut self) {
-                                IN_TRACKING.with(|flag| *flag.borrow_mut() = false);
-                            }
-                        }
-                        let _guard = Guard;
-
-                        // Record deallocation
-                        // Use okaoka to avoid recursive allocations
-                        MultiAllocator::with(AllocatorTag::System, || {
-                            let address = ptr as usize;
-
-                            // Record in thread-local buffer
-                            record_deallocation(address);
-                        });
+            if !already_tracking {
+                // Setup guard
+                struct Guard;
+                impl Drop for Guard {
+                    fn drop(&mut self) {
+                        IN_TRACKING.with(|flag| *flag.borrow_mut() = false);
                     }
                 }
-                Err(err) => eprintln!("Failed to record deallocation: {err}"),
+                let _guard = Guard;
+
+                // Record deallocation
+                // Use okaoka to avoid recursive allocations
+                MultiAllocator::with(AllocatorTag::System, || {
+                    let address = ptr as usize;
+
+                    // Record in thread-local buffer
+                    record_deallocation(address);
+                });
             }
         }
 
@@ -698,28 +668,14 @@ impl Drop for TaskGuard {
             // Process pending allocations before removing the task
             process_pending_allocations();
 
-            // // Remove from active profiles
-            // deactivate_task(self.task_id);
+            // Remove from active profiles
+            deactivate_task(self.task_id);
 
-            // // Remove from thread stack
-            // pop_task_from_stack(thread::current().id(), self.task_id);
+            // Remove from thread stack
+            pop_task_from_stack(thread::current().id(), self.task_id);
 
-            // Get the thread ID before spawning a new thread
-            let thread_id = thread::current().id();
-            // First, clone the task ID so we can use it in the spawned thread
-            let task_id = self.task_id;
-
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(2));
-                MultiAllocator::with(AllocatorTag::System, || {
-                    deactivate_task(task_id);
-                });
-
-                std::thread::sleep(std::time::Duration::from_secs(2));
-                MultiAllocator::with(AllocatorTag::System, || {
-                    pop_task_from_stack(thread_id, task_id);
-                });
-            });
+            // Remove from task path registry
+            remove_task_path(self.task_id);
         });
     }
 }

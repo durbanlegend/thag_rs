@@ -448,7 +448,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
             if layout.size() >= MINIMUM_TRACKED_SIZE {
                 // Simple recursion prevention
                 thread_local! {
-                    static IN_TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
+                    static IN_TRACKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
                 }
 
                 // let already_tracking = IN_TRACKING.with(|flag| {
@@ -673,6 +673,9 @@ impl Drop for TaskGuard {
 
             // Remove from thread stack
             pop_task_from_stack(thread::current().id(), self.task_id);
+
+            // Remove from task path registry
+            remove_task_path(self.task_id);
         });
     }
 }

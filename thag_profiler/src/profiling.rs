@@ -1,4 +1,11 @@
-use crate::{lazy_static_var, static_lazy, ProfileError};
+use crate::{
+    lazy_static_var, static_lazy,
+    task_allocator::{
+        activate_task, extract_path_with_system_alloc, get_task_memory_usage, push_task_to_stack,
+        run_with_system_alloc, TASK_PATH_REGISTRY,
+    },
+    ProfileError,
+};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use std::{
@@ -11,6 +18,7 @@ use std::{
         atomic::{AtomicU8, Ordering},
         Mutex,
     },
+    thread,
     time::Instant,
 };
 
@@ -205,7 +213,7 @@ fn get_time_path() -> ProfileResult<&'static str> {
 }
 
 #[cfg(feature = "full_profiling")]
-fn get_memory_path() -> ProfileResult<&'static str> {
+pub fn get_memory_path() -> ProfileResult<&'static str> {
     struct MemoryPathHolder;
     impl MemoryPathHolder {
         fn get() -> ProfileResult<&'static str> {
@@ -593,6 +601,14 @@ impl Profile {
             return None;
         }
 
+        // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
+        #[cfg(test)]
+        if is_test_mode_active() {
+            // If this is from an attribute in a test, don't create a profile
+            // Our safe wrapper will handle profiling instead
+            return None;
+        }
+
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
@@ -620,10 +636,7 @@ impl Profile {
         eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
         register_profiled_function(fn_name, desc_fn_name);
 
-        let path = extract_path(&cleaned_stack);
-        if path.is_empty() {
-            println!("Path is empty: fn_name={fn_name}, cleaned stack={cleaned_stack:?}");
-        }
+        let path = extract_path_with_system_alloc(&cleaned_stack);
 
         // Try allowing overrides
         let profile_type = requested_type;
@@ -631,26 +644,6 @@ impl Profile {
         #[cfg(not(feature = "full_profiling"))]
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
-        }
-
-        // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
-        // memory allocations in the profile setup itself in this method.
-        #[cfg(feature = "full_profiling")]
-        let maybe_task = if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            // Create a task to track memory usage
-            let task = create_memory_task();
-            register_task_path(task.id(), path.clone());
-            Some(task)
-        } else {
-            return None;
-        };
-
-        // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
-        #[cfg(test)]
-        if is_test_mode_active() {
-            // If this is from an attribute in a test, don't create a profile
-            // Our safe wrapper will handle profiling instead
-            return None;
         }
 
         // Determine if we should keep the custom name
@@ -671,57 +664,62 @@ impl Profile {
             registered_name: fn_name.to_string(),
         };
 
-        // For full profiling, we need to handle memory task and guard creation
+        if !matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            return Some(Self {
+                profile_type,
+                start: Some(Instant::now()),
+                path,
+                custom_name,
+                registered_name: fn_name.to_string(),
+                memory_task: None,
+                memory_guard: None,
+            });
+        }
+
+        // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
+        // memory allocations in the profile setup itself in this method.
         #[cfg(feature = "full_profiling")]
+        // Create a task to track memory usage
+        // Create a memory task and activate it
+        let memory_task = create_memory_task();
+        let task_id = memory_task.id();
+
+        // Register task path
+        run_with_system_alloc(|| {
+            if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
+                registry.insert(task_id, path.clone());
+            }
+        });
+
+        // Activate the task
+        activate_task(task_id);
+
+        // Add to thread stack
+        push_task_to_stack(thread::current().id(), task_id);
+
+        run_with_system_alloc(|| {
+            println!(
+                "NEW PROFILE: Task {task_id} created for {:?}",
+                path.join("::")
+            )
+        });
+
+        // Create memory guard
+        // let mut memory_guard;
+        // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
+        // let memory_guard = *memory_guard;
+        let memory_guard = TaskGuard::new(task_id);
+
         let profile = {
-            // First, determine if we need memory profiling
-            if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-                // // Create a task to track memory usage
-                // let task = create_memory_task();
-                // register_task_path(task.id(), path.clone());
-
-                // Create an owned TaskGuard directly from the task ID
-                // This avoids the 'static lifetime requirement
-                let task = maybe_task.expect("Memory profiling logic error unwrapping task");
-                let task_id = task.id();
-                let guard_result = create_memory_guard(task_id);
-                match &guard_result {
-                    Ok(_) => (),
-                    Err(e) => println!("Failed to create memory guard: {e}"),
-                }
-
-                // Merged into `create_task_context -> create_memory_task` much earlier
-                // task_allocator::activate_profile(task_id);
-
-                println!(
-                    "NEW PROFILE: Task {task_id} created for {:?}",
-                    path.join("::")
-                );
-                // if path.join("::").is_empty() {
-                //     println!("Path is empty: cleaned stack=\n{cleaned_stack:?}");
-                // }
-
-                // Create the profile with necessary components
-                Self {
-                    profile_type,
-                    start: Some(Instant::now()),
-                    path,
-                    custom_name,
-                    registered_name: fn_name.to_string(),
-                    memory_task: Some(task),
-                    memory_guard: guard_result.ok(),
-                }
-            } else {
-                // No memory profiling needed
-                Self {
-                    profile_type,
-                    start: Some(Instant::now()),
-                    path,
-                    custom_name,
-                    registered_name: fn_name.to_string(),
-                    memory_task: None,
-                    memory_guard: None,
-                }
+            // Create the profile with necessary components
+            Self {
+                profile_type,
+                start: Some(Instant::now()),
+                path,
+                custom_name,
+                registered_name: fn_name.to_string(),
+                memory_task: Some(memory_task),
+                memory_guard: Some(memory_guard),
             }
         };
         Some(profile)
@@ -879,6 +877,21 @@ impl Profile {
         // self.write_memory_event_with_op(delta, '-')?;
 
         Ok(())
+    }
+
+    /// Get the memory usage for this profile's task
+    pub fn memory_usage(&self) -> Option<usize> {
+        #[cfg(feature = "full_profiling")]
+        {
+            self.memory_task
+                .as_ref()
+                .and_then(|task| get_task_memory_usage(task.id()))
+        }
+
+        #[cfg(not(feature = "full_profiling"))]
+        {
+            None
+        }
     }
 }
 

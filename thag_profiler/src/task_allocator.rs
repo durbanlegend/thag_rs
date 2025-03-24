@@ -25,10 +25,6 @@ use std::{
 #[cfg(feature = "full_profiling")]
 use parking_lot::Mutex;
 
-// String interning for efficient string storage and comparison
-#[cfg(feature = "full_profiling")]
-use lasso::{Rodeo, Spur};
-
 #[cfg(feature = "full_profiling")]
 const MINIMUM_TRACKED_SIZE: usize = 64;
 
@@ -194,11 +190,8 @@ pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
 
 /// Remove a task from a thread's stack
 #[cfg(feature = "full_profiling")]
-pub fn pop_task_from_stack(_thread_id: ThreadId, _task_id: usize) {
-    MultiAllocator::with(AllocatorTag::System, || {
-        let mut registry = PROFILE_REGISTRY.lock();
-        registry.pop_task_from_stack(_thread_id, _task_id);
-    });
+pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
+    MultiAllocator::with(AllocatorTag::System, || {});
 }
 
 /// Get active tasks
@@ -676,9 +669,9 @@ pub fn create_memory_task() -> TaskMemoryContext {
 }
 
 // Task Path Registry for debugging
-// 1. Declare the TASK_PATH_REGISTRY - now using interned strings for paths
+// 1. Declare the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
-pub static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, InternedPath>>> =
+pub static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(BTreeMap::new()));
 
 // // 2. Function to add a task's path to the TASK_PATH_REGISTRY
@@ -700,10 +693,7 @@ pub static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, InternedPath>>> =
 pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
     // eprintln!("About to try_lock TASK_PATH_REGISTRY for lookup_task_path");
     let registry = TASK_PATH_REGISTRY.lock();
-    registry.get(&task_id).map(|interned_path| {
-        // Convert interned path back to strings
-        interned_path.iter().map(|&id| resolve(id)).collect()
-    })
+    registry.get(&task_id).cloned()
 }
 
 // 4. Function to dump the entire registry
@@ -716,12 +706,7 @@ pub fn dump_task_path_registry() {
     println!("Total registered tasks: {}", registry.len());
 
     for (task_id, path) in registry.iter() {
-        let path_str = path
-            .iter()
-            .map(|&id| resolve(id))
-            .collect::<Vec<String>>()
-            .join("::");
-        println!("Task {}: {}", task_id, path_str);
+        println!("Task {}: {}", task_id, path.join("::"));
     }
     drop(registry);
     println!("=================================");
@@ -840,9 +825,9 @@ fn find_matching_profile(path: &[String]) -> usize {
     get_last_active_task().unwrap_or(0)
 }
 
-// Compute similarity between task paths - one is plain strings, the other is interned IDs
+// Compute similarity between a task path and backtrace frames
 #[cfg(feature = "full_profiling")]
-fn compute_similarity(task_path: &[String], reg_path: &[Spur]) -> usize {
+fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     if task_path.is_empty() || reg_path.is_empty() {
         eprintln!("task_path.is_empty() || reg_path.is_empty()");
         return 0;
@@ -852,13 +837,9 @@ fn compute_similarity(task_path: &[String], reg_path: &[Spur]) -> usize {
         .iter()
         .zip(reg_path.iter())
         // .inspect(|(path_func, frame)| {
-        //     eprintln!(
-        //         "Comparing [{}]\n          [{}]",
-        //         path_func,
-        //         resolve(**frame)
-        //     );
+        //     eprintln!("Comparing [{}]\n          [{}]", path_func, frame);
         // })
-        .filter(|(path_func, &frame)| frame == intern(path_func))
+        .filter(|(path_func, frame)| frame == path_func)
         // .inspect(|(path_func, frame)| {
         //     let matched = frame == path_func;
         //     eprintln!("frame == path_func? {}", matched);
@@ -870,16 +851,10 @@ fn compute_similarity(task_path: &[String], reg_path: &[Spur]) -> usize {
 
     // eprintln!("score={score}");
     if score == 0 {
-        eprintln!("score = {score} for path of length {}", task_path.len());
-
-        // Print paths for comparison
-        let task_path_str = task_path.join("->");
-        let reg_path_str = reg_path
-            .iter()
-            .map(|&id| resolve(id))
-            .collect::<Vec<String>>()
-            .join("->");
-        println!("{}\n{}", task_path_str, reg_path_str);
+        eprintln!("score = {score} for path of length {}", task_path.len(),);
+        // let diff = create_side_by_side_diff(&task_path.join("->"), &reg_path.join("->"), 80);
+        // println!("{diff}");
+        println!("{}\n{}", task_path.join("->"), reg_path.join("->"));
     }
 
     score
@@ -990,13 +965,7 @@ fn write_memory_profile_data() {
 
                 // Get the path for this task
                 if let Some(path) = path_registry.get(task_id) {
-                    // Convert interned path to string
-                    let path_str = path
-                        .iter()
-                        .map(|&id| resolve(id))
-                        .collect::<Vec<String>>()
-                        .join(";");
-
+                    let path_str = path.join(";");
                     let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
 
                     // Write line to folded format file
@@ -1005,48 +974,4 @@ fn write_memory_profile_data() {
             }
         }
     });
-}
-
-// String interner for efficient string storage and comparison
-#[cfg(feature = "full_profiling")]
-static STRING_INTERNER: LazyLock<Mutex<Rodeo>> = LazyLock::new(|| Mutex::new(Rodeo::new()));
-
-// Type alias for interned paths
-#[cfg(feature = "full_profiling")]
-type InternedPath = Vec<Spur>;
-
-// Function to intern a string
-#[cfg(feature = "full_profiling")]
-pub fn intern(s: &str) -> Spur {
-    let mut interner = STRING_INTERNER.lock();
-    interner.get_or_intern(s)
-}
-
-// Function to resolve an interned string ID back to a string
-#[cfg(feature = "full_profiling")]
-pub fn resolve(id: Spur) -> String {
-    // Get a copy of the string to avoid lifetime issues
-    let interner = STRING_INTERNER.lock();
-    interner.resolve(&id).to_string()
-}
-
-// Function to convert a Vec<String> to an InternedPath
-#[cfg(feature = "full_profiling")]
-pub fn intern_path(path: &[String]) -> InternedPath {
-    path.iter().map(|s| intern(s)).collect()
-}
-
-// Function to convert a Vec<Spur> to a Vec<String>
-#[cfg(feature = "full_profiling")]
-pub fn resolve_path(path: &[Spur]) -> Vec<String> {
-    path.iter().map(|s| resolve(*s)).collect()
-}
-
-// Update the path registry with interned strings
-#[allow(dead_code)]
-#[cfg(feature = "full_profiling")]
-pub fn register_task_path(task_id: usize, path: &[String]) {
-    let interned_path = intern_path(path);
-    let mut registry = TASK_PATH_REGISTRY.lock();
-    registry.insert(task_id, interned_path);
 }

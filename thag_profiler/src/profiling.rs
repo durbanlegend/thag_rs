@@ -1,10 +1,5 @@
-use crate::{
-    lazy_static_var, static_lazy,
-    task_allocator::{intern, intern_path, resolve, resolve_path},
-    ProfileError,
-};
+use crate::{lazy_static_var, static_lazy, ProfileError};
 use chrono::Local;
-use lasso::Spur;
 use once_cell::sync::Lazy;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
@@ -560,7 +555,7 @@ impl ProfileType {
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
-    path: Vec<Spur>,
+    path: Vec<String>,
     custom_name: Option<String>, // Custom section name when provided via profile!("name") macro
     registered_name: String,
     #[cfg(feature = "full_profiling")]
@@ -646,7 +641,7 @@ impl Profile {
         let path = extract_path(&cleaned_stack);
 
         #[cfg(feature = "full_profiling")]
-        let path = intern_path(&extract_path_with_system_alloc(&cleaned_stack));
+        let path = extract_path_with_system_alloc(&cleaned_stack);
 
         // Try allowing overrides
         let profile_type = requested_type;
@@ -721,7 +716,7 @@ impl Profile {
             run_with_system_alloc(|| {
                 println!(
                     "NEW PROFILE: Task {task_id} created for {:?}",
-                    resolve_path(&path).join("::")
+                    path.join("::")
                 );
             });
 
@@ -821,10 +816,22 @@ impl Profile {
 
         // println!("DEBUG: write_time_event for stack: {:?}", stack);
 
-        // Add our custom section name to the end of the stack path if present
         // Create a copy of the stack for our modified output
-        let stack_str = self.append_section_to_stack(stack.clone());
+        let mut stack_with_custom_name = stack.clone();
 
+        // Add our custom section name to the end of the stack path if present
+        if let Some(name) = &self.custom_name {
+            // println!("DEBUG: Adding custom name '{}' to time stack", name);
+
+            // If the stack is not empty, get the last function name
+            if let Some(last_fn) = stack_with_custom_name.last_mut() {
+                // Append the custom name to the last function name
+                *last_fn = format!("{last_fn}:{name}");
+                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
+            }
+        }
+
+        let stack_str = stack_with_custom_name.join(";");
         let entry = format!("{stack_str} {micros}");
 
         // let paths = ProfilePaths::get();
@@ -853,28 +860,25 @@ impl Profile {
         // println!("DEBUG: write_memory_event for stack: {:?}", stack);
 
         // Create a copy of the stack for our modified output
-        let stack_str = self.append_section_to_stack(stack.clone());
-        let entry = format!("{stack_str} {op}{delta}");
+        let mut stack_with_custom_name = stack.clone();
 
-        // let paths = ProfilePaths::get();
-        let memory_path = get_memory_path()?;
-        Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
-    }
-
-    /// Add our custom section name to the end of the stack path if present.
-    /// NB this will interfere with the stack path resolution.
-    fn append_section_to_stack(&self, mut stack_with_custom_name: Vec<Spur>) -> String {
+        // Add our custom section name to the end of the stack path if present
         if let Some(name) = &self.custom_name {
             // println!("DEBUG: Adding custom name '{}' to memory stack", name);
 
             // If the stack is not empty, get the last function name
             if let Some(last_fn) = stack_with_custom_name.last_mut() {
                 // Append the custom name to the last function name
-                *last_fn = intern(&format!("{}:{name}", resolve(*last_fn)));
+                *last_fn = format!("{last_fn}:{name}");
                 // println!("DEBUG: Modified stack entry to '{}'", last_fn);
             }
         }
-        resolve_path(&stack_with_custom_name).join(";")
+        let stack_str = stack_with_custom_name.join(";");
+        let entry = format!("{stack_str} {op}{delta}");
+
+        // let paths = ProfilePaths::get();
+        let memory_path = get_memory_path()?;
+        Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
     }
 
     #[cfg(feature = "full_profiling")]
@@ -1076,7 +1080,7 @@ impl Drop for Profile {
                 println!(
                     "DROP PROFILE: Task {} for {:?} used {} bytes",
                     self.memory_task.as_ref().unwrap().id(),
-                    resolve_path(&self.path).join("::"),
+                    self.path.join("::"),
                     memory_usage
                 );
             }

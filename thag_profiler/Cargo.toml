@@ -22,6 +22,7 @@ strum = { version = "0.27.1", features = ["derive", "phf"] }
 thag_proc_macros = { path = "../thag_proc_macros" }
 scopeguard = "1.2.0"
 parking_lot = { version = "0.12.3", default-features = false }
+lasso = "0.7.3"
 
 [dev-dependencies]
 regex = "1.11.1"

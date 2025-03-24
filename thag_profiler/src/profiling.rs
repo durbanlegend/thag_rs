@@ -939,7 +939,7 @@ pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
     extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
 }
 
-fn extract_callstack_from_backtrace(
+pub fn extract_callstack_from_backtrace(
     start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {

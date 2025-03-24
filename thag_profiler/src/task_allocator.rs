@@ -6,6 +6,7 @@
 
 use std::alloc::{GlobalAlloc, Layout};
 
+use crate::profiling::extract_callstack_from_backtrace;
 #[cfg(feature = "full_profiling")]
 use crate::profiling::{extract_callstack, extract_path};
 
@@ -22,6 +23,7 @@ use std::{
     thread::{self, ThreadId},
 };
 
+use backtrace::Backtrace;
 #[cfg(feature = "full_profiling")]
 use parking_lot::Mutex;
 
@@ -417,7 +419,8 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
         #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
             // Skip small allocations
-            if layout.size() >= MINIMUM_TRACKED_SIZE {
+            let size = layout.size();
+            if size >= MINIMUM_TRACKED_SIZE {
                 // Simple recursion prevention
                 thread_local! {
                     static IN_TRACKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
@@ -454,7 +457,9 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     let start_pattern = "Profile::new";
 
                     // eprintln!("Calling extract_callstack");
-                    let cleaned_stack = extract_callstack(start_pattern);
+                    let mut current_backtrace = Backtrace::new_unresolved();
+                    let cleaned_stack =
+                        extract_callstack_from_backtrace(start_pattern, &mut current_backtrace);
                     if cleaned_stack.is_empty() {
                         // eprintln!(
                         //     "Empty cleaned_stack for backtrace\n{:#?}",
@@ -471,11 +476,22 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         // eprintln!("Calling extract_path");
                         let path = extract_path(&cleaned_stack);
                         if path.is_empty() {
+                            if Backtrace::frames(&current_backtrace)
+                                .iter()
+                                .flat_map(backtrace::BacktraceFrame::symbols)
+                                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                                .any(|frame| frame.contains("Backtrace::new"))
+                            {
+                                eprintln!("Ignoring setup allocation of size {size} containing Backtrace::new");
+                                // Don't record the allocation because it's profiling setup
+                                return;
+                            }
                             eprintln!(
-                                "...path is empty for thread {:?}, &cleaned_stack:\n{:#?}",
+                                "...path is empty for thread {:?}: assigning to lastest active task. cleaned_stack: {:?}",
                                 thread::current().id(),
                                 cleaned_stack
                             );
+                            eprintln!("...backtrace: {current_backtrace:?}",);
                             task_id = get_last_active_task().unwrap_or(0);
                         } else {
                             // eprintln!("path={path:#?}");
@@ -490,7 +506,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 MultiAllocator::with(AllocatorTag::System, || {
                     if task_id > 0 {
                         let address = ptr as usize;
-                        let size = layout.size();
+                        // let size = layout.size();
 
                         // Record in thread-local buffer
                         record_allocation(task_id, address, size);

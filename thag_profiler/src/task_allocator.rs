@@ -191,7 +191,11 @@ pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
 /// Remove a task from a thread's stack
 #[cfg(feature = "full_profiling")]
 pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-    MultiAllocator::with(AllocatorTag::System, || {});
+    MultiAllocator::with(AllocatorTag::System, || {
+        PROFILE_REGISTRY
+            .lock()
+            .pop_task_from_stack(thread_id, task_id);
+    });
 }
 
 /// Get active tasks

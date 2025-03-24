@@ -816,22 +816,9 @@ impl Profile {
 
         // println!("DEBUG: write_time_event for stack: {:?}", stack);
 
-        // Create a copy of the stack for our modified output
-        let mut stack_with_custom_name = stack.clone();
-
         // Add our custom section name to the end of the stack path if present
-        if let Some(name) = &self.custom_name {
-            // println!("DEBUG: Adding custom name '{}' to time stack", name);
+        let stack_str = self.append_section_to_stack(stack.clone());
 
-            // If the stack is not empty, get the last function name
-            if let Some(last_fn) = stack_with_custom_name.last_mut() {
-                // Append the custom name to the last function name
-                *last_fn = format!("{last_fn}:{name}");
-                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
-            }
-        }
-
-        let stack_str = stack_with_custom_name.join(";");
         let entry = format!("{stack_str} {micros}");
 
         // let paths = ProfilePaths::get();
@@ -859,10 +846,19 @@ impl Profile {
 
         // println!("DEBUG: write_memory_event for stack: {:?}", stack);
 
-        // Create a copy of the stack for our modified output
-        let mut stack_with_custom_name = stack.clone();
-
         // Add our custom section name to the end of the stack path if present
+        let stack_str = self.append_section_to_stack(stack.clone());
+
+        let entry = format!("{stack_str} {op}{delta}");
+
+        // let paths = ProfilePaths::get();
+        let memory_path = get_memory_path()?;
+        Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
+    }
+
+    /// Add our custom section name to the end of the stack path if present.
+    /// NB this will interfere with the stack path resolution.
+    fn append_section_to_stack(&self, mut stack_with_custom_name: Vec<String>) -> String {
         if let Some(name) = &self.custom_name {
             // println!("DEBUG: Adding custom name '{}' to memory stack", name);
 
@@ -873,12 +869,7 @@ impl Profile {
                 // println!("DEBUG: Modified stack entry to '{}'", last_fn);
             }
         }
-        let stack_str = stack_with_custom_name.join(";");
-        let entry = format!("{stack_str} {op}{delta}");
-
-        // let paths = ProfilePaths::get();
-        let memory_path = get_memory_path()?;
-        Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
+        stack_with_custom_name.join(";")
     }
 
     #[cfg(feature = "full_profiling")]

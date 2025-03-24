@@ -239,15 +239,19 @@ pub fn get_last_active_task() -> Option<usize> {
 #[cfg(feature = "full_profiling")]
 pub fn record_allocation(task_id: usize, address: usize, size: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
+        // eprintln!("Allocating {} bytes at address {}", size, address);
         ALLOCATION_BUFFER.with(|buffer| {
             let mut allocs = buffer.borrow_mut();
             allocs.push((task_id, address, size));
 
             // Process if buffer is getting full
             if allocs.len() >= 50 {
+                // eprintln!("allocs.len() >= 50, time to process pending allocations");
                 // Drop mutable borrow before processing
                 drop(allocs);
+                // eprintln!("...dropped allocs");
                 process_pending_allocations();
+                eprintln!("...processed pending allocations");
             }
         });
     });
@@ -346,8 +350,7 @@ impl TaskAwareAllocator<System> {
         let task_id = TASK_STATE.next_task_id.fetch_add(1, Ordering::SeqCst);
 
         // Initialize task data
-        let mut task_map = TASK_STATE.task_map.lock();
-        task_map.insert(
+        let _task_map = TASK_STATE.task_map.lock().insert(
             task_id,
             TaskData {
                 // allocations: Vec::new(),
@@ -403,12 +406,8 @@ impl TaskAwareAllocator<System> {
 }
 
 #[cfg(feature = "full_profiling")]
-pub fn extract_path_with_system_alloc(cleaned_stack: &Vec<String>) -> Vec<String> {
-    let mut path = Box::new(vec![]);
-    MultiAllocator::with(AllocatorTag::System, || {
-        path = Box::new(extract_path(cleaned_stack));
-    });
-    *path
+pub fn get_with_system_alloc(closure: impl FnMut()) {
+    MultiAllocator::with(AllocatorTag::System, closure);
 }
 
 unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
@@ -953,22 +952,31 @@ fn write_memory_profile_data() {
 
     MultiAllocator::with(AllocatorTag::System, || {
         // Retrieve registries to get task allocations and names
-        let registry = ALLOC_REGISTRY.lock();
-        let path_registry = TASK_PATH_REGISTRY.lock();
-
         // Open memory.folded file
         if let Ok(file) = File::create(get_memory_path().unwrap_or("memory.folded")) {
             let mut writer = BufWriter::new(file);
 
+            let task_allocs = { ALLOC_REGISTRY.lock().task_allocations.clone() };
+            let task_ids = { task_allocs.keys().copied().collect::<Vec<_>>() };
+
+            let candidates: Vec<(usize, Vec<String>)> = {
+                let binding = TASK_PATH_REGISTRY.lock();
+                binding
+                    .iter()
+                    .filter(|(task_id, _pat)| task_ids.contains(task_id))
+                    .map(|(task_id, pat)| (*task_id, pat.clone()))
+                    .collect()
+            };
+
             // Write profile data
-            for (task_id, allocations) in &registry.task_allocations {
+            for (task_id, allocations) in &task_allocs {
                 // Skip tasks with no allocations
                 if allocations.is_empty() {
                     continue;
                 }
 
                 // Get the path for this task
-                if let Some(path) = path_registry.get(task_id) {
+                if let Some((_, path)) = &candidates.get(*task_id) {
                     let path_str = path.join(";");
                     let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
 

@@ -39,6 +39,9 @@ mod errors;
 pub mod profiling;
 mod task_allocator;
 
+#[cfg(feature = "full_profiling")]
+mod interning;
+
 use std::fmt::Display;
 
 // Re-exports

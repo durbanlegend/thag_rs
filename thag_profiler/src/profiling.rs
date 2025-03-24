@@ -1,6 +1,7 @@
-use crate::{lazy_static_var, static_lazy, ProfileError};
+use crate::{lazy_static_var, static_lazy, task_allocator::get_with_system_alloc, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     env,
@@ -9,15 +10,15 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicU8, Ordering},
-        Mutex,
+        // Mutex,
     },
     time::Instant,
 };
 
 #[cfg(feature = "full_profiling")]
 use crate::task_allocator::{
-    activate_task, create_memory_task, extract_path_with_system_alloc, get_task_memory_usage,
-    push_task_to_stack, run_with_system_alloc, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+    activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack,
+    run_with_system_alloc, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -150,23 +151,6 @@ struct ProfileFilePaths {
     memory: String,
 }
 
-/// Resets a profile file by clearing its buffer writer.
-///
-/// # Arguments
-/// * `file` - The mutex-protected buffer writer to reset
-/// * `file_type` - A description of the file type for error messages (e.g., "time", "memory")
-///
-/// # Errors
-/// Returns a `ProfileError` if the mutex lock fails
-#[cfg(feature = "time_profiling")]
-fn reset_profile_file(file: &Mutex<Option<BufWriter<File>>>, file_type: &str) -> ProfileResult<()> {
-    *file
-        .lock()
-        .map_err(|_| ProfileError::General(format!("Failed to lock {file_type} profile file")))? =
-        None;
-    Ok(())
-}
-
 #[cfg(feature = "time_profiling")]
 fn get_time_path() -> ProfileResult<&'static str> {
     struct TimePathHolder;
@@ -269,40 +253,42 @@ pub fn get_memory_path() -> ProfileResult<&'static str> {
 /// Returns a `ProfileError` if any file operations fail
 #[cfg(feature = "time_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
+    let time_path = get_time_path()?;
+    let memory_path = get_memory_path()?;
     match profile_type {
         ProfileType::Time => {
-            let time_path = get_time_path()?;
             TimeProfileFile::init();
-            reset_profile_file(TimeProfileFile::get(), "time")?;
-            initialize_profile_file(time_path, "Time Profile")?;
+            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
             eprintln!("Time profile will be written to {time_path}");
         }
         ProfileType::Memory => {
-            let memory_path = get_memory_path()?;
             MemoryProfileFile::init();
-            reset_profile_file(MemoryProfileFile::get(), "memory")?;
-            initialize_profile_file(memory_path, "Memory Profile")?;
+            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
             eprintln!("Memory profile will be written to {memory_path}");
         }
         ProfileType::Both => {
-            let time_path = get_time_path()?;
-            let memory_path = get_memory_path()?;
             // Initialize all files
             TimeProfileFile::init();
             MemoryProfileFile::init();
 
-            // Reset all files
-            reset_profile_file(TimeProfileFile::get(), "time")?;
-            reset_profile_file(MemoryProfileFile::get(), "memory")?;
-
-            // Initialize all files with headers
-            initialize_profile_file(time_path, "Time Profile")?;
-            initialize_profile_file(memory_path, "Memory Profile")?;
+            // Reset all files and initialize headers, scoped to release locks ASAP
+            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
 
             eprintln!("Time profile will be written to {time_path}");
             eprintln!("Memory profile will be written to {memory_path}");
         }
     }
+    Ok(())
+}
+
+fn initialize_file(
+    profile_type: &str,
+    file_path: &str,
+    file: &parking_lot::lock_api::Mutex<parking_lot::RawMutex, Option<BufWriter<File>>>,
+) -> Result<(), ProfileError> {
+    *file.lock() = None;
+    initialize_profile_file(file_path, profile_type)?;
     Ok(())
 }
 
@@ -365,9 +351,7 @@ fn set_profile_type(profile_type: ProfileType) {
 #[cfg(feature = "time_profiling")]
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResult<()> {
     // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
-    let _guard = PROFILING_MUTEX
-        .lock()
-        .map_err(|_| ProfileError::General("Failed to acquire profiling mutex".into()))?;
+    let _guard = PROFILING_MUTEX.lock();
 
     // Check if the operation is a no-op due to environment settings
     let config = ProfileConfig::get();
@@ -613,7 +597,17 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        let cleaned_stack = extract_callstack(start_pattern);
+        let mut cleaned_stack = Box::new(vec![]);
+        let mut current_backtrace = Backtrace::new_unresolved();
+        // current_backtrace.resolve();
+        get_with_system_alloc(|| {
+            cleaned_stack = Box::new(extract_callstack_from_backtrace(
+                start_pattern,
+                &mut current_backtrace,
+            ));
+        });
+
+        let cleaned_stack = *cleaned_stack;
 
         // Process the collected frames to collapse patterns and clean up
         // let cleaned_stack = clean_stack_trace(&raw_frames);
@@ -632,16 +626,24 @@ impl Profile {
         // } else {
         //     fn_name.to_string()
         // };
-        let desc_fn_name = fn_name.to_string();
+        let desc_fn_name = fn_name;
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-        // eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-        register_profiled_function(fn_name, desc_fn_name);
+        run_with_system_alloc(|| {
+            eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+            register_profiled_function(fn_name, desc_fn_name);
+        });
 
         #[cfg(not(feature = "full_profiling"))]
         let path = extract_path(&cleaned_stack);
 
         #[cfg(feature = "full_profiling")]
-        let path = extract_path_with_system_alloc(&cleaned_stack);
+        let path = {
+            let mut path = Box::new(vec![]);
+            get_with_system_alloc(|| {
+                path = Box::new(extract_path(&cleaned_stack));
+            });
+            *path
+        };
 
         // Try allowing overrides
         let profile_type = requested_type;
@@ -765,10 +767,7 @@ impl Profile {
         file: &Mutex<Option<BufWriter<File>>>,
         entry: &str,
     ) -> ProfileResult<()> {
-        let mut guard = file
-            .lock()
-            .map_err(|_| ProfileError::General("Failed to lock profile file".into()))?;
-
+        let mut guard = file.lock();
         if guard.is_none() {
             *guard = Some(BufWriter::new(
                 OpenOptions::new().create(true).append(true).open(path)?,
@@ -779,8 +778,8 @@ impl Profile {
             writeln!(writer, "{entry}")?;
             writer.flush()?;
         }
-        // println!("Wrote entry {entry}");
         drop(guard);
+        // println!("Wrote entry {entry}");
         Ok(())
     }
 
@@ -936,9 +935,14 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 
 #[must_use]
 pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
-    // Get the current backtrace
-    // let mut is_within_target_range = false;
     let mut current_backtrace = Backtrace::new_unresolved();
+    extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
+}
+
+fn extract_callstack_from_backtrace(
+    start_pattern: &str,
+    current_backtrace: &mut Backtrace,
+) -> Vec<String> {
     current_backtrace.resolve();
     let mut already_seen = HashSet::new();
 
@@ -1007,22 +1011,16 @@ static GLOBAL_CALL_STACK_ENTRIES: Lazy<Mutex<BTreeSet<String>>> =
 /// Prints all entries in the global `BTreeSet`.
 /// Entries are printed in sorted order (alphabetically).
 pub fn print_all_call_stack_entries() {
-    match GLOBAL_CALL_STACK_ENTRIES.lock() {
-        Ok(parts) => {
-            println!("All entries in the global set (sorted):");
-            if parts.is_empty() {
-                println!("  (empty set)");
-            } else {
-                for part in parts.iter() {
-                    println!("  {part}");
-                }
-            }
-            println!("Total entries: {}", parts.len());
-        }
-        Err(e) => {
-            eprintln!("Error accessing the global set: {e:?}");
+    let parts = { GLOBAL_CALL_STACK_ENTRIES.lock() };
+    println!("All entries in the global set (sorted):");
+    if parts.is_empty() {
+        println!("  (empty set)");
+    } else {
+        for part in parts.iter() {
+            println!("  {part}");
         }
     }
+    println!("Total entries: {}", parts.len());
 }
 
 #[allow(dead_code)]
@@ -1049,10 +1047,10 @@ impl Drop for Profile {
         // Handle memory profiling
         #[cfg(feature = "full_profiling")]
         if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-            eprintln!(
-                "In drop for Profile with memory profiling: {}",
-                self.registered_name
-            );
+            // eprintln!(
+            //     "In drop for Profile with memory profiling: {}",
+            //     self.registered_name
+            // );
             // First drop the guard to exit the task context
             self.memory_guard = None;
             // Now get memory usage from our task
@@ -1179,31 +1177,54 @@ unsafe impl Send for ProfileSection {}
 ///
 /// Panics if it finds the name "new", which shows that the inclusion of the
 /// type in the method name is not working.
-pub fn register_profiled_function(name: &str, desc_name: String) {
+pub fn register_profiled_function(name: &str, desc_name: &str) {
     #[cfg(all(debug_assertions, not(test)))]
     assert!(
         name != "new",
         "Logic error: `new` is not an accepted function name on its own. It must be qualified with the type name: `<Type>::new`. desc_name={desc_name}"
     );
-    if let Ok(mut registry) = PROFILED_FUNCTIONS.lock() {
-        // eprintln!("Registering function: {name}::{desc_name}",);
-        registry.insert(name.to_string(), desc_name);
+    let name = name.to_string();
+    let desc_name = desc_name.to_string();
+    eprintln!(
+        "PROFILED_FUNCTIONS.is_locked()? {}",
+        PROFILED_FUNCTIONS.is_locked()
+    );
+    // PROFILED_FUNCTIONS.lock().insert(name, desc_name);
+    if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
+        lock.insert(name, desc_name);
+    } else {
+        eprintln!("Failed to acquire lock");
     }
+    eprintln!("Exiting register_profiled_function");
 }
 
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
-    PROFILED_FUNCTIONS
-        .try_lock()
-        .is_ok_and(|registry| registry.contains_key(name))
+    eprintln!("Checking if function is profiled: {}", name);
+    let contains_key = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
+        lock.contains_key(name)
+    } else {
+        eprintln!("Failed to acquire lock");
+        false
+    };
+    eprintln!("...done");
+    contains_key
 }
 
 // Get the descriptive name of a profiled function
 pub fn get_reg_desc_name(name: &str) -> Option<String> {
-    PROFILED_FUNCTIONS
-        .try_lock()
-        .ok()
-        .and_then(|registry| registry.get(name).cloned())
+    // eprintln!(
+    //     "Getting the descriptive name of a profiled function: {}",
+    //     name
+    // );
+    let maybe_reg_desc_name = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
+        lock.get(name).cloned()
+    } else {
+        eprintln!("Failed to acquire lock");
+        None
+    };
+    // eprintln!("...done");
+    maybe_reg_desc_name
 }
 
 // Extract just the base function name from a fully qualified function name
@@ -1611,15 +1632,11 @@ impl ProfileStats {
 /// This function is primarily intended for test and debugging use.
 #[cfg(any(test, debug_assertions))]
 pub fn dump_profiled_functions() -> Vec<(String, String)> {
-    PROFILED_FUNCTIONS.try_lock().map_or_else(
-        |_| vec![],
-        |registry| {
-            registry
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect()
-        },
-    )
+    let hash_map = { PROFILED_FUNCTIONS.lock().clone() };
+    hash_map
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
 }
 
 #[cfg(test)]

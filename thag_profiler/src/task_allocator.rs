@@ -819,13 +819,13 @@ fn find_matching_profile(path: &[String]) -> usize {
     //     // println!("Active tasks={:#?}", get_active_tasks());
     // }
 
-    // Return the best match if found, otherwise fallback to last active task
+    // Return the best match if found, otherwise fall back to last active task
     if best_match > 0 {
         return best_match;
     }
 
     // Fallback: Return the most recently activated profile
-    eprintln!("...returning fallback: most recently activated profile");
+    eprintln!("...returning fallback: most recently activated profile - for path: {path:?}");
     get_last_active_task().unwrap_or(0)
 }
 

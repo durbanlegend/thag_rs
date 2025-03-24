@@ -716,7 +716,8 @@ impl Profile {
             run_with_system_alloc(|| {
                 println!(
                     "NEW PROFILE: Task {task_id} created for {:?}",
-                    path.join("::")
+                    // path.join("::")
+                    path.last().map_or("", |v| v),
                 );
             });
 
@@ -1071,7 +1072,8 @@ impl Drop for Profile {
                 println!(
                     "DROP PROFILE: Task {} for {:?} used {} bytes",
                     self.memory_task.as_ref().unwrap().id(),
-                    self.path.join("::"),
+                    // self.path.join("::"),
+                    self.path.last().map_or("", |v| v),
                     memory_usage
                 );
             }

@@ -14,7 +14,7 @@ use std::{
     alloc::System,
     // cell::RefCell,
     collections::{BTreeMap, BTreeSet, HashMap},
-    io::{self, Write, Result as IoResult},
+    io::{self, Write},
     sync::{
         atomic::{AtomicUsize, Ordering},
         LazyLock,
@@ -452,37 +452,9 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     if in_backtrace_new {
                         // eprintln!("Ignoring allocation request for new backtrace");
                         return;
-                    } else {
-                        current_backtrace.resolve();
-                        // if Backtrace::frames(&current_backtrace)
-                        //     .iter()
-                        //     .flat_map(backtrace::BacktraceFrame::symbols)
-                        //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                        //     .filter(|frame| frame.contains("Backtrace::new"))
-                        //     .count()
-                        //     > 1
-                        // {
-                        //     eprintln!(
-                        //         "Failed to pick up backtrace with multiple Backtrace::new calls"
-                        //     );
-                        //     Backtrace::frames(&current_backtrace)
-                        //         .iter()
-                        //         .flat_map(backtrace::BacktraceFrame::symbols)
-                        //         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                        //         .for_each(|frame| {
-                        //             eprintln!("frame: {}", frame);
-                        //         });
-                        // } else {
-                        //     eprintln!("All good!");
-                        //     // Backtrace::frames(&current_backtrace)
-                        //     //     .iter()
-                        //     //     .flat_map(backtrace::BacktraceFrame::symbols)
-                        //     //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                        //     //     .for_each(|frame| {
-                        //     //         eprintln!("frame: {}", frame);
-                        //     //     });
-                        // }
                     }
+
+                    current_backtrace.resolve();
 
                     if cleaned_stack.is_empty() {
                         // eprintln!(
@@ -846,12 +818,12 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
     println!("=============================");
 }
 
-// 7. Function to remove an entry from the TASK_PATH_REGISTRY
-#[cfg(feature = "full_profiling")]
-pub fn remove_task_path(task_id: usize) {
-    let mut registry = TASK_PATH_REGISTRY.lock();
-    registry.remove(&task_id);
-}
+// // 7. Function to remove an entry from the TASK_PATH_REGISTRY
+// #[cfg(feature = "full_profiling")]
+// pub fn remove_task_path(task_id: usize) {
+//     let mut registry = TASK_PATH_REGISTRY.lock();
+//     registry.remove(&task_id);
+// }
 
 // Helper function to find the best matching profile
 #[cfg(feature = "full_profiling")]
@@ -882,24 +854,6 @@ fn find_matching_profile(path: &[String]) -> usize {
             }
         }
     }
-    // if best_score == path.len() {
-    //     eprintln!("...returning exact match with 100% score of {}", score);
-    // } else {
-    //     eprintln!(
-    //         "...returning best-match ancestor with score of {} vs path.len() = {}",
-    //         best_score,
-    //         path.len()
-    //     );
-    //     // println!("==== TASK PATH REGISTRY DUMP ====");
-    //     // println!("Total registered tasks: {}", path_registry.len());
-
-    //     // for (task_id, path) in path_registry.iter() {
-    //     //     println!("Task {}: {}", task_id, path.join(" -> "));
-    //     // }
-    //     // println!("=================================");
-
-    //     // println!("Active tasks={:#?}", get_active_tasks());
-    // }
 
     // Return the best match if found, otherwise fall back to last active task
     if best_match > 0 {
@@ -1027,23 +981,24 @@ pub fn finalize_memory_profiling() {
 }
 
 /// Write memory profile data to a file
+#[allow(clippy::too_many_lines)]
 #[cfg(feature = "full_profiling")]
 fn write_memory_profile_data() {
-    use std::{collections::HashMap, fs::File, path::Path};
     use chrono::Local;
+    use std::{collections::HashMap, fs::File, path::Path};
 
     use crate::profiling::get_memory_path;
 
     MultiAllocator::with(AllocatorTag::System, || {
         println!("Starting write_memory_profile_data...");
-        
+
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
         println!("Memory path: {memory_path}");
-        
+
         // Check if the file exists first
         let file_exists = Path::new(memory_path).exists();
-        
+
         // If the file already exists, write the summary information to the existing file
         // Otherwise, create a new file with the appropriate headers
         let file_result = if file_exists {
@@ -1058,7 +1013,7 @@ fn write_memory_profile_data() {
                         println!("Error writing header: {e}");
                         return;
                     }
-                    
+
                     if let Err(e) = writeln!(
                         file,
                         "# Script: {}",
@@ -1067,22 +1022,24 @@ fn write_memory_profile_data() {
                         println!("Error writing script path: {e}");
                         return;
                     }
-                    
+
                     if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
                         println!("Error writing version: {e}");
                         return;
                     }
-                    
-                    if let Err(e) = writeln!(file, "# Date: {}", Local::now().format("%Y-%m-%d %H:%M:%S")) {
+
+                    if let Err(e) =
+                        writeln!(file, "# Date: {}", Local::now().format("%Y-%m-%d %H:%M:%S"))
+                    {
                         println!("Error writing date: {e}");
                         return;
                     }
-                    
+
                     if let Err(e) = writeln!(file) {
                         println!("Error writing newline: {e}");
                         return;
                     }
-                    
+
                     Ok(file)
                 }
                 Err(e) => {
@@ -1091,7 +1048,7 @@ fn write_memory_profile_data() {
                 }
             }
         };
-        
+
         if let Ok(file) = file_result {
             println!("Successfully opened file");
             let mut writer = io::BufWriter::new(file);
@@ -1105,12 +1062,12 @@ fn write_memory_profile_data() {
             let task_paths_map: HashMap<usize, Vec<String>> = {
                 let binding = TASK_PATH_REGISTRY.lock();
                 println!("TASK_PATH_REGISTRY has {} entries", binding.len());
-                
+
                 // Dump all entries for debugging
                 for (id, path) in binding.iter() {
                     println!("Registry entry: task {id}: path: {:?}", path);
                 }
-                
+
                 // Get all entries from the registry
                 binding
                     .iter()
@@ -1121,7 +1078,7 @@ fn write_memory_profile_data() {
 
             // Write profile data
             let mut lines_written = 0;
-            
+
             // First write all tasks with allocations
             for (task_id, allocations) in &task_allocs {
                 // Skip tasks with no allocations
@@ -1138,14 +1095,14 @@ fn write_memory_profile_data() {
 
                     // Write line to folded format file
                     match writeln!(writer, "{} {}", path_str, total_bytes) {
-                        Ok(_) => lines_written += 1,
+                        Ok(()) => lines_written += 1,
                         Err(e) => println!("Error writing line for task {task_id}: {e}"),
                     }
                 } else {
                     println!("No path found for task {task_id}");
                 }
             }
-            
+
             // Now write all tasks from registry that might not have allocations
             // This helps with keeping the full call hierarchy in the output
             for (task_id, path) in &task_paths_map {
@@ -1153,17 +1110,17 @@ fn write_memory_profile_data() {
                 if task_allocs.contains_key(task_id) {
                     continue;
                 }
-                
+
                 let path_str = path.join(";");
                 println!("Writing for task {task_id} from registry: '{path_str}' with 0 bytes");
-                
+
                 // Write line with zero bytes to maintain call hierarchy
                 match writeln!(writer, "{} {}", path_str, 0) {
-                    Ok(_) => lines_written += 1,
+                    Ok(()) => lines_written += 1,
                     Err(e) => println!("Error writing line for task {task_id}: {e}"),
                 }
             }
-            
+
             // Make sure to flush the writer
             if let Err(e) = writer.flush() {
                 println!("Error flushing writer: {e}");

@@ -12,9 +12,9 @@ use crate::profiling::{extract_callstack_from_backtrace, extract_path};
 #[cfg(feature = "full_profiling")]
 use std::{
     alloc::System,
-    cell::RefCell,
+    // cell::RefCell,
     collections::{BTreeMap, BTreeSet, HashMap},
-    io::Write,
+    io::{self, Write, Result as IoResult},
     sync::{
         atomic::{AtomicUsize, Ordering},
         LazyLock,
@@ -65,16 +65,16 @@ static ALLOC_REGISTRY: LazyLock<Mutex<AllocationRegistry>> =
     LazyLock::new(|| Mutex::new(AllocationRegistry::new()));
 
 // Thread-local buffers for pending allocation operations
-#[cfg(feature = "full_profiling")]
-thread_local! {
-    // Buffer for pending allocations: (task_id, address, size)
-    static ALLOCATION_BUFFER: RefCell<Vec<(usize, usize, usize)>> =
-        RefCell::new(Vec::with_capacity(100));
+// #[cfg(feature = "full_profiling")]
+// thread_local! {
+//     // Buffer for pending allocations: (task_id, address, size)
+//     static ALLOCATION_BUFFER: RefCell<Vec<(usize, usize, usize)>> =
+//         RefCell::new(Vec::with_capacity(100));
 
-    // Buffer for pending deallocations: address
-    static DEALLOCATION_BUFFER: RefCell<Vec<usize>> =
-        RefCell::new(Vec::with_capacity(100));
-}
+//     // Buffer for pending deallocations: address
+//     static DEALLOCATION_BUFFER: RefCell<Vec<usize>> =
+//         RefCell::new(Vec::with_capacity(100));
+// }
 
 // ---------- Profile Registry ----------
 
@@ -166,7 +166,7 @@ pub fn activate_task(task_id: usize) {
 pub fn deactivate_task(task_id: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
         // Process any pending allocations before deactivating
-        process_pending_allocations();
+        // process_pending_allocations();
 
         PROFILE_REGISTRY.lock().deactivate_task(task_id);
     });
@@ -176,7 +176,7 @@ pub fn deactivate_task(task_id: usize) {
 #[cfg(feature = "full_profiling")]
 pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
     // Process any pending allocations first
-    process_pending_allocations();
+    // process_pending_allocations();
 
     ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
 }
@@ -238,94 +238,94 @@ pub fn get_last_active_task() -> Option<usize> {
 
 // ---------- Allocation Tracking ----------
 
-/// Record a memory allocation in the thread-local buffer
-#[cfg(feature = "full_profiling")]
-pub fn record_allocation(task_id: usize, address: usize, size: usize) {
-    MultiAllocator::with(AllocatorTag::System, || {
-        // eprintln!("Allocating {} bytes at address {}", size, address);
-        ALLOCATION_BUFFER.with(|buffer| {
-            let mut allocs = buffer.borrow_mut();
-            allocs.push((task_id, address, size));
+// /// Record a memory allocation in the thread-local buffer
+// #[cfg(feature = "full_profiling")]
+// pub fn record_allocation(task_id: usize, address: usize, size: usize) {
+//     MultiAllocator::with(AllocatorTag::System, || {
+//         // eprintln!("Allocating {} bytes at address {}", size, address);
+//         ALLOCATION_BUFFER.with(|buffer| {
+//             let mut allocs = buffer.borrow_mut();
+//             allocs.push((task_id, address, size));
 
-            // Process if buffer is getting full
-            if allocs.len() >= 50 {
-                // eprintln!("allocs.len() >= 50, time to process pending allocations");
-                // Drop mutable borrow before processing
-                drop(allocs);
-                // eprintln!("...dropped allocs");
-                process_pending_allocations();
-                eprintln!("...processed pending allocations");
-            }
-        });
-    });
-}
+//             // Process if buffer is getting full
+//             if allocs.len() >= 50 {
+//                 // eprintln!("allocs.len() >= 50, time to process pending allocations");
+//                 // Drop mutable borrow before processing
+//                 drop(allocs);
+//                 // eprintln!("...dropped allocs");
+//                 process_pending_allocations();
+//                 eprintln!("...processed pending allocations");
+//             }
+//         });
+//     });
+// }
 
-/// Record a memory deallocation in the thread-local buffer
-#[cfg(feature = "full_profiling")]
-pub fn record_deallocation(address: usize) {
-    MultiAllocator::with(AllocatorTag::System, || {
-        DEALLOCATION_BUFFER.with(|buffer| {
-            let mut deallocs = buffer.borrow_mut();
-            deallocs.push(address);
+// /// Record a memory deallocation in the thread-local buffer
+// #[cfg(feature = "full_profiling")]
+// pub fn record_deallocation(address: usize) {
+//     MultiAllocator::with(AllocatorTag::System, || {
+//         DEALLOCATION_BUFFER.with(|buffer| {
+//             let mut deallocs = buffer.borrow_mut();
+//             deallocs.push(address);
 
-            // Process if buffer is getting full
-            if deallocs.len() >= 50 {
-                // Drop mutable borrow before processing
-                drop(deallocs);
-                process_pending_allocations();
-            }
-        });
-    });
-}
+//             // Process if buffer is getting full
+//             if deallocs.len() >= 50 {
+//                 // Drop mutable borrow before processing
+//                 drop(deallocs);
+//                 process_pending_allocations();
+//             }
+//         });
+//     });
+// }
 
-/// Process pending allocations and deallocations
-#[cfg(feature = "full_profiling")]
-pub fn process_pending_allocations() {
-    MultiAllocator::with(AllocatorTag::System, || {
-        // Process allocations
-        let allocations: Vec<(usize, usize, usize)> = ALLOCATION_BUFFER.with(|buffer| {
-            let mut allocs = buffer.borrow_mut();
-            let result = allocs.clone();
-            allocs.clear();
-            result
-        });
+// /// Process pending allocations and deallocations
+// #[cfg(feature = "full_profiling")]
+// pub fn process_pending_allocations() {
+//     MultiAllocator::with(AllocatorTag::System, || {
+//         // Process allocations
+//         let allocations: Vec<(usize, usize, usize)> = ALLOCATION_BUFFER.with(|buffer| {
+//             let mut allocs = buffer.borrow_mut();
+//             let result = allocs.clone();
+//             allocs.clear();
+//             result
+//         });
 
-        if !allocations.is_empty() {
-            let mut registry = ALLOC_REGISTRY.lock();
-            for (task_id, address, size) in allocations {
-                registry
-                    .task_allocations
-                    .entry(task_id)
-                    .or_default()
-                    .push((address, size));
+//         if !allocations.is_empty() {
+//             let mut registry = ALLOC_REGISTRY.lock();
+//             for (task_id, address, size) in allocations {
+//                 registry
+//                     .task_allocations
+//                     .entry(task_id)
+//                     .or_default()
+//                     .push((address, size));
 
-                registry.address_to_task.insert(address, task_id);
-            }
-        }
+//                 registry.address_to_task.insert(address, task_id);
+//             }
+//         }
 
-        // Process deallocations
-        let deallocations: Vec<usize> = DEALLOCATION_BUFFER.with(|buffer| {
-            let mut deallocs = buffer.borrow_mut();
-            let result = deallocs.clone();
-            deallocs.clear();
-            result
-        });
+//         // Process deallocations
+//         let deallocations: Vec<usize> = DEALLOCATION_BUFFER.with(|buffer| {
+//             let mut deallocs = buffer.borrow_mut();
+//             let result = deallocs.clone();
+//             deallocs.clear();
+//             result
+//         });
 
-        if !deallocations.is_empty() {
-            let mut registry = ALLOC_REGISTRY.lock();
-            for address in deallocations {
-                if let Some(task_id) = registry.address_to_task.remove(&address) {
-                    if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                        if let Some(pos) = allocations.iter().position(|(addr, _)| *addr == address)
-                        {
-                            allocations.swap_remove(pos);
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
+//         if !deallocations.is_empty() {
+//             let mut registry = ALLOC_REGISTRY.lock();
+//             for address in deallocations {
+//                 if let Some(task_id) = registry.address_to_task.remove(&address) {
+//                     if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
+//                         if let Some(pos) = allocations.iter().position(|(addr, _)| *addr == address)
+//                         {
+//                             allocations.swap_remove(pos);
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     });
+// }
 
 /// Task-aware allocator that tracks memory usage per task ID
 #[derive(Debug)]
@@ -540,7 +540,32 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         // let size = layout.size();
 
                         // Record in thread-local buffer
-                        record_allocation(task_id, address, size);
+                        // record_allocation(task_id, address, size);
+                        eprintln!("recording allocation for task_id={task_id}, address={address:#x}, size={size}");
+                        let mut registry = ALLOC_REGISTRY.lock();
+                        registry
+                            .task_allocations
+                            .entry(task_id)
+                            .or_default()
+                            .push((address, size));
+
+                        registry.address_to_task.insert(address, task_id);
+                        let check_map = &registry.task_allocations;
+                        let maybe_vec = check_map.get(&task_id);
+                        let (addr, sz) = *maybe_vec
+                            .and_then(|v: &Vec<(usize, usize)>| {
+                                let last = v.iter().filter(|&(addr, _)| *addr == address).last();
+                                last
+                            })
+                            .unwrap();
+                        // eprintln!("Check registry.task_allocations for task_id {task_id}: ({addr:#x}, {sz})");
+                        assert_eq!(sz, size);
+                        assert_eq!(addr, address);
+                        // eprintln! (
+                        //     "Check registry.address_to_task for task_id {task_id}: {:?}",
+                        //     registry.address_to_task.get(&address)
+                        // );
+                        assert_eq!(*registry.address_to_task.get(&address).unwrap(), task_id);
                     }
                 });
             } else {
@@ -583,7 +608,17 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     let address = ptr as usize;
 
                     // Record in thread-local buffer
-                    record_deallocation(address);
+                    // record_deallocation(address);
+                    let mut registry = ALLOC_REGISTRY.lock();
+                    if let Some(task_id) = registry.address_to_task.remove(&address) {
+                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
+                            if let Some(pos) =
+                                allocations.iter().position(|(addr, _)| *addr == address)
+                            {
+                                allocations.swap_remove(pos);
+                            }
+                        }
+                    }
                 });
             }
         }
@@ -682,7 +717,7 @@ impl Drop for TaskGuard {
     fn drop(&mut self) {
         MultiAllocator::with(AllocatorTag::System, || {
             // Process pending allocations before removing the task
-            process_pending_allocations();
+            // process_pending_allocations();
 
             // Remove from active profiles
             deactivate_task(self.task_id);
@@ -690,8 +725,9 @@ impl Drop for TaskGuard {
             // Remove from thread stack
             pop_task_from_stack(thread::current().id(), self.task_id);
 
-            // Remove from task path registry
-            remove_task_path(self.task_id);
+            // IMPORTANT: We no longer remove from task path registry
+            // so that paths remain available for the memory profile output
+            // remove_task_path(self.task_id);
         });
     }
 }
@@ -983,7 +1019,7 @@ pub fn initialize_memory_profiling() {
 pub fn finalize_memory_profiling() {
     MultiAllocator::with(AllocatorTag::System, || {
         // Process any pending allocations
-        process_pending_allocations();
+        // process_pending_allocations();
 
         // Write memory profile data
         write_memory_profile_data();
@@ -993,43 +1029,146 @@ pub fn finalize_memory_profiling() {
 /// Write memory profile data to a file
 #[cfg(feature = "full_profiling")]
 fn write_memory_profile_data() {
-    use std::{fs::File, io::BufWriter};
+    use std::{collections::HashMap, fs::File, path::Path};
+    use chrono::Local;
 
     use crate::profiling::get_memory_path;
 
     MultiAllocator::with(AllocatorTag::System, || {
+        println!("Starting write_memory_profile_data...");
+        
         // Retrieve registries to get task allocations and names
-        // Open memory.folded file
-        if let Ok(file) = File::create(get_memory_path().unwrap_or("memory.folded")) {
-            let mut writer = BufWriter::new(file);
+        let memory_path = get_memory_path().unwrap_or("memory.folded");
+        println!("Memory path: {memory_path}");
+        
+        // Check if the file exists first
+        let file_exists = Path::new(memory_path).exists();
+        
+        // If the file already exists, write the summary information to the existing file
+        // Otherwise, create a new file with the appropriate headers
+        let file_result = if file_exists {
+            println!("Opening existing file in append mode");
+            File::options().append(true).open(memory_path)
+        } else {
+            println!("Creating new file");
+            match File::create(memory_path) {
+                Ok(mut file) => {
+                    // Write headers similar to time profile file
+                    if let Err(e) = writeln!(file, "# Memory Profile") {
+                        println!("Error writing header: {e}");
+                        return;
+                    }
+                    
+                    if let Err(e) = writeln!(
+                        file,
+                        "# Script: {}",
+                        std::env::current_exe().unwrap_or_default().display()
+                    ) {
+                        println!("Error writing script path: {e}");
+                        return;
+                    }
+                    
+                    if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
+                        println!("Error writing version: {e}");
+                        return;
+                    }
+                    
+                    if let Err(e) = writeln!(file, "# Date: {}", Local::now().format("%Y-%m-%d %H:%M:%S")) {
+                        println!("Error writing date: {e}");
+                        return;
+                    }
+                    
+                    if let Err(e) = writeln!(file) {
+                        println!("Error writing newline: {e}");
+                        return;
+                    }
+                    
+                    Ok(file)
+                }
+                Err(e) => {
+                    println!("Error creating file: {e}");
+                    Err(e)
+                }
+            }
+        };
+        
+        if let Ok(file) = file_result {
+            println!("Successfully opened file");
+            let mut writer = io::BufWriter::new(file);
 
+            // Get all task allocations
             let task_allocs = { ALLOC_REGISTRY.lock().task_allocations.clone() };
             let task_ids = { task_allocs.keys().copied().collect::<Vec<_>>() };
+            println!("Task IDs: {:?}", task_ids);
 
-            let candidates: Vec<(usize, Vec<String>)> = {
+            // Get the task path registry mapping for easier lookup
+            let task_paths_map: HashMap<usize, Vec<String>> = {
                 let binding = TASK_PATH_REGISTRY.lock();
+                println!("TASK_PATH_REGISTRY has {} entries", binding.len());
+                
+                // Dump all entries for debugging
+                for (id, path) in binding.iter() {
+                    println!("Registry entry: task {id}: path: {:?}", path);
+                }
+                
+                // Get all entries from the registry
                 binding
                     .iter()
-                    .filter(|(task_id, _pat)| task_ids.contains(task_id))
                     .map(|(task_id, pat)| (*task_id, pat.clone()))
                     .collect()
             };
+            println!("Task paths map has {} entries", task_paths_map.len());
 
             // Write profile data
+            let mut lines_written = 0;
+            
+            // First write all tasks with allocations
             for (task_id, allocations) in &task_allocs {
                 // Skip tasks with no allocations
                 if allocations.is_empty() {
+                    println!("Task {task_id} has no allocations, skipping");
                     continue;
                 }
 
                 // Get the path for this task
-                if let Some((_, path)) = &candidates.get(*task_id) {
+                if let Some(path) = task_paths_map.get(task_id) {
                     let path_str = path.join(";");
                     let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
+                    println!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
 
                     // Write line to folded format file
-                    let _ = writeln!(writer, "{} {}", path_str, total_bytes);
+                    match writeln!(writer, "{} {}", path_str, total_bytes) {
+                        Ok(_) => lines_written += 1,
+                        Err(e) => println!("Error writing line for task {task_id}: {e}"),
+                    }
+                } else {
+                    println!("No path found for task {task_id}");
                 }
+            }
+            
+            // Now write all tasks from registry that might not have allocations
+            // This helps with keeping the full call hierarchy in the output
+            for (task_id, path) in &task_paths_map {
+                // Skip tasks we've already written
+                if task_allocs.contains_key(task_id) {
+                    continue;
+                }
+                
+                let path_str = path.join(";");
+                println!("Writing for task {task_id} from registry: '{path_str}' with 0 bytes");
+                
+                // Write line with zero bytes to maintain call hierarchy
+                match writeln!(writer, "{} {}", path_str, 0) {
+                    Ok(_) => lines_written += 1,
+                    Err(e) => println!("Error writing line for task {task_id}: {e}"),
+                }
+            }
+            
+            // Make sure to flush the writer
+            if let Err(e) = writer.flush() {
+                println!("Error flushing writer: {e}");
+            } else {
+                println!("Successfully wrote {lines_written} lines and flushed buffer");
             }
         }
     });

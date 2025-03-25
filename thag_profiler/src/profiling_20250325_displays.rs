@@ -773,6 +773,7 @@ impl Profile {
         entry: &str,
     ) -> ProfileResult<()> {
         let mut guard = file.lock();
+        eprintln!("guard={guard:?}");
         if guard.is_none() {
             *guard = Some(BufWriter::new(
                 OpenOptions::new().create(true).append(true).open(path)?,
@@ -834,6 +835,12 @@ impl Profile {
     // TODO remove op as redundant
     #[cfg(feature = "full_profiling")]
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
+        eprintln!(
+            "Memory event: for {}: {} {}",
+            self.path.join(" -> "),
+            op,
+            delta
+        );
         if delta == 0 {
             // Keep this as it's a business logic check
             println!(

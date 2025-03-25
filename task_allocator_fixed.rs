@@ -1074,7 +1074,7 @@ pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
     println!("=============================");
 }
 
-// 7. Function to remove an entry from the TASK_PATH_REGISTRY
+// 7. Function to remove an entry from the TASK_PATH_REGISTRY with delay
 #[cfg(feature = "full_profiling")]
 pub fn remove_task_path(task_id: usize) {
     // Skip if thread TLS access is globally disabled
@@ -1082,22 +1082,30 @@ pub fn remove_task_path(task_id: usize) {
         return;
     }
 
-    // Use a one-time catch_unwind to safely handle TLS access
-    let result = std::panic::catch_unwind(|| {
-        if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
-            registry.remove(&task_id);
-        } else {
-            eprintln!(
-                "Failed to lock task path registry to remove task {}",
-                task_id
-            );
+    // Start a new thread that will remove the task path after a delay
+    // This helps ensure allocations get properly attributed even if there's a lag
+    let task_id_clone = task_id;
+    std::thread::spawn(move || {
+        // Wait for 2 seconds before removing the task path
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        
+        // Now proceed with removal
+        let result = std::panic::catch_unwind(|| {
+            if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
+                registry.remove(&task_id_clone);
+            } else {
+                eprintln!(
+                    "Failed to lock task path registry to remove task {}",
+                    task_id_clone
+                );
+            }
+        });
+
+        // If TLS access failed, mark global skip flag
+        if result.is_err() {
+            SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
         }
     });
-
-    // If TLS access failed, mark global skip flag
-    if result.is_err() {
-        SKIP_THREAD_TLS_ACCESS.store(true, std::sync::atomic::Ordering::Relaxed);
-    }
 }
 
 // Helper function to find the best matching profile
@@ -1111,48 +1119,89 @@ fn find_matching_profile(path: &[String]) -> usize {
     // Use a one-time catch_unwind to safely handle TLS access
     let result = std::panic::catch_unwind(|| {
         if let Ok(path_registry) = TASK_PATH_REGISTRY.try_lock() {
-            // eprintln!("...success!");
             // For each active profile, compute a similarity score
             let mut best_match = 0;
             let mut best_score = 0;
             let path_len = path.len();
 
-            let mut score = 0;
-            for task_id in get_active_tasks().iter().rev() {
-                if let Some(reg_path) = path_registry.get(task_id) {
-                    score = compute_similarity(path, reg_path);
+            // First try active tasks (most likely match)
+            let active_tasks = get_active_tasks();
+            if !active_tasks.is_empty() {
+                eprintln!("Checking {} active tasks for matching profile", active_tasks.len());
+                for task_id in active_tasks.iter().rev() {
+                    if let Some(reg_path) = path_registry.get(task_id) {
+                        let score = compute_similarity(path, reg_path);
+                        eprintln!(
+                            "...scored {score} checking active task {} with path {:?}",
+                            task_id,
+                            reg_path.join(" -> ")
+                        );
+                        if score > best_score || score == path_len {
+                            best_score = score;
+                            best_match = *task_id;
+                        }
+                        if score == path_len {
+                            eprintln!("Found exact match in active tasks: {}", task_id);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If no good match found in active tasks, try all registered paths
+            if best_score < path_len / 2 {
+                eprintln!("No good match in active tasks, checking all registered paths");
+                for (task_id, reg_path) in path_registry.iter() {
+                    // Skip tasks we've already checked
+                    if active_tasks.contains(task_id) {
+                        continue;
+                    }
+                    
+                    let score = compute_similarity(path, reg_path);
                     eprintln!(
-                        "...scored {score} checking task {} with path {:?}",
+                        "...scored {score} checking inactive task {} with path {:?}",
                         task_id,
                         reg_path.join(" -> ")
                     );
-                    if score > best_score || score == path_len {
+                    if score > best_score {
                         best_score = score;
                         best_match = *task_id;
                     }
                     if score == path_len {
+                        eprintln!("Found exact match in inactive tasks: {}", task_id);
                         break;
                     }
                 }
             }
-            if best_score == path.len() {
-                eprintln!("...returning best match with perfect score of {}", score);
-            } else {
+
+            if best_score == path_len {
+                eprintln!("...returning best match with 100% score: task {}", best_match);
+            } else if best_score > 0 {
                 eprintln!(
-                    "...returning best match with imperfect score of {} vs path.len() = {} for path:\n{}",
+                    "...returning partial match (score {}/{}) for path: {}",
                     best_score,
-                    path.len(),
+                    path_len,
                     path.join(" -> ")
                 );
                 println!("==== TASK PATH REGISTRY DUMP ====");
                 println!("Total registered tasks: {}", path_registry.len());
-
+                
                 for (task_id, path) in path_registry.iter() {
                     println!("Task {}: {}", task_id, path.join(" -> "));
                 }
                 println!("=================================");
-
+                
                 println!("Active tasks={:#?}", get_active_tasks());
+            } else {
+                eprintln!(
+                    "No matching profile found for path: {}",
+                    path.join(" -> ")
+                );
+                // If we couldn't find any match, default to most recent task
+                if best_match == 0 {
+                    best_match = get_last_active_task().unwrap_or(0);
+                    eprintln!("Using most recent active task as fallback: {}", best_match);
+                }
             }
             best_match
         } else {

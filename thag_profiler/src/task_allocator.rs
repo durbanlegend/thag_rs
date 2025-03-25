@@ -6,9 +6,8 @@
 
 use std::alloc::{GlobalAlloc, Layout};
 
-use crate::profiling::extract_callstack_from_backtrace;
 #[cfg(feature = "full_profiling")]
-use crate::profiling::{extract_callstack, extract_path};
+use crate::profiling::{extract_callstack_from_backtrace, extract_path};
 
 #[cfg(feature = "full_profiling")]
 use std::{
@@ -23,7 +22,9 @@ use std::{
     thread::{self, ThreadId},
 };
 
+#[cfg(feature = "full_profiling")]
 use backtrace::Backtrace;
+
 #[cfg(feature = "full_profiling")]
 use parking_lot::Mutex;
 

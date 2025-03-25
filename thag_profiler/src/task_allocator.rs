@@ -427,18 +427,6 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     static IN_TRACKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
                 }
 
-                // let already_tracking = IN_TRACKING.with(|flag| {
-                //     let value = flag.get();
-                //     if !value {
-                //         flag.set(true);
-                //     }
-                //     value
-                // });
-
-                // if already_tracking {
-                //     eprintln!("Already tracking, i.e. recursion");
-                //     get_last_active_task()
-                // } else {
                 // Create guard for cleanup
                 struct Guard;
                 impl Drop for Guard {
@@ -459,8 +447,43 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
                     // eprintln!("Calling extract_callstack");
                     let mut current_backtrace = Backtrace::new_unresolved();
-                    let cleaned_stack =
+                    let (cleaned_stack, in_backtrace_new) =
                         extract_callstack_from_backtrace(start_pattern, &mut current_backtrace);
+                    if in_backtrace_new {
+                        // eprintln!("Ignoring allocation request for new backtrace");
+                        return;
+                    } else {
+                        current_backtrace.resolve();
+                        // if Backtrace::frames(&current_backtrace)
+                        //     .iter()
+                        //     .flat_map(backtrace::BacktraceFrame::symbols)
+                        //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                        //     .filter(|frame| frame.contains("Backtrace::new"))
+                        //     .count()
+                        //     > 1
+                        // {
+                        //     eprintln!(
+                        //         "Failed to pick up backtrace with multiple Backtrace::new calls"
+                        //     );
+                        //     Backtrace::frames(&current_backtrace)
+                        //         .iter()
+                        //         .flat_map(backtrace::BacktraceFrame::symbols)
+                        //         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                        //         .for_each(|frame| {
+                        //             eprintln!("frame: {}", frame);
+                        //         });
+                        // } else {
+                        //     eprintln!("All good!");
+                        //     // Backtrace::frames(&current_backtrace)
+                        //     //     .iter()
+                        //     //     .flat_map(backtrace::BacktraceFrame::symbols)
+                        //     //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                        //     //     .for_each(|frame| {
+                        //     //         eprintln!("frame: {}", frame);
+                        //     //     });
+                        // }
+                    }
+
                     if cleaned_stack.is_empty() {
                         // eprintln!(
                         //     "Empty cleaned_stack for backtrace\n{:#?}",
@@ -485,6 +508,13 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                             {
                                 eprintln!("Ignoring setup allocation of size {size} containing Backtrace::new");
                                 // Don't record the allocation because it's profiling setup
+                                Backtrace::frames(&current_backtrace)
+                                    .iter()
+                                    .flat_map(backtrace::BacktraceFrame::symbols)
+                                    .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                                    .for_each(|frame| {
+                                        eprintln!("frame: {}", frame);
+                                    });
                                 return;
                             }
                             eprintln!(

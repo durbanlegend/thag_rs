@@ -310,11 +310,13 @@ pub fn get_global_profile_type() -> ProfileType {
                 ProfileConfig::get().profile_type
             }
         };
-        enable_profiling(true, profile_type).expect("Failed to enable profiling");
-        if profile_type == ProfileType::Memory {
-            eprintln!("Memory profiling enabled");
-        } else if profile_type == ProfileType::Both {
-            eprintln!("Both time and memory profiling enabled");
+        if !is_profiling_enabled() {
+            enable_profiling(true, profile_type).expect("Failed to enable profiling");
+            if profile_type == ProfileType::Memory {
+                eprintln!("Memory profiling enabled");
+            } else if profile_type == ProfileType::Both {
+                eprintln!("Both time and memory profiling enabled");
+            }
         }
         profile_type
     })
@@ -597,17 +599,18 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        let mut cleaned_stack = Box::new(vec![]);
+        let mut result = Box::new((vec![], false));
         let mut current_backtrace = Backtrace::new_unresolved();
         // current_backtrace.resolve();
         get_with_system_alloc(|| {
-            cleaned_stack = Box::new(extract_callstack_from_backtrace(
+            result = Box::new(extract_callstack_from_backtrace(
                 start_pattern,
                 &mut current_backtrace,
             ));
         });
 
-        let cleaned_stack = *cleaned_stack;
+        let result = *result;
+        let cleaned_stack = result.0;
 
         // Process the collected frames to collapse patterns and clean up
         // let cleaned_stack = clean_stack_trace(&raw_frames);
@@ -629,7 +632,7 @@ impl Profile {
         let desc_fn_name = fn_name;
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
         run_with_system_alloc(|| {
-            eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+            // eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
             register_profiled_function(fn_name, desc_fn_name);
         });
 
@@ -933,38 +936,74 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
     path
 }
 
-#[must_use]
-pub fn extract_callstack(start_pattern: &str) -> Vec<String> {
-    let mut current_backtrace = Backtrace::new_unresolved();
-    extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
-}
+// #[must_use]
+// pub fn extract_callstack(start_pattern: &str) -> (Vec<String>, bool) {
+//     let mut current_backtrace = Backtrace::new_unresolved();
+//     extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
+// }
 
 pub fn extract_callstack_from_backtrace(
     start_pattern: &str,
     current_backtrace: &mut Backtrace,
-) -> Vec<String> {
+) -> (Vec<String>, bool) {
     current_backtrace.resolve();
     let mut already_seen = HashSet::new();
+    let mut in_backtrace_new = false; // Are we in Backtrace::new*
 
     // First, collect all relevant frames
-    let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
+    // let callstack: Vec<String> = Backtrace::frames(current_backtrace) =
+    let mut iter = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        .skip_while(|name| !name.contains("Backtrace::new"))
+        .skip(1)
+        // .inspect(|element| {
+        //     eprintln!("Element(1): {}", element);
+        //     // if element.contains("Backtrace::new") {
+        //     //     eprintln!("in_backtrace_new: {in_backtrace_new  }");
+        //     // }
+        // })
         .scan(false, |is_within_target_range, name| {
-            if !*is_within_target_range && name.contains(start_pattern) {
+            if !*is_within_target_range
+                && (name.contains(start_pattern) || name.contains("Backtrace::new"))
+            {
                 *is_within_target_range = true;
             }
             Some((*is_within_target_range, name))
         })
         // .inspect(|(is_within_target_range, name)| {
-        //     println!(
-        //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
-        //         name
-        //     );
+        //     if *is_within_target_range {
+        //         println!("Eligible frame: {name}");
+        //     }
         // })
         .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
+        .peekable();
+
+    if let Some((_, name)) = iter.peek() {
+        // eprintln!("Peeked frame 1: {name}");
+        if name.contains("Backtrace::new") {
+            iter.next();
+            if let Some((_, name)) = iter.peek() {
+                // eprintln!("Peeked frame 2: {name}");
+                if name.contains(start_pattern) {
+                    in_backtrace_new = true;
+                    // eprintln!("in_backtrace_new: {in_backtrace_new  }");
+                }
+                iter.next();
+            }
+        }
+    }
+
+    let callstack = iter
         .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
+        // .inspect(|(_, element)| {
+        //     // eprintln!("Element(2): {}", element);
+        //     if element.contains("Backtrace::new") {
+        //         in_backtrace_new = true;
+        //         eprintln!("in_backtrace_new: {in_backtrace_new  }");
+        //     }
+        // })
         .filter(|(_, name)| !name.starts_with("tokio::"))
         .filter(|(_, name)| {
             !name.contains("core::ops::function::FnOnce::call_once")
@@ -997,11 +1036,10 @@ pub fn extract_callstack_from_backtrace(
                 true
             }
         })
-        // .map(|(_, name)| name.clone())
         .collect();
     // eprintln!("Callstack: {:#?}", callstack);
     // eprintln!("already_seen: {:#?}", already_seen);
-    callstack
+    (callstack, in_backtrace_new)
 }
 
 // Global thread-safe BTreeSet
@@ -1195,7 +1233,7 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
     } else {
         eprintln!("Failed to acquire lock");
     }
-    eprintln!("Exiting register_profiled_function");
+    // eprintln!("Exiting register_profiled_function");
 }
 
 // Check if a function is registered for profiling

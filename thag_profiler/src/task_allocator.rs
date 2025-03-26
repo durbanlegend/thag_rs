@@ -13,7 +13,7 @@ use crate::set_multi_global_allocator;
 use crate::okaoka;
 
 #[cfg(feature = "full_profiling")]
-use crate::profiling::{extract_callstack_from_backtrace, extract_path};
+use crate::profiling::{extract_callstack_from_alloc_backtrace, extract_path};
 
 #[cfg(feature = "full_profiling")]
 use std::{
@@ -59,9 +59,13 @@ impl AllocationRegistry {
 
     /// Get the memory usage for a specific task
     fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        self.task_allocations
-            .get(&task_id)
-            .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
+        self.task_allocations.get(&task_id).map(|allocations| {
+            allocations
+                .iter()
+                .map(|(_, size)| *size)
+                .inspect(|size| eprintln!("... found alloc {size}"))
+                .sum()
+        })
     }
 }
 
@@ -240,7 +244,7 @@ pub struct TaskAwareAllocator<A: GlobalAlloc> {
 #[cfg(feature = "full_profiling")]
 #[derive(Debug, Clone)]
 pub struct TaskMemoryContext {
-    task_id: usize,
+    pub task_id: usize,
     // allocator: &'static TaskAwareAllocator<System>,
 }
 
@@ -318,13 +322,19 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let mut task_id = 0;
                 MultiAllocator::with(AllocatorTag::System, || {
                     // Now we can safely use backtrace without recursion!
-                    // let start_pattern = "TaskAwareAllocator";
-                    let start_pattern = "Profile::new";
+                    let start_pattern = "global::GlobalAlloc";
 
                     // eprintln!("Calling extract_callstack");
                     let mut current_backtrace = Backtrace::new_unresolved();
-                    let (cleaned_stack, in_backtrace_new) =
-                        extract_callstack_from_backtrace(start_pattern, &mut current_backtrace);
+                    let cleaned_stack = extract_callstack_from_alloc_backtrace(
+                        start_pattern,
+                        &mut current_backtrace,
+                    );
+                    eprintln!("cleaned_stack for size={size}: {cleaned_stack:?}");
+                    let in_backtrace_new = cleaned_stack
+                        .iter()
+                        .any(|frame| frame.contains("Backtrace::new"));
+
                     if in_backtrace_new {
                         eprintln!("Ignoring allocation request for new backtrace");
                         return;
@@ -335,9 +345,9 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     if cleaned_stack.is_empty() {
                         eprintln!(
                             "Empty cleaned_stack for backtrace: size={size}:\n{:#?}",
-                            backtrace::Backtrace::new()
+                            trim_backtrace(start_pattern, &current_backtrace)
                         );
-                        // eprintln!("Empty cleaned_stack");
+                        eprintln!("Getting last active task (hmmm :/)");
                         task_id = get_last_active_task().unwrap_or(0);
                     } else {
                         // Make sure the use of a separate allocator is working.
@@ -348,29 +358,29 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         eprintln!("Calling extract_path");
                         let path = extract_path(&cleaned_stack);
                         if path.is_empty() {
-                            if Backtrace::frames(&current_backtrace)
+                            let trimmed_backtrace =
+                                trim_backtrace(start_pattern, &current_backtrace);
+                            if trimmed_backtrace
                                 .iter()
-                                .flat_map(backtrace::BacktraceFrame::symbols)
-                                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
                                 .any(|frame| frame.contains("Backtrace::new"))
                             {
-                                eprintln!("Ignoring setup allocation of size {size} containing Backtrace::new");
+                                eprintln!("Ignoring setup allocation of size {size} containing Backtrace::new:");
                                 // Don't record the allocation because it's profiling setup
-                                Backtrace::frames(&current_backtrace)
-                                    .iter()
-                                    .flat_map(backtrace::BacktraceFrame::symbols)
-                                    .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                                    .for_each(|frame| {
-                                        eprintln!("frame: {}", frame);
-                                    });
+                                // Backtrace::frames(&current_backtrace)
+                                //     .iter()
+                                //     .flat_map(backtrace::BacktraceFrame::symbols)
+                                //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                                //     .for_each(|frame| {
+                                //         eprintln!("frame: {}", frame);
+                                //     });
                                 return;
                             }
                             eprintln!(
-                                "...path is empty for thread {:?}: assigning to lastest active task. cleaned_stack: {:?}",
+                                "...path is empty for thread {:?}: assigning to lastest active task.\nCleaned_stack: {:?}",
                                 thread::current().id(),
                                 cleaned_stack
                             );
-                            eprintln!("...backtrace: {current_backtrace:?}",);
+                            eprintln!("...backtrace:\n{trimmed_backtrace:?}");
                             task_id = get_last_active_task().unwrap_or(0);
                         } else {
                             // eprintln!("path={path:#?}");
@@ -393,7 +403,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
                         // Record in thread-local buffer
                         // record_allocation(task_id, address, size);
-                        eprintln!("recording allocation for task_id={task_id}, address={address:#x}, size={size}");
+                        eprintln!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
                         let mut registry = ALLOC_REGISTRY.lock();
                         registry
                             .task_allocations
@@ -420,6 +430,10 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         //     registry.address_to_task.get(&address)
                         // );
                         assert_eq!(reg_task_id, task_id);
+                        eprintln!(
+                            "task {task_id} memory usage: {:?}",
+                            ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
+                        );
                     }
                 });
             } else {
@@ -431,54 +445,20 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        #[cfg(feature = "full_profiling")]
-        if !ptr.is_null() {
-            // Similar recursion prevention as in alloc
-            thread_local! {
-                static IN_TRACKING: std::cell::RefCell<bool> = const { std::cell::RefCell::new(false) };
-            }
-
-            let already_tracking = IN_TRACKING.with(|flag| {
-                let value = *flag.borrow();
-                if !value {
-                    *flag.borrow_mut() = true;
-                }
-                value
-            });
-
-            if !already_tracking {
-                // Setup guard
-                struct Guard;
-                impl Drop for Guard {
-                    fn drop(&mut self) {
-                        IN_TRACKING.with(|flag| *flag.borrow_mut() = false);
-                    }
-                }
-                let _guard = Guard;
-
-                // Record deallocation
-                // Use okaoka to avoid recursive allocations
-                MultiAllocator::with(AllocatorTag::System, || {
-                    let address = ptr as usize;
-
-                    // Record in thread-local buffer
-                    // record_deallocation(address);
-                    let mut registry = ALLOC_REGISTRY.lock();
-                    if let Some(task_id) = registry.address_to_task.remove(&address) {
-                        if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-                            if let Some(pos) =
-                                allocations.iter().position(|(addr, _)| *addr == address)
-                            {
-                                allocations.swap_remove(pos);
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
+        // Don't record deallocation
         self.inner.dealloc(ptr, layout);
     }
+}
+
+fn trim_backtrace(start_pattern: &str, current_backtrace: &Backtrace) -> Vec<String> {
+    let x = Backtrace::frames(current_backtrace)
+        .iter()
+        .flat_map(backtrace::BacktraceFrame::symbols)
+        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        .skip_while(|element| !element.contains(start_pattern))
+        .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
+        .collect::<Vec<String>>();
+    x
 }
 
 // Task tracking state
@@ -716,10 +696,12 @@ fn write_memory_profile_data() {
     use chrono::Local;
     use std::{collections::HashMap, fs::File, path::Path};
 
-    use crate::profiling::get_memory_path;
+    use crate::profiling::{dump_profiled_functions, get_memory_path};
 
     MultiAllocator::with(AllocatorTag::System, || {
         println!("Starting write_memory_profile_data...");
+
+        println!("Profiled functions:\n{:#?}", dump_profiled_functions());
 
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");

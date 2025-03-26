@@ -10,11 +10,8 @@ use std::{
     fs::File,
     io::BufWriter,
     path::PathBuf,
-    sync::{
-        atomic::{AtomicU8, Ordering},
-        // Mutex,
-    },
-    time::Instant,
+    sync::atomic::{AtomicU8, Ordering},
+    time::{Duration, Instant},
 };
 
 #[cfg(feature = "full_profiling")]
@@ -601,25 +598,26 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        let mut result = Box::new((vec![], false));
+        let mut result = Box::new(vec![]);
         let mut current_backtrace = Backtrace::new_unresolved();
         // current_backtrace.resolve();
         run_mut_with_system_alloc(|| {
-            result = Box::new(extract_callstack_from_backtrace(
+            result = Box::new(extract_callstack_from_profile_backtrace(
                 start_pattern,
                 &mut current_backtrace,
             ));
         });
 
-        let result = *result;
-        let cleaned_stack = result.0;
+        let cleaned_stack = *result;
 
         // Process the collected frames to collapse patterns and clean up
         // let cleaned_stack = clean_stack_trace(&raw_frames);
         // eprintln!("cleaned_stack={cleaned_stack:?}");
 
         if cleaned_stack.is_empty() {
-            eprintln!("Empty cleaned stack found");
+            run_with_system_alloc(|| {
+                eprintln!("Empty cleaned stack found");
+            });
             return None;
         }
         // Register this function
@@ -633,8 +631,8 @@ impl Profile {
         // };
         let desc_fn_name = fn_name;
         // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-        run_with_system_alloc(|| {
-            // eprintln!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+        run_mut_with_system_alloc(|| {
+            println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
             register_profiled_function(fn_name, desc_fn_name);
         });
 
@@ -946,68 +944,32 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 //     extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
 // }
 
-pub fn extract_callstack_from_backtrace(
+pub fn extract_callstack_from_profile_backtrace(
     start_pattern: &str,
     current_backtrace: &mut Backtrace,
-) -> (Vec<String>, bool) {
+) -> Vec<String> {
     current_backtrace.resolve();
     let mut already_seen = HashSet::new();
-    let mut in_backtrace_new = false; // Are we in Backtrace::new*
 
     // First, collect all relevant frames
-    // let callstack: Vec<String> = Backtrace::frames(current_backtrace) =
-    let mut iter = Backtrace::frames(current_backtrace)
+    let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|name| !name.contains("Backtrace::new"))
-        .skip(1)
-        // .inspect(|element| {
-        //     eprintln!("Element(1): {}", element);
-        //     // if element.contains("Backtrace::new") {
-        //     //     eprintln!("in_backtrace_new: {in_backtrace_new  }");
-        //     // }
-        // })
         .scan(false, |is_within_target_range, name| {
-            if !*is_within_target_range
-                && (name.contains(start_pattern) || name.contains("Backtrace::new"))
-            {
+            if !*is_within_target_range && name.contains(start_pattern) {
                 *is_within_target_range = true;
             }
             Some((*is_within_target_range, name))
         })
         // .inspect(|(is_within_target_range, name)| {
-        //     if *is_within_target_range {
-        //         println!("Eligible frame: {name}");
-        //     }
+        //     println!(
+        //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
+        //         name
+        //     );
         // })
         .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
-        .peekable();
-
-    if let Some((_, name)) = iter.peek() {
-        // eprintln!("Peeked frame 1: {name}");
-        if name.contains("Backtrace::new") {
-            iter.next();
-            if let Some((_, name)) = iter.peek() {
-                // eprintln!("Peeked frame 2: {name}");
-                if name.contains(start_pattern) {
-                    in_backtrace_new = true;
-                    // eprintln!("in_backtrace_new: {in_backtrace_new  }");
-                }
-                iter.next();
-            }
-        }
-    }
-
-    let callstack = iter
         .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
-        // .inspect(|(_, element)| {
-        //     // eprintln!("Element(2): {}", element);
-        //     if element.contains("Backtrace::new") {
-        //         in_backtrace_new = true;
-        //         eprintln!("in_backtrace_new: {in_backtrace_new  }");
-        //     }
-        // })
         .filter(|(_, name)| !name.starts_with("tokio::"))
         .filter(|(_, name)| {
             !name.contains("core::ops::function::FnOnce::call_once")
@@ -1040,10 +1002,76 @@ pub fn extract_callstack_from_backtrace(
                 true
             }
         })
+        // .map(|(_, name)| name.clone())
         .collect();
     // eprintln!("Callstack: {:#?}", callstack);
     // eprintln!("already_seen: {:#?}", already_seen);
-    (callstack, in_backtrace_new)
+    callstack
+}
+
+pub fn extract_callstack_from_alloc_backtrace(
+    start_pattern: &str,
+    current_backtrace: &mut Backtrace,
+) -> Vec<String> {
+    current_backtrace.resolve();
+    let mut already_seen = HashSet::new();
+
+    // First, collect all relevant frames
+    let callstack: Vec<String> = Backtrace::frames(current_backtrace)
+        .iter()
+        .flat_map(backtrace::BacktraceFrame::symbols)
+        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        .scan(false, |is_within_target_range, name| {
+            if !*is_within_target_range && name.contains(start_pattern) {
+                *is_within_target_range = true;
+            }
+            Some((*is_within_target_range, name))
+        })
+        // .inspect(|(is_within_target_range, name)| {
+        //     println!(
+        //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
+        //         name
+        //     );
+        // })
+        .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
+        .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
+        .filter(|(_, name)| !name.starts_with("tokio::"))
+        .filter(|(_, name)| {
+            !name.contains("core::ops::function::FnOnce::call_once")
+                && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+                && !name.contains("std::rt::lang_start")
+                && !name.contains("std::panicking")
+        })
+        .filter(|(_, name)| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
+        .map(|(_, name)| -> String {
+            if let Some(hash_pos) = name.rfind("::h") {
+                if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+                    name[..hash_pos].to_string()
+                } else {
+                    name
+                }
+            } else {
+                name
+            }
+        })
+        .map(|name| {
+            // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+            clean_function_name(name)
+        })
+        .filter(|name| {
+            // Skip duplicate function calls (helps with the {{closure}} pattern)
+            if already_seen.contains(name.as_str()) {
+                false
+            } else {
+                already_seen.insert(name.clone());
+                true
+            }
+        })
+        // .map(|(_, name)| name.clone())
+        .collect();
+    // eprintln!("Callstack: {:#?}", callstack);
+    // eprintln!("already_seen: {:#?}", already_seen);
+    callstack
 }
 
 // Global thread-safe BTreeSet
@@ -1094,12 +1122,14 @@ impl Drop for Profile {
                 //     "In drop for Profile with memory profiling: {}",
                 //     self.registered_name
                 // );
+
+                thread::sleep(Duration::from_millis(1000));
                 // First drop the guard to exit the task context
                 self.memory_guard = None;
                 // Now get memory usage from our task
                 if let Some(ref task) = self.memory_task {
                     if let Some(memory_usage) = task.memory_usage() {
-                        // eprintln!("memory_usage={memory_usage}");
+                        eprintln!("Task {} final memory_usage={memory_usage}", task.task_id);
                         if memory_usage > 0 {
                             let _ = self.record_memory_change(memory_usage);
                         }
@@ -1229,29 +1259,31 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
     );
     let name = name.to_string();
     let desc_name = desc_name.to_string();
-    eprintln!(
-        "PROFILED_FUNCTIONS.is_locked()? {}",
-        PROFILED_FUNCTIONS.is_locked()
-    );
-    // PROFILED_FUNCTIONS.lock().insert(name, desc_name);
-    if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
-        lock.insert(name, desc_name);
-    } else {
-        eprintln!("Failed to acquire lock");
+    // eprintln!(
+    //     "PROFILED_FUNCTIONS.is_locked()? {}",
+    //     PROFILED_FUNCTIONS.is_locked()
+    // );
+    {
+        if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
+            lock.insert(name, desc_name);
+        } else {
+            eprintln!("Failed to acquire lock");
+        }
     }
-    // eprintln!("Exiting register_profiled_function");
+    eprintln!("Profiled functions: {:#?}", dump_profiled_functions());
+    eprintln!("Exiting register_profiled_function");
 }
 
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
-    eprintln!("Checking if function is profiled: {}", name);
+    // eprintln!("Checking if function is profiled: {}", name);
     let contains_key = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
         lock.contains_key(name)
     } else {
         eprintln!("Failed to acquire lock");
         false
     };
-    eprintln!("...done");
+    // eprintln!("...done");
     contains_key
 }
 
@@ -1278,75 +1310,75 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
     qualified_name.split("::").last().map(ToString::to_string)
 }
 
-// #[cfg(feature = "time_profiling")]
-// TODO out: redundant
-#[must_use]
-pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
-    // First, filter out standard library infrastructure we don't care about
-    let filtered_frames: Vec<String> = raw_frames
-        .iter()
-        .filter(|frame| {
-            !frame.contains("core::ops::function::FnOnce::call_once")
-                && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
-                && !frame.contains("std::rt::lang_start")
-                && !frame.contains("std::panicking")
-        })
-        .cloned()
-        .collect();
+// // #[cfg(feature = "time_profiling")]
+// // TODO out: redundant
+// #[must_use]
+// pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
+//     // First, filter out standard library infrastructure we don't care about
+//     let filtered_frames: Vec<String> = raw_frames
+//         .iter()
+//         .filter(|frame| {
+//             !frame.contains("core::ops::function::FnOnce::call_once")
+//                 && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+//                 && !frame.contains("std::rt::lang_start")
+//                 && !frame.contains("std::panicking")
+//         })
+//         .cloned()
+//         .collect();
 
-    eprintln!("filtered_frames={filtered_frames:#?}");
+//     eprintln!("filtered_frames={filtered_frames:#?}");
 
-    // These are patterns we want to remove from the stack
-    // Create a new cleaned stack, filtering out scaffolding
-    let mut cleaned_frames = Vec::new();
-    let mut i = 0;
-    let mut already_seen = HashSet::new();
-    let mut seen_main = false;
+//     // These are patterns we want to remove from the stack
+//     // Create a new cleaned stack, filtering out scaffolding
+//     let mut cleaned_frames = Vec::new();
+//     let mut i = 0;
+//     let mut already_seen = HashSet::new();
+//     let mut seen_main = false;
 
-    while i < filtered_frames.len() {
-        let current_frame = &filtered_frames[i];
+//     while i < filtered_frames.len() {
+//         let current_frame = &filtered_frames[i];
 
-        // Check if this is scaffolding we want to skip
-        let is_scaffolding = SCAFFOLDING_PATTERNS
-            .iter()
-            .any(|pattern| current_frame.contains(pattern));
+//         // Check if this is scaffolding we want to skip
+//         let is_scaffolding = SCAFFOLDING_PATTERNS
+//             .iter()
+//             .any(|pattern| current_frame.contains(pattern));
 
-        if is_scaffolding {
-            i += 1;
-            continue;
-        }
+//         if is_scaffolding {
+//             i += 1;
+//             continue;
+//         }
 
-        // Clean the function name
-        let clean_name = {
-            // Remove hash suffixes and closure markers
-            let clean_name = current_frame.to_string();
+//         // Clean the function name
+//         let clean_name = {
+//             // Remove hash suffixes and closure markers
+//             let clean_name = current_frame.to_string();
 
-            clean_function_name(clean_name)
-        };
+//             clean_function_name(clean_name)
+//         };
 
-        // Handle main function special case
-        if clean_name.ends_with("::main") || clean_name == "main" {
-            if !seen_main {
-                cleaned_frames.push("main".to_string());
-                seen_main = true;
-            }
-            i += 1;
-            continue;
-        }
+//         // Handle main function special case
+//         if clean_name.ends_with("::main") || clean_name == "main" {
+//             if !seen_main {
+//                 cleaned_frames.push("main".to_string());
+//                 seen_main = true;
+//             }
+//             i += 1;
+//             continue;
+//         }
 
-        // Skip duplicate function calls (helps with the {{closure}} pattern)
-        if already_seen.contains(&clean_name) {
-            i += 1;
-            continue;
-        }
+//         // Skip duplicate function calls (helps with the {{closure}} pattern)
+//         if already_seen.contains(&clean_name) {
+//             i += 1;
+//             continue;
+//         }
 
-        already_seen.insert(clean_name.clone());
-        cleaned_frames.push(clean_name);
-        i += 1;
-    }
+//         already_seen.insert(clean_name.clone());
+//         cleaned_frames.push(clean_name);
+//         i += 1;
+//     }
 
-    cleaned_frames
-}
+//     cleaned_frames
+// }
 
 const SCAFFOLDING_PATTERNS: &[&str] = &[
     "::main::",

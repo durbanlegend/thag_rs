@@ -6,6 +6,7 @@
 
 use std::alloc::{GlobalAlloc, Layout};
 
+use crate::profiling::clean_function_name;
 #[cfg(feature = "full_profiling")]
 use crate::set_multi_global_allocator;
 
@@ -63,7 +64,7 @@ impl AllocationRegistry {
             allocations
                 .iter()
                 .map(|(_, size)| *size)
-                .inspect(|size| eprintln!("... found alloc {size}"))
+                // .inspect(|size| eprintln!("... found alloc {size}"))
                 .sum()
         })
     }
@@ -457,6 +458,7 @@ fn trim_backtrace(start_pattern: &str, current_backtrace: &Backtrace) -> Vec<Str
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .skip_while(|element| !element.contains(start_pattern))
         .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
+        .map(clean_function_name)
         .collect::<Vec<String>>();
     x
 }

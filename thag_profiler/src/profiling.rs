@@ -599,9 +599,12 @@ impl Profile {
         let start_pattern = "Profile::new";
 
         let mut result = Box::new(vec![]);
-        let mut current_backtrace = Backtrace::new_unresolved();
         // current_backtrace.resolve();
         run_mut_with_system_alloc(|| {
+            let mut current_backtrace = Backtrace::new_unresolved();
+            current_backtrace.resolve();
+            // println!("************\n{current_backtrace:?}\n************");
+
             result = Box::new(extract_callstack_from_profile_backtrace(
                 start_pattern,
                 &mut current_backtrace,
@@ -952,10 +955,14 @@ pub fn extract_callstack_from_profile_backtrace(
     let mut already_seen = HashSet::new();
 
     // First, collect all relevant frames
-    let callstack: Vec<String> = Backtrace::frames(&current_backtrace)
+    let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        // Be careful, this is very sensitive to changes in the function signatures of this module.
+        .skip_while(|name| !name.contains("Profile::new::{{closure}}"))
+        .skip(1)
+        .skip_while(|name| !name.contains("Profile::new"))
         .scan(false, |is_within_target_range, name| {
             if !*is_within_target_range && name.contains(start_pattern) {
                 *is_within_target_range = true;
@@ -1394,7 +1401,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 ];
 
 // #[cfg(feature = "time_profiling")]
-fn clean_function_name(mut clean_name: String) -> String {
+pub fn clean_function_name(mut clean_name: String) -> String {
     // Find and remove hash suffixes (::h followed by hex digits)
     // from the last path segment
     if let Some(hash_pos) = clean_name.rfind("::h") {

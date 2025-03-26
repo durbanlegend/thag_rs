@@ -29,17 +29,7 @@
 - [ ]  X Repeated try_lock if first try fails? didn't work
 - [ ]  Try stripping closures to register and track them under their enclosing function names.
 - [ ]  Docs and impl: don't allow profiling sections for memory due to backtrace matching issue.
-- [ ]  Next: TLS out, clippy fixes, deal with this:
-warning: field `active` is never read
-   --> /Users/donf/projects/thag_rs/thag_profiler/src/task_allocator.rs:618:5
-    |
-616 | struct TaskData {
-    |        -------- field in this struct
-617 |     // allocations: Vec<(usize, usize)>,
-618 |     active: bool,
-    |     ^^^^^^
-    |
-    = note: `#[warn(dead_code)]` on by default
+- [ ]  Next: Make extract_callstack_from_profile_backtrace and extract_callstack_from_alloc_event more resilient.:
 
 
 ⏺ I fixed the empty memory profiling output issue by making several key changes:

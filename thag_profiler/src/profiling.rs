@@ -783,7 +783,7 @@ impl Profile {
             writeln!(writer, "{entry}")?;
             writer.flush()?;
         }
-        println!("Wrote entry {entry} to {path} for {guard:?}");
+        // println!("Wrote entry {entry} to {path} for {guard:?}");
         drop(guard);
         Ok(())
     }
@@ -1267,11 +1267,11 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
         if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
             lock.insert(name, desc_name);
         } else {
-            eprintln!("Failed to acquire lock");
+            eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
         }
     }
-    eprintln!("Profiled functions: {:#?}", dump_profiled_functions());
-    eprintln!("Exiting register_profiled_function");
+    // eprintln!("Profiled functions: {:#?}", dump_profiled_functions());
+    // eprintln!("Exiting register_profiled_function");
 }
 
 // Check if a function is registered for profiling
@@ -1280,7 +1280,7 @@ pub fn is_profiled_function(name: &str) -> bool {
     let contains_key = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
         lock.contains_key(name)
     } else {
-        eprintln!("Failed to acquire lock");
+        eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
         false
     };
     // eprintln!("...done");
@@ -1296,7 +1296,7 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
     let maybe_reg_desc_name = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
         lock.get(name).cloned()
     } else {
-        eprintln!("Failed to acquire lock");
+        eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
         None
     };
     // eprintln!("...done");

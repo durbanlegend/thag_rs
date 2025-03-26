@@ -533,8 +533,8 @@ pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
 // Task Path Registry for debugging
 // 1. Declare the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
-pub static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
-    LazyLock::new(|| Mutex::new(BTreeMap::new()));
+pub static TASK_PATH_REGISTRY: LazyLock<Mutex<HashMap<usize, Vec<String>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 // 2. Function to look up a task's path by ID
 #[cfg(feature = "full_profiling")]
@@ -549,14 +549,22 @@ pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
 #[cfg(feature = "full_profiling")]
 pub fn dump_task_path_registry() {
     // eprintln!("About to try_lock TASK_PATH_REGISTRY for dump_task_path_registry");
-    let registry = TASK_PATH_REGISTRY.lock();
     println!("==== TASK PATH REGISTRY DUMP ====");
-    println!("Total registered tasks: {}", registry.len());
+    let task_paths = TASK_PATH_REGISTRY.lock().clone();
+    println!("Total registered tasks: {}", task_paths.len());
 
-    for (task_id, path) in registry.iter() {
-        println!("Task {}: {}", task_id, path.join("::"));
+    let mut v = task_paths
+        .iter()
+        .map(|(&task_id, path)| (task_id, path.join("::")))
+        // .cloned()
+        .collect::<Vec<(usize, String)>>();
+
+    v.sort();
+
+    for (task_id, path) in v.iter() {
+        println!("Task {}: {}", task_id, path);
     }
-    drop(registry);
+    drop(task_paths);
     println!("=================================");
 }
 
@@ -568,6 +576,13 @@ pub fn print_task_path(task_id: usize) {
         Some(path) => println!("Task {} path: {}", task_id, path.join("::")),
         None => println!("No path registered for task {}", task_id),
     }
+}
+
+// 5. Function to remove an entry from the TASK_PATH_REGISTRY
+#[cfg(feature = "full_profiling")]
+pub fn remove_task_path(task_id: usize) {
+    let mut registry = TASK_PATH_REGISTRY.lock();
+    registry.remove(&task_id);
 }
 
 // Helper function to find the best matching profile
@@ -699,13 +714,13 @@ fn write_memory_profile_data() {
     use crate::profiling::{dump_profiled_functions, get_memory_path};
 
     MultiAllocator::with(AllocatorTag::System, || {
-        println!("Starting write_memory_profile_data...");
+        // println!("Starting write_memory_profile_data...");
 
-        println!("Profiled functions:\n{:#?}", dump_profiled_functions());
+        // println!("Profiled functions:\n{:#?}", dump_profiled_functions());
 
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
-        println!("Memory path: {memory_path}");
+        // println!("Memory path: {memory_path}");
 
         // Check if the file exists first
         let file_exists = Path::new(memory_path).exists();
@@ -761,18 +776,18 @@ fn write_memory_profile_data() {
         };
 
         if let Ok(file) = file_result {
-            println!("Successfully opened file");
+            // println!("Successfully opened file");
             let mut writer = io::BufWriter::new(file);
 
             // Get all task allocations
             let task_allocs = { ALLOC_REGISTRY.lock().task_allocations.clone() };
             let task_ids = { task_allocs.keys().copied().collect::<Vec<_>>() };
-            println!("Task IDs: {:?}", task_ids);
+            // println!("Task IDs: {:?}", task_ids);
 
             // Get the task path registry mapping for easier lookup
             let task_paths_map: HashMap<usize, Vec<String>> = {
                 let binding = TASK_PATH_REGISTRY.lock();
-                println!("TASK_PATH_REGISTRY has {} entries", binding.len());
+                // println!("TASK_PATH_REGISTRY has {} entries", binding.len());
 
                 // Dump all entries for debugging
                 for (id, path) in binding.iter() {
@@ -785,7 +800,7 @@ fn write_memory_profile_data() {
                     .map(|(task_id, pat)| (*task_id, pat.clone()))
                     .collect()
             };
-            println!("Task paths map has {} entries", task_paths_map.len());
+            // println!("Task paths map has {} entries", task_paths_map.len());
 
             // Write profile data
             let mut lines_written = 0;
@@ -804,7 +819,7 @@ fn write_memory_profile_data() {
                 if let Some(path) = task_paths_map.get(task_id) {
                     let path_str = path.join(";");
                     let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
-                    println!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
+                    // println!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
 
                     // Write line to folded format file
                     match writeln!(writer, "{} {}", path_str, total_bytes) {
@@ -848,7 +863,7 @@ fn write_memory_profile_data() {
             if let Err(e) = writer.flush() {
                 println!("Error flushing writer: {e}");
             } else {
-                println!("Successfully wrote {lines_written} lines and flushed buffer");
+                // println!("Successfully wrote {lines_written} lines and flushed buffer");
             }
         }
     });

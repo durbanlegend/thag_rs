@@ -13,7 +13,7 @@ use crate::profiling::{extract_callstack_from_backtrace, extract_path};
 use std::{
     alloc::System,
     // cell::RefCell,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     io::{self, Write},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -223,117 +223,11 @@ pub fn get_last_active_task() -> Option<usize> {
     *last_active_task
 }
 
-// /// Get the top task for a thread
-// #[cfg(feature = "full_profiling")]
-// pub fn get_top_task_for_thread(thread_id: ThreadId) -> Option<usize> {
-//     let mut top_task_for_thread: Box<Option<usize>> = Box::new(None);
-//     MultiAllocator::with(AllocatorTag::System, || {
-//         let top_task = PROFILE_REGISTRY
-//             .try_lock()
-//             .map_or(None, |registry| registry.get_top_task_for_thread(thread_id));
-//         top_task_for_thread = Box::new(top_task);
-//     });
-//     *top_task_for_thread
-// }
-
-// ---------- Allocation Tracking ----------
-
-// /// Record a memory allocation in the thread-local buffer
-// #[cfg(feature = "full_profiling")]
-// pub fn record_allocation(task_id: usize, address: usize, size: usize) {
-//     MultiAllocator::with(AllocatorTag::System, || {
-//         // eprintln!("Allocating {} bytes at address {}", size, address);
-//         ALLOCATION_BUFFER.with(|buffer| {
-//             let mut allocs = buffer.borrow_mut();
-//             allocs.push((task_id, address, size));
-
-//             // Process if buffer is getting full
-//             if allocs.len() >= 50 {
-//                 // eprintln!("allocs.len() >= 50, time to process pending allocations");
-//                 // Drop mutable borrow before processing
-//                 drop(allocs);
-//                 // eprintln!("...dropped allocs");
-//                 process_pending_allocations();
-//                 eprintln!("...processed pending allocations");
-//             }
-//         });
-//     });
-// }
-
-// /// Record a memory deallocation in the thread-local buffer
-// #[cfg(feature = "full_profiling")]
-// pub fn record_deallocation(address: usize) {
-//     MultiAllocator::with(AllocatorTag::System, || {
-//         DEALLOCATION_BUFFER.with(|buffer| {
-//             let mut deallocs = buffer.borrow_mut();
-//             deallocs.push(address);
-
-//             // Process if buffer is getting full
-//             if deallocs.len() >= 50 {
-//                 // Drop mutable borrow before processing
-//                 drop(deallocs);
-//                 process_pending_allocations();
-//             }
-//         });
-//     });
-// }
-
-// /// Process pending allocations and deallocations
-// #[cfg(feature = "full_profiling")]
-// pub fn process_pending_allocations() {
-//     MultiAllocator::with(AllocatorTag::System, || {
-//         // Process allocations
-//         let allocations: Vec<(usize, usize, usize)> = ALLOCATION_BUFFER.with(|buffer| {
-//             let mut allocs = buffer.borrow_mut();
-//             let result = allocs.clone();
-//             allocs.clear();
-//             result
-//         });
-
-//         if !allocations.is_empty() {
-//             let mut registry = ALLOC_REGISTRY.lock();
-//             for (task_id, address, size) in allocations {
-//                 registry
-//                     .task_allocations
-//                     .entry(task_id)
-//                     .or_default()
-//                     .push((address, size));
-
-//                 registry.address_to_task.insert(address, task_id);
-//             }
-//         }
-
-//         // Process deallocations
-//         let deallocations: Vec<usize> = DEALLOCATION_BUFFER.with(|buffer| {
-//             let mut deallocs = buffer.borrow_mut();
-//             let result = deallocs.clone();
-//             deallocs.clear();
-//             result
-//         });
-
-//         if !deallocations.is_empty() {
-//             let mut registry = ALLOC_REGISTRY.lock();
-//             for address in deallocations {
-//                 if let Some(task_id) = registry.address_to_task.remove(&address) {
-//                     if let Some(allocations) = registry.task_allocations.get_mut(&task_id) {
-//                         if let Some(pos) = allocations.iter().position(|(addr, _)| *addr == address)
-//                         {
-//                             allocations.swap_remove(pos);
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     });
-// }
-
 /// Task-aware allocator that tracks memory usage per task ID
 #[derive(Debug)]
 pub struct TaskAwareAllocator<A: GlobalAlloc> {
     /// The inner allocator that actually performs allocation
     inner: A,
-    // /// Counter for generating unique task IDs
-    // next_task_id: AtomicUsize,
 }
 
 /// Task context for tracking allocations
@@ -343,6 +237,24 @@ pub struct TaskMemoryContext {
     task_id: usize,
     // allocator: &'static TaskAwareAllocator<System>,
 }
+
+#[cfg(feature = "full_profiling")]
+impl TaskMemoryContext {
+    /// Gets the unique ID for this task
+    pub const fn id(&self) -> usize {
+        self.task_id
+    }
+
+    /// Gets current memory usage for this task
+    pub fn memory_usage(&self) -> Option<usize> {
+        get_task_memory_usage(self.task_id)
+    }
+}
+
+// Provide a dummy TaskMemoryContext type for when full_profiling is disabled
+#[cfg(not(feature = "full_profiling"))]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TaskMemoryContext;
 
 // Define registry-specific methods for System allocator
 #[cfg(feature = "full_profiling")]
@@ -363,49 +275,19 @@ impl TaskAwareAllocator<System> {
 
         // Also initialize in profile registry
         activate_task(task_id);
-        // // eprintln!("About to try_lock registry to initialize task data");
-        // if let Ok(mut registry) = REGISTRY.try_lock() {
-        //     registry.task_allocations.insert(task_id, Vec::new());
-        //     registry.active_profiles.insert(task_id);
-        // } else {
-        //     eprintln!(
-        //         "Failed to lock registry to initialize task data: {}",
-        //         task_id
-        //     );
-        // }
 
         TaskMemoryContext {
             task_id,
             // allocator: self,
         }
     }
+}
 
-    // #[allow(clippy::unused_self)]
-    // pub fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-    //     // eprintln!("About to try_lock registry to get task memory usage");
-    //     REGISTRY.try_lock().map_or(None, |registry| {
-    //         registry
-    //             .task_allocations
-    //             .get(&task_id)
-    //             .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
-    //     })
-    // }
-
-    // #[allow(clippy::unused_self)]
-    // pub fn enter_task(&self, task_id: usize) {
-    //     // eprintln!("Entering task {}", task_id);
-    //     let thread_id = thread::current().id();
-
-    //     push_task_to_stack(thread_id, task_id);
-    // }
-
-    // #[allow(clippy::unused_self)]
-    // pub fn exit_task(&self, task_id: usize) {
-    //     // eprintln!("Exiting task {}", task_id);
-    //     let thread_id = thread::current().id();
-
-    //     pop_task_from_stack(thread_id, task_id);
-    // }
+/// Creates a new task context for memory tracking.
+#[cfg(feature = "full_profiling")]
+pub fn create_memory_task() -> TaskMemoryContext {
+    let allocator = get_allocator();
+    allocator.create_task_context()
 }
 
 #[cfg(feature = "full_profiling")]
@@ -523,6 +405,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
                         registry.address_to_task.insert(address, task_id);
                         let check_map = &registry.task_allocations;
+                        let reg_task_id = *registry.address_to_task.get(&address).unwrap();
                         let maybe_vec = check_map.get(&task_id);
                         let (addr, sz) = *maybe_vec
                             .and_then(|v: &Vec<(usize, usize)>| {
@@ -530,6 +413,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                                 last
                             })
                             .unwrap();
+                        drop(registry);
                         // eprintln!("Check registry.task_allocations for task_id {task_id}: ({addr:#x}, {sz})");
                         assert_eq!(sz, size);
                         assert_eq!(addr, address);
@@ -537,7 +421,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         //     "Check registry.address_to_task for task_id {task_id}: {:?}",
                         //     registry.address_to_task.get(&address)
                         // );
-                        assert_eq!(*registry.address_to_task.get(&address).unwrap(), task_id);
+                        assert_eq!(reg_task_id, task_id);
                     }
                 });
             } else {
@@ -598,24 +482,6 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
         self.inner.dealloc(ptr, layout);
     }
 }
-
-#[cfg(feature = "full_profiling")]
-impl TaskMemoryContext {
-    /// Gets the unique ID for this task
-    pub const fn id(&self) -> usize {
-        self.task_id
-    }
-
-    /// Gets current memory usage for this task
-    pub fn memory_usage(&self) -> Option<usize> {
-        get_task_memory_usage(self.task_id)
-    }
-}
-
-// Provide a dummy TaskMemoryContext type for when full_profiling is disabled
-#[cfg(not(feature = "full_profiling"))]
-#[derive(Debug, Default, Clone, Copy)]
-pub struct TaskMemoryContext;
 
 // /// Creates a standalone memory guard that activates the given task ID
 // ///
@@ -719,34 +585,13 @@ pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
     &TASK_AWARE_ALLOCATOR
 }
 
-/// Creates a new task context for memory tracking.
-#[cfg(feature = "full_profiling")]
-pub fn create_memory_task() -> TaskMemoryContext {
-    let allocator = get_allocator();
-    allocator.create_task_context()
-}
-
 // Task Path Registry for debugging
 // 1. Declare the TASK_PATH_REGISTRY
 #[cfg(feature = "full_profiling")]
 pub static TASK_PATH_REGISTRY: LazyLock<Mutex<BTreeMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(BTreeMap::new()));
 
-// // 2. Function to add a task's path to the TASK_PATH_REGISTRY
-// #[cfg(feature = "full_profiling")]
-// pub fn register_task_path(task_id: usize, path: Vec<String>) {
-//     // eprintln!("About to try_lock TASK_PATH_REGISTRY for register_task_path");
-//     if let Ok(mut registry) = TASK_PATH_REGISTRY.try_lock() {
-//         registry.insert(task_id, path);
-//     } else {
-//         eprintln!(
-//             "Failed to lock task path registry to registertask {}",
-//             task_id
-//         );
-//     }
-// }
-
-// 3. Function to look up a task's path by ID
+// 2. Function to look up a task's path by ID
 #[cfg(feature = "full_profiling")]
 pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
     // eprintln!("About to try_lock TASK_PATH_REGISTRY for lookup_task_path");
@@ -754,7 +599,7 @@ pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
     registry.get(&task_id).cloned()
 }
 
-// 4. Function to dump the entire registry
+// 3. Function to dump the entire registry
 #[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn dump_task_path_registry() {
@@ -770,7 +615,7 @@ pub fn dump_task_path_registry() {
     println!("=================================");
 }
 
-// 5. Utility function to look up and print a specific task's path
+// 4. Utility function to look up and print a specific task's path
 #[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn print_task_path(task_id: usize) {
@@ -779,51 +624,6 @@ pub fn print_task_path(task_id: usize) {
         None => println!("No path registered for task {}", task_id),
     }
 }
-
-// 6. Utility to compare two tasks' paths
-#[allow(dead_code)]
-#[cfg(feature = "full_profiling")]
-pub fn compare_task_paths(task_id1: usize, task_id2: usize) {
-    let path1 = lookup_task_path(task_id1);
-    let path2 = lookup_task_path(task_id2);
-
-    println!("==== TASK PATH COMPARISON ====");
-    match (path1, path2) {
-        (Some(p1), Some(p2)) => {
-            println!("Task {}: {}", task_id1, p1.join("::"));
-            println!("Task {}: {}", task_id2, p2.join("::"));
-
-            // Find common prefix
-            let common_len = p1.iter().zip(p2.iter()).take_while(|(a, b)| a == b).count();
-
-            if common_len > 0 {
-                println!("Common prefix: {}", p1[..common_len].join("::"));
-                println!("Diverges at: {}", common_len);
-            } else {
-                println!("No common prefix");
-            }
-        }
-        (Some(p1), None) => {
-            println!("Task {}: {}", task_id1, p1.join("::"));
-            println!("Task {}: No path registered", task_id2);
-        }
-        (None, Some(p2)) => {
-            println!("Task {}: No path registered", task_id1);
-            println!("Task {}: {}", task_id2, p2.join("::"));
-        }
-        (None, None) => {
-            println!("No paths registered for either task");
-        }
-    }
-    println!("=============================");
-}
-
-// // 7. Function to remove an entry from the TASK_PATH_REGISTRY
-// #[cfg(feature = "full_profiling")]
-// pub fn remove_task_path(task_id: usize) {
-//     let mut registry = TASK_PATH_REGISTRY.lock();
-//     registry.remove(&task_id);
-// }
 
 // Helper function to find the best matching profile
 #[cfg(feature = "full_profiling")]
@@ -899,38 +699,6 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 
     score
 }
-
-// Merged into fn create_task_context
-// // When creating a profile:
-// #[cfg(feature = "full_profiling")]
-// pub fn activate_profile(task_id: usize) {
-//     // eprintln!("About to try_lock registry for activate_profile");
-//     if let Ok(mut registry) = REGISTRY.try_lock() {
-//         registry.active_profiles.insert(task_id);
-//     } else {
-//         eprintln!("Failed to lock registry to activate profile: {}", task_id);
-//     }
-// }
-
-// // When dropping a profile:
-// #[cfg(feature = "full_profiling")]
-// pub fn deactivate_profile(task_id: usize) {
-//     // eprintln!("About to try_lock registry for deactivate_profile");
-//     // if let Ok(mut registry) = REGISTRY.try_lock() {
-//     //     registry.active_profiles.remove(&task_id);
-//     // } else {
-//     //     eprintln!("Failed to lock registry activate profile: {}", task_id);
-//     // }
-//     deactivate_task(task_id);
-// }
-
-// #[cfg(feature = "full_profiling")]
-// pub fn init_allocator_system() {
-//     // This is just to ensure the MultiAllocator is initialized
-//     // The actual setup happens through the #[global_allocator] attribute
-
-//     MultiAllocator::get_current_tag();
-// }
 
 // Setup for okaoka
 #[cfg(feature = "full_profiling")]
@@ -1079,6 +847,8 @@ fn write_memory_profile_data() {
             // Write profile data
             let mut lines_written = 0;
 
+            let mut already_written = HashSet::new();
+
             // First write all tasks with allocations
             for (task_id, allocations) in &task_allocs {
                 // Skip tasks with no allocations
@@ -1095,7 +865,10 @@ fn write_memory_profile_data() {
 
                     // Write line to folded format file
                     match writeln!(writer, "{} {}", path_str, total_bytes) {
-                        Ok(()) => lines_written += 1,
+                        Ok(()) => {
+                            lines_written += 1;
+                            already_written.insert(path_str.clone());
+                        }
                         Err(e) => println!("Error writing line for task {task_id}: {e}"),
                     }
                 } else {
@@ -1112,11 +885,18 @@ fn write_memory_profile_data() {
                 }
 
                 let path_str = path.join(";");
+                if already_written.contains(&path_str) {
+                    continue;
+                }
+
                 println!("Writing for task {task_id} from registry: '{path_str}' with 0 bytes");
 
                 // Write line with zero bytes to maintain call hierarchy
                 match writeln!(writer, "{} {}", path_str, 0) {
-                    Ok(()) => lines_written += 1,
+                    Ok(()) => {
+                        lines_written += 1;
+                        already_written.insert(path_str.clone());
+                    }
                     Err(e) => println!("Error writing line for task {task_id}: {e}"),
                 }
             }

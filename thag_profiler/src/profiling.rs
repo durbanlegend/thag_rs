@@ -1,4 +1,6 @@
-use crate::{lazy_static_var, static_lazy, task_allocator::get_with_system_alloc, ProfileError};
+use crate::{
+    lazy_static_var, static_lazy, task_allocator::run_mut_with_system_alloc, ProfileError,
+};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -602,7 +604,7 @@ impl Profile {
         let mut result = Box::new((vec![], false));
         let mut current_backtrace = Backtrace::new_unresolved();
         // current_backtrace.resolve();
-        get_with_system_alloc(|| {
+        run_mut_with_system_alloc(|| {
             result = Box::new(extract_callstack_from_backtrace(
                 start_pattern,
                 &mut current_backtrace,
@@ -642,7 +644,7 @@ impl Profile {
         #[cfg(feature = "full_profiling")]
         let path = {
             let mut path = Box::new(vec![]);
-            get_with_system_alloc(|| {
+            run_mut_with_system_alloc(|| {
                 path = Box::new(extract_path(&cleaned_stack));
             });
             *path
@@ -708,7 +710,7 @@ impl Profile {
 
             // Register task path
             run_with_system_alloc(|| {
-                println!("Registering task path for task {task_id}: {path:?}");
+                println!("Registering task path for task {task_id}: {:?}", path);
                 let mut registry = TASK_PATH_REGISTRY.lock();
                 registry.insert(task_id, path.clone());
                 println!("TASK_PATH_REGISTRY now has {} entries", registry.len());
@@ -773,7 +775,6 @@ impl Profile {
         entry: &str,
     ) -> ProfileResult<()> {
         let mut guard = file.lock();
-        eprintln!("guard={guard:?}");
         if guard.is_none() {
             *guard = Some(BufWriter::new(
                 OpenOptions::new().create(true).append(true).open(path)?,
@@ -1073,47 +1074,52 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 #[cfg(feature = "time_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        // println!("In drop for Profile {:?}", self);
-        if let Some(start) = self.start.take() {
-            // Handle time profiling as before
-            match self.profile_type {
-                ProfileType::Time | ProfileType::Both => {
-                    let elapsed = start.elapsed();
-                    let _ = self.write_time_event(elapsed);
+        run_mut_with_system_alloc(|| {
+            // println!("In drop for Profile {:?}", self);
+            if let Some(start) = self.start.take() {
+                // Handle time profiling as before
+                match self.profile_type {
+                    ProfileType::Time | ProfileType::Both => {
+                        let elapsed = start.elapsed();
+                        let _ = self.write_time_event(elapsed);
+                    }
+                    ProfileType::Memory => (),
                 }
-                ProfileType::Memory => (),
             }
-        }
 
-        // Handle memory profiling
-        #[cfg(feature = "full_profiling")]
-        if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-            // eprintln!(
-            //     "In drop for Profile with memory profiling: {}",
-            //     self.registered_name
-            // );
-            // First drop the guard to exit the task context
-            self.memory_guard = None;
-
-            // Now get memory usage from our task
-            let maybe_memory_usage = self
-                .memory_task
-                .as_ref()
-                .and_then(TaskMemoryContext::memory_usage);
-
-            if let Some(memory_usage) = maybe_memory_usage {
-                if memory_usage > 0 {
-                    let _ = self.record_memory_change(memory_usage);
+            // Handle memory profiling
+            #[cfg(feature = "full_profiling")]
+            if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+                // eprintln!(
+                //     "In drop for Profile with memory profiling: {}",
+                //     self.registered_name
+                // );
+                // First drop the guard to exit the task context
+                self.memory_guard = None;
+                // Now get memory usage from our task
+                if let Some(ref task) = self.memory_task {
+                    if let Some(memory_usage) = task.memory_usage() {
+                        // eprintln!("memory_usage={memory_usage}");
+                        if memory_usage > 0 {
+                            let _ = self.record_memory_change(memory_usage);
+                        }
+                    }
                 }
-                println!(
-                    "DROP PROFILE: Task {} for {:?} used {} bytes",
-                    self.memory_task.as_ref().unwrap().id(),
-                    // self.path.join("::"),
-                    self.path.last().map_or("", |v| v),
-                    memory_usage
-                );
+                if let Some(memory_usage) = self
+                    .memory_task
+                    .as_ref()
+                    .and_then(TaskMemoryContext::memory_usage)
+                {
+                    println!(
+                        "DROP PROFILE: Task {} for {:?} used {} bytes",
+                        self.memory_task.as_ref().unwrap().id(),
+                        // self.path.join("::"),
+                        self.path.last().map_or("", |v| v),
+                        memory_usage
+                    );
+                }
             }
-        }
+        });
     }
 }
 
@@ -1238,14 +1244,13 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
 
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
-    eprintln!("Checking if function is profiled: {name}");
-    let contains_key = PROFILED_FUNCTIONS.try_lock().map_or_else(
-        || {
-            eprintln!("Failed to acquire lock");
-            false
-        },
-        |lock| lock.contains_key(name),
-    );
+    eprintln!("Checking if function is profiled: {}", name);
+    let contains_key = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
+        lock.contains_key(name)
+    } else {
+        eprintln!("Failed to acquire lock");
+        false
+    };
     eprintln!("...done");
     contains_key
 }
@@ -1256,13 +1261,12 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
     //     "Getting the descriptive name of a profiled function: {}",
     //     name
     // );
-    let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_lock().map_or_else(
-        || {
-            eprintln!("Failed to acquire lock");
-            None
-        },
-        |lock| lock.get(name).cloned(),
-    );
+    let maybe_reg_desc_name = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
+        lock.get(name).cloned()
+    } else {
+        eprintln!("Failed to acquire lock");
+        None
+    };
     // eprintln!("...done");
     maybe_reg_desc_name
 }

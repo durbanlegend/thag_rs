@@ -285,7 +285,7 @@ pub fn create_memory_task() -> TaskMemoryContext {
 }
 
 #[cfg(feature = "full_profiling")]
-pub fn get_with_system_alloc(closure: impl FnMut()) {
+pub fn run_mut_with_system_alloc(closure: impl FnMut()) {
     MultiAllocator::with(AllocatorTag::System, closure);
 }
 
@@ -326,17 +326,17 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     let (cleaned_stack, in_backtrace_new) =
                         extract_callstack_from_backtrace(start_pattern, &mut current_backtrace);
                     if in_backtrace_new {
-                        // eprintln!("Ignoring allocation request for new backtrace");
+                        eprintln!("Ignoring allocation request for new backtrace");
                         return;
                     }
 
                     current_backtrace.resolve();
 
                     if cleaned_stack.is_empty() {
-                        // eprintln!(
-                        //     "Empty cleaned_stack for backtrace\n{:#?}",
-                        //     backtrace::Backtrace::new()
-                        // );
+                        eprintln!(
+                            "Empty cleaned_stack for backtrace: size={size}:\n{:#?}",
+                            backtrace::Backtrace::new()
+                        );
                         // eprintln!("Empty cleaned_stack");
                         task_id = get_last_active_task().unwrap_or(0);
                     } else {
@@ -345,7 +345,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                             .iter()
                             .any(|frame| frame.contains("find_matching_profile")));
 
-                        // eprintln!("Calling extract_path");
+                        eprintln!("Calling extract_path");
                         let path = extract_path(&cleaned_stack);
                         if path.is_empty() {
                             if Backtrace::frames(&current_backtrace)
@@ -376,9 +376,13 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                             // eprintln!("path={path:#?}");
 
                             task_id = find_matching_profile(&path);
+                            eprintln!(
+                                "...find_matching_profile found task_id={task_id} for size={size}"
+                            );
                         }
                     }
                 });
+                run_with_system_alloc(|| println!("######## task_id={task_id}, size={size}"));
 
                 // Record allocation if task found
                 // Use okaoka to avoid recursive allocations
@@ -666,7 +670,24 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 set_multi_global_allocator! {
     MultiAllocator, // Name of our allocator facade
     AllocatorTag,   // Name of our allocator tag enum
+    Default => TaskAwareAllocatorWrapper,  // Our profiling allocator
     System => System,          // Standard system allocator for backtraces
+}
+
+// Wrapper to expose our TaskAwareAllocator to okaoka
+#[cfg(feature = "full_profiling")]
+struct TaskAwareAllocatorWrapper;
+
+#[cfg(feature = "full_profiling")]
+unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
+    unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
+        // Use the static allocator instance
+        TASK_AWARE_ALLOCATOR.alloc(layout)
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: std::alloc::Layout) {
+        TASK_AWARE_ALLOCATOR.dealloc(ptr, layout);
+    }
 }
 
 /// Initialize memory profiling.

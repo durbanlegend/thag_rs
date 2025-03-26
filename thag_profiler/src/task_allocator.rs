@@ -7,6 +7,12 @@
 use std::alloc::{GlobalAlloc, Layout};
 
 #[cfg(feature = "full_profiling")]
+use crate::set_multi_global_allocator;
+
+#[cfg(feature = "full_profiling")]
+use crate::okaoka;
+
+#[cfg(feature = "full_profiling")]
 use crate::profiling::{extract_callstack_from_backtrace, extract_path};
 
 #[cfg(feature = "full_profiling")]
@@ -264,22 +270,10 @@ impl TaskAwareAllocator<System> {
     pub fn create_task_context(&'static self) -> TaskMemoryContext {
         let task_id = TASK_STATE.next_task_id.fetch_add(1, Ordering::SeqCst);
 
-        // Initialize task data
-        let _task_map = TASK_STATE.task_map.lock().insert(
-            task_id,
-            TaskData {
-                // allocations: Vec::new(),
-                active: false,
-            },
-        );
-
-        // Also initialize in profile registry
+        // Initialize in profile registry
         activate_task(task_id);
 
-        TaskMemoryContext {
-            task_id,
-            // allocator: self,
-        }
+        TaskMemoryContext { task_id }
     }
 }
 
@@ -483,43 +477,11 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     }
 }
 
-// /// Creates a standalone memory guard that activates the given task ID
-// ///
-// /// # Errors
-// ///
-// /// This function will bubble up any error from `TaskAwareAllocator::enter_task`.
-// #[cfg(feature = "full_profiling")]
-// pub fn create_memory_guard(task_id: usize) -> Result<TaskGuard, String> {
-//     // Get the allocator
-//     let allocator = get_allocator();
-
-//     // Enter the task (now thread-aware)
-//     allocator.enter_task(task_id);
-
-//     // Create a guard that's tied to this thread and task
-//     let task_guard = TaskGuard::new(task_id);
-//     println!(
-//         "GUARD CREATED: Task {} on thread {:?}",
-//         task_id,
-//         thread::current().id()
-//     );
-//     Ok(task_guard)
-// }
-
 // Task tracking state
 #[cfg(feature = "full_profiling")]
 struct TaskState {
-    // Maps task IDs to their tracking state
-    task_map: Mutex<HashMap<usize, TaskData>>,
     // Counter for generating task IDs
     next_task_id: AtomicUsize,
-}
-
-// Per-task data
-#[cfg(feature = "full_profiling")]
-struct TaskData {
-    // allocations: Vec<(usize, usize)>,
-    active: bool,
 }
 
 // Global task state
@@ -527,7 +489,6 @@ struct TaskData {
 static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
     // println!("Initializing TASK_STATE with next_task_id = 1");
     TaskState {
-        task_map: Mutex::new(HashMap::new()),
         next_task_id: AtomicUsize::new(1),
     }
 });
@@ -702,27 +663,10 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 
 // Setup for okaoka
 #[cfg(feature = "full_profiling")]
-okaoka::set_multi_global_allocator! {
+set_multi_global_allocator! {
     MultiAllocator, // Name of our allocator facade
     AllocatorTag,   // Name of our allocator tag enum
-    Default => TaskAwareAllocatorWrapper,  // Our profiling allocator
     System => System,          // Standard system allocator for backtraces
-}
-
-// Wrapper to expose our TaskAwareAllocator to okaoka
-#[cfg(feature = "full_profiling")]
-struct TaskAwareAllocatorWrapper;
-
-#[cfg(feature = "full_profiling")]
-unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
-    unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
-        // Use the static allocator instance
-        TASK_AWARE_ALLOCATOR.alloc(layout)
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: std::alloc::Layout) {
-        TASK_AWARE_ALLOCATOR.dealloc(ptr, layout);
-    }
 }
 
 /// Initialize memory profiling.
@@ -740,10 +684,6 @@ pub fn initialize_memory_profiling() {
 #[cfg(feature = "full_profiling")]
 pub fn finalize_memory_profiling() {
     MultiAllocator::with(AllocatorTag::System, || {
-        // Process any pending allocations
-        // process_pending_allocations();
-
-        // Write memory profile data
         write_memory_profile_data();
     });
 }

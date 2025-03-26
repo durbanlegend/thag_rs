@@ -1836,10 +1836,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "okaoka"
-version = "0.1.0"
-
-[[package]]
 name = "once_cell"
 version = "1.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2937,7 +2933,6 @@ dependencies = [
  "inferno",
  "inquire",
  "lasso",
- "okaoka",
  "once_cell",
  "parking_lot",
  "ra-ap-rustc_lexer 0.100.0",

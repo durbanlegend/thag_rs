@@ -243,6 +243,11 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 #[tokio::main]
 #[enable_profiling]
 async fn main() -> io::Result<()> {
+    // Check if profiling is enabled
+    println!("PROFILING_ENABLED = {}", thag_profiler::PROFILING_ENABLED);
+
+    // unsafe { backtrace_on_stack_overflow::enable() };
+
     // Process a batch of documents asynchronously
     let docs = generate_and_process_documents(50).await;
 
@@ -288,7 +293,6 @@ async fn main() -> io::Result<()> {
     write_reports(&sync_docs, Path::new("sync_docs_report.txt"))?;
 
     println!("Reports written successfully");
-
 
     Ok(())
 }

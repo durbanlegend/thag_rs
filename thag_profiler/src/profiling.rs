@@ -577,6 +577,7 @@ impl Profile {
     ///
     /// Panics if stack validation fails.
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
+    #[cfg(not(feature = "full_profiling"))]
     pub fn new(
         name: Option<&str>,
         maybe_fn_name: Option<&str>,
@@ -599,7 +600,6 @@ impl Profile {
         // Try allowing overrides
         let profile_type = requested_type;
 
-        #[cfg(not(feature = "full_profiling"))]
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
@@ -607,7 +607,6 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        // #[cfg(not(feature = "full_profiling"))]
         // let fn_name = maybe_fn_name.map_or_else(
         //     || {
         //         let mut current_backtrace = Backtrace::new_unresolved();
@@ -627,8 +626,8 @@ impl Profile {
         //     ToString::to_string,
         // );
 
-        #[cfg(not(feature = "full_profiling"))]
-        let cleaned_stack = maybe_fn_name.map_or_else(|| {
+        // let cleaned_stack = ÷maybe_fn_name.map_or_else(|| {
+        let cleaned_stack = {
             let mut current_backtrace = Backtrace::new_unresolved();
             current_backtrace.resolve();
             Backtrace::frames(&current_backtrace)
@@ -674,40 +673,114 @@ impl Profile {
                 })
                 // .map(|(_, name)| name.clone())
                 .collect()
-        });
+        };
 
-        #[cfg(not(feature = "full_profiling"))]
-        {
-            let fn_name = &cleaned_stack[0];
-            println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-            register_profiled_function(fn_name, desc_fn_name);
+        let fn_name = &cleaned_stack[0];
+        println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+        register_profiled_function(fn_name, desc_fn_name);
+
+        let path = extract_path(&cleaned_stack);
+
+        // Determine if we should keep the custom name
+        let custom_name = name.map(str::to_string);
+
+        // Debug output can be turned back on if needed for troubleshooting
+        // println!(
+        //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
+        // );
+
+        // Create a basic profile structure that works for all configurations
+        if let ProfileType::Memory = profile_type {
+            eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
-        #[cfg(feature = "full_profiling")]
-        let fn_name = maybe_fn_name.unwrap();
+        Some(Self {
+            profile_type,
+            start: Some(Instant::now()),
+            path: path.clone(),
+            custom_name: custom_name.clone(),
+            registered_name: fn_name.to_string(),
+            #[cfg(feature = "full_profiling")]
+            memory_task: None,
+            #[cfg(feature = "full_profiling")]
+            memory_guard: None,
+        })
+    }
+
+    /// Creates a new `Profile` to profile a section of code.
+    ///
+    /// This will track execution time by default. When the `full_profiling` feature
+    /// is enabled, it will also track memory usage if requested via `ProfileType`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use thag_profiler::{Profile, ProfileType};
+    ///
+    /// // Time profiling only
+    /// {
+    ///     let _p = Profile::new("time_only_function", ProfileType::Time);
+    ///     // Code to profile...
+    /// }
+    ///
+    /// // With memory profiling (requires `full_profiling` feature)
+    /// #[cfg(feature = "full_profiling")]
+    /// {
+    ///     let _p = Profile::new("memory_tracking_function", ProfileType::Memory);
+    ///     // Code to profile with memory tracking...
+    /// }
+    /// ```
+    /// # Panics
+    ///
+    /// Panics if stack validation fails.
+    #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
+    #[cfg(feature = "full_profiling")]
+    pub fn new(
+        name: Option<&str>,
+        maybe_fn_name: Option<&str>,
+        requested_type: ProfileType,
+        _is_async: bool,
+        _is_method: bool,
+    ) -> Option<Self> {
+        if !is_profiling_enabled() {
+            return None;
+        }
+
+        // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
+        #[cfg(test)]
+        if is_test_mode_active() {
+            // If this is from an attribute in a test, don't create a profile
+            // Our safe wrapper will handle profiling instead
+            return None;
+        }
+
+        // Try allowing overrides
+        let profile_type = requested_type;
+
+        // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+        let start_pattern = "Profile::new";
+
+        // let fn_name = maybe_fn_name.unwrap();
         let mut result = Box::new(vec![]);
 
-        #[cfg(feature = "full_profiling")]
         run_mut_with_system_alloc(|| {
             let mut current_backtrace = Backtrace::new_unresolved();
             current_backtrace.resolve();
             // println!("************\n{current_backtrace:?}\n************");
 
             result = Box::new(extract_callstack_from_profile_backtrace(
-                fn_name,
+                // fn_name,
                 start_pattern,
                 &mut current_backtrace,
             ));
         });
 
-        #[cfg(feature = "full_profiling")]
         let cleaned_stack = *result;
 
         // Process the collected frames to collapse patterns and clean up
         // let cleaned_stack = clean_stack_trace(&raw_frames);
         // eprintln!("cleaned_stack={cleaned_stack:?}");
 
-        #[cfg(feature = "full_profiling")]
         if cleaned_stack.is_empty() {
             run_with_system_alloc(|| {
                 eprintln!("Empty cleaned stack found");
@@ -715,7 +788,7 @@ impl Profile {
             return None;
         }
         // Register this function
-        // let fn_name = maybe_fn_name.unwrap_or(&cleaned_stack[0]);
+        let fn_name = &cleaned_stack[0];
 
         // Temporarily remove async additions to debug matching
         // let desc_fn_name = if is_async {
@@ -723,20 +796,13 @@ impl Profile {
         // } else {
         //     fn_name.to_string()
         // };
-        #[cfg(feature = "full_profiling")]
-        {
-            let desc_fn_name = fn_name;
-            // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-            run_mut_with_system_alloc(|| {
-                println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-                register_profiled_function(fn_name, desc_fn_name);
-            });
-        }
+        let desc_fn_name = fn_name;
+        // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
+        run_mut_with_system_alloc(|| {
+            println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+            register_profiled_function(fn_name, desc_fn_name);
+        });
 
-        #[cfg(not(feature = "full_profiling"))]
-        let path = extract_path(&cleaned_stack);
-
-        #[cfg(feature = "full_profiling")]
         let path = {
             let mut path = Box::new(vec![]);
             run_mut_with_system_alloc(|| {
@@ -753,90 +819,69 @@ impl Profile {
         //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
-        // Create a basic profile structure that works for all configurations
-        #[cfg(not(feature = "full_profiling"))]
-        {
-            if let ProfileType::Memory = profile_type {
-                eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
-            }
-
-            Some(Self {
-                profile_type,
-                start: Some(Instant::now()),
-                path: path.clone(),
-                custom_name: custom_name.clone(),
-                registered_name: fn_name.to_string(),
-                #[cfg(feature = "full_profiling")]
-                memory_task: None,
-                #[cfg(feature = "full_profiling")]
-                memory_guard: None,
-            })
-        }
-
         // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
         // memory allocations in the profile setup itself in this method.
-        #[cfg(feature = "full_profiling")]
-        {
-            if profile_type == ProfileType::Time {
-                eprintln!("Memory profiling enabled but only time profiling will be profiled as requested.");
-                return Some(Self {
-                    profile_type,
-                    start: Some(Instant::now()),
-                    path,
-                    custom_name,
-                    registered_name: fn_name.to_string(),
-                    memory_task: None,
-                    memory_guard: None,
-                });
-            }
-
-            // Create a task to track memory usage
-            // Create a memory task and activate it
-            let memory_task = create_memory_task();
-            let task_id = memory_task.id();
-
-            // Register task path
-            run_with_system_alloc(|| {
-                println!("Registering task path for task {task_id}: {path:?}");
-                let mut registry = TASK_PATH_REGISTRY.lock();
-                registry.insert(task_id, path.clone());
-                println!("TASK_PATH_REGISTRY now has {} entries", registry.len());
+        if profile_type == ProfileType::Time {
+            eprintln!(
+                "Memory profiling enabled but only time profiling will be profiled as requested."
+            );
+            return Some(Self {
+                profile_type,
+                start: Some(Instant::now()),
+                path,
+                custom_name,
+                registered_name: fn_name.to_string(),
+                memory_task: None,
+                memory_guard: None,
             });
-
-            // Activate the task
-            activate_task(task_id);
-
-            // Add to thread stack
-            push_task_to_stack(thread::current().id(), task_id);
-
-            run_with_system_alloc(|| {
-                println!(
-                    "NEW PROFILE: Task {task_id} created for {:?}",
-                    // path.join("::")
-                    path.last().map_or("", |v| v),
-                );
-            });
-
-            // Create memory guard
-            // let mut memory_guard;
-            // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
-            // let memory_guard = *memory_guard;
-            let memory_guard = TaskGuard::new(task_id);
-
-            let profile = {
-                // Create the profile with necessary components
-                Self {
-                    profile_type,
-                    start: Some(Instant::now()),
-                    path,
-                    custom_name,
-                    registered_name: fn_name.to_string(),
-                    memory_task: Some(memory_task),
-                    memory_guard: Some(memory_guard),
-                }
-            };
-            Some(profile)
         }
+
+        // Create a task to track memory usage
+        // Create a memory task and activate it
+        let memory_task = create_memory_task();
+        let task_id = memory_task.id();
+
+        // Register task path
+        run_with_system_alloc(|| {
+            println!("Registering task path for task {task_id}: {path:?}");
+            let mut registry = TASK_PATH_REGISTRY.lock();
+            registry.insert(task_id, path.clone());
+            println!("TASK_PATH_REGISTRY now has {} entries", registry.len());
+        });
+
+        // Activate the task
+        activate_task(task_id);
+
+        // Add to thread stack
+        push_task_to_stack(thread::current().id(), task_id);
+
+        run_with_system_alloc(|| {
+            println!(
+                "NEW PROFILE: Task {task_id} created for {:?}",
+                // path.join("::")
+                path.last().map_or("", |v| v),
+            );
+        });
+
+        // Create memory guard
+        // let mut memory_guard;
+        // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
+        // let memory_guard = *memory_guard;
+        let memory_guard = TaskGuard::new(task_id);
+
+        let profile = {
+            // Create the profile with necessary components
+            Self {
+                profile_type,
+                start: Some(Instant::now()),
+                path,
+                custom_name,
+                registered_name: fn_name.to_string(),
+                memory_task: Some(memory_task),
+                memory_guard: Some(memory_guard),
+            }
+        };
+        Some(profile)
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -1035,7 +1080,7 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 
 pub fn extract_callstack_from_profile_backtrace(
     // maybe_fn_name: Option<&str>,
-    fn_name: &str,
+    // fn_name: &str,
     _start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
@@ -1047,11 +1092,7 @@ pub fn extract_callstack_from_profile_backtrace(
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|name| {
-            !(name.contains("Profile::new")
-                && extract_fn_only(&clean_function_name(&mut name.clone())).unwrap_or_default()
-                    == fn_name)
-        })
+        .skip_while(|name| !(name.contains("Profile::new") && !name.contains("{{closure}}")))
         // Be careful, this is very sensitive to changes in the function signatures of this module.
         .skip(1)
         // .inspect(|(is_within_target_range, name)| {
@@ -1298,7 +1339,7 @@ impl ProfileSection {
         Self {
             profile: Profile::new(
                 name,
-                None,
+                None::<&str>,
                 ProfileType::Time, // Since memory profiling can't track sections via backtrace
                 false,             // is_async
                 false,             // is_method
@@ -1560,64 +1601,62 @@ macro_rules! profile {
         $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
     };
 
-    // profile!(name, type)
-    ($name:expr, time) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
-    };
-    ($name:expr, memory) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, false, false)
-    };
-    ($name:expr, both) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Both, false, false)
-    };
+    // // profile!(name, type)
+    // ($name:expr, time) => {
+    //     $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
+    // };
+    // ($name:expr, memory) => {
+    //     $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, false, false)
+    // };
+    // ($name:expr, both) => {
+    //     $crate::profile_internal!(Some($name), $crate::ProfileType::Both, false, false)
+    // };
 
     // profile!(name, async)
     ($name:expr, async) => {
         $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
-    };
+    }; // profile!(method) - no custom name
+       // (method) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Time, false, true)
+       // };
 
-    // profile!(method) - no custom name
-    (method) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Time, false, true)
-    };
+       // profile!(method, type) - no custom name
+       // (method, time) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Time, false, true)
+       // };
+       // (method, memory) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Memory, false, true)
+       // };
+       // (method, both) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Both, false, true)
+       // };
 
-    // profile!(method, type) - no custom name
-    (method, time) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Time, false, true)
-    };
-    (method, memory) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Memory, false, true)
-    };
-    (method, both) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Both, false, true)
-    };
+       // profile!(method, async) - no custom name
+       // (method, async) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
+       // };
 
-    // profile!(method, async) - no custom name
-    (method, async) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
-    };
+       // profile!(method, type, async) - no custom name
+       // (method, time, async) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
+       // };
+       // (method, memory, async) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Memory, true, true)
+       // };
+       // (method, both, async) => {
+       //     $crate::profile_internal!(None, $crate::ProfileType::Both, true, true)
+       // };
 
-    // profile!(method, type, async) - no custom name
-    (method, time, async) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
-    };
-    (method, memory, async) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Memory, true, true)
-    };
-    (method, both, async) => {
-        $crate::profile_internal!(None, $crate::ProfileType::Both, true, true)
-    };
-
-    // profile!(name, type, async)
-    ($name:expr, time, async) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
-    };
-    ($name:expr, memory, async) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, true, false)
-    };
-    ($name:expr, both, async) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Both, true, false)
-    };
+       // profile!(name, type, async)
+       // ($name:expr, time, async) => {
+       //     $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
+       // };
+       // ($name:expr, memory, async) => {
+       //     $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, true, false)
+       // };
+       // ($name:expr, both, async) => {
+       //     $crate::profile_internal!(Some($name), $crate::ProfileType::Both, true, false)
+       // };
 }
 
 // No-op implementation for when profiling is disabled
@@ -1698,7 +1737,7 @@ macro_rules! profile_internal {
         // #[cfg(not(any(test, doctest)))]
         {
             if $crate::PROFILING_ENABLED {
-                let profile = $crate::Profile::new($name, $type, $is_async, $is_method);
+                let profile = $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
                 $crate::ProfileSection { profile }
             } else {
                 $crate::ProfileSection::new($name)
@@ -1709,7 +1748,7 @@ macro_rules! profile_internal {
         // #[cfg(any(test, doctest))]
         // {
         //     if $crate::profiling::is_profiling_enabled() {
-        //         let profile = $crate::profiling::Profile::new($name, $type, $is_async, $is_method);
+        //         let profile = $crate::profiling::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
         //         $crate::profiling::ProfileSection { profile }
         //     } else {
         //         $crate::profiling::ProfileSection::new($name)

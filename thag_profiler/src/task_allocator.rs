@@ -812,31 +812,32 @@ fn write_memory_profile_data() {
             let mut already_written = HashSet::new();
 
             // First write all tasks with allocations
-            for (task_id, allocations) in &task_allocs {
-                // Skip tasks with no allocations
-                if allocations.is_empty() {
-                    println!("Task {task_id} has no allocations, skipping");
-                    continue;
-                }
+            // No: this is a duplication
+            // for (task_id, allocations) in &task_allocs {
+            //     // Skip tasks with no allocations
+            //     if allocations.is_empty() {
+            //         println!("Task {task_id} has no allocations, skipping");
+            //         continue;
+            //     }
 
-                // Get the path for this task
-                if let Some(path) = task_paths_map.get(task_id) {
-                    let path_str = path.join(";");
-                    let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
-                    // println!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
+            //     // Get the path for this task
+            //     if let Some(path) = task_paths_map.get(task_id) {
+            //         let path_str = path.join(";");
+            //         let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
+            //         println!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
 
-                    // Write line to folded format file
-                    match writeln!(writer, "{} {}", path_str, total_bytes) {
-                        Ok(()) => {
-                            // lines_written += 1;
-                            already_written.insert(path_str.clone());
-                        }
-                        Err(e) => println!("Error writing line for task {task_id}: {e}"),
-                    }
-                } else {
-                    println!("No path found for task {task_id}");
-                }
-            }
+            //         // Write line to folded format file
+            //         match writeln!(writer, "{} {}", path_str, total_bytes) {
+            //             Ok(()) => {
+            //                 // lines_written += 1;
+            //                 already_written.insert(path_str.clone());
+            //             }
+            //             Err(e) => println!("Error writing line for task {task_id}: {e}"),
+            //         }
+            //     } else {
+            //         println!("No path found for task {task_id}");
+            //     }
+            // }
 
             // Now write all tasks from registry that might not have allocations
             // This helps with keeping the full call hierarchy in the output

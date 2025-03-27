@@ -304,12 +304,14 @@ fn generate_sync_wrapper(
     }: &FunctionContext<'_> = ctx;
 
     let profile_type = resolve_profile_type(profile_type);
+    // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
+    let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
 
             // We pass None for the name as we rely on the backtrace to identify the function
-            let _profile = ::thag_profiler::Profile::new(None, Some(&#fn_name), #profile_type, false, #is_method);
+            let _profile = ::thag_profiler::Profile::new(None, Some(#fn_name_str), #profile_type, false, #is_method);
             #body
         }
     }
@@ -344,6 +346,9 @@ fn generate_async_wrapper(
     } = ctx;
 
     let profile_type = resolve_profile_type(profile_type);
+    // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
+    let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
+
     // let is_method = ctx.is_method;
 
     quote! {
@@ -375,7 +380,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: ::thag_profiler::Profile::new(None, #profile_type, true, #is_method),
+                _profile: ::thag_profiler::Profile::new(None, Some(#fn_name_str), #profile_type, true, #is_method),
             }.await
         }
     }

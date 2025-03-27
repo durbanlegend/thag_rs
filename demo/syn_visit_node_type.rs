@@ -62,8 +62,8 @@ fn main() {
     println!("{}", code.clone().into_token_stream());
     println!();
 
-    // Note: dependency inference can't currently look inside the token stream
-    // of a macro to find a crate, so use a toml block or a use statement, or
-    // a variable assignment to prettyplease::unparse(&code) outside of the println!.
+    // Note: dependency inference can't currently look inside the token stream of a macro to find a crate,
+    // so to ensure prettyplease gets included in the manifest, use a toml block or a use statement, or a
+    // variable assignment to prettyplease::unparse(&code) outside of the println!.
     println!("{}", prettyplease::unparse(&code));
 }

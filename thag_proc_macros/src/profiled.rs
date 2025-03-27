@@ -304,12 +304,12 @@ fn generate_sync_wrapper(
     }: &FunctionContext<'_> = ctx;
 
     let profile_type = resolve_profile_type(profile_type);
-    // let is_method = ctx.is_method;
 
     quote! {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
+
             // We pass None for the name as we rely on the backtrace to identify the function
-            let _profile = ::thag_profiler::Profile::new(None, #profile_type, false, #is_method);
+            let _profile = ::thag_profiler::Profile::new(None, Some(&#fn_name), #profile_type, false, #is_method);
             #body
         }
     }

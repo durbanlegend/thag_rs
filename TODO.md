@@ -29,8 +29,11 @@
 - [ ]  X Repeated try_lock if first try fails? didn't work
 - [ ]  Try stripping closures to register and track them under their enclosing function names.
 - [ ]  Docs and impl: don't allow profiling sections for memory due to backtrace matching issue.
-- [ ]  Next: Make extract_callstack_from_profile_backtrace and extract_callstack_from_alloc_event more resilient.:
+- [ ]  Next: Make extract_callstack_from_profile_backtrace and extract_callstack_from_alloc_event more resilient.
+- [ ]  Split Profile::new by #[cfg(feature = "full_profiling)] vs not
 
+
+I'm thinking of using a background thread in my profiler to handle the final gathering and writing out of information for each dropped Profile. At the moment there are timing issues: Profile::drop is collecting the information
 
 ⏺ I fixed the empty memory profiling output issue by making several key changes:
 

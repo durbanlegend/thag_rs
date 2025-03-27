@@ -462,8 +462,8 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> 
 ///
 /// # Returns
 /// `true` if profiling is enabled, `false` otherwise
-#[inline(always)]
-#[allow(clippy::inline_always)]
+// #[inline(always)]
+// #[allow(clippy::inline_always)]
 #[cfg(feature = "time_profiling")]
 pub fn is_profiling_enabled() -> bool {
     // eprintln!(
@@ -491,8 +491,8 @@ pub fn is_profiling_enabled() -> bool {
 ///
 /// # Returns
 /// `true` if profiling state is enabled, `false` otherwise
-#[inline(always)]
-#[allow(clippy::inline_always)]
+// #[inline(always)]
+// #[allow(clippy::inline_always)]
 #[cfg(feature = "time_profiling")]
 pub fn is_profiling_state_enabled() -> bool {
     // eprintln!(
@@ -579,6 +579,7 @@ impl Profile {
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
     pub fn new(
         name: Option<&str>,
+        maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
         is_method: bool,
@@ -595,28 +596,118 @@ impl Profile {
             return None;
         }
 
+        // Try allowing overrides
+        let profile_type = requested_type;
+
+        #[cfg(not(feature = "full_profiling"))]
+        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+        }
+
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
+        // #[cfg(not(feature = "full_profiling"))]
+        // let fn_name = maybe_fn_name.map_or_else(
+        //     || {
+        //         let mut current_backtrace = Backtrace::new_unresolved();
+        //         current_backtrace.resolve();
+        //         Backtrace::frames(&current_backtrace)
+        //             .iter()
+        //             .flat_map(backtrace::BacktraceFrame::symbols)
+        //             .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        //             .skip_while(|name| {
+        //                 !(name.contains("Profile::new") && !name.contains("{{closure}}"))
+        //             })
+        //             .skip(1)
+        //             .take(1)
+        //             .last()
+        //             .unwrap()
+        //     },
+        //     ToString::to_string,
+        // );
+
+        #[cfg(not(feature = "full_profiling"))]
+        let cleaned_stack = maybe_fn_name.map_or_else(|| {
+            let mut current_backtrace = Backtrace::new_unresolved();
+            current_backtrace.resolve();
+            Backtrace::frames(&current_backtrace)
+                .iter()
+                .flat_map(backtrace::BacktraceFrame::symbols)
+                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                .skip_while(|name| {
+                    !(name.contains("Profile::new") && !name.contains("{{closure}}"))
+                })
+                .skip(1)
+                .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
+                .filter(|(_, name)| !name.starts_with("tokio::"))
+                .filter(|(_, name)| {
+                    !name.contains("core::ops::function::FnOnce::call_once")
+                        && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+                        && !name.contains("std::rt::lang_start")
+                        && !name.contains("std::panicking")
+                })
+                .filter(|(_, name)| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
+                .map(|(_, name)| -> String {
+                    if let Some(hash_pos) = name.rfind("::h") {
+                        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+                            name[..hash_pos].to_string()
+                        } else {
+                            name
+                        }
+                    } else {
+                        name
+                    }
+                })
+                .map(|mut name| {
+                    // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+                    clean_function_name(&mut name)
+                })
+                .filter(|name| {
+                    // Skip duplicate function calls (helps with the {{closure}} pattern)
+                    if already_seen.contains(name.as_str()) {
+                        false
+                    } else {
+                        already_seen.insert(name.clone());
+                        true
+                    }
+                })
+                // .map(|(_, name)| name.clone())
+                .collect()
+        });
+
+        #[cfg(not(feature = "full_profiling"))]
+        {
+            let fn_name = &cleaned_stack[0];
+            println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+            register_profiled_function(fn_name, desc_fn_name);
+        }
+
+        #[cfg(feature = "full_profiling")]
+        let fn_name = maybe_fn_name.unwrap();
         let mut result = Box::new(vec![]);
-        // current_backtrace.resolve();
+
+        #[cfg(feature = "full_profiling")]
         run_mut_with_system_alloc(|| {
             let mut current_backtrace = Backtrace::new_unresolved();
             current_backtrace.resolve();
             // println!("************\n{current_backtrace:?}\n************");
 
             result = Box::new(extract_callstack_from_profile_backtrace(
+                fn_name,
                 start_pattern,
                 &mut current_backtrace,
             ));
         });
 
+        #[cfg(feature = "full_profiling")]
         let cleaned_stack = *result;
 
         // Process the collected frames to collapse patterns and clean up
         // let cleaned_stack = clean_stack_trace(&raw_frames);
         // eprintln!("cleaned_stack={cleaned_stack:?}");
 
+        #[cfg(feature = "full_profiling")]
         if cleaned_stack.is_empty() {
             run_with_system_alloc(|| {
                 eprintln!("Empty cleaned stack found");
@@ -624,7 +715,7 @@ impl Profile {
             return None;
         }
         // Register this function
-        let fn_name = &cleaned_stack[0];
+        // let fn_name = maybe_fn_name.unwrap_or(&cleaned_stack[0]);
 
         // Temporarily remove async additions to debug matching
         // let desc_fn_name = if is_async {
@@ -632,12 +723,15 @@ impl Profile {
         // } else {
         //     fn_name.to_string()
         // };
-        let desc_fn_name = fn_name;
-        // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-        run_mut_with_system_alloc(|| {
-            println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-            register_profiled_function(fn_name, desc_fn_name);
-        });
+        #[cfg(feature = "full_profiling")]
+        {
+            let desc_fn_name = fn_name;
+            // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
+            run_mut_with_system_alloc(|| {
+                println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+                register_profiled_function(fn_name, desc_fn_name);
+            });
+        }
 
         #[cfg(not(feature = "full_profiling"))]
         let path = extract_path(&cleaned_stack);
@@ -650,14 +744,6 @@ impl Profile {
             });
             *path
         };
-
-        // Try allowing overrides
-        let profile_type = requested_type;
-
-        #[cfg(not(feature = "full_profiling"))]
-        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
-        }
 
         // Determine if we should keep the custom name
         let custom_name = name.map(str::to_string);
@@ -711,7 +797,7 @@ impl Profile {
 
             // Register task path
             run_with_system_alloc(|| {
-                println!("Registering task path for task {task_id}: {:?}", path);
+                println!("Registering task path for task {task_id}: {path:?}");
                 let mut registry = TASK_PATH_REGISTRY.lock();
                 registry.insert(task_id, path.clone());
                 println!("TASK_PATH_REGISTRY now has {} entries", registry.len());
@@ -948,7 +1034,9 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 // }
 
 pub fn extract_callstack_from_profile_backtrace(
-    start_pattern: &str,
+    // maybe_fn_name: Option<&str>,
+    fn_name: &str,
+    _start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
     current_backtrace.resolve();
@@ -959,33 +1047,29 @@ pub fn extract_callstack_from_profile_backtrace(
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        // Be careful, this is very sensitive to changes in the function signatures of this module.
-        .skip_while(|name| !name.contains("Profile::new::{{closure}}"))
-        .skip(1)
-        .skip_while(|name| !name.contains("Profile::new"))
-        .scan(false, |is_within_target_range, name| {
-            if !*is_within_target_range && name.contains(start_pattern) {
-                *is_within_target_range = true;
-            }
-            Some((*is_within_target_range, name))
+        .skip_while(|name| {
+            !(name.contains("Profile::new")
+                && extract_fn_only(&clean_function_name(&mut name.clone())).unwrap_or_default()
+                    == fn_name)
         })
+        // Be careful, this is very sensitive to changes in the function signatures of this module.
+        .skip(1)
         // .inspect(|(is_within_target_range, name)| {
         //     println!(
         //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
         //         name
         //     );
         // })
-        .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
-        .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
-        .filter(|(_, name)| !name.starts_with("tokio::"))
-        .filter(|(_, name)| {
+        .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
+        .filter(|name| !name.starts_with("tokio::"))
+        .filter(|name| {
             !name.contains("core::ops::function::FnOnce::call_once")
                 && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
                 && !name.contains("std::rt::lang_start")
                 && !name.contains("std::panicking")
         })
-        .filter(|(_, name)| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
-        .map(|(_, name)| -> String {
+        .filter(|name| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
+        .map(|name| {
             if let Some(hash_pos) = name.rfind("::h") {
                 if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
                     name[..hash_pos].to_string()
@@ -996,9 +1080,9 @@ pub fn extract_callstack_from_profile_backtrace(
                 name
             }
         })
-        .map(|name| {
+        .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-            clean_function_name(name)
+            clean_function_name(&mut name)
         })
         .filter(|name| {
             // Skip duplicate function calls (helps with the {{closure}} pattern)
@@ -1061,9 +1145,9 @@ pub fn extract_callstack_from_alloc_backtrace(
                 name
             }
         })
-        .map(|name| {
+        .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-            clean_function_name(name)
+            clean_function_name(&mut name)
         })
         .filter(|name| {
             // Skip duplicate function calls (helps with the {{closure}} pattern)
@@ -1209,14 +1293,15 @@ pub struct ProfileSection {
 impl ProfileSection {
     #[must_use]
     pub fn new(name: Option<&str>) -> Self {
-        let profile_type = get_global_profile_type();
+        // let profile_type = get_global_profile_type();
         // eprintln!("profile_type={profile_type:?}");
         Self {
             profile: Profile::new(
                 name,
-                profile_type,
-                false, // is_async
-                false, // is_method
+                None,
+                ProfileType::Time, // Since memory profiling can't track sections via backtrace
+                false,             // is_async
+                false,             // is_method
             ),
         }
     }
@@ -1284,12 +1369,13 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
     // eprintln!("Checking if function is profiled: {}", name);
-    let contains_key = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
-        lock.contains_key(name)
-    } else {
-        eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
-        false
-    };
+    let contains_key = PROFILED_FUNCTIONS.try_lock().map_or_else(
+        || {
+            eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            false
+        },
+        |lock| lock.contains_key(name),
+    );
     // eprintln!("...done");
     contains_key
 }
@@ -1300,12 +1386,13 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
     //     "Getting the descriptive name of a profiled function: {}",
     //     name
     // );
-    let maybe_reg_desc_name = if let Some(lock) = PROFILED_FUNCTIONS.try_lock() {
-        lock.get(name).cloned()
-    } else {
-        eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
-        None
-    };
+    let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_lock().map_or_else(
+        || {
+            eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            None
+        },
+        |lock| lock.get(name).cloned(),
+    );
     // eprintln!("...done");
     maybe_reg_desc_name
 }
@@ -1314,7 +1401,9 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
 // #[cfg(feature = "time_profiling")]
 fn extract_fn_only(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last component
-    qualified_name.split("::").last().map(ToString::to_string)
+    qualified_name
+        .rfind("::")
+        .map(|pos| qualified_name[(pos + 2)..].to_string())
 }
 
 // // #[cfg(feature = "time_profiling")]
@@ -1401,27 +1490,37 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 ];
 
 // #[cfg(feature = "time_profiling")]
-pub fn clean_function_name(mut clean_name: String) -> String {
-    // Find and remove hash suffixes (::h followed by hex digits)
-    // from the last path segment
-    if let Some(hash_pos) = clean_name.rfind("::h") {
+pub fn clean_function_name(clean_name: &mut str) -> String {
+    // Remove any closure markers
+    let mut clean_name: &mut str = if let Some(closure_pos) = clean_name.find("::{{closure}}") {
+        // index = closure_pos;
+        &mut clean_name[..closure_pos]
+    } else if let Some(hash_pos) = clean_name.rfind("::h") {
+        // Find and remove hash suffixes (::h followed by hex digits)
+        // from the last path segment
         if clean_name[hash_pos + 3..]
             .chars()
             .all(|c| c.is_ascii_hexdigit())
         {
-            clean_name = clean_name[..hash_pos].to_string();
+            &mut clean_name[..hash_pos]
+        } else {
+            clean_name
         }
+    } else {
+        clean_name
+    };
+    // .to_string();
+
+    while clean_name.ends_with("::") {
+        let len = clean_name.len();
+        clean_name = &mut clean_name[..len - 2];
     }
 
-    // Remove closure markers
-    clean_name = clean_name.replace("::{{closure}}", "");
+    let mut clean_name = (*clean_name).to_string();
 
     // Clean up any double colons that might be left
     while clean_name.contains("::::") {
         clean_name = clean_name.replace("::::", "::");
-    }
-    if clean_name.ends_with("::") {
-        clean_name = clean_name[..clean_name.len() - 2].to_string();
     }
 
     clean_name
@@ -1836,20 +1935,20 @@ mod tests {
     #[test]
     fn test_profiling_clean_function_name() {
         // Test with hash suffix
-        let name = "module::func::h1234abcd".to_string();
-        assert_eq!(clean_function_name(name), "module::func");
+        let mut name = "module::func::h1234abcd".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
 
         // Test with closure
-        let name = "module::func{{closure}}".to_string();
-        assert_eq!(clean_function_name(name), "module::func");
+        let mut name = "module::func{{closure}}".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
 
         // Test with both
-        let name = "module::func{{closure}}::h1234abcd".to_string();
-        assert_eq!(clean_function_name(name), "module::func");
+        let mut name = "module::func{{closure}}::h1234abcd".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
 
         // Test with multiple colons
-        let name = "module::::func".to_string();
-        assert_eq!(clean_function_name(name), "module::func");
+        let mut name = "module::::func".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
     }
 
     #[test]

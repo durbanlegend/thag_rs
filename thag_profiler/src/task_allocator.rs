@@ -14,13 +14,13 @@ use crate::set_multi_global_allocator;
 use crate::okaoka;
 
 #[cfg(feature = "full_profiling")]
-use crate::profiling::{extract_callstack_from_alloc_backtrace, extract_path};
+use crate::profiling::{extract_callstack_from_alloc_backtrace, extract_path, get_memory_path};
 
 #[cfg(feature = "full_profiling")]
 use std::{
     alloc::System,
     // cell::RefCell,
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     io::{self, Write},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -295,6 +295,7 @@ pub fn run_mut_with_system_alloc(closure: impl FnMut()) {
 }
 
 unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
+    #[allow(clippy::too_many_lines)]
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = self.inner.alloc(layout);
 
@@ -458,7 +459,7 @@ fn trim_backtrace(start_pattern: &str, current_backtrace: &Backtrace) -> Vec<Str
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .skip_while(|element| !element.contains(start_pattern))
         .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
-        .map(clean_function_name)
+        .map(|mut name| clean_function_name(&mut name))
         .collect::<Vec<String>>();
     x
 }
@@ -563,7 +564,7 @@ pub fn dump_task_path_registry() {
 
     v.sort();
 
-    for (task_id, path) in v.iter() {
+    for (task_id, path) in &v {
         println!("Task {}: {}", task_id, path);
     }
     drop(task_paths);
@@ -581,6 +582,7 @@ pub fn print_task_path(task_id: usize) {
 }
 
 // 5. Function to remove an entry from the TASK_PATH_REGISTRY
+#[allow(dead_code)]
 #[cfg(feature = "full_profiling")]
 pub fn remove_task_path(task_id: usize) {
     let mut registry = TASK_PATH_REGISTRY.lock();
@@ -667,7 +669,7 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 set_multi_global_allocator! {
     MultiAllocator, // Name of our allocator facade
     AllocatorTag,   // Name of our allocator tag enum
-    Default => TaskAwareAllocatorWrapper,  // Our profiling allocator
+    _Default => TaskAwareAllocatorWrapper,  // Our profiling allocator, first = default
     System => System,          // Standard system allocator for backtraces
 }
 
@@ -713,7 +715,7 @@ fn write_memory_profile_data() {
     use chrono::Local;
     use std::{collections::HashMap, fs::File, path::Path};
 
-    use crate::profiling::{dump_profiled_functions, get_memory_path};
+    // use crate::profiling::get_memory_path;
 
     MultiAllocator::with(AllocatorTag::System, || {
         // println!("Starting write_memory_profile_data...");
@@ -783,7 +785,7 @@ fn write_memory_profile_data() {
 
             // Get all task allocations
             let task_allocs = { ALLOC_REGISTRY.lock().task_allocations.clone() };
-            let task_ids = { task_allocs.keys().copied().collect::<Vec<_>>() };
+            // let task_ids = { task_allocs.keys().copied().collect::<Vec<_>>() };
             // println!("Task IDs: {:?}", task_ids);
 
             // Get the task path registry mapping for easier lookup
@@ -805,7 +807,7 @@ fn write_memory_profile_data() {
             // println!("Task paths map has {} entries", task_paths_map.len());
 
             // Write profile data
-            let mut lines_written = 0;
+            // let mut lines_written = 0;
 
             let mut already_written = HashSet::new();
 
@@ -826,7 +828,7 @@ fn write_memory_profile_data() {
                     // Write line to folded format file
                     match writeln!(writer, "{} {}", path_str, total_bytes) {
                         Ok(()) => {
-                            lines_written += 1;
+                            // lines_written += 1;
                             already_written.insert(path_str.clone());
                         }
                         Err(e) => println!("Error writing line for task {task_id}: {e}"),
@@ -854,7 +856,7 @@ fn write_memory_profile_data() {
                 // Write line with zero bytes to maintain call hierarchy
                 match writeln!(writer, "{} {}", path_str, 0) {
                     Ok(()) => {
-                        lines_written += 1;
+                        // lines_written += 1;
                         already_written.insert(path_str.clone());
                     }
                     Err(e) => println!("Error writing line for task {task_id}: {e}"),

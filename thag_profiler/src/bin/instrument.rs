@@ -121,6 +121,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             }
 
             let fn_name = function.name().map(|n| n.text().to_string());
+            eprintln!("fn_name={fn_name:?}");
             let attr_text = if fn_name.as_deref() == Some("main") {
                 "#[thag_profiler::enable_profiling]"
             } else {
@@ -148,25 +149,29 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             } else {
                 fn_token
             };
-            // eprintln!("target_token: {target_token:?}");
+            eprintln!(
+                "target_token: {target_token:?}, function.body().is_some()? {}",
+                function.body().is_some()
+            );
             let function_syntax: &SyntaxNode = function.syntax();
             if function.body().is_some()
                 && !function_syntax.descendants_with_tokens().any(|it| {
                     let text = it.to_string();
-                    // eprintln!(
-                    //     "fn_name={}; text: {text}",
-                    //     fn_name.clone().expect("fn_name should be Some")
-                    // );
-                    text.starts_with("#[profiled")
+                    let fname = fn_name.clone().expect("fn_name should be Some");
+                    let filtered_out = text.starts_with("#[profiled")
                         || text.starts_with("#[thag_profiler::profiled")
                         || text.starts_with("#[enable_profiling")
                         || text.starts_with("#[thag_profiler::enable_profiling")
                         || text.starts_with("#[test")
                         || text.starts_with("profile!")
-                        || text.starts_with("profile_")
-                        || text.starts_with("enable_profiling")
+                        || text.starts_with("enable_profiling");
+                    // if fname == "initialize_profile_files" {
+                    //     eprintln!("fn_name={fname}; text: {text}, filtered out={filtered_out}",);
+                    // }
+                    filtered_out
                 })
             {
+                dbg!();
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get

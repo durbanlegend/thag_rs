@@ -569,7 +569,7 @@ impl Profile {
     #[cfg(not(feature = "full_profiling"))]
     pub fn new(
         name: Option<&str>,
-        maybe_fn_name: Option<&str>,
+        _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
         is_method: bool,
@@ -710,7 +710,7 @@ impl Profile {
     #[must_use]
     pub fn new(
         name: Option<&str>,
-        maybe_fn_name: Option<&str>,
+        _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         _is_async: bool,
         _is_method: bool,
@@ -1051,7 +1051,6 @@ fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
-#[allow(clippy::nonminimal_bool)]
 pub fn extract_callstack_from_profile_backtrace(
     // maybe_fn_name: Option<&str>,
     // fn_name: &str,
@@ -1062,6 +1061,7 @@ pub fn extract_callstack_from_profile_backtrace(
     let mut already_seen = HashSet::new();
 
     // First, collect all relevant frames
+    #[allow(clippy::nonminimal_bool)]
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)

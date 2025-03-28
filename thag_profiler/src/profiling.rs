@@ -1048,20 +1048,7 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 // }
 
 fn filter_scaffolding(name: &str) -> bool {
-    !name.starts_with("tokio::")
-        && !name.contains("__rust_alloc")
-        && !name.contains("__rust_realloc")
-        && !name.contains("__rust_try")
-        && !name.contains("core::ops::function::FnOnce::call_once")
-        && !name.contains("hashbrown")
-        && !name.contains("okaoka::with_allocator")
-        && !name.contains("std::panic::catch_unwind")
-        && !name.contains("std::panicking")
-        && !name.contains("std::rt::lang_start")
-        && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
-        && !name.contains("std::thread::local::LocalKey<T>::try_with")
-        && !name.contains("task_allocator::MultiAllocator::with")
-        && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
+    !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
 #[allow(clippy::nonminimal_bool)]
@@ -1394,13 +1381,25 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     // "::main::",
     "::poll::",
     "::poll_next_unpin",
-    "alloc::",
-    "core::",
     "<F as core::future::future::Future>::poll",
     "FuturesOrdered<Fut>",
     "FuturesUnordered<Fut>",
-    // "Profile::new",
     "ProfiledFuture",
+    "__rust_alloc",
+    "__rust_realloc",
+    "__rust_try",
+    "alloc::",
+    "core::",
+    "core::ops::function::FnOnce::call_once",
+    "hashbrown",
+    "okaoka::with_allocator",
+    "std::panic::catch_unwind",
+    "std::panicking",
+    "std::rt::lang_start",
+    "std::sys::backtrace::__rust_begin_short_backtrace",
+    "std::thread::local::LocalKey<T>::try_with",
+    "task_allocator::MultiAllocator::with",
+    // "Profile::new",
 ];
 
 // #[cfg(feature = "time_profiling")]

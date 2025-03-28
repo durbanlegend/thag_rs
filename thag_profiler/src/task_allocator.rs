@@ -377,13 +377,24 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                                 //     });
                                 return;
                             }
+                            // eprintln!(
+                            //     "...path is empty for thread {:?}: assigning to lastest active task.\nCleaned_stack: {:?}",
+                            //     thread::current().id(),
+                            //     cleaned_stack
+                            // );
                             eprintln!(
-                                "...path is empty for thread {:?}: assigning to lastest active task.\nCleaned_stack: {:?}",
+                                "...path is empty for thread {:?}, size: {size:?}, not eligible for allocation",
                                 thread::current().id(),
-                                cleaned_stack
                             );
-                            eprintln!("...backtrace:\n{trimmed_backtrace:?}");
-                            task_id = get_last_active_task().unwrap_or(0);
+                            // eprintln!("...backtrace:\n{trimmed_backtrace:?}");
+                            // let last_active_task = get_last_active_task();
+                            // task_id = last_active_task.unwrap_or(0);
+                            // if task_id == 0 {
+                            //     eprintln!(
+                            //         "...no active task found, calling get_active_tasks to confirm"
+                            //     );
+                            //     eprintln!("...active tasks: {:?}", get_active_tasks());
+                            // }
                         } else {
                             // eprintln!("path={path:#?}");
 

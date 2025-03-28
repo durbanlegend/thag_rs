@@ -211,7 +211,7 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
     // eprintln!("DEBUGLIB: profiled attribute macro called");
     // Set to true to enable macro expansion output
-    maybe_expand_attr_macro(true, "profiled", &attr, &item, profiled_impl)
+    maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
 }
 
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct

@@ -31,7 +31,7 @@
 - [ ]  Docs and impl: don't allow profiling sections for memory due to backtrace matching issue.
 - [ ]  Next: Make extract_callstack_from_profile_backtrace and extract_callstack_from_alloc_event more resilient.
 - [ ]  Split Profile::new by #[cfg(feature = "full_profiling)] vs not
-- [ ]  Profile::new for #[cfg(feature = "full_profiling)]: start with `let mut maybe_profile = Box::new(None) and run the whole method contents
+- [ ]  Profile::new for #[cfg(feature = "full_profiling)]: start with `let mut maybe_profile = Box::new(None)` and run the whole method contents
         in a closure with run_mut_with_system_alloc, then extract with `let maybe_profile = *option;` and return maybe_profile.
 
 

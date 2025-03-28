@@ -1,6 +1,5 @@
-use crate::{
-    lazy_static_var, static_lazy, task_allocator::run_mut_with_system_alloc, ProfileError,
-};
+use crate::{lazy_static_var, static_lazy, ProfileError};
+use backtrace::Backtrace;
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -17,21 +16,11 @@ use std::{
 #[cfg(feature = "full_profiling")]
 use crate::task_allocator::{
     activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack,
-    run_with_system_alloc, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+    run_mut_with_system_alloc, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
 };
 
 #[cfg(feature = "full_profiling")]
 use std::thread;
-
-// #[cfg(feature = "full_profiling")]
-// use crate::task_allocator::get_allocator;
-
-// #[cfg(feature = "full_profiling")]
-// #[global_allocator]
-// static ALLOC: re_memory::accounting_allocator::AccountingAllocator<std::alloc::System> =
-//     re_memory::accounting_allocator::AccountingAllocator::new(std::alloc::System);
-
-use backtrace::Backtrace;
 
 #[cfg(feature = "time_profiling")]
 use crate::ProfileResult;
@@ -754,134 +743,128 @@ impl Profile {
             return None;
         }
 
-        // Try allowing overrides
-        let profile_type = requested_type;
-
-        // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
-        let start_pattern = "Profile::new";
-
-        // let fn_name = maybe_fn_name.unwrap();
-        let mut result = Box::new(vec![]);
+        // For full profiling (specifically memory), run this method using the system allocator
+        // so as not to clog the allocation tracking in mod task_allocator.
+        let mut maybe_profile = Box::new(None);
 
         run_mut_with_system_alloc(|| {
+            // Try allowing overrides
+            let profile_type = requested_type;
+
+            // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+            let start_pattern = "Profile::new";
+
+            // let fn_name = maybe_fn_name.unwrap();
+
             let mut current_backtrace = Backtrace::new_unresolved();
             current_backtrace.resolve();
             // println!("************\n{current_backtrace:?}\n************");
 
-            result = Box::new(extract_callstack_from_profile_backtrace(
+            let cleaned_stack = extract_callstack_from_profile_backtrace(
                 // fn_name,
                 start_pattern,
                 &mut current_backtrace,
-            ));
-        });
+            );
 
-        let cleaned_stack = *result;
-
-        // Process the collected frames to collapse patterns and clean up
-        // let cleaned_stack = clean_stack_trace(&raw_frames);
-        // eprintln!("cleaned_stack={cleaned_stack:?}");
-
-        if cleaned_stack.is_empty() {
-            run_with_system_alloc(|| {
+            if cleaned_stack.is_empty() {
                 eprintln!("Empty cleaned stack found");
-            });
-            return None;
-        }
-        // Register this function
-        let fn_name = &cleaned_stack[0];
+                return;
+            }
 
-        // Temporarily remove async additions to debug matching
-        // let desc_fn_name = if is_async {
-        //     format!("async::{fn_name}")
-        // } else {
-        //     fn_name.to_string()
-        // };
-        let desc_fn_name = fn_name;
-        // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-        run_mut_with_system_alloc(|| {
+            // Register this function
+            let fn_name = &cleaned_stack[0];
+
+            // Temporarily remove async additions to debug matching
+            // let desc_fn_name = if is_async {
+            //     format!("async::{fn_name}")
+            // } else {
+            //     fn_name.to_string()
+            // };
+            let desc_fn_name = fn_name;
+            // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
             println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
             register_profiled_function(fn_name, desc_fn_name);
-        });
 
-        let path = {
-            let mut path = Box::new(vec![]);
-            run_mut_with_system_alloc(|| {
-                path = Box::new(extract_path(&cleaned_stack));
-            });
-            *path
-        };
+            let path = {
+                let mut path = Box::new(vec![]);
+                run_mut_with_system_alloc(|| {
+                    path = Box::new(extract_path(&cleaned_stack));
+                });
+                *path
+            };
 
-        // Determine if we should keep the custom name
-        let custom_name = name.map(str::to_string);
+            // Determine if we should keep the custom name
+            let custom_name = name.map(str::to_string);
 
-        // Debug output can be turned back on if needed for troubleshooting
-        // println!(
-        //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
-        // );
+            // Debug output can be turned back on if needed for troubleshooting
+            // println!(
+            //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
+            // );
 
-        // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
-        // memory allocations in the profile setup itself in this method.
-        if profile_type == ProfileType::Time {
-            eprintln!(
+            // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
+            // memory allocations in the profile setup itself in this method.
+            if profile_type == ProfileType::Time {
+                eprintln!(
                 "Memory profiling enabled but only time profiling will be profiled as requested."
             );
-            return Some(Self {
-                profile_type,
-                start: Some(Instant::now()),
-                path,
-                custom_name,
-                registered_name: fn_name.to_string(),
-                memory_task: None,
-                memory_guard: None,
-            });
-        }
+                maybe_profile = Box::new(Some(Self {
+                    profile_type,
+                    start: Some(Instant::now()),
+                    path,
+                    custom_name,
+                    registered_name: fn_name.to_string(),
+                    memory_task: None,
+                    memory_guard: None,
+                }));
+                return;
+            }
 
-        // Create a task to track memory usage
-        // Create a memory task and activate it
-        let memory_task = create_memory_task();
-        let task_id = memory_task.id();
+            // Create a task to track memory usage
+            // Create a memory task and activate it
+            let memory_task = create_memory_task();
+            let task_id = memory_task.id();
 
-        // Register task path
-        run_with_system_alloc(|| {
+            // Register task path
             println!("Registering task path for task {task_id}: {path:?}");
             let mut registry = TASK_PATH_REGISTRY.lock();
             registry.insert(task_id, path.clone());
             println!("TASK_PATH_REGISTRY now has {} entries", registry.len());
-        });
 
-        // Activate the task
-        activate_task(task_id);
+            // Activate the task
+            activate_task(task_id);
 
-        // Add to thread stack
-        push_task_to_stack(thread::current().id(), task_id);
+            // Add to thread stack
+            push_task_to_stack(thread::current().id(), task_id);
 
-        run_with_system_alloc(|| {
             println!(
                 "NEW PROFILE: Task {task_id} created for {:?}",
                 // path.join("::")
                 path.last().map_or("", |v| v),
             );
+
+            // Create memory guard
+            // let mut memory_guard;
+            // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
+            // let memory_guard = *memory_guard;
+            let memory_guard = TaskGuard::new(task_id);
+
+            let profile = {
+                // Create the profile with necessary components
+                Self {
+                    profile_type,
+                    start: Some(Instant::now()),
+                    path,
+                    custom_name,
+                    registered_name: fn_name.to_string(),
+                    memory_task: Some(memory_task),
+                    memory_guard: Some(memory_guard),
+                }
+            };
+            maybe_profile = Box::new(Some(profile));
         });
 
-        // Create memory guard
-        // let mut memory_guard;
-        // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
-        // let memory_guard = *memory_guard;
-        let memory_guard = TaskGuard::new(task_id);
-
-        let profile = {
-            // Create the profile with necessary components
-            Self {
-                profile_type,
-                start: Some(Instant::now()),
-                path,
-                custom_name,
-                registered_name: fn_name.to_string(),
-                memory_task: Some(memory_task),
-                memory_guard: Some(memory_guard),
-            }
-        };
-        Some(profile)
+        // let maybe_profile = *maybe_profile;
+        *maybe_profile
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -1447,78 +1430,8 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
         .map(|pos| qualified_name[(pos + 2)..].to_string())
 }
 
-// // #[cfg(feature = "time_profiling")]
-// // TODO out: redundant
-// #[must_use]
-// pub fn clean_stack_trace(raw_frames: &[String]) -> Vec<String> {
-//     // First, filter out standard library infrastructure we don't care about
-//     let filtered_frames: Vec<String> = raw_frames
-//         .iter()
-//         .filter(|frame| {
-//             !frame.contains("core::ops::function::FnOnce::call_once")
-//                 && !frame.contains("std::sys::backtrace::__rust_begin_short_backtrace")
-//                 && !frame.contains("std::rt::lang_start")
-//                 && !frame.contains("std::panicking")
-//         })
-//         .cloned()
-//         .collect();
-
-//     eprintln!("filtered_frames={filtered_frames:#?}");
-
-//     // These are patterns we want to remove from the stack
-//     // Create a new cleaned stack, filtering out scaffolding
-//     let mut cleaned_frames = Vec::new();
-//     let mut i = 0;
-//     let mut already_seen = HashSet::new();
-//     let mut seen_main = false;
-
-//     while i < filtered_frames.len() {
-//         let current_frame = &filtered_frames[i];
-
-//         // Check if this is scaffolding we want to skip
-//         let is_scaffolding = SCAFFOLDING_PATTERNS
-//             .iter()
-//             .any(|pattern| current_frame.contains(pattern));
-
-//         if is_scaffolding {
-//             i += 1;
-//             continue;
-//         }
-
-//         // Clean the function name
-//         let clean_name = {
-//             // Remove hash suffixes and closure markers
-//             let clean_name = current_frame.to_string();
-
-//             clean_function_name(clean_name)
-//         };
-
-//         // Handle main function special case
-//         if clean_name.ends_with("::main") || clean_name == "main" {
-//             if !seen_main {
-//                 cleaned_frames.push("main".to_string());
-//                 seen_main = true;
-//             }
-//             i += 1;
-//             continue;
-//         }
-
-//         // Skip duplicate function calls (helps with the {{closure}} pattern)
-//         if already_seen.contains(&clean_name) {
-//             i += 1;
-//             continue;
-//         }
-
-//         already_seen.insert(clean_name.clone());
-//         cleaned_frames.push(clean_name);
-//         i += 1;
-//     }
-
-//     cleaned_frames
-// }
-
 const SCAFFOLDING_PATTERNS: &[&str] = &[
-    "::main::",
+    // "::main::",
     "::poll::",
     "::poll_next_unpin",
     "alloc::",

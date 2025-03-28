@@ -25,6 +25,14 @@ impl Document {
     fn new(id: usize, content: String) -> Self {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(10));
+
+        let _create_something = vec![
+            "Hello".to_string(),
+            "world".to_string(),
+            "testing".to_string(),
+            "testing".to_string(),
+        ];
+
         Document {
             id,
             content,
@@ -77,6 +85,13 @@ impl Document {
             score /= total_words as f64;
         }
 
+        let _create_something = vec![
+            "Hello".to_string(),
+            "world".to_string(),
+            "testing".to_string(),
+            "testing".to_string(),
+        ];
+
         self.sentiment_score = score;
         score
     }
@@ -125,6 +140,7 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 
 #[tokio::main]
 #[enable_profiling]
+#[profiled]
 async fn main() {
     println!(
         "is_profiling_enabled()? {}, get_global_profile_type(): {:?}",

@@ -24,14 +24,10 @@
 - [ ]  Document use of `THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=$TMPDIR cargo run demo/syn_dump_syntax.rs -- demo/hello_main.rs
 - [ ]  Try cloning re_memory and maybe add the latest /identifying entry as its own field.
 - [ ]  Fix registration for generics - maybe try entire cleaned name.
-- [ ]  Debug memory profiler hanging on `syn` example.
 - [ ]  profile_type arg on enable_profiling now redundant
-- [ ]  X Repeated try_lock if first try fails? didn't work
 - [ ]  Try stripping closures to register and track them under their enclosing function names.
-- [ ]  Docs and impl: don't allow profiling sections for memory due to backtrace matching issue.
-- [ ]  Next: Make extract_callstack_from_profile_backtrace and extract_callstack_from_alloc_event more resilient.
+- [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
 - [ ]  Try hashbrown for performance.
-
 
 I'm thinking of using a background thread in my profiler to handle the final gathering and writing out of information for each dropped Profile. At the moment there are timing issues: Profile::drop is collecting the information
 

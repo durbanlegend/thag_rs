@@ -18,10 +18,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 use strum::Display;
-use thag_profiler::{
-    profiling::{self, ProfileStats},
-    thousands, ProfileError, ProfileResult,
-};
+use thag_profiler::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -137,7 +134,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Ensure profiling is disabled for the analyzer
     // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
-    profiling::disable_profiling();
+    // profiling::disable_profiling();
     loop {
         let analysis_types = vec![
             "Time Profile - Single",

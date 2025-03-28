@@ -49,12 +49,12 @@ Install the profiling tools:
 
 ```bash
 # Install all tools
-cargo install thag_profiler --features=tools
+cargo install thag_profiler --no-default-features --features=tools
 
 # Or install individual tools
-cargo install thag_profiler --features=instrument-tool --bin thag-instrument
-cargo install thag_profiler --features=instrument-tool --bin thag-remove
-cargo install thag_profiler --features=analyze-tool --bin thag-analyze
+cargo install thag_profiler --no-default-features --features=instrument-tool --bin thag-instrument
+cargo install thag_profiler --no-default-features --features=instrument-tool --bin thag-remove
+cargo install thag_profiler --no-default-features --features=analyze-tool --bin thag-analyze
 ```
 
 ## Quick Start

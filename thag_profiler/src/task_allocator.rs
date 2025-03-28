@@ -333,12 +333,12 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         &mut current_backtrace,
                     );
                     eprintln!("cleaned_stack for size={size}: {cleaned_stack:?}");
-                    let in_backtrace_new = cleaned_stack
-                        .iter()
-                        .any(|frame| frame.contains("Backtrace::new"));
+                    let in_profile_code = cleaned_stack.iter().any(|frame| {
+                        frame.contains("Backtrace::new") || frame.contains("Profile::new")
+                    });
 
-                    if in_backtrace_new {
-                        eprintln!("Ignoring allocation request for new backtrace");
+                    if in_profile_code {
+                        eprintln!("Ignoring allocation request of size {size} for profiler code");
                         return;
                     }
 

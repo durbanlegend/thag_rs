@@ -627,26 +627,9 @@ impl Profile {
                     !(name.contains("Profile::new") && !name.contains("{{closure}}"))
                 })
                 .skip(1)
-                .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
-                .filter(|(_, name)| !name.starts_with("tokio::"))
-                .filter(|(_, name)| {
-                    !name.contains("core::ops::function::FnOnce::call_once")
-                        && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
-                        && !name.contains("std::rt::lang_start")
-                        && !name.contains("std::panicking")
-                })
-                .filter(|(_, name)| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
-                .map(|(_, name)| -> String {
-                    if let Some(hash_pos) = name.rfind("::h") {
-                        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-                            name[..hash_pos].to_string()
-                        } else {
-                            name
-                        }
-                    } else {
-                        name
-                    }
-                })
+                .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
+                .filter(|name| filter_scaffolding(name))
+                .map(strip_hex_suffix)
                 .map(|mut name| {
                     // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
                     clean_function_name(&mut name)
@@ -724,6 +707,7 @@ impl Profile {
     /// Panics if stack validation fails.
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
     #[cfg(feature = "full_profiling")]
+    #[must_use]
     pub fn new(
         name: Option<&str>,
         maybe_fn_name: Option<&str>,
@@ -828,7 +812,9 @@ impl Profile {
             println!("Registering task path for task {task_id}: {path:?}");
             let mut registry = TASK_PATH_REGISTRY.lock();
             registry.insert(task_id, path.clone());
-            println!("TASK_PATH_REGISTRY now has {} entries", registry.len());
+            let reg_len = registry.len();
+            drop(registry);
+            println!("TASK_PATH_REGISTRY now has {reg_len} entries",);
 
             // Activate the task
             activate_task(task_id);
@@ -1061,6 +1047,24 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 //     extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
 // }
 
+fn filter_scaffolding(name: &str) -> bool {
+    !name.starts_with("tokio::")
+        && !name.contains("__rust_alloc")
+        && !name.contains("__rust_realloc")
+        && !name.contains("__rust_try")
+        && !name.contains("core::ops::function::FnOnce::call_once")
+        && !name.contains("hashbrown")
+        && !name.contains("okaoka::with_allocator")
+        && !name.contains("std::panic::catch_unwind")
+        && !name.contains("std::panicking")
+        && !name.contains("std::rt::lang_start")
+        && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
+        && !name.contains("std::thread::local::LocalKey<T>::try_with")
+        && !name.contains("task_allocator::MultiAllocator::with")
+        && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
+}
+
+#[allow(clippy::nonminimal_bool)]
 pub fn extract_callstack_from_profile_backtrace(
     // maybe_fn_name: Option<&str>,
     // fn_name: &str,
@@ -1085,25 +1089,8 @@ pub fn extract_callstack_from_profile_backtrace(
         //     );
         // })
         .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
-        .filter(|name| !name.starts_with("tokio::"))
-        .filter(|name| {
-            !name.contains("core::ops::function::FnOnce::call_once")
-                && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
-                && !name.contains("std::rt::lang_start")
-                && !name.contains("std::panicking")
-        })
-        .filter(|name| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
-        .map(|name| {
-            if let Some(hash_pos) = name.rfind("::h") {
-                if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-                    name[..hash_pos].to_string()
-                } else {
-                    name
-                }
-            } else {
-                name
-            }
-        })
+        .filter(|name| filter_scaffolding(name))
+        .map(strip_hex_suffix)
         .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
             clean_function_name(&mut name)
@@ -1136,39 +1123,13 @@ pub fn extract_callstack_from_alloc_backtrace(
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .scan(false, |is_within_target_range, name| {
-            if !*is_within_target_range && name.contains(start_pattern) {
-                *is_within_target_range = true;
-            }
-            Some((*is_within_target_range, name))
-        })
-        // .inspect(|(is_within_target_range, name)| {
-        //     println!(
-        //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
-        //         name
-        //     );
+        .skip_while(|frame| !frame.contains(start_pattern))
+        // .inspect(|frame| {
+        //     println!("frame: {frame}");
         // })
-        .skip_while(|(is_within_target_range, _)| !*is_within_target_range)
-        .take_while(|(_, name)| !name.contains("__rust_begin_short_backtrace"))
-        .filter(|(_, name)| !name.starts_with("tokio::"))
-        .filter(|(_, name)| {
-            !name.contains("core::ops::function::FnOnce::call_once")
-                && !name.contains("std::sys::backtrace::__rust_begin_short_backtrace")
-                && !name.contains("std::rt::lang_start")
-                && !name.contains("std::panicking")
-        })
-        .filter(|(_, name)| !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s)))
-        .map(|(_, name)| -> String {
-            if let Some(hash_pos) = name.rfind("::h") {
-                if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-                    name[..hash_pos].to_string()
-                } else {
-                    name
-                }
-            } else {
-                name
-            }
-        })
+        .take_while(|frame| !frame.contains("__rust_begin_short_backtrace"))
+        .filter(|name| filter_scaffolding(name))
+        .map(strip_hex_suffix)
         .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
             clean_function_name(&mut name)
@@ -1182,9 +1143,8 @@ pub fn extract_callstack_from_alloc_backtrace(
                 true
             }
         })
-        // .map(|(_, name)| name.clone())
         .collect();
-    // eprintln!("Callstack: {:#?}", callstack);
+    eprintln!("Callstack: {callstack:#?}");
     // eprintln!("already_seen: {:#?}", already_seen);
     callstack
 }
@@ -1439,7 +1399,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "<F as core::future::future::Future>::poll",
     "FuturesOrdered<Fut>",
     "FuturesUnordered<Fut>",
-    "Profile::new",
+    // "Profile::new",
     "ProfiledFuture",
 ];
 
@@ -1949,5 +1909,17 @@ mod tests {
             re.is_match(&paths.time),
             "Time path should contain timestamp in YYYYmmdd-HHMMSS format"
         );
+    }
+}
+
+fn strip_hex_suffix(name: String) -> String {
+    if let Some(hash_pos) = name.rfind("::h") {
+        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+            name[..hash_pos].to_string()
+        } else {
+            name
+        }
+    } else {
+        name
     }
 }

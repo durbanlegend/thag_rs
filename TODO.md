@@ -27,7 +27,8 @@
 - [ ]  profile_type arg on enable_profiling now redundant
 - [ ]  Try stripping closures to register and track them under their enclosing function names.
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
-- [ ]  Try hashbrown for performance.
+- [ ]  hashbrown: no difference because adopted by Rust already.
+- [ ]  is_none_or in thag_proc_macros preload_themes.rs requires Rust 1.84?
 
 I'm thinking of using a background thread in my profiler to handle the final gathering and writing out of information for each dropped Profile. At the moment there are timing issues: Profile::drop is collecting the information
 

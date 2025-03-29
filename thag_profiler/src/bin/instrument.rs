@@ -9,7 +9,7 @@ use std::io::Read;
 /// A stand-alone convenience tool to instrument a Rust source program for `thag_profiler` profiling.
 /// It accepts the source code on stdin and outputs instrumented code to stdout.
 /// The instrumentation consists of adding the #[thag_profiler::enable_profiling] attribute to `fn main` if
-/// present, and the #[thag_profiler::profiled] attribute to all other functions and methods.
+/// present, and the #[thag_profiler::profiled] attribute to all functions and methods.
 /// module and proc macro library. It is intended to be lossless, using the `rust-analyzer` crate
 /// to preserve the original source code intact with its comments and formatting. However, by using
 /// it you accept responsibility for all consequences of instrumentation and profiling.
@@ -122,10 +122,13 @@ fn instrument_code(edition: Edition, source: &str) -> String {
 
             let fn_name = function.name().map(|n| n.text().to_string());
             eprintln!("fn_name={fn_name:?}");
-            let attr_text = if fn_name.as_deref() == Some("main") {
-                "#[thag_profiler::enable_profiling]"
+            let attr_texts = if fn_name.as_deref() == Some("main") {
+                vec![
+                    "#[thag_profiler::enable_profiling]",
+                    "#[thag_profiler::profiled]",
+                ]
             } else {
-                "#[thag_profiler::profiled]"
+                vec!["#[thag_profiler::profiled]"]
             };
 
             let fn_token = function.fn_token().expect("Function token is None");
@@ -149,15 +152,14 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             } else {
                 fn_token
             };
-            eprintln!(
-                "target_token: {target_token:?}, function.body().is_some()? {}",
-                function.body().is_some()
-            );
+            // eprintln!(
+            //     "target_token: {target_token:?}, function.body().is_some()? {}",
+            //     function.body().is_some()
+            // );
             let function_syntax: &SyntaxNode = function.syntax();
             if function.body().is_some()
                 && !function_syntax.descendants_with_tokens().any(|it| {
                     let text = it.to_string();
-                    let fname = fn_name.clone().expect("fn_name should be Some");
                     let filtered_out = text.starts_with("#[profiled")
                         || text.starts_with("#[thag_profiler::profiled")
                         || text.starts_with("#[enable_profiling")
@@ -166,12 +168,12 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                         || text.starts_with("profile!")
                         || text.starts_with("enable_profiling");
                     // if fname == "initialize_profile_files" {
-                    //     eprintln!("fn_name={fname}; text: {text}, filtered out={filtered_out}",);
+                    //     eprintln!("fn_name={}; text: {text}, fn_name.clone(), filtered out={filtered_out}",);
                     // }
                     filtered_out
                 })
             {
-                dbg!();
+                // dbg!();
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get
@@ -194,15 +196,17 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                         }
                     })
                     .unwrap_or_default();
-                // eprintln!("Indentation: {}, value: [{}]", indent.len(), indent);
-                // Parse and insert attribute with proper indentation
-                let attr_node = parse_attr(&format!("{}{}", indent, attr_text))
-                    .expect("Failed to parse attribute");
-                ted::insert(Position::before(&target_token), &attr_node);
+                // eprintln!("Indentation: {}, value: [{indent}]", indent.len());
+                for attr_text in &attr_texts {
+                    // Parse and insert attribute with proper indentation
+                    let attr_node = parse_attr(&format!("{indent}{attr_text}"))
+                        .expect("Failed to parse attribute");
+                    ted::insert(Position::before(&target_token), &attr_node);
 
-                if &indent.len() > &0 {
-                    let ws_token = ast::make::tokens::whitespace(&indent);
-                    ted::insert(Position::before(target_token), ws_token);
+                    if &indent.len() > &0 {
+                        let ws_token = ast::make::tokens::whitespace(&indent);
+                        ted::insert(Position::before(&target_token), ws_token);
+                    }
                 }
             }
         }

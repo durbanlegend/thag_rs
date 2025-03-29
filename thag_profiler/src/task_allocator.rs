@@ -5,6 +5,7 @@
 //! rather than threads, making it suitable for async code profiling.
 
 use std::alloc::{GlobalAlloc, Layout};
+use std::time::Instant;
 
 use crate::profiling::clean_function_name;
 #[cfg(feature = "full_profiling")]
@@ -321,6 +322,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 // Get backtrace without recursion
                 // eprintln!("Attempting backtrace");
                 // Use a different allocator for backtrace operations
+                let start_ident = Instant::now();
                 let mut task_id = 0;
                 MultiAllocator::with(AllocatorTag::System, || {
                     // Now we can safely use backtrace without recursion!
@@ -405,49 +407,61 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         }
                     }
                 });
-                run_with_system_alloc(|| println!("######## task_id={task_id}, size={size}"));
+                run_with_system_alloc(|| {
+                    println!(
+                        "task_id={task_id}, size={size}, time to assign = {}ms",
+                        start_ident.elapsed().as_millis()
+                    );
+                });
 
                 // Record allocation if task found
+                if task_id == 0 {
+                    return ptr;
+                }
+
+                let start_record_alloc = Instant::now();
                 // Use okaoka to avoid recursive allocations
                 MultiAllocator::with(AllocatorTag::System, || {
-                    if task_id > 0 {
-                        let address = ptr as usize;
-                        // let size = layout.size();
+                    let address = ptr as usize;
+                    // let size = layout.size();
 
-                        // Record in thread-local buffer
-                        // record_allocation(task_id, address, size);
-                        eprintln!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
-                        let mut registry = ALLOC_REGISTRY.lock();
-                        registry
-                            .task_allocations
-                            .entry(task_id)
-                            .or_default()
-                            .push((address, size));
+                    // Record in thread-local buffer
+                    // record_allocation(task_id, address, size);
+                    eprintln!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
+                    let mut registry = ALLOC_REGISTRY.lock();
+                    registry
+                        .task_allocations
+                        .entry(task_id)
+                        .or_default()
+                        .push((address, size));
 
-                        registry.address_to_task.insert(address, task_id);
-                        let check_map = &registry.task_allocations;
-                        let reg_task_id = *registry.address_to_task.get(&address).unwrap();
-                        let maybe_vec = check_map.get(&task_id);
-                        let (addr, sz) = *maybe_vec
-                            .and_then(|v: &Vec<(usize, usize)>| {
-                                let last = v.iter().filter(|&(addr, _)| *addr == address).last();
-                                last
-                            })
-                            .unwrap();
-                        drop(registry);
-                        // eprintln!("Check registry.task_allocations for task_id {task_id}: ({addr:#x}, {sz})");
-                        assert_eq!(sz, size);
-                        assert_eq!(addr, address);
-                        // eprintln! (
-                        //     "Check registry.address_to_task for task_id {task_id}: {:?}",
-                        //     registry.address_to_task.get(&address)
-                        // );
-                        assert_eq!(reg_task_id, task_id);
-                        eprintln!(
-                            "task {task_id} memory usage: {:?}",
-                            ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
-                        );
-                    }
+                    registry.address_to_task.insert(address, task_id);
+                    let check_map = &registry.task_allocations;
+                    let reg_task_id = *registry.address_to_task.get(&address).unwrap();
+                    let maybe_vec = check_map.get(&task_id);
+                    let (addr, sz) = *maybe_vec
+                        .and_then(|v: &Vec<(usize, usize)>| {
+                            let last = v.iter().filter(|&(addr, _)| *addr == address).last();
+                            last
+                        })
+                        .unwrap();
+                    drop(registry);
+                    // eprintln!("Check registry.task_allocations for task_id {task_id}: ({addr:#x}, {sz})");
+                    assert_eq!(sz, size);
+                    assert_eq!(addr, address);
+                    // eprintln! (
+                    //     "Check registry.address_to_task for task_id {task_id}: {:?}",
+                    //     registry.address_to_task.get(&address)
+                    // );
+                    assert_eq!(reg_task_id, task_id);
+                    // eprintln!(
+                    //     "task {task_id} memory usage: {:?}",
+                    //     ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
+                    // );
+                    eprintln!(
+                        "Time to record allocation: {}ms",
+                        start_record_alloc.elapsed().as_millis()
+                    );
                 });
             } else {
                 // eprintln!("ignoring allocation of {} bytes", layout.size());

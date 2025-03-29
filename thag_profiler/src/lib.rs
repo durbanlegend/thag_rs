@@ -41,8 +41,8 @@ pub mod profiling;
 #[cfg(feature = "full_profiling")]
 mod task_allocator;
 
-#[cfg(feature = "full_profiling")]
-mod interning;
+// #[cfg(feature = "full_profiling")]
+// mod interning;
 
 #[cfg(feature = "full_profiling")]
 mod okaoka;

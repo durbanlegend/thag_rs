@@ -10,7 +10,7 @@ use std::{
     io::BufWriter,
     path::PathBuf,
     sync::atomic::{AtomicU8, Ordering},
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -270,6 +270,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     Ok(())
 }
 
+#[cfg(feature = "time_profiling")]
 fn initialize_file(
     profile_type: &str,
     file_path: &str,
@@ -596,29 +597,12 @@ impl Profile {
         // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        // let fn_name = maybe_fn_name.map_or_else(
-        //     || {
-        //         let mut current_backtrace = Backtrace::new_unresolved();
-        //         current_backtrace.resolve();
-        //         Backtrace::frames(&current_backtrace)
-        //             .iter()
-        //             .flat_map(backtrace::BacktraceFrame::symbols)
-        //             .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        //             .skip_while(|name| {
-        //                 !(name.contains("Profile::new") && !name.contains("{{closure}}"))
-        //             })
-        //             .skip(1)
-        //             .take(1)
-        //             .last()
-        //             .unwrap()
-        //     },
-        //     ToString::to_string,
-        // );
-
         // let cleaned_stack = ÷maybe_fn_name.map_or_else(|| {
-        let cleaned_stack = {
+        let cleaned_stack: Vec<String> = {
             let mut current_backtrace = Backtrace::new_unresolved();
             current_backtrace.resolve();
+            let mut already_seen = HashSet::new();
+
             Backtrace::frames(&current_backtrace)
                 .iter()
                 .flat_map(backtrace::BacktraceFrame::symbols)
@@ -648,6 +632,7 @@ impl Profile {
         };
 
         let fn_name = &cleaned_stack[0];
+        let desc_fn_name = fn_name;
         println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
         register_profiled_function(fn_name, desc_fn_name);
 
@@ -732,6 +717,7 @@ impl Profile {
         let mut maybe_profile = Box::new(None);
 
         run_mut_with_system_alloc(|| {
+            let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
 
@@ -847,6 +833,7 @@ impl Profile {
                 }
             };
             maybe_profile = Box::new(Some(profile));
+            eprintln!("Time to create profile: {}ms", start.elapsed().as_millis());
         });
 
         // let maybe_profile = *maybe_profile;
@@ -966,6 +953,7 @@ impl Profile {
 
     /// Add our custom section name to the end of the stack path if present.
     /// NB this will interfere with the stack path resolution.
+    #[cfg(feature = "time_profiling")]
     fn append_section_to_stack(&self, mut stack_with_custom_name: Vec<String>) -> String {
         if let Some(name) = &self.custom_name {
             // println!("DEBUG: Adding custom name '{}' to memory stack", name);
@@ -1166,6 +1154,7 @@ impl Drop for Profile {
     fn drop(&mut self) {
         run_mut_with_system_alloc(|| {
             // println!("In drop for Profile {:?}", self);
+            let start = Instant::now();
             if let Some(start) = self.start.take() {
                 // Handle time profiling as before
                 match self.profile_type {
@@ -1176,6 +1165,7 @@ impl Drop for Profile {
                     ProfileType::Memory => (),
                 }
             }
+            eprintln!("Time to write event: {}ms", start.elapsed().as_millis());
 
             // Handle memory profiling
             #[cfg(feature = "full_profiling")]
@@ -1185,7 +1175,6 @@ impl Drop for Profile {
                 //     self.registered_name
                 // );
 
-                thread::sleep(Duration::from_millis(1000));
                 // First drop the guard to exit the task context
                 self.memory_guard = None;
                 // Now get memory usage from our task
@@ -1211,6 +1200,7 @@ impl Drop for Profile {
                     );
                 }
             }
+            eprintln!("Time to drop profile: {}ms", start.elapsed().as_millis());
         });
     }
 }
@@ -1315,6 +1305,7 @@ unsafe impl Send for ProfileSection {}
 /// Panics if it finds the name "new", which shows that the inclusion of the
 /// type in the method name is not working.
 pub fn register_profiled_function(name: &str, desc_name: &str) {
+    let start = Instant::now();
     #[cfg(all(debug_assertions, not(test)))]
     assert!(
         name != "new",
@@ -1335,6 +1326,10 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
     }
     // eprintln!("Profiled functions: {:#?}", dump_profiled_functions());
     // eprintln!("Exiting register_profiled_function");
+    eprintln!(
+        "register_profiled_function took {}ms",
+        start.elapsed().as_millis()
+    );
 }
 
 // Check if a function is registered for profiling

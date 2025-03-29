@@ -282,13 +282,35 @@ where
 
 #[proc_macro_derive(DocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, "derive_doc_comment", &input, derive_doc_comment_impl)
+    intercept_and_debug(true, &input, |tokens| derive_doc_comment_impl(tokens))
 }
 
-use std::collections::HashMap;
-use std::path::PathBuf;
-use toml::{self, Value};
+/// Basic file embedding handles a file.
+#[proc_macro]
+pub fn embed_file(input: TokenStream) -> TokenStream {
+    println!("The current directory is {:#?}", std::env::current_dir());
 
+    println!("vars={:#?}", std::env::vars());
+
+    #[cfg(target_os = "windows")]
+    let pwd = std::env::var("pwd").expect("Could not resolve $pwd");
+
+    #[cfg(not(target_os = "windows"))]
+    let pwd = std::env::var("PWD").expect("Could not resolve $PWD");
+
+    println!("PWD={pwd}");
+    let embed = parse_macro_input!(input as LitStr).value();
+    let path = std::path::PathBuf::from(pwd).join(&embed);
+    println!("path={path:#?}");
+    let content = fs::read_to_string(Path::new(&path)).expect("Failed to read file");
+
+    quote! {
+        #content
+    }
+    .into()
+}
+
+/// More advanced embedding can handle a directory.
 #[proc_macro]
 pub fn load_static_map(input: TokenStream) -> TokenStream {
     intercept_and_debug(true, "load_static_map", &input, load_static_map_impl)

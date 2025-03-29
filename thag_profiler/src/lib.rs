@@ -39,13 +39,10 @@ mod errors;
 pub mod profiling;
 
 #[cfg(feature = "full_profiling")]
-mod task_allocator;
-
-// #[cfg(feature = "full_profiling")]
-// mod interning;
+mod okaoka;
 
 #[cfg(feature = "full_profiling")]
-mod okaoka;
+mod task_allocator;
 
 use std::fmt::Display;
 
@@ -124,6 +121,25 @@ macro_rules! lazy_static_var {
         use std::sync::OnceLock;
         static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
         GENERIC_LAZY.get_or_init(|| $init_fn)
+    }};
+}
+
+/// Lazy-static regular expression generator.
+///
+/// From burntsushi at `https://github.com/rust-lang/regex/issues/709`
+/// Syntax:
+/// ```Rust
+/// let re = regex!(<string literal>)
+/// ```
+///
+/// NB: In order to avoid fighting the compiler, it is not recommended to make `re` uppercase.
+#[macro_export]
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        use {regex::Regex, std::sync::OnceLock};
+
+        static RE: OnceLock<Regex> = OnceLock::new();
+        RE.get_or_init(|| Regex::new($re).unwrap())
     }};
 }
 

@@ -20,6 +20,9 @@ use crate::task_allocator::{
 };
 
 #[cfg(feature = "full_profiling")]
+use regex::Regex;
+
+#[cfg(feature = "full_profiling")]
 use std::thread;
 
 #[cfg(feature = "time_profiling")]
@@ -1087,7 +1090,7 @@ pub fn extract_callstack_from_profile_backtrace(
 }
 
 pub fn extract_callstack_from_alloc_backtrace(
-    start_pattern: &str,
+    start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
     current_backtrace.resolve();
@@ -1098,12 +1101,12 @@ pub fn extract_callstack_from_alloc_backtrace(
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|frame| !frame.contains(start_pattern))
+        .skip_while(|frame| !start_pattern.is_match(frame))
+        .take_while(|frame| !frame.contains("__rust_begin_short_backtrace"))
+        .filter(|name| filter_scaffolding(name))
         // .inspect(|frame| {
         //     println!("frame: {frame}");
         // })
-        .take_while(|frame| !frame.contains("__rust_begin_short_backtrace"))
-        .filter(|name| filter_scaffolding(name))
         .map(strip_hex_suffix)
         .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function

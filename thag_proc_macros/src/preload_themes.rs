@@ -11,21 +11,17 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
     let mut theme_indices = Vec::new();
     let mut bg_to_names = HashMap::new();
 
+    #[allow(clippy::map_unwrap_or, clippy::unnecessary_map_or)]
     for entry in std::fs::read_dir(themes_dir).unwrap() {
         let path = entry.unwrap().path();
         // Skip hidden files like .DS_Store and read only .toml files
-        if path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .map(|n| {
-                n.starts_with('.')
-                    || !std::path::Path::new(n)
-                        .extension()
-                        .map(|ext| ext.eq_ignore_ascii_case("toml"))
-                        .unwrap_or(false)
-            })
-            .unwrap_or(true)
-        {
+        if path.file_name().and_then(|n| n.to_str()).map_or(true, |n| {
+            n.starts_with('.')
+                || !std::path::Path::new(n)
+                    .extension()
+                    .map(|ext| ext.eq_ignore_ascii_case("toml"))
+                    .unwrap_or(false)
+        }) {
             continue;
         }
 

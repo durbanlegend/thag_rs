@@ -8,16 +8,16 @@ use std::alloc::{GlobalAlloc, Layout};
 use std::time::Instant;
 
 use crate::profiling::clean_function_name;
-#[cfg(feature = "full_profiling")]
+
 use crate::set_multi_global_allocator;
 
-#[cfg(feature = "full_profiling")]
-use crate::okaoka;
+use crate::{okaoka, regex};
 
-#[cfg(feature = "full_profiling")]
 use crate::profiling::{extract_callstack_from_alloc_backtrace, extract_path, get_memory_path};
 
-#[cfg(feature = "full_profiling")]
+use backtrace::Backtrace;
+use parking_lot::Mutex;
+use regex::Regex;
 use std::{
     alloc::System,
     // cell::RefCell,
@@ -30,18 +30,10 @@ use std::{
     thread::{self, ThreadId},
 };
 
-#[cfg(feature = "full_profiling")]
-use backtrace::Backtrace;
-
-#[cfg(feature = "full_profiling")]
-use parking_lot::Mutex;
-
-#[cfg(feature = "full_profiling")]
 const MINIMUM_TRACKED_SIZE: usize = 64;
 
 /// Registry for tracking memory allocations and deallocations
 #[derive(Debug)]
-#[cfg(feature = "full_profiling")]
 struct AllocationRegistry {
     /// Task ID -> Allocations mapping: [(address, size)]
     task_allocations: HashMap<usize, Vec<(usize, usize)>>,
@@ -50,7 +42,6 @@ struct AllocationRegistry {
     address_to_task: HashMap<usize, usize>,
 }
 
-#[cfg(feature = "full_profiling")]
 impl AllocationRegistry {
     fn new() -> Self {
         Self {
@@ -72,27 +63,11 @@ impl AllocationRegistry {
 }
 
 // Global allocation registry
-#[cfg(feature = "full_profiling")]
 static ALLOC_REGISTRY: LazyLock<Mutex<AllocationRegistry>> =
     LazyLock::new(|| Mutex::new(AllocationRegistry::new()));
 
-// Thread-local buffers for pending allocation operations
-// #[cfg(feature = "full_profiling")]
-// thread_local! {
-//     // Buffer for pending allocations: (task_id, address, size)
-//     static ALLOCATION_BUFFER: RefCell<Vec<(usize, usize, usize)>> =
-//         RefCell::new(Vec::with_capacity(100));
-
-//     // Buffer for pending deallocations: address
-//     static DEALLOCATION_BUFFER: RefCell<Vec<usize>> =
-//         RefCell::new(Vec::with_capacity(100));
-// }
-
-// ---------- Profile Registry ----------
-
 /// Registry for tracking active profiles and task stacks
 #[derive(Debug)]
-#[cfg(feature = "full_profiling")]
 struct ProfileRegistry {
     /// Set of active task IDs
     active_profiles: BTreeSet<usize>,
@@ -101,7 +76,6 @@ struct ProfileRegistry {
     thread_task_stacks: HashMap<ThreadId, Vec<usize>>,
 }
 
-#[cfg(feature = "full_profiling")]
 impl ProfileRegistry {
     fn new() -> Self {
         Self {
@@ -159,14 +133,12 @@ impl ProfileRegistry {
 }
 
 // Global profile registry
-#[cfg(feature = "full_profiling")]
 static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
     LazyLock::new(|| Mutex::new(ProfileRegistry::new()));
 
 // ---------- Public Registry API ----------
 
 /// Add a task to active profiles
-#[cfg(feature = "full_profiling")]
 pub fn activate_task(task_id: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
         PROFILE_REGISTRY.lock().activate_task(task_id);
@@ -174,7 +146,6 @@ pub fn activate_task(task_id: usize) {
 }
 
 /// Remove a task from active profiles
-#[cfg(feature = "full_profiling")]
 pub fn deactivate_task(task_id: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
         // Process any pending allocations before deactivating
@@ -185,7 +156,6 @@ pub fn deactivate_task(task_id: usize) {
 }
 
 /// Get the memory usage for a specific task
-#[cfg(feature = "full_profiling")]
 pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
     // Process any pending allocations first
     // process_pending_allocations();
@@ -194,7 +164,6 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 }
 
 /// Add a task to a thread's stack
-#[cfg(feature = "full_profiling")]
 pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
         PROFILE_REGISTRY
@@ -204,7 +173,6 @@ pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
 }
 
 /// Remove a task from a thread's stack
-#[cfg(feature = "full_profiling")]
 pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
     MultiAllocator::with(AllocatorTag::System, || {
         PROFILE_REGISTRY
@@ -214,7 +182,6 @@ pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
 }
 
 /// Get active tasks
-#[cfg(feature = "full_profiling")]
 pub fn get_active_tasks() -> Vec<usize> {
     let mut active_tasks = Box::new(vec![]);
     MultiAllocator::with(AllocatorTag::System, || {
@@ -225,7 +192,6 @@ pub fn get_active_tasks() -> Vec<usize> {
 }
 
 /// Get the last active task
-#[cfg(feature = "full_profiling")]
 pub fn get_last_active_task() -> Option<usize> {
     let mut last_active_task: Box<Option<usize>> = Box::new(None);
     MultiAllocator::with(AllocatorTag::System, || {
@@ -243,14 +209,12 @@ pub struct TaskAwareAllocator<A: GlobalAlloc> {
 }
 
 /// Task context for tracking allocations
-#[cfg(feature = "full_profiling")]
 #[derive(Debug, Clone)]
 pub struct TaskMemoryContext {
     pub task_id: usize,
     // allocator: &'static TaskAwareAllocator<System>,
 }
 
-#[cfg(feature = "full_profiling")]
 impl TaskMemoryContext {
     /// Gets the unique ID for this task
     pub const fn id(&self) -> usize {
@@ -269,7 +233,6 @@ impl TaskMemoryContext {
 pub struct TaskMemoryContext;
 
 // Define registry-specific methods for System allocator
-#[cfg(feature = "full_profiling")]
 #[allow(clippy::unused_self)]
 impl TaskAwareAllocator<System> {
     /// Creates a new task context for tracking memory
@@ -284,13 +247,11 @@ impl TaskAwareAllocator<System> {
 }
 
 /// Creates a new task context for memory tracking.
-#[cfg(feature = "full_profiling")]
 pub fn create_memory_task() -> TaskMemoryContext {
     let allocator = get_allocator();
     allocator.create_task_context()
 }
 
-#[cfg(feature = "full_profiling")]
 pub fn run_mut_with_system_alloc(closure: impl FnMut()) {
     MultiAllocator::with(AllocatorTag::System, closure);
 }
@@ -300,7 +261,6 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = self.inner.alloc(layout);
 
-        #[cfg(feature = "full_profiling")]
         if !ptr.is_null() {
             // Skip small allocations
             let size = layout.size();
@@ -326,7 +286,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let mut task_id = 0;
                 MultiAllocator::with(AllocatorTag::System, || {
                     // Now we can safely use backtrace without recursion!
-                    let start_pattern = "global::GlobalAlloc";
+                    let start_pattern: &Regex = regex!("thag_profiler::okaoka.+MultiAllocator");
 
                     // eprintln!("Calling extract_callstack");
                     let mut current_backtrace = Backtrace::new_unresolved();
@@ -477,12 +437,12 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
     }
 }
 
-fn trim_backtrace(start_pattern: &str, current_backtrace: &Backtrace) -> Vec<String> {
+fn trim_backtrace(start_pattern: &Regex, current_backtrace: &Backtrace) -> Vec<String> {
     let x = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(backtrace::BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|element| !element.contains(start_pattern))
+        .skip_while(|element| !start_pattern.is_match(element))
         .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
         .map(|mut name| clean_function_name(&mut name))
         .collect::<Vec<String>>();
@@ -490,14 +450,12 @@ fn trim_backtrace(start_pattern: &str, current_backtrace: &Backtrace) -> Vec<Str
 }
 
 // Task tracking state
-#[cfg(feature = "full_profiling")]
 struct TaskState {
     // Counter for generating task IDs
     next_task_id: AtomicUsize,
 }
 
 // Global task state
-#[cfg(feature = "full_profiling")]
 static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
     // println!("Initializing TASK_STATE with next_task_id = 1");
     TaskState {
@@ -506,13 +464,11 @@ static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
 });
 
 // To handle active task tracking, instead of thread-locals, we'll use task-specific techniques
-#[cfg(feature = "full_profiling")]
 #[derive(Debug)]
 pub struct TaskGuard {
     task_id: usize,
 }
 
-#[cfg(feature = "full_profiling")]
 impl TaskGuard {
     pub const fn new(task_id: usize) -> Self {
         Self { task_id }
@@ -523,7 +479,6 @@ impl TaskGuard {
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TaskGuard;
 
-#[cfg(feature = "full_profiling")]
 impl Drop for TaskGuard {
     fn drop(&mut self) {
         MultiAllocator::with(AllocatorTag::System, || {
@@ -543,29 +498,23 @@ impl Drop for TaskGuard {
     }
 }
 
-#[cfg(feature = "full_profiling")]
 pub fn run_with_system_alloc(closure: impl Fn()) {
     MultiAllocator::with(AllocatorTag::System, closure);
 }
 
-#[cfg(feature = "full_profiling")]
-// #[global_allocator]
 static TASK_AWARE_ALLOCATOR: TaskAwareAllocator<System> = TaskAwareAllocator { inner: System };
 
 // Helper to get the allocator instance
-#[cfg(feature = "full_profiling")]
 pub fn get_allocator() -> &'static TaskAwareAllocator<System> {
     &TASK_AWARE_ALLOCATOR
 }
 
 // Task Path Registry for debugging
 // 1. Declare the TASK_PATH_REGISTRY
-#[cfg(feature = "full_profiling")]
 pub static TASK_PATH_REGISTRY: LazyLock<Mutex<HashMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 // 2. Function to look up a task's path by ID
-#[cfg(feature = "full_profiling")]
 pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
     // eprintln!("About to try_lock TASK_PATH_REGISTRY for lookup_task_path");
     let registry = TASK_PATH_REGISTRY.lock();
@@ -574,7 +523,6 @@ pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
 
 // 3. Function to dump the entire registry
 #[allow(dead_code)]
-#[cfg(feature = "full_profiling")]
 pub fn dump_task_path_registry() {
     // eprintln!("About to try_lock TASK_PATH_REGISTRY for dump_task_path_registry");
     println!("==== TASK PATH REGISTRY DUMP ====");
@@ -598,7 +546,6 @@ pub fn dump_task_path_registry() {
 
 // 4. Utility function to look up and print a specific task's path
 #[allow(dead_code)]
-#[cfg(feature = "full_profiling")]
 pub fn print_task_path(task_id: usize) {
     match lookup_task_path(task_id) {
         Some(path) => println!("Task {} path: {}", task_id, path.join("::")),
@@ -608,14 +555,12 @@ pub fn print_task_path(task_id: usize) {
 
 // 5. Function to remove an entry from the TASK_PATH_REGISTRY
 #[allow(dead_code)]
-#[cfg(feature = "full_profiling")]
 pub fn remove_task_path(task_id: usize) {
     let mut registry = TASK_PATH_REGISTRY.lock();
     registry.remove(&task_id);
 }
 
 // Helper function to find the best matching profile
-#[cfg(feature = "full_profiling")]
 fn find_matching_profile(path: &[String]) -> usize {
     let path_registry = TASK_PATH_REGISTRY.lock();
     // eprintln!("...success!");
@@ -655,7 +600,6 @@ fn find_matching_profile(path: &[String]) -> usize {
 }
 
 // Compute similarity between a task path and backtrace frames
-#[cfg(feature = "full_profiling")]
 fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     if task_path.is_empty() || reg_path.is_empty() {
         eprintln!("task_path.is_empty() || reg_path.is_empty()");
@@ -690,7 +634,6 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 }
 
 // Setup for okaoka
-#[cfg(feature = "full_profiling")]
 set_multi_global_allocator! {
     MultiAllocator, // Name of our allocator facade
     AllocatorTag,   // Name of our allocator tag enum
@@ -699,10 +642,8 @@ set_multi_global_allocator! {
 }
 
 // Wrapper to expose our TaskAwareAllocator to okaoka
-#[cfg(feature = "full_profiling")]
 struct TaskAwareAllocatorWrapper;
 
-#[cfg(feature = "full_profiling")]
 unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
     unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
         // Use the static allocator instance
@@ -716,7 +657,6 @@ unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
 
 /// Initialize memory profiling.
 /// This is called by the main `init_profiling` function.
-#[cfg(feature = "full_profiling")]
 pub fn initialize_memory_profiling() {
     // This is called at application startup to set up memory profiling
     MultiAllocator::with(AllocatorTag::System, || {
@@ -726,7 +666,6 @@ pub fn initialize_memory_profiling() {
 
 /// Finalize memory profiling and write out data.
 /// This is called by the main `finalize_profiling` function.
-#[cfg(feature = "full_profiling")]
 pub fn finalize_memory_profiling() {
     MultiAllocator::with(AllocatorTag::System, || {
         write_memory_profile_data();
@@ -735,7 +674,6 @@ pub fn finalize_memory_profiling() {
 
 /// Write memory profile data to a file
 #[allow(clippy::too_many_lines)]
-#[cfg(feature = "full_profiling")]
 fn write_memory_profile_data() {
     use chrono::Local;
     use std::{collections::HashMap, fs::File, path::Path};

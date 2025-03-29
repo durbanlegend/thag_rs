@@ -1217,10 +1217,6 @@ name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
-dependencies = [
- "ahash",
- "allocator-api2",
-]
 
 [[package]]
 name = "hashbrown"
@@ -1591,15 +1587,6 @@ checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "lasso"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e14eda50a3494b3bf7b9ce51c52434a761e383d7238ce1dd5dcec2fbc13e9fb"
-dependencies = [
- "hashbrown 0.14.5",
 ]
 
 [[package]]
@@ -2129,17 +2116,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ra-ap-rustc_lexer"
-version = "0.100.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8358702c2a510ea84ba5801ddc047d9ad9520902cfb0e6173277610cdce2c9c"
-dependencies = [
- "memchr",
- "unicode-properties",
- "unicode-xid 0.2.6",
-]
-
-[[package]]
 name = "ra_ap_edition"
 version = "0.0.264"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2158,7 +2134,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4393f287f18c19f8a9a60a8b53e59003e0edffbe355bb2ced96a054f73109a14"
 dependencies = [
  "drop_bomb",
- "ra-ap-rustc_lexer 0.94.0",
+ "ra-ap-rustc_lexer",
  "ra_ap_edition",
  "ra_ap_limit",
  "tracing",
@@ -2189,7 +2165,7 @@ dependencies = [
  "either",
  "indexmap",
  "itertools 0.12.1",
- "ra-ap-rustc_lexer 0.94.0",
+ "ra-ap-rustc_lexer",
  "ra_ap_parser",
  "ra_ap_stdx",
  "rowan",
@@ -2907,16 +2883,12 @@ dependencies = [
  "backtrace",
  "chrono",
  "dirs",
- "hashbrown 0.15.2",
  "inferno",
  "inquire",
- "lasso",
  "once_cell",
  "parking_lot",
- "ra-ap-rustc_lexer 0.100.0",
  "ra_ap_syntax",
  "regex",
- "scopeguard",
  "serde",
  "serde_json",
  "serial_test",

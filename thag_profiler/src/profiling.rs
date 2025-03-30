@@ -3,6 +3,7 @@ use backtrace::Backtrace;
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use regex::Regex;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     env,

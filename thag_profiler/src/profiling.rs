@@ -1,4 +1,4 @@
-use crate::{lazy_static_var, static_lazy, ProfileError};
+use crate::{debug_log, flush_debug_log, lazy_static_var, static_lazy, ProfileError};
 use backtrace::Backtrace;
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -247,7 +247,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
         ProfileType::Time => {
             TimeProfileFile::init();
             initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            eprintln!("Time profile will be written to {time_path}");
+            debug_log!("Time profile will be written to {time_path}");
         }
         ProfileType::Memory | ProfileType::Both => panic!(
             "Profile type `{profile_type:?}` requested but feature `full_profiling` is not enabled",
@@ -276,12 +276,12 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
         ProfileType::Time => {
             TimeProfileFile::init();
             initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            eprintln!("Time profile will be written to {time_path}");
+            debug_log!("Time profile will be written to {time_path}");
         }
         ProfileType::Memory => {
             MemoryProfileFile::init();
             initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-            eprintln!("Memory profile will be written to {memory_path}");
+            debug_log!("Memory profile will be written to {memory_path}");
         }
         ProfileType::Both => {
             // Initialize all files
@@ -292,8 +292,8 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
             initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
 
-            eprintln!("Time profile will be written to {time_path}");
-            eprintln!("Memory profile will be written to {memory_path}");
+            debug_log!("Time profile will be written to {time_path}");
+            debug_log!("Memory profile will be written to {memory_path}");
         }
     }
     Ok(())
@@ -317,7 +317,7 @@ fn initialize_file(
 /// Panics if `enable_profiling` fails.
 // Modify get_global_profile_type to use the config:
 pub fn get_global_profile_type() -> ProfileType {
-    // eprintln!("profile_type={profile_type:?}");
+    // debug_log!("profile_type={profile_type:?}");
 
     lazy_static_var!(ProfileType, deref, {
         let profile_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
@@ -331,9 +331,9 @@ pub fn get_global_profile_type() -> ProfileType {
         if !is_profiling_enabled() {
             enable_profiling(true, profile_type).expect("Failed to enable profiling");
             if profile_type == ProfileType::Memory {
-                eprintln!("Memory profiling enabled");
+                debug_log!("Memory profiling enabled");
             } else if profile_type == ProfileType::Both {
-                eprintln!("Both time and memory profiling enabled");
+                debug_log!("Both time and memory profiling enabled");
             }
         }
         profile_type
@@ -378,7 +378,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
     if !enabled && config.enabled {
         // If trying to disable but env var says enabled, log a warning but continue
         // (environment settings take precedence)
-        println!(
+        debug_log!(
             "Warning: Attempt to disable profiling overridden by THAG_PROFILE environment variable"
         );
         return Ok(());
@@ -485,7 +485,7 @@ fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> 
 // #[allow(clippy::inline_always)]
 #[cfg(feature = "time_profiling")]
 pub fn is_profiling_enabled() -> bool {
-    // eprintln!(
+    // debug_log!(
     //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
     //     cfg!(test),
     //     cfg!(feature = "time_profiling")
@@ -514,7 +514,7 @@ pub fn is_profiling_enabled() -> bool {
 // #[allow(clippy::inline_always)]
 #[cfg(feature = "time_profiling")]
 pub fn is_profiling_state_enabled() -> bool {
-    // eprintln!(
+    // debug_log!(
     //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
     //     cfg!(test),
     //     cfg!(feature = "time_profiling")
@@ -620,10 +620,10 @@ impl Profile {
         let profile_type = requested_type;
 
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
-            eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
-        // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+        // debug_log!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
         // let cleaned_stack = ÷maybe_fn_name.map_or_else(|| {
@@ -662,7 +662,7 @@ impl Profile {
 
         let fn_name = &cleaned_stack[0];
         let desc_fn_name = fn_name;
-        println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+        debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
         register_profiled_function(fn_name, desc_fn_name);
 
         let path = extract_path(&cleaned_stack);
@@ -671,13 +671,13 @@ impl Profile {
         let custom_name = name.map(str::to_string);
 
         // Debug output can be turned back on if needed for troubleshooting
-        // println!(
+        // debug_log!(
         //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
         // Create a basic profile structure that works for all configurations
         if let ProfileType::Memory = profile_type {
-            eprintln!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
+            debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
         Some(Self {
@@ -750,14 +750,14 @@ impl Profile {
             // Try allowing overrides
             let profile_type = requested_type;
 
-            // eprintln!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+            // debug_log!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
 
             // let fn_name = maybe_fn_name.unwrap();
 
             let mut current_backtrace = Backtrace::new_unresolved();
             current_backtrace.resolve();
-            // println!("************\n{current_backtrace:?}\n************");
+            // debug_log!("************\n{current_backtrace:?}\n************");
 
             let cleaned_stack = extract_callstack_from_profile_backtrace(
                 // fn_name,
@@ -766,7 +766,7 @@ impl Profile {
             );
 
             if cleaned_stack.is_empty() {
-                eprintln!("Empty cleaned stack found");
+                debug_log!("Empty cleaned stack found");
                 return;
             }
 
@@ -780,8 +780,8 @@ impl Profile {
             //     fn_name.to_string()
             // };
             let desc_fn_name = fn_name;
-            // eprintln!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-            println!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
+            // debug_log!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
+            debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
             register_profiled_function(fn_name, desc_fn_name);
 
             let path = {
@@ -796,14 +796,14 @@ impl Profile {
             let custom_name = name.map(str::to_string);
 
             // Debug output can be turned back on if needed for troubleshooting
-            // println!(
+            // debug_log!(
             //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
             // );
 
             // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
             // memory allocations in the profile setup itself in this method.
             if profile_type == ProfileType::Time {
-                eprintln!(
+                debug_log!(
                 "Memory profiling enabled but only time profiling will be profiled as requested."
             );
                 maybe_profile = Box::new(Some(Self {
@@ -824,12 +824,12 @@ impl Profile {
             let task_id = memory_task.id();
 
             // Register task path
-            println!("Registering task path for task {task_id}: {path:?}");
+            debug_log!("Registering task path for task {task_id}: {path:?}");
             let mut registry = TASK_PATH_REGISTRY.lock();
             registry.insert(task_id, path.clone());
             let reg_len = registry.len();
             drop(registry);
-            println!("TASK_PATH_REGISTRY now has {reg_len} entries",);
+            debug_log!("TASK_PATH_REGISTRY now has {reg_len} entries",);
 
             // Activate the task
             activate_task(task_id);
@@ -837,7 +837,7 @@ impl Profile {
             // Add to thread stack
             push_task_to_stack(thread::current().id(), task_id);
 
-            println!(
+            debug_log!(
                 "NEW PROFILE: Task {task_id} created for {:?}",
                 // path.join("::")
                 path.last().map_or("", |v| v),
@@ -862,7 +862,7 @@ impl Profile {
                 }
             };
             maybe_profile = Box::new(Some(profile));
-            eprintln!("Time to create profile: {}ms", start.elapsed().as_millis());
+            debug_log!("Time to create profile: {}ms", start.elapsed().as_millis());
         });
 
         // let maybe_profile = *maybe_profile;
@@ -902,7 +902,7 @@ impl Profile {
             writeln!(writer, "{entry}")?;
             writer.flush()?;
         }
-        // println!("Wrote entry {entry} to {path} for {guard:?}");
+        // debug_log!("Wrote entry {entry} to {path} for {guard:?}");
         drop(guard);
         Ok(())
     }
@@ -924,7 +924,7 @@ impl Profile {
 
         let micros = duration.as_micros();
         if micros == 0 {
-            println!(
+            debug_log!(
                 "DEBUG: Not writing time event for stack: {:?} due to zero duration",
                 self.path
             );
@@ -934,11 +934,11 @@ impl Profile {
         let stack = &self.path;
 
         if stack.is_empty() {
-            println!("DEBUG: Stack is empty for {:?}", self.custom_name);
+            debug_log!("DEBUG: Stack is empty for {:?}", self.custom_name);
             return Err(ProfileError::General("Stack is empty".into()));
         }
 
-        // println!("DEBUG: write_time_event for stack: {:?}", stack);
+        // debug_log!("DEBUG: write_time_event for stack: {:?}", stack);
 
         // Add our custom section name to the end of the stack path if present
         let stack_str = self.append_section_to_stack(stack.clone());
@@ -955,7 +955,7 @@ impl Profile {
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
             // Keep this as it's a business logic check
-            println!(
+            debug_log!(
                 "DEBUG: Not writing memory event for stack: {:?} due to zero delta",
                 self.path
             );
@@ -973,7 +973,7 @@ impl Profile {
 
         let entry = format!("{stack_str} {op}{delta}");
 
-        println!("DEBUG: write_memory_event: {entry}");
+        debug_log!("DEBUG: write_memory_event: {entry}");
 
         // let paths = ProfilePaths::get();
         let memory_path = get_memory_path()?;
@@ -985,13 +985,13 @@ impl Profile {
     #[cfg(feature = "time_profiling")]
     fn append_section_to_stack(&self, mut stack_with_custom_name: Vec<String>) -> String {
         if let Some(name) = &self.custom_name {
-            // println!("DEBUG: Adding custom name '{}' to memory stack", name);
+            // debug_log!("DEBUG: Adding custom name '{}' to memory stack", name);
 
             // If the stack is not empty, get the last function name
             if let Some(last_fn) = stack_with_custom_name.last_mut() {
                 // Append the custom name to the last function name
                 *last_fn = format!("{last_fn}:{name}");
-                // println!("DEBUG: Modified stack entry to '{}'", last_fn);
+                // debug_log!("DEBUG: Modified stack entry to '{}'", last_fn);
             }
         }
         stack_with_custom_name.join(";")
@@ -1037,18 +1037,18 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 
     // Add self and ancestors that are profiled functions
     for fn_name_str in cleaned_stack {
-        // eprintln!("fn_name_str={}", fn_name_str);
+        // debug_log!("fn_name_str={}", fn_name_str);
         if let Some(name) = get_reg_desc_name(fn_name_str) {
-            // eprintln!("Registered desc name: {}", name);
+            // debug_log!("Registered desc name: {}", name);
             path.push(name);
             continue;
         }
 
         // Async prefixes temp out to simplify debugging
         // let key = get_fn_desc_name(fn_name_str);
-        // // eprintln!("Function desc name: {}", key);
+        // // debug_log!("Function desc name: {}", key);
         // if let Some(name) = get_reg_desc_name(&key) {
-        //     // eprintln!("Registered desc name: {}", name);
+        //     // debug_log!("Registered desc name: {}", name);
         //     path.push(name);
         // }
     }
@@ -1087,7 +1087,7 @@ pub fn extract_callstack_from_profile_backtrace(
         // Be careful, this is very sensitive to changes in the function signatures of this module.
         .skip(1)
         // .inspect(|(is_within_target_range, name)| {
-        //     println!(
+        //     debug_log!(
         //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
         //         name
         //     );
@@ -1110,8 +1110,8 @@ pub fn extract_callstack_from_profile_backtrace(
         })
         // .map(|(_, name)| name.clone())
         .collect();
-    // eprintln!("Callstack: {:#?}", callstack);
-    // eprintln!("already_seen: {:#?}", already_seen);
+    // debug_log!("Callstack: {:#?}", callstack);
+    // debug_log!("already_seen: {:#?}", already_seen);
     callstack
 }
 
@@ -1131,7 +1131,7 @@ pub fn extract_callstack_from_alloc_backtrace(
         .take_while(|frame| !frame.contains("__rust_begin_short_backtrace"))
         .filter(|name| filter_scaffolding(name))
         // .inspect(|frame| {
-        //     println!("frame: {frame}");
+        //     debug_log!("frame: {frame}");
         // })
         .map(strip_hex_suffix)
         .map(|mut name| {
@@ -1148,8 +1148,8 @@ pub fn extract_callstack_from_alloc_backtrace(
             }
         })
         .collect();
-    eprintln!("Callstack: {callstack:#?}");
-    // eprintln!("already_seen: {:#?}", already_seen);
+    debug_log!("Callstack: {callstack:#?}");
+    // debug_log!("already_seen: {:#?}", already_seen);
     callstack
 }
 
@@ -1161,15 +1161,15 @@ static GLOBAL_CALL_STACK_ENTRIES: Lazy<Mutex<BTreeSet<String>>> =
 /// Entries are printed in sorted order (alphabetically).
 pub fn print_all_call_stack_entries() {
     let parts = { GLOBAL_CALL_STACK_ENTRIES.lock() };
-    println!("All entries in the global set (sorted):");
+    debug_log!("All entries in the global set (sorted):");
     if parts.is_empty() {
-        println!("  (empty set)");
+        debug_log!("  (empty set)");
     } else {
         for part in parts.iter() {
-            println!("  {part}");
+            debug_log!("  {part}");
         }
     }
-    println!("Total entries: {}", parts.len());
+    debug_log!("Total entries: {}", parts.len());
 }
 
 #[allow(dead_code)]
@@ -1181,7 +1181,7 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 impl Drop for Profile {
     fn drop(&mut self) {
-        // println!("In drop for Profile {:?}", self);
+        // debug_log!("In drop for Profile {:?}", self);
         let start = Instant::now();
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
@@ -1193,7 +1193,8 @@ impl Drop for Profile {
                 ProfileType::Memory => (),
             }
         }
-        eprintln!("Time to drop profile: {}ms", start.elapsed().as_millis());
+        debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
+        flush_debug_log();
     }
 }
 
@@ -1201,7 +1202,7 @@ impl Drop for Profile {
 impl Drop for Profile {
     fn drop(&mut self) {
         run_mut_with_system_alloc(|| {
-            // println!("In drop for Profile {:?}", self);
+            // debug_log!("In drop for Profile {:?}", self);
             let start = Instant::now();
             if let Some(start) = self.start.take() {
                 // Handle time profiling as before
@@ -1213,12 +1214,12 @@ impl Drop for Profile {
                     ProfileType::Memory => (),
                 }
             }
-            eprintln!("Time to write event: {}ms", start.elapsed().as_millis());
+            debug_log!("Time to write event: {}ms", start.elapsed().as_millis());
 
             // Handle memory profiling
             #[cfg(feature = "full_profiling")]
             if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-                // eprintln!(
+                // debug_log!(
                 //     "In drop for Profile with memory profiling: {}",
                 //     self.registered_name
                 // );
@@ -1228,7 +1229,7 @@ impl Drop for Profile {
                 // Now get memory usage from our task
                 if let Some(ref task) = self.memory_task {
                     if let Some(memory_usage) = task.memory_usage() {
-                        eprintln!("Task {} final memory_usage={memory_usage}", task.task_id);
+                        debug_log!("Task {} final memory_usage={memory_usage}", task.task_id);
                         if memory_usage > 0 {
                             let _ = self.record_memory_change(memory_usage);
                         }
@@ -1239,7 +1240,7 @@ impl Drop for Profile {
                     .as_ref()
                     .and_then(TaskMemoryContext::memory_usage)
                 {
-                    println!(
+                    debug_log!(
                         "DROP PROFILE: Task {} for {:?} used {} bytes",
                         self.memory_task.as_ref().unwrap().id(),
                         // self.path.join("::"),
@@ -1248,7 +1249,8 @@ impl Drop for Profile {
                     );
                 }
             }
-            eprintln!("Time to drop profile: {}ms", start.elapsed().as_millis());
+            debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
+            flush_debug_log();
         });
     }
 }
@@ -1264,7 +1266,7 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
     for line in lines {
         for &pattern in patterns {
             if line.contains(pattern) {
-                // eprintln!("Backtrace contains pattern: {pattern}, line: {line}");
+                // debug_log!("Backtrace contains pattern: {pattern}, line: {line}");
                 return true;
             }
         }
@@ -1303,7 +1305,7 @@ impl ProfileSection {
     #[must_use]
     pub fn new(name: Option<&str>) -> Self {
         // let profile_type = get_global_profile_type();
-        // eprintln!("profile_type={profile_type:?}");
+        // debug_log!("profile_type={profile_type:?}");
         Self {
             profile: Profile::new(
                 name,
@@ -1361,7 +1363,7 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
     );
     let name = name.to_string();
     let desc_name = desc_name.to_string();
-    // eprintln!(
+    // debug_log!(
     //     "PROFILED_FUNCTIONS.is_locked()? {}",
     //     PROFILED_FUNCTIONS.is_locked()
     // );
@@ -1369,12 +1371,12 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
         if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
             lock.insert(name, desc_name);
         } else {
-            eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("Failed to acquire lock on PROFILED_FUNCTIONS");
         }
     }
-    // eprintln!("Profiled functions: {:#?}", dump_profiled_functions());
-    // eprintln!("Exiting register_profiled_function");
-    eprintln!(
+    // debug_log!("Profiled functions: {:#?}", dump_profiled_functions());
+    // debug_log!("Exiting register_profiled_function");
+    debug_log!(
         "register_profiled_function took {}ms",
         start.elapsed().as_millis()
     );
@@ -1382,32 +1384,32 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
 
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
-    // eprintln!("Checking if function is profiled: {}", name);
+    // debug_log!("Checking if function is profiled: {}", name);
     let contains_key = PROFILED_FUNCTIONS.try_lock().map_or_else(
         || {
-            eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("Failed to acquire lock on PROFILED_FUNCTIONS");
             false
         },
         |lock| lock.contains_key(name),
     );
-    // eprintln!("...done");
+    // debug_log!("...done");
     contains_key
 }
 
 // Get the descriptive name of a profiled function
 pub fn get_reg_desc_name(name: &str) -> Option<String> {
-    // eprintln!(
+    // debug_log!(
     //     "Getting the descriptive name of a profiled function: {}",
     //     name
     // );
     let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_lock().map_or_else(
         || {
-            eprintln!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("Failed to acquire lock on PROFILED_FUNCTIONS");
             None
         },
         |lock| lock.get(name).cloned(),
     );
-    // eprintln!("...done");
+    // debug_log!("...done");
     maybe_reg_desc_name
 }
 

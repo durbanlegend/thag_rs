@@ -10,13 +10,13 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_profiler::profiled;
 
 #[cfg(feature = "simplelog")]
-use crate::vlog;
-#[cfg(feature = "simplelog")]
-use simplelog::{
-    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+use {
+    crate::vlog,
+    simplelog::{
+        ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+    },
+    std::fs::File,
 };
-#[cfg(feature = "simplelog")]
-use std::fs::File;
 
 #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
 use env_logger::{Builder, Env};

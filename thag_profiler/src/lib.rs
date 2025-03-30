@@ -210,6 +210,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// This function panics if profiling cannot be enabled.
 #[cfg(feature = "time_profiling")]
 pub fn init_profiling() {
+    #[cfg(feature = "full_profiling")]
     use task_allocator::run_with_system_alloc;
 
     use crate::profiling::{enable_profiling, ProfileType};
@@ -224,8 +225,10 @@ pub fn init_profiling() {
     // Enable profiling
     #[cfg(not(feature = "full_profiling"))]
     {
+        if profile_type == ProfileType::Memory {
+            panic!("Memory profiling requested but `full_profiling` feature is not enabled");
+        }
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
-        task_allocator::initialize_memory_profiling();
     }
 
     #[cfg(feature = "full_profiling")]
@@ -255,6 +258,7 @@ pub fn finalize_profiling() {
     // Disable profiling, which will finalize and write data
     enable_profiling(false, profile_type).expect("Failed to finalize profiling");
 
+    #[cfg(feature = "full_profiling")]
     task_allocator::finalize_memory_profiling();
 }
 

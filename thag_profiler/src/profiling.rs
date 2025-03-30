@@ -21,9 +21,6 @@ use crate::task_allocator::{
 };
 
 #[cfg(feature = "full_profiling")]
-use regex::Regex;
-
-#[cfg(feature = "full_profiling")]
 use std::thread;
 
 #[cfg(feature = "time_profiling")]
@@ -243,7 +240,35 @@ pub fn get_memory_path() -> ProfileResult<&'static str> {
 ///
 /// # Errors
 /// Returns a `ProfileError` if any file operations fail
-#[cfg(feature = "time_profiling")]
+#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
+    let time_path = get_time_path()?;
+    match profile_type {
+        ProfileType::Time => {
+            TimeProfileFile::init();
+            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+            eprintln!("Time profile will be written to {time_path}");
+        }
+        ProfileType::Memory | ProfileType::Both => panic!(
+            "Profile type `{profile_type:?}` requested but feature `full_profiling` is not enabled",
+        ),
+    }
+    Ok(())
+}
+
+/// Initializes profile files based on the specified profile type.
+///
+/// This function handles the initialization sequence for both profiling files:
+/// - For Time profiling: creates and initializes the time profile file
+/// - For Memory profiling: creates and initializes memory profile file
+/// - For Both: initializes both files
+///
+/// # Arguments
+/// * `profile_type` - The type of profiling to initialize files for
+///
+/// # Errors
+/// Returns a `ProfileError` if any file operations fail
+#[cfg(feature = "full_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     let time_path = get_time_path()?;
     let memory_path = get_memory_path()?;
@@ -1153,7 +1178,26 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
     extract_fn_only(fn_name_str).unwrap_or_else(|| fn_name_str.to_string())
 }
 
-#[cfg(feature = "time_profiling")]
+#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+impl Drop for Profile {
+    fn drop(&mut self) {
+        // println!("In drop for Profile {:?}", self);
+        let start = Instant::now();
+        if let Some(start) = self.start.take() {
+            // Handle time profiling as before
+            match self.profile_type {
+                ProfileType::Time | ProfileType::Both => {
+                    let elapsed = start.elapsed();
+                    let _ = self.write_time_event(elapsed);
+                }
+                ProfileType::Memory => (),
+            }
+        }
+        eprintln!("Time to drop profile: {}ms", start.elapsed().as_millis());
+    }
+}
+
+#[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
         run_mut_with_system_alloc(|| {

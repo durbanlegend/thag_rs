@@ -294,7 +294,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         start_pattern,
                         &mut current_backtrace,
                     );
-                    eprintln!("cleaned_stack for size={size}: {cleaned_stack:?}");
+                    eprintln!("Cleaned_stack for size={size}: {cleaned_stack:?}");
                     let in_profile_code = cleaned_stack.iter().any(|frame| {
                         frame.contains("Backtrace::new") || frame.contains("Profile::new")
                     });
@@ -305,12 +305,14 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     }
 
                     current_backtrace.resolve();
-
+                    
                     if cleaned_stack.is_empty() {
                         eprintln!(
-                            "Empty cleaned_stack for backtrace: size={size}:\n{:#?}",
+                            "...empty cleaned_stack for backtrace: size={size}:\n{:#?}",
                             trim_backtrace(start_pattern, &current_backtrace)
                         );
+                        // let bt = Backtrace::new();
+                        // println!(""{bt});
                         eprintln!("Getting last active task (hmmm :/)");
                         task_id = get_last_active_task().unwrap_or(0);
                     } else {

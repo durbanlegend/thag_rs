@@ -30,6 +30,20 @@
 - [ ]  hashbrown: no difference because adopted by Rust already.
 - [ ]  is_none_or in thag_proc_macros preload_themes.rs requires Rust 1.84?
 
+Worked example: serde
+
+1. Clone repo
+2. cd /home/donf/Documents/GitHub/serde
+3. find . -name "*.rs"
+4. d=./serde/src/de
+4. find $d -name '*.rs' -exec sh -c 'temp=$(mktemp) && thag-instrument 2021 < "$1" > "$temp" && mv "$temp" "$1"' sh {} \;
+5. Repeat for /serde/src/ser (& could do ./serde_derive/src if change serde_derive dep to here in ./serde/Cargo.toml and add thag_profiler as dep in serde_derive's local Cargo.toml )
+5a. Undo for lib.rs
+6. Add to ./serde/Cargo.toml [TODO update when published to crates.io ] thag_profiler = { path = "/home/donf/Documents/GitHub/thag_rs/thag_profiler", features = ["full_profiling"] }
+7. Do same for demo/crokey_deser_profile.rs
+8. Change toml path to local, e.g. `serde = { path = "/home/donf/Documents/GitHub/serde/serde", features = ["derive"] }`
+9. thag demo/crokey_deser_profile.rs -ft
+
 I'm thinking of using a background thread in my profiler to handle the final gathering and writing out of information for each dropped Profile. At the moment there are timing issues: Profile::drop is collecting the information
 
 ⏺ I fixed the empty memory profiling output issue by making several key changes:

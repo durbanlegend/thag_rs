@@ -30,8 +30,8 @@
 - [ ]  hashbrown: no difference because adopted by Rust already.
 - [ ]  is_none_or in thag_proc_macros preload_themes.rs requires Rust 1.84?
 
-Worked example: serde
-
+Worked example: TODO replace: serde
+Don't use a crate that is called by other dependencies, otherwise there may be conflicts.
 1. Clone repo
 2. cd /home/donf/Documents/GitHub/serde
 3. find . -name "*.rs"

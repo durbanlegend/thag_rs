@@ -4,23 +4,18 @@
 //! This module provides a memory allocator that tracks allocations by logical tasks
 //! rather than threads, making it suitable for async code profiling.
 
-use std::alloc::{GlobalAlloc, Layout};
-use std::time::Instant;
-
-use crate::profiling::clean_function_name;
-
-use crate::set_multi_global_allocator;
-
-use crate::{okaoka, regex};
-
-use crate::profiling::{extract_callstack_from_alloc_backtrace, extract_path, get_memory_path};
-
+use crate::{
+    debug_log, flush_debug_log, okaoka,
+    profiling::{
+        clean_function_name, extract_callstack_from_alloc_backtrace, extract_path, get_memory_path,
+    },
+    regex, set_multi_global_allocator,
+};
 use backtrace::Backtrace;
 use parking_lot::Mutex;
 use regex::Regex;
 use std::{
-    alloc::System,
-    // cell::RefCell,
+    alloc::{GlobalAlloc, Layout, System},
     collections::{BTreeSet, HashMap, HashSet},
     io::{self, Write},
     sync::{
@@ -28,6 +23,7 @@ use std::{
         LazyLock,
     },
     thread::{self, ThreadId},
+    time::Instant,
 };
 
 const MINIMUM_TRACKED_SIZE: usize = 64;
@@ -56,7 +52,7 @@ impl AllocationRegistry {
             allocations
                 .iter()
                 .map(|(_, size)| *size)
-                // .inspect(|size| eprintln!("... found alloc {size}"))
+                // .inspect(|size| debug_log!("... found alloc {size}"))
                 .sum()
         })
     }
@@ -280,7 +276,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                 let _guard = Guard;
 
                 // Get backtrace without recursion
-                // eprintln!("Attempting backtrace");
+                // debug_log!("Attempting backtrace");
                 // Use a different allocator for backtrace operations
                 let start_ident = Instant::now();
                 let mut task_id = 0;
@@ -288,32 +284,32 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                     // Now we can safely use backtrace without recursion!
                     let start_pattern: &Regex = regex!("thag_profiler::okaoka.+MultiAllocator");
 
-                    // eprintln!("Calling extract_callstack");
+                    // debug_log!("Calling extract_callstack");
                     let mut current_backtrace = Backtrace::new_unresolved();
                     let cleaned_stack = extract_callstack_from_alloc_backtrace(
                         start_pattern,
                         &mut current_backtrace,
                     );
-                    eprintln!("Cleaned_stack for size={size}: {cleaned_stack:?}");
+                    debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
                     let in_profile_code = cleaned_stack.iter().any(|frame| {
                         frame.contains("Backtrace::new") || frame.contains("Profile::new")
                     });
 
                     if in_profile_code {
-                        eprintln!("Ignoring allocation request of size {size} for profiler code");
+                        debug_log!("Ignoring allocation request of size {size} for profiler code");
                         return;
                     }
 
                     current_backtrace.resolve();
-                    
+
                     if cleaned_stack.is_empty() {
-                        eprintln!(
+                        debug_log!(
                             "...empty cleaned_stack for backtrace: size={size}:\n{:#?}",
                             trim_backtrace(start_pattern, &current_backtrace)
                         );
                         // let bt = Backtrace::new();
-                        // println!(""{bt});
-                        eprintln!("Getting last active task (hmmm :/)");
+                        // debug_log!(""{bt});
+                        debug_log!("Getting last active task (hmmm :/)");
                         task_id = get_last_active_task().unwrap_or(0);
                     } else {
                         // Make sure the use of a separate allocator is working.
@@ -321,7 +317,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                             .iter()
                             .any(|frame| frame.contains("find_matching_profile")));
 
-                        eprintln!("Calling extract_path");
+                        debug_log!("Calling extract_path");
                         let path = extract_path(&cleaned_stack);
                         if path.is_empty() {
                             let trimmed_backtrace =
@@ -330,47 +326,47 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                                 .iter()
                                 .any(|frame| frame.contains("Backtrace::new"))
                             {
-                                eprintln!("Ignoring setup allocation of size {size} containing Backtrace::new:");
+                                debug_log!("Ignoring setup allocation of size {size} containing Backtrace::new:");
                                 // Don't record the allocation because it's profiling setup
                                 // Backtrace::frames(&current_backtrace)
                                 //     .iter()
                                 //     .flat_map(backtrace::BacktraceFrame::symbols)
                                 //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
                                 //     .for_each(|frame| {
-                                //         eprintln!("frame: {}", frame);
+                                //         debug_log!("frame: {}", frame);
                                 //     });
                                 return;
                             }
-                            // eprintln!(
+                            // debug_log!(
                             //     "...path is empty for thread {:?}: assigning to lastest active task.\nCleaned_stack: {:?}",
                             //     thread::current().id(),
                             //     cleaned_stack
                             // );
-                            eprintln!(
+                            debug_log!(
                                 "...path is empty for thread {:?}, size: {size:?}, not eligible for allocation",
                                 thread::current().id(),
                             );
-                            // eprintln!("...backtrace:\n{trimmed_backtrace:?}");
+                            // debug_log!("...backtrace:\n{trimmed_backtrace:?}");
                             // let last_active_task = get_last_active_task();
                             // task_id = last_active_task.unwrap_or(0);
                             // if task_id == 0 {
-                            //     eprintln!(
+                            //     debug_log!(
                             //         "...no active task found, calling get_active_tasks to confirm"
                             //     );
-                            //     eprintln!("...active tasks: {:?}", get_active_tasks());
+                            //     debug_log!("...active tasks: {:?}", get_active_tasks());
                             // }
                         } else {
-                            // eprintln!("path={path:#?}");
+                            // debug_log!("path={path:#?}");
 
                             task_id = find_matching_profile(&path);
-                            eprintln!(
+                            debug_log!(
                                 "...find_matching_profile found task_id={task_id} for size={size}"
                             );
                         }
                     }
                 });
                 run_with_system_alloc(|| {
-                    println!(
+                    debug_log!(
                         "task_id={task_id}, size={size}, time to assign = {}ms",
                         start_ident.elapsed().as_millis()
                     );
@@ -389,7 +385,7 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
 
                     // Record in thread-local buffer
                     // record_allocation(task_id, address, size);
-                    eprintln!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
+                    debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
                     let mut registry = ALLOC_REGISTRY.lock();
                     registry
                         .task_allocations
@@ -408,25 +404,25 @@ unsafe impl<A: GlobalAlloc> GlobalAlloc for TaskAwareAllocator<A> {
                         })
                         .unwrap();
                     drop(registry);
-                    // eprintln!("Check registry.task_allocations for task_id {task_id}: ({addr:#x}, {sz})");
+                    // debug_log!("Check registry.task_allocations for task_id {task_id}: ({addr:#x}, {sz})");
                     assert_eq!(sz, size);
                     assert_eq!(addr, address);
-                    // eprintln! (
+                    // debug_log! (
                     //     "Check registry.address_to_task for task_id {task_id}: {:?}",
                     //     registry.address_to_task.get(&address)
                     // );
                     assert_eq!(reg_task_id, task_id);
-                    // eprintln!(
+                    // debug_log!(
                     //     "task {task_id} memory usage: {:?}",
                     //     ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
                     // );
-                    eprintln!(
+                    debug_log!(
                         "Time to record allocation: {}ms",
                         start_record_alloc.elapsed().as_millis()
                     );
                 });
             } else {
-                // eprintln!("ignoring allocation of {} bytes", layout.size());
+                // debug_log!("ignoring allocation of {} bytes", layout.size());
             }
         }
 
@@ -459,7 +455,7 @@ struct TaskState {
 
 // Global task state
 static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
-    // println!("Initializing TASK_STATE with next_task_id = 1");
+    // debug_log!("Initializing TASK_STATE with next_task_id = 1");
     TaskState {
         next_task_id: AtomicUsize::new(1),
     }
@@ -493,6 +489,8 @@ impl Drop for TaskGuard {
             // Remove from thread stack
             pop_task_from_stack(thread::current().id(), self.task_id);
 
+            flush_debug_log();
+
             // IMPORTANT: We no longer remove from task path registry
             // so that paths remain available for the memory profile output
             // remove_task_path(self.task_id);
@@ -518,7 +516,7 @@ pub static TASK_PATH_REGISTRY: LazyLock<Mutex<HashMap<usize, Vec<String>>>> =
 
 // 2. Function to look up a task's path by ID
 pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
-    // eprintln!("About to try_lock TASK_PATH_REGISTRY for lookup_task_path");
+    // debug_log!("About to try_lock TASK_PATH_REGISTRY for lookup_task_path");
     let registry = TASK_PATH_REGISTRY.lock();
     registry.get(&task_id).cloned()
 }
@@ -526,10 +524,10 @@ pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
 // 3. Function to dump the entire registry
 #[allow(dead_code)]
 pub fn dump_task_path_registry() {
-    // eprintln!("About to try_lock TASK_PATH_REGISTRY for dump_task_path_registry");
-    println!("==== TASK PATH REGISTRY DUMP ====");
+    // debug_log!("About to try_lock TASK_PATH_REGISTRY for dump_task_path_registry");
+    debug_log!("==== TASK PATH REGISTRY DUMP ====");
     let task_paths = TASK_PATH_REGISTRY.lock().clone();
-    println!("Total registered tasks: {}", task_paths.len());
+    debug_log!("Total registered tasks: {}", task_paths.len());
 
     let mut v = task_paths
         .iter()
@@ -540,19 +538,21 @@ pub fn dump_task_path_registry() {
     v.sort();
 
     for (task_id, path) in &v {
-        println!("Task {}: {}", task_id, path);
+        debug_log!("Task {}: {}", task_id, path);
     }
     drop(task_paths);
-    println!("=================================");
+    debug_log!("=================================");
+    flush_debug_log();
 }
 
 // 4. Utility function to look up and print a specific task's path
 #[allow(dead_code)]
 pub fn print_task_path(task_id: usize) {
     match lookup_task_path(task_id) {
-        Some(path) => println!("Task {} path: {}", task_id, path.join("::")),
-        None => println!("No path registered for task {}", task_id),
+        Some(path) => debug_log!("Task {} path: {}", task_id, path.join("::")),
+        None => debug_log!("No path registered for task {}", task_id),
     }
+    flush_debug_log();
 }
 
 // 5. Function to remove an entry from the TASK_PATH_REGISTRY
@@ -565,7 +565,7 @@ pub fn remove_task_path(task_id: usize) {
 // Helper function to find the best matching profile
 fn find_matching_profile(path: &[String]) -> usize {
     let path_registry = TASK_PATH_REGISTRY.lock();
-    // eprintln!("...success!");
+    // debug_log!("...success!");
     // For each active profile, compute a similarity score
     let mut best_match = 0;
     let mut best_score = 0;
@@ -576,7 +576,7 @@ fn find_matching_profile(path: &[String]) -> usize {
     for task_id in get_active_tasks().iter().rev() {
         if let Some(reg_path) = path_registry.get(task_id) {
             score = compute_similarity(path, reg_path);
-            // eprintln!(
+            // debug_log!(
             //     "...scored {score} checking task {} with path {:?}",
             //     task_id,
             //     reg_path.join(" -> ")
@@ -597,14 +597,14 @@ fn find_matching_profile(path: &[String]) -> usize {
     }
 
     // Fallback: Return the most recently activated profile
-    eprintln!("...returning fallback: most recently activated profile - for path: {path:?}");
+    debug_log!("...returning fallback: most recently activated profile - for path: {path:?}");
     get_last_active_task().unwrap_or(0)
 }
 
 // Compute similarity between a task path and backtrace frames
 fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     if task_path.is_empty() || reg_path.is_empty() {
-        eprintln!("task_path.is_empty() || reg_path.is_empty()");
+        debug_log!("task_path.is_empty() || reg_path.is_empty()");
         return 0;
     }
 
@@ -612,24 +612,24 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
         .iter()
         .zip(reg_path.iter())
         // .inspect(|(path_func, frame)| {
-        //     eprintln!("Comparing [{}]\n          [{}]", path_func, frame);
+        //     debug_log!("Comparing [{}]\n          [{}]", path_func, frame);
         // })
         .filter(|(path_func, frame)| frame == path_func)
         // .inspect(|(path_func, frame)| {
         //     let matched = frame == path_func;
-        //     eprintln!("frame == path_func? {}", matched);
+        //     debug_log!("frame == path_func? {}", matched);
         //     if matched {
         //         score += 1;
         //     }
         // })
         .count();
 
-    // eprintln!("score={score}");
+    // debug_log!("score={score}");
     if score == 0 {
-        eprintln!("score = {score} for path of length {}", task_path.len(),);
+        debug_log!("score = {score} for path of length {}", task_path.len(),);
         // let diff = create_side_by_side_diff(&task_path.join("->"), &reg_path.join("->"), 80);
-        // println!("{diff}");
-        println!("{}\n{}", task_path.join("->"), reg_path.join("->"));
+        // debug_log!("{diff}");
+        debug_log!("{}\n{}", task_path.join("->"), reg_path.join("->"));
     }
 
     score
@@ -662,7 +662,8 @@ unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
 pub fn initialize_memory_profiling() {
     // This is called at application startup to set up memory profiling
     MultiAllocator::with(AllocatorTag::System, || {
-        println!("Memory profiling initialized");
+        debug_log!("Memory profiling initialized");
+        flush_debug_log();
     });
 }
 
@@ -672,6 +673,7 @@ pub fn finalize_memory_profiling() {
     MultiAllocator::with(AllocatorTag::System, || {
         write_memory_profile_data();
     });
+    flush_debug_log();
 }
 
 /// Write memory profile data to a file
@@ -683,13 +685,13 @@ fn write_memory_profile_data() {
     // use crate::profiling::get_memory_path;
 
     MultiAllocator::with(AllocatorTag::System, || {
-        // println!("Starting write_memory_profile_data...");
+        // debug_log!("Starting write_memory_profile_data...");
 
-        // println!("Profiled functions:\n{:#?}", dump_profiled_functions());
+        // debug_log!("Profiled functions:\n{:#?}", dump_profiled_functions());
 
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
-        // println!("Memory path: {memory_path}");
+        // debug_log!("Memory path: {memory_path}");
 
         // Check if the file exists first
         let file_exists = Path::new(memory_path).exists();
@@ -697,15 +699,15 @@ fn write_memory_profile_data() {
         // If the file already exists, write the summary information to the existing file
         // Otherwise, create a new file with the appropriate headers
         let file_result = if file_exists {
-            println!("Opening existing file in append mode");
+            debug_log!("Opening existing file in append mode");
             File::options().append(true).open(memory_path)
         } else {
-            println!("Creating new file");
+            debug_log!("Creating new file");
             match File::create(memory_path) {
                 Ok(mut file) => {
                     // Write headers similar to time profile file
                     if let Err(e) = writeln!(file, "# Memory Profile") {
-                        println!("Error writing header: {e}");
+                        debug_log!("Error writing header: {e}");
                         return;
                     }
 
@@ -714,53 +716,53 @@ fn write_memory_profile_data() {
                         "# Script: {}",
                         std::env::current_exe().unwrap_or_default().display()
                     ) {
-                        println!("Error writing script path: {e}");
+                        debug_log!("Error writing script path: {e}");
                         return;
                     }
 
                     if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
-                        println!("Error writing version: {e}");
+                        debug_log!("Error writing version: {e}");
                         return;
                     }
 
                     if let Err(e) =
                         writeln!(file, "# Date: {}", Local::now().format("%Y-%m-%d %H:%M:%S"))
                     {
-                        println!("Error writing date: {e}");
+                        debug_log!("Error writing date: {e}");
                         return;
                     }
 
                     if let Err(e) = writeln!(file) {
-                        println!("Error writing newline: {e}");
+                        debug_log!("Error writing newline: {e}");
                         return;
                     }
 
                     Ok(file)
                 }
                 Err(e) => {
-                    println!("Error creating file: {e}");
+                    debug_log!("Error creating file: {e}");
                     Err(e)
                 }
             }
         };
 
         if let Ok(file) = file_result {
-            // println!("Successfully opened file");
+            // debug_log!("Successfully opened file");
             let mut writer = io::BufWriter::new(file);
 
             // Get all task allocations
             let task_allocs = { ALLOC_REGISTRY.lock().task_allocations.clone() };
             // let task_ids = { task_allocs.keys().copied().collect::<Vec<_>>() };
-            // println!("Task IDs: {:?}", task_ids);
+            // debug_log!("Task IDs: {:?}", task_ids);
 
             // Get the task path registry mapping for easier lookup
             let task_paths_map: HashMap<usize, Vec<String>> = {
                 let binding = TASK_PATH_REGISTRY.lock();
-                // println!("TASK_PATH_REGISTRY has {} entries", binding.len());
+                // debug_log!("TASK_PATH_REGISTRY has {} entries", binding.len());
 
                 // Dump all entries for debugging
                 for (id, path) in binding.iter() {
-                    println!("Registry entry: task {id}: path: {:?}", path);
+                    debug_log!("Registry entry: task {id}: path: {:?}", path);
                 }
 
                 // Get all entries from the registry
@@ -769,7 +771,7 @@ fn write_memory_profile_data() {
                     .map(|(task_id, pat)| (*task_id, pat.clone()))
                     .collect()
             };
-            // println!("Task paths map has {} entries", task_paths_map.len());
+            // debug_log!("Task paths map has {} entries", task_paths_map.len());
 
             // Write profile data
             // let mut lines_written = 0;
@@ -781,7 +783,7 @@ fn write_memory_profile_data() {
             // for (task_id, allocations) in &task_allocs {
             //     // Skip tasks with no allocations
             //     if allocations.is_empty() {
-            //         println!("Task {task_id} has no allocations, skipping");
+            //         debug_log!("Task {task_id} has no allocations, skipping");
             //         continue;
             //     }
 
@@ -789,7 +791,7 @@ fn write_memory_profile_data() {
             //     if let Some(path) = task_paths_map.get(task_id) {
             //         let path_str = path.join(";");
             //         let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
-            //         println!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
+            //         debug_log!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
 
             //         // Write line to folded format file
             //         match writeln!(writer, "{} {}", path_str, total_bytes) {
@@ -797,10 +799,10 @@ fn write_memory_profile_data() {
             //                 // lines_written += 1;
             //                 already_written.insert(path_str.clone());
             //             }
-            //             Err(e) => println!("Error writing line for task {task_id}: {e}"),
+            //             Err(e) => debug_log!("Error writing line for task {task_id}: {e}"),
             //         }
             //     } else {
-            //         println!("No path found for task {task_id}");
+            //         debug_log!("No path found for task {task_id}");
             //     }
             // }
 
@@ -817,7 +819,7 @@ fn write_memory_profile_data() {
                     continue;
                 }
 
-                println!("Writing for task {task_id} from registry: '{path_str}' with 0 bytes");
+                debug_log!("Writing for task {task_id} from registry: '{path_str}' with 0 bytes");
 
                 // Write line with zero bytes to maintain call hierarchy
                 match writeln!(writer, "{} {}", path_str, 0) {
@@ -825,15 +827,15 @@ fn write_memory_profile_data() {
                         // lines_written += 1;
                         already_written.insert(path_str.clone());
                     }
-                    Err(e) => println!("Error writing line for task {task_id}: {e}"),
+                    Err(e) => debug_log!("Error writing line for task {task_id}: {e}"),
                 }
             }
 
             // Make sure to flush the writer
             if let Err(e) = writer.flush() {
-                println!("Error flushing writer: {e}");
+                debug_log!("Error flushing writer: {e}");
             } else {
-                // println!("Successfully wrote {lines_written} lines and flushed buffer");
+                // debug_log!("Successfully wrote {lines_written} lines and flushed buffer");
             }
         }
     });

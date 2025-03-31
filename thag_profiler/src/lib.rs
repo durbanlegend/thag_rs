@@ -36,6 +36,8 @@
 //! }
 //! ```
 mod errors;
+mod logging;
+
 pub mod profiling;
 
 #[cfg(feature = "full_profiling")]
@@ -49,6 +51,7 @@ use std::fmt::Display;
 // Re-exports
 pub use {
     errors::{ProfileError, ProfileResult},
+    logging::{flush_debug_log, DebugLogger},
     profiling::{
         get_global_profile_type, is_profiling_enabled, Profile, ProfileSection, ProfileType,
     },
@@ -146,11 +149,28 @@ macro_rules! regex {
 #[macro_export]
 #[doc(hidden)] // Makes it not appear in documentation
 macro_rules! static_lazy {
-    ($name:ident: $type:ty = $init:expr) => {
-        struct $name;
+    ($name:ident: Option<$inner_type:ty> = $init:expr) => {
+        pub struct $name;
 
         impl $name {
-            pub fn get() -> &'static $type {
+            pub fn get() -> Option<&'static $inner_type> {
+                static INSTANCE: std::sync::OnceLock<Option<$inner_type>> =
+                    std::sync::OnceLock::new();
+                INSTANCE.get_or_init(|| $init).as_ref()
+            }
+
+            #[allow(dead_code)]
+            pub fn init() {
+                let _ = Self::get();
+            }
+        }
+    };
+
+    ($name:ident: $type:ty = $init:expr) => {
+        pub struct $name;
+
+        impl $name {
+            fn get() -> &'static $type {
                 static INSTANCE: std::sync::OnceLock<$type> = std::sync::OnceLock::new();
                 INSTANCE.get_or_init(|| $init)
             }
@@ -260,6 +280,8 @@ pub fn finalize_profiling() {
 
     #[cfg(feature = "full_profiling")]
     task_allocator::finalize_memory_profiling();
+
+    flush_debug_log();
 }
 
 // Provide no-op versions when profiling is disabled

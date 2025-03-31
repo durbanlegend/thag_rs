@@ -1,7 +1,15 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::mem;
 
+/// Claude-generated multi-allocator prototype for use in thag_profiler.
+/// This uses the tagging technique demonstrated by the unlicensed (as at time of writing)
+/// `okaoka` crate at `https://github.com/emi0x7d1/okaoka` and found via
+/// `https://www.reddit.com/r/rust/comments/12di5bo/custom_allocators_in_rust/`.
+///
+//# Purpose: Prototype using separate memory allocators for user and profiler code for use by `thag_profiler` for memory profiling.
+//# Categories: prototype, technique
 // Trait to access allocators by tag
 pub trait AllocatorProvider<T: Copy + 'static> {
     fn get_allocator(&self, tag: T) -> &dyn GlobalAlloc;
@@ -32,19 +40,20 @@ where
     unsafe fn allocate(&self, layout: Layout, tag: T) -> *mut u8 {
         let allocator = self.allocators.get_allocator(tag);
 
-        // Calculate the layout with space for our tag
-        let (alloc_layout, offset) = self.layout_with_tag(layout);
+        // Create a new layout that includes space for the tag and ensures proper alignment
+        let (alloc_layout, offset) = Self::layout_with_tag(layout);
 
         let ptr = allocator.alloc(alloc_layout);
         if ptr.is_null() {
             return ptr;
         }
 
-        // Store the tag before the actual memory
+        // Store the tag at the beginning of the allocated memory
+        // We'll use memcpy to avoid alignment issues
         let tag_ptr = ptr as *mut T;
-        *tag_ptr = tag;
+        std::ptr::write_unaligned(tag_ptr, tag);
 
-        // Return the pointer to the actual memory (after the tag)
+        // Return the adjusted pointer (after the tag)
         ptr.add(offset)
     }
 
@@ -54,35 +63,45 @@ where
         }
 
         // Calculate the layout with space for our tag
-        let (alloc_layout, offset) = self.layout_with_tag(layout);
+        let (alloc_layout, offset) = Self::layout_with_tag(layout);
 
         // Get back to the original pointer (before the tag)
         let original_ptr = ptr.sub(offset);
 
         // Read the tag to know which allocator to use
+        // Use unaligned read to avoid alignment issues
         let tag_ptr = original_ptr as *const T;
-        let tag = *tag_ptr;
+        let tag = std::ptr::read_unaligned(tag_ptr);
 
         let allocator = self.allocators.get_allocator(tag);
         allocator.dealloc(original_ptr, alloc_layout);
     }
 
-    fn layout_with_tag(&self, layout: Layout) -> (Layout, usize) {
-        let tag_size = std::mem::size_of::<T>();
-        let tag_align = std::mem::align_of::<T>();
+    // This method calculates the layout for an allocation that includes the tag
+    fn layout_with_tag(layout: Layout) -> (Layout, usize) {
+        unsafe {
+            // We can't use std::mem::size_of::<T>() as a const generic,
+            // so we'll calculate the values at runtime
+            let tag_size = mem::size_of::<T>();
+            let tag_align = mem::align_of::<T>();
 
-        // Ensure the layout has at least the alignment of T
-        let layout = layout.align_to(tag_align).expect("Failed to align layout");
+            // To avoid alignment issues, we'll use the maximum alignment
+            let align = layout.align().max(tag_align);
 
-        // Calculate a new layout with space for the tag
-        Layout::from_size_align(
-            layout.size() + tag_size,
-            std::cmp::max(layout.align(), tag_align),
-        )
-        .map(|l| (l, tag_size))
-        .expect("Failed to create layout with tag")
+            // Padding to ensure proper alignment after the tag
+            let offset = (tag_size + align - 1) & !(align - 1);
+
+            // Total size needed
+            let size = offset + layout.size();
+
+            // Create a new layout
+            (Layout::from_size_align_unchecked(size, align), offset)
+        }
     }
 }
+
+// Now let's define concrete types for our allocator implementation
+// instead of using generics in constant expressions
 
 // Define our allocator type
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -153,7 +172,7 @@ impl AllocatorProvider<AllocatorType> for AllocatorSet {
     }
 }
 
-// Implement GlobalAlloc for our allocator
+// Concrete implementation for our specific types
 unsafe impl GlobalAlloc for MultiAllocator<AllocatorType, AllocatorSet> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let tag = current_allocator();
@@ -165,7 +184,7 @@ unsafe impl GlobalAlloc for MultiAllocator<AllocatorType, AllocatorSet> {
     }
 }
 
-// Create a direct static instance - no references or lazy initialization
+// Create a direct static instance
 #[global_allocator]
 static ALLOCATOR: MultiAllocator<AllocatorType, AllocatorSet> =
     MultiAllocator::new(AllocatorSet::new());
@@ -177,11 +196,17 @@ fn main() {
         // All allocations in this closure will use the System allocator
         let vec = vec![1, 2, 3];
 
+        // Check which allocator is currently being used
+        let current = current_allocator();
+        println!("Current allocator: {:?}", current); // Should print TaskAware
+        assert_eq!(current, AllocatorType::SystemAlloc);
+
         // Can return any value from the closure
-        vec.len()
+        // vec.len()
+        vec
     });
 
-    println!("Result: {}", result);
+    println!("Result: {:?}", result);
 
     // By default, TaskAwareAllocator will be used
     let _vec = vec![1, 2, 3];
@@ -189,4 +214,5 @@ fn main() {
     // Check which allocator is currently being used
     let current = current_allocator();
     println!("Current allocator: {:?}", current); // Should print TaskAware
+    assert_eq!(current, AllocatorType::TaskAware);
 }

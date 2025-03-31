@@ -6,6 +6,11 @@ thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=
 tokio = { version = "1", features = ["full"] }
 */
 
+/// Test async program (minimalist instrumented version) for `thag_profiler` debugging.
+/// See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile.rs`.
+///
+//# Purpose: Test and debug profiling using `thag_profiler`.
+//# Categories: prototype, testing
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;

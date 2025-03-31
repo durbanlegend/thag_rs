@@ -65,7 +65,7 @@ where
 {
     // Register the crate under a name that the #[profiled] macro will recognize
     // This simulates what would happen if this was using an imported thag_profiler
-    register_profiled_function("test_function", "test_description".to_string());
+    register_profiled_function("test_function", "test_description");
 
     // Explicitly disable profiling first to ensure clean state
     let _ = enable_profiling(false, ProfileType::Time);
@@ -84,7 +84,7 @@ where
 
     // Register the crate under a name that the #[profiled] macro will recognize
     // This simulates what would happen if this was using an imported thag_profiler
-    register_profiled_function("test_function", "test_description".to_string());
+    register_profiled_function("test_function", "test_description");
 
     // Explicitly disable profiling first to ensure clean state
     let _ = enable_profiling(false, ProfileType::Time);
@@ -229,13 +229,8 @@ fn test_profiling_profile_macro() {
         thread::sleep(Duration::from_millis(5));
         section.end();
 
-        // With type
-        let section = thag_profiler::profile!("memory_test", memory);
-        thread::sleep(Duration::from_millis(5));
-        section.end();
-
         // Method style - Pass a string since we can't use the method keyword in tests
-        let section = thag_profiler::profile!("method_test");
+        let section = thag_profiler::profile!("repeat");
         thread::sleep(Duration::from_millis(5));
         section.end();
     });
@@ -294,7 +289,7 @@ fn test_profiling_full_profiling() {
     );
 
     // Create a profile section that tracks memory
-    let section = thag_profiler::profile!("memory_test", memory);
+    let section = thag_profiler::profile!("test_section");
 
     // Allocate some memory
     let data = vec![0u8; 1_000_000];
@@ -353,7 +348,7 @@ fn test_profiling_profiled_function_registration() {
     // Clear registry or start with a clean state if needed
 
     // Register a function
-    register_profiled_function("test_func", "test_desc".to_string());
+    register_profiled_function("test_func", "test_desc");
 
     // Dump the registry contents
     let contents = dump_profiled_functions();

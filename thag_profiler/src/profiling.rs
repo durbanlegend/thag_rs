@@ -1,4 +1,4 @@
-use crate::{debug_log, flush_debug_log, lazy_static_var, static_lazy, ProfileError};
+use crate::{debug_log, lazy_static_var, static_lazy, ProfileError};
 use backtrace::Backtrace;
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -24,7 +24,7 @@ use crate::task_allocator::{
 use std::thread;
 
 #[cfg(feature = "time_profiling")]
-use crate::ProfileResult;
+use crate::{flush_debug_log, ProfileResult};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -1419,9 +1419,10 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
 // #[cfg(feature = "time_profiling")]
 fn extract_fn_only(qualified_name: &str) -> Option<String> {
     // Split by :: and get the last component
-    qualified_name
-        .rfind("::")
-        .map(|pos| qualified_name[(pos + 2)..].to_string())
+    qualified_name.rfind("::").map_or_else(
+        || Some(qualified_name.to_string()),
+        |pos| Some(qualified_name[(pos + 2)..].to_string()),
+    )
 }
 
 const SCAFFOLDING_PATTERNS: &[&str] = &[
@@ -1843,7 +1844,7 @@ mod tests {
     #[serial]
     fn test_profiling_function_registry() {
         // Register a function
-        register_profiled_function("test_func", "test_desc".to_string());
+        register_profiled_function("test_func", "test_desc");
 
         // Check if it's registered
         assert!(is_profiled_function("test_func"));
@@ -1897,11 +1898,11 @@ mod tests {
         assert_eq!(clean_function_name(&mut name), "module::func");
 
         // Test with closure
-        let mut name = "module::func{{closure}}".to_string();
+        let mut name = "module::func::{{closure}}".to_string();
         assert_eq!(clean_function_name(&mut name), "module::func");
 
         // Test with both
-        let mut name = "module::func{{closure}}::h1234abcd".to_string();
+        let mut name = "module::func::{{closure}}::h1234abcd".to_string();
         assert_eq!(clean_function_name(&mut name), "module::func");
 
         // Test with multiple colons

@@ -709,7 +709,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
+**Crates:** `lazy_static`, `log`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
@@ -826,7 +826,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
 
 **Purpose:** Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
 
-**Crates:** `documented`, `edit`, `mockall`, `serde`, `serde_with`, `simplelog`, `strum`, `tempfile`, `thag_rs`, `toml`, `toml_edit`
+**Crates:** `documented`, `edit`, `log`, `mockall`, `serde`, `serde_with`, `simplelog`, `strum`, `tempfile`, `thag_rs`, `toml`, `toml_edit`
 
 **Type:** Program
 
@@ -1329,6 +1329,78 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
 
 ---
 
+### Script: document_pipeline.rs
+
+**Description:**  Test async program (uninstrumented base / control version) for `thag_profiler` testing.
+ See also `demo/document_pipeline_profile.rs` and `demo/document_pipeline_profile_minimal.rs`.
+
+
+**Purpose:** Test auto-instrumentation using `thag_profiler`'s `thag-instrument` resulting in `demo/document_pipeline_profile.rs`.
+
+**Crates:** `futures`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline.rs
+```
+
+---
+
+### Script: document_pipeline_profile.rs
+
+**Description:**  Test async program (instrumented version) for `thag_profiler` testing.
+ See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
+
+
+**Purpose:** Test profiling using `thag_profiler`.
+
+**Crates:** `futures`, `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile.rs
+```
+
+---
+
+### Script: document_pipeline_profile_minimal.rs
+
+**Description:**  Test async program (minimalist instrumented version) for `thag_profiler` debugging.
+ See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile.rs`.
+
+
+**Purpose:** Test and debug profiling using `thag_profiler`.
+
+**Crates:** `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal.rs
+```
+
+---
+
 ### Script: documented.rs
 
 **Description:**  Published example from the `documented` crate.
@@ -1597,7 +1669,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Purpose:** Demo `thag_rs` execution timeline and memory profiling.
 
-**Crates:** `ibig`, `thag_rs`
+**Crates:** `ibig`, `thag_profiler`
 
 **Type:** Program
 
@@ -1609,6 +1681,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs -- 50
+```
+
+---
+
+### Script: factorial_ibig_product_profile.rs
+
+**Description:**  Fast factorial algorithm with arbitrary precision and avoiding recursion.
+ Closures and functions are effectively interchangeable here.
+
+ Using the `std::iter::Product` trait - if implemented - is the most concise factorial
+ implementation. Unfortunately, but unlike the `dashu` and `rug` crates, `ibig` does
+ not implement the Product trait, so we have to wrap the `UBig`. Which of course
+ is pretty verbose in the context of a snippet, but could be useful in an app.
+ The implementation is thanks to GPT-4.
+
+**Purpose:** Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
+
+**Crates:** `ibig`, `thag_profiler`
+
+**Type:** Snippet
+
+**Categories:** big_numbers, learning, math, recreational, technique
+
+**Link:** [factorial_ibig_product_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_profile.rs -- 50
 ```
 
 ---
@@ -2432,6 +2533,32 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
+```
+
+---
+
+### Script: flume_async_profile.rs
+
+**Description:**  Published example from the `flume` channel crate.
+ Must be run with --multimain (-m) option to allow multiple main methods.
+
+ Refactored and profiled to test and demonstrate profiling of non-tokio
+ async functions with `thag_profiler`.
+
+**Purpose:** demo and test profiling of non-tokio async functions with `thag_profiler`.
+
+**Crates:** `async_std`, `flume`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** async, crates, proc_macros, profiling, technique
+
+**Link:** [flume_async_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async_profile.rs
 ```
 
 ---
@@ -3300,6 +3427,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
 
 ---
 
+### Script: multi_allocator.rs
+
+**Description:**  Claude-generated multi-allocator prototype for use in thag_profiler.
+ This uses the tagging technique demonstrated by the unlicensed (as at time of writing)
+ `okaoka` crate at `https://github.com/emi0x7d1/okaoka` and found via
+ `https://www.reddit.com/r/rust/comments/12di5bo/custom_allocators_in_rust/`.
+
+
+**Purpose:** Prototype using separate memory allocators for user and profiler code for use by `thag_profiler` for memory profiling.
+
+**Type:** Program
+
+**Categories:** prototype, technique
+
+**Link:** [multi_allocator.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multi_allocator.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multi_allocator.rs
+```
+
+---
+
 ### Script: multiline_err.rs
 
 **Description:**  LLM-provided formatting for error messages
@@ -3901,6 +4052,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_str
 
 ---
 
+### Script: process_results.rs
+
+**Description:**  Trait for processing results of an iterator.
+ From Chaim freedman's answer to https://stackoverflow.com/questions/69746026/how-to-convert-an-iterator-of-results-into-a-result-of-an-iterator,
+ combined with an example from the `itertools` crate at https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.process_results.
+
+
+**Purpose:** RYO iterator result processor
+
+**Type:** Program
+
+**Categories:** Learning, Technique
+
+**Link:** [process_results.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/process_results.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/process_results.rs
+```
+
+---
+
 ### Script: profile_file.rs
 
 **Description:**  Tries to profile a file via injection into its abstract syntax tree.
@@ -4011,6 +4185,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
 
 ---
 
+### Script: ra_ap_syntax_tree.rs
+
+**Description:**  Parse and display the `rust-analyzer` (not `syn`) format syntax tree of a Rust source file.
+
+ Assumes the input is a valid Rust program and that its Rust edition is 2021
+
+
+**Purpose:** examine a `ra_ap_syntax` syntax tree.
+
+**Crates:** `ra_ap_syntax`
+
+**Type:** Program
+
+**Categories:** AST, crates, technique
+
+**Link:** [ra_ap_syntax_tree.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ra_ap_syntax_tree.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ra_ap_syntax_tree.rs
+```
+
+---
+
 ### Script: ratatui_user_input.rs
 
 **Description:**  Published example from the `ratatui` crate.
@@ -4029,6 +4228,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs
+```
+
+---
+
+### Script: ratatui_user_input_profile.rs
+
+**Description:**  Published example from the `ratatui` crate.
+
+**Purpose:** Demo the featured crate.
+
+**Crates:** `ratatui`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** crates
+
+**Link:** [ratatui_user_input_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input_profile.rs
 ```
 
 ---
@@ -4820,7 +5041,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
 
 **Purpose:** Debugging.
 
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_profiler`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -5557,21 +5778,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 ### Script: tui_ta_editor_profile.rs
 
-**Description:**  Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
- down to two files at a time, because it was developed to allow editing of generated code and
- cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
- or default to a standard editor. A more minimalist version is used to edit stdin input in
- the `--edit (-d)` option of `thag_rs`.
+**Description:**  A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate
+ profiling.
 
  Not suitable for running from a URL.
 
-**Purpose:** Demo and explore TUI editor and featured crates, including `crossterm`.
+**Purpose:** Demo `thag_profiler`.
 
-**Crates:** `ratatui`, `thag_proc_macros`, `thag_rs`, `tui_textarea`
+**Crates:** `ratatui`, `thag_profiler`, `tui_textarea`
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, profiling, technique
 
 **Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
 

@@ -5,6 +5,11 @@
 thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
 */
 
+/// Test async program (instrumented version) for `thag_profiler` testing.
+/// See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
+///
+//# Purpose: Test profiling using `thag_profiler`.
+//# Categories: prototype, testing
 use futures::future::join_all;
 use std::collections::HashMap;
 use std::fs::File;

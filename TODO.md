@@ -30,6 +30,10 @@
 - [ ]  hashbrown: no difference because adopted by Rust already.
 - [ ]  is_none_or in thag_proc_macros preload_themes.rs requires Rust 1.84?
 
+cd thag_profiler
+cargo test --test profiling --features full_profiling
+cargo test --lib
+
 Worked example: TODO replace: serde
 Don't use a crate that is called by other dependencies, otherwise there may be conflicts.
 1. Clone repo

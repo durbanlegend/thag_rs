@@ -6,6 +6,11 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
+/// Test async program (uninstrumented base / control version) for `thag_profiler` testing.
+/// See also `demo/document_pipeline_profile.rs` and `demo/document_pipeline_profile_minimal.rs`.
+///
+//# Purpose: Test auto-instrumentation using `thag_profiler`'s `thag-instrument` resulting in `demo/document_pipeline_profile.rs`.
+//# Categories: prototype, testing
 struct Document {
     id: usize,
     content: String,

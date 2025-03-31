@@ -41,7 +41,7 @@ mod logging;
 pub mod profiling;
 
 #[cfg(feature = "full_profiling")]
-mod okaoka;
+mod mem_alloc;
 
 #[cfg(feature = "full_profiling")]
 mod task_allocator;
@@ -57,6 +57,15 @@ pub use {
     },
     thag_proc_macros::{enable_profiling, profiled},
     // Only re-export what users need from task_allocator
+};
+
+#[cfg(feature = "full_profiling")]
+pub use mem_alloc::{with_allocator, AllocatorType, MultiAllocator, TaskAwareAllocator};
+
+#[cfg(feature = "full_profiling")]
+pub use {
+    profiling::extract_path,
+    task_allocator::{find_matching_profile, get_last_active_task, trim_backtrace, ALLOC_REGISTRY},
 };
 
 #[cfg(test)]
@@ -230,9 +239,6 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// This function panics if profiling cannot be enabled.
 #[cfg(feature = "time_profiling")]
 pub fn init_profiling() {
-    #[cfg(feature = "full_profiling")]
-    use task_allocator::run_with_system_alloc;
-
     use crate::profiling::{enable_profiling, ProfileType};
 
     // Determine profile type based on features
@@ -252,7 +258,7 @@ pub fn init_profiling() {
     }
 
     #[cfg(feature = "full_profiling")]
-    run_with_system_alloc(|| {
+    with_allocator(AllocatorType::SystemAlloc, || {
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
         task_allocator::initialize_memory_profiling();
     });

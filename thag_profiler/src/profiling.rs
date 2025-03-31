@@ -15,9 +15,12 @@ use std::{
 };
 
 #[cfg(feature = "full_profiling")]
-use crate::task_allocator::{
-    activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack,
-    run_mut_with_system_alloc, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+use crate::{
+    task_allocator::{
+        activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
+        TaskMemoryContext, TASK_PATH_REGISTRY,
+    },
+    with_allocator, AllocatorType,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -745,9 +748,7 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod task_allocator.
-        let mut maybe_profile = Box::new(None);
-
-        run_mut_with_system_alloc(|| {
+        with_allocator(AllocatorType::SystemAlloc, || -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
@@ -769,7 +770,7 @@ impl Profile {
 
             if cleaned_stack.is_empty() {
                 debug_log!("Empty cleaned stack found");
-                return;
+                return None;
             }
 
             // Register this function
@@ -786,13 +787,7 @@ impl Profile {
             debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
             register_profiled_function(fn_name, desc_fn_name);
 
-            let path = {
-                let mut path = Box::new(vec![]);
-                run_mut_with_system_alloc(|| {
-                    path = Box::new(extract_path(&cleaned_stack));
-                });
-                *path
-            };
+            let path = with_allocator(AllocatorType::SystemAlloc, || extract_path(&cleaned_stack));
 
             // Determine if we should keep the custom name
             let custom_name = name.map(str::to_string);
@@ -808,7 +803,7 @@ impl Profile {
                 debug_log!(
                 "Memory profiling enabled but only time profiling will be profiled as requested."
             );
-                maybe_profile = Box::new(Some(Self {
+                return Some(Self {
                     profile_type,
                     start: Some(Instant::now()),
                     path,
@@ -816,8 +811,7 @@ impl Profile {
                     registered_name: fn_name.to_string(),
                     memory_task: None,
                     memory_guard: None,
-                }));
-                return;
+                });
             }
 
             // Create a task to track memory usage
@@ -846,9 +840,6 @@ impl Profile {
             );
 
             // Create memory guard
-            // let mut memory_guard;
-            // run_with_system_alloc(|| memory_guard = Box::new(TaskGuard::new(task_id)));
-            // let memory_guard = *memory_guard;
             let memory_guard = TaskGuard::new(task_id);
 
             let profile = {
@@ -863,12 +854,9 @@ impl Profile {
                     memory_guard: Some(memory_guard),
                 }
             };
-            maybe_profile = Box::new(Some(profile));
             debug_log!("Time to create profile: {}ms", start.elapsed().as_millis());
-        });
-
-        // let maybe_profile = *maybe_profile;
-        *maybe_profile
+            Some(profile)
+        })
     }
 
     /// Writes a profiling event to the specified profile file.
@@ -1203,7 +1191,7 @@ impl Drop for Profile {
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        run_mut_with_system_alloc(|| {
+        with_allocator(AllocatorType::SystemAlloc, || {
             // debug_log!("In drop for Profile {:?}", self);
             let start = Instant::now();
             if let Some(start) = self.start.take() {

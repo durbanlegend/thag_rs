@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::RefCell;
 use std::marker::PhantomData;

@@ -28,7 +28,9 @@
 - [ ]  Try stripping closures to register and track them under their enclosing function names.
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
 - [ ]  hashbrown: no difference because adopted by Rust already.
-- [ ]  is_none_or in thag_proc_macros preload_themes.rs requires Rust 1.84?
+- [ ]  Make MINIMUM_TRACKED_SIZE configurable
+- [ ]  Make THAG_PROFILER_DEBUG=1 silent, 2 display location
+- [ ]  Change debug logging address to temp_dir/thag_profiler/debug.log with program qualifier?
 
 cd thag_profiler
 cargo test --test profiling --features full_profiling

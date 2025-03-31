@@ -50,33 +50,21 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
 8. Change toml path to local, e.g. `serde = { path = "/home/donf/Documents/GitHub/serde/serde", features = ["derive"] }`
 9. thag demo/crokey_deser_profile.rs -ft
 
-I'm thinking of using a background thread in my profiler to handle the final gathering and writing out of information for each dropped Profile. At the moment there are timing issues: Profile::drop is collecting the information
+> Great explanation. What are the implications of replacing the thread_local IN_TRACKING with a simple static mutable bool variable in your point 3?
 
-⏺ I fixed the empty memory profiling output issue by making several key changes:
+⏺ Replacing the thread-local IN_TRACKING with a static mutable bool has important implications:
 
-  1. Fixed the TaskGuard::drop method to keep task paths in the registry
-    - Previously, task paths were being removed when guards were dropped
-    - Commented out the line that removed them: // remove_task_path(self.task_id);
-  2. Improved the write_memory_profile_data function:
-    - Added proper file existence checking with Path
-    - Made it properly append to existing files rather than overwriting
-    - Added timestamp to headers for better traceability
-    - Added chrono::Local for date/time formatting
-  3. Fixed how task paths are collected for the output:
-    - Now collecting ALL task paths from registry, not just those with allocations
-    - Added explicit section that writes entries for tasks without allocations
-    - This preserves the full call hierarchy in the visualization
-  4. Added better error handling:
-    - Replaced ? operator with explicit match patterns for file operations
-    - Added more verbose logging to track the state of each operation
+  1. Thread safety: Static mutable variables aren't thread-safe. Multiple threads could access/modify it simultaneously, potentially causing race conditions. This works in your case because:
+    - The recursion prevention is per-thread in the allocator
+    - Each thread's allocation path is independent
+  2. Global state vs thread-local state:
+    - Before: Each thread had its own independent tracking flag
+    - Now: All threads share one tracking flag
+  3. Potential false positives: If two threads allocate memory simultaneously, one might set the flag and block the other thread's tracking incorrectly
+  4. Performance: No more TLS lookup overhead, but potential contention between threads
 
-  These changes ensure that the memory.folded files now:
-  1. Contain complete data for all tasks
-  2. Have proper headers
-  3. Include the complete call hierarchy
-  4. Show accurate allocation sizes
-
-  The proof is in the successful execution - we now see many records being written to the memory output file with detailed allocation information.
+  This approach works for simple use cases but might need atomic operations or a mutex for complete thread safety in a high-concurrency environment. For your specific use case, it's likely
+  sufficient since allocator code runs with minimal thread contention, and recursion detection is primarily about preventing infinite recursion within the same thread.
 
 
 > I know this may be crazy and/or slow, but I've managed to display a backtrace in the alloc method, even though I expected it would probably fail trying to allocate memory. If this is reliable we

@@ -11,7 +11,7 @@ use crate::{
 use backtrace::Backtrace;
 use regex::Regex;
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::cell::RefCell;
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::mem;
 use std::sync::atomic::Ordering;
@@ -120,23 +120,29 @@ pub enum AllocatorType {
 
 // Thread-local current allocator
 thread_local! {
-    static CURRENT_ALLOCATOR: RefCell<AllocatorType> = const { RefCell::new(AllocatorType::TaskAware) };
+    static CURRENT_ALLOCATOR: UnsafeCell<AllocatorType> = const { UnsafeCell::new(AllocatorType::TaskAware) };
 }
 
 // Function to get current allocator
 pub fn current_allocator() -> AllocatorType {
-    CURRENT_ALLOCATOR.with(|current| *current.borrow())
+    CURRENT_ALLOCATOR.with(|tag| unsafe { *tag.get() })
 }
 
 // Function to run code with a specific allocator
 pub fn with_allocator<T, F: FnOnce() -> T>(allocator: AllocatorType, f: F) -> T {
-    CURRENT_ALLOCATOR.with(|current| {
-        let prev = *current.borrow();
-        *current.borrow_mut() = allocator;
-
+    CURRENT_ALLOCATOR.with(|tag| {
+        // Save the current allocator
+        let prev = unsafe { *tag.get() };
+        
+        // Set the new allocator
+        unsafe { *tag.get() = allocator };
+        
+        // Run the function
         let result = f();
-
-        *current.borrow_mut() = prev;
+        
+        // Restore the previous allocator
+        unsafe { *tag.get() = prev };
+        
         result
     })
 }
@@ -177,18 +183,22 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
             // Skip small allocations
             let size = layout.size();
             if size >= MINIMUM_TRACKED_SIZE {
-                // Simple recursion prevention
-                thread_local! {
-                    static IN_TRACKING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-                }
-
-                // Create guard for cleanup
+                // Simple recursion prevention without using TLS with destructors
+                static mut IN_TRACKING: bool = false;
                 struct Guard;
                 impl Drop for Guard {
                     fn drop(&mut self) {
-                        IN_TRACKING.with(|flag| flag.set(false));
+                        unsafe { IN_TRACKING = false; }
                     }
                 }
+                
+                // Only proceed if we're not already tracking
+                if unsafe { IN_TRACKING } {
+                    return ptr;
+                }
+                
+                // Set tracking flag and create guard for cleanup
+                unsafe { IN_TRACKING = true; }
                 let _guard = Guard;
 
                 // Get backtrace without recursion

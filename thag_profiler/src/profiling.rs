@@ -42,8 +42,6 @@ use std::{
     time::SystemTime,
 };
 
-// use super::task_allocator::TaskMemoryContext;
-
 // Single atomic for runtime profiling state
 #[cfg(feature = "time_profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
@@ -93,7 +91,7 @@ static_lazy! {
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-struct ProfileConfiguration {
+pub struct ProfileConfiguration {
     enabled: bool,
     profile_type: ProfileType,
     output_dir: Option<String>,
@@ -103,7 +101,6 @@ struct ProfileConfiguration {
 static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
-// #[cfg(feature = "time_profiling")]
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
         let script_path = std::env::current_exe()
@@ -112,12 +109,21 @@ static_lazy! {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
-        let timestamp = Local::now().format("%Y%m%d-%H%M%S");
+        let timestamp = Local::now().format("%Y%m%d-%H%M%S").to_string();
         let base = format!("{script_stem}-{timestamp}");
+
+        // Create debug log path in temp directory
+        let mut debug_log_path = std::env::temp_dir();
+        debug_log_path.push("thag_profiler");
+        std::fs::create_dir_all(&debug_log_path).ok();
+        debug_log_path.push(format!("{base}-debug.log"));
 
         ProfileFilePaths {
             time: format!("{base}.folded"),
             memory: format!("{base}-memory.folded"),
+            debug_log: debug_log_path.to_string_lossy().to_string(),
+            executable_stem: script_stem.to_string(),
+            timestamp,
         }
     }
 }
@@ -138,9 +144,12 @@ static START_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 #[allow(dead_code)]
-struct ProfileFilePaths {
+pub struct ProfileFilePaths {
     time: String,
     memory: String,
+    pub debug_log: String,       // The full path to the debug log file
+    pub executable_stem: String, // Store the executable stem for reuse
+    pub timestamp: String,       // Store the timestamp for reuse
 }
 
 #[cfg(feature = "time_profiling")]

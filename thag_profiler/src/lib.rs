@@ -51,7 +51,7 @@ use std::fmt::Display;
 // Re-exports
 pub use {
     errors::{ProfileError, ProfileResult},
-    logging::{flush_debug_log, get_platform_log_path, DebugLogger},
+    logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
         get_global_profile_type, is_profiling_enabled, Profile, ProfileSection, ProfileType,
     },
@@ -179,7 +179,7 @@ macro_rules! static_lazy {
         pub struct $name;
 
         impl $name {
-            fn get() -> &'static $type {
+            pub fn get() -> &'static $type {
                 static INSTANCE: std::sync::OnceLock<$type> = std::sync::OnceLock::new();
                 INSTANCE.get_or_init(|| $init)
             }

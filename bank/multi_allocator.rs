@@ -1,15 +1,13 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::RefCell;
 use std::marker::PhantomData;
-// use std::sync::OnceLock;
-use lazy_static::lazy_static;
 
 // Trait to access allocators by tag
 pub trait AllocatorProvider<T: Copy + 'static> {
     fn get_allocator(&self, tag: T) -> &dyn GlobalAlloc;
 }
 
-// The main allocator struct - fully generic
+// The main allocator struct
 pub struct MultiAllocator<T, A>
 where
     T: Copy + 'static,
@@ -86,161 +84,39 @@ where
     }
 }
 
-unsafe impl<T, A> GlobalAlloc for MultiAllocator<T, A>
-where
-    T: Copy + 'static,
-    A: AllocatorProvider<T>,
-{
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // We need to handle the case where T is not AllocatorType
-        // This is a bit of a hack, but it works
-        struct AllocHelper<'a, T: Copy + 'static, A: AllocatorProvider<T>> {
-            allocator: &'a MultiAllocator<T, A>,
-            layout: Layout,
-        }
-
-        impl AllocHelper<'_, AllocatorType, AllocatorSet> {
-            unsafe fn allocate(&self) -> *mut u8 {
-                let tag = current_allocator();
-                self.allocator.allocate(self.layout, tag)
-            }
-        }
-
-        // Only works with AllocatorType, but that's all we need
-        if std::any::TypeId::of::<T>() == std::any::TypeId::of::<AllocatorType>() {
-            let helper = AllocHelper {
-                allocator: &*(self as *const _
-                    as *const MultiAllocator<AllocatorType, AllocatorSet>),
-                layout,
-            };
-            return unsafe { helper.allocate() };
-        }
-
-        // Fallback for other types - should never be reached in practice
-        System.alloc(layout)
-    }
-
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        // Similar approach for deallocation
-        struct DeallocHelper<'a, T: Copy + 'static, A: AllocatorProvider<T>> {
-            allocator: &'a MultiAllocator<T, A>,
-            ptr: *mut u8,
-            layout: Layout,
-        }
-
-        impl DeallocHelper<'_, AllocatorType, AllocatorSet> {
-            unsafe fn deallocate(&self) {
-                self.allocator.deallocate(self.ptr, self.layout)
-            }
-        }
-
-        if std::any::TypeId::of::<T>() == std::any::TypeId::of::<AllocatorType>() {
-            let helper = DeallocHelper {
-                allocator: &*(self as *const _
-                    as *const MultiAllocator<AllocatorType, AllocatorSet>),
-                ptr,
-                layout,
-            };
-            unsafe { helper.deallocate() };
-            return;
-        }
-
-        // Fallback
-        System.dealloc(ptr, layout);
-    }
+// Define our allocator type
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(u8)]
+pub enum AllocatorType {
+    TaskAware = 0, // Default is 0
+    SystemAlloc,
 }
 
-// This macro generates an enum with your custom allocators
-// and defines the MultiAllocator with the specified allocators
-#[macro_export]
-macro_rules! define_allocators {
-    (
-        $(#[$enum_meta:meta])*
-        $vis:vis enum $name:ident {
-            $default:ident = $default_impl:ty,
-            $($variant:ident = $variant_impl:ty),* $(,)?
-        }
-    ) => {
-        $(#[$enum_meta])*
-        #[repr(u8)]
-        $vis enum $name {
-            $default = 0, // Default is always 0
-            $($variant),*
-        }
+// Thread-local current allocator
+thread_local! {
+    static CURRENT_ALLOCATOR: RefCell<AllocatorType> = RefCell::new(AllocatorType::TaskAware);
+}
 
-        impl $name {
-            const fn default() -> Self {
-                Self::$default
-            }
-        }
+// Function to get current allocator
+pub fn current_allocator() -> AllocatorType {
+    CURRENT_ALLOCATOR.with(|current| *current.borrow())
+}
 
-        thread_local! {
-            static CURRENT_ALLOCATOR: RefCell<$name> = RefCell::new($name::default());
-        }
+// Function to run code with a specific allocator
+pub fn with_allocator<T, F: FnOnce() -> T>(allocator: AllocatorType, f: F) -> T {
+    CURRENT_ALLOCATOR.with(|current| {
+        let prev = *current.borrow();
+        *current.borrow_mut() = allocator;
 
-        $vis fn with_allocator<T, F: FnOnce() -> T>(allocator: $name, f: F) -> T {
-            CURRENT_ALLOCATOR.with(|current| {
-                let prev = *current.borrow();
-                *current.borrow_mut() = allocator;
+        let result = f();
 
-                let result = f();
-
-                *current.borrow_mut() = prev;
-                result
-            })
-        }
-
-        $vis fn current_allocator() -> $name {
-            CURRENT_ALLOCATOR.with(|current| *current.borrow())
-        }
-
-        // Create the actual allocator struct that holds all the allocator instances
-        pub struct AllocatorSet {
-            $default: $default_impl,
-            $($variant: $variant_impl),*
-        }
-
-        impl AllocatorSet {
-            fn new() -> Self {
-                Self {
-                    $default: <$default_impl>::default(),
-                    $($variant: <$variant_impl>::default()),*
-                }
-            }
-        }
-
-        impl AllocatorProvider<$name> for AllocatorSet {
-            fn get_allocator(&self, tag: $name) -> &dyn GlobalAlloc {
-                match tag {
-                    $name::$default => &self.$default,
-                    $($name::$variant => &self.$variant),*
-                }
-            }
-        }
-
-        // Global allocator instance using OnceLock
-        static ALLOCATOR_CELL: OnceLock<MultiAllocator<$name, AllocatorSet>> = OnceLock::new();
-
-        #[global_allocator]
-        static ALLOCATOR: &MultiAllocator<$name, AllocatorSet> =
-            ALLOCATOR_CELL.get_or_init(|| MultiAllocator::new(AllocatorSet::new()));
-    };
+        *current.borrow_mut() = prev;
+        result
+    })
 }
 
 // Placeholder for your TaskAwareAllocator
 pub struct TaskAwareAllocator;
-
-impl TaskAwareAllocator {
-    pub const fn new() -> Self {
-        Self
-    }
-}
-
-impl Default for TaskAwareAllocator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 unsafe impl GlobalAlloc for TaskAwareAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
@@ -252,34 +128,49 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
     }
 }
 
-pub struct SystemWrapper(pub System);
+// Our allocator set - use const fields for static initialization
+pub struct AllocatorSet {
+    task_aware: TaskAwareAllocator,
+    system_alloc: System,
+}
 
-impl Default for SystemWrapper {
-    fn default() -> Self {
-        Self(System)
+// Make the allocator set constructible in const contexts
+impl AllocatorSet {
+    pub const fn new() -> Self {
+        Self {
+            task_aware: TaskAwareAllocator,
+            system_alloc: System,
+        }
     }
 }
 
-unsafe impl GlobalAlloc for SystemWrapper {
+impl AllocatorProvider<AllocatorType> for AllocatorSet {
+    fn get_allocator(&self, tag: AllocatorType) -> &dyn GlobalAlloc {
+        match tag {
+            AllocatorType::TaskAware => &self.task_aware,
+            AllocatorType::SystemAlloc => &self.system_alloc,
+        }
+    }
+}
+
+// Implement GlobalAlloc for our allocator
+unsafe impl GlobalAlloc for MultiAllocator<AllocatorType, AllocatorSet> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.0.alloc(layout)
+        let tag = current_allocator();
+        self.allocate(layout, tag)
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        self.0.dealloc(ptr, layout)
+        self.deallocate(ptr, layout)
     }
 }
 
-// Now define your allocators with TaskAwareAllocator as default
-define_allocators! {
-    #[derive(Debug, Copy, Clone, PartialEq)]
-    pub enum AllocatorType {
-        TaskAware = TaskAwareAllocator,
-        SystemAlloc = SystemWrapper,
-    }
-}
+// Create a direct static instance - no references or lazy initialization
+#[global_allocator]
+static ALLOCATOR: MultiAllocator<AllocatorType, AllocatorSet> =
+    MultiAllocator::new(AllocatorSet::new());
 
-// Usage in code
+// Usage example
 fn main() {
     // Use a specific allocator for a block of code
     let result = with_allocator(AllocatorType::SystemAlloc, || {

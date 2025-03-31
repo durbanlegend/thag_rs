@@ -253,6 +253,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             "Profile type `{profile_type:?}` requested but feature `full_profiling` is not enabled",
         ),
     }
+    flush_debug_log();
     Ok(())
 }
 
@@ -296,6 +297,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             debug_log!("Memory profile will be written to {memory_path}");
         }
     }
+    flush_debug_log();
     Ok(())
 }
 

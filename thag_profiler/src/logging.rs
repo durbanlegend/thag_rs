@@ -26,7 +26,7 @@ static_lazy! {
     }
 }
 
-fn get_platform_log_path() -> Option<PathBuf> {
+pub fn get_platform_log_path() -> Option<PathBuf> {
     // Platform-specific paths
     #[cfg(target_os = "windows")]
     {

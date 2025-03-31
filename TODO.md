@@ -29,8 +29,8 @@
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
 - [ ]  hashbrown: no difference because adopted by Rust already.
 - [ ]  Make MINIMUM_TRACKED_SIZE configurable
-- [ ]  Make THAG_PROFILER_DEBUG=1 silent, 2 display location
-- [ ]  Change debug logging address to temp_dir/thag_profiler/debug.log with program qualifier?
+- [ ]  Debug std::io::Write::write_fmt getting tacked on to front of path sometimes in syn test case bank/syn_dump_syntax_profile_syn.rs.
+
 
 cd thag_profiler
 cargo test --test profiling --features full_profiling

@@ -274,6 +274,9 @@ pub fn init_profiling() {
 pub fn finalize_profiling() {
     use crate::profiling::{enable_profiling, ProfileType};
 
+    // Ensure debug log is flushed before we disable profiling
+    flush_debug_log();
+
     // Determine profile type based on features
     #[cfg(feature = "full_profiling")]
     let profile_type = ProfileType::Both;
@@ -287,7 +290,11 @@ pub fn finalize_profiling() {
     #[cfg(feature = "full_profiling")]
     task_allocator::finalize_memory_profiling();
 
+    // Final flush to ensure all data is written
     flush_debug_log();
+    
+    // Add a delay to ensure flush completes before program exit
+    std::thread::sleep(std::time::Duration::from_millis(10));
 }
 
 // Provide no-op versions when profiling is disabled

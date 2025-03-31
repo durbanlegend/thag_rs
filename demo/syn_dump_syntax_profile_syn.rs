@@ -24,6 +24,8 @@ thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
 /// THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=. cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
 /// ```
 ///
+/// You can also prefix this with `THAG_PROFILER_DEBUG=1` to enable profiler logging to `std::env::temp_dir()` or `THAG_PROFILER_DEBUG=2`
+/// to do likewise but additionally display the path to the log file location via `eprintln!`.
 //# Purpose: demonstrate profiling a dependency with `thag_profiler`.
 //# Categories: AST, crates, technique
 //# Sample arguments: `-- demo/hello_main.rs`

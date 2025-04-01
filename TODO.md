@@ -30,8 +30,14 @@
 - [ ]  hashbrown: no difference because adopted by Rust already.
 - [ ]  Make MINIMUM_TRACKED_SIZE configurable
 - [ ]  Debug std::io::Write::write_fmt getting tacked on to front of path sometimes in syn test case bank/syn_dump_syntax_profile_syn.rs.
-- [ ]  lazy_static variable in enable_profiling using backtrace to establish root
+- [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
+look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Either merge mem_alloc into task_allocator or rename the latter to something like task_tracker.
+
+
+# Alternative ways to run thag-instrument without installing:
+cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs
+cargo run --features=instrument-tool --bin thag-instrument --manifest-path thag_profiler/Cargo.toml -- 2021 < bank/main_with_attrs.rs
 
 cd thag_profiler
 cargo test --test profiling --features full_profiling

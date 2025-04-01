@@ -177,11 +177,11 @@ In standard Cargo projects, the same options apply, only directly in Cargo.toml:
 
 **EITHER**
 
-**1. With an attribute**
+**1. With an attribute (recommended)**
 
-Enable profiling by adding the #[enable_profiling] attribute to your main function.
+Enable profiling by adding the #[enable_profiling] attribute to your `main` function.
 
-This is a compile-time attribute that is may be useful in certain development scenarios.
+The `main` function will be taken to be the root of the profiling callstack.
 
 ```rust
 use thag_profiler::profiled;
@@ -257,16 +257,31 @@ impl MyStruct {
 
 #### Attribute Options
 
-The `#[profiled]` and `#[enable_profiling]` attributes support a profile_type option:
+The `#[profiled]` attribute supports a profile_type option:
 
 ```rust
-// Specify at the global level what to profile (time, memory, or both)
-#[enable_profiling(profile_type = "memory")]
-fn main() { /* ... */ }
-
 // Override the profile type for a specific function (time, memory, or both)
 #[profiled(profile_type = "both")]
 fn allocating_function() { /* ... */ }
+```
+
+#### Order of attributes
+
+If both `#[enable_profiling]` and `#[profiled]` attributes are used, they should be specified in that order.
+
+```rust
+#[enable_profiling]
+#[profiled]
+fn main() { /* ... */ }
+```
+
+If used to decorate a main function that has the attribute `#[tokio::main]`, they should come before `#[tokio::main]`.
+
+```rust
+#[enable_profiling]
+#[profiled]
+#[tokio::main]
+async fn main() { /* ... */ }
 ```
 
 ### Controlling Profiling at Runtime

@@ -1,5 +1,5 @@
 use crate::{debug_log, lazy_static_var, static_lazy, ProfileError};
-use backtrace::Backtrace;
+use backtrace::{Backtrace, BacktraceFrame};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -618,6 +618,8 @@ impl Profile {
         is_async: bool,
         is_method: bool,
     ) -> Option<Self> {
+        use backtrace::BacktraceFrame;
+
         if !is_profiling_enabled() {
             return None;
         }
@@ -648,7 +650,7 @@ impl Profile {
 
             Backtrace::frames(&current_backtrace)
                 .iter()
-                .flat_map(backtrace::BacktraceFrame::symbols)
+                .flat_map(BacktraceFrame::symbols)
                 .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
                 .skip_while(|name| {
                     !(name.contains("Profile::new") && !name.contains("{{closure}}"))
@@ -1080,17 +1082,11 @@ pub fn extract_callstack_from_profile_backtrace(
     #[allow(clippy::nonminimal_bool)]
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
-        .flat_map(backtrace::BacktraceFrame::symbols)
+        .flat_map(BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .skip_while(|name| !(name.contains("Profile::new") && !name.contains("{{closure}}")))
         // Be careful, this is very sensitive to changes in the function signatures of this module.
         .skip(1)
-        // .inspect(|(is_within_target_range, name)| {
-        //     debug_log!(
-        //         "Eligible frame: is_within_target_range? {is_within_target_range}; {}",
-        //         name
-        //     );
-        // })
         .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
         .filter(|name| filter_scaffolding(name))
         .map(strip_hex_suffix)
@@ -1124,14 +1120,14 @@ pub fn extract_callstack_from_alloc_backtrace(
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
-        .flat_map(backtrace::BacktraceFrame::symbols)
+        .flat_map(BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .skip_while(|frame| !start_pattern.is_match(frame))
         .take_while(|frame| !frame.contains("__rust_begin_short_backtrace"))
         .filter(|name| filter_scaffolding(name))
-        // .inspect(|frame| {
-        //     debug_log!("frame: {frame}");
-        // })
+        .inspect(|frame| {
+            debug_log!("frame: {frame}");
+        })
         .map(strip_hex_suffix)
         .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
@@ -1437,11 +1433,13 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "core::",
     "core::ops::function::FnOnce::call_once",
     "hashbrown",
-    "okaoka::with_allocator",
+    "meme_alloc::with_allocator",
     "std::panic::catch_unwind",
     "std::panicking",
     "std::rt::lang_start",
+    "std::sync::poison::",
     "std::sys::backtrace::__rust_begin_short_backtrace",
+    "std::sys::sync::",
     "std::thread::local::LocalKey<T>::try_with",
     "task_allocator::MultiAllocator::with",
     // "Profile::new",

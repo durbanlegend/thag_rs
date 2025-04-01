@@ -3,7 +3,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, FnArg, Generics, ItemFn, LitStr, ReturnType, Type, Visibility, WhereClause,
+    parse_macro_input, Attribute, FnArg, Generics, ItemFn, LitStr, ReturnType, Type, Visibility,
+    WhereClause,
 };
 
 /// Configuration for profile attribute macro
@@ -49,6 +50,7 @@ struct FunctionContext<'a> {
     where_clause: Option<&'a WhereClause>,
     /// Function body
     body: &'a syn::Block,
+    attrs: &'a Vec<Attribute>,
     // Generated profile name incorporating context (impl/trait/async/etc.)
     // profile_name: String,
     // /// Whether the function is asynchronous
@@ -243,6 +245,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         output: &input.sig.output,
         where_clause: input.sig.generics.where_clause.as_ref(),
         body: &input.block,
+        attrs: &input.attrs,
         // profile_name,
         // is_async,
         is_method,
@@ -298,6 +301,7 @@ fn generate_sync_wrapper(
         output,
         where_clause,
         body,
+        attrs,
         // profile_name,
         // is_async,
         is_method,
@@ -308,6 +312,8 @@ fn generate_sync_wrapper(
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     quote! {
+
+        #(#attrs)*
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
 
             // We pass None for the name as we rely on the backtrace to identify the function
@@ -340,6 +346,7 @@ fn generate_async_wrapper(
         output,
         where_clause,
         body,
+        attrs,
         // profile_name,
         // is_async,
         is_method,
@@ -352,6 +359,8 @@ fn generate_async_wrapper(
     // let is_method = ctx.is_method;
 
     quote! {
+
+        #(#attrs)*
         #vis async fn #fn_name #generics (#inputs) #output #where_clause {
             use std::future::Future;
             use std::pin::Pin;

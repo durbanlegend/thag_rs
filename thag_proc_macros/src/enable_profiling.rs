@@ -56,6 +56,7 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
 
     // Check if the function is async
     let is_async = input.sig.asyncness.is_some();
+    eprintln!("is_async={is_async}, input={input:#?}");
 
     // let profile_type = match args.profile_type {
     //     Some(ProfileTypeOverride::Time) => quote! { ProfileType::Time },
@@ -73,9 +74,27 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
     let block = &input.block;
     let attrs = &input.attrs;
 
+    let base_location = quote! {
+        use backtrace::{Backtrace, BacktraceFrame};
+
+        static_lazy! {
+            BaseLocation: &'static str =  Box::leak(Backtrace::frames(&Backtrace::new())
+                .iter()
+                .flat_map(BacktraceFrame::symbols)
+                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                .skip_while(|frame| !(frame.contains(module_path!())))
+                .take(1)
+                .last()
+                .unwrap().into_boxed_str())
+        }
+    };
+
     let result = if is_async {
         // Handle async function
         quote! {
+
+            #base_location
+
             #(#attrs)*
             #vis async fn #fn_name #generics(#inputs) #output #where_clause {
                 // Initialize profiling
@@ -94,6 +113,9 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
     } else {
         // Handle non-async function (existing implementation)
         quote! {
+
+            #base_location
+
             #(#attrs)*
             #vis fn #fn_name #generics(#inputs) #output #where_clause {
                 // Initialize profiling

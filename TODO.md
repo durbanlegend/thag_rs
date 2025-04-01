@@ -30,7 +30,8 @@
 - [ ]  hashbrown: no difference because adopted by Rust already.
 - [ ]  Make MINIMUM_TRACKED_SIZE configurable
 - [ ]  Debug std::io::Write::write_fmt getting tacked on to front of path sometimes in syn test case bank/syn_dump_syntax_profile_syn.rs.
-
+- [ ]  lazy_static variable in enable_profiling using backtrace to establish root
+- [ ]  Either merge mem_alloc into task_allocator or rename the latter to something like task_tracker.
 
 cd thag_profiler
 cargo test --test profiling --features full_profiling

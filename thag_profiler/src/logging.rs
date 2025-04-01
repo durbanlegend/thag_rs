@@ -27,7 +27,7 @@ static_lazy! {
         #[cfg(feature = "full_profiling")]
         {
             // For memory profiling, we must use the system allocator
-            crate::with_allocator(crate::AllocatorType::SystemAlloc, || {
+            crate::with_allocator(crate::AllocatorType::System, || {
                 create_debug_logger()
             })
         }
@@ -51,7 +51,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
 
         // Print the log path if we're in verbose mode
         if debug_level >= DEBUG_LEVEL_VERBOSE {
-            eprintln!("THAG Profiler debug log: {}", log_path.display());
+            eprintln!("Thag Profiler debug log: {}", log_path.display());
         }
 
         // Try to open the file with a buffered writer
@@ -95,7 +95,7 @@ pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for getting log path
-        crate::with_allocator(crate::AllocatorType::SystemAlloc, || {
+        crate::with_allocator(crate::AllocatorType::System, || {
             if get_debug_level() > DEBUG_LEVEL_NONE {
                 Some(ProfilePaths::get().debug_log.clone())
             } else {
@@ -119,7 +119,7 @@ pub fn flush_debug_log() {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for logging operations to prevent circular dependencies
-        crate::with_allocator(crate::AllocatorType::SystemAlloc, || {
+        crate::with_allocator(crate::AllocatorType::System, || {
             if let Some(logger) = DebugLogger::get() {
                 let flush_result = {
                     let mut locked_writer = logger.lock();
@@ -156,7 +156,7 @@ pub fn flush_debug_log() {
 macro_rules! debug_log {
     ($($arg:tt)*) => {
         // Always use system allocator for logging to prevent circular dependencies
-        $crate::with_allocator($crate::AllocatorType::SystemAlloc, || {
+        $crate::with_allocator($crate::AllocatorType::System, || {
             static mut LOG_COUNT: usize = 0;
             if let Some(logger) = $crate::DebugLogger::get() {
                 use std::io::Write;

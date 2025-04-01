@@ -60,7 +60,7 @@ pub use {
 };
 
 #[cfg(feature = "full_profiling")]
-pub use mem_alloc::{with_allocator, AllocatorType, MultiAllocator, TaskAwareAllocator};
+pub use mem_alloc::{with_allocator, AllocatorType, Dispatcher, TaskAwareAllocator};
 
 #[cfg(feature = "full_profiling")]
 pub use {
@@ -258,7 +258,7 @@ pub fn init_profiling() {
     }
 
     #[cfg(feature = "full_profiling")]
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
         task_allocator::initialize_memory_profiling();
     });
@@ -292,7 +292,7 @@ pub fn finalize_profiling() {
 
     // Final flush to ensure all data is written
     flush_debug_log();
-    
+
     // Add a delay to ensure flush completes before program exit
     std::thread::sleep(std::time::Duration::from_millis(10));
 }

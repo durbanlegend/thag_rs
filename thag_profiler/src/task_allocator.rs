@@ -135,14 +135,14 @@ static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
 
 /// Add a task to active profiles
 pub fn activate_task(task_id: usize) {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         PROFILE_REGISTRY.lock().activate_task(task_id);
     });
 }
 
 /// Remove a task from active profiles
 pub fn deactivate_task(task_id: usize) {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         // Process any pending allocations before deactivating
         // process_pending_allocations();
 
@@ -160,7 +160,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 
 /// Add a task to a thread's stack
 pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         PROFILE_REGISTRY
             .lock()
             .push_task_to_stack(thread_id, task_id);
@@ -169,7 +169,7 @@ pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
 
 /// Remove a task from a thread's stack
 pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         PROFILE_REGISTRY
             .lock()
             .pop_task_from_stack(thread_id, task_id);
@@ -178,7 +178,7 @@ pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
 
 /// Get active tasks
 pub fn get_active_tasks() -> Vec<usize> {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         PROFILE_REGISTRY.lock().get_active_tasks()
     })
 }
@@ -186,17 +186,10 @@ pub fn get_active_tasks() -> Vec<usize> {
 /// Get the last active task
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         PROFILE_REGISTRY.lock().get_last_active_task()
     })
 }
-
-// /// Task-aware allocator that tracks memory usage per task ID
-// #[derive(Debug)]
-// pub struct TaskAwareAllocator<A: GlobalAlloc> {
-//     /// The inner allocator that actually performs allocation
-//     inner: A,
-// }
 
 /// Task context for tracking allocations
 #[derive(Debug, Clone)]
@@ -226,10 +219,6 @@ pub fn create_memory_task() -> TaskMemoryContext {
     let allocator = get_allocator();
     allocator.create_task_context()
 }
-
-// pub fn run_mut_with_system_alloc(closure: impl FnMut()) {
-//     MultiAllocator::with(AllocatorTag::System, closure);
-// }
 
 pub fn trim_backtrace(start_pattern: &Regex, current_backtrace: &Backtrace) -> Vec<String> {
     Backtrace::frames(current_backtrace)
@@ -274,7 +263,7 @@ pub struct TaskGuard;
 
 impl Drop for TaskGuard {
     fn drop(&mut self) {
-        with_allocator(AllocatorType::SystemAlloc, || {
+        with_allocator(AllocatorType::System, || {
             // Process pending allocations before removing the task
             // process_pending_allocations();
 
@@ -292,10 +281,6 @@ impl Drop for TaskGuard {
         });
     }
 }
-
-// pub fn run_with_system_alloc(closure: impl Fn()) {
-//     MultiAllocator::with(AllocatorTag::System, closure);
-// }
 
 static TASK_AWARE_ALLOCATOR: TaskAwareAllocator = TaskAwareAllocator;
 
@@ -430,33 +415,11 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     score
 }
 
-// // Setup for okaoka
-// set_multi_global_allocator! {
-//     MultiAllocator, // Name of our allocator facade
-//     AllocatorTag,   // Name of our allocator tag enum
-//     _Default => TaskAwareAllocatorWrapper,  // Our profiling allocator, first = default
-//     System => System,          // Standard system allocator for backtraces
-// }
-
-// // Wrapper to expose our TaskAwareAllocator to okaoka
-// struct TaskAwareAllocatorWrapper;
-
-// unsafe impl std::alloc::GlobalAlloc for TaskAwareAllocatorWrapper {
-//     unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
-//         // Use the static allocator instance
-//         TASK_AWARE_ALLOCATOR.alloc(layout)
-//     }
-
-//     unsafe fn dealloc(&self, ptr: *mut u8, layout: std::alloc::Layout) {
-//         TASK_AWARE_ALLOCATOR.dealloc(ptr, layout);
-//     }
-// }
-
 /// Initialize memory profiling.
 /// This is called by the main `init_profiling` function.
 pub fn initialize_memory_profiling() {
     // This is called at application startup to set up memory profiling
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
     });
@@ -465,7 +428,7 @@ pub fn initialize_memory_profiling() {
 /// Finalize memory profiling and write out data.
 /// This is called by the main `finalize_profiling` function.
 pub fn finalize_memory_profiling() {
-    with_allocator(AllocatorType::SystemAlloc, || {
+    with_allocator(AllocatorType::System, || {
         write_memory_profile_data();
     });
     flush_debug_log();
@@ -479,11 +442,7 @@ fn write_memory_profile_data() {
 
     // use crate::profiling::get_memory_path;
 
-    with_allocator(AllocatorType::SystemAlloc, || {
-        // debug_log!("Starting write_memory_profile_data...");
-
-        // debug_log!("Profiled functions:\n{:#?}", dump_profiled_functions());
-
+    with_allocator(AllocatorType::System, || {
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
         // debug_log!("Memory path: {memory_path}");
@@ -568,38 +527,7 @@ fn write_memory_profile_data() {
             };
             // debug_log!("Task paths map has {} entries", task_paths_map.len());
 
-            // Write profile data
-            // let mut lines_written = 0;
-
             let mut already_written = HashSet::new();
-
-            // First write all tasks with allocations
-            // No: this is a duplication
-            // for (task_id, allocations) in &task_allocs {
-            //     // Skip tasks with no allocations
-            //     if allocations.is_empty() {
-            //         debug_log!("Task {task_id} has no allocations, skipping");
-            //         continue;
-            //     }
-
-            //     // Get the path for this task
-            //     if let Some(path) = task_paths_map.get(task_id) {
-            //         let path_str = path.join(";");
-            //         let total_bytes: usize = allocations.iter().map(|(_, size)| *size).sum();
-            //         debug_log!("Writing for task {task_id}: '{path_str}' with {total_bytes} bytes");
-
-            //         // Write line to folded format file
-            //         match writeln!(writer, "{} {}", path_str, total_bytes) {
-            //             Ok(()) => {
-            //                 // lines_written += 1;
-            //                 already_written.insert(path_str.clone());
-            //             }
-            //             Err(e) => debug_log!("Error writing line for task {task_id}: {e}"),
-            //         }
-            //     } else {
-            //         debug_log!("No path found for task {task_id}");
-            //     }
-            // }
 
             // Now write all tasks from registry that might not have allocations
             // This helps with keeping the full call hierarchy in the output

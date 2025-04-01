@@ -1,5 +1,5 @@
 use ra_ap_syntax::{
-    ast::{self, HasName, HasVisibility},
+    ast::{self, HasAttrs, HasName, HasVisibility},
     ted::{self, Position},
     AstNode, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode,
 };
@@ -124,8 +124,8 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             eprintln!("fn_name={fn_name:?}");
             let attr_texts = if fn_name.as_deref() == Some("main") {
                 vec![
-                    "#[thag_profiler::enable_profiling]",
                     "#[thag_profiler::profiled]",
+                    "#[thag_profiler::enable_profiling]",
                 ]
             } else {
                 vec!["#[thag_profiler::profiled]"]
@@ -167,13 +167,9 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                         || text.starts_with("#[test")
                         || text.starts_with("profile!")
                         || text.starts_with("enable_profiling");
-                    // if fname == "initialize_profile_files" {
-                    //     eprintln!("fn_name={}; text: {text}, fn_name.clone(), filtered out={filtered_out}",);
-                    // }
                     filtered_out
                 })
             {
-                // dbg!();
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get
@@ -182,30 +178,47 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                     .syntax()
                     .prev_sibling_or_token()
                     .and_then(|t| {
-                        // eprintln!("t: {t:?}");
                         if t.kind() == SyntaxKind::WHITESPACE {
                             let s = t.to_string();
                             let new_indent = s
                                 .rmatch_indices('\n')
                                 .next()
                                 .map_or(s.clone(), |(i, _)| (&s[i..]).to_string());
-                            // eprintln!("new_indent: [{new_indent}]");
                             Some(new_indent)
                         } else {
                             None
                         }
                     })
                     .unwrap_or_default();
-                // eprintln!("Indentation: {}, value: [{indent}]", indent.len());
-                for attr_text in &attr_texts {
+                
+                // Get the collection of attributes
+                let attrs = function.attrs().collect::<Vec<_>>();
+                
+                // Determine where to insert our attributes - we need to recreate this for each iteration
+                let get_insert_pos = || {
+                    if attrs.is_empty() {
+                        // No existing attributes, use default position
+                        Position::before(&target_token)
+                    } else {
+                        // Insert before the first attribute
+                        Position::before(attrs[0].syntax())
+                    }
+                };
+                
+                // Reverse the order so they'll end up in the correct order when inserted
+                for attr_text in attr_texts.iter().rev() {
+                    // Get a fresh position for each insertion
+                    let insert_pos = get_insert_pos();
+                    
                     // Parse and insert attribute with proper indentation
                     let attr_node = parse_attr(&format!("{indent}{attr_text}"))
                         .expect("Failed to parse attribute");
-                    ted::insert(Position::before(&target_token), &attr_node);
+                    ted::insert(insert_pos, &attr_node);
 
-                    if &indent.len() > &0 {
+                    if indent.len() > 0 {
+                        let insert_pos = get_insert_pos();
                         let ws_token = ast::make::tokens::whitespace(&indent);
-                        ted::insert(Position::before(&target_token), ws_token);
+                        ted::insert(insert_pos, ws_token);
                     }
                 }
             }

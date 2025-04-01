@@ -10,7 +10,7 @@ use crate::{
     // mem_alloc,
     profiling::{clean_function_name, get_memory_path},
     with_allocator,
-    AllocatorType,
+    Allocator,
     TaskAwareAllocator,
 };
 use backtrace::Backtrace;
@@ -135,14 +135,14 @@ static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
 
 /// Add a task to active profiles
 pub fn activate_task(task_id: usize) {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         PROFILE_REGISTRY.lock().activate_task(task_id);
     });
 }
 
 /// Remove a task from active profiles
 pub fn deactivate_task(task_id: usize) {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         // Process any pending allocations before deactivating
         // process_pending_allocations();
 
@@ -160,7 +160,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 
 /// Add a task to a thread's stack
 pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         PROFILE_REGISTRY
             .lock()
             .push_task_to_stack(thread_id, task_id);
@@ -169,7 +169,7 @@ pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
 
 /// Remove a task from a thread's stack
 pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         PROFILE_REGISTRY
             .lock()
             .pop_task_from_stack(thread_id, task_id);
@@ -178,7 +178,7 @@ pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
 
 /// Get active tasks
 pub fn get_active_tasks() -> Vec<usize> {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         PROFILE_REGISTRY.lock().get_active_tasks()
     })
 }
@@ -186,7 +186,7 @@ pub fn get_active_tasks() -> Vec<usize> {
 /// Get the last active task
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         PROFILE_REGISTRY.lock().get_last_active_task()
     })
 }
@@ -263,7 +263,7 @@ pub struct TaskGuard;
 
 impl Drop for TaskGuard {
     fn drop(&mut self) {
-        with_allocator(AllocatorType::System, || {
+        with_allocator(Allocator::System, || {
             // Process pending allocations before removing the task
             // process_pending_allocations();
 
@@ -419,7 +419,7 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 /// This is called by the main `init_profiling` function.
 pub fn initialize_memory_profiling() {
     // This is called at application startup to set up memory profiling
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
     });
@@ -428,7 +428,7 @@ pub fn initialize_memory_profiling() {
 /// Finalize memory profiling and write out data.
 /// This is called by the main `finalize_profiling` function.
 pub fn finalize_memory_profiling() {
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         write_memory_profile_data();
     });
     flush_debug_log();
@@ -442,7 +442,7 @@ fn write_memory_profile_data() {
 
     // use crate::profiling::get_memory_path;
 
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
         // debug_log!("Memory path: {memory_path}");

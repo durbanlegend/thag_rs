@@ -15,35 +15,35 @@ use std::time::Instant;
 
 /// Enum defining all available allocators used by the profiler
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AllocatorType {
+pub enum Allocator {
     TaskAware,
     System,
 }
 
 // Thread-local current allocator selection
 thread_local! {
-    static CURRENT_ALLOCATOR: UnsafeCell<AllocatorType> = const { UnsafeCell::new(AllocatorType::TaskAware) };
+    static CURRENT_ALLOCATOR: UnsafeCell<Allocator> = const { UnsafeCell::new(Allocator::TaskAware) };
 }
 
 // Function to get current allocator type
-pub fn current_allocator() -> AllocatorType {
-    CURRENT_ALLOCATOR.with(|tag| unsafe { *tag.get() })
+pub fn current_allocator() -> Allocator {
+    CURRENT_ALLOCATOR.with(|curr_alloc| unsafe { *curr_alloc.get() })
 }
 
 // Function to run code with a specific allocator
-pub fn with_allocator<T, F: FnOnce() -> T>(allocator: AllocatorType, f: F) -> T {
-    CURRENT_ALLOCATOR.with(|tag| {
+pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T {
+    CURRENT_ALLOCATOR.with(|curr_alloc| {
         // Save the current allocator
-        let prev = unsafe { *tag.get() };
+        let prev = unsafe { *curr_alloc.get() };
 
         // Set the new allocator
-        unsafe { *tag.get() = allocator };
+        unsafe { *curr_alloc.get() = req_alloc };
 
         // Run the function
         let result = f();
 
         // Restore the previous allocator
-        unsafe { *tag.get() = prev };
+        unsafe { *curr_alloc.get() = prev };
 
         result
     })
@@ -101,7 +101,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                 // Use a different allocator for backtrace operations
                 let start_ident = Instant::now();
                 let mut task_id = 0;
-                with_allocator(AllocatorType::System, || {
+                with_allocator(Allocator::System, || {
                     // Now we can safely use backtrace without recursion!
                     let start_pattern: &Regex = regex!("thag_profiler::mem_alloc.+Dispatcher");
 
@@ -160,7 +160,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                         }
                     }
                 });
-                with_allocator(AllocatorType::System, || {
+                with_allocator(Allocator::System, || {
                     debug_log!(
                         "task_id={task_id}, size={size}, time to assign = {}ms",
                         start_ident.elapsed().as_millis()
@@ -174,7 +174,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
                 let start_record_alloc = Instant::now();
                 // Use system allocator to avoid recursive allocations
-                with_allocator(AllocatorType::System, || {
+                with_allocator(Allocator::System, || {
                     let address = ptr as usize;
 
                     debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
@@ -242,8 +242,8 @@ unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         // Get current allocator type from thread-local storage
         match current_allocator() {
-            AllocatorType::TaskAware => unsafe { self.task_aware.alloc(layout) },
-            AllocatorType::System => unsafe { self.system.alloc(layout) },
+            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
+            Allocator::System => unsafe { self.system.alloc(layout) },
         }
     }
 

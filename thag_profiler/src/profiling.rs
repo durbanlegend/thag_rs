@@ -20,7 +20,7 @@ use crate::{
         activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
         TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    with_allocator, AllocatorType,
+    with_allocator, Allocator,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -757,7 +757,7 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod task_allocator.
-        with_allocator(AllocatorType::System, || -> Option<Self> {
+        with_allocator(Allocator::System, || -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
@@ -796,7 +796,7 @@ impl Profile {
             debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
             register_profiled_function(fn_name, desc_fn_name);
 
-            let path = with_allocator(AllocatorType::System, || extract_path(&cleaned_stack));
+            let path = with_allocator(Allocator::System, || extract_path(&cleaned_stack));
 
             // Determine if we should keep the custom name
             let custom_name = name.map(str::to_string);
@@ -1200,7 +1200,7 @@ impl Drop for Profile {
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        with_allocator(AllocatorType::System, || {
+        with_allocator(Allocator::System, || {
             // debug_log!("In drop for Profile {:?}", self);
             let start = Instant::now();
             if let Some(start) = self.start.take() {

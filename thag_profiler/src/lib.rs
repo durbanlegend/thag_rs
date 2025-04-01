@@ -60,7 +60,7 @@ pub use {
 };
 
 #[cfg(feature = "full_profiling")]
-pub use mem_alloc::{with_allocator, AllocatorType, Dispatcher, TaskAwareAllocator};
+pub use mem_alloc::{with_allocator, Allocator, Dispatcher, TaskAwareAllocator};
 
 #[cfg(feature = "full_profiling")]
 pub use {
@@ -258,7 +258,7 @@ pub fn init_profiling() {
     }
 
     #[cfg(feature = "full_profiling")]
-    with_allocator(AllocatorType::System, || {
+    with_allocator(Allocator::System, || {
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
         task_allocator::initialize_memory_profiling();
     });

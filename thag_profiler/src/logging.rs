@@ -5,7 +5,6 @@ use parking_lot::Mutex;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 // Define constants for clarity
 const DEBUG_LEVEL_NONE: u8 = 0;
@@ -14,18 +13,13 @@ const DEBUG_LEVEL_VERBOSE: u8 = 2;
 
 // Helper function to get the current debug level
 fn get_debug_level() -> u8 {
-    match std::env::var("THAG_PROFILER_DEBUG") {
-        Ok(value) => {
-            // Try to parse the value as a number
-            match value.parse::<u8>() {
-                Ok(level) if level > 0 => level,
-                // If parsing fails or level is 0, but the var exists, default to level 1
-                _ => DEBUG_LEVEL_LOG,
-            }
+    std::env::var("THAG_PROFILER_DEBUG").map_or(DEBUG_LEVEL_NONE, |value| {
+        match value.parse::<u8>() {
+            Ok(level) if level > 0 => level,
+            // If parsing fails or level is 0, but the var exists, default to level 1
+            _ => DEBUG_LEVEL_LOG,
         }
-        // If env var isn't set, return 0 (no debugging)
-        Err(_) => DEBUG_LEVEL_NONE,
-    }
+    })
 }
 
 static_lazy! {
@@ -65,7 +59,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
             // Add a header to the log file with information about the run
             // Increase buffer capacity to 64KB to reduce flush frequency
             let mut header_writer = BufWriter::with_capacity(65536, file);
-            let _ = writeln!(header_writer, "--- THAG Profiler Debug Log ---");
+            let _ = writeln!(header_writer, "--- Thag Profiler Debug Log ---");
             let _ = writeln!(
                 header_writer,
                 "Executable: {}",
@@ -76,7 +70,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
                 "Timestamp: {}",
                 ProfilePaths::get().timestamp
             );
-            let _ = writeln!(header_writer, "Debug level: {}", debug_level);
+            let _ = writeln!(header_writer, "Debug level: {debug_level}");
             let _ = writeln!(
                 header_writer,
                 "Start time: {}",
@@ -86,7 +80,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
 
             // Make sure to flush the header before returning
             if let Err(e) = header_writer.flush() {
-                eprintln!("Failed to flush debug log header: {}", e);
+                eprintln!("Failed to flush debug log header: {e}");
             }
 
             return Some(Mutex::new(header_writer));
@@ -96,6 +90,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
 }
 
 // Update the helper function to include debug level check
+#[must_use]
 pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
@@ -133,7 +128,7 @@ pub fn flush_debug_log() {
 
                 if let Err(e) = flush_result {
                     // Use eprintln for direct console output without going through our logger
-                    eprintln!("Error flushing debug log: {}", e);
+                    eprintln!("Error flushing debug log: {e}");
                 }
             }
         });
@@ -162,6 +157,7 @@ macro_rules! debug_log {
     ($($arg:tt)*) => {
         // Always use system allocator for logging to prevent circular dependencies
         $crate::with_allocator($crate::AllocatorType::SystemAlloc, || {
+            static mut LOG_COUNT: usize = 0;
             if let Some(logger) = $crate::DebugLogger::get() {
                 use std::io::Write;
                 let _write_result = {
@@ -170,7 +166,6 @@ macro_rules! debug_log {
                 };
 
                 // Auto-flush periodically
-                static mut LOG_COUNT: usize = 0;
                 unsafe {
                     LOG_COUNT += 1;
                     if LOG_COUNT % 1000 == 0 {

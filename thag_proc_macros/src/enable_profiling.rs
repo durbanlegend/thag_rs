@@ -27,6 +27,14 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
     let block = &input.block;
     let attrs = &input.attrs;
 
+    for attr in attrs {
+        assert_ne!(
+            quote!(#attr).to_string().as_str(),
+            "#[tokio :: main]",
+            "#[tokio::main] if present must appear before #[enable_profiling] for correct expansion."
+        );
+    }
+
     // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 

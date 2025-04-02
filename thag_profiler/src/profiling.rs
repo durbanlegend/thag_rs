@@ -680,9 +680,19 @@ impl Profile {
         };
 
         let fn_name = &cleaned_stack[0];
-        let desc_fn_name = fn_name;
+
+        #[cfg(not(target_os = "windows"))]
+        let desc_fn_name = if is_async {
+            format!("async::{fn_name}")
+        } else {
+            fn_name.to_string()
+        };
+
+        #[cfg(target_os = "windows")]
+        let desc_fn_name = fn_name; // Windows already highlights async functions
+
         debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-        register_profiled_function(fn_name, desc_fn_name);
+        register_profiled_function(fn_name, &desc_fn_name);
 
         let path = extract_path(&cleaned_stack);
 
@@ -745,7 +755,7 @@ impl Profile {
         name: Option<&str>,
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
-        _is_async: bool,
+        is_async: bool,
         _is_method: bool,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
@@ -790,16 +800,19 @@ impl Profile {
             // Register this function
             let fn_name = &cleaned_stack[0];
 
-            // Temporarily remove async additions to debug matching
-            // let desc_fn_name = if is_async {
-            //     format!("async::{fn_name}")
-            // } else {
-            //     fn_name.to_string()
-            // };
-            let desc_fn_name = fn_name;
+            #[cfg(not(target_os = "windows"))]
+            let desc_fn_name = if is_async {
+                format!("async::{fn_name}")
+            } else {
+                fn_name.to_string()
+            };
+
+            #[cfg(target_os = "windows")]
+            let desc_fn_name = fn_name; // Windows already highlights async functions
+
             // debug_log!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
             debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-            register_profiled_function(fn_name, desc_fn_name);
+            register_profiled_function(fn_name, &desc_fn_name);
 
             let path = with_allocator(Allocator::System, || extract_path(&cleaned_stack));
 
@@ -935,26 +948,27 @@ impl Profile {
             return Ok(());
         }
 
-        let stack = &self.path;
+        let path = &self.path;
 
-        if stack.is_empty() {
+        if path.is_empty() {
             debug_log!("DEBUG: Stack is empty for {:?}", self.custom_name);
             return Err(ProfileError::General("Stack is empty".into()));
         }
 
-        // debug_log!("DEBUG: write_time_event for stack: {:?}", stack);
+        // debug_log!("DEBUG: write_time_event for stack: {:?}", path);
+
+        let stack = self.build_stack(path);
 
         // Add our custom section name to the end of the stack path if present
-        let stack_str = self.append_section_to_stack(stack.clone());
+        // let stack = self.append_section_to_stack(path.clone());
 
-        let entry = format!("{stack_str} {micros}");
+        let entry = format!("{stack} {micros}");
 
         // let paths = ProfilePaths::get();
         let time_path = get_time_path()?;
         Self::write_profile_event(time_path, TimeProfileFile::get(), &entry)
     }
 
-    // TODO remove op as redundant
     #[cfg(feature = "full_profiling")]
     fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
@@ -966,16 +980,15 @@ impl Profile {
             return Ok(());
         }
 
-        let stack = &self.path;
+        let path = &self.path;
 
-        if stack.is_empty() {
+        if path.is_empty() {
             return Err(ProfileError::General("Stack is empty".into()));
         }
 
-        // Add our custom section name to the end of the stack path if present
-        let stack_str = self.append_section_to_stack(stack.clone());
+        let stack = self.build_stack(path);
 
-        let entry = format!("{stack_str} {op}{delta}");
+        let entry = format!("{stack} {op}{delta}");
 
         debug_log!("DEBUG: write_memory_event: {entry}");
 
@@ -984,21 +997,14 @@ impl Profile {
         Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
     }
 
-    /// Add our custom section name to the end of the stack path if present.
-    /// NB this will interfere with the stack path resolution.
     #[cfg(feature = "time_profiling")]
-    fn append_section_to_stack(&self, mut stack_with_custom_name: Vec<String>) -> String {
-        if let Some(name) = &self.custom_name {
-            // debug_log!("DEBUG: Adding custom name '{}' to memory stack", name);
+    fn build_stack(&self, path: &[String]) -> std::string::String {
+        let iter = path
+            .iter()
+            .map(|fn_name| get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string()))
+            .chain(self.custom_name.clone());
 
-            // If the stack is not empty, get the last function name
-            if let Some(last_fn) = stack_with_custom_name.last_mut() {
-                // Append the custom name to the last function name
-                *last_fn = format!("{last_fn}:{name}");
-                // debug_log!("DEBUG: Modified stack entry to '{}'", last_fn);
-            }
-        }
-        stack_with_custom_name.join(";")
+        iter.collect::<Vec<String>>().join(";")
     }
 
     #[cfg(feature = "full_profiling")]
@@ -1042,9 +1048,10 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
     // Add self and ancestors that are profiled functions
     for fn_name_str in cleaned_stack {
         // debug_log!("fn_name_str={}", fn_name_str);
-        if let Some(name) = get_reg_desc_name(fn_name_str) {
+        // if let Some(name) = get_reg_desc_name(fn_name_str) {
+        if is_profiled_function(fn_name_str) {
             // debug_log!("Registered desc name: {}", name);
-            path.push(name);
+            path.push(fn_name_str.to_string());
             continue;
         }
 
@@ -1223,7 +1230,6 @@ impl Drop for Profile {
             debug_log!("Time to write event: {}ms", start.elapsed().as_millis());
 
             // Handle memory profiling
-            #[cfg(feature = "full_profiling")]
             if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
                 // debug_log!(
                 //     "In drop for Profile with memory profiling: {}",
@@ -1446,6 +1452,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "core::ops::function::FnOnce::call_once",
     "hashbrown",
     "meme_alloc::with_allocator",
+    "mio::",
     "std::panic::catch_unwind",
     "std::panicking",
     "std::rt::lang_start",

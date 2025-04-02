@@ -48,14 +48,18 @@ mod task_allocator;
 
 use std::fmt::Display;
 
+#[cfg(feature = "full_profiling")]
+use std::sync::OnceLock;
+
 // Re-exports
 pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        get_global_profile_type, is_profiling_enabled, Profile, ProfileSection, ProfileType,
+        get_global_profile_type, is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection,
+        ProfileType,
     },
-    thag_proc_macros::{enable_profiling, profiled},
+    thag_proc_macros::{enable_profiling, fn_name, profiled},
     // Only re-export what users need from task_allocator
 };
 
@@ -67,6 +71,32 @@ pub use {
     profiling::extract_path,
     task_allocator::{find_matching_profile, get_last_active_task, trim_backtrace, ALLOC_REGISTRY},
 };
+
+#[cfg(feature = "full_profiling")]
+pub static PROFILER: OnceLock<Profiler> = OnceLock::new();
+
+#[cfg(feature = "full_profiling")]
+#[derive(Debug)]
+pub struct Profiler {
+    base_location: &'static str,
+}
+
+#[cfg(feature = "full_profiling")]
+impl Profiler {
+    const fn new(base_location: &'static str) -> Self {
+        Self { base_location }
+    }
+}
+
+#[cfg(feature = "full_profiling")]
+pub fn get_profiler() -> Option<&'static Profiler> {
+    PROFILER.get()
+}
+
+#[cfg(feature = "full_profiling")]
+pub fn get_base_location() -> Option<&'static str> {
+    PROFILER.get().map(|profiler| profiler.base_location)
+}
 
 #[cfg(test)]
 mod feature_tests {
@@ -238,6 +268,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 ///
 /// This function panics if profiling cannot be enabled.
 #[cfg(feature = "time_profiling")]
+#[fn_name]
 pub fn init_profiling() {
     use crate::profiling::{enable_profiling, ProfileType};
 
@@ -259,6 +290,40 @@ pub fn init_profiling() {
 
     #[cfg(feature = "full_profiling")]
     with_allocator(Allocator::System, || {
+        use backtrace::{Backtrace, BacktraceFrame};
+        eprintln!("module_path!()={}", module_path!());
+        // TODO replace by function_name attribute macro
+        let this_function = format!("{}::{fn_name}", module_path!());
+        eprintln!("this_function={this_function}");
+        let base_location = Box::leak(
+            Backtrace::frames(&Backtrace::new())
+                .iter()
+                .flat_map(BacktraceFrame::symbols)
+                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                .skip_while(|frame| {
+                    !(frame.contains(&this_function)
+                        && strip_hex_suffix(frame.to_string()) == this_function)
+                })
+                .take(1)
+                .last()
+                .unwrap()
+                .into_boxed_str(),
+        );
+        PROFILER.set(Profiler::new(base_location)).unwrap();
+        eprintln!("get_profiler()={:?}", get_profiler());
+        eprintln!("get_base_location()={:?}", get_base_location());
+
+        // let _ = Backtrace::frames(&Backtrace::new())
+        //     .iter()
+        //     .flat_map(BacktraceFrame::symbols)
+        //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        //     .skip_while(|frame| {
+        //         !(frame.contains(&this_function)
+        //             && strip_hex_suffix(frame.to_string()) == this_function)
+        //     })
+        //     .for_each(|frame| eprintln!("frame={}", frame));
+        eprintln!("base_location={base_location}");
+
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
         task_allocator::initialize_memory_profiling();
     });

@@ -1,9 +1,15 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
+
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Attribute, FnArg, Generics, ItemFn, LitStr, ReturnType, Type, Visibility,
+    LitStr,
+};
+
+#[cfg(feature = "profiling")]
+use syn::{
+    parse_macro_input, Attribute, FnArg, Generics, ItemFn, ReturnType, Type, Visibility,
     WhereClause,
 };
 
@@ -35,6 +41,7 @@ enum ProfileTypeOverride {
 /// This struct contains all the necessary components to generate either a synchronous
 /// or asynchronous function wrapper with profiling capabilities.
 #[derive(Debug)]
+#[cfg(feature = "profiling")]
 struct FunctionContext<'a> {
     /// Function visibility (pub, pub(crate), etc.)
     vis: &'a Visibility,
@@ -103,6 +110,7 @@ impl Parse for ProfileArgs {
 /// 2. Return type of Self (including references to Self)
 /// 3. Return type containing Self as a generic parameter (Result<Self>, Option<Self>, etc.)
 /// 4. Location within an impl block (when available)
+#[cfg(feature = "profiling")]
 fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
     // Check for self parameter (the most reliable indicator)
     let has_self_param = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
@@ -129,6 +137,7 @@ fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
 }
 
 /// Recursively checks if a type contains Self
+#[cfg(feature = "profiling")]
 fn contains_self_type(ty: &Type) -> bool {
     match ty {
         // Handle reference types (&Self, &'static Self, etc.)
@@ -183,20 +192,26 @@ fn contains_self_type(ty: &Type) -> bool {
     }
 }
 
-pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+#[cfg(not(feature = "profiling"))]
+pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // Always check the feature flag at runtime to handle when the proc macro
     // is compiled with the feature but used without it
-    // println!("profiling feature enabled: {}", cfg!(feature = "profiling"));
+    item
+}
 
-    if cfg!(not(feature = "profiling")) {
+#[cfg(feature = "profiling")]
+pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(attr as ProfileArgs);
+    let item_clone = item.clone();
+    let input = parse_macro_input!(item_clone as ItemFn);
+
+    let fn_name = &input.sig.ident;
+
+    if fn_name.to_string().as_str() == "main" {
+        eprintln!("`main `function may only be profiled through #[enable_function] attribute - ignoring #[profiled] attribute");
         return item;
     }
 
-    // Only parse and expand if profiling is enabled
-    let args = parse_macro_input!(attr as ProfileArgs);
-    let input = parse_macro_input!(item as ItemFn);
-
-    let fn_name = &input.sig.ident;
     let inputs = &input.sig.inputs;
     let output = &input.sig.output;
     // let generics = &input.sig.generics;
@@ -289,6 +304,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 //     parts.join("::")
 // }
 
+#[cfg(feature = "profiling")]
 fn generate_sync_wrapper(
     ctx: &FunctionContext,
     profile_type: Option<&ProfileTypeOverride>,
@@ -323,6 +339,7 @@ fn generate_sync_wrapper(
     }
 }
 
+#[cfg(feature = "profiling")]
 fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
     match profile_type {
         Some(ProfileTypeOverride::Global) | None => {
@@ -334,6 +351,7 @@ fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macr
     }
 }
 
+#[cfg(feature = "profiling")]
 fn generate_async_wrapper(
     ctx: &FunctionContext,
     profile_type: Option<&ProfileTypeOverride>,

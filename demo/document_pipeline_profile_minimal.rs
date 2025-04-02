@@ -144,9 +144,8 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     documents
 }
 
-#[enable_profiling]
-#[profiled]
 #[tokio::main]
+#[enable_profiling]
 async fn main() {
     println!(
         "is_profiling_enabled()? {}, get_global_profile_type(): {:?}",
@@ -170,6 +169,9 @@ async fn main() {
     // Print results for verification
     let section = profile!("section::print_docs");
     for doc in &docs {
+        // Small async delay
+        sleep(Duration::from_millis(15)).await;
+
         println!(
             "Doc #{}: Word count: {}, Sentiment: {:.2}",
             doc.id,

@@ -3,7 +3,6 @@ use backtrace::{Backtrace, BacktraceFrame};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use regex::Regex;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     env,
@@ -16,12 +15,16 @@ use std::{
 
 #[cfg(feature = "full_profiling")]
 use crate::{
+    get_base_location,
     task_allocator::{
         activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
         TaskMemoryContext, TASK_PATH_REGISTRY,
     },
     with_allocator, Allocator,
 };
+
+#[cfg(feature = "full_profiling")]
+use regex::Regex;
 
 #[cfg(feature = "full_profiling")]
 use std::thread;
@@ -618,8 +621,6 @@ impl Profile {
         is_async: bool,
         is_method: bool,
     ) -> Option<Self> {
-        use backtrace::BacktraceFrame;
-
         if !is_profiling_enabled() {
             return None;
         }
@@ -648,6 +649,9 @@ impl Profile {
             current_backtrace.resolve();
             let mut already_seen = HashSet::new();
 
+            // let end_point = "__rust_begin_short_backtrace";
+            let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
+
             Backtrace::frames(&current_backtrace)
                 .iter()
                 .flat_map(BacktraceFrame::symbols)
@@ -656,7 +660,7 @@ impl Profile {
                     !(name.contains("Profile::new") && !name.contains("{{closure}}"))
                 })
                 .skip(1)
-                .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
+                .take_while(|frame| !frame.contains(end_point))
                 .filter(|name| filter_scaffolding(name))
                 .map(strip_hex_suffix)
                 .map(|mut name| {
@@ -1069,6 +1073,7 @@ fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
+#[cfg(feature = "full_profiling")]
 pub fn extract_callstack_from_profile_backtrace(
     // maybe_fn_name: Option<&str>,
     // fn_name: &str,
@@ -1077,6 +1082,9 @@ pub fn extract_callstack_from_profile_backtrace(
 ) -> Vec<String> {
     current_backtrace.resolve();
     let mut already_seen = HashSet::new();
+
+    // let end_point = "__rust_begin_short_backtrace";
+    let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
 
     // First, collect all relevant frames
     #[allow(clippy::nonminimal_bool)]
@@ -1087,7 +1095,7 @@ pub fn extract_callstack_from_profile_backtrace(
         .skip_while(|name| !(name.contains("Profile::new") && !name.contains("{{closure}}")))
         // Be careful, this is very sensitive to changes in the function signatures of this module.
         .skip(1)
-        .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
+        .take_while(|name| !name.contains(end_point))
         .filter(|name| filter_scaffolding(name))
         .map(strip_hex_suffix)
         .map(|mut name| {
@@ -1110,6 +1118,7 @@ pub fn extract_callstack_from_profile_backtrace(
     callstack
 }
 
+#[cfg(feature = "full_profiling")]
 pub fn extract_callstack_from_alloc_backtrace(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
@@ -1117,13 +1126,16 @@ pub fn extract_callstack_from_alloc_backtrace(
     current_backtrace.resolve();
     let mut already_seen = HashSet::new();
 
+    // let end_point = "__rust_begin_short_backtrace";
+    let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
+
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
         .skip_while(|frame| !start_pattern.is_match(frame))
-        .take_while(|frame| !frame.contains("__rust_begin_short_backtrace"))
+        .take_while(|frame| !frame.contains(end_point))
         .filter(|name| filter_scaffolding(name))
         .inspect(|frame| {
             debug_log!("frame: {frame}");
@@ -1819,6 +1831,7 @@ pub fn safely_cleanup_profiling_after_test() -> crate::ProfileResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use regex::Regex;
     use serial_test::serial;
     use std::time::Duration;
 
@@ -1946,7 +1959,7 @@ mod tests {
         );
 
         // Check that timestamp format is correct (YYYYmmdd-HHMMSS)
-        let re = regex::Regex::new(r"\d{8}-\d{6}\.folded$").unwrap();
+        let re = Regex::new(r"\d{8}-\d{6}\.folded$").unwrap();
         assert!(
             re.is_match(&paths.time),
             "Time path should contain timestamp in YYYYmmdd-HHMMSS format"
@@ -1954,7 +1967,8 @@ mod tests {
     }
 }
 
-fn strip_hex_suffix(name: String) -> String {
+#[must_use]
+pub fn strip_hex_suffix(name: String) -> String {
     if let Some(hash_pos) = name.rfind("::h") {
         if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
             name[..hash_pos].to_string()

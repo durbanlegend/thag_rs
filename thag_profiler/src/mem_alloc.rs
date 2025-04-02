@@ -71,37 +71,40 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
         let ptr = unsafe { System.alloc(layout) };
 
         if !ptr.is_null() {
-            // Skip small allocations
-            let size = layout.size();
-            if size >= MINIMUM_TRACKED_SIZE {
-                // Simple recursion prevention without using TLS with destructors
-                static mut IN_TRACKING: bool = false;
-                struct Guard;
-                impl Drop for Guard {
-                    fn drop(&mut self) {
-                        unsafe {
-                            IN_TRACKING = false;
+            with_allocator(Allocator::System, || {
+                // Skip small allocations
+                let size = layout.size();
+                if size > MINIMUM_TRACKED_SIZE {
+                    // Simple recursion prevention without using TLS with destructors
+                    static mut IN_TRACKING: bool = false;
+                    struct Guard;
+                    impl Drop for Guard {
+                        fn drop(&mut self) {
+                            unsafe {
+                                IN_TRACKING = false;
+                            }
                         }
                     }
-                }
 
-                // Only proceed if we're not already tracking
-                if unsafe { IN_TRACKING } {
-                    return ptr;
-                }
+                    // Flag if we're already tracking in case it causes an infinite recursion
+                    if unsafe { IN_TRACKING } {
+                        debug_log!(
+                            "*** Caution: already tracking: proceeding for allocation of {size} B"
+                        );
+                        // return ptr;
+                    }
 
-                // Set tracking flag and create guard for cleanup
-                unsafe {
-                    IN_TRACKING = true;
-                }
-                let _guard = Guard;
+                    // Set tracking flag and create guard for cleanup
+                    unsafe {
+                        IN_TRACKING = true;
+                    }
+                    let _guard = Guard;
 
-                // Get backtrace without recursion
-                // debug_log!("Attempting backtrace");
-                // Use a different allocator for backtrace operations
-                let start_ident = Instant::now();
-                let mut task_id = 0;
-                with_allocator(Allocator::System, || {
+                    // Get backtrace without recursion
+                    // debug_log!("Attempting backtrace");
+                    // Use a different allocator for backtrace operations
+                    let start_ident = Instant::now();
+                    let mut task_id = 0;
                     // Now we can safely use backtrace without recursion!
                     let start_pattern: &Regex = regex!("thag_profiler::mem_alloc.+Dispatcher");
 
@@ -159,22 +162,22 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                             );
                         }
                     }
-                });
-                with_allocator(Allocator::System, || {
+                    // with_allocator(Allocator::System, || {
                     debug_log!(
                         "task_id={task_id}, size={size}, time to assign = {}ms",
                         start_ident.elapsed().as_millis()
                     );
-                });
+                    // });
 
-                // Record allocation if task found
-                if task_id == 0 {
-                    return ptr;
-                }
+                    // Record allocation if task found
+                    if task_id == 0 {
+                        // TODO record in suspense file and allocate later
+                        return;
+                    }
 
-                let start_record_alloc = Instant::now();
-                // Use system allocator to avoid recursive allocations
-                with_allocator(Allocator::System, || {
+                    let start_record_alloc = Instant::now();
+                    // Use system allocator to avoid recursive allocations
+                    // with_allocator(Allocator::System, || {
                     let address = ptr as usize;
 
                     debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
@@ -203,8 +206,8 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                         "Time to record allocation: {}ms",
                         start_record_alloc.elapsed().as_millis()
                     );
-                });
-            }
+                }
+            });
         }
 
         ptr

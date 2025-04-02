@@ -22,17 +22,15 @@
 - [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
 - [ ]  Worked example - e.g. syn as dependency.
 - [ ]  Document use of `THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=$TMPDIR cargo run demo/syn_dump_syntax.rs -- demo/hello_main.rs
-- [ ]  Try cloning re_memory and maybe add the latest /identifying entry as its own field.
 - [ ]  Fix registration for generics - maybe try entire cleaned name.
 - [ ]  profile_type arg on enable_profiling now redundant
-- [ ]  Try stripping closures to register and track them under their enclosing function names.
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
-- [ ]  hashbrown: no difference because adopted by Rust already.
-- [ ]  Make MINIMUM_TRACKED_SIZE configurable
+- [ ]  Make MINIMUM_TRACKED_SIZE a configurable option (default 0)? or remove it altogether?
 - [ ]  Debug std::io::Write::write_fmt getting tacked on to front of path sometimes in syn test case bank/syn_dump_syntax_profile_syn.rs.
 - [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Either merge mem_alloc into task_allocator or rename the latter to something like task_tracker.
+- [ ]  Test for #[tokio::main] attribute in #[enable_profiling] macro and flag as an error.
 
 
 # Alternative ways to run thag-instrument without installing:

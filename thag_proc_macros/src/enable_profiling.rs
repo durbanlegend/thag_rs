@@ -3,46 +3,6 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
-// #[derive(Debug)]
-// enum ProfileTypeOverride {
-//     Time,
-//     Memory,
-//     Both,
-// }
-
-// struct ProfileArgs {
-//     profile_type: Option<ProfileTypeOverride>,
-// }
-
-// // Custom parsing for the attribute arguments
-// impl Parse for ProfileArgs {
-//     fn parse(input: ParseStream) -> syn::Result<Self> {
-//         let profile_type = if input.is_empty() {
-//             None
-//         } else {
-//             let ident: Ident = input.parse()?;
-//             if ident != "profile_type" {
-//                 return Err(syn::Error::new(ident.span(), "Expected 'type'"));
-//             }
-//             let _: Token![=] = input.parse()?;
-//             let type_str: LitStr = input.parse()?;
-//             Some(match type_str.value().as_str() {
-//                 "time" => ProfileTypeOverride::Time,
-//                 "memory" => ProfileTypeOverride::Memory,
-//                 "both" => ProfileTypeOverride::Both,
-//                 _ => {
-//                     return Err(syn::Error::new(
-//                         type_str.span(),
-//                         "Invalid profile type. Expected 'time', 'memory', or 'both'",
-//                     ))
-//                 }
-//             })
-//         };
-
-//         Ok(Self { profile_type })
-//     }
-// }
-
 pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // Runtime check for feature flag to handle when the proc macro
     // is compiled with the feature but used without it
@@ -56,13 +16,6 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
 
     // Check if the function is async
     let is_async = input.sig.asyncness.is_some();
-    eprintln!("is_async={is_async}, input={input:#?}");
-
-    // let profile_type = match args.profile_type {
-    //     Some(ProfileTypeOverride::Time) => quote! { ProfileType::Time },
-    //     Some(ProfileTypeOverride::Memory) => quote! { ProfileType::Memory },
-    //     Some(ProfileTypeOverride::Both) | None => quote! { ProfileType::Both },
-    // };
 
     // Get function details
     let fn_name = &input.sig.ident;
@@ -74,36 +27,34 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
     let block = &input.block;
     let attrs = &input.attrs;
 
-    let base_location = quote! {
-        use backtrace::{Backtrace, BacktraceFrame};
-
-        static_lazy! {
-            BaseLocation: &'static str =  Box::leak(Backtrace::frames(&Backtrace::new())
-                .iter()
-                .flat_map(BacktraceFrame::symbols)
-                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                .skip_while(|frame| !(frame.contains(module_path!())))
-                .take(1)
-                .last()
-                .unwrap().into_boxed_str())
-        }
-    };
+    // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
+    let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     let result = if is_async {
         // Handle async function
         quote! {
-
-            #base_location
-
             #(#attrs)*
             #vis async fn #fn_name #generics(#inputs) #output #where_clause {
                 // Initialize profiling
                 thag_profiler::init_profiling();
 
+                // Create a profile that covers everything, including tokio setup
+                // We pass None for the name as we rely on the backtrace to identify the function
+                let profile = ::thag_profiler::Profile::new(
+                    None,
+                    Some(#fn_name_str),
+                    ::thag_profiler::profiling::get_global_profile_type(),
+                    false,
+                    false,
+                );
+
                 // For async functions, we need to use an async block
                 let result = async {
                     #block
                 }.await;
+
+                // Drop the profile explicitly at the end
+                drop(profile);
 
                 // Finalize profiling
                 thag_profiler::finalize_profiling();
@@ -113,17 +64,27 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
     } else {
         // Handle non-async function (existing implementation)
         quote! {
-
-            #base_location
-
             #(#attrs)*
             #vis fn #fn_name #generics(#inputs) #output #where_clause {
                 // Initialize profiling
                 thag_profiler::init_profiling();
 
+                // Create a profile that covers everything, including tokio setup
+                // We pass None for the name as we rely on the backtrace to identify the function
+                let profile = ::thag_profiler::Profile::new(
+                    None,
+                    Some(#fn_name_str),
+                    ::thag_profiler::profiling::get_global_profile_type(),
+                    false,
+                    false,
+                );
+
                 let result = (|| {
                     #block
                 })();
+
+                // Drop the profile explicitly at the end
+                drop(profile);
 
                 // Finalize profiling
                 thag_profiler::finalize_profiling();

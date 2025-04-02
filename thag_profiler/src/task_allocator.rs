@@ -25,7 +25,7 @@ use std::{
     // time::Instant,
 };
 
-pub const MINIMUM_TRACKED_SIZE: usize = 64;
+pub const MINIMUM_TRACKED_SIZE: usize = 0;
 
 /// Registry for tracking memory allocations and deallocations
 #[derive(Debug)]

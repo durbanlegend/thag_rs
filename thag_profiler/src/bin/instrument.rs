@@ -1,7 +1,7 @@
 use ra_ap_syntax::{
-    ast::{self, Fn, HasAttrs, HasName, HasVisibility},
+    ast::{self, HasName, HasVisibility},
     ted::{self, Position},
-    AstNode, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode, SyntaxToken,
+    AstNode, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode,
 };
 use std::env;
 use std::io::Read;
@@ -123,14 +123,32 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             let fn_name = function.name().map(|n| n.text().to_string());
             // eprintln!("fn_name={fn_name:?}");
             let attr_texts = if fn_name.as_deref() == Some("main") {
-                vec![
-                    "#[thag_profiler::enable_profiling]",
-                    "#[thag_profiler::profiled]",
-                ]
+                vec!["#[thag_profiler::enable_profiling]"]
             } else {
                 vec!["#[thag_profiler::profiled]"]
             };
 
+            let fn_token = function.fn_token().expect("Function token is None");
+            let maybe_visibility = function.visibility();
+            let maybe_async_token = function.async_token();
+            let maybe_unsafe_token = function.unsafe_token();
+            let target_token = if let Some(visibility) = maybe_visibility {
+                if let Some(pub_token) = visibility.pub_token() {
+                    pub_token
+                } else if let Some(async_token) = maybe_async_token {
+                    async_token
+                } else if let Some(unsafe_token) = maybe_unsafe_token {
+                    unsafe_token
+                } else {
+                    fn_token
+                }
+            } else if let Some(async_token) = maybe_async_token {
+                async_token
+            } else if let Some(unsafe_token) = maybe_unsafe_token {
+                unsafe_token
+            } else {
+                fn_token
+            };
             // eprintln!(
             //     "target_token: {target_token:?}, function.body().is_some()? {}",
             //     function.body().is_some()
@@ -149,6 +167,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                     filtered_out
                 })
             {
+                // dbg!();
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get
@@ -169,42 +188,16 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                         }
                     })
                     .unwrap_or_default();
-
-                // Get the collection of attributes
-                let attrs = function.attrs().collect::<Vec<_>>();
-
-                // Cache the target token only if we need it
-                let target_token = if attrs.is_empty() {
-                    // Only compute the token if there are no attributes
-                    Some(get_target_token(&function))
-                } else {
-                    None
-                };
-
-                // Create a function that returns the appropriate position
-                let get_insert_pos = || {
-                    if attrs.is_empty() {
-                        // Use the cached token
-                        Position::before(target_token.as_ref().unwrap())
-                    } else {
-                        // Insert before the first attribute
-                        Position::before(attrs[0].syntax())
-                    }
-                };
-
-                for attr_text in attr_texts.iter() {
-                    // Get a fresh position for each insertion
-                    let insert_pos = get_insert_pos();
-
+                // eprintln!("Indentation: {}, value: [{indent}]", indent.len());
+                for attr_text in &attr_texts {
                     // Parse and insert attribute with proper indentation
                     let attr_node = parse_attr(&format!("{indent}{attr_text}"))
                         .expect("Failed to parse attribute");
-                    ted::insert(insert_pos, &attr_node);
+                    ted::insert(Position::before(&target_token), &attr_node);
 
-                    if indent.len() > 0 {
-                        let insert_pos = get_insert_pos();
+                    if &indent.len() > &0 {
                         let ws_token = ast::make::tokens::whitespace(&indent);
-                        ted::insert(insert_pos, ws_token);
+                        ted::insert(Position::before(&target_token), ws_token);
                     }
                 }
             }
@@ -214,31 +207,6 @@ fn instrument_code(edition: Edition, source: &str) -> String {
     // eprintln!("tree={tree:#?}");
     // Return the result without trimming, to preserve original file start
     tree.syntax().to_string()
-}
-
-fn get_target_token(function: &Fn) -> SyntaxToken {
-    let fn_token = function.fn_token().expect("Function token is None");
-    let maybe_visibility = function.visibility();
-    let maybe_async_token = function.async_token();
-    let maybe_unsafe_token = function.unsafe_token();
-    let target_token = if let Some(visibility) = maybe_visibility {
-        if let Some(pub_token) = visibility.pub_token() {
-            pub_token
-        } else if let Some(async_token) = maybe_async_token {
-            async_token
-        } else if let Some(unsafe_token) = maybe_unsafe_token {
-            unsafe_token
-        } else {
-            fn_token
-        }
-    } else if let Some(async_token) = maybe_async_token {
-        async_token
-    } else if let Some(unsafe_token) = maybe_unsafe_token {
-        unsafe_token
-    } else {
-        fn_token
-    };
-    target_token
 }
 
 fn read_stdin() -> std::io::Result<String> {

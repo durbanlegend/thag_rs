@@ -48,7 +48,13 @@ mod task_allocator;
 
 use std::fmt::Display;
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
+use backtrace::{Backtrace, BacktraceFrame};
+
+#[cfg(feature = "time_profiling")]
+use crate::profiling::enable_profiling;
+
+#[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
 // Re-exports
@@ -72,28 +78,28 @@ pub use {
     task_allocator::{find_matching_profile, get_last_active_task, trim_backtrace, ALLOC_REGISTRY},
 };
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 pub static PROFILER: OnceLock<Profiler> = OnceLock::new();
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 #[derive(Debug)]
 pub struct Profiler {
     base_location: &'static str,
 }
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 impl Profiler {
     const fn new(base_location: &'static str) -> Self {
         Self { base_location }
     }
 }
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn get_profiler() -> Option<&'static Profiler> {
     PROFILER.get()
 }
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn get_base_location() -> Option<&'static str> {
     PROFILER.get().map(|profiler| profiler.base_location)
 }
@@ -267,66 +273,77 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// # Panics
 ///
 /// This function panics if profiling cannot be enabled.
-#[cfg(feature = "time_profiling")]
+#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 #[fn_name]
 pub fn init_profiling() {
-    use crate::profiling::{enable_profiling, ProfileType};
-
     // Determine profile type based on features
-    #[cfg(feature = "full_profiling")]
-    let profile_type = ProfileType::Both;
-
-    #[cfg(not(feature = "full_profiling"))]
     let profile_type = ProfileType::Time;
 
     // Enable profiling
-    #[cfg(not(feature = "full_profiling"))]
-    {
-        if profile_type == ProfileType::Memory {
-            panic!("Memory profiling requested but `full_profiling` feature is not enabled");
-        }
-        enable_profiling(true, profile_type).expect("Failed to enable profiling");
-    }
+    assert!(
+        !(profile_type == ProfileType::Memory),
+        "Memory profiling requested but `full_profiling` feature is not enabled"
+    );
+    set_base_location(fn_name);
+    enable_profiling(true, profile_type).expect("Failed to enable profiling");
+}
 
-    #[cfg(feature = "full_profiling")]
+/// Initialize the profiling system.
+/// This should be called at the start of your program to set up profiling.
+///
+/// # Panics
+///
+/// This function panics if profiling cannot be enabled.
+#[cfg(feature = "full_profiling")]
+#[fn_name]
+pub fn init_profiling() {
     with_allocator(Allocator::System, || {
-        use backtrace::{Backtrace, BacktraceFrame};
-        eprintln!("module_path!()={}", module_path!());
-        // TODO replace by function_name attribute macro
-        let this_function = format!("{}::{fn_name}", module_path!());
-        eprintln!("this_function={this_function}");
-        let base_location = Box::leak(
-            Backtrace::frames(&Backtrace::new())
-                .iter()
-                .flat_map(BacktraceFrame::symbols)
-                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                .skip_while(|frame| {
-                    !(frame.contains(&this_function)
-                        && strip_hex_suffix(frame.to_string()) == this_function)
-                })
-                .take(1)
-                .last()
-                .unwrap()
-                .into_boxed_str(),
-        );
-        PROFILER.set(Profiler::new(base_location)).unwrap();
-        eprintln!("get_profiler()={:?}", get_profiler());
-        eprintln!("get_base_location()={:?}", get_base_location());
+        let profile_type = ProfileType::Both;
 
-        // let _ = Backtrace::frames(&Backtrace::new())
-        //     .iter()
-        //     .flat_map(BacktraceFrame::symbols)
-        //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        //     .skip_while(|frame| {
-        //         !(frame.contains(&this_function)
-        //             && strip_hex_suffix(frame.to_string()) == this_function)
-        //     })
-        //     .for_each(|frame| eprintln!("frame={}", frame));
-        eprintln!("base_location={base_location}");
-
+        set_base_location(fn_name);
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
         task_allocator::initialize_memory_profiling();
     });
+}
+
+// Provide no-op versions when profiling is disabled
+#[cfg(not(feature = "time_profiling"))]
+pub const fn init_profiling() {}
+
+#[cfg(feature = "time_profiling")]
+fn set_base_location(fn_name: &str) {
+    eprintln!("module_path!()={}", module_path!());
+    // TODO replace by function_name attribute macro
+    let this_function = format!("{}::{fn_name}", module_path!());
+    eprintln!("this_function={this_function}");
+    let base_location = Box::leak(
+        Backtrace::frames(&Backtrace::new())
+            .iter()
+            .flat_map(BacktraceFrame::symbols)
+            .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+            .skip_while(|frame| {
+                !(frame.contains(&this_function)
+                    && strip_hex_suffix(frame.to_string()) == this_function)
+            })
+            .take(1)
+            .last()
+            .unwrap()
+            .into_boxed_str(),
+    );
+    PROFILER.set(Profiler::new(base_location)).unwrap();
+    // eprintln!("get_profiler()={:?}", get_profiler());
+    // eprintln!("get_base_location()={:?}", get_base_location());
+
+    // let _ = Backtrace::frames(&Backtrace::new())
+    //     .iter()
+    //     .flat_map(BacktraceFrame::symbols)
+    //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+    //     .skip_while(|frame| {
+    //         !(frame.contains(&this_function)
+    //             && strip_hex_suffix(frame.to_string()) == this_function)
+    //     })
+    //     .for_each(|frame| eprintln!("frame={}", frame));
+    // eprintln!("base_location={base_location}");
 }
 
 /// Finalize profiling and write out data files.
@@ -362,9 +379,5 @@ pub fn finalize_profiling() {
     std::thread::sleep(std::time::Duration::from_millis(10));
 }
 
-// Provide no-op versions when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
-pub fn init_profiling() {}
-
-#[cfg(not(feature = "time_profiling"))]
-pub fn finalize_profiling() {}
+pub const fn finalize_profiling() {}

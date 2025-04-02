@@ -31,6 +31,7 @@
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Either merge mem_alloc into task_allocator or rename the latter to something like task_tracker.
 - [ ]  Test for #[tokio::main] attribute in #[enable_profiling] macro and flag as an error.
+- [ ]  Translate fn_name to fn_desc_name on output writes. Maybe not for Windows async?
 
 
 # Alternative ways to run thag-instrument without installing:

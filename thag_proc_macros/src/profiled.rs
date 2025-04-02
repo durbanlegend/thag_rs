@@ -1,11 +1,13 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 
-use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
     LitStr,
 };
+
+#[cfg(feature = "profiling")]
+use quote::quote;
 
 #[cfg(feature = "profiling")]
 use syn::{

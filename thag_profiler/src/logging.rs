@@ -144,7 +144,7 @@ pub fn flush_debug_log() {
 
             if let Err(e) = flush_result {
                 // Use eprintln for direct console output without going through our logger
-                eprintln!("Error flushing debug log: {}", e);
+                eprintln!("Error flushing debug log: {e}");
             }
         }
     }
@@ -182,6 +182,7 @@ macro_rules! debug_log {
 macro_rules! debug_log {
     ($($arg:tt)*) => {
         if let Some(logger) = $crate::DebugLogger::get() {
+            static mut LOG_COUNT: usize = 0;
             use std::io::Write;
             let _write_result = {
                 let mut locked_writer = logger.lock();
@@ -189,7 +190,6 @@ macro_rules! debug_log {
             };
 
             // Auto-flush periodically
-            static mut LOG_COUNT: usize = 0;
             unsafe {
                 LOG_COUNT += 1;
                 if LOG_COUNT % 1000 == 0 {

@@ -1,5 +1,4 @@
 use crate::{debug_log, lazy_static_var, static_lazy, ProfileError};
-use backtrace::{Backtrace, BacktraceFrame};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -15,7 +14,6 @@ use std::{
 
 #[cfg(feature = "full_profiling")]
 use crate::{
-    get_base_location,
     task_allocator::{
         activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
         TaskMemoryContext, TASK_PATH_REGISTRY,
@@ -30,7 +28,10 @@ use regex::Regex;
 use std::thread;
 
 #[cfg(feature = "time_profiling")]
-use crate::{flush_debug_log, ProfileResult};
+use backtrace::{Backtrace, BacktraceFrame};
+
+#[cfg(feature = "time_profiling")]
+use crate::{flush_debug_log, get_base_location, ProfileResult};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -613,7 +614,7 @@ impl Profile {
     ///
     /// Panics if stack validation fails.
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
-    #[cfg(not(feature = "full_profiling"))]
+    #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
     pub fn new(
         name: Option<&str>,
         _maybe_fn_name: Option<&str>,
@@ -656,9 +657,7 @@ impl Profile {
                 .iter()
                 .flat_map(BacktraceFrame::symbols)
                 .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                .skip_while(|name| {
-                    !(name.contains("Profile::new") && !name.contains("{{closure}}"))
-                })
+                .skip_while(|name| !name.contains("Profile::new") || name.contains("{{closure}}"))
                 .skip(1)
                 .take_while(|frame| !frame.contains(end_point))
                 .filter(|name| filter_scaffolding(name))
@@ -696,15 +695,15 @@ impl Profile {
         // );
 
         // Create a basic profile structure that works for all configurations
-        if let ProfileType::Memory = profile_type {
+        if profile_type == ProfileType::Memory {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
         Some(Self {
             profile_type,
             start: Some(Instant::now()),
-            path: path.clone(),
-            custom_name: custom_name.clone(),
+            path,
+            custom_name,
             registered_name: fn_name.to_string(),
             #[cfg(feature = "full_profiling")]
             memory_task: None,
@@ -1020,18 +1019,18 @@ impl Profile {
 
     /// Get the memory usage for this profile's task
     #[must_use]
-    pub fn memory_usage(&self) -> Option<usize> {
-        #[cfg(feature = "full_profiling")]
-        {
-            self.memory_task
-                .as_ref()
-                .and_then(|task| get_task_memory_usage(task.id()))
-        }
+    #[cfg(not(feature = "full_profiling"))]
+    pub const fn memory_usage(&self) -> Option<usize> {
+        None
+    }
 
-        #[cfg(not(feature = "full_profiling"))]
-        {
-            None
-        }
+    /// Get the memory usage for this profile's task
+    #[must_use]
+    #[cfg(feature = "full_profiling")]
+    pub fn memory_usage(&self) -> Option<usize> {
+        self.memory_task
+            .as_ref()
+            .and_then(|task| get_task_memory_usage(task.id()))
     }
 }
 
@@ -1069,6 +1068,7 @@ pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
 //     extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
 // }
 
+#[cfg(feature = "time_profiling")]
 fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
@@ -1087,12 +1087,11 @@ pub fn extract_callstack_from_profile_backtrace(
     let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
 
     // First, collect all relevant frames
-    #[allow(clippy::nonminimal_bool)]
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|name| !(name.contains("Profile::new") && !name.contains("{{closure}}")))
+        .skip_while(|name| !name.contains("Profile::new") || name.contains("{{closure}}"))
         // Be careful, this is very sensitive to changes in the function signatures of this module.
         .skip(1)
         .take_while(|name| !name.contains(end_point))
@@ -1167,12 +1166,12 @@ static GLOBAL_CALL_STACK_ENTRIES: Lazy<Mutex<BTreeSet<String>>> =
 /// Prints all entries in the global `BTreeSet`.
 /// Entries are printed in sorted order (alphabetically).
 pub fn print_all_call_stack_entries() {
-    let parts = { GLOBAL_CALL_STACK_ENTRIES.lock() };
+    let parts = { GLOBAL_CALL_STACK_ENTRIES.lock().clone() };
     debug_log!("All entries in the global set (sorted):");
     if parts.is_empty() {
         debug_log!("  (empty set)");
     } else {
-        for part in parts.iter() {
+        for part in &parts {
             debug_log!("  {part}");
         }
     }
@@ -1430,6 +1429,7 @@ fn extract_fn_only(qualified_name: &str) -> Option<String> {
     )
 }
 
+#[cfg(feature = "time_profiling")]
 const SCAFFOLDING_PATTERNS: &[&str] = &[
     // "::main::",
     "::poll::",
@@ -1452,7 +1452,8 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "std::sync::poison::",
     "std::sys::backtrace::__rust_begin_short_backtrace",
     "std::sys::sync::",
-    "std::thread::local::LocalKey<T>::try_with",
+    "std::sys::thread_local",
+    "std::thread",
     "task_allocator::MultiAllocator::with",
     // "Profile::new",
 ];

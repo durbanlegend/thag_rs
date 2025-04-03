@@ -22,7 +22,6 @@
 - [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
 - [ ]  Worked example - e.g. syn as dependency.
 - [ ]  Document use of `THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=$TMPDIR cargo run demo/syn_dump_syntax.rs -- demo/hello_main.rs
-- [ ]  Fix registration for generics - maybe try entire cleaned name.
 - [ ]  profile_type arg on enable_profiling now redundant
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
 - [ ]  Make MINIMUM_TRACKED_SIZE a configurable option (default 0)? or remove it altogether?
@@ -30,9 +29,9 @@
 - [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Either merge mem_alloc into task_allocator or rename the latter to something like task_tracker.
-- [ ]  Test for #[tokio::main] attribute in #[enable_profiling] macro and flag as an error.
-- [ ]  Translate fn_name to fn_desc_name on output writes. Maybe not for Windows async?
-
+- [ ]  Trace option using inspect in backtrace in task_allocator.
+- [ ]  New demo scripts: string_to_static_str.rs and add_one_thing_to_iter.rs
+- [ ]  Change to register under full path or interned full path rather than just function name, and perhaps store async and ?method rather than desc_fn_name.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

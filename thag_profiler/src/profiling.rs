@@ -599,14 +599,14 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new("time_only_function", ProfileType::Time);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false);
     ///     // Code to profile...
     /// }
     ///
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new("memory_tracking_function", ProfileType::Memory);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```
@@ -734,14 +734,14 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new("time_only_function", ProfileType::Time);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false);
     ///     // Code to profile...
     /// }
     ///
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new("memory_tracking_function", ProfileType::Memory);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```
@@ -1514,19 +1514,17 @@ pub enum MemoryError {
 /// # Examples
 ///
 /// ```
+/// use thag_profiler::profile;
+/// 
 /// // Basic usage (profiles time, sync function)
 /// let section = profile!("expensive_operation");
 /// // ... code to profile
 /// section.end();
 ///
-/// // With explicit type (profile memory)
-/// let section = profile!("allocation_heavy", memory);
-///
-/// // Method profiling
-/// let section = profile!(method);
-///
-/// // Async method with explicit type
-/// let section = profile!(method, both, async);
+/// // Async function profiling
+/// let section = profile!("async_operation", async);
+/// // ... async code to profile
+/// section.end();
 /// ```
 #[macro_export]
 #[cfg(feature = "time_profiling")]

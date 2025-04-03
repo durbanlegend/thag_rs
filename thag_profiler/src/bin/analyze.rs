@@ -1066,9 +1066,9 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
 
         if !processed.memory_events.is_empty() {
             // First validate the events
-            if let Err(msg) = validate_memory_events(&processed.memory_events) {
-                println!("Warning: Memory event validation failed: {msg}");
-            }
+            // if let Err(msg) = validate_memory_events(&processed.memory_events) {
+            //     println!("Warning: Memory event validation failed: {msg}");
+            // }
 
             let mut memory_data = MemoryData::default();
             let mut current_memory = 0u64;

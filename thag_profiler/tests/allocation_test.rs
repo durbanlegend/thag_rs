@@ -1,4 +1,4 @@
-use thag_profiler::task_allocator::create_memory_task;
+use thag_profiler::create_memory_task;
 
 #[test]
 fn test_basic_allocation() {

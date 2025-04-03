@@ -20,18 +20,18 @@
 //! ## Basic Usage
 //!
 //! ```rust
-//! use thag_profiler::Profile;
+//! use thag_profiler::{Profile, ProfileType};
 //!
 //! // Time profiling
 //! {
-//!     let _p = Profile::new("my_function");
+//!     let _p = Profile::new(Some("my_function"), None, ProfileType::Time, false, false);
 //!     // Code to profile...
 //! }
 //!
 //! // Memory profiling (requires `full_profiling` feature)
 //! #[cfg(feature = "full_profiling")]
 //! {
-//!     let _p = Profile::new_memory("memory_intensive_function");
+//!     let _p = Profile::new(Some("memory_intensive_function"), None, ProfileType::Memory, false, false);
 //!     // Code to profile memory usage...
 //! }
 //! ```
@@ -39,9 +39,6 @@ mod errors;
 mod logging;
 
 pub mod profiling;
-
-#[cfg(feature = "full_profiling")]
-mod mem_alloc;
 
 #[cfg(feature = "full_profiling")]
 mod task_allocator;
@@ -70,12 +67,15 @@ pub use {
 };
 
 #[cfg(feature = "full_profiling")]
-pub use mem_alloc::{with_allocator, Allocator, Dispatcher, TaskAwareAllocator};
+pub use task_allocator::{with_allocator, Allocator, Dispatcher, TaskAwareAllocator};
 
 #[cfg(feature = "full_profiling")]
 pub use {
     profiling::extract_path,
-    task_allocator::{find_matching_profile, get_last_active_task, trim_backtrace, ALLOC_REGISTRY},
+    task_allocator::{
+        find_matching_profile, get_last_active_task, trim_backtrace, 
+        ALLOC_REGISTRY, TaskMemoryContext, TaskGuard, create_memory_task,
+    },
 };
 
 #[cfg(feature = "time_profiling")]

@@ -15,7 +15,7 @@ use syn::{
     WhereClause,
 };
 
-/// Configuration for profile attribute macro
+/// Configuration for `profiled` attribute macro
 #[derive(Default)]
 struct ProfileArgs {
     /// The implementing type (e.g., "`MyStruct`") - kept for backwards compatibility
@@ -25,6 +25,45 @@ struct ProfileArgs {
     // trait_name: Option<String>,
     /// Explicit profile type override
     profile_type: Option<ProfileTypeOverride>,
+}
+
+impl Parse for ProfileArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut args = Self::default();
+
+        while !input.is_empty() {
+            let ident: syn::Ident = input.parse()?;
+            let _: syn::Token![=] = input.parse()?;
+
+            match ident.to_string().as_str() {
+                "imp" => {
+                    let lit: LitStr = input.parse()?;
+                    args.imp = Some(lit.value());
+                }
+                // "trait_name" => {
+                //     let lit: LitStr = input.parse()?;
+                //     args.trait_name = Some(lit.value());
+                // }
+                "profile_type" => {
+                    let lit: LitStr = input.parse()?;
+                    args.profile_type = Some(match lit.value().as_str() {
+                        "global" => ProfileTypeOverride::Global,
+                        "time" => ProfileTypeOverride::Time,
+                        "memory" => ProfileTypeOverride::Memory,
+                        "both" => ProfileTypeOverride::Both,
+                        _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
+                    });
+                }
+                _ => return Err(syn::Error::new(ident.span(), "unknown attribute")),
+            }
+
+            if !input.is_empty() {
+                let _: syn::Token![,] = input.parse()?;
+            }
+        }
+
+        Ok(args)
+    }
 }
 
 /// Explicit profile type configuration
@@ -66,45 +105,6 @@ struct FunctionContext<'a> {
     // is_async: bool,
     /// Whether the function is a method
     is_method: bool,
-}
-
-impl Parse for ProfileArgs {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut args = Self::default();
-
-        while !input.is_empty() {
-            let ident: syn::Ident = input.parse()?;
-            let _: syn::Token![=] = input.parse()?;
-
-            match ident.to_string().as_str() {
-                "imp" => {
-                    let lit: LitStr = input.parse()?;
-                    args.imp = Some(lit.value());
-                }
-                // "trait_name" => {
-                //     let lit: LitStr = input.parse()?;
-                //     args.trait_name = Some(lit.value());
-                // }
-                "profile_type" => {
-                    let lit: LitStr = input.parse()?;
-                    args.profile_type = Some(match lit.value().as_str() {
-                        "global" => ProfileTypeOverride::Global,
-                        "time" => ProfileTypeOverride::Time,
-                        "memory" => ProfileTypeOverride::Memory,
-                        "both" => ProfileTypeOverride::Both,
-                        _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
-                    });
-                }
-                _ => return Err(syn::Error::new(ident.span(), "unknown attribute")),
-            }
-
-            if !input.is_empty() {
-                let _: syn::Token![,] = input.parse()?;
-            }
-        }
-
-        Ok(args)
-    }
 }
 
 /// Determines if a function is a method by checking for:

@@ -146,8 +146,8 @@ fn analyze_single_time_profile(dir_path: &PathBuf) -> ProfileResult<()> {
                 let options = vec![
                     "Show Aggregated Execution Timeline (Flamegraph)",
                     "...Filter Aggregated Functions (Recursive or Exact Match)",
-                    "Show Detailed Execution Timeline (Flamechart)",
-                    "...Filter Detailed Functions (Recursive or Exact Match)",
+                    "Show Individual Sequential Execution Timeline (Flamechart)",
+                    "...Filter Individual Sequential Functions (Recursive or Exact Match)",
                     "Show Statistics",
                     "Back to Profile Selection",
                 ];
@@ -165,10 +165,10 @@ fn analyze_single_time_profile(dir_path: &PathBuf) -> ProfileResult<()> {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamegraph(&filtered, false)?;
                     }
-                    "Show Detailed Execution Timeline (Flamechart)" => {
+                    "Show Individual Sequential Execution Timeline (Flamechart)" => {
                         generate_time_flamegraph(&processed, true)?
                     }
-                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
+                    "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamegraph(&filtered, true)?;
                     }
@@ -215,8 +215,8 @@ fn analyze_memory_profiles(dir_path: &PathBuf) -> ProfileResult<()> {
                 let options = vec![
                     "Show Aggregated Memory Profile (Flamegraph)",
                     "...Filter Aggregated Functions (Recursive or Exact Match)",
-                    "Show Detailed Memory Profile (Flamechart)",
-                    "...Filter Detailed Functions (Recursive or Exact Match)",
+                    "Show Individual Sequential Memory Profile (Flamechart)",
+                    "...Filter Individual Sequential Functions (Recursive or Exact Match)",
                     "Show Memory Statistics",
                     "Show Allocation Size Distribution",
                     "Back to Profile Selection",
@@ -242,11 +242,11 @@ fn analyze_memory_profiles(dir_path: &PathBuf) -> ProfileResult<()> {
                             },
                         );
                     }
-                    "Show Detailed Memory Profile (Flamechart)" => {
+                    "Show Individual Sequential Memory Profile (Flamechart)" => {
                         generate_memory_flamegraph(&processed, true)
                             .map_or_else(|e| println!("{e}"), |()| {})
                     }
-                    "...Filter Detailed Functions (Recursive or Exact Match)" => {
+                    "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
                         filter_memory_patterns(&processed).map_or_else(
                             |e| println!("{e}"),
                             |filtered| {
@@ -427,12 +427,13 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
 }
 
 fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<ProcessedProfile> {
-    // Get unique top-level functions from the stacks
+    // Get unique top-level functions from the stacks, not counting `main`.
     let functions: HashSet<_> = processed
         .stacks
         .iter()
         .filter_map(|line| {
             line.split(';')
+                .filter(|path| !path.ends_with("::main"))
                 .next()
                 .map(|s| s.split_whitespace().next().unwrap_or(""))
                 .filter(|s| !s.is_empty())
@@ -1394,7 +1395,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
 
     // Now add function-based filtering similar to filter_functions
 
-    // Get unique top-level functions from the stacks
+    // Get unique top-level functions from the stacks, not counting `main`.
     let functions: HashSet<String> = pattern_filtered
         .stacks
         .iter()
@@ -1406,6 +1407,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 // Get the root function from the stack
                 stack_str
                     .split(';')
+                    .filter(|path| !path.ends_with("::main"))
                     .next()
                     .map(|s| s.to_string())
                     .filter(|s| !s.is_empty())

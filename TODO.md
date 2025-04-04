@@ -19,24 +19,26 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
-- [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event.
-- [ ]  Worked example - e.g. syn as dependency.
+- [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event. Not necessary.
+- [ ]  Worked example - e.g. syn as dependency - no need to do this with dependencies now that we have detailed profiling.
 - [ ]  Document use of `THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=$TMPDIR cargo run demo/syn_dump_syntax.rs -- demo/hello_main.rs
 - [ ]  profile_type arg on enable_profiling now redundant
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
 - [ ]  Make MINIMUM_TRACKED_SIZE a configurable option (default 0)? or remove it altogether?
-- [ ]  Debug std::io::Write::write_fmt getting tacked on to front of path sometimes in syn test case bank/syn_dump_syntax_profile_syn.rs.
 - [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
 look for an alternative or cater for and put up with the overhead of not having this baseline.
-- [ ]  Either merge mem_alloc into task_allocator or rename the latter to something like task_tracker.
-- [ ]  Trace option using inspect in backtrace in task_allocator.
-- [ ]  New demo scripts: string_to_static_str.rs and add_one_thing_to_iter.rs
 - [ ]  Change to register under full path or interned full path rather than just function name, and perhaps store async and ?method rather than desc_fn_name.
-- [ ]  Test and document: should be able to do a detailed profile of everything
+- [ ]  Test and document: should be able to do a detailed profile of everything with just one #[enable_profiling] on fn main.
+- [ ]  Debug Esc at all places in thag-analyze.
+- [ ]  Control detailed logging with env var
+- [ ]  Rationalise env vars
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs
 cargo run --features=instrument-tool --bin thag-instrument --manifest-path thag_profiler/Cargo.toml -- 2021 < bank/main_with_attrs.rs
+
+# Alternative ways to run thag-analyze without installing:
+cargo run -p thag_profiler --features=analyze-tool --bin thag-analyze -- .
 
 cd thag_profiler
 cargo test --test profiling --features full_profiling
@@ -72,24 +74,38 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
   This approach works for simple use cases but might need atomic operations or a mutex for complete thread safety in a high-concurrency environment. For your specific use case, it's likely
   sufficient since allocator code runs with minimal thread contention, and recursion detection is primarily about preventing infinite recursion within the same thread.
 
+Tools classification suggestions from Claude
 
-> I know this may be crazy and/or slow, but I've managed to display a backtrace in the alloc method, even though I expected it would probably fail trying to allocate memory. If this is reliable we
-  could build the calling call stack from this backtrace just as we do in Profile::new. We could also maintain in the registry all active Profiles by task_id, with their call stacks. So in theory, for
-  every memory allocation over a certain "worthwhile" size, we could narrow the caller down to the active Profiles with matching call stacks, and allocate it e.g. at random or to the newest.
-  Apart from that idea, your latest suggestion sounds worth trying.
+### Format & Conversion
+- `format_dethagomize.rs` (from dethagomizer.rs) - Converts escaped text to readable format
+- `convert_rust_script_to_thag.rs` (from thag_from_rust_script.rs)
+- `convert_thag_to_rust_script.rs` (from thag_to_rust_script.rs)
+- `convert_theme.rs` (from theme_converter.rs)
 
+### Config & Setup
+- `config_build.rs` (from thag_config_builder.rs)
+- `setup_download_demos.rs` (from download_demo_dir.rs)
 
-  Benefits
+### Profiling
+- `profile_instrument.rs` (from profile_instr.rs)
+- `profile_remove.rs` (stays the same)
+- `profile_analyze.rs` (from thag_profile.rs)
 
-  Despite the performance considerations, this approach has significant advantages:
+### Documentation & Generation
+- `gen_readme.rs` (stays the same)
+- `gen_error.rs` (from error_builder.rs)
+- `filter_demos.rs` (stays the same)
 
-  1. Works correctly even in complex async environments
-  2. Doesn't rely on thread identity or task-local storage
-  3. Can attribute allocations to the most semantically appropriate profile
-  4. Is fundamentally resilient to task switching and thread migration
+### Frontend & UI
+- `ui_cargo.rs` (from thag_cargo.rs)
+- `ui_clippy.rs` (from thag_clippy.rs)
+- `ui_url.rs` (from thag_url.rs)
+- `ui_theme.rs` (from theme_helper.rs)
 
-  I think this could be a very powerful approach, especially if performance concerns are addressed. It's certainly worth exploring further!
-
+### Debugging & Analysis
+- `debug_expr_to_ast.rs` (from input_expr_to_ast.rs)
+- `debug_file_to_ast.rs` (from input_file_to_ast.rs)
+- `analyze_terminal.rs` (from term_detection_pack.rs)
 
 
 ## Medium Priority

@@ -145,7 +145,7 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 }
 
 #[tokio::main]
-#[enable_profiling]
+#[enable_profiling(no)]
 async fn main() {
     println!(
         "is_profiling_enabled()? {}, get_global_profile_type(): {:?}",

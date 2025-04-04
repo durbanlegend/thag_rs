@@ -392,7 +392,7 @@ fn initialize_file(
 ///
 /// # Panics
 ///
-/// Panics if `enable_profiling` fails.
+// /// Panics if `enable_profiling` fails.
 // Modify get_global_profile_type to use the config:
 pub fn get_global_profile_type() -> ProfileType {
     // debug_log!("profile_type={profile_type:?}");
@@ -406,14 +406,14 @@ pub fn get_global_profile_type() -> ProfileType {
                 ProfileConfig::get().profile_type
             }
         };
-        if !is_profiling_enabled() {
-            enable_profiling(true, profile_type).expect("Failed to enable profiling");
-            if profile_type == ProfileType::Memory {
-                debug_log!("Memory profiling enabled");
-            } else if profile_type == ProfileType::Both {
-                debug_log!("Both time and memory profiling enabled");
-            }
-        }
+        // if !is_profiling_enabled() {
+        //     enable_profiling(true, profile_type).expect("Failed to enable profiling");
+        //     if profile_type == ProfileType::Memory {
+        //         debug_log!("Memory profiling enabled");
+        //     } else if profile_type == ProfileType::Both {
+        //         debug_log!("Both time and memory profiling enabled");
+        //     }
+        // }
         profile_type
     })
 }
@@ -448,6 +448,10 @@ fn set_profile_type(profile_type: ProfileType) {
 /// - Mutex operations fail
 #[cfg(feature = "time_profiling")]
 pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResult<()> {
+    // eprintln!(
+    //     "In enable_profiling, arg enabled={enabled} backtrace=\n{:#?}",
+    //     backtrace::Backtrace::new()
+    // );
     // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
     let _guard = PROFILING_MUTEX.lock();
 
@@ -574,7 +578,7 @@ pub fn is_profiling_enabled() -> bool {
 
     // In normal operation, use both feature flag and runtime state
     #[cfg(not(test))]
-    let enabled = PROFILING_FEATURE || PROFILING_STATE.load(Ordering::SeqCst);
+    let enabled = PROFILING_FEATURE && PROFILING_STATE.load(Ordering::SeqCst);
 
     enabled
 }

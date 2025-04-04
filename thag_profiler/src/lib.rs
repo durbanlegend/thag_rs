@@ -338,7 +338,7 @@ pub fn init_profiling(root_module: &'static str) {
 
 // Provide no-op versions when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
-pub const fn init_profiling(root_module: &str) {}
+pub const fn init_profiling(_root_module: &str) {}
 
 #[cfg(feature = "time_profiling")]
 fn set_base_location(fn_name: &str) {

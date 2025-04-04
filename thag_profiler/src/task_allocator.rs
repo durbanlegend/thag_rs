@@ -10,7 +10,7 @@ use crate::{
     debug_log, extract_path, flush_debug_log,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
-        get_memory_detail_path, get_memory_path, MemoryDetailFile,
+        get_memory_detail_path, get_memory_path, is_profiling_state_enabled, MemoryDetailFile,
     },
     regex, Profile,
 };
@@ -105,7 +105,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = unsafe { System.alloc(layout) };
 
-        if !ptr.is_null() {
+        if !ptr.is_null() && is_profiling_state_enabled() {
             with_allocator(Allocator::System, || {
                 // Skip small allocations
                 let size = layout.size();

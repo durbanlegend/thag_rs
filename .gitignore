@@ -76,3 +76,4 @@ flames/firestorm/merged.svg
 flames/firestorm/owntime.svg
 flames/firestorm/timeaxis.svg
 thag_profiler/src/profiling_uninstr.rs
+demo/string_to_static_str1.rs

@@ -156,16 +156,20 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 ### Script: any.rs
 
 **Description:**  Demo determining at run-time whether an expression returns a unit value
- so that it can be handled appropriately. When using a code template this is
+ so that it can be handled appropriately.
+
+ `thag` needs to know whether an expression returns a unit type or a value
+ that we should display. When using a code template this using `Any` is
  short and sweet, but it has to be included in the template and thus the
- generated code, whereas using an AST is quite a mission but works with
- any arbitrary snippet and doesn't pollute the generated source code.
+ generated code, whereas the alternative of using an AST is quite a mission
+ but works with any arbitrary snippet and doesn't pollute the generated
+ source code, so `thag` went with the latter.
 
 **Purpose:** Demo Rust's answer to dynamic typing.
 
 **Type:** Snippet
 
-**Categories:** type_identification, technique
+**Categories:** exploration, type_identification, technique
 
 **Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
 
@@ -173,6 +177,27 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
+```
+
+---
+
+### Script: append_option_to_iter.rs
+
+**Description:**  Demo: Optionally append one item to an iterator.
+ The trick is that `Option` implements the `IntoIterator` trait.
+
+**Purpose:** demo a handy trick.
+
+**Type:** Program
+
+**Categories:** learning, technique
+
+**Link:** [append_option_to_iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/append_option_to_iter.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/append_option_to_iter.rs
 ```
 
 ---
@@ -5057,6 +5082,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_ins
 
 ---
 
+### Script: string_to_static_str.rs
+
+**Description:**  Demo: Convert a `String` to a `&'static str` at runtime, then do
+ the same for a whole vector of `String`s.
+
+ This should only be used when it's appropriate for the string
+ reference to remain allocated for the life of the program.
+
+**Purpose:** demo a handy trick.
+
+**Type:** Program
+
+**Categories:** learning, technique
+
+**Link:** [string_to_static_str.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/string_to_static_str.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/string_to_static_str.rs
+```
+
+---
+
 ### Script: structopt_cli_gpt.rs
 
 **Description:**  Basic demo of GPT-generated CLI using the `structopt` crate. This
@@ -5177,6 +5226,43 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs -- demo/hello_main.rs
+```
+
+---
+
+### Script: syn_dump_syntax_profile_syn.rs
+
+**Description:**  A version of the published example from the `syn` crate used to demonstrate profiling a dependency with `thag_profiler`.
+ Description "Parse a Rust source file into a `syn::File` and print out a debug representation of the syntax tree."
+
+ Pass it the absolute or relative path of any Rust PROGRAM source file, e.g. its own
+ path that you passed to the script runner to invoke it.
+
+ NB: Pick a script that is a valid program (containing `fn main()` as opposed to a snippet).
+
+ E.g.:
+
+ ```
+ THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=. cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
+ ```
+
+ You can also prefix this with `THAG_PROFILER_DEBUG=1` to enable profiler logging to `std::env::temp_dir()` or `THAG_PROFILER_DEBUG=2`
+ to do likewise but additionally display the path to the log file location via `eprintln!`.
+
+**Purpose:** demonstrate profiling a dependency with `thag_profiler`.
+
+**Crates:** `colored`, `syn`
+
+**Type:** Program
+
+**Categories:** AST, crates, technique
+
+**Link:** [syn_dump_syntax_profile_syn.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax_profile_syn.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax_profile_syn.rs -- demo/hello_main.rs
 ```
 
 ---

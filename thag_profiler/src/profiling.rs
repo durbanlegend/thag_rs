@@ -398,23 +398,14 @@ pub fn get_global_profile_type() -> ProfileType {
     // debug_log!("profile_type={profile_type:?}");
 
     lazy_static_var!(ProfileType, deref, {
-        let profile_type = match PROFILE_TYPE.load(Ordering::SeqCst) {
+        match PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
             _ => {
                 // Then check environment variables
                 ProfileConfig::get().profile_type
             }
-        };
-        // if !is_profiling_enabled() {
-        //     enable_profiling(true, profile_type).expect("Failed to enable profiling");
-        //     if profile_type == ProfileType::Memory {
-        //         debug_log!("Memory profiling enabled");
-        //     } else if profile_type == ProfileType::Both {
-        //         debug_log!("Both time and memory profiling enabled");
-        //     }
-        // }
-        profile_type
+        }
     })
 }
 
@@ -755,10 +746,12 @@ impl Profile {
         #[cfg(target_os = "windows")]
         let desc_fn_name = fn_name; // Windows already highlights async functions
 
-        debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-        register_profiled_function(fn_name, &desc_fn_name);
+        let path = extract_path(&cleaned_stack, Some(fn_name));
 
-        let path = extract_path(&cleaned_stack);
+        let stack = path.join(";");
+
+        debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
+        register_profiled_function(&stack, &desc_fn_name);
 
         // Determine if we should keep the custom name
         let custom_name = name.map(str::to_string);
@@ -874,11 +867,13 @@ impl Profile {
             #[cfg(target_os = "windows")]
             let desc_fn_name = fn_name; // Windows already highlights async functions
 
-            // debug_log!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-            debug_log!("Calling register_profiled_function({fn_name}, {desc_fn_name})");
-            register_profiled_function(fn_name, &desc_fn_name);
+            let path = extract_path(&cleaned_stack, Some(fn_name));
 
-            let path = with_allocator(Allocator::System, || extract_path(&cleaned_stack));
+            let stack = path.join(";");
+
+            // debug_log!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
+            debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
+            register_profiled_function(&stack, &desc_fn_name);
 
             // Determine if we should keep the custom name
             let custom_name = name.map(str::to_string);
@@ -899,7 +894,7 @@ impl Profile {
                     start: Some(Instant::now()),
                     path,
                     custom_name,
-                    registered_name: fn_name.to_string(),
+                    registered_name: stack,
                     memory_task: None,
                     memory_guard: None,
                 });
@@ -940,7 +935,7 @@ impl Profile {
                     start: Some(Instant::now()),
                     path,
                     custom_name,
-                    registered_name: fn_name.to_string(),
+                    registered_name: stack,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
                 }
@@ -1061,15 +1056,28 @@ impl Profile {
         Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
     }
 
+    /// Convert function names in the stack into their descriptive names.
     #[cfg(feature = "time_profiling")]
     #[must_use]
     pub fn build_stack(&self, path: &[String]) -> std::string::String {
-        let iter = path
-            .iter()
-            .map(|fn_name| get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string()))
-            .chain(self.custom_name.clone());
+        let mut vanilla_stack = String::new();
 
-        iter.collect::<Vec<String>>().join(";")
+        path.iter()
+            .map(|fn_name_str| {
+                let stack_str = if vanilla_stack.is_empty() {
+                    fn_name_str.to_string()
+                } else {
+                    format!("{vanilla_stack};{fn_name_str}")
+                };
+                vanilla_stack.clone_from(&stack_str);
+                (stack_str, fn_name_str)
+            })
+            .map(|(stack_str, fn_name_str)| {
+                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
+            })
+            .chain(self.custom_name.clone())
+            .collect::<Vec<String>>()
+            .join(";")
     }
 
     #[cfg(feature = "full_profiling")]
@@ -1106,32 +1114,29 @@ impl Profile {
 }
 
 #[must_use]
-pub fn extract_path(cleaned_stack: &Vec<String>) -> Vec<String> {
-    // Filter to only profiled functions
-    let mut path: Vec<String> = Vec::new();
-
-    // Add self and ancestors that are profiled functions
-    for fn_name_str in cleaned_stack {
-        // debug_log!("fn_name_str={}", fn_name_str);
-        // if let Some(name) = get_reg_desc_name(fn_name_str) {
-        if is_profiled_function(fn_name_str) {
-            // debug_log!("Registered desc name: {}", name);
-            path.push(fn_name_str.to_string());
-            continue;
-        }
-
-        // Async prefixes temp out to simplify debugging
-        // let key = get_fn_desc_name(fn_name_str);
-        // // debug_log!("Function desc name: {}", key);
-        // if let Some(name) = get_reg_desc_name(&key) {
-        //     // debug_log!("Registered desc name: {}", name);
-        //     path.push(name);
-        // }
-    }
-
-    // Reverse the path so it goes from root caller to current function
-    path.reverse();
-    path
+pub fn extract_path(cleaned_stack: &[String], append: Option<&String>) -> Vec<String> {
+    // Extract profiled functions
+    // let mut stack = String::new();
+    cleaned_stack
+        .iter()
+        // Reverse the path so it goes from root caller to current function
+        .rev()
+        // Add path elements that make for a registered function name stack
+        .fold(vec![], |stack: Vec<String>, fn_name_str| {
+            let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
+            let stack_str = new_vec.join(";");
+            let stack = if is_profiled_function(&stack_str) {
+                new_vec
+            } else {
+                stack
+            };
+            eprintln!("stack={stack:?}");
+            stack
+        })
+        .iter()
+        .chain(append)
+        .cloned()
+        .collect()
 }
 
 // #[must_use]

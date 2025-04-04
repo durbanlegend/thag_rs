@@ -9,14 +9,20 @@ use inferno::flamegraph::{
     color::{BasicPalette, MultiPalette},
     Options, Palette,
 };
-use inquire::{MultiSelect, Select};
+use inquire::{InquireError, MultiSelect, Select};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
+use std::{
+    collections::{HashMap, HashSet},
+    string::ToString,
+};
+use std::{
+    fs::{self, File},
+    path::Path,
+};
 use strum::Display;
 use thag_profiler::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
 
@@ -111,11 +117,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Exit" => break,
             "Time Profile - Single" => analyze_single_time_profile(&dir_path)?,
             "Time Profile - Differential" => {
-                analyze_differential_profiles(&dir_path, ProfileType::Time)?
+                analyze_differential_profiles(&dir_path, &ProfileType::Time)?;
             }
             "Memory Profile - Single" => analyze_memory_profiles(&dir_path)?,
             "Memory Profile - Differential" => {
-                analyze_differential_profiles(&dir_path, ProfileType::Memory)?
+                analyze_differential_profiles(&dir_path, &ProfileType::Memory)?;
             }
             _ => println!("Invalid selection"),
         }
@@ -127,9 +133,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn analyze_single_time_profile(dir_path: &PathBuf) -> ProfileResult<()> {
+fn analyze_single_time_profile(dir_path: &Path) -> ProfileResult<()> {
     // Get time profile files (exclude memory profiles)
-    let profile_groups = group_profile_files(dir_path, |f| !f.contains("-memory"))?;
+    let maybe_profile_groups = group_profile_files(dir_path, |f| !f.contains("-memory"))?;
+
+    let Some(profile_groups) = maybe_profile_groups else {
+        return Ok(());
+    };
 
     if profile_groups.is_empty() {
         println!("No time profile files found.");
@@ -159,14 +169,14 @@ fn analyze_single_time_profile(dir_path: &PathBuf) -> ProfileResult<()> {
                 match action {
                     "Back to Profile Selection" => break,
                     "Show Aggregated Execution Timeline (Flamegraph)" => {
-                        generate_time_flamegraph(&processed, false)?
+                        generate_time_flamegraph(&processed, false)?;
                     }
                     "...Filter Aggregated Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
                         generate_time_flamegraph(&filtered, false)?;
                     }
                     "Show Individual Sequential Execution Timeline (Flamechart)" => {
-                        generate_time_flamegraph(&processed, true)?
+                        generate_time_flamegraph(&processed, true)?;
                     }
                     "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
                         let filtered = filter_functions(&processed)?;
@@ -186,20 +196,23 @@ fn analyze_single_time_profile(dir_path: &PathBuf) -> ProfileResult<()> {
     }
 }
 
-fn analyze_differential_profiles(
-    dir_path: &PathBuf,
-    profile_type: ProfileType,
-) -> ProfileResult<()> {
+fn analyze_differential_profiles(dir_path: &Path, profile_type: &ProfileType) -> ProfileResult<()> {
     let filter = |filename: &str| match profile_type {
         ProfileType::Time => !filename.contains("-memory"),
         ProfileType::Memory => filename.contains("-memory"),
     };
-    let (before, after) = select_profile_files(dir_path, filter)?;
+    let Some((before, after)) = select_profile_files(dir_path, filter)? else {
+        return Ok(());
+    };
     generate_differential_flamegraph(profile_type, &before, &after)
 }
 
-fn analyze_memory_profiles(dir_path: &PathBuf) -> ProfileResult<()> {
-    let profile_groups = group_profile_files(dir_path, |f| f.contains("-memory"))?;
+fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
+    let maybe_profile_groups = group_profile_files(dir_path, |f| f.contains("-memory"))?;
+
+    let Some(profile_groups) = maybe_profile_groups else {
+        return Ok(());
+    };
 
     if profile_groups.is_empty() {
         println!("No memory profile files found.");
@@ -231,27 +244,37 @@ fn analyze_memory_profiles(dir_path: &PathBuf) -> ProfileResult<()> {
                     "Back to Profile Selection" => break,
                     "Show Aggregated Memory Profile (Flamegraph)" => {
                         generate_memory_flamegraph(&processed, false)
-                            .map_or_else(|e| println!("{e}"), |()| {})
+                            .map_or_else(|e| println!("{e}"), |()| {});
                     }
                     "...Filter Aggregated Functions (Recursive or Exact Match)" => {
                         filter_memory_patterns(&processed).map_or_else(
                             |e| println!("{e}"),
-                            |filtered| {
-                                generate_memory_flamegraph(&filtered, false)
-                                    .map_or_else(|e| println!("{e}"), |()| {});
+                            |maybe_filtered| {
+                                maybe_filtered.map_or_else(
+                                    || println!("Could not find matching profile"),
+                                    |filtered| {
+                                        generate_memory_flamegraph(&filtered, false)
+                                            .map_or_else(|e| println!("{e}"), |()| {});
+                                    },
+                                );
                             },
                         );
                     }
                     "Show Individual Sequential Memory Profile (Flamechart)" => {
                         generate_memory_flamegraph(&processed, true)
-                            .map_or_else(|e| println!("{e}"), |()| {})
+                            .map_or_else(|e| println!("{e}"), |()| {});
                     }
                     "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
                         filter_memory_patterns(&processed).map_or_else(
                             |e| println!("{e}"),
-                            |filtered| {
-                                generate_memory_flamegraph(&filtered, true)
-                                    .map_or_else(|e| println!("{e}"), |()| {});
+                            |maybe_filtered| {
+                                maybe_filtered.map_or_else(
+                                    || println!("Could not find matching profile"),
+                                    |filtered| {
+                                        generate_memory_flamegraph(&filtered, true)
+                                            .map_or_else(|e| println!("{e}"), |()| {});
+                                    },
+                                );
                             },
                         );
                     }
@@ -316,12 +339,12 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
         "Flame {} generated: {svg}",
         if as_chart { "chart" } else { "graph" }
     );
-    open_in_browser(&svg).map_err(|e| ProfileError::General(e.to_string()))?;
+    open_in_browser(svg).map_err(|e| ProfileError::General(e.to_string()))?;
     Ok(())
 }
 
 fn generate_differential_flamegraph(
-    profile_type: ProfileType,
+    profile_type: &ProfileType,
     before: &PathBuf,
     after: &PathBuf,
 ) -> ProfileResult<()> {
@@ -433,8 +456,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<ProcessedProf
         .iter()
         .filter_map(|line| {
             line.split(';')
-                .filter(|path| !path.ends_with("::main"))
-                .next()
+                .find(|path| !path.ends_with("::main"))
                 .map(|s| s.split_whitespace().next().unwrap_or(""))
                 .filter(|s| !s.is_empty())
         })
@@ -499,8 +521,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<ProcessedProf
                 // If the root function is in our filter list
                 if to_filter.contains(&root_func) {
                     // Check if this is a multi-function stack (has children)
-                    let stack_parts = line.split(';').collect::<Vec<_>>();
-                    return stack_parts.len() > 1;
+                    return line.split(';').count() > 1;
                 }
 
                 // If the function is not in our filter list, keep it
@@ -698,10 +719,12 @@ fn select_time_color_scheme() -> ProfileResult<Palette> {
         .palette)
 }
 
+type FileGroup = Vec<(String, Vec<PathBuf>)>;
+
 fn group_profile_files<T: Fn(&str) -> bool>(
-    dir_path: &PathBuf,
+    dir_path: &Path,
     filter: T,
-) -> ProfileResult<Vec<(String, Vec<PathBuf>)>> {
+) -> ProfileResult<Option<FileGroup>> {
     let all_groups = collect_profile_files(dir_path, &filter)?;
     let mut current_filter = String::new();
 
@@ -719,7 +742,7 @@ fn group_profile_files<T: Fn(&str) -> bool>(
                         .filter(|p| {
                             p.file_name()
                                 .and_then(|n| n.to_str())
-                                .map_or(false, |name| name.contains(&current_filter))
+                                .is_some_and(|name| name.contains(&current_filter))
                         })
                         .collect();
 
@@ -756,7 +779,7 @@ fn group_profile_files<T: Fn(&str) -> bool>(
                 println!("   ... and {} more", paths.len() - 3);
             }
         }
-        println!("");
+        println!();
 
         // Create selection options with Filter as the first option
         let mut options = vec!["Filter/modify selection".to_string()];
@@ -766,18 +789,31 @@ fn group_profile_files<T: Fn(&str) -> bool>(
             options.push(format!("{}. {} ({} files)", i + 1, group_name, paths.len()));
         }
 
-        let selection = inquire::Select::new("Select an option:", options)
-            .prompt()
-            .map_err(|e| ProfileError::General(e.to_string()))?;
+        let maybe_selection = inquire::Select::new("Select an option:", options).prompt();
+        // .map_err(|e| ProfileError::General(e.to_string()))?;
+        let Ok(selection) = maybe_selection else {
+            match maybe_selection {
+                Ok(_) => panic!(),
+                Err(InquireError::OperationCanceled) => return Ok(None),
+                Err(e) => return Err(ProfileError::General(e.to_string())),
+            }
+        };
 
         if selection == "Filter/modify selection" {
             // Show filter options
-            let filter_action = inquire::Select::new(
+            let maybe_filter_action = inquire::Select::new(
                 "Filter options:",
                 vec!["Apply/modify filter", "Clear filter", "Back to selection"],
             )
-            .prompt()
-            .map_err(|e| ProfileError::General(e.to_string()))?;
+            .prompt();
+
+            let Ok(filter_action) = maybe_filter_action else {
+                match maybe_filter_action {
+                    Ok(_) => panic!(),
+                    Err(InquireError::OperationCanceled) => return Ok(None),
+                    Err(e) => return Err(ProfileError::General(e.to_string())),
+                }
+            };
 
             match filter_action {
                 "Apply/modify filter" => {
@@ -787,17 +823,23 @@ fn group_profile_files<T: Fn(&str) -> bool>(
                         .map_err(|e| ProfileError::General(e.to_string()))?;
                 }
                 "Clear filter" => current_filter.clear(),
-                _ => {} // Back to selection
+                _ => return Ok(None), // Back to selection
             }
         } else {
             // Extract the index from the selection string
-            if let Some(index_str) = selection.split('.').next() {
-                if let Ok(index) = index_str.trim().parse::<usize>() {
-                    if index > 0 && index <= filtered_groups.len() {
-                        // Return the selected group
-                        return Ok(vec![filtered_groups[index - 1].clone()]);
+            match selection.split('.').next() {
+                Some(index_str) => {
+                    match index_str.trim().parse::<usize>() {
+                        Ok(index) => {
+                            if index > 0 && index <= filtered_groups.len() {
+                                // Return the selected group
+                                return Ok(Some(vec![filtered_groups[index - 1].clone()]));
+                            }
+                        }
+                        _ => return Ok(None), // Back to selection
                     }
                 }
+                _ => return Ok(None), // Back to selection
             }
         }
     }
@@ -805,7 +847,7 @@ fn group_profile_files<T: Fn(&str) -> bool>(
 
 // Helper function to collect all profile files matching the initial filter
 fn collect_profile_files<T: Fn(&str) -> bool>(
-    dir_path: &PathBuf,
+    dir_path: &Path,
     filter: &T,
 ) -> ProfileResult<Vec<(String, Vec<PathBuf>)>> {
     let mut groups: HashMap<String, Vec<PathBuf>> = HashMap::new();
@@ -839,17 +881,21 @@ fn collect_profile_files<T: Fn(&str) -> bool>(
 }
 
 fn select_profile_files<T: Fn(&str) -> bool>(
-    dir_path: &PathBuf,
+    dir_path: &Path,
     filter: T,
-) -> ProfileResult<(PathBuf, PathBuf)> {
-    let groups = group_profile_files(dir_path, filter)?;
+) -> ProfileResult<Option<(PathBuf, PathBuf)>> {
+    let maybe_profile_groups = group_profile_files(dir_path, filter)?;
 
-    if groups.is_empty() {
+    let Some(profile_groups) = maybe_profile_groups else {
+        return Ok(None);
+    };
+
+    if profile_groups.is_empty() {
         return Err(ProfileError::General("No profile files found".to_string()));
     }
 
     // First select the script group
-    let script_options: Vec<_> = groups
+    let script_options: Vec<_> = profile_groups
         .iter()
         .map(|(name, files)| format!("{} ({} profiles)", name, files.len()))
         .collect();
@@ -863,7 +909,7 @@ fn select_profile_files<T: Fn(&str) -> bool>(
         .position(|s| s == &script_selection)
         .ok_or_else(|| ProfileError::General("Invalid selection".to_string()))?;
 
-    let files = &groups[script_idx].1;
+    let files = &profile_groups[script_idx].1;
     if files.len() < 2 {
         return Err(ProfileError::General(
             "Need at least 2 profiles to compare".to_string(),
@@ -895,7 +941,7 @@ fn select_profile_files<T: Fn(&str) -> bool>(
         .prompt()
         .map_err(|e| ProfileError::General(e.to_string()))?;
 
-    Ok((
+    Ok(Some((
         files
             .iter()
             .find(|p| p.file_name().unwrap_or_default().to_string_lossy() == before)
@@ -906,7 +952,7 @@ fn select_profile_files<T: Fn(&str) -> bool>(
             .find(|p| p.file_name().unwrap_or_default().to_string_lossy() == after)
             .cloned()
             .unwrap(),
-    ))
+    )))
 }
 
 fn select_profile_file(
@@ -951,13 +997,15 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
 
-    let mut processed = ProcessedProfile::default();
     // let start_time: std::option::Option<DateTime<Local>> = None;
-    processed.subtitle = path
-        .file_name()
-        .ok_or::<ProfileError>(ProfileError::General("Failed to get file name".to_string()))?
-        .to_string_lossy()
-        .to_string();
+    let mut processed = ProcessedProfile {
+        subtitle: path
+            .file_name()
+            .ok_or_else(|| ProfileError::General("Failed to get file name".to_string()))?
+            .to_string_lossy()
+            .to_string(),
+        ..Default::default()
+    };
 
     // Determine profile type from first non-empty line
     for line in &lines {
@@ -1304,8 +1352,8 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()>
     Ok(())
 }
 
-#[allow(clippy::cast_precision_loss)]
-fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<ProcessedProfile> {
+#[allow(clippy::cast_precision_loss, clippy::too_many_lines)]
+fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<ProcessedProfile>> {
     // First provide memory pattern selection
     let patterns = vec![
         "Large allocations (>1MB)",
@@ -1315,21 +1363,36 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
         "Custom pattern...",
     ];
 
-    let selected_patterns = MultiSelect::new("Select memory patterns to filter out:", patterns)
-        .prompt()
-        .map_err(|e| ProfileError::General(e.to_string()))?;
+    let maybe_selected_patterns =
+        MultiSelect::new("Select memory patterns to filter out:", patterns).prompt();
+
+    let Ok(selected_patterns) = maybe_selected_patterns else {
+        match maybe_selected_patterns {
+            Ok(_) => panic!(),
+            Err(InquireError::OperationCanceled) => return Ok(None),
+            Err(e) => return Err(ProfileError::General(e.to_string())),
+        }
+    };
 
     // Handle custom pattern if selected
-    let custom_pattern = if selected_patterns.contains(&"Custom pattern...") {
-        inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):")
-            .prompt()
-            .map_err(|e| ProfileError::General(e.to_string()))?
+    let maybe_custom_pattern = if selected_patterns.contains(&"Custom pattern...") {
+        inquire::Text::new("Enter custom pattern to filter (e.g., 'vec' or 'string'):").prompt()
     } else {
-        String::new()
+        Ok(String::new())
+    };
+
+    let Ok(custom_pattern) = maybe_custom_pattern else {
+        match maybe_custom_pattern {
+            Ok(_) => panic!(),
+            Err(InquireError::OperationCanceled) => return Ok(None),
+            Err(e) => return Err(ProfileError::General(e.to_string())),
+        }
     };
 
     // Create a filtered profile based on memory patterns
-    let pattern_filtered = if !selected_patterns.is_empty() {
+    let pattern_filtered = if selected_patterns.is_empty() {
+        profile.clone()
+    } else {
         // Track filtering statistics
         let mut filter_stats: HashMap<&str, usize> = HashMap::new();
         let total_entries = profile.stacks.len();
@@ -1389,8 +1452,6 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
         } else {
             filtered
         }
-    } else {
-        profile.clone()
     };
 
     // Now add function-based filtering similar to filter_functions
@@ -1407,9 +1468,8 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 // Get the root function from the stack
                 stack_str
                     .split(';')
-                    .filter(|path| !path.ends_with("::main"))
-                    .next()
-                    .map(|s| s.to_string())
+                    .find(|path| !path.ends_with("::main"))
+                    .map(ToString::to_string)
                     .filter(|s| !s.is_empty())
             } else {
                 None
@@ -1422,7 +1482,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
 
     if function_list.is_empty() {
         println!("No unique functions found to filter.");
-        return Ok(pattern_filtered);
+        return Ok(Some(pattern_filtered));
     }
 
     // Display information about filtering modes
@@ -1464,7 +1524,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
 
     if to_filter.is_empty() {
         println!("No functions selected for filtering.");
-        return Ok(pattern_filtered);
+        return Ok(Some(pattern_filtered));
     }
 
     // Apply appropriate filtering based on the chosen mode
@@ -1489,8 +1549,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
                 // If the root function is in our filter list
                 if to_filter.contains(&root_func) {
                     // Check if this is a multi-function stack (has children)
-                    let stack_parts = stack_str.split(';').collect::<Vec<_>>();
-                    return stack_parts.len() > 1;
+                    return stack_str.split(';').count() > 1;
                 }
 
                 // If the function is not in our filter list, keep it
@@ -1539,10 +1598,10 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Processed
         function_filtered_percent
     );
 
-    Ok(ProcessedProfile {
+    Ok(Some(ProcessedProfile {
         stacks: filtered_stacks,
-        ..pattern_filtered.clone() // Keep the metadata
-    })
+        ..pattern_filtered // Keep the metadata
+    }))
 }
 
 fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {

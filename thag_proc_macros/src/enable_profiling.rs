@@ -23,10 +23,10 @@ struct ProfilingArgs {
 }
 
 impl Parse for ProfilingArgs {
-    fn parse(input: ParseStream) -> Result<ProfilingArgs, syn::Error> {
+    fn parse(input: ParseStream) -> Result<Self, syn::Error> {
         // Empty input means use default
         if input.is_empty() {
-            return Ok(ProfilingArgs {
+            return Ok(Self {
                 mode: ProfilingMode::Enabled,
             });
         }
@@ -47,10 +47,11 @@ impl Parse for ProfilingArgs {
             }
         };
 
-        Ok(ProfilingArgs { mode })
+        Ok(Self { mode })
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Runtime check for feature flag to handle when the proc macro
     // is compiled with the feature but used without it

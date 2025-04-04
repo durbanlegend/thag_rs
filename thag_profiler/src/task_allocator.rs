@@ -189,7 +189,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                             .any(|frame| frame.contains("find_matching_profile")));
 
                         debug_log!("Calling extract_path");
-                        let path = extract_path(&cleaned_stack);
+                        let path = extract_path(&cleaned_stack, None);
                         if path.is_empty() {
                             let trimmed_backtrace =
                                 trim_backtrace(start_pattern, &current_backtrace);

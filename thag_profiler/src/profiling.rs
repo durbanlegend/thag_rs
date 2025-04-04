@@ -122,13 +122,7 @@ static_lazy! {
         std::fs::create_dir_all(&debug_log_path).ok();
         debug_log_path.push(format!("{base}-debug.log"));
 
-        ProfileFilePaths {
-            time: format!("{base}.folded"),
-            memory: format!("{base}-memory.folded"),
-            debug_log: debug_log_path.to_string_lossy().to_string(),
-            executable_stem: script_stem.to_string(),
-            timestamp,
-        }
+        ProfileFilePaths {time:format!("{base}.folded"),memory:format!("{base}-memory.folded"),debug_log:debug_log_path.to_string_lossy().to_string(),executable_stem:script_stem.to_string(),timestamp, memory_detail: format!("{base}-memory_detail.folded") }
     }
 }
 
@@ -138,9 +132,14 @@ static_lazy! {
     TimeProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
-// #[cfg(feature = "time_profiling")]
+// #[cfg(feature = "full_profiling")]
 static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
+}
+
+#[cfg(feature = "full_profiling")]
+static_lazy! {
+    MemoryDetailFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
 #[cfg(feature = "time_profiling")]
@@ -151,6 +150,7 @@ static START_TIME: AtomicU64 = AtomicU64::new(0);
 pub struct ProfileFilePaths {
     time: String,
     memory: String,
+    memory_detail: String,
     pub debug_log: String,       // The full path to the debug log file
     pub executable_stem: String, // Store the executable stem for reuse
     pub timestamp: String,       // Store the timestamp for reuse
@@ -195,6 +195,58 @@ fn get_time_path() -> ProfileResult<&'static str> {
     }
 
     TimePathHolder::get()
+}
+
+/// Get the path to the memory.folded output file.
+///
+/// # Errors
+///
+/// This function will bubble up any filesystem errors that occur trying to create the directory.
+#[cfg(feature = "full_profiling")]
+pub fn get_memory_detail_path() -> ProfileResult<&'static str> {
+    struct MemoryDetailPathHolder;
+    impl MemoryDetailPathHolder {
+        fn get() -> ProfileResult<&'static str> {
+            static PATH_RESULT: OnceLock<Result<String, ProfileError>> = OnceLock::new();
+
+            let result = PATH_RESULT.get_or_init(|| {
+                let paths = ProfilePaths::get();
+                let config = ProfileConfig::get();
+
+                let path = if let Some(dir) = &config.output_dir {
+                    let dir_path = PathBuf::from(dir);
+                    if !dir_path.exists() {
+                        match std::fs::create_dir_all(&dir_path) {
+                            Ok(()) => {}
+                            Err(e) => return Err(ProfileError::from(e)),
+                        }
+                    }
+
+                    let memory_detail_file = dir_path.join(
+                        paths
+                            .memory_detail
+                            .split('/')
+                            .last()
+                            .unwrap_or(&paths.memory_detail),
+                    );
+
+                    memory_detail_file.to_string_lossy().to_string()
+                } else {
+                    paths.memory_detail.clone()
+                };
+
+                Ok(path)
+            });
+
+            // Convert to static reference
+            match result {
+                Ok(s) => Ok(Box::leak(s.clone().into_boxed_str())),
+                Err(e) => Err(e.clone()),
+            }
+        }
+    }
+
+    MemoryDetailPathHolder::get()
 }
 
 /// Get the path to the memory.folded output file.
@@ -289,6 +341,8 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     let time_path = get_time_path()?;
     let memory_path = get_memory_path()?;
+    let memory_detail_path = get_memory_detail_path()?;
+
     match profile_type {
         ProfileType::Time => {
             TimeProfileFile::init();
@@ -299,18 +353,24 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             MemoryProfileFile::init();
             initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
             debug_log!("Memory profile will be written to {memory_path}");
+            MemoryDetailFile::init();
+            initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+            debug_log!("Memory detail will be written to {memory_detail_path}");
         }
         ProfileType::Both => {
             // Initialize all files
             TimeProfileFile::init();
             MemoryProfileFile::init();
+            MemoryDetailFile::init();
 
             // Reset all files and initialize headers, scoped to release locks ASAP
             initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
             initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+            initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
 
             debug_log!("Time profile will be written to {time_path}");
             debug_log!("Memory profile will be written to {memory_path}");
+            debug_log!("Memory detail will be written to {memory_detail_path}");
         }
     }
     flush_debug_log();
@@ -786,7 +846,7 @@ impl Profile {
             current_backtrace.resolve();
             // debug_log!("************\n{current_backtrace:?}\n************");
 
-            let cleaned_stack = extract_callstack_from_profile_backtrace(
+            let cleaned_stack = extract_profile_callstack(
                 // fn_name,
                 start_pattern,
                 &mut current_backtrace,
@@ -903,7 +963,7 @@ impl Profile {
     /// * File operations fail
     /// * Writing to the file fails
     #[cfg(feature = "time_profiling")]
-    fn write_profile_event(
+    pub fn write_profile_event(
         path: &str,
         file: &Mutex<Option<BufWriter<File>>>,
         entry: &str,
@@ -998,7 +1058,8 @@ impl Profile {
     }
 
     #[cfg(feature = "time_profiling")]
-    fn build_stack(&self, path: &[String]) -> std::string::String {
+    #[must_use]
+    pub fn build_stack(&self, path: &[String]) -> std::string::String {
         let iter = path
             .iter()
             .map(|fn_name| get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string()))
@@ -1081,7 +1142,7 @@ fn filter_scaffolding(name: &str) -> bool {
 }
 
 #[cfg(feature = "full_profiling")]
-pub fn extract_callstack_from_profile_backtrace(
+pub fn extract_profile_callstack(
     // maybe_fn_name: Option<&str>,
     // fn_name: &str,
     _start_pattern: &str,
@@ -1125,7 +1186,7 @@ pub fn extract_callstack_from_profile_backtrace(
 }
 
 #[cfg(feature = "full_profiling")]
-pub fn extract_callstack_from_alloc_backtrace(
+pub fn extract_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
@@ -1143,6 +1204,50 @@ pub fn extract_callstack_from_alloc_backtrace(
         .skip_while(|frame| !start_pattern.is_match(frame))
         .take_while(|frame| !frame.contains(end_point))
         .filter(|name| filter_scaffolding(name))
+        // .inspect(|frame| {
+        //     debug_log!("frame: {frame}");
+        // })
+        .map(strip_hex_suffix)
+        .map(|mut name| {
+            // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+            clean_function_name(&mut name)
+        })
+        .filter(|name| {
+            // Skip duplicate function calls (helps with the {{closure}} pattern)
+            if already_seen.contains(name.as_str()) {
+                false
+            } else {
+                already_seen.insert(name.clone());
+                true
+            }
+        })
+        .collect();
+    debug_log!("Callstack: {callstack:#?}");
+    // debug_log!("already_seen: {:#?}", already_seen);
+    callstack
+}
+
+#[cfg(feature = "full_profiling")]
+pub fn extract_detailed_alloc_callstack(
+    start_pattern: &Regex,
+    current_backtrace: &mut Backtrace,
+) -> Vec<String> {
+    use crate::get_root_module;
+
+    current_backtrace.resolve();
+    let mut already_seen = HashSet::new();
+
+    let end_point = "__rust_begin_short_backtrace";
+
+    // First, collect all relevant frames
+    let callstack: Vec<String> = Backtrace::frames(current_backtrace)
+        .iter()
+        .flat_map(BacktraceFrame::symbols)
+        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+        .skip_while(|frame| !start_pattern.is_match(frame))
+        .skip(1)
+        .take_while(|frame| !frame.contains(end_point))
+        // .filter(|name| filter_scaffolding(name))
         .inspect(|frame| {
             debug_log!("frame: {frame}");
         })
@@ -1163,7 +1268,15 @@ pub fn extract_callstack_from_alloc_backtrace(
         .collect();
     debug_log!("Callstack: {callstack:#?}");
     // debug_log!("already_seen: {:#?}", already_seen);
+
+    let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
+
     callstack
+        .iter()
+        .rev()
+        .skip_while(|frame| !frame.contains(end_point))
+        .cloned()
+        .collect()
 }
 
 // Global thread-safe BTreeSet
@@ -1451,7 +1564,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "core::",
     "core::ops::function::FnOnce::call_once",
     "hashbrown",
-    "meme_alloc::with_allocator",
+    "task_allocator::with_allocator",
     "mio::",
     "std::panic::catch_unwind",
     "std::panicking",
@@ -1515,7 +1628,7 @@ pub enum MemoryError {
 ///
 /// ```
 /// use thag_profiler::profile;
-/// 
+///
 /// // Basic usage (profiles time, sync function)
 /// let section = profile!("expensive_operation");
 /// // ... code to profile

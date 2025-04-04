@@ -84,45 +84,6 @@ impl ChartType {
     }
 }
 
-#[allow(clippy::cast_possible_wrap)]
-fn validate_memory_events(events: &[MemoryEvent]) -> Result<(), String> {
-    let mut stack = Vec::new();
-    let mut net_memory = 0i64;
-
-    for event in events {
-        match event.operation {
-            '+' => {
-                stack.push(event.delta);
-                net_memory += event.delta as i64;
-            }
-            '-' => {
-                if let Some(alloc) = stack.pop() {
-                    if alloc != event.delta {
-                        return Err(format!(
-                            "Mismatched allocation ({}) and deallocation ({})",
-                            alloc, event.delta
-                        ));
-                    }
-                    net_memory -= event.delta as i64;
-                } else {
-                    return Err("Deallocation without matching allocation".to_string());
-                }
-            }
-            _ => return Err(format!("Invalid operation: {}", event.operation)),
-        }
-    }
-
-    if !stack.is_empty() {
-        return Err(format!("{} unclosed allocations", stack.len()));
-    }
-
-    if net_memory != 0 {
-        return Err(format!("Net memory leak: {net_memory} bytes"));
-    }
-
-    Ok(())
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
@@ -1002,7 +963,7 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
         if line.starts_with("# Time Profile") {
             processed.profile_type = ProfileType::Time;
             break;
-        } else if line.starts_with("# Memory Profile") {
+        } else if line.starts_with("# Memory") {
             processed.profile_type = ProfileType::Memory;
             break;
         }

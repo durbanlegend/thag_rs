@@ -7,10 +7,12 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, 
-    flush_debug_log,
-    profiling::{clean_function_name, extract_callstack_from_alloc_backtrace, get_memory_path},
-    regex,
+    debug_log, extract_path, flush_debug_log,
+    profiling::{
+        clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
+        get_memory_detail_path, get_memory_path, MemoryDetailFile,
+    },
+    regex, Profile,
 };
 use backtrace::Backtrace;
 use parking_lot::Mutex;
@@ -19,7 +21,10 @@ use std::{
     alloc::{GlobalAlloc, Layout, System},
     collections::{BTreeSet, HashMap, HashSet},
     io::{self, Write},
-    sync::{atomic::{AtomicUsize, Ordering}, LazyLock},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        LazyLock,
+    },
     thread::{self, ThreadId},
     time::Instant,
 };
@@ -55,7 +60,7 @@ pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T {
         Allocator::TaskAware => 0,
         Allocator::System => 1,
     };
-    
+
     // Save the current allocator
     let prev_id = CURRENT_ALLOCATOR_ID.load(std::sync::atomic::Ordering::Relaxed);
 
@@ -140,10 +145,8 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
                     // debug_log!("Calling extract_callstack");
                     let mut current_backtrace = Backtrace::new_unresolved();
-                    let cleaned_stack = extract_callstack_from_alloc_backtrace(
-                        start_pattern,
-                        &mut current_backtrace,
-                    );
+                    let cleaned_stack =
+                        extract_alloc_callstack(start_pattern, &mut current_backtrace);
                     debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
                     let in_profile_code = cleaned_stack.iter().any(|frame| {
                         frame.contains("Backtrace::new") || frame.contains("Profile::new")
@@ -152,6 +155,22 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                     if in_profile_code {
                         debug_log!("Ignoring allocation request of size {size} for profiler code");
                         return;
+                    }
+
+                    // TODO control with env var
+                    if size > 0 {
+                        let detailed_stack =
+                            extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
+
+                        let stack = detailed_stack.join(";");
+                        let entry = format!("{stack} +{size}");
+
+                        let memory_detail_path = get_memory_detail_path().unwrap();
+                        let _ = Profile::write_profile_event(
+                            memory_detail_path,
+                            MemoryDetailFile::get(),
+                            &entry,
+                        );
                     }
 
                     current_backtrace.resolve();
@@ -312,12 +331,9 @@ impl AllocationRegistry {
 
     /// Get the memory usage for a specific task
     fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        self.task_allocations.get(&task_id).map(|allocations| {
-            allocations
-                .iter()
-                .map(|(_, size)| *size)
-                .sum()
-        })
+        self.task_allocations
+            .get(&task_id)
+            .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
     }
 }
 
@@ -454,16 +470,22 @@ pub struct TaskMemoryContext {
 
 impl TaskMemoryContext {
     /// Gets the unique ID for this task
+    #[must_use]
     pub const fn id(&self) -> usize {
         self.task_id
     }
 
     /// Gets current memory usage for this task
+    #[must_use]
     pub fn memory_usage(&self) -> Option<usize> {
         get_task_memory_usage(self.task_id)
     }
-    
+
     /// Enter this task context for memory tracking
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any errors encountered (TODO: do we need a Result wrapper?)
     pub fn enter(&self) -> crate::ProfileResult<TaskGuard> {
         // Push to thread stack
         push_task_to_stack(thread::current().id(), self.task_id);
@@ -477,6 +499,7 @@ impl TaskMemoryContext {
 pub struct TaskMemoryContext;
 
 /// Creates a new task context for memory tracking.
+#[must_use]
 pub fn create_memory_task() -> TaskMemoryContext {
     let allocator = get_allocator();
     allocator.create_task_context()
@@ -502,10 +525,8 @@ pub struct TaskState {
 }
 
 // Global task state
-pub static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| {
-    TaskState {
-        next_task_id: AtomicUsize::new(1),
-    }
+pub static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| TaskState {
+    next_task_id: AtomicUsize::new(1),
 });
 
 // To handle active task tracking, instead of thread-locals, we'll use task-specific techniques
@@ -515,6 +536,7 @@ pub struct TaskGuard {
 }
 
 impl TaskGuard {
+    #[must_use]
     pub const fn new(task_id: usize) -> Self {
         Self { task_id }
     }
@@ -528,17 +550,17 @@ impl Drop for TaskGuard {
     fn drop(&mut self) {
         // Use simpler approach with direct method calls
         // This avoids complex TLS interactions during thread shutdown
-        
+
         // Run these operations with System allocator
         with_allocator(Allocator::System, || {
             // Remove from active profiles
             PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
-            
+
             // Remove from thread stack
             PROFILE_REGISTRY
                 .lock()
                 .pop_task_from_stack(thread::current().id(), self.task_id);
-                
+
             // Flush logs directly
             if let Some(logger) = crate::DebugLogger::get() {
                 let _ = logger.lock().flush();

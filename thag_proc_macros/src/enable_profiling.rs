@@ -43,8 +43,9 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
         quote! {
             #(#attrs)*
             #vis async fn #fn_name #generics(#inputs) #output #where_clause {
+
                 // Initialize profiling
-                thag_profiler::init_profiling();
+                ::thag_profiler::init_profiling(module_path!());
 
                 // Create a profile that covers everything, including tokio setup
                 // We pass None for the name as we rely on the backtrace to identify the function
@@ -65,7 +66,7 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
                 drop(profile);
 
                 // Finalize profiling
-                thag_profiler::finalize_profiling();
+                ::thag_profiler::finalize_profiling();
                 result
             }
         }
@@ -74,8 +75,9 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
         quote! {
             #(#attrs)*
             #vis fn #fn_name #generics(#inputs) #output #where_clause {
+
                 // Initialize profiling
-                thag_profiler::init_profiling();
+                ::thag_profiler::init_profiling(module_path!());
 
                 // Create a profile that covers everything, including tokio setup
                 // We pass None for the name as we rely on the backtrace to identify the function
@@ -95,7 +97,7 @@ pub fn enable_profiling_impl(_attr: TokenStream, item: TokenStream) -> TokenStre
                 drop(profile);
 
                 // Finalize profiling
-                thag_profiler::finalize_profiling();
+                ::thag_profiler::finalize_profiling();
                 result
             }
         }

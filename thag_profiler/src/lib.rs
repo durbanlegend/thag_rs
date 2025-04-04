@@ -73,8 +73,8 @@ pub use task_allocator::{with_allocator, Allocator, Dispatcher, TaskAwareAllocat
 pub use {
     profiling::extract_path,
     task_allocator::{
-        find_matching_profile, get_last_active_task, trim_backtrace, 
-        ALLOC_REGISTRY, TaskMemoryContext, TaskGuard, create_memory_task,
+        create_memory_task, find_matching_profile, get_last_active_task, trim_backtrace, TaskGuard,
+        TaskMemoryContext, ALLOC_REGISTRY,
     },
 };
 
@@ -102,6 +102,32 @@ pub fn get_profiler() -> Option<&'static Profiler> {
 #[cfg(feature = "time_profiling")]
 pub fn get_base_location() -> Option<&'static str> {
     PROFILER.get().map(|profiler| profiler.base_location)
+}
+
+#[cfg(feature = "time_profiling")]
+pub static PROFILEE: OnceLock<Profilee> = OnceLock::new();
+
+#[cfg(feature = "time_profiling")]
+#[derive(Debug)]
+pub struct Profilee {
+    root_module: &'static str,
+}
+
+#[cfg(feature = "time_profiling")]
+impl Profilee {
+    const fn new(root_module: &'static str) -> Self {
+        Self { root_module }
+    }
+}
+
+#[cfg(feature = "time_profiling")]
+pub fn get_profilee() -> Option<&'static Profilee> {
+    PROFILEE.get()
+}
+
+#[cfg(feature = "time_profiling")]
+pub fn get_root_module() -> Option<&'static str> {
+    PROFILEE.get().map(|profilee| profilee.root_module)
 }
 
 #[cfg(test)]
@@ -275,7 +301,9 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// This function panics if profiling cannot be enabled.
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 #[fn_name]
-pub fn init_profiling() {
+pub fn init_profiling(root_module: &'static str) {
+    PROFILEE.set(Profilee::new(root_module)).unwrap();
+
     // Determine profile type based on features
     let profile_type = ProfileType::Time;
 
@@ -296,8 +324,10 @@ pub fn init_profiling() {
 /// This function panics if profiling cannot be enabled.
 #[cfg(feature = "full_profiling")]
 #[fn_name]
-pub fn init_profiling() {
+pub fn init_profiling(root_module: &'static str) {
     with_allocator(Allocator::System, || {
+        PROFILEE.set(Profilee::new(root_module)).unwrap();
+
         let profile_type = ProfileType::Both;
 
         set_base_location(fn_name);
@@ -308,7 +338,7 @@ pub fn init_profiling() {
 
 // Provide no-op versions when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
-pub const fn init_profiling() {}
+pub const fn init_profiling(root_module: &str) {}
 
 #[cfg(feature = "time_profiling")]
 fn set_base_location(fn_name: &str) {

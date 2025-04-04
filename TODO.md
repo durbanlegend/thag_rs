@@ -32,6 +32,7 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Trace option using inspect in backtrace in task_allocator.
 - [ ]  New demo scripts: string_to_static_str.rs and add_one_thing_to_iter.rs
 - [ ]  Change to register under full path or interned full path rather than just function name, and perhaps store async and ?method rather than desc_fn_name.
+- [ ]  Test and document: should be able to do a detailed profile of everything
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

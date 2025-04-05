@@ -202,8 +202,8 @@ pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[cfg(feature = "profiling")]
-pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(attr as ProfileArgs);
+pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    // let args = parse_macro_input!(attr as ProfileArgs);
     let item_clone = item.clone();
     let input = parse_macro_input!(item_clone as ItemFn);
 
@@ -269,9 +269,9 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     if is_async {
-        generate_async_wrapper(&ctx, args.profile_type.as_ref())
+        generate_async_wrapper(&ctx /*, args.profile_type.as_ref() */)
     } else {
-        generate_sync_wrapper(&ctx, args.profile_type.as_ref())
+        generate_sync_wrapper(&ctx /*, args.profile_type.as_ref() */)
     }
     .into()
 }
@@ -309,7 +309,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[cfg(feature = "profiling")]
 fn generate_sync_wrapper(
     ctx: &FunctionContext,
-    profile_type: Option<&ProfileTypeOverride>,
+    // profile_type: Option<&ProfileTypeOverride>,
 ) -> proc_macro2::TokenStream {
     let FunctionContext {
         vis,
@@ -325,7 +325,7 @@ fn generate_sync_wrapper(
         is_method,
     }: &FunctionContext<'_> = ctx;
 
-    let profile_type = resolve_profile_type(profile_type);
+    // let profile_type = resolve_profile_type(profile_type);
     // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
@@ -335,28 +335,28 @@ fn generate_sync_wrapper(
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
 
             // We pass None for the name as we rely on the backtrace to identify the function
-            let _profile = ::thag_profiler::Profile::new(None, Some(#fn_name_str), #profile_type, false, #is_method);
+            let _profile = ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_profile_type(), false, #is_method);
             #body
         }
     }
 }
 
-#[cfg(feature = "profiling")]
-fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
-    match profile_type {
-        Some(ProfileTypeOverride::Global) | None => {
-            quote!(::thag_profiler::profiling::get_global_profile_type())
-        }
-        Some(ProfileTypeOverride::Time) => quote!(::thag_profiler::ProfileType::Time),
-        Some(ProfileTypeOverride::Memory) => quote!(::thag_profiler::ProfileType::Memory),
-        Some(ProfileTypeOverride::Both) => quote!(::thag_profiler::ProfileType::Both),
-    }
-}
+// #[cfg(feature = "profiling")]
+// fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
+//     match profile_type {
+//         Some(ProfileTypeOverride::Global) | None => {
+//             quote!(::thag_profiler::profiling::get_global_profile_type())
+//         }
+//         Some(ProfileTypeOverride::Time) => quote!(::thag_profiler::ProfileType::Time),
+//         Some(ProfileTypeOverride::Memory) => quote!(::thag_profiler::ProfileType::Memory),
+//         Some(ProfileTypeOverride::Both) => quote!(::thag_profiler::ProfileType::Both),
+//     }
+// }
 
 #[cfg(feature = "profiling")]
 fn generate_async_wrapper(
     ctx: &FunctionContext,
-    profile_type: Option<&ProfileTypeOverride>,
+    // profile_type: Option<&ProfileTypeOverride>,
 ) -> proc_macro2::TokenStream {
     let FunctionContext {
         vis,
@@ -372,7 +372,7 @@ fn generate_async_wrapper(
         is_method,
     } = ctx;
 
-    let profile_type = resolve_profile_type(profile_type);
+    // let profile_type = resolve_profile_type(profile_type);
     // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
@@ -409,7 +409,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: ::thag_profiler::Profile::new(None, Some(#fn_name_str), #profile_type, true, #is_method),
+                _profile: ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_profile_type(), true, #is_method),
             }.await
         }
     }

@@ -249,7 +249,10 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 #[enable_profiling(runtime)]
 async fn main() -> io::Result<()> {
     // Check if profiling is enabled
-    println!("PROFILING_ENABLED = {}", thag_profiler::PROFILING_ENABLED);
+    println!(
+        "PROFILING_FEATURE_ENABLED={}",
+        thag_profiler::PROFILING_FEATURE_ENABLED
+    );
 
     // unsafe { backtrace_on_stack_overflow::enable() };
 

@@ -59,8 +59,8 @@ pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        get_global_profile_type, is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection,
-        ProfileType,
+        /*get_global_profile_type,*/ get_profile_type, is_profiling_enabled, strip_hex_suffix,
+        Profile, ProfileSection, ProfileType,
     },
     thag_proc_macros::{enable_profiling, fn_name, profiled},
     // Only re-export what users need from task_allocator
@@ -169,10 +169,10 @@ mod feature_tests {
 }
 
 #[cfg(feature = "time_profiling")]
-pub const PROFILING_ENABLED: bool = true;
+pub const PROFILING_FEATURE_ENABLED: bool = true;
 
 #[cfg(not(feature = "time_profiling"))]
-pub const PROFILING_ENABLED: bool = false;
+pub const PROFILING_FEATURE_ENABLED: bool = false;
 
 /// Lazy-static variable generator.
 ///
@@ -241,6 +241,7 @@ macro_rules! static_lazy {
         pub struct $name;
 
         impl $name {
+            #[allow(clippy::missing_panics_doc)]
             pub fn get() -> &'static $type {
                 static INSTANCE: std::sync::OnceLock<$type> = std::sync::OnceLock::new();
                 INSTANCE.get_or_init(|| $init)
@@ -305,7 +306,8 @@ pub fn init_profiling(root_module: &'static str) {
     PROFILEE.set(Profilee::new(root_module)).unwrap();
 
     // Determine profile type based on features
-    let profile_type = ProfileType::Time;
+    // let profile_type = ProfileType::Time;
+    let profile_type = get_profile_type();
 
     // Enable profiling
     assert!(
@@ -328,11 +330,15 @@ pub fn init_profiling(root_module: &'static str) {
     with_allocator(Allocator::System, || {
         PROFILEE.set(Profilee::new(root_module)).unwrap();
 
-        let profile_type = ProfileType::Both;
+        // let profile_type = ProfileType::Both;
+        let profile_type = get_profile_type();
 
         set_base_location(fn_name);
         enable_profiling(true, profile_type).expect("Failed to enable profiling");
-        task_allocator::initialize_memory_profiling();
+
+        if profile_type != ProfileType::Time {
+            task_allocator::initialize_memory_profiling();
+        }
     });
 }
 
@@ -342,10 +348,10 @@ pub const fn init_profiling(_root_module: &str) {}
 
 #[cfg(feature = "time_profiling")]
 fn set_base_location(fn_name: &str) {
-    eprintln!("module_path!()={}", module_path!());
+    // eprintln!("module_path!()={}", module_path!());
     // TODO replace by function_name attribute macro
     let this_function = format!("{}::{fn_name}", module_path!());
-    eprintln!("this_function={this_function}");
+    // eprintln!("this_function={this_function}");
     let base_location = Box::leak(
         Backtrace::frames(&Backtrace::new())
             .iter()
@@ -391,7 +397,7 @@ pub fn finalize_profiling() {
 
     // Determine profile type based on features
     #[cfg(feature = "full_profiling")]
-    let profile_type = ProfileType::Both;
+    let profile_type = get_profile_type();
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_type = ProfileType::Time;
@@ -400,7 +406,9 @@ pub fn finalize_profiling() {
     enable_profiling(false, profile_type).expect("Failed to finalize profiling");
 
     #[cfg(feature = "full_profiling")]
-    task_allocator::finalize_memory_profiling();
+    if profile_type != ProfileType::Time {
+        task_allocator::finalize_memory_profiling();
+    }
 
     // Final flush to ensure all data is written
     flush_debug_log();

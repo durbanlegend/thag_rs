@@ -42,7 +42,10 @@ fn example_using_region() {
 #[enable_profiling]
 fn main() {
     // Check if profiling is enabled
-    println!("PROFILING_ENABLED = {}", thag_profiler::PROFILING_ENABLED);
+    println!(
+        "PROFILING_ENABLED={}",
+        thag_profiler::PROFILING_FEATURE_ENABLED
+    );
 
     if cfg!(feature = "profile") {
         println!("Profiling is enabled");

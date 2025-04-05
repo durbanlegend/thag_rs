@@ -7,10 +7,11 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, flush_debug_log,
+    debug_log, extract_path, flush_debug_log, lazy_static_var,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
-        get_memory_detail_path, get_memory_path, is_profiling_state_enabled, MemoryDetailFile,
+        get_memory_detail_path, get_memory_path, is_detailed_memory, is_profiling_state_enabled,
+        MemoryDetailFile,
     },
     regex, Profile,
 };
@@ -157,13 +158,16 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                         return;
                     }
 
-                    // TODO control with env var
-                    if size > 0 {
+                    let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
+                    if size > 0 && detailed_memory {
                         let detailed_stack =
                             extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
 
-                        let stack = detailed_stack.join(";");
-                        let entry = format!("{stack} +{size}");
+                        let entry = if detailed_stack.is_empty() {
+                            format!("[out_of_bounds] +{size}")
+                        } else {
+                            format!("{} +{size}", detailed_stack.join(";"))
+                        };
 
                         let memory_detail_path = get_memory_detail_path().unwrap();
                         let _ = Profile::write_profile_event(

@@ -40,7 +40,10 @@ async fn main() {
     // enable_profiling(true, ProfileType::Both).expect("Failed to enable profiling");
 
     // Check if profiling is enabled
-    println!("PROFILING_ENABLED = {}", thag_profiler::PROFILING_ENABLED);
+    println!(
+        "PROFILING_FEATURE_ENABLED = {}",
+        thag_profiler::PROFILING_ENABLED
+    );
 
     if cfg!(feature = "profiling") {
         println!("Profiling is enabled");

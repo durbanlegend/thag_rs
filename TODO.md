@@ -21,17 +21,21 @@
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event. Not necessary.
 - [ ]  Worked example - e.g. syn as dependency - no need to do this with dependencies now that we have detailed profiling.
-- [ ]  Document use of `THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=$TMPDIR cargo run demo/syn_dump_syntax.rs -- demo/hello_main.rs
+- [ ]  Document use of `THAG_PROFILE=<type,dir,log,detail>, e.g. THAG_PROFILE=both,,announce,true demo/syn_dump_syntax.rs -- demo/hello_main.rs
 - [ ]  profile_type arg on enable_profiling now redundant
 - [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
+- [ ]  Docs: should be able to #[enable_profiling] on any 1 function, and all profiled functions should be included.
+       If the decorated function is not the root of all the profiled functions, then the root will be the standard "all".
 - [ ]  Make MINIMUM_TRACKED_SIZE a configurable option (default 0)? or remove it altogether?
 - [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Change to register under full path or interned full path rather than just function name, and perhaps store async and ?method rather than desc_fn_name.
-- [ ]  Test and document: should be able to do a detailed profile of everything with just one #[enable_profiling] on fn main.
+- [ ]  Docs: should be able to do a detailed profile of everything with just one #[enable_profiling] on fn main.
 - [ ]  Debug Esc at all places in thag-analyze.
 - [ ]  Control detailed logging with env var
 - [ ]  Rationalise env vars
+- [ ]  Get rid of get_global_profile_type and its setter and ?static.
+- [ ]  Suppress writing of memory detail in finalization.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

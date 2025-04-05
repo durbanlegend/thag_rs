@@ -93,7 +93,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         ::thag_profiler::Profile::new(
             None,
             Some(#fn_name_str),
-            ::thag_profiler::profiling::get_global_profile_type(),
+            ::thag_profiler::get_profile_type(),
             false,
             false,
         )
@@ -102,9 +102,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                let should_profile = std::env::var("ENABLE_PROFILING")
-                    .map(|val| val == "1" || val.to_lowercase() == "true")
-                    .unwrap_or(false);
+                let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
                 eprintln!("should_profile={should_profile}");
 
                 if should_profile {

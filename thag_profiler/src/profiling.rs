@@ -80,6 +80,7 @@ static_lazy! {
                     ProfileType::Both
                 } else {
                     ProfileType::Time
+            return ProfileConfiguration {
                 }
             });
 

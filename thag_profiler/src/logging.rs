@@ -1,26 +1,10 @@
-use crate::profiling::ProfilePaths;
-use crate::static_lazy;
+use crate::profiling::{get_debug_level, DebugLevel, ProfilePaths};
+use crate::{static_lazy, with_allocator};
 use chrono::Local;
 use parking_lot::Mutex;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-
-// Define constants for clarity
-const DEBUG_LEVEL_NONE: u8 = 0;
-const DEBUG_LEVEL_LOG: u8 = 1;
-const DEBUG_LEVEL_VERBOSE: u8 = 2;
-
-// Helper function to get the current debug level
-fn get_debug_level() -> u8 {
-    std::env::var("THAG_PROFILER_DEBUG").map_or(DEBUG_LEVEL_NONE, |value| {
-        match value.parse::<u8>() {
-            Ok(level) if level > 0 => level,
-            // If parsing fails or level is 0, but the var exists, default to level 1
-            _ => DEBUG_LEVEL_LOG,
-        }
-    })
-}
 
 static_lazy! {
     DebugLogger: Option<Mutex<BufWriter<File>>> = {
@@ -45,12 +29,12 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
     let debug_level = get_debug_level();
 
     // Only proceed if debugging is enabled
-    if debug_level > DEBUG_LEVEL_NONE {
+    if debug_level != DebugLevel::None {
         // Get the debug log path from ProfilePaths
         let log_path = PathBuf::from(&ProfilePaths::get().debug_log);
 
         // Print the log path if we're in verbose mode
-        if debug_level >= DEBUG_LEVEL_VERBOSE {
+        if debug_level == DebugLevel::Announce {
             eprintln!("Thag Profiler debug log: {}", log_path.display());
         }
 
@@ -95,21 +79,21 @@ pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for getting log path
-        crate::with_allocator(crate::Allocator::System, || {
-            if get_debug_level() > DEBUG_LEVEL_NONE {
-                Some(ProfilePaths::get().debug_log.clone())
-            } else {
+        with_allocator(crate::Allocator::System, || {
+            if get_debug_level() == DebugLevel::None {
                 None
+            } else {
+                Some(ProfilePaths::get().debug_log.clone())
             }
         })
     }
 
     #[cfg(not(feature = "full_profiling"))]
     {
-        if get_debug_level() > DEBUG_LEVEL_NONE {
-            Some(ProfilePaths::get().debug_log.clone())
-        } else {
+        if get_debug_level() == DebugLevel::None {
             None
+        } else {
+            Some(ProfilePaths::get().debug_log.clone())
         }
     }
 }
@@ -119,7 +103,7 @@ pub fn flush_debug_log() {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for logging operations to prevent circular dependencies
-        crate::with_allocator(crate::Allocator::System, || {
+        with_allocator(crate::Allocator::System, || {
             if let Some(logger) = DebugLogger::get() {
                 let flush_result = {
                     let mut locked_writer = logger.lock();

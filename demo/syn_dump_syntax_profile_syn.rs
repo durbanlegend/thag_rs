@@ -2,8 +2,8 @@
 [dependencies]
 colored = "2.1.0"
 quote = "1.0.37"
-# syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
-syn = { path = "/Users/donf/projects/syn", features = ["extra-traits", "full", "parsing"] }
+syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
+# syn = { path = "/Users/donf/projects/syn", features = ["extra-traits", "full", "parsing"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 # thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }

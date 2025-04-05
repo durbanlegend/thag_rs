@@ -246,7 +246,7 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
 }
 
 #[tokio::main]
-#[enable_profiling]
+#[enable_profiling(runtime)]
 async fn main() -> io::Result<()> {
     // Check if profiling is enabled
     println!("PROFILING_ENABLED = {}", thag_profiler::PROFILING_ENABLED);

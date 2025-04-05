@@ -1125,13 +1125,11 @@ pub fn extract_path(cleaned_stack: &[String], append: Option<&String>) -> Vec<St
         .fold(vec![], |stack: Vec<String>, fn_name_str| {
             let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
             let stack_str = new_vec.join(";");
-            let stack = if is_profiled_function(&stack_str) {
+            if is_profiled_function(&stack_str) {
                 new_vec
             } else {
                 stack
-            };
-            eprintln!("stack={stack:?}");
-            stack
+            }
         })
         .iter()
         .chain(append)
@@ -1178,6 +1176,7 @@ pub fn extract_profile_callstack(
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
             clean_function_name(&mut name)
         })
+        // TODO May be problematic? - this will collapse legitimate nesting, but protects against recursion
         .filter(|name| {
             // Skip duplicate function calls (helps with the {{closure}} pattern)
             if already_seen.contains(name.as_str()) {

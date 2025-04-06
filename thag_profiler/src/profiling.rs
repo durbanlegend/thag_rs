@@ -5,9 +5,11 @@ use parking_lot::Mutex;
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     env,
+    fmt::{Display, Formatter},
     fs::File,
     io::BufWriter,
     path::PathBuf,
+    str::FromStr,
     sync::atomic::{AtomicU8, Ordering},
     time::Instant,
 };
@@ -66,40 +68,213 @@ static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Mem
 
 static_lazy! {
     ProfileConfig: ProfileConfiguration = {
-        let env_profile = env::var("THAG_PROFILE")
-            .ok()
-            .and_then(|v| v.parse::<u8>().ok())
-            .unwrap_or(0);
-
-        let env_profile_type = env::var("THAG_PROFILE_TYPE")
-            .ok()
-            .map(|v| v.to_lowercase())
-            .and_then(|v| ProfileType::from_str(&v))
-            .unwrap_or({
-                if cfg!(feature = "full_profiling") {
-                    ProfileType::Both
-                } else {
-                    ProfileType::Time
+        let Ok(env_var) = env::var("THAG_PROFILE") else {
             return ProfileConfiguration {
+                enabled: false,
+                profile_type: None,
+                output_dir: None,
+                debug_level: None,
+                detailed_memory: false,
+            };
+        };
+
+        let parts: Vec<&str> = env_var.split(',').collect();
+        let mut errors = Vec::new();
+
+        // Parse profile type (first element)
+        let profile_type = if parts.first().map_or("", |s| *s).trim().is_empty() {
+            errors.push(
+                "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
+                    .to_string(),
+            );
+            None
+        } else {
+            match parts.first().unwrap().parse::<ProfileType>() {
+                Ok(val) => Some(val),
+                Err(e) => {
+                    errors.push(e);
+                    None
                 }
-            });
+            }
+        };
 
-        let env_profile_dir = env::var("THAG_PROFILE_DIR").ok();
+        // Parse output directory (second element)
+        let output_dir = if parts.get(1).map_or("", |s| *s).trim().is_empty() {
+            Some(PathBuf::from(".")) // Default to current directory if empty
+        } else {
+            Some(PathBuf::from(parts.get(1).unwrap().trim()))
+        };
 
+        // Parse debug log (third element)
+        let debug_level = if parts.get(2).map_or("", |s| *s).trim().is_empty() {
+            errors.push(
+                "Third element (debug log) is empty. Expected 'none', 'quiet', or 'announce'"
+                    .to_string(),
+            );
+            None
+        } else {
+            match parts.get(2).unwrap().parse::<DebugLevel>() {
+                Ok(val) => Some(val),
+                Err(e) => {
+                    errors.push(e);
+                    None
+                }
+            }
+        };
+
+        // Parse detailed memory (fourth element)
+        let detailed_memory = parts.get(3).is_some_and(|val| if val.trim().is_empty() {
+                          false // Default if empty
+                      } else if let Ok(val) = val.trim().parse::<bool>() {
+                          // Validate that detailed memory is only true for Memory or Both profile types
+                          if val
+                              && profile_type
+                                  .as_ref().is_some_and(|pt| *pt == ProfileType::Time)
+                          {
+                              errors.push(
+                                  "Detailed memory profiling can only be enabled with profile_type=memory or profile_type=both"
+                                      .to_string(),
+                              );
+                              false
+                          } else {
+                              val
+                          }
+                      } else {
+                          errors.push(format!(
+                              "Failed to parse '{val}' as boolean for detailed memory flag. Expected 'true' or 'false'"
+                          ));
+                          false
+                      });
+
+        // If there are errors, return them
+        if !errors.is_empty() {
+            eprintln!("THAG_PROFILE errors:{errors:#?}");
+        }
+
+        // All good, config is enabled
         ProfileConfiguration {
-            enabled: env_profile > 0,
-            profile_type: env_profile_type,
-            output_dir: env_profile_dir,
+            enabled: true, // Assume enabled if all elements are valid
+            profile_type,
+            output_dir,
+            debug_level,
+            detailed_memory,
         }
     }
 }
 
-#[derive(Debug, Clone)]
 #[allow(dead_code)]
+// Define the DebugLog enum
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum DebugLevel {
+    #[default]
+    None,
+    Quiet,
+    Announce,
+}
+
+impl Display for DebugLevel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => write!(f, "none"),
+            Self::Quiet => write!(f, "quiet"),
+            Self::Announce => write!(f, "announce"),
+        }
+    }
+}
+
+impl FromStr for DebugLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "none" => Ok(Self::None),
+            "quiet" => Ok(Self::Quiet),
+            "announce" => Ok(Self::Announce),
+            _ => Err(format!(
+                "Invalid debug log type '{s}'. Expected 'none', 'quiet', or 'announce'"
+            )),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct ProfileConfiguration {
     enabled: bool,
-    profile_type: ProfileType,
-    output_dir: Option<String>,
+    profile_type: Option<ProfileType>,
+    output_dir: Option<PathBuf>,
+    debug_level: Option<DebugLevel>,
+    detailed_memory: bool,
+}
+
+impl Default for ProfileConfiguration {
+    #[cfg(feature = "time_profiling")]
+    fn default() -> Self {
+        use std::env::current_dir;
+
+        #[cfg(feature = "full_profiling")]
+        let profile_type = Some(ProfileType::Both);
+
+        #[cfg(not(feature = "full_profiling"))]
+        let profile_type = Some(ProfileType::Time);
+
+        Self {
+            enabled: true,
+            profile_type,
+            output_dir: Some(current_dir().expect("Failed to determine current directory")),
+            debug_level: Some(DebugLevel::None),
+            detailed_memory: false,
+        }
+    }
+
+    #[cfg(not(feature = "time_profiling"))]
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            profile_type: None,
+            output_dir: None,
+            debug_level: None,
+            detailed_memory: false,
+        }
+    }
+}
+
+impl Display for ProfileConfiguration {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Profile Config:")?;
+        writeln!(f, "  Enabled: {}", self.enabled)?;
+
+        match &self.profile_type {
+            Some(pt) => writeln!(f, "  Profile Type: {pt:?}")?,
+            None => writeln!(f, "  Profile Type: none")?,
+        }
+
+        match &self.output_dir {
+            Some(dir) => writeln!(f, "  Output Directory: {}", dir.display())?,
+            None => writeln!(f, "  Output Directory: none")?,
+        }
+
+        match &self.debug_level {
+            Some(log) => writeln!(f, "  Debug Log: {log:?}")?,
+            None => writeln!(f, "  Debug Log: none")?,
+        }
+
+        write!(f, "  Detailed Memory: {:?}", self.detailed_memory)
+    }
+}
+
+#[must_use]
+pub fn get_debug_level() -> DebugLevel {
+    ProfileConfig::get().debug_level.unwrap_or_default()
+}
+
+#[must_use]
+pub fn is_detailed_memory() -> bool {
+    ProfileConfig::get().detailed_memory
+}
+
+#[must_use]
+pub fn get_profile_type() -> ProfileType {
+    ProfileConfig::get().profile_type.unwrap_or_default()
 }
 
 // Global registry of profiled functions
@@ -344,6 +519,8 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     let memory_path = get_memory_path()?;
     let memory_detail_path = get_memory_detail_path()?;
 
+    eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
+
     match profile_type {
         ProfileType::Time => {
             TimeProfileFile::init();
@@ -404,7 +581,9 @@ pub fn get_global_profile_type() -> ProfileType {
             3 => ProfileType::Both,
             _ => {
                 // Then check environment variables
-                ProfileConfig::get().profile_type
+                ProfileConfig::get()
+                    .profile_type
+                    .expect("Missing profile type")
             }
         }
     })
@@ -461,14 +640,20 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
     if enabled {
         // Respect environment variable for profile type if one wasn't explicitly provided
         let final_profile_type = if profile_type == ProfileType::Time
-            && matches!(config.profile_type, ProfileType::Memory | ProfileType::Both)
-        {
+            && matches!(
+                config.profile_type,
+                Some(ProfileType::Memory | ProfileType::Both)
+            ) {
             config.profile_type
         } else {
-            profile_type
+            Some(profile_type)
         };
 
-        set_profile_type(final_profile_type);
+        let Some(profile_type) = final_profile_type else {
+            return Err(ProfileError::General("Missing profile type".to_string()));
+        };
+
+        set_profile_type(profile_type);
 
         let Ok(now) = u64::try_from(
             SystemTime::now()
@@ -480,7 +665,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
         };
         START_TIME.store(now, Ordering::SeqCst);
 
-        initialize_profile_files(final_profile_type)?;
+        initialize_profile_files(profile_type)?;
     }
 
     // Whether enabling or disabling, set the state
@@ -608,10 +793,11 @@ pub const fn is_profiling_state_enabled() -> bool {
     false
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ProfileType {
     Time, // Wall clock/elapsed time
     Memory,
+    #[default]
     Both,
 }
 
@@ -624,6 +810,31 @@ impl ProfileType {
             "memory" => Some(Self::Memory),
             "both" => Some(Self::Both),
             _ => None,
+        }
+    }
+}
+
+impl Display for ProfileType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Time => write!(f, "time"),
+            Self::Memory => write!(f, "memory"),
+            Self::Both => write!(f, "both"),
+        }
+    }
+}
+
+impl FromStr for ProfileType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_lowercase().as_str() {
+            "time" => Ok(Self::Time),
+            "memory" => Ok(Self::Memory),
+            "both" => Ok(Self::Both),
+            _ => Err(format!(
+                "Invalid profile type '{s}'. Expected 'time', 'memory', or 'both'"
+            )),
         }
     }
 }
@@ -692,6 +903,7 @@ impl Profile {
 
         // Try allowing overrides
         let profile_type = requested_type;
+        eprintln!("requested_type={requested_type:?}");
 
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
@@ -834,6 +1046,7 @@ impl Profile {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
+            // eprintln!("requested_type={requested_type:?}");
 
             // debug_log!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
@@ -887,9 +1100,9 @@ impl Profile {
             // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
             // memory allocations in the profile setup itself in this method.
             if profile_type == ProfileType::Time {
-                debug_log!(
-                "Memory profiling enabled but only time profiling will be profiled as requested."
-            );
+                //     debug_log!(
+                //     "Memory profiling enabled but only time profiling will be profiled as requested."
+                // );
                 return Some(Self {
                     profile_type,
                     start: Some(Instant::now()),
@@ -1256,10 +1469,9 @@ pub fn extract_detailed_alloc_callstack(
         .skip_while(|frame| !start_pattern.is_match(frame))
         .skip(1)
         .take_while(|frame| !frame.contains(end_point))
-        // .filter(|name| filter_scaffolding(name))
-        .inspect(|frame| {
-            debug_log!("frame: {frame}");
-        })
+        // .inspect(|frame| {
+        //     debug_log!("frame: {frame}");
+        // })
         .map(strip_hex_suffix)
         .map(|mut name| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
@@ -1275,7 +1487,7 @@ pub fn extract_detailed_alloc_callstack(
             }
         })
         .collect();
-    debug_log!("Callstack: {callstack:#?}");
+    // debug_log!("Callstack: {callstack:#?}");
     // debug_log!("already_seen: {:#?}", already_seen);
 
     let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
@@ -1409,26 +1621,6 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
     false
 }
 
-// More sophisticated helper function to check if a backtrace contains any of the specified patterns
-// #[cfg(feature = "full_profiling")]
-// fn backtrace_contains_any_sophisticated(backtrace: &str, patterns: &[&str]) -> bool {
-//     let lines = backtrace.lines();
-
-//     for line in lines {
-//         // Skip lines that don't look like function references
-//         if !line.contains(" at ") && !line.trim().starts_with(|c: char| c.is_ascii_digit() || c == ' ') {
-//             continue;
-//         }
-
-//         for &pattern in patterns {
-//             if line.contains(pattern) {
-//                 return true;
-//             }
-//         }
-//     }
-
-//     false
-// }
 #[cfg(feature = "time_profiling")]
 pub struct ProfileSection {
     pub profile: Option<Profile>,
@@ -1791,7 +1983,7 @@ macro_rules! profile_internal {
         // Within the crate itself, we should use relative paths
         // #[cfg(not(any(test, doctest)))]
         {
-            if $crate::PROFILING_ENABLED {
+            if $crate::PROFILING_FEATURE_ENABLED {
                 let profile = $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
                 $crate::ProfileSection { profile }
             } else {

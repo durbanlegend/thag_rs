@@ -59,7 +59,7 @@ pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        /*get_global_profile_type,*/ get_profile_type, is_profiling_enabled, strip_hex_suffix,
+        get_config_profile_type, get_global_profile_type, is_profiling_enabled, strip_hex_suffix,
         Profile, ProfileSection, ProfileType,
     },
     thag_proc_macros::{enable_profiling, fn_name, profiled},
@@ -305,17 +305,8 @@ pub fn thousands<T: Display>(n: T) -> String {
 pub fn init_profiling(root_module: &'static str) {
     PROFILEE.set(Profilee::new(root_module)).unwrap();
 
-    // Determine profile type based on features
-    // let profile_type = ProfileType::Time;
-    let profile_type = get_profile_type();
-
-    // Enable profiling
-    assert!(
-        !(profile_type == ProfileType::Memory),
-        "Memory profiling requested but `full_profiling` feature is not enabled"
-    );
     set_base_location(fn_name);
-    enable_profiling(true, profile_type).expect("Failed to enable profiling");
+    enable_profiling(true, None).expect("Failed to enable profiling");
 }
 
 /// Initialize the profiling system.
@@ -330,13 +321,12 @@ pub fn init_profiling(root_module: &'static str) {
     with_allocator(Allocator::System, || {
         PROFILEE.set(Profilee::new(root_module)).unwrap();
 
-        // let profile_type = ProfileType::Both;
-        let profile_type = get_profile_type();
-
         set_base_location(fn_name);
-        enable_profiling(true, profile_type).expect("Failed to enable profiling");
+        enable_profiling(true, None).expect("Failed to enable profiling");
 
-        if profile_type != ProfileType::Time {
+        let global_profile_type = get_global_profile_type();
+
+        if global_profile_type != ProfileType::Time {
             task_allocator::initialize_memory_profiling();
         }
     });
@@ -367,18 +357,6 @@ fn set_base_location(fn_name: &str) {
             .into_boxed_str(),
     );
     PROFILER.set(Profiler::new(base_location)).unwrap();
-    // eprintln!("get_profiler()={:?}", get_profiler());
-    // eprintln!("get_base_location()={:?}", get_base_location());
-
-    // let _ = Backtrace::frames(&Backtrace::new())
-    //     .iter()
-    //     .flat_map(BacktraceFrame::symbols)
-    //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-    //     .skip_while(|frame| {
-    //         !(frame.contains(&this_function)
-    //             && strip_hex_suffix(frame.to_string()) == this_function)
-    //     })
-    //     .for_each(|frame| eprintln!("frame={}", frame));
     // eprintln!("base_location={base_location}");
 }
 
@@ -388,33 +366,52 @@ fn set_base_location(fn_name: &str) {
 /// # Panics
 ///
 /// This function panics if profiling cannot be enabled.
-#[cfg(feature = "time_profiling")]
+#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 pub fn finalize_profiling() {
-    use crate::profiling::{enable_profiling, ProfileType};
-
     // Ensure debug log is flushed before we disable profiling
+
     flush_debug_log();
 
+    // Disable profiling
+    enable_profiling(false, None).expect("Failed to finalize profiling");
+
     // Determine profile type based on features
-    #[cfg(feature = "full_profiling")]
-    let profile_type = get_profile_type();
-
-    #[cfg(not(feature = "full_profiling"))]
-    let profile_type = ProfileType::Time;
-
-    // Disable profiling, which will finalize and write data
-    enable_profiling(false, profile_type).expect("Failed to finalize profiling");
-
-    #[cfg(feature = "full_profiling")]
-    if profile_type != ProfileType::Time {
-        task_allocator::finalize_memory_profiling();
-    }
+    let global_profile_type = get_global_profile_type();
 
     // Final flush to ensure all data is written
     flush_debug_log();
 
     // Add a delay to ensure flush completes before program exit
     std::thread::sleep(std::time::Duration::from_millis(10));
+}
+
+/// Finalize profiling and write out data files.
+/// This should be called at the end of your program.
+///
+/// # Panics
+///
+/// This function panics if profiling cannot be enabled.
+#[cfg(feature = "full_profiling")]
+pub fn finalize_profiling() {
+    with_allocator(Allocator::System, || {
+        // Ensure debug log is flushed before we disable profiling
+        flush_debug_log();
+
+        let global_profile_type = get_global_profile_type();
+
+        // Disable profiling
+        enable_profiling(false, None).expect("Failed to finalize profiling");
+
+        if global_profile_type != ProfileType::Time {
+            task_allocator::finalize_memory_profiling();
+        }
+
+        // Final flush to ensure all data is written
+        flush_debug_log();
+
+        // Add a delay to ensure flush completes before program exit
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    });
 }
 
 #[cfg(not(feature = "time_profiling"))]

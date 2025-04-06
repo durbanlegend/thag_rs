@@ -93,7 +93,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         ::thag_profiler::Profile::new(
             None,
             Some(#fn_name_str),
-            ::thag_profiler::get_profile_type(),
+            ::thag_profiler::get_global_profile_type(),
             false,
             false,
         )

@@ -335,7 +335,7 @@ fn generate_sync_wrapper(
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
 
             // We pass None for the name as we rely on the backtrace to identify the function
-            let _profile = ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_profile_type(), false, #is_method);
+            let _profile = ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method);
             #body
         }
     }
@@ -409,7 +409,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_profile_type(), true, #is_method),
+                _profile: ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method),
             }.await
         }
     }

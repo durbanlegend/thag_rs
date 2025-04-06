@@ -28,7 +28,7 @@ struct TestGuard;
 #[cfg(feature = "time_profiling")]
 impl Drop for TestGuard {
     fn drop(&mut self) {
-        let _ = enable_profiling(false, ProfileType::Time);
+        let _ = enable_profiling(false, Some(ProfileType::Time));
         eprintln!("TestGuard disabled profiling on drop");
     }
 }
@@ -50,7 +50,7 @@ fn setup_test() -> MutexGuard<'static, ()> {
     let guard = get_test_lock();
 
     // Reset profiling state completely
-    let _ = enable_profiling(false, ProfileType::Time);
+    let _ = enable_profiling(false, Some(ProfileType::Time));
 
     // Reset any other global state here
     // ...
@@ -68,10 +68,10 @@ where
     register_profiled_function("test_function", "test_description");
 
     // Explicitly disable profiling first to ensure clean state
-    let _ = enable_profiling(false, ProfileType::Time);
+    let _ = enable_profiling(false, Some(ProfileType::Time));
 
     // Then enable profiling
-    let _ = enable_profiling(true, ProfileType::Time);
+    let _ = enable_profiling(true, Some(ProfileType::Time));
 
     // Verify profiling is actually enabled
     assert!(
@@ -87,7 +87,7 @@ where
     register_profiled_function("test_function", "test_description");
 
     // Explicitly disable profiling first to ensure clean state
-    let _ = enable_profiling(false, ProfileType::Time);
+    let _ = enable_profiling(false, Some(ProfileType::Time));
 
     // Run the test, catching any panics to ensure our guard runs
     let result = panic::catch_unwind(test);
@@ -251,7 +251,7 @@ fn test_profiling_create_section() {
     );
 
     // Enable profiling
-    let _ = enable_profiling(true, ProfileType::Time);
+    let _ = enable_profiling(true, Some(ProfileType::Time));
     assert!(
         is_profiling_state_enabled(),
         "Profiling should be enabled after calling enable_profiling"
@@ -281,7 +281,7 @@ fn test_profiling_full_profiling() {
     );
 
     // Enable memory profiling
-    let _ = enable_profiling(true, ProfileType::Memory);
+    let _ = enable_profiling(true, Some(ProfileType::Memory));
 
     assert!(
         is_profiling_state_enabled(),
@@ -301,7 +301,7 @@ fn test_profiling_full_profiling() {
     section.end();
 
     // Disable profiling
-    let _ = enable_profiling(false, ProfileType::Time);
+    let _ = enable_profiling(false, Some(ProfileType::Time));
 }
 
 // Thread-safety test

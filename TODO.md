@@ -32,9 +32,6 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Change to register under full path or interned full path rather than just function name, and perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Docs: should be able to do a detailed profile of everything with just one #[enable_profiling] on fn main.
 - [ ]  Debug Esc at all places in thag-analyze.
-- [ ]  Control detailed logging with env var
-- [ ]  Rationalise env vars
-- [ ]  Get rid of get_global_profile_type and its setter and ?static.
 - [ ]  Suppress writing of memory detail in finalization.
 
 # Alternative ways to run thag-instrument without installing:

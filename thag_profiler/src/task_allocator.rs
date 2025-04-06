@@ -694,9 +694,7 @@ pub fn initialize_memory_profiling() {
 /// Finalize memory profiling and write out data.
 /// This is called by the main `finalize_profiling` function.
 pub fn finalize_memory_profiling() {
-    with_allocator(Allocator::System, || {
-        write_memory_profile_data();
-    });
+    write_memory_profile_data();
     flush_debug_log();
 }
 

@@ -64,7 +64,7 @@ const PROFILING_FEATURE: bool = true;
 #[cfg(all(feature = "time_profiling", test))]
 const PROFILING_FEATURE: bool = false;
 
-static PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+static GLOBAL_PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
 static_lazy! {
     ProfileConfig: ProfileConfiguration = {
@@ -273,7 +273,7 @@ pub fn is_detailed_memory() -> bool {
 }
 
 #[must_use]
-pub fn get_profile_type() -> ProfileType {
+pub fn get_config_profile_type() -> ProfileType {
     ProfileConfig::get().profile_type.unwrap_or_default()
 }
 
@@ -531,24 +531,30 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
             MemoryProfileFile::init();
             initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
             debug_log!("Memory profile will be written to {memory_path}");
-            MemoryDetailFile::init();
-            initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-            debug_log!("Memory detail will be written to {memory_detail_path}");
+
+            if is_detailed_memory() {
+                MemoryDetailFile::init();
+                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+                debug_log!("Memory detail will be written to {memory_detail_path}");
+            }
         }
         ProfileType::Both => {
-            // Initialize all files
+            // Initialize both main files and memory detail if requested
             TimeProfileFile::init();
             MemoryProfileFile::init();
-            MemoryDetailFile::init();
 
-            // Reset all files and initialize headers, scoped to release locks ASAP
+            // Reset both files and initialize headers, scoped to release locks ASAP
             initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
             initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-            initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
 
             debug_log!("Time profile will be written to {time_path}");
             debug_log!("Memory profile will be written to {memory_path}");
-            debug_log!("Memory detail will be written to {memory_detail_path}");
+
+            if is_detailed_memory() {
+                MemoryDetailFile::init();
+                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+                debug_log!("Memory detail will be written to {memory_detail_path}");
+            }
         }
     }
     flush_debug_log();
@@ -576,7 +582,7 @@ pub fn get_global_profile_type() -> ProfileType {
     // debug_log!("profile_type={profile_type:?}");
 
     lazy_static_var!(ProfileType, deref, {
-        match PROFILE_TYPE.load(Ordering::SeqCst) {
+        match GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst) {
             2 => ProfileType::Memory,
             3 => ProfileType::Both,
             _ => {
@@ -589,14 +595,23 @@ pub fn get_global_profile_type() -> ProfileType {
     })
 }
 
-#[cfg(feature = "time_profiling")]
-fn set_profile_type(profile_type: ProfileType) {
+#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
+fn set_global_profile_type(profile_type: ProfileType) {
+    let value = match profile_type {
+        ProfileType::Time => 1,
+        _ => panic!(r#"Memory profiling may not be set for feature "time_profiling" "#),
+    };
+    GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
+}
+
+#[cfg(feature = "full_profiling")]
+fn set_global_profile_type(profile_type: ProfileType) {
     let value = match profile_type {
         ProfileType::Time => 1,
         ProfileType::Memory => 2,
         ProfileType::Both => 3,
     };
-    PROFILE_TYPE.store(value, Ordering::SeqCst);
+    GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -618,7 +633,10 @@ fn set_profile_type(profile_type: ProfileType) {
 /// - File operations fail
 /// - Mutex operations fail
 #[cfg(feature = "time_profiling")]
-pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResult<()> {
+pub fn enable_profiling(
+    enabled: bool,
+    maybe_profile_type: Option<ProfileType>,
+) -> ProfileResult<()> {
     // eprintln!(
     //     "In enable_profiling, arg enabled={enabled} backtrace=\n{:#?}",
     //     backtrace::Backtrace::new()
@@ -638,22 +656,18 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
     }
 
     if enabled {
-        // Respect environment variable for profile type if one wasn't explicitly provided
-        let final_profile_type = if profile_type == ProfileType::Time
-            && matches!(
-                config.profile_type,
-                Some(ProfileType::Memory | ProfileType::Both)
-            ) {
-            config.profile_type
+        // Programmatic call may override the config defaults.
+        let final_profile_type = if let Some(profile_type) = maybe_profile_type {
+            profile_type
         } else {
-            Some(profile_type)
+            let config_profile_type = get_config_profile_type();
+            if !cfg!(feature = "full_profiling") && config_profile_type != ProfileType::Time {
+                return Err(ProfileError::General(r#"Memory profiling not allowed since feature "full_profiling" is not specified"#.to_string()));
+            }
+            config_profile_type
         };
 
-        let Some(profile_type) = final_profile_type else {
-            return Err(ProfileError::General("Missing profile type".to_string()));
-        };
-
-        set_profile_type(profile_type);
+        set_global_profile_type(final_profile_type);
 
         let Ok(now) = u64::try_from(
             SystemTime::now()
@@ -665,7 +679,7 @@ pub fn enable_profiling(enabled: bool, profile_type: ProfileType) -> ProfileResu
         };
         START_TIME.store(now, Ordering::SeqCst);
 
-        initialize_profile_files(profile_type)?;
+        initialize_profile_files(final_profile_type)?;
     }
 
     // Whether enabling or disabling, set the state
@@ -689,7 +703,7 @@ pub const fn enable_profiling(
 /// Disable profiling and reset the profiling stack.
 #[cfg(feature = "time_profiling")]
 pub fn disable_profiling() {
-    let _ = enable_profiling(false, ProfileType::Both);
+    let _ = enable_profiling(false, None);
 }
 
 #[cfg(not(feature = "time_profiling"))]
@@ -2133,14 +2147,14 @@ pub fn safely_setup_profiling_for_test() -> crate::ProfileResult<()> {
     TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
 
     // Then enable profiling
-    enable_profiling(true, ProfileType::Time)
+    enable_profiling(true, Some(ProfileType::Time))
 }
 
 #[cfg(test)]
 /// Safely cleans up profiling after a test
 pub fn safely_cleanup_profiling_after_test() -> crate::ProfileResult<()> {
     // First disable profiling
-    let result = enable_profiling(false, ProfileType::Time);
+    let result = enable_profiling(false, Some(ProfileType::Time));
 
     // Finally reset test mode flag
     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);

@@ -289,20 +289,20 @@ async fn main() { /* ... */ }
 You can programmatically control profiling:
 
 ```rust
-use thag_profiler::profiling;
+use thag_profiler::{disable_profiling, enable_profiling, ProfileType};
 
 fn main() {
     // Enable profiling programmatically
-    profiling::enable_profiling();
+    enable_profiling(true, Some(ProfileType::Time));
 
     // Run code with profiling...
 
     // Disable profiling for a section
-    profiling::disable_profiling();
+    disable_profiling();
     run_unprofiled_section();
 
-    // Re-enable for another section
-    profiling::enable_profiling();
+    // Re-enable for another section (profile type according to feature "full_profiling" or "time_profiling"))
+    enable_profiling(true, None);
     run_profiled_section();
 }
 ```

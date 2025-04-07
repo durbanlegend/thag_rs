@@ -144,21 +144,17 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     documents
 }
 
-#[tokio::main]
-#[enable_profiling(runtime)]
-async fn main() {
+#[profiled]
+async fn run_batch(count: usize) {
+    // Fixed duration for predictability
     println!(
         "is_profiling_enabled()? {}, get_global_profile_type(): {:?}",
         thag_profiler::is_profiling_enabled(),
         thag_profiler::get_global_profile_type()
     );
-    // Enable profiling manually at the start
-    // profiling::enable_profiling(true, ProfileType::Time).unwrap();
-    println!("Starting simplified document processing example");
 
-    // Only process 3 documents for easy tracing
     let start = Instant::now();
-    let docs = generate_and_process_documents(3).await;
+    let docs = generate_and_process_documents(count).await;
 
     println!(
         "Processed {} documents in {:?}",
@@ -167,7 +163,7 @@ async fn main() {
     );
 
     // Print results for verification
-    let section = profile!("section::print_docs");
+    let section = profile!("section::print_docs", async_fn);
     for doc in &docs {
         // Small async delay
         sleep(Duration::from_millis(15)).await;
@@ -180,6 +176,27 @@ async fn main() {
         );
     }
     section.end();
+}
+
+#[tokio::main]
+#[enable_profiling(runtime)]
+async fn main() {
+    println!("Starting simplified document processing example");
+
+    // Only process small batches of different sizes for easy tracing
+    run_batch(3).await;
+
+    println!("Switching profiling off");
+    profiling::disable_profiling();
+
+    // Only process small batches of documents for easy tracing
+    run_batch(2).await;
+
+    println!("Switching only time profiling back on");
+    profiling::enable_profiling(true, Some(ProfileType::Time)).unwrap();
+
+    // Only process small batches of documents for easy tracing
+    run_batch(1).await;
 
     println!("Profiling data written to folded files in current directory");
 }

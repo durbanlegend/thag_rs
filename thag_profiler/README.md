@@ -286,7 +286,7 @@ async fn main() { /* ... */ }
 
 ### Controlling Profiling at Runtime
 
-You can programmatically control profiling:
+You can programmatically control profiling with the `thag_profile::enable_profiling` and `disable_profiling` functions.
 
 ```rust
 use thag_profiler::{disable_profiling, enable_profiling, ProfileType};
@@ -306,6 +306,10 @@ fn main() {
     run_profiled_section();
 }
 ```
+This should be straightforward for synchronous code, but be careful if doing this for async code, because the
+`enable_profiling` and `disable_profiling` functions will respectively switch profiling on and off in real time for all
+instrumented functions and sections in all threads, instead of only for child nodes in the abstract syntax tree of the
+code, which is likely not what you want.
 
 ### Code Section Profiling with `profile!`
 

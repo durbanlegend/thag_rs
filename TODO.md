@@ -29,10 +29,10 @@
 - [ ]  Make MINIMUM_TRACKED_SIZE a configurable option (default 0)? or remove it altogether?
 - [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
 look for an alternative or cater for and put up with the overhead of not having this baseline.
-- [ ]  Change to register under full path or interned full path rather than just function name, and perhaps store async and ?method rather than desc_fn_name.
-- [ ]  Docs: should be able to do a detailed profile of everything with just one #[enable_profiling] on fn main.
+- [ ]  Perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Debug Esc at all places in thag-analyze.
-- [ ]  Suppress writing of memory detail in finalization.
+- [ ]  Fix or doc: profiling a section loses any async attribute of the surrounding function. Considered changing #[profiled] to change the name or args of
+the declarative macro to e.g. `profile_in_async`, or changing Profile::new to look up an existing profile, if that can be guaranteed to be registered first (seems to get messy), or having #[profiled] add function names to a separate register with their attributes. Decided to rename the `async` arg of the `profile!` macro to `async_fn` and document that this is required to align the reporting.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

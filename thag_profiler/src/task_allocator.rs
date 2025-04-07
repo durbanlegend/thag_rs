@@ -222,7 +222,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
                     // Record allocation if task found
                     if task_id == 0 {
-                        // TODO record in suspense file and allocate later
+                        // TODO if necessary, record in suspense file and allocate later
                         return;
                     }
 

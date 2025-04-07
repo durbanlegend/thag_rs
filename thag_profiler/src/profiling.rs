@@ -501,7 +501,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     Ok(())
 }
 
-/// Initializes profile files based on the specified profile type.
+/// Initializes profile files once only, based on the specified profile type.
 ///
 /// This function handles the initialization sequence for both profiling files:
 /// - For Time profiling: creates and initializes the time profile file
@@ -514,51 +514,54 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
 /// # Errors
 /// Returns a `ProfileError` if any file operations fail
 #[cfg(feature = "full_profiling")]
-fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
-    let time_path = get_time_path()?;
-    let memory_path = get_memory_path()?;
-    let memory_detail_path = get_memory_detail_path()?;
+fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
+    let initialized = lazy_static_var!(ProfileResult<bool>, {
+        let time_path = get_time_path()?;
+        let memory_path = get_memory_path()?;
+        let memory_detail_path = get_memory_detail_path()?;
 
-    eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
+        eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
 
-    match profile_type {
-        ProfileType::Time => {
-            TimeProfileFile::init();
-            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            debug_log!("Time profile will be written to {time_path}");
-        }
-        ProfileType::Memory => {
-            MemoryProfileFile::init();
-            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-            debug_log!("Memory profile will be written to {memory_path}");
+        match profile_type {
+            ProfileType::Time => {
+                TimeProfileFile::init();
+                initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+                debug_log!("Time profile will be written to {time_path}");
+            }
+            ProfileType::Memory => {
+                MemoryProfileFile::init();
+                initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+                debug_log!("Memory profile will be written to {memory_path}");
 
-            if is_detailed_memory() {
-                MemoryDetailFile::init();
-                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-                debug_log!("Memory detail will be written to {memory_detail_path}");
+                if is_detailed_memory() {
+                    MemoryDetailFile::init();
+                    initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+                    debug_log!("Memory detail will be written to {memory_detail_path}");
+                }
+            }
+            ProfileType::Both => {
+                // Initialize both main files and memory detail if requested
+                TimeProfileFile::init();
+                MemoryProfileFile::init();
+
+                // Reset both files and initialize headers, scoped to release locks ASAP
+                initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+                initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+
+                debug_log!("Time profile will be written to {time_path}");
+                debug_log!("Memory profile will be written to {memory_path}");
+
+                if is_detailed_memory() {
+                    MemoryDetailFile::init();
+                    initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+                    debug_log!("Memory detail will be written to {memory_detail_path}");
+                }
             }
         }
-        ProfileType::Both => {
-            // Initialize both main files and memory detail if requested
-            TimeProfileFile::init();
-            MemoryProfileFile::init();
-
-            // Reset both files and initialize headers, scoped to release locks ASAP
-            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-
-            debug_log!("Time profile will be written to {time_path}");
-            debug_log!("Memory profile will be written to {memory_path}");
-
-            if is_detailed_memory() {
-                MemoryDetailFile::init();
-                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-                debug_log!("Memory detail will be written to {memory_detail_path}");
-            }
-        }
-    }
-    flush_debug_log();
-    Ok(())
+        flush_debug_log();
+        Ok(true)
+    });
+    initialized.to_owned()
 }
 
 #[cfg(feature = "time_profiling")]
@@ -646,13 +649,10 @@ pub fn enable_profiling(
 
     // Check if the operation is a no-op due to environment settings
     let config = ProfileConfig::get();
-    if !enabled && config.enabled {
-        // If trying to disable but env var says enabled, log a warning but continue
-        // (environment settings take precedence)
+    if enabled != config.enabled {
         debug_log!(
-            "Warning: Attempt to disable profiling overridden by THAG_PROFILE environment variable"
+            "Caution: `enable_profiling` attribute or function `enabled={enabled}` call overriding configured value"
         );
-        return Ok(());
     }
 
     if enabled {
@@ -679,7 +679,7 @@ pub fn enable_profiling(
         };
         START_TIME.store(now, Ordering::SeqCst);
 
-        initialize_profile_files(final_profile_type)?;
+        let _ = initialize_profile_files(final_profile_type)?;
     }
 
     // Whether enabling or disabling, set the state
@@ -897,7 +897,7 @@ impl Profile {
     #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
     pub fn new(
-        name: Option<&str>,
+        custom_name: Option<&str>,
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
@@ -923,43 +923,13 @@ impl Profile {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
-        // debug_log!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+        // debug_log!("Current function/section: {custom_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        // let cleaned_stack = ÷maybe_fn_name.map_or_else(|| {
-        let cleaned_stack: Vec<String> = {
-            let mut current_backtrace = Backtrace::new_unresolved();
-            current_backtrace.resolve();
-            let mut already_seen = HashSet::new();
+        let mut current_backtrace = Backtrace::new_unresolved();
+        let cleaned_stack = extract_profile_callstack(start_pattern, &mut current_backtrace);
 
-            // let end_point = "__rust_begin_short_backtrace";
-            let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
-
-            Backtrace::frames(&current_backtrace)
-                .iter()
-                .flat_map(BacktraceFrame::symbols)
-                .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                .skip_while(|name| !name.contains("Profile::new") || name.contains("{{closure}}"))
-                .skip(1)
-                .take_while(|frame| !frame.contains(end_point))
-                .filter(|name| filter_scaffolding(name))
-                .map(strip_hex_suffix)
-                .map(|mut name| {
-                    // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-                    clean_function_name(&mut name)
-                })
-                .filter(|name| {
-                    // Skip duplicate function calls (helps with the {{closure}} pattern)
-                    if already_seen.contains(name.as_str()) {
-                        false
-                    } else {
-                        already_seen.insert(name.clone());
-                        true
-                    }
-                })
-                // .map(|(_, name)| name.clone())
-                .collect()
-        };
+        debug_log!("cleaned_stack={cleaned_stack:#?}");
 
         let fn_name = &cleaned_stack[0];
 
@@ -981,17 +951,22 @@ impl Profile {
         register_profiled_function(&stack, &desc_fn_name);
 
         // Determine if we should keep the custom name
-        let custom_name = name.map(str::to_string);
+        let custom_name = custom_name.map(str::to_string);
 
         // Debug output can be turned back on if needed for troubleshooting
         // debug_log!(
-        //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
+        //     "DEBUG: Profile::new with custom_name='{custom_name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
         // Create a basic profile structure that works for all configurations
         if profile_type == ProfileType::Memory {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
+
+        debug_log!(
+            "NEW PROFILE: Task {task_id} created for {:?}",
+            path.join(" -> ") // path.last().map_or("", |v| v),
+        );
 
         Some(Self {
             profile_type,
@@ -1036,7 +1011,7 @@ impl Profile {
     #[cfg(feature = "full_profiling")]
     #[must_use]
     pub fn new(
-        name: Option<&str>,
+        custom_name: Option<&str>,
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
@@ -1062,7 +1037,7 @@ impl Profile {
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
-            // debug_log!("Current function/section: {name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+            // debug_log!("Current function/section: {custom_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
 
             // let fn_name = maybe_fn_name.unwrap();
@@ -1076,6 +1051,8 @@ impl Profile {
                 start_pattern,
                 &mut current_backtrace,
             );
+
+            debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
                 debug_log!("Empty cleaned stack found");
@@ -1104,11 +1081,11 @@ impl Profile {
             register_profiled_function(&stack, &desc_fn_name);
 
             // Determine if we should keep the custom name
-            let custom_name = name.map(str::to_string);
+            let custom_name = custom_name.map(str::to_string);
 
             // Debug output can be turned back on if needed for troubleshooting
             // debug_log!(
-            //     "DEBUG: Profile::new with name='{name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
+            //     "DEBUG: Profile::new with custom_name='{custom_name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
             // );
 
             // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
@@ -1117,6 +1094,9 @@ impl Profile {
                 //     debug_log!(
                 //     "Memory profiling enabled but only time profiling will be profiled as requested."
                 // );
+
+                debug_log!("NEW PROFILE: (Time) created for {:?}", path.join(" -> "));
+
                 return Some(Self {
                     profile_type,
                     start: Some(Instant::now()),
@@ -1128,7 +1108,6 @@ impl Profile {
                 });
             }
 
-            // Create a task to track memory usage
             // Create a memory task and activate it
             let memory_task = create_memory_task();
             let task_id = memory_task.id();
@@ -1149,8 +1128,7 @@ impl Profile {
 
             debug_log!(
                 "NEW PROFILE: Task {task_id} created for {:?}",
-                // path.join("::")
-                path.last().map_or("", |v| v),
+                path.join(" -> ") // path.last().map_or("", |v| v),
             );
 
             // Create memory guard
@@ -1342,10 +1320,18 @@ impl Profile {
 }
 
 #[must_use]
-pub fn extract_path(cleaned_stack: &[String], append: Option<&String>) -> Vec<String> {
+pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
     // Extract profiled functions
-    // let mut stack = String::new();
-    cleaned_stack
+    // if maybe_append.is_some() {
+    //     eprintln!(
+    //         "*** cleaned_stack.first()={:?}, append={maybe_append:?}",
+    //         cleaned_stack.first()
+    //     );
+    // }
+    let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
+        == Some(true);
+    let start = if dup { 1 } else { 0 };
+    cleaned_stack[start..]
         .iter()
         // Reverse the path so it goes from root caller to current function
         .rev()
@@ -1360,7 +1346,7 @@ pub fn extract_path(cleaned_stack: &[String], append: Option<&String>) -> Vec<St
             }
         })
         .iter()
-        .chain(append)
+        .chain(maybe_append)
         .cloned()
         .collect()
 }
@@ -1388,6 +1374,7 @@ pub fn extract_profile_callstack(
 
     // let end_point = "__rust_begin_short_backtrace";
     let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
+    debug_log!("end_point={end_point}");
 
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
@@ -1849,9 +1836,10 @@ pub enum MemoryError {
 /// // ... code to profile
 /// section.end();
 ///
-/// // Async function profiling
-/// let section = profile!("async_operation", async);
-/// // ... async code to profile
+/// // Section profiling in an async function.
+/// // `async_fn` to integrate the section and function reporting
+/// let section = profile!("async_operation", async_fn);
+/// // ... code to profile in an async function
 /// section.end();
 /// ```
 #[macro_export]
@@ -1873,8 +1861,8 @@ macro_rules! profile {
     //     $crate::profile_internal!(Some($name), $crate::ProfileType::Both, false, false)
     // };
 
-    // profile!(name, async)
-    ($name:expr, async) => {
+    // profile!(name, async_fn)
+    ($name:expr, async_fn) => {
         $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
     }; // profile!(method) - no custom name
        // (method) => {
@@ -1892,30 +1880,30 @@ macro_rules! profile {
        //     $crate::profile_internal!(None, $crate::ProfileType::Both, false, true)
        // };
 
-       // profile!(method, async) - no custom name
-       // (method, async) => {
+       // profile!(method, async_fn) - no custom name
+       // (method, async_fn) => {
        //     $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
        // };
 
-       // profile!(method, type, async) - no custom name
-       // (method, time, async) => {
+       // profile!(method, type, async_fn) - no custom name
+       // (method, time, async_fn) => {
        //     $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
        // };
-       // (method, memory, async) => {
+       // (method, memory, async_fn) => {
        //     $crate::profile_internal!(None, $crate::ProfileType::Memory, true, true)
        // };
-       // (method, both, async) => {
+       // (method, both, async_fn) => {
        //     $crate::profile_internal!(None, $crate::ProfileType::Both, true, true)
        // };
 
-       // profile!(name, type, async)
-       // ($name:expr, time, async) => {
+       // profile!(name, type, async_fn)
+       // ($name:expr, time, async_fn) => {
        //     $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
        // };
-       // ($name:expr, memory, async) => {
+       // ($name:expr, memory, async_fn) => {
        //     $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, true, false)
        // };
-       // ($name:expr, both, async) => {
+       // ($name:expr, both, async_fn) => {
        //     $crate::profile_internal!(Some($name), $crate::ProfileType::Both, true, false)
        // };
 }
@@ -1941,8 +1929,8 @@ macro_rules! profile {
         $crate::ProfileSection {}
     }};
 
-    // profile!(name, async)
-    ($name:expr, async) => {{
+    // profile!(name, async_fn)
+    ($name:expr, async_fn) => {{
         $crate::ProfileSection {}
     }};
 
@@ -1962,30 +1950,30 @@ macro_rules! profile {
         $crate::ProfileSection {}
     }};
 
-    // profile!(method, async)
-    (method, async) => {{
+    // profile!(method, async_fn)
+    (method, async_fn) => {{
         $crate::ProfileSection {}
     }};
 
-    // profile!(method, type, async)
-    (method, time, async) => {{
+    // profile!(method, type, async_fn)
+    (method, time, async_fn) => {{
         $crate::ProfileSection {}
     }};
-    (method, memory, async) => {{
+    (method, memory, async_fn) => {{
         $crate::ProfileSection {}
     }};
-    (method, both, async) => {{
+    (method, both, async_fn) => {{
         $crate::ProfileSection {}
     }};
 
-    // profile!(name, type, async)
-    ($name:expr, time, async) => {{
+    // profile!(name, type, async_fn)
+    ($name:expr, time, async_fn) => {{
         $crate::ProfileSection {}
     }};
-    ($name:expr, memory, async) => {{
+    ($name:expr, memory, async_fn) => {{
         $crate::ProfileSection {}
     }};
-    ($name:expr, both, async) => {{
+    ($name:expr, both, async_fn) => {{
         $crate::ProfileSection {}
     }};
 }
@@ -2021,8 +2009,7 @@ macro_rules! profile_internal {
 #[derive(Default)]
 pub struct ProfileStats {
     pub calls: HashMap<String, u64>,
-    pub total_time: HashMap<String, u128>, // Change to u128 for microseconds
-    pub async_boundaries: HashSet<String>,
+    pub total_time: HashMap<String, u128>,
     // Keep existing fields for backwards compatibility
     count: u64,
     duration_total: std::time::Duration,
@@ -2046,17 +2033,6 @@ impl ProfileStats {
         *self.total_time.entry(func_name.to_string()).or_default() += duration.as_micros();
     }
 
-    /// Marks a function as an async boundary.
-    ///
-    /// Async boundaries are points where asynchronous operations occur,
-    /// which can be useful for understanding async execution patterns.
-    ///
-    /// # Arguments
-    /// * `func_name` - The name of the function to mark as an async boundary
-    pub fn mark_async(&mut self, func_name: &str) {
-        self.async_boundaries.insert(func_name.to_string());
-    }
-
     /// Calculates the average duration of all recorded calls.
     ///
     /// # Returns
@@ -2070,18 +2046,6 @@ impl ProfileStats {
         } else {
             None
         }
-    }
-
-    #[must_use]
-    /// Checks if a function is marked as an async boundary.
-    ///
-    /// # Arguments
-    /// * `func_name` - The name of the function to check
-    ///
-    /// # Returns
-    /// `true` if the function is marked as an async boundary, `false` otherwise
-    pub fn is_async_boundary(&self, func_name: &str) -> bool {
-        self.async_boundaries.contains(func_name)
     }
 
     /// Returns the total number of times a function was called.
@@ -2220,11 +2184,6 @@ mod tests {
         // Check total times
         assert_eq!(*stats.total_time.get("func1").unwrap(), 300);
         assert_eq!(*stats.total_time.get("func2").unwrap(), 150);
-
-        // Mark async boundaries
-        stats.mark_async("func1");
-        assert!(stats.is_async_boundary("func1"));
-        assert!(!stats.is_async_boundary("func2"));
     }
 
     // Profile type tests

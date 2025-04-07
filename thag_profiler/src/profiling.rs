@@ -298,7 +298,15 @@ static_lazy! {
         std::fs::create_dir_all(&debug_log_path).ok();
         debug_log_path.push(format!("{base}-debug.log"));
 
-        ProfileFilePaths {time:format!("{base}.folded"),memory:format!("{base}-memory.folded"),debug_log:debug_log_path.to_string_lossy().to_string(),executable_stem:script_stem.to_string(),timestamp, memory_detail: format!("{base}-memory_detail.folded") }
+        ProfileFilePaths {
+            time:format!("{base}.folded"),
+            memory:format!("{base}-memory.folded"),
+            memory_dealloc:format!("{base}-memory_dealloc.folded"),
+            debug_log:debug_log_path.to_string_lossy().to_string(),
+            executable_stem:script_stem.to_string(),timestamp,
+            memory_detail: format!("{base}-memory_detail.folded"),
+            memory_detail_dealloc: format!("{base}-memory_detail_dealloc.folded")
+        }
     }
 }
 
@@ -313,20 +321,31 @@ static_lazy! {
     MemoryProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
+static_lazy! {
+    MemoryDeallocFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
+}
+
 #[cfg(feature = "full_profiling")]
 static_lazy! {
     MemoryDetailFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
+#[cfg(feature = "full_profiling")]
+static_lazy! {
+    MemoryDetailDeallocFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
+}
+
 #[cfg(feature = "time_profiling")]
-static START_TIME: AtomicU64 = AtomicU64::new(0);
+pub static START_TIME: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct ProfileFilePaths {
     time: String,
     memory: String,
+    memory_dealloc: String,
     memory_detail: String,
+    memory_detail_dealloc: String,
     pub debug_log: String,       // The full path to the debug log file
     pub executable_stem: String, // Store the executable stem for reuse
     pub timestamp: String,       // Store the timestamp for reuse
@@ -373,7 +392,7 @@ fn get_time_path() -> ProfileResult<&'static str> {
     TimePathHolder::get()
 }
 
-/// Get the path to the memory.folded output file.
+/// Get the path to the `memory_detail.folded` output file.
 ///
 /// # Errors
 ///
@@ -423,6 +442,110 @@ pub fn get_memory_detail_path() -> ProfileResult<&'static str> {
     }
 
     MemoryDetailPathHolder::get()
+}
+
+/// Get the path to the `memory_dealloc.folded` output file.
+///
+/// # Errors
+///
+/// This function will bubble up any filesystem errors that occur trying to create the directory.
+#[cfg(feature = "full_profiling")]
+pub fn get_memory_dealloc_path() -> ProfileResult<&'static str> {
+    struct MemoryDeallocPathHolder;
+    impl MemoryDeallocPathHolder {
+        fn get() -> ProfileResult<&'static str> {
+            static PATH_RESULT: OnceLock<Result<String, ProfileError>> = OnceLock::new();
+
+            let result = PATH_RESULT.get_or_init(|| {
+                let paths = ProfilePaths::get();
+                let config = ProfileConfig::get();
+
+                let path = if let Some(dir) = &config.output_dir {
+                    let dir_path = PathBuf::from(dir);
+                    if !dir_path.exists() {
+                        match std::fs::create_dir_all(&dir_path) {
+                            Ok(()) => {}
+                            Err(e) => return Err(ProfileError::from(e)),
+                        }
+                    }
+
+                    let memory_dealloc_file = dir_path.join(
+                        paths
+                            .memory_dealloc
+                            .split('/')
+                            .last()
+                            .unwrap_or(&paths.memory_dealloc),
+                    );
+
+                    memory_dealloc_file.to_string_lossy().to_string()
+                } else {
+                    paths.memory_dealloc.clone()
+                };
+
+                Ok(path)
+            });
+
+            // Convert to static reference
+            match result {
+                Ok(s) => Ok(Box::leak(s.clone().into_boxed_str())),
+                Err(e) => Err(e.clone()),
+            }
+        }
+    }
+
+    MemoryDeallocPathHolder::get()
+}
+
+/// Get the path to the `memory_detail_dealloc.folded` output file.
+///
+/// # Errors
+///
+/// This function will bubble up any filesystem errors that occur trying to create the directory.
+#[cfg(feature = "full_profiling")]
+pub fn get_memory_detail_dealloc_path() -> ProfileResult<&'static str> {
+    struct MemoryDetailDeallocPathHolder;
+    impl MemoryDetailDeallocPathHolder {
+        fn get() -> ProfileResult<&'static str> {
+            static PATH_RESULT: OnceLock<Result<String, ProfileError>> = OnceLock::new();
+
+            let result = PATH_RESULT.get_or_init(|| {
+                let paths = ProfilePaths::get();
+                let config = ProfileConfig::get();
+
+                let path = if let Some(dir) = &config.output_dir {
+                    let dir_path = PathBuf::from(dir);
+                    if !dir_path.exists() {
+                        match std::fs::create_dir_all(&dir_path) {
+                            Ok(()) => {}
+                            Err(e) => return Err(ProfileError::from(e)),
+                        }
+                    }
+
+                    let memory_detail_dealloc_file = dir_path.join(
+                        paths
+                            .memory_detail_dealloc
+                            .split('/')
+                            .last()
+                            .unwrap_or(&paths.memory_detail_dealloc),
+                    );
+
+                    memory_detail_dealloc_file.to_string_lossy().to_string()
+                } else {
+                    paths.memory_detail_dealloc.clone()
+                };
+
+                Ok(path)
+            });
+
+            // Convert to static reference
+            match result {
+                Ok(s) => Ok(Box::leak(s.clone().into_boxed_str())),
+                Err(e) => Err(e.clone()),
+            }
+        }
+    }
+
+    MemoryDetailDeallocPathHolder::get()
 }
 
 /// Get the path to the memory.folded output file.
@@ -518,7 +641,9 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
     let initialized = lazy_static_var!(ProfileResult<bool>, {
         let time_path = get_time_path()?;
         let memory_path = get_memory_path()?;
+        let memory_dealloc_path = get_memory_dealloc_path()?;
         let memory_detail_path = get_memory_detail_path()?;
+        let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
 
         eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
 
@@ -532,11 +657,27 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
                 MemoryProfileFile::init();
                 initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
                 debug_log!("Memory profile will be written to {memory_path}");
+                MemoryDeallocFile::init();
+                initialize_file(
+                    "Memory Dealloc",
+                    memory_dealloc_path,
+                    MemoryDeallocFile::get(),
+                )?;
+                debug_log!("Memory deallocation will be written to {memory_dealloc_path}");
 
                 if is_detailed_memory() {
                     MemoryDetailFile::init();
                     initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
                     debug_log!("Memory detail will be written to {memory_detail_path}");
+                    MemoryDetailDeallocFile::init();
+                    initialize_file(
+                        "Memory Detail Dealloc",
+                        memory_detail_dealloc_path,
+                        MemoryDetailDeallocFile::get(),
+                    )?;
+                    debug_log!(
+                        "Memory detail dealloc will be written to {memory_detail_dealloc_path}"
+                    );
                 }
             }
             ProfileType::Both => {
@@ -547,14 +688,30 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
                 // Reset both files and initialize headers, scoped to release locks ASAP
                 initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
                 initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+                MemoryDeallocFile::init();
+                initialize_file(
+                    "Memory Dealloc",
+                    memory_dealloc_path,
+                    MemoryDeallocFile::get(),
+                )?;
 
                 debug_log!("Time profile will be written to {time_path}");
                 debug_log!("Memory profile will be written to {memory_path}");
+                debug_log!("Memory deallocation will be written to {memory_dealloc_path}");
 
                 if is_detailed_memory() {
                     MemoryDetailFile::init();
                     initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
                     debug_log!("Memory detail will be written to {memory_detail_path}");
+                    MemoryDetailDeallocFile::init();
+                    initialize_file(
+                        "Memory Detail Dealloc",
+                        memory_detail_dealloc_path,
+                        MemoryDetailDeallocFile::get(),
+                    )?;
+                    debug_log!(
+                        "Memory detail dealloc will be written to {memory_detail_dealloc_path}"
+                    );
                 }
             }
         }
@@ -1222,6 +1379,10 @@ impl Profile {
 
         // debug_log!("DEBUG: write_time_event for stack: {:?}", path);
 
+        // eprintln!(
+        //     "Backtrace for section::print_docs:\n{:#?}",
+        //     Backtrace::new()
+        // );
         let stack = self.build_stack(path);
 
         // Add our custom section name to the end of the stack path if present
@@ -1330,7 +1491,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
     // }
     let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
         == Some(true);
-    let start = if dup { 1 } else { 0 };
+    let start = usize::from(dup);
     cleaned_stack[start..]
         .iter()
         // Reverse the path so it goes from root caller to current function
@@ -1556,8 +1717,14 @@ impl Drop for Profile {
                 // Handle time profiling as before
                 match self.profile_type {
                     ProfileType::Time | ProfileType::Both => {
-                        let elapsed = start.elapsed();
-                        let _ = self.write_time_event(elapsed);
+                        // debug_log!("In drop for Profile {:?}", self);
+                        if matches!(
+                            get_global_profile_type(),
+                            ProfileType::Time | ProfileType::Both
+                        ) {
+                            let elapsed = start.elapsed();
+                            let _ = self.write_time_event(elapsed);
+                        }
                     }
                     ProfileType::Memory => (),
                 }

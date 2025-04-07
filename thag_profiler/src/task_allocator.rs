@@ -10,8 +10,9 @@ use crate::{
     debug_log, extract_path, flush_debug_log, lazy_static_var,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
-        get_memory_detail_path, get_memory_path, is_detailed_memory, is_profiling_state_enabled,
-        MemoryDetailFile,
+        get_memory_dealloc_path, get_memory_detail_dealloc_path, get_memory_detail_path,
+        get_memory_path, is_detailed_memory, is_profiling_state_enabled, MemoryDetailDeallocFile,
+        MemoryDetailFile, START_TIME,
     },
     regex, Profile,
 };
@@ -138,7 +139,6 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
                     // Get backtrace without recursion
                     // debug_log!("Attempting backtrace");
-                    // Use a different allocator for backtrace operations
                     let start_ident = Instant::now();
                     let mut task_id = 0;
                     // Now we can safely use backtrace without recursion!
@@ -205,7 +205,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                                 return;
                             }
                             debug_log!(
-                                "...path is empty for thread {:?}, size: {size:?}, not eligible for allocation",
+                                "...path is empty for thread {:?}, size: {size:?}",
                                 thread::current().id(),
                             );
                         } else {
@@ -220,14 +220,13 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                         start_ident.elapsed().as_millis()
                     );
 
-                    // Record allocation if task found
-                    if task_id == 0 {
-                        // TODO if necessary, record in suspense file and allocate later
-                        return;
-                    }
+                    // // Record allocation if task found
+                    // if task_id == 0 {
+                    //     // TODO if necessary, record in suspense file and allocate later
+                    //     return;
+                    // }
 
                     let start_record_alloc = Instant::now();
-                    // Use system allocator to avoid recursive allocations
                     let address = ptr as usize;
 
                     debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
@@ -239,19 +238,23 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                         .push((address, size));
 
                     registry.address_to_task.insert(address, task_id);
-                    let check_map = &registry.task_allocations;
-                    let reg_task_id = *registry.address_to_task.get(&address).unwrap();
-                    let maybe_vec = check_map.get(&task_id);
-                    let (addr, sz) = *maybe_vec
-                        .and_then(|v: &Vec<(usize, usize)>| {
-                            let last = v.iter().filter(|&(addr, _)| *addr == address).last();
-                            last
-                        })
-                        .unwrap();
-                    drop(registry);
-                    assert_eq!(sz, size);
-                    assert_eq!(addr, address);
-                    assert_eq!(reg_task_id, task_id);
+
+                    if cfg!(debug_assertions) {
+                        let check_map = &registry.task_allocations;
+                        let reg_task_id = *registry.address_to_task.get(&address).unwrap();
+                        let maybe_vec = check_map.get(&task_id);
+                        let (addr, sz) = *maybe_vec
+                            .and_then(|v: &Vec<(usize, usize)>| {
+                                let last = v.iter().filter(|&(addr, _)| *addr == address).last();
+                                last
+                            })
+                            .unwrap();
+                        drop(registry);
+                        assert_eq!(sz, size);
+                        assert_eq!(addr, address);
+                        assert_eq!(reg_task_id, task_id);
+                    }
+
                     debug_log!(
                         "Time to record allocation: {}ms",
                         start_record_alloc.elapsed().as_millis()
@@ -263,8 +266,200 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
         ptr
     }
 
+    #[allow(clippy::too_many_lines)]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        // Just forward to system allocator for deallocation
+        if !ptr.is_null() && is_profiling_state_enabled() {
+            with_allocator(Allocator::System, || {
+                // Skip small allocations
+                let size = layout.size();
+                if size > MINIMUM_TRACKED_SIZE {
+                    // Simple recursion prevention without using TLS with destructors
+                    static mut IN_TRACKING: bool = false;
+                    struct Guard;
+                    impl Drop for Guard {
+                        fn drop(&mut self) {
+                            unsafe {
+                                IN_TRACKING = false;
+                            }
+                        }
+                    }
+
+                    // Flag if we're already tracking in case it causes an infinite recursion
+                    if unsafe { IN_TRACKING } {
+                        debug_log!(
+                            "*** Caution: already tracking: proceeding for deallocation of {size} B"
+                        );
+                        // return ptr;
+                    }
+
+                    // Set tracking flag and create guard for cleanup
+                    unsafe {
+                        IN_TRACKING = true;
+                    }
+                    let _guard = Guard;
+
+                    // Get backtrace without recursion
+                    // debug_log!("Attempting backtrace");
+                    let start_ident = Instant::now();
+                    let mut task_id = 0;
+                    // Now we can safely use backtrace without recursion!
+                    let start_pattern: &Regex = regex!("thag_profiler::task_allocator.+Dispatcher");
+
+                    // debug_log!("Calling extract_callstack");
+                    let mut current_backtrace = Backtrace::new_unresolved();
+                    let cleaned_stack =
+                        extract_alloc_callstack(start_pattern, &mut current_backtrace);
+                    debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
+                    let in_profile_code = cleaned_stack.iter().any(|frame| {
+                        frame.contains("Backtrace::new") || frame.contains("Profile::new")
+                    });
+
+                    if in_profile_code {
+                        debug_log!(
+                            "Ignoring deallocation request of size {size} for profiler code"
+                        );
+                        return;
+                    }
+
+                    let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
+                    if size > 0 && detailed_memory {
+                        let detailed_stack =
+                            extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
+
+                        let entry = if detailed_stack.is_empty() {
+                            // debug_log!(
+                            //     "...empty detailed_stack for backtrace: size={size}:\n{:#?}",
+                            //     // trim_backtrace(start_pattern, &current_backtrace)
+                            //     current_backtrace
+                            // );
+                            // Assuming address is not volatile
+                            let address = ptr as usize;
+
+                            let reg_task_id = {
+                                *ALLOC_REGISTRY
+                                    .lock()
+                                    .address_to_task
+                                    .get(&address)
+                                    .unwrap_or(&0)
+                            };
+                            // Caution: more condensed
+                            let reg_path: Vec<String> = {
+                                TASK_PATH_REGISTRY
+                                    .lock()
+                                    .get(&reg_task_id)
+                                    .unwrap_or(&Vec::new())
+                                    .clone()
+                            };
+
+                            format!("{} +{size}", reg_path.join(";"))
+                        } else {
+                            format!("{} +{size}", detailed_stack.join(";"))
+                        };
+
+                        let memory_detail_dealloc_path = get_memory_detail_dealloc_path().unwrap();
+                        let _ = Profile::write_profile_event(
+                            memory_detail_dealloc_path,
+                            MemoryDetailDeallocFile::get(),
+                            &entry,
+                        );
+                    }
+
+                    current_backtrace.resolve();
+
+                    if cleaned_stack.is_empty() {
+                        debug_log!(
+                            "...empty cleaned_stack for backtrace: size={size}:\n{:#?}",
+                            trim_backtrace(start_pattern, &current_backtrace)
+                        );
+                        // Assuming address is not volatile
+                        let address = ptr as usize;
+
+                        task_id = {
+                            *ALLOC_REGISTRY
+                                .lock()
+                                .address_to_task
+                                .get(&address)
+                                .unwrap_or(&0)
+                        };
+                    } else {
+                        // Make sure the use of a separate allocator is working.
+                        assert!(!cleaned_stack
+                            .iter()
+                            .any(|frame| frame.contains("find_matching_profile")));
+
+                        debug_log!("Calling extract_path");
+                        let path = extract_path(&cleaned_stack, None);
+                        if path.is_empty() {
+                            let trimmed_backtrace =
+                                trim_backtrace(start_pattern, &current_backtrace);
+                            if trimmed_backtrace
+                                .iter()
+                                .any(|frame| frame.contains("Backtrace::new"))
+                            {
+                                debug_log!("Ignoring setup deallocation of size {size} containing Backtrace::new:");
+                                return;
+                            }
+                            debug_log!(
+                                "...path is empty for thread {:?}, size: {size:?}",
+                                thread::current().id(),
+                            );
+                        } else {
+                            task_id = find_matching_profile(&path);
+                            debug_log!(
+                                "...find_matching_profile found task_id={task_id} for size={size} deallocation"
+                            );
+                        }
+                    }
+                    debug_log!(
+                        "task_id={task_id}, size={size}, time to assign = {}ms",
+                        start_ident.elapsed().as_millis()
+                    );
+
+                    // // Record deallocation if task found
+                    // if task_id == 0 {
+                    //     // TODO if necessary, record in suspense file and allocate later
+                    //     return;
+                    // }
+
+                    let start_record_dealloc = Instant::now();
+                    let address = ptr as usize;
+
+                    debug_log!("Recording deallocation for task_id={task_id}, address={address:#x}, size={size}");
+                    let mut registry = ALLOC_REGISTRY.lock();
+                    registry
+                        .task_deallocations
+                        .entry(task_id)
+                        .or_default()
+                        .push((address, size));
+
+                    if cfg!(debug_assertions) {
+                        let check_map = &registry.task_deallocations;
+                        let reg_task_id = *registry.address_to_task.get(&address).unwrap_or(&0);
+                        let maybe_vec = check_map.get(&task_id);
+                        let (addr, sz) = *maybe_vec
+                            .and_then(|v: &Vec<(usize, usize)>| {
+                                let last = v.iter().filter(|&(addr, _)| *addr == address).last();
+                                last
+                            })
+                            .unwrap();
+                        drop(registry);
+                        assert_eq!(sz, size);
+                        assert_eq!(addr, address);
+                        // assert_eq!(reg_task_id, task_id);
+                        if reg_task_id == 0 {
+                            debug_log!("Unrecognised address {address}");
+                        }
+                    }
+
+                    debug_log!(
+                        "Time to record deallocation: {}ms",
+                        start_record_dealloc.elapsed().as_millis()
+                    );
+                }
+            });
+        }
+
+        // Forward to system allocator for deallocation
         unsafe { System.dealloc(ptr, layout) };
     }
 }
@@ -301,9 +496,13 @@ unsafe impl GlobalAlloc for Dispatcher {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        // For deallocation, we don't need to check the allocator type, as both
-        // allocators use System for the actual deallocation.
-        unsafe { self.system.dealloc(ptr, layout) };
+        // // For deallocation, we don't need to check the allocator type, as both
+        // // allocators use System for the actual deallocation.
+        // unsafe { self.system.dealloc(ptr, layout) };
+        match current_allocator() {
+            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
+            Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
+        }
     }
 }
 
@@ -320,6 +519,8 @@ pub const MINIMUM_TRACKED_SIZE: usize = 0;
 pub struct AllocationRegistry {
     /// Task ID -> Allocations mapping: [(address, size)]
     pub task_allocations: HashMap<usize, Vec<(usize, usize)>>,
+    /// Task ID -> Deallocations mapping: [(address, size)]
+    pub task_deallocations: HashMap<usize, Vec<(usize, usize)>>,
 
     /// Address -> Task ID mapping for deallocations
     pub address_to_task: HashMap<usize, usize>,
@@ -329,6 +530,7 @@ impl AllocationRegistry {
     fn new() -> Self {
         Self {
             task_allocations: HashMap::new(),
+            task_deallocations: HashMap::new(),
             address_to_task: HashMap::new(),
         }
     }
@@ -338,6 +540,13 @@ impl AllocationRegistry {
         self.task_allocations
             .get(&task_id)
             .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
+    }
+
+    /// Get the memory deallocations for a specific task
+    fn get_task_memory_deallocs(&self, task_id: usize) -> Option<usize> {
+        self.task_deallocations
+            .get(&task_id)
+            .map(|deallocs| deallocs.iter().map(|(_, size)| *size).sum())
     }
 }
 
@@ -695,13 +904,13 @@ pub fn initialize_memory_profiling() {
 /// This is called by the main `finalize_profiling` function.
 pub fn finalize_memory_profiling() {
     write_memory_profile_data();
+    write_memory_dealloc_data();
     flush_debug_log();
 }
 
 /// Write memory profile data to a file
 #[allow(clippy::too_many_lines)]
 fn write_memory_profile_data() {
-    use chrono::Local;
     use std::{collections::HashMap, fs::File, path::Path};
 
     with_allocator(Allocator::System, || {
@@ -735,15 +944,15 @@ fn write_memory_profile_data() {
                         return;
                     }
 
-                    if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
-                        debug_log!("Error writing version: {e}");
+                    if let Err(e) =
+                        writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))
+                    {
+                        debug_log!("Error writing date: {e}");
                         return;
                     }
 
-                    if let Err(e) =
-                        writeln!(file, "# Date: {}", Local::now().format("%Y-%m-%d %H:%M:%S"))
-                    {
-                        debug_log!("Error writing date: {e}");
+                    if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
+                        debug_log!("Error writing version: {e}");
                         return;
                     }
 
@@ -785,11 +994,19 @@ fn write_memory_profile_data() {
 
             let mut already_written = HashSet::new();
 
+            // Write out any allocations for task 0, i.e. unassigned allocations
+            if let Some(allocation) = { ALLOC_REGISTRY.lock().get_task_memory_usage(0) } {
+                debug_log!("Writing for task 0 (unassigned) with {allocation} bytes");
+                write_alloc(0, allocation, &mut writer, &mut already_written, "");
+            }
+
             // Now write all tasks from registry that might not have allocations
             // This helps with keeping the full call hierarchy in the output
             for (task_id, path) in &task_paths_map {
+                let task_id = *task_id;
+
                 // Skip tasks we've already written
-                if task_allocs.contains_key(task_id) {
+                if task_allocs.contains_key(&task_id) {
                     continue;
                 }
 
@@ -801,12 +1018,7 @@ fn write_memory_profile_data() {
                 debug_log!("Writing for task {task_id} from registry: '{path_str}' with 0 bytes");
 
                 // Write line with zero bytes to maintain call hierarchy
-                match writeln!(writer, "{} {}", path_str, 0) {
-                    Ok(()) => {
-                        already_written.insert(path_str.clone());
-                    }
-                    Err(e) => debug_log!("Error writing line for task {task_id}: {e}"),
-                }
+                write_alloc(task_id, 0, &mut writer, &mut already_written, &path_str);
             }
 
             // Make sure to flush the writer
@@ -815,4 +1027,145 @@ fn write_memory_profile_data() {
             }
         }
     });
+}
+
+/// Write memory deallocation data to a file
+#[allow(clippy::too_many_lines)]
+fn write_memory_dealloc_data() {
+    use std::{collections::HashMap, fs::File, path::Path};
+
+    with_allocator(Allocator::System, || {
+        // Retrieve registries to get task allocations and names
+        let memory_dealloc_path = get_memory_dealloc_path().unwrap_or("memory_dealloc.folded");
+
+        // Check if the file exists first
+        let file_exists = Path::new(memory_dealloc_path).exists();
+
+        // If the file already exists, write the summary information to the existing file
+        // Otherwise, create a new file with the appropriate headers
+        let file_result = if file_exists {
+            debug_log!("Opening existing file in append mode");
+            File::options().append(true).open(memory_dealloc_path)
+        } else {
+            debug_log!("Creating new file");
+            match File::create(memory_dealloc_path) {
+                Ok(mut file) => {
+                    // Write headers similar to time profile file
+                    if let Err(e) = writeln!(file, "# Memory Deallocations") {
+                        debug_log!("Error writing header: {e}");
+                        return;
+                    }
+
+                    if let Err(e) = writeln!(
+                        file,
+                        "# Script: {}",
+                        std::env::current_exe().unwrap_or_default().display()
+                    ) {
+                        debug_log!("Error writing script path: {e}");
+                        return;
+                    }
+
+                    if let Err(e) =
+                        writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))
+                    {
+                        debug_log!("Error writing date: {e}");
+                        return;
+                    }
+
+                    if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
+                        debug_log!("Error writing version: {e}");
+                        return;
+                    }
+
+                    if let Err(e) = writeln!(file) {
+                        debug_log!("Error writing newline: {e}");
+                        return;
+                    }
+
+                    Ok(file)
+                }
+                Err(e) => {
+                    debug_log!("Error creating file: {e}");
+                    Err(e)
+                }
+            }
+        };
+
+        if let Ok(file) = file_result {
+            let mut writer = io::BufWriter::new(file);
+
+            // Get the task path registry mapping for easier lookup
+            let task_paths_map: HashMap<usize, Vec<String>> = {
+                let binding = TASK_PATH_REGISTRY.lock();
+
+                // // Dump all entries for debugging
+                // for (id, path) in binding.iter() {
+                //     debug_log!("Registry entry: task {id}: path: {:?}", path);
+                // }
+
+                // Get all entries from the registry
+                binding
+                    .iter()
+                    .map(|(task_id, pat)| (*task_id, pat.clone()))
+                    .collect()
+            };
+
+            let mut already_written = HashSet::new();
+
+            // Write out deallocations by task
+            for (task_id, path) in &task_paths_map {
+                let task_id = *task_id;
+
+                let path_str = path.join(";");
+                if already_written.contains(&path_str) {
+                    continue;
+                }
+
+                if let Some(dealloc) = { ALLOC_REGISTRY.lock().get_task_memory_deallocs(task_id) } {
+                    debug_log!(
+                    "Writing for task {task_id} from registry: '{path_str}' with {dealloc} bytes"
+                );
+                    write_alloc(
+                        task_id,
+                        dealloc,
+                        &mut writer,
+                        &mut already_written,
+                        &path_str,
+                    );
+                }
+            }
+
+            // Write out any deallocations for task 0, i.e. unassigned deallocations
+            if let Some(dealloc) = { ALLOC_REGISTRY.lock().get_task_memory_deallocs(0) } {
+                debug_log!("Writing for task 0 (unassigned) with {dealloc} bytes");
+                write_alloc(
+                    0,
+                    dealloc,
+                    &mut writer,
+                    &mut already_written,
+                    "[unassigned]",
+                );
+            }
+
+            // Make sure to flush the writer
+            if let Err(e) = writer.flush() {
+                debug_log!("Error flushing writer: {e}");
+            }
+        }
+    });
+}
+
+fn write_alloc(
+    task_id: usize,
+    allocation: usize,
+    writer: &mut io::BufWriter<std::fs::File>,
+    already_written: &mut HashSet<String>,
+    path_str: &str,
+) {
+    match writeln!(writer, "{} +{}", path_str, allocation) {
+        Ok(()) => {
+            already_written.insert(path_str.to_string());
+        }
+        Err(e) => debug_log!("Error writing line for task {task_id}: {e}"),
+    }
 }

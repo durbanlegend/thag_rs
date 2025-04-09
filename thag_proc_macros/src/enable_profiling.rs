@@ -53,12 +53,7 @@ impl Parse for ProfilingArgs {
 
 #[allow(clippy::too_many_lines)]
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // Runtime check for feature flag to handle when the proc macro
-    // is compiled with the feature but used without it
-    if cfg!(not(feature = "time_profiling")) {
-        // No wrapper, return original function
-        return item;
-    }
+    assert!(cfg!(feature = "time_profiling"));
 
     let args = parse_macro_input!(attr as ProfilingArgs);
     let input = parse_macro_input!(item as ItemFn);
@@ -86,7 +81,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
-    // #[cfg(not(feature = "full_profiling"))]
     let profile_new = quote! {
         ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, false)
     };

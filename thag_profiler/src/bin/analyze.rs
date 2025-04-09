@@ -1283,11 +1283,9 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
     clippy::cast_sign_loss,
     clippy::type_complexity
 )]
-fn analyze_allocation_sites(
-    profile: &ProcessedProfile,
-) -> (Vec<(String, usize)>, Vec<(String, i64)>) {
+fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> {
     let mut total_allocs: HashMap<String, usize> = HashMap::new();
-    let mut net_allocs: HashMap<String, i64> = HashMap::new();
+    // let mut net_allocs: HashMap<String, i64> = HashMap::new();
 
     // Process lines directly without creating intermediate MemoryEvents
     for event in &profile.memory_events {
@@ -1303,9 +1301,9 @@ fn analyze_allocation_sites(
 
             if operation == '+' {
                 *total_allocs.entry(event.stack.join(";")).or_default() += delta;
-                *net_allocs.entry(event.stack.join(";")).or_default() += delta as i64;
-            } else {
-                *net_allocs.entry(event.stack.join(";")).or_default() -= delta as i64;
+                //     *net_allocs.entry(event.stack.join(";")).or_default() += delta as i64;
+                // } else {
+                //     *net_allocs.entry(event.stack.join(";")).or_default() -= delta as i64;
             }
         }
     }
@@ -1313,13 +1311,14 @@ fn analyze_allocation_sites(
     let mut total_sites: Vec<_> = total_allocs.into_iter().collect();
     total_sites.sort_by(|a, b| b.1.cmp(&a.1));
 
-    let mut net_sites: Vec<_> = net_allocs
-        .into_iter()
-        .filter(|(_, size)| *size != 0)
-        .collect();
-    net_sites.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
+    // let mut net_s ites: Vec<_> = net_allocs
+    //     .into_iter()
+    //     .filter(|(_, size)| *size != 0)
+    //     .collect();
+    // net_sites.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
 
-    (total_sites, net_sites)
+    // (total_sites, net_sites)
+    total_sites
 }
 
 // Add pattern analysis to memory statistics display
@@ -1332,7 +1331,8 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
         println!("Current Memory Usage: {} bytes", memory_data.current_memory);
 
         // Show top allocation sites from profile data
-        let (total_sites, net_sites) = analyze_allocation_sites(profile);
+        // let (total_sites, net_sites) = analyze_allocation_sites(profile);
+        let total_sites = analyze_allocation_sites(profile);
 
         println!("\nTop Allocation Sites (Total Allocations):");
         println!("----------------------------------------");
@@ -1340,21 +1340,21 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
             println!("{size:>12} bytes: {stack}");
         }
 
-        println!("\nTop Allocation Sites (Net Memory Impact):");
-        println!("----------------------------------------");
-        for (stack, size) in net_sites.iter().take(15) {
-            let sign = if *size > 0 { '+' } else { '-' };
-            println!("{:>12} bytes ({:>}): {}", size.abs(), sign, stack);
-        }
+        // println!("\nTop Allocation Sites (Net Memory Impact):");
+        // println!("----------------------------------------");
+        // for (stack, size) in net_sites.iter().take(15) {
+        //     let sign = if *size > 0 { '+' } else { '-' };
+        //     println!("{:>12} bytes ({:>}): {}", size.abs(), sign, stack);
+        // }
 
-        // Optional: show allocation patterns
-        if !net_sites.is_empty() {
-            println!("\nPotential Memory Leaks (Positive Net Allocations):");
-            println!("------------------------------------------------");
-            for (stack, size) in net_sites.iter().filter(|(_, size)| *size > 0).take(5) {
-                println!("{size:>12} bytes: {stack}");
-            }
-        }
+        // // Optional: show allocation patterns
+        // if !net_sites.is_empty() {
+        //     println!("\nPotential Memory Leaks (Positive Net Allocations):");
+        //     println!("------------------------------------------------");
+        //     for (stack, size) in net_sites.iter().filter(|(_, size)| *size > 0).take(5) {
+        //         println!("{size:>12} bytes: {stack}");
+        //     }
+        // }
     }
 }
 

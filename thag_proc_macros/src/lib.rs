@@ -1,15 +1,19 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
-mod enable_profiling;
 mod file_navigator;
 mod fn_name;
 mod generate_theme_types;
 mod palette_methods;
 mod preload_themes;
-mod profiled;
 mod repeat_dash;
 mod tool_errors;
+
+#[cfg(feature = "time_profiling")]
+mod enable_profiling;
+
+#[cfg(feature = "time_profiling")]
+mod profiled;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;

@@ -6,10 +6,6 @@ use syn::{
     LitStr,
 };
 
-// #[cfg(feature = "time_profiling")]
-// use quote::quote;
-
-#[cfg(feature = "time_profiling")]
 use syn::{parse_macro_input, ItemFn, Type};
 
 use syn::{Attribute, FnArg, Generics, ReturnType, Visibility, WhereClause};
@@ -81,7 +77,6 @@ enum ProfileTypeOverride {
 /// This struct contains all the necessary components to generate either a synchronous
 /// or asynchronous function wrapper with profiling capabilities.
 #[derive(Debug)]
-// #[cfg(feature = "time_profiling")]
 struct FunctionContext<'a> {
     /// Function visibility (pub, pub(crate), etc.)
     vis: &'a Visibility,
@@ -111,7 +106,6 @@ struct FunctionContext<'a> {
 /// 2. Return type of Self (including references to Self)
 /// 3. Return type containing Self as a generic parameter (Result<Self>, Option<Self>, etc.)
 /// 4. Location within an impl block (when available)
-#[cfg(feature = "time_profiling")]
 fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
     // Check for self parameter (the most reliable indicator)
     let has_self_param = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
@@ -138,7 +132,6 @@ fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
 }
 
 /// Recursively checks if a type contains Self
-#[cfg(feature = "time_profiling")]
 fn contains_self_type(ty: &Type) -> bool {
     match ty {
         // Handle reference types (&Self, &'static Self, etc.)
@@ -193,14 +186,6 @@ fn contains_self_type(ty: &Type) -> bool {
     }
 }
 
-#[cfg(not(feature = "time_profiling"))]
-pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    // Always check the feature flag at runtime to handle when the proc macro
-    // is compiled with the feature but used without it
-    item
-}
-
-#[cfg(feature = "time_profiling")]
 pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // let args = parse_macro_input!(attr as ProfileArgs);
     let item_clone = item.clone();
@@ -319,7 +304,6 @@ pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
 //     parts.join("::")
 // }
 
-#[cfg(feature = "time_profiling")]
 fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
     let FunctionContext {
         vis,
@@ -351,7 +335,6 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
     }
 }
 
-// #[cfg(feature = "time_profiling")]
 // fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
 //     match profile_type {
 //         Some(ProfileTypeOverride::Global) | None => {

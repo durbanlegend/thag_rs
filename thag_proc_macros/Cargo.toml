@@ -23,7 +23,9 @@ syn = { version = "2.0", default-features = false, features = [
 toml = { version = "0.8.19" }
 
 [features]
-profiling = [] # New feature for conditional compilation
+time_profiling = []                 # New feature for conditional compilation
+full_profiling = ["time_profiling"]
+default = []
 
 [lib]
 proc-macro = true

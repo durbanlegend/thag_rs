@@ -1,19 +1,18 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-
+use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
     LitStr,
 };
 
-#[cfg(feature = "profiling")]
-use quote::quote;
+// #[cfg(feature = "time_profiling")]
+// use quote::quote;
 
-#[cfg(feature = "profiling")]
-use syn::{
-    parse_macro_input, Attribute, FnArg, Generics, ItemFn, ReturnType, Type, Visibility,
-    WhereClause,
-};
+#[cfg(feature = "time_profiling")]
+use syn::{parse_macro_input, ItemFn, Type};
+
+use syn::{Attribute, FnArg, Generics, ReturnType, Visibility, WhereClause};
 
 /// Configuration for `profiled` attribute macro
 #[derive(Default)]
@@ -82,7 +81,7 @@ enum ProfileTypeOverride {
 /// This struct contains all the necessary components to generate either a synchronous
 /// or asynchronous function wrapper with profiling capabilities.
 #[derive(Debug)]
-#[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 struct FunctionContext<'a> {
     /// Function visibility (pub, pub(crate), etc.)
     vis: &'a Visibility,
@@ -99,12 +98,12 @@ struct FunctionContext<'a> {
     /// Function body
     body: &'a syn::Block,
     attrs: &'a Vec<Attribute>,
-    // Generated profile name incorporating context (impl/trait/async/etc.)
-    // profile_name: String,
+    // Profile instantiation, avoiding allocation tracking if memory profiling
+    profile_new: proc_macro2::TokenStream,
     // /// Whether the function is asynchronous
     // is_async: bool,
-    /// Whether the function is a method
-    is_method: bool,
+    // /// Whether the function is a method
+    // is_method: bool,
 }
 
 /// Determines if a function is a method by checking for:
@@ -112,7 +111,7 @@ struct FunctionContext<'a> {
 /// 2. Return type of Self (including references to Self)
 /// 3. Return type containing Self as a generic parameter (Result<Self>, Option<Self>, etc.)
 /// 4. Location within an impl block (when available)
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
     // Check for self parameter (the most reliable indicator)
     let has_self_param = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
@@ -139,7 +138,7 @@ fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
 }
 
 /// Recursively checks if a type contains Self
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 fn contains_self_type(ty: &Type) -> bool {
     match ty {
         // Handle reference types (&Self, &'static Self, etc.)
@@ -194,14 +193,14 @@ fn contains_self_type(ty: &Type) -> bool {
     }
 }
 
-#[cfg(not(feature = "profiling"))]
+#[cfg(not(feature = "time_profiling"))]
 pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // Always check the feature flag at runtime to handle when the proc macro
     // is compiled with the feature but used without it
     item
 }
 
-#[cfg(feature = "profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // let args = parse_macro_input!(attr as ProfileArgs);
     let item_clone = item.clone();
@@ -254,6 +253,20 @@ pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     // let profile_name =
     //     generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
 
+    let fn_name_str = fn_name.to_string();
+
+    #[cfg(not(feature = "full_profiling"))]
+    let profile_new = quote! {
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method)
+    };
+
+    #[cfg(feature = "full_profiling")]
+    let profile_new = quote! {
+        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method)
+        })
+    };
+
     let ctx = FunctionContext {
         vis: &input.vis,
         fn_name,
@@ -263,15 +276,15 @@ pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
         where_clause: input.sig.generics.where_clause.as_ref(),
         body: &input.block,
         attrs: &input.attrs,
-        // profile_name,
+        profile_new,
         // is_async,
-        is_method,
+        // is_method,
     };
 
     if is_async {
-        generate_async_wrapper(&ctx /*, args.profile_type.as_ref() */)
+        generate_async_wrapper(&ctx)
     } else {
-        generate_sync_wrapper(&ctx /*, args.profile_type.as_ref() */)
+        generate_sync_wrapper(&ctx)
     }
     .into()
 }
@@ -306,11 +319,8 @@ pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
 //     parts.join("::")
 // }
 
-#[cfg(feature = "profiling")]
-fn generate_sync_wrapper(
-    ctx: &FunctionContext,
-    // profile_type: Option<&ProfileTypeOverride>,
-) -> proc_macro2::TokenStream {
+#[cfg(feature = "time_profiling")]
+fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
     let FunctionContext {
         vis,
         fn_name,
@@ -320,14 +330,14 @@ fn generate_sync_wrapper(
         where_clause,
         body,
         attrs,
-        // profile_name,
+        profile_new,
         // is_async,
-        is_method,
+        // is_method: _,
     }: &FunctionContext<'_> = ctx;
 
     // let profile_type = resolve_profile_type(profile_type);
     // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
-    let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
+    // let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     quote! {
 
@@ -335,13 +345,13 @@ fn generate_sync_wrapper(
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
 
             // We pass None for the name as we rely on the backtrace to identify the function
-            let _profile = ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method);
+            #profile_new;
             #body
         }
     }
 }
 
-// #[cfg(feature = "profiling")]
+// #[cfg(feature = "time_profiling")]
 // fn resolve_profile_type(profile_type: Option<&ProfileTypeOverride>) -> proc_macro2::TokenStream {
 //     match profile_type {
 //         Some(ProfileTypeOverride::Global) | None => {
@@ -353,7 +363,6 @@ fn generate_sync_wrapper(
 //     }
 // }
 
-#[cfg(feature = "profiling")]
 fn generate_async_wrapper(
     ctx: &FunctionContext,
     // profile_type: Option<&ProfileTypeOverride>,
@@ -367,14 +376,14 @@ fn generate_async_wrapper(
         where_clause,
         body,
         attrs,
-        // profile_name,
+        profile_new,
         // is_async,
-        is_method,
+        // is_method: _,
     } = ctx;
 
     // let profile_type = resolve_profile_type(profile_type);
     // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
-    let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
+    // let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     // let is_method = ctx.is_method;
 
@@ -409,7 +418,7 @@ fn generate_async_wrapper(
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method),
+                _profile: #profile_new,
             }.await
         }
     }

@@ -916,7 +916,7 @@ fn collect_profile_files<T: Fn(&str) -> bool>(
     // Convert to sorted vec for display
     let mut result: Vec<_> = groups.into_iter().collect();
     // Show in reverse chronological order
-    result.sort_by(|(_a, ta), (_b, tb)| tb.cmp(ta));
+    result.sort_by(|(_a, ta), (_b, tb)| ta.cmp(tb));
 
     Ok(result)
 }
@@ -1526,6 +1526,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
                 // Get the root function from the stack
                 stack_str
                     .split(';')
+                    // .inspect(|path| eprintln!("path={path}"))
                     .find(|path| !path.ends_with("::main"))
                     .map(ToString::to_string)
                     .filter(|s| !s.is_empty())
@@ -1533,6 +1534,22 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
                 None
             }
         })
+        .chain(pattern_filtered.stacks.iter().filter_map(|line| {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 {
+                // Extract stack trace part (without the size at the end)
+                let stack_str = parts[..parts.len() - 1].join(" ");
+                // Get the root function from the stack
+                stack_str
+                    .split(';')
+                    // .inspect(|path| eprintln!("path={path}"))
+                    .find(|path| path.ends_with("::main"))
+                    .map(ToString::to_string)
+                    .filter(|s| !s.is_empty())
+            } else {
+                None
+            }
+        }))
         .collect();
 
     let mut function_list: Vec<String> = functions.into_iter().collect();

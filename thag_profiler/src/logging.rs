@@ -1,10 +1,13 @@
 use crate::profiling::{get_debug_level, DebugLevel, ProfilePaths};
-use crate::{static_lazy, with_allocator};
+use crate::static_lazy;
 use chrono::Local;
 use parking_lot::Mutex;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
+
+#[cfg(feature = "full_profiling")]
+use crate::with_allocator;
 
 static_lazy! {
     DebugLogger: Option<Mutex<BufWriter<File>>> = {

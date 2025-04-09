@@ -55,7 +55,7 @@ impl Parse for ProfilingArgs {
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Runtime check for feature flag to handle when the proc macro
     // is compiled with the feature but used without it
-    if cfg!(not(feature = "profiling")) {
+    if cfg!(not(feature = "time_profiling")) {
         // No wrapper, return original function
         return item;
     }
@@ -84,34 +84,41 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         );
     }
 
-    // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
-    let new_profile = quote! {
-        // Create a profile that covers everything, including tokio setup
-        // We pass None for the name as we rely on the backtrace to identify the function
-        ::thag_profiler::Profile::new(
-            None,
-            Some(#fn_name_str),
-            ::thag_profiler::get_global_profile_type(),
-            false,
-            false,
-        )
+    // #[cfg(not(feature = "full_profiling"))]
+    let profile_new = quote! {
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, false)
     };
 
+    #[cfg(not(feature = "full_profiling"))]
+    let profile_drop = quote! {
+        drop(profile);
+    };
+
+    #[cfg(feature = "full_profiling")]
+    let profile_drop = quote! {
+        with_allocator(Allocator::System, || {
+            drop(profile);
+        });
+    };
+
+    #[cfg(not(feature = "full_profiling"))]
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
+                use ::thag_profiler::{finalize_profiling, init_profiling};
+
                 let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
                 eprintln!("should_profile={should_profile}");
 
                 if should_profile {
                     // Initialize profiling
-                    ::thag_profiler::init_profiling(module_path!());
+                    init_profiling(module_path!());
                 }
 
                 let maybe_profile = if should_profile {
-                    Some(#new_profile)
+                    #profile_new
                 } else {
                     None
                 };
@@ -120,9 +127,46 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         ProfilingMode::Enabled => {
             quote! {
                 // Initialize profiling
-                ::thag_profiler::init_profiling(module_path!());
+                init_profiling(module_path!());
 
-                let profile = #new_profile;
+                let profile = #profile_new;
+            }
+        }
+        ProfilingMode::Disabled => {
+            quote! {}
+        }
+    };
+
+    #[cfg(feature = "full_profiling")]
+    let profile_init = match args.mode {
+        ProfilingMode::Runtime => {
+            quote! {
+                use ::thag_profiler::{finalize_profiling, init_profiling, with_allocator, Allocator};
+
+                let (should_profile, maybe_profile) = with_allocator(Allocator::System, || {
+                    let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
+                    eprintln!("should_profile={should_profile}");
+
+                    if should_profile {
+                        // Initialize profiling
+                        ::thag_profiler::init_profiling(module_path!());
+                    }
+
+                    let maybe_profile = if should_profile {
+                        #profile_new
+                    } else {
+                        None
+                    };
+                    (should_profile, maybe_profile)
+                });
+            }
+        }
+        ProfilingMode::Enabled => {
+            quote! {
+                // Initialize profiling
+                init_profiling(module_path!());
+
+                let profile = #profile_new;
             }
         }
         ProfilingMode::Disabled => {
@@ -136,18 +180,18 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 if should_profile {
                     // Drop the profile explicitly at the end
                     if let Some(profile) = maybe_profile {
-                        drop(profile);
+                        #profile_drop
                     }
 
                     // Finalize profiling
-                    ::thag_profiler::finalize_profiling();
+                    finalize_profiling();
                 }
             }
         }
         ProfilingMode::Enabled => {
             quote! {
                 // Drop the profile explicitly at the end
-                drop(profile);
+                #profile_drop
 
                 // Finalize profiling
                 ::thag_profiler::finalize_profiling();

@@ -3,7 +3,7 @@ use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     env,
     fmt::{Display, Formatter},
     fs::File,
@@ -37,6 +37,7 @@ use crate::{flush_debug_log, get_base_location, ProfileResult};
 
 #[cfg(feature = "time_profiling")]
 use std::{
+    collections::HashSet,
     convert::Into,
     fs::OpenOptions,
     io::Write,
@@ -124,27 +125,27 @@ static_lazy! {
 
         // Parse detailed memory (fourth element)
         let detailed_memory = parts.get(3).is_some_and(|val| if val.trim().is_empty() {
-                          false // Default if empty
-                      } else if let Ok(val) = val.trim().parse::<bool>() {
-                          // Validate that detailed memory is only true for Memory or Both profile types
-                          if val
-                              && profile_type
-                                  .as_ref().is_some_and(|pt| *pt == ProfileType::Time)
-                          {
-                              errors.push(
-                                  "Detailed memory profiling can only be enabled with profile_type=memory or profile_type=both"
-                                      .to_string(),
-                              );
-                              false
-                          } else {
-                              val
-                          }
-                      } else {
-                          errors.push(format!(
-                              "Failed to parse '{val}' as boolean for detailed memory flag. Expected 'true' or 'false'"
-                          ));
-                          false
-                      });
+            false // Default if empty
+        } else if let Ok(val) = val.trim().parse::<bool>() {
+            // Validate that detailed memory is only true for Memory or Both profile types
+            if val
+                && profile_type
+                    .as_ref().is_some_and(|pt| *pt == ProfileType::Time)
+            {
+                errors.push(
+                    "Detailed memory profiling can only be enabled with profile_type=memory or profile_type=both"
+                        .to_string(),
+                );
+                false
+            } else {
+                val
+            }
+        } else {
+            errors.push(format!(
+                "Failed to parse '{val}' as boolean for detailed memory flag. Expected 'true' or 'false'"
+            ));
+            false
+        });
 
         // If there are errors, return them
         if !errors.is_empty() {
@@ -301,7 +302,7 @@ static_lazy! {
         ProfileFilePaths {
             time:format!("{base}.folded"),
             memory:format!("{base}-memory.folded"),
-            memory_dealloc:format!("{base}-memory_dealloc.folded"),
+            // memory_dealloc:format!("{base}-memory_dealloc.folded"),
             debug_log:debug_log_path.to_string_lossy().to_string(),
             executable_stem:script_stem.to_string(),timestamp,
             memory_detail: format!("{base}-memory_detail.folded"),
@@ -343,7 +344,7 @@ pub static START_TIME: AtomicU64 = AtomicU64::new(0);
 pub struct ProfileFilePaths {
     time: String,
     memory: String,
-    memory_dealloc: String,
+    // memory_dealloc: String,
     memory_detail: String,
     memory_detail_dealloc: String,
     pub debug_log: String,       // The full path to the debug log file
@@ -442,58 +443,6 @@ pub fn get_memory_detail_path() -> ProfileResult<&'static str> {
     }
 
     MemoryDetailPathHolder::get()
-}
-
-/// Get the path to the `memory_dealloc.folded` output file.
-///
-/// # Errors
-///
-/// This function will bubble up any filesystem errors that occur trying to create the directory.
-#[cfg(feature = "full_profiling")]
-pub fn get_memory_dealloc_path() -> ProfileResult<&'static str> {
-    struct MemoryDeallocPathHolder;
-    impl MemoryDeallocPathHolder {
-        fn get() -> ProfileResult<&'static str> {
-            static PATH_RESULT: OnceLock<Result<String, ProfileError>> = OnceLock::new();
-
-            let result = PATH_RESULT.get_or_init(|| {
-                let paths = ProfilePaths::get();
-                let config = ProfileConfig::get();
-
-                let path = if let Some(dir) = &config.output_dir {
-                    let dir_path = PathBuf::from(dir);
-                    if !dir_path.exists() {
-                        match std::fs::create_dir_all(&dir_path) {
-                            Ok(()) => {}
-                            Err(e) => return Err(ProfileError::from(e)),
-                        }
-                    }
-
-                    let memory_dealloc_file = dir_path.join(
-                        paths
-                            .memory_dealloc
-                            .split('/')
-                            .last()
-                            .unwrap_or(&paths.memory_dealloc),
-                    );
-
-                    memory_dealloc_file.to_string_lossy().to_string()
-                } else {
-                    paths.memory_dealloc.clone()
-                };
-
-                Ok(path)
-            });
-
-            // Convert to static reference
-            match result {
-                Ok(s) => Ok(Box::leak(s.clone().into_boxed_str())),
-                Err(e) => Err(e.clone()),
-            }
-        }
-    }
-
-    MemoryDeallocPathHolder::get()
 }
 
 /// Get the path to the `memory_detail_dealloc.folded` output file.
@@ -641,7 +590,6 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
     let initialized = lazy_static_var!(ProfileResult<bool>, {
         let time_path = get_time_path()?;
         let memory_path = get_memory_path()?;
-        let memory_dealloc_path = get_memory_dealloc_path()?;
         let memory_detail_path = get_memory_detail_path()?;
         let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
 
@@ -657,13 +605,6 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
                 MemoryProfileFile::init();
                 initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
                 debug_log!("Memory profile will be written to {memory_path}");
-                MemoryDeallocFile::init();
-                initialize_file(
-                    "Memory Dealloc",
-                    memory_dealloc_path,
-                    MemoryDeallocFile::get(),
-                )?;
-                debug_log!("Memory deallocation will be written to {memory_dealloc_path}");
 
                 if is_detailed_memory() {
                     MemoryDetailFile::init();
@@ -688,16 +629,9 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
                 // Reset both files and initialize headers, scoped to release locks ASAP
                 initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
                 initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-                MemoryDeallocFile::init();
-                initialize_file(
-                    "Memory Dealloc",
-                    memory_dealloc_path,
-                    MemoryDeallocFile::get(),
-                )?;
 
                 debug_log!("Time profile will be written to {time_path}");
                 debug_log!("Memory profile will be written to {memory_path}");
-                debug_log!("Memory deallocation will be written to {memory_dealloc_path}");
 
                 if is_detailed_memory() {
                     MemoryDetailFile::init();
@@ -819,7 +753,10 @@ pub fn enable_profiling(
         } else {
             let config_profile_type = get_config_profile_type();
             if !cfg!(feature = "full_profiling") && config_profile_type != ProfileType::Time {
-                return Err(ProfileError::General(r#"Memory profiling not allowed since feature "full_profiling" is not specified"#.to_string()));
+                return Err(ProfileError::General(
+                    "Memory profiling not allowed since feature `full_profiling` is not specified"
+                        .to_string(),
+                ));
             }
             config_profile_type
         };
@@ -836,7 +773,7 @@ pub fn enable_profiling(
         };
         START_TIME.store(now, Ordering::SeqCst);
 
-        let _ = initialize_profile_files(final_profile_type)?;
+        initialize_profile_files(final_profile_type)?;
     }
 
     // Whether enabling or disabling, set the state
@@ -1086,7 +1023,7 @@ impl Profile {
         let mut current_backtrace = Backtrace::new_unresolved();
         let cleaned_stack = extract_profile_callstack(start_pattern, &mut current_backtrace);
 
-        debug_log!("cleaned_stack={cleaned_stack:#?}");
+        // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
         let fn_name = &cleaned_stack[0];
 
@@ -1121,7 +1058,7 @@ impl Profile {
         }
 
         debug_log!(
-            "NEW PROFILE: Task {task_id} created for {:?}",
+            "NEW PROFILE: (Time) created for {:?}",
             path.join(" -> ") // path.last().map_or("", |v| v),
         );
 
@@ -1209,7 +1146,7 @@ impl Profile {
                 &mut current_backtrace,
             );
 
-            debug_log!("cleaned_stack={cleaned_stack:#?}");
+            // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
                 debug_log!("Empty cleaned stack found");
@@ -1523,7 +1460,7 @@ fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn extract_profile_callstack(
     // maybe_fn_name: Option<&str>,
     // fn_name: &str,
@@ -1606,7 +1543,7 @@ pub fn extract_alloc_callstack(
             }
         })
         .collect();
-    debug_log!("Callstack: {callstack:#?}");
+    // debug_log!("Callstack: {callstack:#?}");
     // debug_log!("already_seen: {:#?}", already_seen);
     callstack
 }
@@ -2239,6 +2176,19 @@ impl ProfileStats {
         self.max_time
     }
 }
+
+#[cfg(feature = "full_profiling")]
+pub fn force_gc() {
+    // Allocate and immediately drop a large object to encourage GC
+    let pressure = vec![0u8; 1024 * 1024];
+    drop(pressure);
+
+    // Sleep briefly to give the system time to process deallocations
+    std::thread::sleep(std::time::Duration::from_millis(10));
+}
+
+#[cfg(not(feature = "full_profiling"))]
+pub const fn force_gc() {}
 
 /// Dumps the contents of the profiled functions registry for debugging purposes
 ///

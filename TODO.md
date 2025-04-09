@@ -31,8 +31,8 @@
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Debug Esc at all places in thag-analyze.
-- [ ]  Fix or doc: profiling a section loses any async attribute of the surrounding function. Considered changing #[profiled] to change the name or args of
-the declarative macro to e.g. `profile_in_async`, or changing Profile::new to look up an existing profile, if that can be guaranteed to be registered first (seems to get messy), or having #[profiled] add function names to a separate register with their attributes. Decided to rename the `async` arg of the `profile!` macro to `async_fn` and document that this is required to align the reporting.
+- [ ]  Remove redundant sections (leak?) from analyze memory stats.
+- [ ]  Consider reallocations as deallocations as well as allocations, to balance the books.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

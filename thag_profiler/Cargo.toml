@@ -15,7 +15,7 @@ ra_ap_syntax = { version = "0.0.264", optional = true }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", optional = true }
 strum = { version = "0.27.1", features = ["derive", "phf"] }
-thag_proc_macros = { path = "../thag_proc_macros" }
+thag_proc_macros = { path = "../thag_proc_macros", default-features = false }
 parking_lot = { version = "0.12.3", default-features = false }
 regex = { version = "1.11.1", default-features = false }
 
@@ -27,9 +27,9 @@ tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
 
 [features]
 analyze-tool = ["dirs", "inferno", "inquire", "ra_ap_syntax", "serde_json"]
-default = []
-full_profiling = ["time_profiling"]
-time_profiling = ["thag_proc_macros/profiling"]
+default = ["time_profiling"]
+time_profiling = ["thag_proc_macros/time_profiling"]
+full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
 tools = ["analyze-tool", "instrument-tool"]                                 # Enable all tools
 instrument-tool = ["ra_ap_syntax"]                                          # Dependencies for instrument
 

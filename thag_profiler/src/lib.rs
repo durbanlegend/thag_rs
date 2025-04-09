@@ -62,21 +62,22 @@ pub use {
         get_config_profile_type, get_global_profile_type, is_profiling_enabled, strip_hex_suffix,
         Profile, ProfileSection, ProfileType,
     },
-    thag_proc_macros::{enable_profiling, fn_name, profiled},
+    thag_proc_macros::fn_name,
     // Only re-export what users need from task_allocator
 };
-
-#[cfg(feature = "full_profiling")]
-pub use task_allocator::{with_allocator, Allocator, Dispatcher, TaskAwareAllocator};
 
 #[cfg(feature = "full_profiling")]
 pub use {
     profiling::extract_path,
     task_allocator::{
-        create_memory_task, find_matching_profile, get_last_active_task, trim_backtrace, TaskGuard,
-        TaskMemoryContext, ALLOC_REGISTRY,
+        create_memory_task, find_matching_profile, get_last_active_task, trim_backtrace,
+        with_allocator, Allocator, Dispatcher, TaskAwareAllocator, TaskGuard, TaskMemoryContext,
+        ALLOC_REGISTRY,
     },
 };
+
+#[cfg(feature = "time_profiling")]
+pub use thag_proc_macros::{enable_profiling, profiled};
 
 #[cfg(feature = "time_profiling")]
 pub static PROFILER: OnceLock<Profiler> = OnceLock::new();
@@ -376,7 +377,7 @@ pub fn finalize_profiling() {
     enable_profiling(false, None).expect("Failed to finalize profiling");
 
     // Determine profile type based on features
-    let global_profile_type = get_global_profile_type();
+    // let global_profile_type = get_global_profile_type();
 
     // Final flush to ensure all data is written
     flush_debug_log();

@@ -31,6 +31,7 @@ pub struct ProcessedProfile {
     pub stacks: Vec<String>,
     pub title: String,
     pub subtitle: String,
+    pub duration: u32,
     pub timestamp: DateTime<Local>,
     pub profile_type: ProfileType,
     pub memory_data: Option<MemoryData>,
@@ -330,9 +331,10 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
         "Execution Timeline Flamegraph (Aggregated)".to_string()
     };
     opts.subtitle = Some(format!(
-        "{}  Started:  {}",
+        "{}  Started:  {}  Total sec: {:.3}",
         profile.subtitle,
-        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
+        f64::from(profile.duration) / 1_000_000_f64
     ));
     // opts.notes = profile.subtitle.clone();
     opts.colors = color_scheme;
@@ -528,7 +530,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
     };
 
     // Apply appropriate filtering based on the chosen mode
-    let filtered_stacks = if exact_match {
+    let filtered_stacks: Vec<String> = if exact_match {
         // In exact match mode, we need to keep any stack where the filtered function
         // has children (i.e., is part of a call chain)
         processed
@@ -572,8 +574,18 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
             .collect()
     };
 
+    let mut duration: u32 = 0;
+    for line in &filtered_stacks {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 2 {
+            let delta = parts[parts.len() - 1].parse::<u32>().unwrap_or(0_u32);
+            duration += delta;
+        }
+    }
+
     Ok(Some(ProcessedProfile {
         stacks: filtered_stacks,
+        duration,
         ..processed.clone() // Keep the metadata
     }))
 }
@@ -1049,7 +1061,8 @@ fn select_profile_file(
 #[allow(
     clippy::cast_possible_wrap,
     clippy::cast_possible_truncation,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    clippy::too_many_lines
 )]
 fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
     let input = File::open(path)?;
@@ -1098,6 +1111,14 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
             .filter(|line| !line.starts_with('#') && !line.is_empty())
             .cloned()
             .collect();
+    }
+
+    for stack in &processed.stacks {
+        let parts: Vec<&str> = stack.split_whitespace().collect();
+        if parts.len() >= 2 {
+            let delta = parts[parts.len() - 1].parse::<u32>().unwrap_or(0_u32);
+            processed.duration += delta;
+        }
     }
 
     // Process memory entries from folded file
@@ -1233,7 +1254,7 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         "Memory Profile Flamegraph (Aggregated)".to_string()
     };
     opts.subtitle = Some(format!(
-        "{}  Started: {}  Total Bytes Alloc: {} Peak: {}",
+        "{}  Started: {}  Total Bytes: {} Peak: {}",
         profile.subtitle,
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
         thousands(memory_data.bytes_allocated),
@@ -1447,6 +1468,8 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
         maybe_custom_pattern?
     };
 
+    // let mut memory_data = MemoryData::default();
+
     // Create a filtered profile based on memory patterns
     let pattern_filtered = if selected_patterns.is_empty() {
         profile.clone()
@@ -1647,6 +1670,7 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
         pattern_filtered
             .stacks
             .iter()
+            .inspect(|stack| eprintln!("Recursive stack: {stack}"))
             .filter(|line| {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() < 2 {
@@ -1657,10 +1681,14 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
                 let stack_str = parts[..parts.len() - 1].join(" ");
 
                 // Get the root function name
-                let func = stack_str.split(';').next().unwrap_or("").to_string();
-
-                // If it's in the filter list, filter it out
-                !to_filter.contains(&func)
+                // let func = stack_str.split(';').next().unwrap_or("").to_string();
+                for func in stack_str.split(';') {
+                    // If it's in the filter list, filter it out
+                    if to_filter.contains(&func.to_string()) {
+                        return false;
+                    }
+                }
+                true
             })
             .cloned()
             .collect()
@@ -1683,8 +1711,18 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
         function_filtered_percent
     );
 
+    let mut memory_data = MemoryData::default();
+    for line in &filtered_stacks {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 2 {
+            let delta = parts[parts.len() - 1].parse::<u64>().unwrap_or(0_u64);
+            memory_data.bytes_allocated += delta;
+        }
+    }
+
     Ok(Some(ProcessedProfile {
         stacks: filtered_stacks,
+        memory_data: Some(memory_data),
         ..pattern_filtered // Keep the metadata
     }))
 }

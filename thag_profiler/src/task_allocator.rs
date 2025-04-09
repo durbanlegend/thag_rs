@@ -345,10 +345,15 @@ fn record_dealloc(address: usize, size: usize) {
     // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
     let in_profile_code = cleaned_stack
         .iter()
-        .any(|frame| frame.contains("Backtrace::new") || frame.contains("Profile::new"));
+        .any(|frame| frame.contains("::profiling::Profile"));
 
     if in_profile_code {
-        debug_log!("Ignoring deallocation request of size {size} for profiler code");
+        debug_log!(
+            "Ignoring deallocation request of size {size} for profiler code: frame={:?}",
+            cleaned_stack
+                .iter()
+                .find(|frame| frame.contains("::profiling::Profile"))
+        );
         return;
     }
 
@@ -356,6 +361,20 @@ fn record_dealloc(address: usize, size: usize) {
     if size > 0 && detailed_memory {
         let detailed_stack =
             extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
+
+        let in_profile_code = detailed_stack
+            .iter()
+            .any(|frame| frame.contains("::profiling::Profile"));
+
+        if in_profile_code {
+            debug_log!(
+                "Ignoring deallocation request of size {size} for profiler code: frame={:?}",
+                detailed_stack
+                    .iter()
+                    .find(|frame| frame.contains("::profiling::Profile"))
+            );
+            return;
+        }
 
         let entry = if detailed_stack.is_empty() {
             // debug_log!(

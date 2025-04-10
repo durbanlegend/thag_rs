@@ -1,23 +1,26 @@
 # thag_profiler
 
-A straightforward, lightweight profiling library for Rust applications that provides time profiling with minimal overhead, and memory profiling with
-more substantial runtime overhead.
+A straightforward, lightweight cross-platform profiling library for Rust applications that provides time profiling with minimal overhead, and memory profiling with more substantial runtime overhead.
+
+`thag-profiler` aims to lower the barriers to profiling by offering a quick and easy, async-compatible tool producing clear and accurate flamegraphs.
 
 ## Features
 
 - **Zero-cost abstraction**: No runtime overhead when profiling is disabled
 
-- **Time and memory profiling**: Track execution time or memory usage, or both.
+- **Time and memory profiling**: Track execution time or memory usage, or both. Time profiling is fast, while memory profiling is slower but richer in detail, and optionally very detailed.
 
     **Notes:**
 
-    Memory profiling (the optional `full_profiling` feature) uses the `re_memory` crate's global allocator.
+    Memory profiling (the optional `full_profiling` feature) requires `thag_profiler` to use a custom global allocator for user code.
 
     1. This is incompatible with specifying your own global allocator.
 
-    2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies. You will get an error: "fatal runtime error: the global allocator may not use TLS with destructors".
+    2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies. You will know if you see an error: "fatal runtime error: the global allocator may not use TLS with destructors".
 
         For instance this is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
+
+- **Detailed memory profiling with only one attribute on `fn main`**: The combination of `#[enable_profiling(runtime)]` on `fn main` and the runtime environment `THAG_PROFILE=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation in a flamegraph (`.folded`) format, with a similar file for deallocations. Accurate memory tracking requires `thag_profiler` to use backtraces for all allocations and deallocations, so obviously this kind of diagnostic analysis may slow your program down quite considerably compared with a normal execution, depending on how many small allocations your code and its dependencies are making.
 
 - **Function and section profiling**: Profile entire functions or specific code sections, down to single instructions.
 

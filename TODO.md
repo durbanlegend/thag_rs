@@ -74,6 +74,9 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
   This approach works for simple use cases but might need atomic operations or a mutex for complete thread safety in a high-concurrency environment. For your specific use case, it's likely
   sufficient since allocator code runs with minimal thread contention, and recursion detection is primarily about preventing infinite recursion within the same thread.
 
+At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag-profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILE=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag-analyze .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
+
+
 Tools classification suggestions from Claude
 
 ### Format & Conversion

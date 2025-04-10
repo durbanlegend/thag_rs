@@ -106,20 +106,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
                 eprintln!("should_profile={should_profile}");
 
-                // if should_profile {
-                //     // Acquire the mutex to ensure only one instance can be profiling at a time
-                //     let _guard = PROFILING_MUTEX.lock();
-                //     eprintln!("Locked profiling mutex");
-
-                //     // Initialize profiling
-                //     init_profiling(module_path!());
-                // }
-
-                // let maybe_profile = if should_profile {
-                //     #profile_new
-                // } else {
-                //     None
-                // };
             }
         }
         ProfilingMode::Enabled | ProfilingMode::Disabled => {
@@ -135,39 +121,13 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
                 let should_profile = with_allocator(Allocator::System, || {
                     std::env::var("THAG_PROFILE").ok().is_some()
-                    // eprintln!("should_profile={should_profile}");
                 });
 
-                // let (should_profile, maybe_profile) = with_allocator(Allocator::System, || {
-
-                //     if should_profile {
-                //         // Acquire the mutex to ensure only one instance can be profiling at a time
-                //         let _guard = PROFILING_MUTEX.lock();
-                //         eprintln!("Locked profiling mutex");
-
-                //         // Initialize profiling
-                //         ::thag_profiler::init_profiling(module_path!());
-                //     }
-
-                //     let maybe_profile = if should_profile {
-                //         #profile_new
-                //     } else {
-                //         None
-                //     };
-                //     (should_profile, maybe_profile)
-                // });
             }
         }
         ProfilingMode::Enabled => {
             quote! {
-                // // Acquire the mutex to ensure only one instance can be profiling at a time
-                // let _guard = PROFILING_MUTEX.lock();
-                // eprintln!("Locked profiling mutex");
-
-                // // Initialize profiling
-                // init_profiling(module_path!());
-
-                // let profile = #profile_new;
+                use ::thag_profiler::{disable_profiling, enable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileType, PROFILING_MUTEX};
             }
         }
         ProfilingMode::Disabled => {
@@ -185,7 +145,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                     }
 
                     // Finalize profiling
-                    finalize_profiling();
+                    finalize_profiling();  // Already uses with_allocator(Allocator::System... internally
                 }
             }
         }
@@ -195,7 +155,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 #profile_drop
 
                 // Finalize profiling
-                ::thag_profiler::finalize_profiling();
+                finalize_profiling();  // Already uses with_allocator(Allocator::System... internally
             }
         }
         ProfilingMode::Disabled => {
@@ -226,11 +186,10 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 if should_profile {
                     // Acquire the mutex to ensure only one instance can be profiling at a time
                     Some(PROFILING_MUTEX.lock())
-                    // eprintln!("Locked profiling mutex");
                 } else {None}
             });
 
-            init_profiling(module_path!());
+            init_profiling(module_path!());  // Already uses with_allocator(Allocator::System... internally
 
             let maybe_profile = with_allocator(Allocator::System, || {
                 if should_profile {
@@ -246,11 +205,10 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             // Acquire the mutex to ensure only one instance can be profiling at a time
             let _guard = with_allocator(Allocator::System, || {
                 PROFILING_MUTEX.lock()
-                // eprintln!("Locked profiling mutex");
             });
 
             // Initialize profiling
-            init_profiling(module_path!());
+            init_profiling(module_path!());  // Already uses with_allocator(Allocator::System... internally
 
             let profile = with_allocator(Allocator::System, || {
                 #profile_new

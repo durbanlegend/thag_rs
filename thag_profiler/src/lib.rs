@@ -48,8 +48,8 @@ use std::fmt::Display;
 #[cfg(feature = "time_profiling")]
 use backtrace::{Backtrace, BacktraceFrame};
 
-#[cfg(feature = "time_profiling")]
-use crate::profiling::enable_profiling;
+// #[cfg(feature = "time_profiling")]
+// pub use crate::profiling::{disable_profiling, enable_profiling};
 
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
@@ -59,8 +59,9 @@ pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        get_config_profile_type, get_global_profile_type, is_profiling_enabled, strip_hex_suffix,
-        Profile, ProfileSection, ProfileType, PROFILING_MUTEX,
+        disable_profiling, enable_profiling, get_config_profile_type, get_global_profile_type,
+        is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection, ProfileType,
+        PROFILING_MUTEX,
     },
     thag_proc_macros::fn_name,
     // Only re-export what users need from task_allocator

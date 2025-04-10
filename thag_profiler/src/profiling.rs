@@ -1,4 +1,4 @@
-use crate::{debug_log, lazy_static_var, static_lazy, ProfileError};
+use crate::{debug_log, static_lazy, ProfileError};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -587,72 +587,65 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
 /// Returns a `ProfileError` if any file operations fail
 #[cfg(feature = "full_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
-    let initialized = lazy_static_var!(ProfileResult<bool>, {
-        let time_path = get_time_path()?;
-        let memory_path = get_memory_path()?;
-        let memory_detail_path = get_memory_detail_path()?;
-        let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
+    let time_path = get_time_path()?;
+    let memory_path = get_memory_path()?;
+    let memory_detail_path = get_memory_detail_path()?;
+    let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
 
-        eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
+    eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
 
-        match profile_type {
-            ProfileType::Time => {
-                TimeProfileFile::init();
-                initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-                debug_log!("Time profile will be written to {time_path}");
-            }
-            ProfileType::Memory => {
-                MemoryProfileFile::init();
-                initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-                debug_log!("Memory profile will be written to {memory_path}");
+    match profile_type {
+        ProfileType::Time => {
+            TimeProfileFile::init();
+            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+            debug_log!("Time profile will be written to {time_path}");
+        }
+        ProfileType::Memory => {
+            MemoryProfileFile::init();
+            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+            debug_log!("Memory profile will be written to {memory_path}");
 
-                if is_detailed_memory() {
-                    MemoryDetailFile::init();
-                    initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-                    debug_log!("Memory detail will be written to {memory_detail_path}");
-                    MemoryDetailDeallocFile::init();
-                    initialize_file(
-                        "Memory Detail Dealloc",
-                        memory_detail_dealloc_path,
-                        MemoryDetailDeallocFile::get(),
-                    )?;
-                    debug_log!(
-                        "Memory detail dealloc will be written to {memory_detail_dealloc_path}"
-                    );
-                }
-            }
-            ProfileType::Both => {
-                // Initialize both main files and memory detail if requested
-                TimeProfileFile::init();
-                MemoryProfileFile::init();
-
-                // Reset both files and initialize headers, scoped to release locks ASAP
-                initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-                initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-
-                debug_log!("Time profile will be written to {time_path}");
-                debug_log!("Memory profile will be written to {memory_path}");
-
-                if is_detailed_memory() {
-                    MemoryDetailFile::init();
-                    initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-                    debug_log!("Memory detail will be written to {memory_detail_path}");
-                    MemoryDetailDeallocFile::init();
-                    initialize_file(
-                        "Memory Detail Dealloc",
-                        memory_detail_dealloc_path,
-                        MemoryDetailDeallocFile::get(),
-                    )?;
-                    debug_log!(
-                        "Memory detail dealloc will be written to {memory_detail_dealloc_path}"
-                    );
-                }
+            if is_detailed_memory() {
+                MemoryDetailFile::init();
+                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+                debug_log!("Memory detail will be written to {memory_detail_path}");
+                MemoryDetailDeallocFile::init();
+                initialize_file(
+                    "Memory Detail Dealloc",
+                    memory_detail_dealloc_path,
+                    MemoryDetailDeallocFile::get(),
+                )?;
+                debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
             }
         }
-        flush_debug_log();
-        Ok(true)
-    });
-    initialized.to_owned()
+        ProfileType::Both => {
+            // Initialize both main files and memory detail if requested
+            TimeProfileFile::init();
+            MemoryProfileFile::init();
+
+            // Reset both files and initialize headers, scoped to release locks ASAP
+            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+
+            debug_log!("Time profile will be written to {time_path}");
+            debug_log!("Memory profile will be written to {memory_path}");
+
+            if is_detailed_memory() {
+                MemoryDetailFile::init();
+                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+                debug_log!("Memory detail will be written to {memory_detail_path}");
+                MemoryDetailDeallocFile::init();
+                initialize_file(
+                    "Memory Detail Dealloc",
+                    memory_detail_dealloc_path,
+                    MemoryDetailDeallocFile::get(),
+                )?;
+                debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
+            }
+        }
+    }
+    flush_debug_log();
+    Ok(true)
 }
 
 #[cfg(feature = "time_profiling")]

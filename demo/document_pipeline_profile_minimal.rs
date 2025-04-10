@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::*;
+use thag_profiler::{self, enable_profiling, profile, profiled};
 
 struct Document {
     id: usize,
@@ -179,7 +179,7 @@ async fn run_batch(count: usize) {
 }
 
 #[tokio::main]
-#[enable_profiling(no)]
+#[enable_profiling(yes)]
 async fn main() {
     println!(
         "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
@@ -192,13 +192,13 @@ async fn main() {
     run_batch(3).await;
 
     println!("Switching profiling off");
-    profiling::disable_profiling();
+    disable_profiling();
 
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
     println!("Switching only time profiling back on");
-    profiling::enable_profiling(true, Some(ProfileType::Time)).unwrap();
+    enable_profiling(true, Some(ProfileType::Time)).unwrap();
 
     // Only process small batches of documents for easy tracing
     run_batch(1).await;

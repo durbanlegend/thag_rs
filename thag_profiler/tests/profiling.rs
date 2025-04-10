@@ -183,7 +183,7 @@ fn test_profiling_profiled_attribute() {
 // Using direct macro approach for consistency
 #[cfg(feature = "time_profiling")]
 async fn async_profiled_function() -> u32 {
-    let _section = thag_profiler::profile!("async_profiled_function", async);
+    let _section = thag_profiler::profile!("async_profiled_function", async_fn);
     // Simulate some async work
     smol::Timer::after(Duration::from_millis(500)).await;
     84

@@ -31,8 +31,7 @@
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Debug Esc at all places in thag-analyze.
-- [ ]  Remove redundant sections (leak?) from analyze memory stats.
-- [ ]  Consider reallocations as deallocations as well as allocations, to balance the books.
+- [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

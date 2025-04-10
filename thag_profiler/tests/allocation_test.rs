@@ -1,6 +1,7 @@
 use thag_profiler::create_memory_task;
 
 #[test]
+#[cfg(feature = "full_profiling")]
 fn test_basic_allocation() {
     // Create a memory task
     let task = create_memory_task();

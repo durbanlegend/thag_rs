@@ -53,7 +53,7 @@ use std::{
 #[cfg(feature = "time_profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
-// Mutex to protect profiling state changes
+// Mutex to prevent concurrent access to profiling by different executions.
 #[cfg(feature = "time_profiling")]
 pub static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 
@@ -300,11 +300,10 @@ static_lazy! {
         debug_log_path.push(format!("{base}-debug.log"));
 
         ProfileFilePaths {
-            time:format!("{base}.folded"),
-            memory:format!("{base}-memory.folded"),
-            // memory_dealloc:format!("{base}-memory_dealloc.folded"),
-            debug_log:debug_log_path.to_string_lossy().to_string(),
-            executable_stem:script_stem.to_string(),timestamp,
+            time: format!("{base}.folded"),
+            memory: format!("{base}-memory.folded"),
+            debug_log: debug_log_path.to_string_lossy().to_string(),
+            executable_stem: script_stem.to_string(),timestamp,
             memory_detail: format!("{base}-memory_detail.folded"),
             memory_detail_dealloc: format!("{base}-memory_detail_dealloc.folded")
         }
@@ -344,7 +343,6 @@ pub static START_TIME: AtomicU64 = AtomicU64::new(0);
 pub struct ProfileFilePaths {
     time: String,
     memory: String,
-    // memory_dealloc: String,
     memory_detail: String,
     memory_detail_dealloc: String,
     pub debug_log: String,       // The full path to the debug log file
@@ -721,10 +719,6 @@ pub fn enable_profiling(
     enabled: bool,
     maybe_profile_type: Option<ProfileType>,
 ) -> ProfileResult<()> {
-    // eprintln!(
-    //     "In enable_profiling, arg enabled={enabled} backtrace=\n{:#?}",
-    //     backtrace::Backtrace::new()
-    // );
     // // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
     // let _guard = PROFILING_MUTEX.lock();
 

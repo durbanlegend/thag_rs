@@ -160,10 +160,6 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
 #[allow(clippy::too_many_lines)]
 fn record_alloc(address: usize, size: usize) {
-    if get_global_profile_type() != ProfileType::Memory {
-        return;
-    }
-
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -173,6 +169,10 @@ fn record_alloc(address: usize, size: usize) {
                 IN_TRACKING = false;
             }
         }
+    }
+
+    if get_global_profile_type() != ProfileType::Memory {
+        return;
     }
 
     // Flag if we're already tracking in case it causes an infinite recursion
@@ -308,10 +308,6 @@ fn record_alloc(address: usize, size: usize) {
 }
 
 fn record_dealloc(address: usize, size: usize) {
-    if get_global_profile_type() != ProfileType::Memory {
-        return;
-    }
-
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -321,6 +317,10 @@ fn record_dealloc(address: usize, size: usize) {
                 IN_TRACKING = false;
             }
         }
+    }
+
+    if get_global_profile_type() != ProfileType::Memory {
+        return;
     }
 
     // Flag if we're already tracking in case it causes an infinite recursion

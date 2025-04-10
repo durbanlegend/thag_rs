@@ -7,14 +7,14 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, flush_debug_log, lazy_static_var,
+    debug_log, extract_path, flush_debug_log, get_global_profile_type, lazy_static_var,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
         is_detailed_memory, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
         START_TIME,
     },
-    regex, Profile,
+    regex, Profile, ProfileType,
 };
 use backtrace::Backtrace;
 use parking_lot::Mutex;
@@ -160,6 +160,10 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
 #[allow(clippy::too_many_lines)]
 fn record_alloc(address: usize, size: usize) {
+    if get_global_profile_type() != ProfileType::Memory {
+        return;
+    }
+
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -304,6 +308,10 @@ fn record_alloc(address: usize, size: usize) {
 }
 
 fn record_dealloc(address: usize, size: usize) {
+    if get_global_profile_type() != ProfileType::Memory {
+        return;
+    }
+
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;

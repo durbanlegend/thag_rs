@@ -55,7 +55,7 @@ static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
 // Mutex to protect profiling state changes
 #[cfg(feature = "time_profiling")]
-static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
+pub static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 
 // Compile-time feature check - always use the runtime state in tests
 #[cfg(all(feature = "time_profiling", not(test)))]
@@ -673,20 +673,17 @@ fn initialize_file(
 // /// Panics if `enable_profiling` fails.
 // Modify get_global_profile_type to use the config:
 pub fn get_global_profile_type() -> ProfileType {
-    // debug_log!("profile_type={profile_type:?}");
-
-    lazy_static_var!(ProfileType, deref, {
-        match GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst) {
-            2 => ProfileType::Memory,
-            3 => ProfileType::Both,
-            _ => {
-                // Then check environment variables
-                ProfileConfig::get()
-                    .profile_type
-                    .expect("Missing profile type")
-            }
+    match GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst) {
+        1 => ProfileType::Time,
+        2 => ProfileType::Memory,
+        3 => ProfileType::Both,
+        _ => {
+            // Then check environment variables
+            ProfileConfig::get()
+                .profile_type
+                .expect("Missing profile type")
         }
-    })
+    }
 }
 
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
@@ -735,8 +732,8 @@ pub fn enable_profiling(
     //     "In enable_profiling, arg enabled={enabled} backtrace=\n{:#?}",
     //     backtrace::Backtrace::new()
     // );
-    // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
-    let _guard = PROFILING_MUTEX.lock();
+    // // Acquire the mutex to ensure only one thread can enable/disable profiling at a time
+    // let _guard = PROFILING_MUTEX.lock();
 
     // Check if the operation is a no-op due to environment settings
     let config = ProfileConfig::get();
@@ -762,6 +759,7 @@ pub fn enable_profiling(
         };
 
         set_global_profile_type(final_profile_type);
+        eprintln!("get_global_profile_type={:?}", get_global_profile_type());
 
         let Ok(now) = u64::try_from(
             SystemTime::now()

@@ -179,8 +179,13 @@ async fn run_batch(count: usize) {
 }
 
 #[tokio::main]
-#[enable_profiling(runtime)]
+#[enable_profiling(no)]
 async fn main() {
+    println!(
+        "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
+        thag_profiler::PROFILING_MUTEX.is_locked()
+    );
+
     println!("Starting simplified document processing example");
 
     // Only process small batches of different sizes for easy tracing
@@ -199,4 +204,9 @@ async fn main() {
     run_batch(1).await;
 
     println!("Profiling data written to folded files in current directory");
+
+    println!(
+        "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
+        thag_profiler::PROFILING_MUTEX.is_locked()
+    );
 }

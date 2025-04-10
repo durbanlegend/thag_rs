@@ -1712,6 +1712,7 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 }
 
 #[cfg(feature = "time_profiling")]
+#[derive(Debug)]
 pub struct ProfileSection {
     pub profile: Option<Profile>,
 }

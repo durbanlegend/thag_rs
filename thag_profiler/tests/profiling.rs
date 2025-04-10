@@ -1,10 +1,5 @@
-// use serial_test::file_serial;
-// use serial_test::is_locked_serially;
-use std::{
-    sync::{Mutex, MutexGuard},
-    thread,
-    time::Duration,
-};
+use parking_lot::MutexGuard;
+use std::{thread, time::Duration};
 use thag_profiler::{
     profiling::{
         dump_profiled_functions, enable_profiling, is_profiled_function,
@@ -16,11 +11,11 @@ use thag_profiler::{
 #[cfg(feature = "time_profiling")]
 use std::panic;
 
-#[cfg(feature = "time_profiling")]
-use thag_profiler::profile;
+#[cfg(feature = "full_profiling")]
+use thag_profiler::{with_allocator, Allocator};
 
-// Static mutex for test synchronization
-static TEST_MUTEX: Mutex<()> = Mutex::new(());
+#[cfg(feature = "time_profiling")]
+use thag_profiler::{profile, PROFILING_MUTEX};
 
 #[cfg(feature = "time_profiling")]
 struct TestGuard;
@@ -33,27 +28,26 @@ impl Drop for TestGuard {
     }
 }
 
-// Helper function to get a mutex guard, even if poisoned
-fn get_test_lock() -> MutexGuard<'static, ()> {
-    match TEST_MUTEX.lock() {
-        Ok(guard) => guard,
-        Err(poison_error) => {
-            // If poisoned, recover the guard anyway
-            println!("Warning: Mutex was poisoned from a previous test panic. Recovering...");
-            poison_error.into_inner()
-        }
-    }
-}
-
 // Use this before each test
+#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 fn setup_test() -> MutexGuard<'static, ()> {
-    let guard = get_test_lock();
+    let guard = PROFILING_MUTEX.lock();
 
     // Reset profiling state completely
     let _ = enable_profiling(false, Some(ProfileType::Time));
 
-    // Reset any other global state here
-    // ...
+    guard
+}
+
+// Use this before each test
+#[cfg(feature = "full_profiling")]
+fn setup_test() -> MutexGuard<'static, ()> {
+    let guard = with_allocator(Allocator::System, || PROFILING_MUTEX.lock());
+
+    // Reset profiling state completely
+    let _ = with_allocator(Allocator::System, || {
+        enable_profiling(false, Some(ProfileType::Time))
+    });
 
     guard
 }
@@ -68,26 +62,23 @@ where
     register_profiled_function("test_function", "test_description");
 
     // Explicitly disable profiling first to ensure clean state
-    let _ = enable_profiling(false, Some(ProfileType::Time));
+    let result = enable_profiling(false, Some(ProfileType::Time));
+    eprintln!("Disabling profiling result: {:?}", result);
 
     // Then enable profiling
-    let _ = enable_profiling(true, Some(ProfileType::Time));
+    let result = enable_profiling(true, Some(ProfileType::Time));
+    eprintln!("Enabling profiling result: {:?}", result);
 
     // Verify profiling is actually enabled
+    let is_enabled = is_profiling_state_enabled();
+    eprintln!("Is profiling enabled after explicit enable: {}", is_enabled);
     assert!(
-        is_profiling_state_enabled(),
+        is_enabled,
         "Profiling should be enabled at the start of run_test"
     );
 
-    // Create guard that will clean up even if test panics
+    // Create guard that will clean up only after the test is done
     let _guard = TestGuard;
-
-    // Register the crate under a name that the #[profiled] macro will recognize
-    // This simulates what would happen if this was using an imported thag_profiler
-    register_profiled_function("test_function", "test_description");
-
-    // Explicitly disable profiling first to ensure clean state
-    let _ = enable_profiling(false, Some(ProfileType::Time));
 
     // Run the test, catching any panics to ensure our guard runs
     let result = panic::catch_unwind(test);
@@ -113,8 +104,20 @@ fn test_profiling_profile_creation() {
     );
 
     run_test(|| {
+        // Verify profiling is enabled
+        eprintln!(
+            "Before creating section: is_profiling_enabled = {}",
+            is_profiling_state_enabled()
+        );
+
         // Create a profile section using the macro
         let section = profile!("test_profile");
+        eprintln!("section={section:?}");
+        eprintln!(
+            "After creating section: is_profiling_enabled = {}",
+            is_profiling_state_enabled()
+        );
+
         assert!(
             section.is_active(),
             "ProfileSection should be active when profiling is enabled"
@@ -269,7 +272,7 @@ fn test_profiling_create_section() {
 // Memory profiling test
 
 #[test]
-#[cfg(feature = "time_profiling")]
+#[cfg(feature = "full_profiling")]
 fn test_profiling_full_profiling() {
     // Get lock and reset state
     let _guard = setup_test();

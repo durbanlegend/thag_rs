@@ -181,6 +181,7 @@ async fn run_batch(count: usize) {
 #[tokio::main]
 #[enable_profiling(yes)]
 async fn main() {
+    let section_a = profile!("section_a", async_fn);
     println!(
         "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
         thag_profiler::PROFILING_MUTEX.is_locked()
@@ -200,13 +201,17 @@ async fn main() {
     println!("Switching only time profiling back on");
     enable_profiling(true, Some(ProfileType::Time)).unwrap();
 
+    let section_b = profile!("section_b", async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
 
     println!("Profiling data written to folded files in current directory");
 
+    section_a.end();
+
     println!(
         "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
         thag_profiler::PROFILING_MUTEX.is_locked()
     );
+    section_b.end();
 }

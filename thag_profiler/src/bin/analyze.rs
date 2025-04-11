@@ -457,7 +457,7 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
             0
         };
         println!(
-            "{:>10} calls {:>12} μs total {:>12} μs avg     {func}",
+            "{:>10} calls {:>14} μs total {:>14} μs avg     {func}",
             thousands(calls),
             thousands(total_time),
             thousands(avg_time)
@@ -1185,14 +1185,18 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
                 // instances of the same function running in parallel with both leaky and non-leaky
                 // code paths .
                 current_memory -= memory_event.delta as u64;
-                memory_data.bytes_deallocated += memory_event.delta as u64;
-                memory_data.deallocation_count += 1;
+                // memory_data.bytes_deallocated += memory_event.delta as u64;
+                // memory_data.deallocation_count += 1;
 
                 // // Track allocation size distribution
                 // let size_abs = memory_event.delta;
                 // *memory_data.allocation_sizes.entry(size_abs).or_default() += 1;
             }
 
+            eprintln!(
+                "memory_data.allocation_sizes={:#?}",
+                memory_data.allocation_sizes
+            );
             memory_data.current_memory = current_memory;
             processed.memory_data = Some(memory_data);
         }
@@ -1285,7 +1289,6 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
 )]
 fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> {
     let mut total_allocs: HashMap<String, usize> = HashMap::new();
-    // let mut net_allocs: HashMap<String, i64> = HashMap::new();
 
     // Process lines directly without creating intermediate MemoryEvents
     for event in &profile.memory_events {
@@ -1311,13 +1314,6 @@ fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> 
     let mut total_sites: Vec<_> = total_allocs.into_iter().collect();
     total_sites.sort_by(|a, b| b.1.cmp(&a.1));
 
-    // let mut net_s ites: Vec<_> = net_allocs
-    //     .into_iter()
-    //     .filter(|(_, size)| *size != 0)
-    //     .collect();
-    // net_sites.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
-
-    // (total_sites, net_sites)
     total_sites
 }
 
@@ -1334,27 +1330,15 @@ fn show_memory_statistics(profile: &ProcessedProfile) {
         // let (total_sites, net_sites) = analyze_allocation_sites(profile);
         let total_sites = analyze_allocation_sites(profile);
 
-        println!("\nTop Allocation Sites (Total Allocations):");
-        println!("----------------------------------------");
+        let heading = "Top Allocation Sites (Total Allocations)";
+        println!("\n{heading}");
+        println!("{}", "━".repeat(heading.len()));
         for (stack, size) in total_sites.iter().take(15) {
-            println!("{size:>12} bytes: {stack}");
+            if *size == 0 {
+                break;
+            }
+            println!("{:>12} bytes: {stack}\n", thousands(size));
         }
-
-        // println!("\nTop Allocation Sites (Net Memory Impact):");
-        // println!("----------------------------------------");
-        // for (stack, size) in net_sites.iter().take(15) {
-        //     let sign = if *size > 0 { '+' } else { '-' };
-        //     println!("{:>12} bytes ({:>}): {}", size.abs(), sign, stack);
-        // }
-
-        // // Optional: show allocation patterns
-        // if !net_sites.is_empty() {
-        //     println!("\nPotential Memory Leaks (Positive Net Allocations):");
-        //     println!("------------------------------------------------");
-        //     for (stack, size) in net_sites.iter().filter(|(_, size)| *size > 0).take(5) {
-        //         println!("{size:>12} bytes: {stack}");
-        //     }
-        // }
     }
 }
 
@@ -1374,8 +1358,9 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()>
         return Ok(());
     }
 
-    println!("\nAllocation Size Distribution");
-    println!("===========================");
+    let heading = "Allocation Size Distribution";
+    println!("\n{heading}");
+    println!("{}", "━".repeat(heading.len()));
 
     // Define size buckets (in bytes)
     let buckets = vec![
@@ -1389,30 +1374,57 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()>
     ];
 
     let mut bucket_counts: HashMap<&str, u64> = HashMap::new();
+    let mut bucket_totals: HashMap<&str, u64> = HashMap::new();
 
     let mut total_bytes = 0u64;
 
     for (&size, &count) in &memory_data.allocation_sizes {
         let count = count as u64;
 
-        total_bytes += size as u64 * count;
+        let bytes = size as u64 * count;
+        total_bytes += bytes;
 
         for &(min, max, label) in &buckets {
             if size >= min && size <= max {
                 *bucket_counts.entry(label).or_default() += count;
+                *bucket_totals.entry(label).or_default() += bytes;
                 break;
             }
         }
     }
 
+    // eprintln!("bucket_counts={bucket_counts:#?}\nbucket_totals={bucket_totals:#?}");
+
     // Calculate max count for bar scaling
     let max_count = bucket_counts.values().max().copied().unwrap_or(1);
 
+    // Calculate max total for bar scaling
+    let max_total = bucket_totals.values().max().copied().unwrap_or(1);
+
     // Display distribution with bars
+    println!(
+        "{:>8} │ {:>6} │ {:<50}   {:>14} │ {:<50}",
+        "Bucket", "Count", "Count Graph", "Size (bytes)", "Size Graph"
+    );
+    println!(
+        "{:>8} │ {:>6} │ {:<50}   {:>14} │ {:<50}",
+        "─".repeat(8),
+        "─".repeat(6),
+        "─".repeat(50),
+        "─".repeat(14),
+        "─".repeat(50),
+    );
     for &(_, _, label) in &buckets {
         let count = bucket_counts.get(label).copied().unwrap_or(0);
-        let bar_length = ((count as f64 / max_count as f64) * 50.0) as usize;
-        println!("{label:>8}: {count:>6} |{}", "█".repeat(bar_length));
+        let count_bar_length = ((count as f64 / max_count as f64) * 50.0) as usize;
+        let total = bucket_totals.get(label).copied().unwrap_or(0);
+        let total_bar_length = ((total as f64 / max_total as f64) * 50.0) as usize;
+        println!(
+            "{label:>8} │ {count:>6} │ {:<50}   {:>14} │ {:<50}",
+            "█".repeat(count_bar_length),
+            thousands(total),
+            "█".repeat(total_bar_length)
+        );
     }
 
     assert_eq!(total_bytes, memory_data.bytes_allocated);
@@ -1468,8 +1480,6 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
         maybe_custom_pattern?
     };
 
-    // let mut memory_data = MemoryData::default();
-
     // Create a filtered profile based on memory patterns
     let pattern_filtered = if selected_patterns.is_empty() {
         profile.clone()
@@ -1502,9 +1512,9 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
             .collect();
 
         // Display filtering statistics
-        println!("\nPattern Filtering Statistics:");
-        println!("============================");
-        println!("Total entries: {total_entries}");
+        let heading = "Pattern Filtering Statistics";
+        println!("\n{heading}");
+        println!("{}", "━".repeat(heading.len()));
 
         let mut total_filtered = 0;
         for pattern in &selected_patterns {
@@ -1702,8 +1712,9 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
         (function_filtered_count as f64 / pattern_filtered.stacks.len() as f64) * 100.0
     };
 
-    println!("\nFunction Filtering Statistics:");
-    println!("============================");
+    let heading = "Function Filtering Statistics";
+    println!("\n{heading}");
+    println!("{}", "━".repeat(heading.len()));
     println!(
         "Functions filtered: {} of {} ({:.1}%)",
         function_filtered_count,

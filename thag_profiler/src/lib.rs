@@ -61,7 +61,6 @@ pub use {
     profiling::{
         disable_profiling, enable_profiling, get_config_profile_type, get_global_profile_type,
         is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection, ProfileType,
-        PROFILING_MUTEX,
     },
     thag_proc_macros::fn_name,
     // Only re-export what users need from task_allocator
@@ -79,6 +78,9 @@ pub use {
 
 #[cfg(feature = "time_profiling")]
 pub use thag_proc_macros::{enable_profiling, profiled};
+
+#[cfg(feature = "time_profiling")]
+pub use profiling::PROFILING_MUTEX;
 
 #[cfg(feature = "time_profiling")]
 pub static PROFILER: OnceLock<Profiler> = OnceLock::new();

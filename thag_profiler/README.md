@@ -1,36 +1,35 @@
 # thag_profiler
 
-A straightforward, lightweight cross-platform profiling library for Rust applications that provides time profiling with minimal overhead, and memory profiling with more substantial runtime overhead.
+A straightforward, accurate, lightweight cross-platform profiling library for Rust applications that provides both time and memory profiling.
 
-`thag-profiler` aims to lower the barriers to profiling by offering a quick and easy, async-compatible tool producing clear and accurate flamegraphs.
+`thag-profiler` aims to lower the barriers to profiling by offering a quick and easy tool producing clear and accurate flamegraphs for both synchronous and asynchronous code.
+
+`thag-profiler` provides an `#[enable_profiling]` attribute for your main method and a #`[profiled]` attribute for every function to be profiled.
+
+`thag-profiler` provides an automated instrumentation tool `thag-instrument` to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
+
+It also provides a `profile!` macro, in combination with an optional `end` call,  allowing _time_ profiling of any desired code section(s) within a function, including nested or even overlapping sections.
+
+`thag-profiler`'s easy-to-use prompted analysis tool `thag-analyze` uses the `inquire` crate to help you select output for analysis and optionally filter out any unwanted functions, and the `inferno` crate to display the results in your browser as interactive flamegraphs and flamecharts. For memory profiles you can also choose to display memory statistics and an allocation size analysis.
+
 
 ## Features
 
-- **Zero-cost abstraction**: No runtime overhead when profiling is disabled
+- **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are disabled
 
-- **Time and memory profiling**: Track execution time or memory usage, or both. Time profiling is fast, while memory profiling is slower but richer in detail, and optionally very detailed.
+- **Time and memory profiling**: Track execution time or memory usage, or both.
 
-    **Notes:**
+- **Single-attribute detailed memory profiling**: A deep dive into your app's complete memory allocations is possible simply by specifying `#[enable_profiling(runtime)]` in `fn main` and specifying detailed profiling via a `THAG_PROFILE` environment variable.
 
-    Memory profiling (the optional `full_profiling` feature) requires `thag_profiler` to use a custom global allocator for user code.
+- **Function and section profiling**: Time profiling can be applied to any number of specific code sections, down to single instructions.
 
-    1. This is incompatible with specifying your own global allocator.
+- **Async support**: Seamlessly works with `tokio` or other async code.
 
-    2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies. You will know if you see an error: "fatal runtime error: the global allocator may not use TLS with destructors".
+- **Automatic instrumentation**: Tools to quickly add and remove profiling annotations without losing comments or formatting.
 
-        For instance this is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
+- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks and easily do before-and-after comparisons using `inferno` differential analysis.
 
-- **Detailed memory profiling with only one attribute on `fn main`**: The combination of `#[enable_profiling(runtime)]` on `fn main` and the runtime environment `THAG_PROFILE=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation in a flamegraph (`.folded`) format, with a similar file for deallocations. Accurate memory tracking requires `thag_profiler` to use backtraces for all allocations and deallocations, so obviously this kind of diagnostic analysis may slow your program down quite considerably compared with a normal execution, depending on how many small allocations your code and its dependencies are making.
-
-- **Function and section profiling**: Profile entire functions or specific code sections, down to single instructions.
-
-- **Async support**: Seamlessly works with async code.
-
-- **Automatic instrumentation**: Tools to quickly add and remove profiling annotations without losing comments or formatting (but verify!).
-
-- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks, do before-and-after comparisons.
-
-- **Cross-platform**: Works on all platforms supported by Rust.
+- **Cross-platform**: Works on macOs, Linux and Windows.
 
 ## Installation
 
@@ -44,7 +43,7 @@ thag_profiler = "0.1.0"
 # For time profiling only
 thag_profiler = { version = "0.1.0", features = ["time_profiling"] }
 
-# OR for comprehensive profiling (time + memory)
+# OR for comprehensive profiling (memory and optionally time)
 thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
 ```
 
@@ -326,32 +325,21 @@ fn complex_function() {
     let section = profile!("initialization");
     initialize_things();
     section.end();
+}
 
-    // Profile a method
-    let section = profile!(method);
-    self.do_something();
+// Profiling a section of an async function, provide an `async_fn` arg for accurate collation
+asyn fn async_complex_function() {
+    // Basic usage
+    let section = profile!("initialization", async_fn);
+    initialize_things();
     section.end();
 
-    // Profile memory usage
-    let section = profile!("allocation", memory);
-    let data = vec![0; 1_000_000];
-    section.end();
-
-    // Profile async code
-    let section = profile!("async_operation", async);
-    async_operation().await;
-    section.end();
-
-    // Combined options
-    let section = profile!(method, both, async);
-    self.complex_async_operation().await;
-    section.end();
 }
 ```
 
-### Nesting Profiles
+### Nesting and Overlapping Section Profiles
 
-Profiles can be nested to track hierarchical operations:
+Section profiles can be nested to track hierarchical operations:
 
 ```rust
 use thag_profiler::profile;
@@ -374,6 +362,8 @@ fn complex_operation() {
     meal_section.end();  // Optional if about to go out of scope anywa
 }
 ```
+
+There is nothing preventing you from overlapping section profiles if you so desire. They will of course still appear separately in the detailed time flamechart in the order of completion.
 
 ### Conditional Profiling
 
@@ -441,22 +431,32 @@ Time profiling measures the wall-clock time between profile creation and destruc
 
 Disclaimer: `thag_profiler` memory profiling aims to provide a practical and convenient solution to memory profiling that is compatible with async operation.
 
-Memory profiling (available with the `full_profiling` feature) tracks heap allocations during the profiled section. It uses the `re_memory` crate, which
-works by installing a global memory allocator that uses sampling to track allocation events with their call stacks. When a `thag_profiler` `Profile` is dropped,
-as its final act it retrieves the tracking data from the `re_memory` allocator, finds the matching call stack and reports the associated usage estimate based on
-the sampled data.
-
-The memory allocation estimates in `thag_profiler` are thus a best estimate based on sampled data. They are intended to provide a rough first-order estimate of memory
-usage and identify hotspots. They can't cater for secondary effects such as multiple instances of the same function or code section running in parallel, so read
-the stats, flamegraphs and flamecharts with that caveat. They should certainly not be relied upon for precise measurements.
-
-I've tried various options and this is the best I've found so far. If you have any suggestions or improvements, please feel free to open an issue. If you prefer
-to use a different analysis tool like `valgrind` or `heaptrack`, you can disable `thag_profiler` memory profiling by removing the `full_profiling` feature or
-downgrading to the `time_profiling` feature.
+Memory profiling (available via the `full_profiling` feature) accurately tracks every heap allocation and deallocation requested by profiled user code, including reallocations, using a global memory allocator in conjunction with attribute macros to exclude `thag_profiler`'s own code from interfering with the analysis. It uses the official Rust `backtrace` crate to identify the source of the allocation or deallocation request.
 
 **Note:** Memory profiling is about memory analysis, not about speed. `thag_profiler` memory profiling has distinctly higher overhead than time profiling and will
 noticeably affect performance.
 It's recommended to use it selectively for occasional health checks and targeted investigations in development rather than leave it enabled indefinitely.
+
+ Time profiling is fast, while memory profiling is slower but richer in detail, and optionally fully detailed.
+
+    **Notes:**
+
+    Memory profiling (the optional `full_profiling` feature) requires `thag_profiler` to use a custom global allocator for user code.
+
+    1. This is incompatible with specifying your own global allocator.
+
+    2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies. You will know if you see an error: "fatal runtime error: the global allocator may not use TLS with destructors".
+
+        This is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
+
+### Detailed memory profiling with a single attribute
+
+The combination of `#[enable_profiling(runtime)]` on `fn main` and the runtime environment `THAG_PROFILE=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation and de-allocation in separate flamegraph (`.folded`) format files.
+
+Obviously this is the slowest profiling option and may be prohibitively slow for some applications.
+
+To mitigate this, `thag_profiler` provides a `SIZE_TRACKING_THRESHOLD=<bytes>)` environment variable allowing you to track only individual allocations that exceed the specified threshold size (default value 0). This is obviously at the cost of accuracy, particularly if your app mainly does allocations below the threshold. To get a good idea of s suitable threshold, you can first do _detailed_ memory profiling and select `Show Allocation Size Distribution` from the `thag-analyze` tool for the profile. This must be detailed because the normal memory profiling shows aggregated values per function rather than the detailed values being tracked.
+
 
 ### Profile Output
 

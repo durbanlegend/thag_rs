@@ -22,6 +22,7 @@ use regex::Regex;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     collections::{BTreeSet, HashMap, HashSet},
+    env,
     io::{self, Write},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -110,7 +111,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
             if !ptr.is_null() && is_profiling_state_enabled() {
                 let size = layout.size();
                 // Potentially skip small allocations
-                if size > SIZE_TRACKING_THRESHOLD {
+                if size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
 
                     record_alloc(address, size);
@@ -126,7 +127,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
             if !ptr.is_null() && is_profiling_state_enabled() {
                 // Potentially skip small allocations
                 let size = layout.size();
-                if size > SIZE_TRACKING_THRESHOLD {
+                if size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
                     record_dealloc(address, size);
                 }
@@ -142,13 +143,13 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
             with_allocator(Allocator::System, || {
                 // Potentially skip small allocations
                 let dealloc_size = layout.size();
-                if dealloc_size > SIZE_TRACKING_THRESHOLD {
+                if dealloc_size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
                     record_dealloc(address, dealloc_size);
                 }
 
                 // Potentially skip small allocations
-                if new_size > SIZE_TRACKING_THRESHOLD {
+                if new_size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
                     record_alloc(address, new_size);
                 }
@@ -471,7 +472,14 @@ static ALLOCATOR: Dispatcher = Dispatcher::new();
 
 // ========== ALLOCATION TRACKING DEFINITIONS ==========
 
-pub const SIZE_TRACKING_THRESHOLD: usize = 0;
+pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
+    let threshold = env::var("SIZE_TRACKING_THRESHOLD")
+        .ok()
+        .and_then(|val| val.parse::<usize>().ok())
+        .expect("Value specified for SIZE_TRACKING_THRESHOLD must be a valid integer");
+    debug_log!("*** Only memory allocations and deallocations exceeding the specified threshold of {threshold} bytes will be tracked.");
+    threshold
+});
 
 /// Registry for tracking memory allocations and deallocations
 #[derive(Debug)]
@@ -987,132 +995,6 @@ fn write_memory_profile_data() {
         }
     });
 }
-
-// /// Write memory deallocation data to a file
-// #[allow(clippy::too_many_lines)]
-// fn write_memory_dealloc_data() {
-//     use std::{collections::HashMap, fs::File, path::Path};
-
-//     with_allocator(Allocator::System, || {
-//         // Retrieve registries to get task allocations and names
-//         let memory_dealloc_path = get_memory_dealloc_path().unwrap_or("memory_dealloc.folded");
-
-//         // Check if the file exists first
-//         let file_exists = Path::new(memory_dealloc_path).exists();
-
-//         // If the file already exists, write the summary information to the existing file
-//         // Otherwise, create a new file with the appropriate headers
-//         let file_result = if file_exists {
-//             debug_log!("Opening existing file in append mode");
-//             File::options().append(true).open(memory_dealloc_path)
-//         } else {
-//             debug_log!("Creating new file");
-//             match File::create(memory_dealloc_path) {
-//                 Ok(mut file) => {
-//                     // Write headers similar to time profile file
-//                     if let Err(e) = writeln!(file, "# Memory Deallocations") {
-//                         debug_log!("Error writing header: {e}");
-//                         return;
-//                     }
-
-//                     if let Err(e) = writeln!(
-//                         file,
-//                         "# Script: {}",
-//                         std::env::current_exe().unwrap_or_default().display()
-//                     ) {
-//                         debug_log!("Error writing script path: {e}");
-//                         return;
-//                     }
-
-//                     if let Err(e) =
-//                         writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))
-//                     {
-//                         debug_log!("Error writing date: {e}");
-//                         return;
-//                     }
-
-//                     if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
-//                         debug_log!("Error writing version: {e}");
-//                         return;
-//                     }
-
-//                     if let Err(e) = writeln!(file) {
-//                         debug_log!("Error writing newline: {e}");
-//                         return;
-//                     }
-
-//                     Ok(file)
-//                 }
-//                 Err(e) => {
-//                     debug_log!("Error creating file: {e}");
-//                     Err(e)
-//                 }
-//             }
-//         };
-
-//         if let Ok(file) = file_result {
-//             let mut writer = io::BufWriter::new(file);
-
-//             // Get the task path registry mapping for easier lookup
-//             let task_paths_map: HashMap<usize, Vec<String>> = {
-//                 let binding = TASK_PATH_REGISTRY.lock();
-
-//                 // // Dump all entries for debugging
-//                 // for (id, path) in binding.iter() {
-//                 //     debug_log!("Registry entry: task {id}: path: {:?}", path);
-//                 // }
-
-//                 // Get all entries from the registry
-//                 binding
-//                     .iter()
-//                     .map(|(task_id, pat)| (*task_id, pat.clone()))
-//                     .collect()
-//             };
-
-//             let mut already_written = HashSet::new();
-
-//             // Write out deallocations by task
-//             for (task_id, path) in &task_paths_map {
-//                 let task_id = *task_id;
-
-//                 let path_str = path.join(";");
-//                 if already_written.contains(&path_str) {
-//                     continue;
-//                 }
-
-//                 if let Some(dealloc) = { ALLOC_REGISTRY.lock().get_task_memory_deallocs(task_id) } {
-//                     debug_log!(
-//                     "Writing for task {task_id} from registry: '{path_str}' with {dealloc} bytes"
-//                 );
-//                     write_alloc(
-//                         task_id,
-//                         dealloc,
-//                         &mut writer,
-//                         &mut already_written,
-//                         &path_str,
-//                     );
-//                 }
-//             }
-
-//             // Write out any deallocations for task 0, i.e. unassigned deallocations
-//             if let Some(dealloc) = { ALLOC_REGISTRY.lock().get_task_memory_deallocs(0) } {
-//                 debug_log!("Writing for task 0 (unassigned) with {dealloc} bytes");
-//                 write_alloc(
-//                     0,
-//                     dealloc,
-//                     &mut writer,
-//                     &mut already_written,
-//                     "[unassigned]",
-//                 );
-//             }
-
-//             // Make sure to flush the writer
-//             if let Err(e) = writer.flush() {
-//                 debug_log!("Error flushing writer: {e}");
-//             }
-//         }
-//     });
-// }
 
 fn write_alloc(
     task_id: usize,

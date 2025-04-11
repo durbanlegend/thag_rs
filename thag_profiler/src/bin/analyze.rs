@@ -48,6 +48,8 @@ pub enum ProfileType {
 // Keep existing MemoryData struct
 #[derive(Debug, Default, Clone)]
 pub struct MemoryData {
+    pub dealloc: bool, // true for a deallocation file
+
     // Allocation counts
     pub allocation_count: usize,   // Number of allocation operations
     pub deallocation_count: usize, // Number of deallocation operations
@@ -126,9 +128,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             _ => println!("Invalid selection"),
         }
-
-        // println!("\nPress Enter to continue...");
-        // let _ = std::io::stdin().read_line(&mut String::new());
     }
 
     Ok(())
@@ -196,9 +195,6 @@ fn analyze_single_time_profile(dir_path: &Path) -> ProfileResult<()> {
                     }
                     _ => println!("Unknown option"),
                 }
-
-                // println!("\nPress Enter to continue...");
-                // let _ = std::io::stdin().read_line(&mut String::new());
             }
             Ok(())
         }
@@ -233,6 +229,14 @@ fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
 
+            let alloc_type = if processed.memory_data.as_ref().unwrap().dealloc {
+                "Deallocation"
+            } else {
+                "Allocation"
+            };
+
+            let size_distribution_option = format!("Show {alloc_type} Size Distribution");
+
             loop {
                 let options = vec![
                     "Show Aggregated Memory Profile (Flamegraph)",
@@ -240,7 +244,7 @@ fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
                     "Show Individual Sequential Memory Profile (Flamechart)",
                     "...Filter Individual Sequential Functions (Recursive or Exact Match)",
                     "Show Memory Statistics",
-                    "Show Allocation Size Distribution",
+                    &size_distribution_option,
                     "Back to Profile Selection",
                 ];
 
@@ -292,13 +296,10 @@ fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
                         );
                     }
                     "Show Memory Statistics" => show_memory_statistics(&processed),
-                    "Show Allocation Size Distribution" => show_allocation_distribution(&processed)
+                    #[allow(unused_variables)]
+                    size_distribution_option => show_allocation_distribution(&processed)
                         .map_or_else(|e| println!("{e}"), |()| {}),
-                    _ => {}
                 }
-
-                // println!("\nPress Enter to continue...");
-                // let _ = std::io::stdin().read_line(&mut String::new());
             }
             Ok(())
         }
@@ -1155,20 +1156,10 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
         processed.memory_events = entries;
 
         if !processed.memory_events.is_empty() {
-            // First validate the events
-            // if let Err(msg) = validate_memory_events(&processed.memory_events) {
-            //     println!("Warning: Memory event validation failed: {msg}");
-            // }
-
             let mut memory_data = MemoryData::default();
             let mut current_memory = 0u64;
 
             for memory_event in &processed.memory_events {
-                // eprintln!(
-                //     "memory_data.bytes_allocated = {}; size = {}",
-                //     memory_data.bytes_allocated, memory_event.delta
-                // );
-
                 current_memory += memory_event.delta as u64;
                 memory_data.bytes_allocated += memory_event.delta as u64;
                 memory_data.allocation_count += 1;
@@ -1185,19 +1176,15 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
                 // instances of the same function running in parallel with both leaky and non-leaky
                 // code paths .
                 current_memory -= memory_event.delta as u64;
-                // memory_data.bytes_deallocated += memory_event.delta as u64;
-                // memory_data.deallocation_count += 1;
-
-                // // Track allocation size distribution
-                // let size_abs = memory_event.delta;
-                // *memory_data.allocation_sizes.entry(size_abs).or_default() += 1;
             }
 
-            eprintln!(
-                "memory_data.allocation_sizes={:#?}",
-                memory_data.allocation_sizes
-            );
+            // eprintln!(
+            //     "memory_data.allocation_sizes={:#?}",
+            //     memory_data.allocation_sizes
+            // );
             memory_data.current_memory = current_memory;
+            memory_data.dealloc = path.display().to_string().contains("dealloc");
+
             processed.memory_data = Some(memory_data);
         }
 
@@ -1257,8 +1244,15 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
     } else {
         "Memory Profile Flamegraph (Aggregated)".to_string()
     };
+
+    let alloc_type = if memory_data.dealloc {
+        "Deallocated"
+    } else {
+        "Allocated"
+    };
+
     opts.subtitle = Some(format!(
-        "{}  Started: {}  Total Bytes: {} Peak: {}",
+        "{}  Started: {}  Total Bytes {alloc_type}: {} Peak: {}",
         profile.subtitle,
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
         thousands(memory_data.bytes_allocated),
@@ -1304,9 +1298,6 @@ fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> 
 
             if operation == '+' {
                 *total_allocs.entry(event.stack.join(";")).or_default() += delta;
-                //     *net_allocs.entry(event.stack.join(";")).or_default() += delta as i64;
-                // } else {
-                //     *net_allocs.entry(event.stack.join(";")).or_default() -= delta as i64;
             }
         }
     }
@@ -1322,15 +1313,19 @@ fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> 
 fn show_memory_statistics(profile: &ProcessedProfile) {
     if let Some(memory_data) = &profile.memory_data {
         let memory_data = memory_data.clone();
+        let alloc_type = if memory_data.dealloc {
+            "Deallocation"
+        } else {
+            "Allocation"
+        };
 
         println!("Peak Memory Usage:    {} bytes", memory_data.peak_memory);
         println!("Current Memory Usage: {} bytes", memory_data.current_memory);
 
         // Show top allocation sites from profile data
-        // let (total_sites, net_sites) = analyze_allocation_sites(profile);
         let total_sites = analyze_allocation_sites(profile);
 
-        let heading = "Top Allocation Sites (Total Allocations)";
+        let heading = format!("Top {alloc_type} Sites (Total {alloc_type}s)");
         println!("\n{heading}");
         println!("{}", "━".repeat(heading.len()));
         for (stack, size) in total_sites.iter().take(15) {
@@ -1353,12 +1348,18 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()>
         .as_ref()
         .ok_or_else(|| ProfileError::General("No memory statistics available".to_string()))?;
 
+    let alloc_type = if memory_data.dealloc {
+        "Deallocation"
+    } else {
+        "Allocation"
+    };
+
     if memory_data.allocation_sizes.is_empty() {
-        println!("No allocation data available.");
+        println!("No {alloc_type} data available.");
         return Ok(());
     }
 
-    let heading = "Allocation Size Distribution";
+    let heading = format!("{alloc_type} Size Distribution");
     println!("\n{heading}");
     println!("{}", "━".repeat(heading.len()));
 
@@ -1429,14 +1430,20 @@ fn show_allocation_distribution(profile: &ProcessedProfile) -> ProfileResult<()>
 
     assert_eq!(total_bytes, memory_data.bytes_allocated);
 
+    let alloc_type = if memory_data.dealloc {
+        "deallocated"
+    } else {
+        "allocated"
+    };
+
     println!(
-        "\nTotal memory allocated: {} bytes",
+        "\nTotal memory {alloc_type}: {} bytes",
         memory_data.bytes_allocated
     );
     println!("Total stack frames: {}", memory_data.allocation_count);
     if memory_data.allocation_count > 0 {
         println!(
-            "Average allocation per stack frame: {} bytes",
+            "Average {alloc_type} per stack frame: {} bytes",
             memory_data.bytes_allocated / memory_data.allocation_count as u64
         );
     }

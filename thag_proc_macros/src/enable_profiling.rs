@@ -17,17 +17,37 @@ pub enum ProfilingMode {
 }
 
 /// Configuration for `enable_profiling` attribute macro
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum ProfileType {
+    Time, // Wall clock/elapsed time
+    Memory,
+    #[default]
+    Both,
+}
+
+/// Configuration for `enable_profiling` attribute macro
 #[derive(Default)]
 struct ProfilingArgs {
     mode: ProfilingMode,
+    profile_type: Option<ProfileType>,
 }
 
 impl Parse for ProfilingArgs {
     fn parse(input: ParseStream) -> Result<Self, syn::Error> {
         // Empty input means use default
+        #[cfg(not(feature = "full_profiling"))]
         if input.is_empty() {
             return Ok(Self {
                 mode: ProfilingMode::Enabled,
+                profile_type: Some(ProfileType::Time),
+            });
+        }
+
+        #[cfg(feature = "full_profiling")]
+        if input.is_empty() {
+            return Ok(Self {
+                mode: ProfilingMode::Enabled,
+                profile_type: Some(ProfileType::Both),
             });
         }
 
@@ -35,19 +55,41 @@ impl Parse for ProfilingArgs {
         let mode_ident: Ident = input.parse()?;
         let mode_str = mode_ident.to_string();
 
-        let mode = match mode_str.as_str() {
-            "runtime" => ProfilingMode::Runtime,
-            "yes" => ProfilingMode::Enabled,
-            "no" => ProfilingMode::Disabled,
+        Ok(match mode_str.as_str() {
+            "no" => Self {
+                mode: ProfilingMode::Disabled,
+                profile_type: None,
+            },
+            "runtime" => Self {
+                mode: ProfilingMode::Runtime,
+                profile_type: None,
+            },
+            "both" => Self {
+                mode: ProfilingMode::Enabled,
+                profile_type: Some(ProfileType::Both),
+            },
+            "yes" => Self {
+                mode: ProfilingMode::Enabled,
+                #[cfg(feature = "full_profiling")]
+                profile_type: Some(ProfileType::Both),
+                #[cfg(not(feature = "full_profiling"))]
+                profile_type: Some(ProfileType::Time),
+            },
+            "memory" => Self {
+                mode: ProfilingMode::Enabled,
+                profile_type: Some(ProfileType::Memory),
+            },
+            "time" => Self {
+                mode: ProfilingMode::Enabled,
+                profile_type: Some(ProfileType::Time),
+            },
             _ => {
                 return Err(syn::Error::new(
                     mode_ident.span(),
-                    "Expected 'runtime', 'yes', or 'no'",
+                    "Expected 'memory', 'time', 'both', 'runtime', 'yes', or 'no'",
                 ));
             }
-        };
-
-        Ok(Self { mode })
+        })
     }
 }
 
@@ -108,7 +150,12 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             }
         }
-        ProfilingMode::Enabled | ProfilingMode::Disabled => {
+        ProfilingMode::Enabled => {
+            quote! {
+                use thag_profiler::{disable_profiling, finalize_profiling, init_profiling, ProfileType, PROFILING_MUTEX};
+            }
+        }
+        ProfilingMode::Disabled => {
             quote! {}
         }
     };
@@ -180,6 +227,59 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
     };
 
+    // Verbosity is the price we pay for having to replicate the enum.
+    let profile_type = match args.profile_type {
+        Some(ProfileType::Both) => quote! {
+            Some(ProfileType::Both)
+        },
+        Some(ProfileType::Memory) => quote! {
+            Some(ProfileType::Memory)
+        },
+        Some(ProfileType::Time) => quote! {
+            Some(ProfileType::Time)
+        },
+        None => quote! {
+            None
+        },
+    };
+
+    // let profile_type = args.profile_type;
+
+    #[cfg(not(feature = "full_profiling"))]
+    let wrapped_block = match args.mode {
+        ProfilingMode::Runtime => quote! {
+            let _guard = if should_profile {
+                // Acquire the mutex to ensure only one instance can be profiling at a time
+                Some(PROFILING_MUTEX.lock())
+            } else {None};
+
+            init_profiling(module_path!(), #profile_type);
+
+            let maybe_profile = if should_profile {
+                #profile_new
+            } else {
+                None
+            };
+
+            #wrapped_block
+        },
+        ProfilingMode::Enabled => quote! {
+            // Acquire the mutex to ensure only one instance can be profiling at a time
+            let _guard = PROFILING_MUTEX.lock();
+
+            // Initialize profiling
+            init_profiling(module_path!(), #profile_type);
+
+            let profile = #profile_new;
+
+            #wrapped_block
+        },
+        ProfilingMode::Disabled => quote! {
+            #wrapped_block
+        },
+    };
+
+    #[cfg(feature = "full_profiling")]
     let wrapped_block = match args.mode {
         ProfilingMode::Runtime => quote! {
             let _guard = with_allocator(Allocator::System, || {
@@ -189,7 +289,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 } else {None}
             });
 
-            init_profiling(module_path!());  // Already uses with_allocator(Allocator::System... internally
+            init_profiling(module_path!(), #profile_type);  // Already uses with_allocator(Allocator::System... internally
 
             let maybe_profile = with_allocator(Allocator::System, || {
                 if should_profile {
@@ -208,7 +308,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             });
 
             // Initialize profiling
-            init_profiling(module_path!());  // Already uses with_allocator(Allocator::System... internally
+            init_profiling(module_path!(), #profile_type);  // Already uses with_allocator(Allocator::System... internally
 
             let profile = with_allocator(Allocator::System, || {
                 #profile_new

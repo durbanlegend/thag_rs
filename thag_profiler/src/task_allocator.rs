@@ -117,6 +117,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
                     record_alloc(address, size);
                 }
             }
+            // See ya later allocator
             ptr
         })
     }
@@ -474,7 +475,7 @@ static ALLOCATOR: Dispatcher = Dispatcher::new();
 
 pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
     let threshold = env::var("SIZE_TRACKING_THRESHOLD")
-        .or::<Result<String, &str>>(Ok(String::from("0")))
+        .or_else(|_| Ok::<String, &str>(String::from("0")))
         .ok()
         .and_then(|val| val.parse::<usize>().ok())
         .expect("Value specified for SIZE_TRACKING_THRESHOLD must be a valid integer");

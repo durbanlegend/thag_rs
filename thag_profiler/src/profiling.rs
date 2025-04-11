@@ -732,6 +732,10 @@ pub fn enable_profiling(
 
     if enabled {
         // Programmatic call may override the config defaults.
+        eprintln!(
+            "maybe_profile_type={maybe_profile_type:#?}, get_config_profile_type={:#?}",
+            get_config_profile_type()
+        );
         let final_profile_type = if let Some(profile_type) = maybe_profile_type {
             profile_type
         } else {
@@ -996,7 +1000,7 @@ impl Profile {
 
         // Try allowing overrides
         let profile_type = requested_type;
-        eprintln!("requested_type={requested_type:?}");
+        // eprintln!("requested_type={requested_type:?}");
 
         if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");

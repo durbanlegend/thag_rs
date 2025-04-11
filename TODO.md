@@ -32,6 +32,21 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Debug Esc at all places in thag-analyze.
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator.
+- [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling]
+
+26. Need to test if always incompatible with async_std. TODO need test/s
+27. Ouptut dir may be specified as 2nd arg to THAG_PROFILE env var with #[enable_profiling(runtime)] TODO add section on THAG_PROFILE env var. Args: profile_type,dir,log_level,detail
+33. TODO probable need
+34. Have not tested config_attr. TODO test
+35. Serial execution of tests is via PROFILING_MUTEX as serial_test crate was problematic. TODO fix doc
+
+Discrepancies:
+1. Fixed, thank you
+2. Don't see any mention of memory_profile_test.rs as mentioned.
+3. Don't see the contradiction. What limitations are you referring to?
+4. Please be specific.
+5. Please be specific.
+6. I thought I covered the difference in lines 568-9, but would be happy to hear suggestions.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

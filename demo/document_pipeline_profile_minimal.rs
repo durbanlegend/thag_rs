@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::{self, enable_profiling, profile, profiled};
+use thag_profiler::{self, disable_profiling, enable_profiling, profile, profiled, ProfileType};
 
 struct Document {
     id: usize,
@@ -179,7 +179,7 @@ async fn run_batch(count: usize) {
 }
 
 #[tokio::main]
-#[enable_profiling(yes)]
+#[enable_profiling(runtime)]
 async fn main() {
     let section_a = profile!("section_a", async_fn);
     println!(

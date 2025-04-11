@@ -306,11 +306,11 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// This function panics if profiling cannot be enabled.
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 #[fn_name]
-pub fn init_profiling(root_module: &'static str) {
+pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
     PROFILEE.set(Profilee::new(root_module)).unwrap();
 
     set_base_location(fn_name);
-    enable_profiling(true, None).expect("Failed to enable profiling");
+    enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
 }
 
 /// Initialize the profiling system.
@@ -321,12 +321,12 @@ pub fn init_profiling(root_module: &'static str) {
 /// This function panics if profiling cannot be enabled.
 #[cfg(feature = "full_profiling")]
 #[fn_name]
-pub fn init_profiling(root_module: &'static str) {
+pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
     with_allocator(Allocator::System, || {
         PROFILEE.set(Profilee::new(root_module)).unwrap();
 
         set_base_location(fn_name);
-        enable_profiling(true, None).expect("Failed to enable profiling");
+        enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
 
@@ -338,7 +338,7 @@ pub fn init_profiling(root_module: &'static str) {
 
 // Provide no-op versions when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
-pub const fn init_profiling(_root_module: &str) {}
+pub const fn init_profiling(_root_module: &str, _maybe_profile_type: Option<ProfileType>) {}
 
 #[cfg(feature = "time_profiling")]
 fn set_base_location(fn_name: &str) {

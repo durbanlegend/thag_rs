@@ -35,10 +35,10 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling]
 
 26. Need to test if always incompatible with async_std. TODO need test/s
-27. Ouptut dir may be specified as 2nd arg to THAG_PROFILE env var with #[enable_profiling(runtime)] TODO add section on THAG_PROFILE env var. Args: profile_type,dir,log_level,detail
-33. TODO probable need
-34. Have not tested config_attr. TODO test
-35. Serial execution of tests is via PROFILING_MUTEX as serial_test crate was problematic. TODO fix doc
+27. Ouptut dir may be specified as 2nd arg to THAG_PROFILE env var with #[enable_profiling(runtime)] Have added section on THAG_PROFILE env var.
+33. Done some testing and seems to be working. Could use more tests
+34. Done a test of config_attr and seems to be working. Could use more tests
+35. Serial execution of tests is via PROFILING_MUTEX as serial_test crate was problematic. Have fixed doc
 
 Discrepancies:
 1. Fixed, thank you

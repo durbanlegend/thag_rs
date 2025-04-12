@@ -70,9 +70,9 @@ pub use {
 pub use {
     profiling::extract_path,
     task_allocator::{
-        create_memory_task, find_matching_profile, get_last_active_task, trim_backtrace,
-        with_allocator, Allocator, Dispatcher, TaskAwareAllocator, TaskGuard, TaskMemoryContext,
-        ALLOC_REGISTRY,
+        create_memory_task, find_matching_task_id, get_last_active_task, get_task_memory_usage,
+        trim_backtrace, with_allocator, Allocator, Dispatcher, TaskAwareAllocator, TaskGuard,
+        TaskMemoryContext, ALLOC_REGISTRY,
     },
 };
 

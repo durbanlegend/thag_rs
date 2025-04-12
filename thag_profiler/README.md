@@ -186,6 +186,8 @@ Enable profiling by adding the `#[enable_profiling]` attribute to your `main` fu
 
 The attribute is recommended because it is the only way to obtain the zero-cost abstraction of unused profiling code, and to ensure that in the case of memory profiling, profiler code is excluded at compile time from interfering with the tracking of memory allocations and deallocations by profiled code.
 
+NB: the `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute should not be specified on the same function.
+
 **#[enable_profiling] arguments**
 The following optional arguments are available:
 

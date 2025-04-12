@@ -246,6 +246,7 @@ fn record_alloc(address: usize, size: usize) {
 
         debug_log!("Calling extract_path");
         let path = extract_path(&cleaned_stack, None);
+        debug_log!("path={path:#?}");
         if path.is_empty() {
             let trimmed_backtrace = trim_backtrace(start_pattern, &current_backtrace);
             if trimmed_backtrace
@@ -260,8 +261,8 @@ fn record_alloc(address: usize, size: usize) {
                 thread::current().id(),
             );
         } else {
-            task_id = find_matching_profile(&path);
-            debug_log!("...find_matching_profile found task_id={task_id} for size={size}");
+            task_id = find_matching_task_id(&path);
+            debug_log!("...find_matching_task_id found task_id={task_id} for size={size}");
         }
     }
     debug_log!(
@@ -736,6 +737,7 @@ impl Drop for TaskGuard {
         // Run these operations with System allocator
         with_allocator(Allocator::System, || {
             // Remove from active profiles
+            debug_log!("Deactivating task {}", self.task_id);
             PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
 
             // Remove from thread stack
@@ -803,14 +805,15 @@ pub fn remove_task_path(task_id: usize) {
     registry.remove(&task_id);
 }
 
-// Helper function to find the best matching profile
-pub fn find_matching_profile(path: &[String]) -> usize {
+// Helper function to find the best matching task_id
+pub fn find_matching_task_id(path: &[String]) -> usize {
     let path_registry = TASK_PATH_REGISTRY.lock();
     // For each active profile, compute a similarity score
     let mut best_match = 0;
     let mut best_score = 0;
     let path_len = path.len();
 
+    debug_log!("get_active_tasks()={:#?}", get_active_tasks());
     #[allow(unused_assignments)]
     let mut score = 0;
     for task_id in get_active_tasks().iter().rev() {

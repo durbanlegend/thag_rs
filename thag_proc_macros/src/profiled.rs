@@ -329,7 +329,7 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
 
             // We pass None for the name as we rely on the backtrace to identify the function
-            #profile_new;
+            let profile = #profile_new;
             #body
         }
     }

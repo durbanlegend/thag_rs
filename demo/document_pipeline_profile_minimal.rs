@@ -5,6 +5,9 @@ backtrace = "0.3"
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }
 thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling"] }
 tokio = { version = "1", features = ["full"] }
+
+[profile.dev]
+debug-assertions = false
 */
 
 /// Test async program (minimalist instrumented version) for `thag_profiler` debugging.
@@ -179,7 +182,7 @@ async fn run_batch(count: usize) {
 }
 
 #[tokio::main]
-#[enable_profiling(runtime)]
+#[cfg_attr(debug_assertions, enable_profiling(runtime))]
 async fn main() {
     let section_a = profile!("section_a", async_fn);
     println!(

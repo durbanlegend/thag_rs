@@ -1578,6 +1578,7 @@ pub fn extract_detailed_alloc_callstack(
     // debug_log!("Callstack: {callstack:#?}");
     // debug_log!("already_seen: {:#?}", already_seen);
 
+    // Redefine end-point as inclusive
     let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
 
     callstack

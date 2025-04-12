@@ -20,14 +20,14 @@ fn main() {
     allocate_some_memory();
     println!("Test completed");
 
-    // // #[thag_profiler::profiled]
-    // fn main() {
-    //     println!("Starting memory profile test");
-    //     allocate_some_memory();
-    //     println!("Test completed");
-    // }
+    // #[thag_profiler::profiled]
+    fn main() {
+        println!("Starting memory profile test");
+        allocate_some_memory();
+        println!("Test completed");
+    }
 
-    // main();
+    main();
 }
 
 #[thag_profiler::profiled]

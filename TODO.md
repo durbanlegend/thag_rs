@@ -33,6 +33,7 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Debug Esc at all places in thag-analyze.
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator.
 - [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling]
+- [ ]  Look into selective detailed profiling by function? (Issue with deallocations not being in same function).
 
 26. Need to test if always incompatible with async_std. TODO need test/s
 27. Ouptut dir may be specified as 2nd arg to THAG_PROFILE env var with #[enable_profiling(runtime)] Have added section on THAG_PROFILE env var.

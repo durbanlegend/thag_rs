@@ -324,7 +324,7 @@ The `#[profiled]` attribute supports a profile_type option:
 
 ```rust
 // Override the profile type for a specific function (time, memory, or both)
-#[profiled(profile_type = "both")]
+#[profiled(both)]
 fn allocating_function() { /* ... */ }
 ```
 
@@ -494,6 +494,68 @@ Obviously this is the slowest profiling option and may be prohibitively slow for
 
 To mitigate this, `thag_profiler` provides a `SIZE_TRACKING_THRESHOLD=<bytes>` environment variable allowing you to track only individual allocations that exceed the specified threshold size (default value 0). This is obviously at the cost of accuracy, particularly if your app mainly does allocations below the threshold. To get a good idea of s suitable threshold, you can first do _detailed_ memory profiling (cancel if you need to once you see significant detailed output being generated) and select `Show Allocation Size Distribution` from the `thag-analyze` tool for the profile. This needs to be the detailed allocations `.folded` file because the normal memory profiling shows aggregated values per function rather than the detailed values being tracked.
 
+### Memory Profiling Limitations and Considerations
+
+- **Performance Impact**: Memory profiling introduces significant overhead compared to time profiling. Expect your application to run significantly more slowly when memory profiling is enabled.
+
+- **Allocation Attribution**: Memory profiling attempts to attribute allocations to the correct task using stack traces, but in complex async code or highly concurrent applications, some
+allocations may be attributed to parent tasks rather than to the exact function that requested them.
+
+- **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
+
+- **Implementation Details**: Memory tracking is implemented using a global allocator that intercepts all memory allocations. This has several consequences:
+  - Incompatible with custom global allocators
+  - May experience issues with thread-local storage with destructors
+
+ - **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
+   across your entire application stack, revealing hidden costs from dependencies like async runtimes.
+
+Detailed memory profiling will allow you to drill down into these allocations as well as the resulting deallocations.
+
+### Async Compatibility
+
+`thag_profiler` supports profiling async code with some considerations:
+
+- **Basic Time Profiling**: Works well with most async runtimes including tokio and smol.
+
+- **Memory Profiling with Async**: Memory profiling in async contexts is more complex:
+  - Works with tokio and smol for most common patterns
+  - Not compatible with async_std due to TLS limitations
+  - Task attribution may be less precise in highly concurrent async code
+  - For best results in async code, use explicit section profiling with `profile!("section_name", async)`
+
+- **Runtime Control**: Enabling/disabling profiling at runtime in async code affects all instrumented code across all threads, which may not align with the logical structure of async tasks. Plan
+your profiling strategy accordingly.
+
+### Implementation Details (For Advanced Users)
+
+`thag_profiler` uses several internal mechanisms to track profiling data:
+
+- **Task Tracking**: Memory profiling uses a task-based system to attribute allocations to the correct code path, even in async contexts.
+
+- **Thread-Safety**: The profiler uses atomic operations and mutex-protected shared state to coordinate profiling across threads.
+
+- **Guard Objects**: TaskGuard objects help manage the lifetime of profiling tasks and ensure proper cleanup when tasks complete.
+
+- **Stack Introspection**: The profiler examines stack traces to attribute allocations to the correct task, using pattern matching and similarity scoring.
+
+- **Ring Fencing of User and Profiler Code**: The global allocator manages two separate memory allocators to which it delegates all memory allocation requests:
+
+1. The normal System allocator, which is untracked.
+
+2. A tracked "Task-aware" allocator` (default). This allocator still delegates all allocation and deallocation requests to the System allocator, but then immediately then tracks and reports them, including reallocation requests.
+
+Note that deallocations are not reported for normal memory profiling, as they invite a fruitless attempt to identify memory leaks by matching them up by function against the allocations, whereas the deallocations are often done by a parent function. However, deallocations are reported for detailed memory profiling in order to give a complete picture, so this is a better tool for identifying memory leaks, although still not a walk in the park.
+
+The reporting takes two forms:
+
+a. For regular memory profiling, the allocations are accumulated to a mutex-protected collection with the key of the identified `task_id` which in turn is associated with a `Profile` that created it before the execution of the function began. When the function completes execution the `Profile` goes out of scope and is automatically dropped, and its `drop` trait method retrieves all the accumulated allocations for the associated `task_id` and writes them to the `-memory.folded` file.
+
+b. For detailed memory profiling, allocations and deallocations alike are not accumulated or even tracked back to a `Profile`, but immediately written with a lightly tidied-up stack to the `-memory_detail.folded` and `-memory_detail_dealloc.folded` files respectively.
+
+Being the default, this allocator is automatically used for user code and must not be used for profiler code.
+
+To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_allocator()` function (`pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T`).
 
 ### Profile Output
 
@@ -605,14 +667,26 @@ Flamegraphs and flamecharts are interactive SVGs that allow you to:
 
 You can interact with the above example [here](../assets/flamechart_time_20250312-081119.svg).
 
-You may be more familiar with flamegraphs than flamecharts. Flamecharts are distinguished by laying out data on the horizontal axis chronologically instead of alphabetically.
-Flamecharts provide a detailed view that reflects the sequence of events, in particular for the execution timeline. For memory profiling the sequence will be the sequence of `drop` events,
-since this is the point at which `thag` profiling records the allocation and deallocation.
-
 `thag` uses the `inferno` crate to generate flamegraphs and flamecharts.
 For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use.
 For memory flamegraphs and flamecharts, it adheres to `inferno`'s memory-optimized color scheme.
 
+
+ ### Flamegraphs vs. Flamecharts
+
+`thag_profiler` can generate both flamegraphs and flamecharts:
+
+- **Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no deep significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
+
+- **Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:
+  - Understanding the progression of your application's execution
+  - Identifying patterns in memory allocation/deallocation
+  - Seeing how different phases of your application behave
+
+For time profiling, flamecharts show when each function executed relative to others. For regular memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that `thag_profiler` `Profile` object generated for that execution of the function is dropped and its `drop` method writes the function's accumulated allocations to the `-memory.folded` file.
+For detailed memory profiling, they are again more significant as they show when the allocations (for `-memory_detail.folded` and deallocations (for `-memory_detail_dealloc.folded`) actually occurred, as they are recorded immediately the allocation or deallocation requests are received and identified by the global allocator.
+
+Choose flamegraphs for a high-level view of resource usage and flamecharts for detailed analysis of execution flow.
 
 ## Best Practices
 
@@ -625,6 +699,56 @@ For memory flamegraphs and flamecharts, it adheres to `inferno`'s memory-optimiz
 **4. Watch for memory bloat**: Use memory profiling to identify excessive allocations
 
 **5. Verify changes**: Always verify automated changes with a diff tool
+
+**6. Async Function Profiling**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
+
+```rust
+async fn fetch_data() {
+    // Tell the profiler this section is within an async function
+    let section = profile!("database_query", async_fn);
+
+    // Async operations...
+    let result = query_database().await;
+
+    section.end();
+}
+```
+
+This ensures the profile correctly associates the section with its async parent function in the profiling output. Without this parameter, the section might be incorrectly duplicated in memory
+profiling output.
+
+ ### Memory Profiling Best Practices
+
+When using memory profiling, follow these guidelines for the most accurate results:
+
+```rust
+// Use attribute macros for consistent memory tracking
+#[enable_profiling]
+#[profiled]
+fn main() {
+    // Run your application...
+    memory_intensive_function();
+}
+
+#[profiled]
+fn memory_intensive_function() {
+    // Memory will be automatically tracked for this function
+    // and attributed to it in the profiling output
+
+    // Create explicit scope for allocations to ensure
+    // they're properly tracked and released
+    {
+        let data = vec![0u8; 1_000_000];
+        process_data(&data);
+    } // Memory is released here and recorded
+}
+
+For the most accurate memory profiling:
+
+1. Use attribute macros consistently across your codebase
+2. Create clear scopes for memory-intensive operations
+3. Use thag-analyze's filtering to focus on relevant parts of your application
+4. Consider enabling detailed memory profiling for full allocation visibility
 
 ## Testing with Profiled Code
 

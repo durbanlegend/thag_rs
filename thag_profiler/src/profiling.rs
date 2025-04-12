@@ -2075,29 +2075,37 @@ macro_rules! profile {
 
 #[doc(hidden)]
 #[macro_export]
+#[cfg(not(feature = "full_profiling"))]
 macro_rules! profile_internal {
     ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
         // Within the crate itself, we should use relative paths
-        // #[cfg(not(any(test, doctest)))]
         {
             if $crate::PROFILING_FEATURE_ENABLED {
-                let profile = $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
+                let profile =
+                    $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
                 $crate::ProfileSection { profile }
             } else {
                 $crate::ProfileSection::new($name)
             }
         }
+    }};
+}
 
-        // // For testing, use direct calls to avoid import issues
-        // #[cfg(any(test, doctest))]
-        // {
-        //     if $crate::profiling::is_profiling_enabled() {
-        //         let profile = $crate::profiling::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
-        //         $crate::profiling::ProfileSection { profile }
-        //     } else {
-        //         $crate::profiling::ProfileSection::new($name)
-        //     }
-        // }
+#[doc(hidden)]
+#[macro_export]
+#[cfg(feature = "full_profiling")]
+macro_rules! profile_internal {
+    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
+        use $crate::{with_allocator, Allocator, ProfileSection};
+        with_allocator(Allocator::System, || -> ProfileSection {
+            if $crate::PROFILING_FEATURE_ENABLED {
+                let profile =
+                    $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
+                $crate::ProfileSection { profile }
+            } else {
+                $crate::ProfileSection::new($name)
+            }
+        })
     }};
 }
 

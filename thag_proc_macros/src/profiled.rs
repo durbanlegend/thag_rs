@@ -30,26 +30,21 @@ impl Parse for ProfileArgs {
             let ident: syn::Ident = input.parse()?;
             let _: syn::Token![=] = input.parse()?;
 
-            match ident.to_string().as_str() {
+            let ident_str = ident.to_string().as_str();
+            match ident_str {
                 "imp" => {
                     let lit: LitStr = input.parse()?;
                     args.imp = Some(lit.value());
                 }
-                // "trait_name" => {
-                //     let lit: LitStr = input.parse()?;
-                //     args.trait_name = Some(lit.value());
-                // }
-                "profile_type" => {
-                    let lit: LitStr = input.parse()?;
-                    args.profile_type = Some(match lit.value().as_str() {
+                _ => {
+                    args.profile_type = Some(match ident_str {
                         "global" => ProfileTypeOverride::Global,
                         "time" => ProfileTypeOverride::Time,
                         "memory" => ProfileTypeOverride::Memory,
                         "both" => ProfileTypeOverride::Both,
-                        _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
-                    });
-                }
-                _ => return Err(syn::Error::new(ident.span(), "unknown attribute")),
+                        _ => return Err(syn::Error::new(ident.span(), "invalid profile type")),
+                    })
+                };
             }
 
             if !input.is_empty() {

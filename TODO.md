@@ -34,20 +34,11 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator.
 - [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling]
 - [ ]  Look into selective detailed profiling by function? (Issue with deallocations not being in same function).
+- [ ]  Look into section memory profiling, using line numbers.
 
-26. Need to test if always incompatible with async_std. TODO need test/s
-27. Ouptut dir may be specified as 2nd arg to THAG_PROFILE env var with #[enable_profiling(runtime)] Have added section on THAG_PROFILE env var.
-33. Done some testing and seems to be working. Could use more tests
-34. Done a test of config_attr and seems to be working. Could use more tests
-35. Serial execution of tests is via PROFILING_MUTEX as serial_test crate was problematic. Have fixed doc
+An alternative approach might be for task_allocator simply to be aware of the profiled modules via a registry and rather than extract a path from the stack to match on, simply find the topmost entry in the stack that matches one of these modules. E.g. if fn a calls fn b, calls fn c, which calls a dependency which calls another dependency etc., then fn c is the topmost matching entry, unless of course one of the dependent functions in the chain happens calls back on a fn d of our module. (But in practice, it's much easier to implement than to explain here.)
+Having found the topmost entry with its module name, function name and line number, the task-aware allocator then has to look up the most recent matching Profile and maybe call a method on that Profile to record the allocation, rather than try to figure out the appropriate action itself. The Profile then checks its summary/detail status and handles the accumulation and/or detailed logging of that information appropriately. Which seems a better division of labour to me, and perhaps more efficient for the allocator, since it now no longer needs to extract a complete cleaned stack to identify the Profile, except maybe in the case of the current detailed profiling, assuming we retain that. The Profile still has to build and store its own stack for writing to the .folded files, but its key for interactions with the allocation tracking now becomes something like module name and maybe function name and maybe a proc_macro2 or similar Span - ideally we need it to implement PartialEq/Eq, unlike proc_macro2::Span but like its byte_range::Range. I'm a little hazy as to how best to to a look-up by line number against a HashMap key that's a range of values. The registry info needs to include a sequential task_id or timestamp so we can pick up the latest matching Profile and also maybe garbage-collect older ones. The Profile's registry info will also need to include an active flag, which the Profile must unset in its drop method. This strikes me as quite an exciting approach if we can pull it off, and hopefully us to achieve the goals I mentioned of section memory profiling and per-function detail profiling.
 
-Discrepancies:
-1. Fixed, thank you
-2. Don't see any mention of memory_profile_test.rs as mentioned.
-3. Don't see the contradiction. What limitations are you referring to?
-4. Please be specific.
-5. Please be specific.
-6. I thought I covered the difference in lines 568-9, but would be happy to hear suggestions.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

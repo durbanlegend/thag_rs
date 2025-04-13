@@ -539,11 +539,8 @@ your profiling strategy accordingly.
 
 - **Stack Introspection**: The profiler examines stack traces to attribute allocations to the correct task, using pattern matching and similarity scoring.
 
-- **Ring Fencing of User and Profiler Code**: The global allocator manages two separate memory allocators to which it delegates all memory allocation requests:
-
-1. The normal System allocator, which is untracked.
-
-2. A tracked "Task-aware" allocator` (default). This allocator still delegates all allocation and deallocation requests to the System allocator, but then immediately then tracks and reports them, including reallocation requests.
+- **Profile Code Ring-Fencing**: The profiler carefully isolates its own allocations and operations from user code through the use of a dual-allocator system. This ensures that profiling overhead
+  doesn't contaminate the results, providing clean separation between the measurement apparatus and the code being measured.
 
 Note that deallocations are not reported for normal memory profiling, as they invite a fruitless attempt to identify memory leaks by matching them up by function against the allocations, whereas the deallocations are often done by a parent function. However, deallocations are reported for detailed memory profiling in order to give a complete picture, so this is a better tool for identifying memory leaks, although still not a walk in the park.
 

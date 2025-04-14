@@ -64,6 +64,7 @@ impl Parse for ProfilingArgs {
                 mode: ProfilingMode::Runtime,
                 profile_type: None,
             },
+            #[allow(clippy::match_same_arms)]
             "both" => Self {
                 mode: ProfilingMode::Enabled,
                 profile_type: Some(ProfileType::Both),
@@ -124,7 +125,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, false)
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, false, ::thag_profiler::is_detailed_memory())
     };
 
     #[cfg(not(feature = "full_profiling"))]

@@ -7,16 +7,16 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, flush_debug_log, get_global_profile_type, lazy_static_var,
+    debug_log, extract_path, flush_debug_log, get_global_profile_type, is_detailed_memory,
+    lazy_static_var,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
-        is_detailed_memory, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
-        START_TIME,
+        is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, START_TIME,
     },
     regex, Profile, ProfileType,
 };
-use backtrace::Backtrace;
+use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;
 use regex::Regex;
 use std::{
@@ -173,7 +173,12 @@ fn record_alloc(address: usize, size: usize) {
         }
     }
 
-    if get_global_profile_type() != ProfileType::Memory {
+    let profile_type = get_global_profile_type();
+    if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
+        debug_log!(
+            "Skipping allocation recording because profile_type={:?}",
+            profile_type
+        );
         return;
     }
 
@@ -219,6 +224,80 @@ fn record_alloc(address: usize, size: usize) {
         let detailed_stack =
             extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
 
+        // Try to extract source file location from backtrace
+        let module_path = String::new();
+        let line_number = 0;
+
+        // // Extract module path and line number from backtrace if available
+        // if let Some(frame) = current_backtrace.frames().first() {
+        //     if let Some(symbol) = frame.symbols().first() {
+        //         if let Some(filename) = symbol.filename() {
+        //             if let Some(file_str) = filename.to_str() {
+        //                 module_path = file_str.to_string();
+        //             }
+        //         }
+
+        //         if let Some(line) = symbol.lineno() {
+        //             line_number = line;
+        //         }
+        //     }
+        // }
+        let module_paths = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_module_paths() };
+        debug_log!("module_paths={module_paths:#?}");
+
+        // TODO: redo, extracting filename
+
+        let Some((filename, lineno, frame)) = Backtrace::frames(&current_backtrace)
+            .iter()
+            .flat_map(BacktraceFrame::symbols)
+            // .inspect(|symbol| {
+            //     debug_log!("symbol: {symbol:#?}");
+            // })
+            .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
+            .filter(|(maybe_filename, maybe_lineno, frame)| {
+                maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some()
+            })
+            .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
+                (
+                    maybe_filename
+                        .unwrap()
+                        .to_owned()
+                        .as_path()
+                        .file_name()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string(),
+                    maybe_lineno.unwrap(),
+                    maybe_frame.unwrap(),
+                )
+            })
+            .inspect(|(filename, lineno, frame)| {
+                debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}");
+            })
+            .skip_while(|(filename, _, _)| !module_paths.contains(filename))
+            .take(1)
+            .last()
+        else {
+            debug_log!("Could not find module in stack TODO");
+            return;
+        };
+
+        let name = clean_function_name(frame);
+        debug_log!("Found filename={filename}, lineno={lineno}", name: {name:?}, frame: {frame:?});
+
+        // Try to record the allocation in the new profile registry
+        if !module_path.is_empty()
+            && line_number > 0
+            && crate::mem_alloc::record_allocation(&module_path, fn_name, line_number, size)
+        {
+            debug_log!(
+                "Recorded allocation of {size} bytes in {module_path}:{line_number} to a profile"
+            );
+            // Allocation was recorded in a profile, no need to continue with global tracking
+            return;
+        }
+
+        // Fall back to the old method
         let entry = if detailed_stack.is_empty() {
             format!("[out_of_bounds] +{size}")
         } else {
@@ -244,9 +323,9 @@ fn record_alloc(address: usize, size: usize) {
             .iter()
             .any(|frame| frame.contains("find_matching_profile")));
 
-        debug_log!("Calling extract_path");
+        // debug_log!("Calling extract_path");
         let path = extract_path(&cleaned_stack, None);
-        debug_log!("path={path:#?}");
+        // debug_log!("path={path:#?}");
         if path.is_empty() {
             let trimmed_backtrace = trim_backtrace(start_pattern, &current_backtrace);
             if trimmed_backtrace
@@ -322,7 +401,12 @@ fn record_dealloc(address: usize, size: usize) {
         }
     }
 
-    if get_global_profile_type() != ProfileType::Memory {
+    let profile_type = get_global_profile_type();
+    if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
+        debug_log!(
+            "Skipping deallocation recording because profile_type={:?}",
+            profile_type
+        );
         return;
     }
 
@@ -813,7 +897,7 @@ pub fn find_matching_task_id(path: &[String]) -> usize {
     let mut best_score = 0;
     let path_len = path.len();
 
-    debug_log!("get_active_tasks()={:#?}", get_active_tasks());
+    // debug_log!("get_active_tasks()={:#?}", get_active_tasks());
     #[allow(unused_assignments)]
     let mut score = 0;
     for task_id in get_active_tasks().iter().rev() {

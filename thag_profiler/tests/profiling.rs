@@ -53,7 +53,7 @@ fn setup_test() -> MutexGuard<'static, ()> {
 }
 
 #[cfg(feature = "time_profiling")]
-fn run_test<T>(test: T) -> ()
+fn run_test<T>(test: T)
 where
     T: FnOnce() + panic::UnwindSafe,
 {

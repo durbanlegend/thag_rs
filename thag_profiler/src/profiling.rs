@@ -70,6 +70,7 @@ static GLOBAL_PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 
 static_lazy! {
     ProfileConfig: ProfileConfiguration = {
         let Ok(env_var) = env::var("THAG_PROFILE") else {
+            eprintln!("THAG_PROFILE environment variable not found, returning disabled config");
             return ProfileConfiguration {
                 enabled: false,
                 profile_type: None,
@@ -79,7 +80,9 @@ static_lazy! {
             };
         };
 
+        eprintln!("THAG_PROFILE environment variable found: {}", env_var);
         let parts: Vec<&str> = env_var.split(',').collect();
+        eprintln!("THAG_PROFILE parts: {:?}", parts);
         let mut errors = Vec::new();
 
         // Parse profile type (first element)
@@ -88,11 +91,18 @@ static_lazy! {
                 "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
                     .to_string(),
             );
+            eprintln!("THAG_PROFILE: First element is empty");
             None
         } else {
-            match parts.first().unwrap().parse::<ProfileType>() {
-                Ok(val) => Some(val),
+            let profile_type_str = parts.first().unwrap().trim();
+            eprintln!("THAG_PROFILE: Parsing profile type '{}'", profile_type_str);
+            match profile_type_str.parse::<ProfileType>() {
+                Ok(val) => {
+                    eprintln!("THAG_PROFILE: Successfully parsed profile type: {:?}", val);
+                    Some(val)
+                },
                 Err(e) => {
+                    eprintln!("THAG_PROFILE: Failed to parse profile type: {}", e);
                     errors.push(e);
                     None
                 }
@@ -664,36 +674,78 @@ fn initialize_file(
 // /// Panics if `enable_profiling` fails.
 // Modify get_global_profile_type to use the config:
 pub fn get_global_profile_type() -> ProfileType {
-    match GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst) {
-        1 => ProfileType::Time,
-        2 => ProfileType::Memory,
-        3 => ProfileType::Both,
+    let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
+    // debug_log!(
+    //     "get_global_profile_type: GLOBAL_PROFILE_TYPE={}",
+    //     global_value
+    // );
+
+    match global_value {
+        1 => {
+            // debug_log!(
+            //     "get_global_profile_type: returning ProfileType::Time from GLOBAL_PROFILE_TYPE"
+            // );
+            ProfileType::Time
+        }
+        2 => {
+            // debug_log!(
+            //     "get_global_profile_type: returning ProfileType::Memory from GLOBAL_PROFILE_TYPE"
+            // );
+            ProfileType::Memory
+        }
+        3 => {
+            // debug_log!(
+            //     "get_global_profile_type: returning ProfileType::Both from GLOBAL_PROFILE_TYPE"
+            // );
+            ProfileType::Both
+        }
         _ => {
             // Then check environment variables
-            ProfileConfig::get()
+            // debug_log!(
+            //     "get_global_profile_type: GLOBAL_PROFILE_TYPE not set, checking ProfileConfig"
+            // );
+            let config_type = ProfileConfig::get()
                 .profile_type
-                .expect("Missing profile type")
+                .expect("Missing profile type");
+            // debug_log!(
+            //     "get_global_profile_type: returning {:?} from ProfileConfig",
+            //     config_type
+            // );
+            config_type
         }
     }
 }
 
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 fn set_global_profile_type(profile_type: ProfileType) {
+    debug_log!(
+        "set_global_profile_type (time-only): profile_type={:?}",
+        profile_type
+    );
     let value = match profile_type {
         ProfileType::Time => 1,
         _ => panic!(r#"Memory profiling may not be set for feature "time_profiling" "#),
     };
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
+    debug_log!(
+        "set_global_profile_type (time-only): stored value={}",
+        value
+    );
 }
 
 #[cfg(feature = "full_profiling")]
 fn set_global_profile_type(profile_type: ProfileType) {
+    debug_log!(
+        "set_global_profile_type (full): profile_type={:?}",
+        profile_type
+    );
     let value = match profile_type {
         ProfileType::Time => 1,
         ProfileType::Memory => 2,
         ProfileType::Both => 3,
     };
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
+    debug_log!("set_global_profile_type (full): stored value={}", value);
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -737,10 +789,22 @@ pub fn enable_profiling(
             get_config_profile_type()
         );
         let final_profile_type = if let Some(profile_type) = maybe_profile_type {
+            debug_log!(
+                "enable_profiling: Using provided profile_type={:?}",
+                profile_type
+            );
             profile_type
         } else {
             let config_profile_type = get_config_profile_type();
+            debug_log!(
+                "enable_profiling: Using config_profile_type={:?}",
+                config_profile_type
+            );
+
             if !cfg!(feature = "full_profiling") && config_profile_type != ProfileType::Time {
+                debug_log!(
+                    "enable_profiling: Memory profiling not allowed without full_profiling feature"
+                );
                 return Err(ProfileError::General(
                     "Memory profiling not allowed since feature `full_profiling` is not specified"
                         .to_string(),
@@ -925,13 +989,28 @@ impl FromStr for ProfileType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "time" => Ok(Self::Time),
-            "memory" => Ok(Self::Memory),
-            "both" => Ok(Self::Both),
-            _ => Err(format!(
-                "Invalid profile type '{s}'. Expected 'time', 'memory', or 'both'"
-            )),
+        let trimmed = s.trim().to_lowercase();
+        eprintln!("ProfileType::from_str: parsing '{}'", trimmed);
+
+        match trimmed.as_str() {
+            "time" => {
+                eprintln!("ProfileType::from_str: matched 'time'");
+                Ok(Self::Time)
+            }
+            "memory" => {
+                eprintln!("ProfileType::from_str: matched 'memory'");
+                Ok(Self::Memory)
+            }
+            "both" => {
+                eprintln!("ProfileType::from_str: matched 'both'");
+                Ok(Self::Both)
+            }
+            _ => {
+                let err =
+                    format!("Invalid profile type '{s}'. Expected 'time', 'memory', or 'both'");
+                eprintln!("ProfileType::from_str: error: {}", err);
+                Err(err)
+            }
         }
     }
 }
@@ -944,6 +1023,11 @@ pub struct Profile {
     path: Vec<String>,
     custom_name: Option<String>, // Custom section name when provided via profile!("name") macro
     registered_name: String,
+    fn_name: String,
+    start_line: Option<u32>, // Source line where profile was created (for sections)
+    end_line: Option<u32>,   // Source line where profile was ended (if section explicitly ended)
+    detailed_memory: bool,   // Whether to do detailed memory profiling for this profile
+    module_path: String,     // Module path where this profile was created
     #[cfg(feature = "full_profiling")]
     memory_task: Option<TaskMemoryContext>,
     #[cfg(feature = "full_profiling")]
@@ -963,14 +1047,111 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, false);
     ///     // Code to profile...
     /// }
     ///
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, true);
+    ///     // Code to profile with memory tracking...
+    /// }
+    /// ```
+    /// # Panics
+    ///
+    /// Panics if stack validation fails.
+    ///
+    /// Get the module path of this profile
+    #[must_use]
+    pub fn module_path(&self) -> &str {
+        &self.module_path
+    }
+
+    /// Get the start line of this profile
+    #[must_use]
+    pub fn fn_name(&self) -> &str {
+        self.fn_name.as_str()
+    }
+
+    /// Get the start line of this profile
+    #[must_use]
+    pub fn start_line(&self) -> Option<u32> {
+        self.start_line
+    }
+
+    /// Get the end line of this profile, if available
+    #[must_use]
+    pub fn end_line(&self) -> Option<u32> {
+        self.end_line
+    }
+
+    /// Check if this profile uses detailed memory tracking
+    #[must_use]
+    pub fn detailed_memory(&self) -> bool {
+        self.detailed_memory
+    }
+
+    /// Get the registered name of this profile
+    #[must_use]
+    pub fn registered_name(&self) -> &str {
+        &self.registered_name
+    }
+
+    /// Get the custom name of this profile, if provided
+    #[must_use]
+    pub fn custom_name(&self) -> Option<&str> {
+        self.custom_name.as_deref()
+    }
+
+    /// Records a memory allocation in this profile
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The size of the allocation in bytes
+    ///
+    /// # Returns
+    ///
+    /// `true` if the allocation was recorded, `false` otherwise
+    #[cfg(feature = "full_profiling")]
+    pub fn record_allocation(&self, size: usize) -> bool {
+        if !self.detailed_memory {
+            return false;
+        }
+
+        if size == 0 {
+            return false;
+        }
+
+        // Record the allocation
+        if let Err(e) = self.record_memory_change(size) {
+            debug_log!("Failed to record allocation: {e:?}");
+            return false;
+        }
+
+        true
+    }
+
+    /// Creates a new `Profile` to profile a section of code.
+    ///
+    /// This will track execution time by default. When the `full_profiling` feature
+    /// is enabled, it will also track memory usage if requested via `ProfileType`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use thag_profiler::{Profile, ProfileType};
+    ///
+    /// // Time profiling only
+    /// {
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, false);
+    ///     // Code to profile...
+    /// }
+    ///
+    /// // With memory profiling (requires `full_profiling` feature)
+    /// #[cfg(feature = "full_profiling")]
+    /// {
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, true);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```
@@ -985,6 +1166,8 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         is_method: bool,
+        detailed_memory: bool, // New parameter
+        end: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
@@ -1051,12 +1234,20 @@ impl Profile {
             path.join(" -> ") // path.last().map_or("", |v| v),
         );
 
+        // Get current module path and line number
+        let module_path = std::module_path!().to_string();
+        let start_line = line!() as u32;
+
         Some(Self {
             profile_type,
             start: Some(Instant::now()),
             path,
             custom_name,
             registered_name: fn_name.to_string(),
+            start_line,
+            end_line: end,
+            detailed_memory,
+            module_path,
             #[cfg(feature = "full_profiling")]
             memory_task: None,
             #[cfg(feature = "full_profiling")]
@@ -1076,14 +1267,14 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, false);
     ///     // Code to profile...
     /// }
     ///
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, true);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```
@@ -1099,7 +1290,11 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         _is_method: bool,
+        detailed_memory: bool, // New parameter
+        end: Option<u32>,
     ) -> Option<Self> {
+        use std::module_path;
+
         if !is_profiling_enabled() {
             return None;
         }
@@ -1180,15 +1375,49 @@ impl Profile {
 
                 debug_log!("NEW PROFILE: (Time) created for {:?}", path.join(" -> "));
 
-                return Some(Self {
+                // Get current module path and line number
+                // let module_path = std::module_path!().to_string();
+                let start_line = line!();
+
+                let profile = Self {
                     profile_type,
                     start: Some(Instant::now()),
                     path,
                     custom_name,
                     registered_name: stack,
+                    fn_name: fn_name.to_string(),
+                    start_line: None,
+                    end_line: end,
+                    detailed_memory,
+                    module_path: module_path!().to_string(),
                     memory_task: None,
                     memory_guard: None,
-                });
+                };
+
+                // Register this profile with the new ProfileRegistry
+                // ???This only happens if the profile has an end_line, meaning it was properly ended
+                // if detailed_memory {
+                // First log the details to avoid potential deadlock
+                debug_log!(
+                        "About to register profile in module {} with line range {}..None for detailed memory tracking",
+                        module_path!(),
+                        start_line,
+                    );
+
+                // Flush logs before calling register_profile
+                flush_debug_log();
+
+                // Now register the profile
+                crate::mem_alloc::register_profile(&profile);
+
+                // Log again after registration completes
+                debug_log!(
+                    "Successfully registered profile in module {} for detailed memory tracking",
+                    &profile.module_path
+                );
+                // }
+
+                return Some(profile);
             }
 
             // Create a memory task and activate it
@@ -1219,12 +1448,22 @@ impl Profile {
 
             let profile = {
                 // Create the profile with necessary components
+                // Get current module path and line number
+                let module_path = module_path!().to_string();
+                // let start_line = line!();
+
                 Self {
                     profile_type,
                     start: Some(Instant::now()),
                     path,
                     custom_name,
                     registered_name: stack,
+                    fn_name: fn_name.to_string(),
+                    // start_line: Some(start_line),
+                    start_line: None,
+                    end_line: None,
+                    detailed_memory,
+                    module_path,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
                 }
@@ -1379,14 +1618,27 @@ impl Profile {
             return Ok(());
         }
 
+        debug_log!(
+            "Recording memory change: delta={}, profile={}, detailed_memory={}",
+            delta,
+            self.registered_name(),
+            self.detailed_memory()
+        );
+
         // Record allocation
-        self.write_memory_event_with_op(delta, '+')?;
+        let result = self.write_memory_event_with_op(delta, '+');
+
+        if let Err(ref e) = result {
+            debug_log!("Error writing memory event: {:?}", e);
+        } else {
+            debug_log!("Successfully wrote memory event for delta={}", delta);
+        }
 
         // // Record corresponding deallocation
         // // Store both events atomically to maintain pairing
         // self.write_memory_event_with_op(delta, '-')?;
 
-        Ok(())
+        result
     }
 
     /// Get the memory usage for this profile's task
@@ -1445,7 +1697,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
 // }
 
 #[cfg(feature = "time_profiling")]
-fn filter_scaffolding(name: &str) -> bool {
+pub fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
@@ -1690,6 +1942,31 @@ impl Drop for Profile {
                     );
                 }
             }
+
+            // // Register this profile with the new ProfileRegistry
+            // // This only happens if the profile has an end_line, meaning it was properly ended
+            // if self.detailed_memory && self.end_line.is_some() {
+            //     // First log the details to avoid potential deadlock
+            //     debug_log!(
+            //         "About to register profile in module {} with line range {}..{:?} for detailed memory tracking",
+            //         self.module_path,
+            //         self.start_line,
+            //         self.end_line
+            //     );
+
+            //     // Flush logs before calling register_profile
+            //     flush_debug_log();
+
+            //     // Now register the profile
+            //     crate::mem_alloc::register_profile(self);
+
+            //     // Log again after registration completes
+            //     debug_log!(
+            //         "Successfully registered profile in module {} for detailed memory tracking",
+            //         self.module_path
+            //     );
+            // }
+
             debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
             flush_debug_log();
         });
@@ -1720,6 +1997,8 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 #[derive(Debug)]
 pub struct ProfileSection {
     pub profile: Option<Profile>,
+    pub start_line: u32,       // Line number where section starts
+    pub end_line: Option<u32>, // Line number where section ends (if explicitly ended)
 }
 
 #[cfg(feature = "time_profiling")]
@@ -1728,6 +2007,7 @@ impl ProfileSection {
     pub fn new(name: Option<&str>) -> Self {
         // let profile_type = get_global_profile_type();
         // debug_log!("profile_type={profile_type:?}");
+        let start_line = line!();
         Self {
             profile: Profile::new(
                 name,
@@ -1735,11 +2015,43 @@ impl ProfileSection {
                 ProfileType::Time, // Since memory profiling can't track sections via backtrace
                 false,             // is_async
                 false,             // is_method
+                false,             // detailed_memory
+                None::<u32>,
             ),
+            start_line,
+            end_line: None,
         }
     }
 
-    pub fn end(self) {
+    /// Creates a new profile section with detailed memory tracking
+    #[must_use]
+    pub fn new_with_detailed_memory(name: Option<&str>) -> Self {
+        let start_line = line!();
+        Self {
+            profile: Profile::new(
+                name,
+                None::<&str>,
+                ProfileType::Time, // Since memory profiling can't track sections via backtrace
+                false,             // is_async
+                false,             // is_method
+                true,              // detailed_memory
+                None::<u32>,
+            ),
+            start_line,
+            end_line: None,
+        }
+    }
+
+    pub fn end(mut self) {
+        // Record the end line
+        let end_line = line!();
+        self.end_line = Some(end_line);
+
+        // Update the profile's end_line if it exists
+        if let Some(ref mut profile) = self.profile {
+            profile.end_line = Some(end_line);
+        }
+
         // Profile (if any) will be dropped here
     }
 
@@ -1759,7 +2071,14 @@ impl ProfileSection {
     pub const fn new(_name: Option<&str>) -> Self {
         Self
     }
+
+    #[must_use]
+    pub const fn new_with_detailed_memory(_name: Option<&str>) -> Self {
+        Self
+    }
+
     pub const fn end(self) {}
+
     #[must_use]
     pub const fn is_active(&self) -> bool {
         false
@@ -1931,145 +2250,69 @@ pub enum MemoryError {
 /// // ... code to profile
 /// section.end();
 ///
-/// // Section profiling in an async function.
-/// // `async_fn` to integrate the section and function reporting
+/// // Section profiling in an async function
 /// let section = profile!("async_operation", async_fn);
 /// // ... code to profile in an async function
+/// section.end();
+///
+/// // Detailed memory profiling (when full_profiling feature is enabled)
+/// let section = profile!("memory_heavy_operation", detailed_memory);
+/// // ... code with memory allocations to profile in detail
+/// section.end();
+///
+/// // Combine detailed memory and async function
+/// let section = profile!("async_memory_operation", detailed_memory, async_fn);
+/// // ... async code with memory operations
 /// section.end();
 /// ```
 #[macro_export]
 #[cfg(feature = "time_profiling")]
 macro_rules! profile {
-    // profile!(name)
-    ($name:expr) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
-    };
+    // Basic profile!(name) - time profiling only
+    ($name:expr) => {{
+        $crate::ProfileSection::new(Some($name))
+    }};
 
-    // // profile!(name, type)
-    // ($name:expr, time) => {
-    //     $crate::profile_internal!(Some($name), $crate::ProfileType::Time, false, false)
-    // };
-    // ($name:expr, memory) => {
-    //     $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, false, false)
-    // };
-    // ($name:expr, both) => {
-    //     $crate::profile_internal!(Some($name), $crate::ProfileType::Both, false, false)
-    // };
+    // Section in async function
+    ($name:expr, async_fn) => {{
+        $crate::ProfileSection::new(Some($name))
+    }};
 
-    // profile!(name, async_fn)
-    ($name:expr, async_fn) => {
-        $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
-    }; // profile!(method) - no custom name
-       // (method) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Time, false, true)
-       // };
+    // Detailed memory profiling
+    ($name:expr, detailed_memory) => {{
+        $crate::ProfileSection::new_with_detailed_memory(Some($name))
+    }};
 
-       // profile!(method, type) - no custom name
-       // (method, time) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Time, false, true)
-       // };
-       // (method, memory) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Memory, false, true)
-       // };
-       // (method, both) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Both, false, true)
-       // };
+    // Combination of detailed_memory and async_fn
+    ($name:expr, detailed_memory, async_fn) => {{
+        $crate::ProfileSection::new_with_detailed_memory(Some($name))
+    }};
 
-       // profile!(method, async_fn) - no custom name
-       // (method, async_fn) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
-       // };
-
-       // profile!(method, type, async_fn) - no custom name
-       // (method, time, async_fn) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Time, true, true)
-       // };
-       // (method, memory, async_fn) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Memory, true, true)
-       // };
-       // (method, both, async_fn) => {
-       //     $crate::profile_internal!(None, $crate::ProfileType::Both, true, true)
-       // };
-
-       // profile!(name, type, async_fn)
-       // ($name:expr, time, async_fn) => {
-       //     $crate::profile_internal!(Some($name), $crate::ProfileType::Time, true, false)
-       // };
-       // ($name:expr, memory, async_fn) => {
-       //     $crate::profile_internal!(Some($name), $crate::ProfileType::Memory, true, false)
-       // };
-       // ($name:expr, both, async_fn) => {
-       //     $crate::profile_internal!(Some($name), $crate::ProfileType::Both, true, false)
-       // };
+    // Async function with detailed memory (alternative order)
+    ($name:expr, async_fn, detailed_memory) => {{
+        $crate::ProfileSection::new_with_detailed_memory(Some($name))
+    }};
 }
 
 // No-op implementation for when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
 #[macro_export]
 macro_rules! profile {
-    // The implementations are all identical for the no-op version
-    // Basic variants
+    // The implementations are all identical for the no-op version - just return an empty ProfileSection
+
+    // Basic variant
     ($name:expr) => {{
-        $crate::ProfileSection {}
+        $crate::ProfileSection::new(Some($name))
     }};
 
-    // profile!(name, type)
-    ($name:expr, time) => {{
-        $crate::ProfileSection {}
-    }};
-    ($name:expr, memory) => {{
-        $crate::ProfileSection {}
-    }};
-    ($name:expr, both) => {{
-        $crate::ProfileSection {}
+    // Two-parameter variants (any combination)
+    ($name:expr, $param:ident) => {{
+        $crate::ProfileSection::new(Some($name))
     }};
 
-    // profile!(name, async_fn)
-    ($name:expr, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-
-    // profile!(method)
-    (method) => {{
-        $crate::ProfileSection {}
-    }};
-
-    // profile!(method, type)
-    (method, time) => {{
-        $crate::ProfileSection {}
-    }};
-    (method, memory) => {{
-        $crate::ProfileSection {}
-    }};
-    (method, both) => {{
-        $crate::ProfileSection {}
-    }};
-
-    // profile!(method, async_fn)
-    (method, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-
-    // profile!(method, type, async_fn)
-    (method, time, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-    (method, memory, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-    (method, both, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-
-    // profile!(name, type, async_fn)
-    ($name:expr, time, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-    ($name:expr, memory, async_fn) => {{
-        $crate::ProfileSection {}
-    }};
-    ($name:expr, both, async_fn) => {{
-        $crate::ProfileSection {}
+    // Three-parameter variants (any combination)
+    ($name:expr, $param1:ident, $param2:ident) => {{
+        $crate::ProfileSection::new(Some($name))
     }};
 }
 
@@ -2077,17 +2320,32 @@ macro_rules! profile {
 #[macro_export]
 #[cfg(not(feature = "full_profiling"))]
 macro_rules! profile_internal {
-    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
+    ($name:expr, $type:expr, $is_async:expr, $is_method:expr, $detailed_memory:expr) => {{
         // Within the crate itself, we should use relative paths
         {
             if $crate::PROFILING_FEATURE_ENABLED {
-                let profile =
-                    $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
-                $crate::ProfileSection { profile }
+                let profile = $crate::Profile::new(
+                    $name,
+                    None::<&str>,
+                    $type,
+                    $is_async,
+                    $is_method,
+                    $detailed_memory,
+                );
+                let start_line = line!() as u32;
+                $crate::ProfileSection {
+                    profile,
+                    start_line,
+                    end_line: None,
+                }
             } else {
                 $crate::ProfileSection::new($name)
             }
         }
+    }};
+    // Backward compatibility for calls without $detailed_memory
+    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
+        $crate::profile_internal!($name, $type, $is_async, $is_method, false)
     }};
 }
 
@@ -2095,17 +2353,32 @@ macro_rules! profile_internal {
 #[macro_export]
 #[cfg(feature = "full_profiling")]
 macro_rules! profile_internal {
-    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
+    ($name:expr, $type:expr, $is_async:expr, $is_method:expr, $detailed_memory:expr) => {{
         use $crate::{with_allocator, Allocator, ProfileSection};
         with_allocator(Allocator::System, || -> ProfileSection {
             if $crate::PROFILING_FEATURE_ENABLED {
-                let profile =
-                    $crate::Profile::new($name, None::<&str>, $type, $is_async, $is_method);
-                $crate::ProfileSection { profile }
+                let profile = $crate::Profile::new(
+                    $name,
+                    None::<&str>,
+                    $type,
+                    $is_async,
+                    $is_method,
+                    $detailed_memory,
+                );
+                let start_line = line!() as u32;
+                $crate::ProfileSection {
+                    profile,
+                    start_line,
+                    end_line: None,
+                }
             } else {
                 $crate::ProfileSection::new($name)
             }
         })
+    }};
+    // Backward compatibility for calls without $detailed_memory
+    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
+        $crate::profile_internal!($name, $type, $is_async, $is_method, false)
     }};
 }
 
@@ -2242,6 +2515,19 @@ pub fn safely_cleanup_profiling_after_test() -> crate::ProfileResult<()> {
     result
 }
 
+#[must_use]
+pub fn strip_hex_suffix(name: String) -> String {
+    if let Some(hash_pos) = name.rfind("::h") {
+        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+            name[..hash_pos].to_string()
+        } else {
+            name
+        }
+    } else {
+        name
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2373,18 +2659,5 @@ mod tests {
             re.is_match(&paths.time),
             "Time path should contain timestamp in YYYYmmdd-HHMMSS format"
         );
-    }
-}
-
-#[must_use]
-pub fn strip_hex_suffix(name: String) -> String {
-    if let Some(hash_pos) = name.rfind("::h") {
-        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-            name[..hash_pos].to_string()
-        } else {
-            name
-        }
-    } else {
-        name
     }
 }

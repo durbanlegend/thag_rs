@@ -20,6 +20,8 @@ struct ProfileArgs {
     // trait_name: Option<String>,
     /// Explicit profile type override
     profile_type: Option<ProfileTypeOverride>,
+    /// Whether to enable detailed memory profiling for this function
+    detailed_memory: bool,
 }
 
 impl Parse for ProfileArgs {
@@ -30,21 +32,25 @@ impl Parse for ProfileArgs {
             let ident: syn::Ident = input.parse()?;
             let _: syn::Token![=] = input.parse()?;
 
-            let ident_str = ident.to_string().as_str();
-            match ident_str {
+            let ident_str = ident.to_string();
+            match ident_str.as_str() {
                 "imp" => {
                     let lit: LitStr = input.parse()?;
                     args.imp = Some(lit.value());
                 }
+                "detailed_memory" => {
+                    let lit: syn::LitBool = input.parse()?;
+                    args.detailed_memory = lit.value;
+                }
                 _ => {
-                    args.profile_type = Some(match ident_str {
+                    args.profile_type = Some(match ident_str.as_str() {
                         "global" => ProfileTypeOverride::Global,
                         "time" => ProfileTypeOverride::Time,
                         "memory" => ProfileTypeOverride::Memory,
                         "both" => ProfileTypeOverride::Both,
                         _ => return Err(syn::Error::new(ident.span(), "invalid profile type")),
-                    })
-                };
+                    });
+                }
             }
 
             if !input.is_empty() {
@@ -181,8 +187,8 @@ fn contains_self_type(ty: &Type) -> bool {
     }
 }
 
-pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    // let args = parse_macro_input!(attr as ProfileArgs);
+pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(attr as ProfileArgs);
     let item_clone = item.clone();
     let input = parse_macro_input!(item_clone as ItemFn);
 
@@ -234,16 +240,17 @@ pub fn profiled_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
     //     generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
 
     let fn_name_str = fn_name.to_string();
+    let detailed_memory = args.detailed_memory;
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method)
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method, #detailed_memory)
     };
 
     #[cfg(feature = "full_profiling")]
     let profile_new = quote! {
         ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
-            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method)
+            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method, #detailed_memory)
         })
     };
 

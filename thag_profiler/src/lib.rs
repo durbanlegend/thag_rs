@@ -24,14 +24,14 @@
 //!
 //! // Time profiling
 //! {
-//!     let _p = Profile::new(Some("my_function"), None, ProfileType::Time, false, false);
+//!     let _p = Profile::new(Some("my_function"), None, ProfileType::Time, false, false, false);
 //!     // Code to profile...
 //! }
 //!
 //! // Memory profiling (requires `full_profiling` feature)
 //! #[cfg(feature = "full_profiling")]
 //! {
-//!     let _p = Profile::new(Some("memory_intensive_function"), None, ProfileType::Memory, false, false);
+//!     let _p = Profile::new(Some("memory_intensive_function"), None, ProfileType::Memory, false, false, true);
 //!     // Code to profile memory usage...
 //! }
 //! ```
@@ -42,6 +42,9 @@ pub mod profiling;
 
 #[cfg(feature = "full_profiling")]
 mod task_allocator;
+
+#[cfg(feature = "full_profiling")]
+mod mem_alloc;
 
 use std::fmt::Display;
 
@@ -60,7 +63,8 @@ pub use {
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
         disable_profiling, enable_profiling, get_config_profile_type, get_global_profile_type,
-        is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection, ProfileType,
+        is_detailed_memory, is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection,
+        ProfileType,
     },
     thag_proc_macros::fn_name,
     // Only re-export what users need from task_allocator
@@ -68,6 +72,7 @@ pub use {
 
 #[cfg(feature = "full_profiling")]
 pub use {
+    mem_alloc::{find_profile, record_allocation, register_profile, ProfileRef, PROFILE_REGISTRY},
     profiling::extract_path,
     task_allocator::{
         create_memory_task, find_matching_task_id, get_last_active_task, get_task_memory_usage,
@@ -330,8 +335,19 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
 
         let global_profile_type = get_global_profile_type();
 
+        debug_log!(
+            "In init_profiling with global_profile_type={:?}",
+            global_profile_type
+        );
+
         if global_profile_type != ProfileType::Time {
+            debug_log!("Initializing memory profiling");
             task_allocator::initialize_memory_profiling();
+        } else {
+            debug_log!(
+                "Skipping memory profiling initialization because global_profile_type={:?}",
+                global_profile_type
+            );
         }
     });
 }

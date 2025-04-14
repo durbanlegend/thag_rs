@@ -1,4 +1,4 @@
-use crate::{debug_log, static_lazy, ProfileError};
+use crate::task_allocator::record_alloc_for_task_id;
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -16,11 +16,12 @@ use std::{
 
 #[cfg(feature = "full_profiling")]
 use crate::{
+    debug_log, static_lazy,
     task_allocator::{
         activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
         TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    with_allocator, Allocator,
+    with_allocator, Allocator, ProfileError,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -1016,7 +1017,7 @@ impl FromStr for ProfileType {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
@@ -1114,17 +1115,18 @@ impl Profile {
     ///
     /// `true` if the allocation was recorded, `false` otherwise
     #[cfg(feature = "full_profiling")]
-    pub fn record_allocation(&self, size: usize) -> bool {
-        if !self.detailed_memory {
-            return false;
-        }
+    pub fn record_allocation(&self, size: usize, address: usize) -> bool {
+        debug_log!("In Profile::record_allocation for size={size} for profile {self:?}");
+        // if !self.detailed_memory {
+        //     return false;
+        // }
 
         if size == 0 {
             return false;
         }
 
         // Record the allocation
-        if let Err(e) = self.record_memory_change(size) {
+        if let Err(e) = self.handle_allocation(size, address) {
             debug_log!("Failed to record allocation: {e:?}");
             return false;
         }
@@ -1167,7 +1169,7 @@ impl Profile {
         is_async: bool,
         is_method: bool,
         detailed_memory: bool, // New parameter
-        end: Option<u32>,
+        module_path: String,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
@@ -1290,8 +1292,8 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         _is_method: bool,
-        detailed_memory: bool, // New parameter
-        end: Option<u32>,
+        detailed_memory: bool,
+        module_path: String,
     ) -> Option<Self> {
         use std::module_path;
 
@@ -1315,6 +1317,7 @@ impl Profile {
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
+            debug_log!("module_path={module_path}");
             // debug_log!("Current function/section: {custom_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
 
@@ -1387,20 +1390,18 @@ impl Profile {
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
                     start_line: None,
-                    end_line: end,
+                    end_line: None,
                     detailed_memory,
-                    module_path: module_path!().to_string(),
+                    module_path,
                     memory_task: None,
                     memory_guard: None,
                 };
 
                 // Register this profile with the new ProfileRegistry
-                // ???This only happens if the profile has an end_line, meaning it was properly ended
-                // if detailed_memory {
                 // First log the details to avoid potential deadlock
                 debug_log!(
                         "About to register profile in module {} with line range {}..None for detailed memory tracking",
-                        module_path!(),
+                        profile.module_path,
                         start_line,
                     );
 
@@ -1449,7 +1450,7 @@ impl Profile {
             let profile = {
                 // Create the profile with necessary components
                 // Get current module path and line number
-                let module_path = module_path!().to_string();
+                // let module_path = module_path!().to_string();
                 // let start_line = line!();
 
                 Self {
@@ -1469,6 +1470,27 @@ impl Profile {
                 }
             };
             debug_log!("Time to create profile: {}ms", start.elapsed().as_millis());
+
+            // Register this profile with the new ProfileRegistry
+            // First log the details to avoid potential deadlock
+            debug_log!(
+                "About to register profile in module {}",
+                profile.module_path,
+            );
+
+            // Flush logs before calling register_profile
+            flush_debug_log();
+
+            // Now register the profile
+            crate::mem_alloc::register_profile(&profile);
+
+            // Log again after registration completes
+            debug_log!(
+                "Successfully registered profile in module {} for detailed memory tracking",
+                &profile.module_path
+            );
+            // }
+
             Some(profile)
         })
     }
@@ -1634,11 +1656,35 @@ impl Profile {
             debug_log!("Successfully wrote memory event for delta={}", delta);
         }
 
-        // // Record corresponding deallocation
-        // // Store both events atomically to maintain pairing
-        // self.write_memory_event_with_op(delta, '-')?;
+        Ok(())
+    }
 
-        result
+    #[cfg(feature = "full_profiling")]
+    fn handle_allocation(&self, size: usize, address: usize) -> ProfileResult<()> {
+        if size == 0 {
+            return Ok(());
+        }
+
+        debug_log!(
+            "Handling allocation change: size={}, profile={}, detailed_memory={}",
+            size,
+            self.registered_name(),
+            self.detailed_memory()
+        );
+
+        // Record allocation
+        // let result = self.write_memory_event_with_op(delta, '+');
+        if let Some(memory_task) = &self.memory_task {
+            record_alloc_for_task_id(address, size, memory_task.task_id);
+            debug_log!("Successfully wrote memory event for delta={}", size);
+        } else {
+            debug_log!("Could not retrieve &self.memory_task");
+            return Err(ProfileError::General(
+                "Could not retrieve &self.memory_task".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 
     /// Get the memory usage for this profile's task
@@ -2016,7 +2062,7 @@ impl ProfileSection {
                 false,             // is_async
                 false,             // is_method
                 false,             // detailed_memory
-                None::<u32>,
+                module_path!().to_string(),
             ),
             start_line,
             end_line: None,
@@ -2035,7 +2081,7 @@ impl ProfileSection {
                 false,             // is_async
                 false,             // is_method
                 true,              // detailed_memory
-                None::<u32>,
+                module_path!().to_string(),
             ),
             start_line,
             end_line: None,

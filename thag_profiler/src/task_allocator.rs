@@ -7,12 +7,13 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, flush_debug_log, get_global_profile_type, is_detailed_memory,
-    lazy_static_var,
+    debug_log, extract_path, find_profile, flush_debug_log, get_global_profile_type,
+    is_detailed_memory, lazy_static_var,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
-        is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, START_TIME,
+        is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
+        START_TIME,
     },
     regex, Profile, ProfileType,
 };
@@ -31,6 +32,9 @@ use std::{
     thread::{self, ThreadId},
     time::Instant,
 };
+
+pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
+    LazyLock::new(|| regex!("thag_profiler::task_allocator.+Dispatcher"));
 
 // ========== MEMORY ALLOCATOR DEFINITION ==========
 
@@ -162,6 +166,11 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
 #[allow(clippy::too_many_lines)]
 fn record_alloc(address: usize, size: usize) {
+    if size == 0 {
+        debug_log!("Zero-sized allocation found");
+        return;
+    }
+
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -204,11 +213,11 @@ fn record_alloc(address: usize, size: usize) {
     let start_ident = Instant::now();
     let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
-    let start_pattern: &Regex = regex!("thag_profiler::task_allocator.+Dispatcher");
-
     // debug_log!("Calling extract_callstack");
     let mut current_backtrace = Backtrace::new_unresolved();
-    let cleaned_stack = extract_alloc_callstack(start_pattern, &mut current_backtrace);
+
+    // TODO phase out
+    let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
     debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
     let in_profile_code = cleaned_stack
         .iter()
@@ -220,100 +229,83 @@ fn record_alloc(address: usize, size: usize) {
     }
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-    if size > 0 && detailed_memory {
-        let detailed_stack =
-            extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
 
-        // Try to extract source file location from backtrace
-        let module_path = String::new();
-        let line_number = 0;
+    let module_paths = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_module_paths() };
+    debug_log!("module_paths={module_paths:#?}");
 
-        // // Extract module path and line number from backtrace if available
-        // if let Some(frame) = current_backtrace.frames().first() {
-        //     if let Some(symbol) = frame.symbols().first() {
-        //         if let Some(filename) = symbol.filename() {
-        //             if let Some(file_str) = filename.to_str() {
-        //                 module_path = file_str.to_string();
-        //             }
-        //         }
+    let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
+        .iter()
+        .flat_map(BacktraceFrame::symbols)
+        // .inspect(|symbol| {
+        //     debug_log!("symbol: {symbol:#?}");
+        // })
+        .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
+        .filter(|(maybe_filename, maybe_lineno, frame)| {
+            maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some()
+        })
+        .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
+            (
+                maybe_filename
+                    .unwrap()
+                    .to_owned()
+                    .as_path()
+                    .file_stem()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string(),
+                maybe_lineno.unwrap(),
+                maybe_frame.unwrap().to_string(),
+            )
+        })
+        .filter(|(filename, _, _)| (module_paths.contains(filename)))
+        .inspect(|(filename, lineno, frame)| {
+            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
+        })
+        .map(|(filename, lineno, frame)| (filename, lineno, frame.clone(), clean_function_name(frame.clone().as_mut_str())))
+        .map(|(filename, lineno, frame, fn_name)| (filename.clone(), lineno, frame, fn_name.clone(), find_profile(&filename, &fn_name, lineno)))
+        .skip_while(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_none())
+        .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap()))
+        // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
+        // .cloned()
+        .take(1)
+        .last() else {return};
 
-        //         if let Some(line) = symbol.lineno() {
-        //             line_number = line;
-        //         }
-        //     }
-        // }
-        let module_paths = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_module_paths() };
-        debug_log!("module_paths={module_paths:#?}");
+    debug_log!(
+        "Found filename (module_path)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}, profile_ref: {profile_ref:?}"
+    );
 
-        // TODO: redo, extracting filename
+    // Try to record the allocation in the new profile registry
+    if !filename.is_empty()
+        && lineno > 0
+        && crate::mem_alloc::record_allocation(
+            &filename,
+            &fn_name,
+            lineno,
+            size,
+            address,
+            &mut current_backtrace,
+        )
+    {
+        debug_log!(
+            "Recorded allocation of {size} bytes in {filename}::{fn_name}:{lineno} to a profile"
+        );
 
-        let Some((filename, lineno, frame)) = Backtrace::frames(&current_backtrace)
-            .iter()
-            .flat_map(BacktraceFrame::symbols)
-            // .inspect(|symbol| {
-            //     debug_log!("symbol: {symbol:#?}");
-            // })
-            .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
-            .filter(|(maybe_filename, maybe_lineno, frame)| {
-                maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some()
-            })
-            .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
-                (
-                    maybe_filename
-                        .unwrap()
-                        .to_owned()
-                        .as_path()
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                        .to_string(),
-                    maybe_lineno.unwrap(),
-                    maybe_frame.unwrap(),
-                )
-            })
-            .inspect(|(filename, lineno, frame)| {
-                debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}");
-            })
-            .skip_while(|(filename, _, _)| !module_paths.contains(filename))
-            .take(1)
-            .last()
-        else {
-            debug_log!("Could not find module in stack TODO");
-            return;
-        };
-
-        let name = clean_function_name(frame);
-        debug_log!("Found filename={filename}, lineno={lineno}", name: {name:?}, frame: {frame:?});
-
-        // Try to record the allocation in the new profile registry
-        if !module_path.is_empty()
-            && line_number > 0
-            && crate::mem_alloc::record_allocation(&module_path, fn_name, line_number, size)
-        {
-            debug_log!(
-                "Recorded allocation of {size} bytes in {module_path}:{line_number} to a profile"
-            );
-            // Allocation was recorded in a profile, no need to continue with global tracking
-            return;
+        // Still record detailed allocations to -memory_detail.folded if requested
+        if detailed_memory {
+            write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
         }
 
-        // Fall back to the old method
-        let entry = if detailed_stack.is_empty() {
-            format!("[out_of_bounds] +{size}")
-        } else {
-            format!("{} +{size}", detailed_stack.join(";"))
-        };
-
-        let memory_detail_path = get_memory_detail_path().unwrap();
-        let _ = Profile::write_profile_event(memory_detail_path, MemoryDetailFile::get(), &entry);
+        // Allocation was recorded in a profile, no need to continue with global tracking
+        return;
     }
 
+    // Fall back to traditional method
     current_backtrace.resolve();
 
     if cleaned_stack.is_empty() {
         debug_log!(
             "...empty cleaned_stack for backtrace: size={size}:\n{:#?}",
-            trim_backtrace(start_pattern, &current_backtrace)
+            trim_backtrace(&ALLOC_START_PATTERN, &current_backtrace)
         );
         debug_log!("Getting last active task (hmmm :/)");
         task_id = get_last_active_task().unwrap_or(0);
@@ -327,7 +319,7 @@ fn record_alloc(address: usize, size: usize) {
         let path = extract_path(&cleaned_stack, None);
         // debug_log!("path={path:#?}");
         if path.is_empty() {
-            let trimmed_backtrace = trim_backtrace(start_pattern, &current_backtrace);
+            let trimmed_backtrace = trim_backtrace(&ALLOC_START_PATTERN, &current_backtrace);
             if trimmed_backtrace
                 .iter()
                 .any(|frame| frame.contains("Backtrace::new"))
@@ -355,6 +347,18 @@ fn record_alloc(address: usize, size: usize) {
     //     return;
     // }
 
+    record_alloc_for_task_id(address, size, task_id);
+
+    if module_paths.is_empty() {
+        return;
+    }
+
+    if detailed_memory {
+        write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
+    }
+}
+
+pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
     let start_record_alloc = Instant::now();
 
     debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
@@ -387,6 +391,28 @@ fn record_alloc(address: usize, size: usize) {
         "Time to record allocation: {}ms",
         start_record_alloc.elapsed().as_millis()
     );
+}
+
+pub fn write_detailed_alloc(
+    size: usize,
+    start_pattern: &Regex,
+    current_backtrace: &mut Backtrace,
+    write_to_detail_file: bool,
+) {
+    let detailed_stack = extract_detailed_alloc_callstack(start_pattern, current_backtrace);
+
+    let entry = if detailed_stack.is_empty() {
+        format!("[out_of_bounds] +{size}")
+    } else {
+        format!("{} +{size}", detailed_stack.join(";"))
+    };
+
+    let (memory_path, file) = if write_to_detail_file {
+        (get_memory_detail_path().unwrap(), MemoryDetailFile::get())
+    } else {
+        (get_memory_path().unwrap(), MemoryProfileFile::get())
+    };
+    let _ = Profile::write_profile_event(memory_path, file, &entry);
 }
 
 fn record_dealloc(address: usize, size: usize) {
@@ -797,7 +823,7 @@ pub static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| TaskState {
 });
 
 // To handle active task tracking, instead of thread-locals, we'll use task-specific techniques
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TaskGuard {
     task_id: usize,
 }

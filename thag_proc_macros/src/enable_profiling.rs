@@ -122,10 +122,11 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         );
     }
 
+    // let module_path = module_path!();
     let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
 
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, false, ::thag_profiler::is_detailed_memory())
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, false, ::thag_profiler::is_detailed_memory(), module_path!().to_string())
     };
 
     #[cfg(not(feature = "full_profiling"))]

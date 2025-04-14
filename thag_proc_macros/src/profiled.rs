@@ -239,18 +239,19 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // let profile_name =
     //     generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
 
+    // let module_path = module_path!();
     let fn_name_str = fn_name.to_string();
     let detailed_memory = args.detailed_memory;
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method, #detailed_memory)
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method, #detailed_memory, module_path!().to_string())
     };
 
     #[cfg(feature = "full_profiling")]
     let profile_new = quote! {
         ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
-            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method, #detailed_memory)
+            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method, #detailed_memory, module_path!().to_string())
         })
     };
 

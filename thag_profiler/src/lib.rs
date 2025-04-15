@@ -340,14 +340,14 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
             global_profile_type
         );
 
-        if global_profile_type != ProfileType::Time {
-            debug_log!("Initializing memory profiling");
-            task_allocator::initialize_memory_profiling();
-        } else {
+        if global_profile_type == ProfileType::Time {
             debug_log!(
                 "Skipping memory profiling initialization because global_profile_type={:?}",
                 global_profile_type
             );
+        } else {
+            debug_log!("Initializing memory profiling");
+            task_allocator::initialize_memory_profiling();
         }
     });
 }

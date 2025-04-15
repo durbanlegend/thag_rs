@@ -166,11 +166,6 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
 #[allow(clippy::too_many_lines)]
 fn record_alloc(address: usize, size: usize) {
-    if size == 0 {
-        debug_log!("Zero-sized allocation found");
-        return;
-    }
-
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -180,6 +175,11 @@ fn record_alloc(address: usize, size: usize) {
                 IN_TRACKING = false;
             }
         }
+    }
+
+    if size == 0 {
+        debug_log!("Zero-sized allocation found");
+        return;
     }
 
     let profile_type = get_global_profile_type();
@@ -261,7 +261,7 @@ fn record_alloc(address: usize, size: usize) {
         .inspect(|(filename, lineno, frame)| {
             debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
         })
-        .map(|(filename, lineno, frame)| (filename, lineno, frame.clone(), clean_function_name(frame.clone().as_mut_str())))
+        .map(|(filename, lineno, mut frame)| (filename, lineno, frame.clone(), clean_function_name(frame.as_mut_str())))
         .map(|(filename, lineno, frame, fn_name)| (filename.clone(), lineno, frame, fn_name.clone(), find_profile(&filename, &fn_name, lineno)))
         .skip_while(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_none())
         .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap()))
@@ -401,7 +401,17 @@ pub fn write_detailed_alloc(
 ) {
     let detailed_stack = extract_detailed_alloc_callstack(start_pattern, current_backtrace);
 
+    write_detailed_stack_alloc(size, write_to_detail_file, &detailed_stack);
+}
+
+#[allow(clippy::ptr_arg)]
+pub fn write_detailed_stack_alloc(
+    size: usize,
+    write_to_detail_file: bool,
+    detailed_stack: &Vec<String>,
+) {
     let entry = if detailed_stack.is_empty() {
+        // format!("[out_of_bounds] +{}", size)
         format!("[out_of_bounds] +{size}")
     } else {
         format!("{} +{size}", detailed_stack.join(";"))

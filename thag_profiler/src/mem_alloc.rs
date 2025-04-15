@@ -1,12 +1,15 @@
 use crate::{
     debug_log, flush_debug_log,
-    profiling::Profile,
-    task_allocator::{with_allocator, write_detailed_alloc, Allocator, ALLOC_START_PATTERN},
+    profiling::{clean_function_name, Profile},
+    regex, strip_hex_suffix,
+    task_allocator::{with_allocator, write_detailed_stack_alloc, Allocator},
 };
-use backtrace::Backtrace;
+use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;
+use regex::Regex;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
+    string::ToString,
     sync::LazyLock,
 };
 
@@ -27,6 +30,7 @@ pub struct ProfileRegistry {
 /// Reference to a Profile for the registry
 /// We use a simple wrapper to avoid ownership issues
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ProfileRef {
     /// Function name or custom name if provided
     name: String,
@@ -49,10 +53,10 @@ impl ProfileRegistry {
 
         // Create a reference to this profile
         let profile_ref = ProfileRef {
-            name: profile
-                .custom_name()
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| profile.registered_name().to_string()),
+            name: profile.custom_name().map_or_else(
+                || profile.registered_name().to_string(),
+                ToString::to_string,
+            ),
             detailed_memory: profile.detailed_memory(),
             profile: Some(static_profile),
         };
@@ -72,12 +76,10 @@ impl ProfileRegistry {
         let function_ranges = self
             .module_functions
             .entry(module_path.clone())
-            .or_insert_with(HashMap::new);
+            .or_default();
 
         // Get or create the range sections map for this function
-        let range_sections = function_ranges
-            .entry(fn_name.clone())
-            .or_insert_with(BTreeMap::new);
+        let range_sections = function_ranges.entry(fn_name.clone()).or_default();
 
         // Insert the profile reference at this line range
         range_sections.insert((start_line, end_line), profile_ref);
@@ -112,21 +114,15 @@ impl ProfileRegistry {
     /// Returns the profile reference if found
     pub fn find_profile(&self, module_path: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
         // Check if we have this module
-        let function_ranges = match self.module_functions.get(module_path) {
-            Some(fr) => fr,
-            None => {
-                debug_log!("Module not found in registry: {module_path}");
-                return None;
-            }
+        let Some(function_ranges) = self.module_functions.get(module_path) else {
+            debug_log!("Module not found in registry: {module_path}");
+            return None;
         };
 
         // Check if we have this function
-        let range_sections = match function_ranges.get(fn_name) {
-            Some(rs) => rs,
-            None => {
-                debug_log!("Function {fn_name} not found in module {module_path}");
-                return None;
-            }
+        let Some(range_sections) = function_ranges.get(fn_name) else {
+            debug_log!("Function {fn_name} not found in module {module_path}");
+            return None;
         };
 
         debug_log!(
@@ -192,7 +188,7 @@ impl ProfileRegistry {
         // Find the profile for this allocation
         let profile_ref_opt = self.find_profile(module_path, fn_name, line);
 
-        debug_log!("profile_ref_opt={profile_ref_opt:#?}");
+        // debug_log!("profile_ref_opt={profile_ref_opt:#?}");
 
         // Process the found profile if any
         if let Some(profile_ref) = profile_ref_opt {
@@ -205,20 +201,60 @@ impl ProfileRegistry {
             if let Some(profile) = profile_ref.profile {
                 // Record the allocation to the profile
                 if profile_ref.detailed_memory {
+                    // let detailed_stack =
+                    //     extract_detailed_alloc_callstack(&ALLOC_START_PATTERN, current_backtrace);
+                    let start_pattern: &Regex = regex!("thag_profiler::task_allocator.+Dispatcher");
+                    let end_point = profile.fn_name();
+                    current_backtrace.resolve();
+                    let mut already_seen = HashSet::new();
+
+                    // First, collect all relevant frames
+                    let callstack: Vec<String> = Backtrace::frames(current_backtrace)
+                        // let iter = Backtrace::frames(current_backtrace)
+                        .iter()
+                        .flat_map(BacktraceFrame::symbols)
+                        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                        .skip_while(|frame| !start_pattern.is_match(frame))
+                        .skip(1)
+                        .take_while(|frame| !frame.contains(end_point))
+                        // .inspect(|frame| {
+                        //     debug_log!("frame: {frame}");
+                        // })
+                        .map(strip_hex_suffix)
+                        .map(|mut name| {
+                            // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+                            clean_function_name(&mut name)
+                        })
+                        .filter(|name| {
+                            // Skip duplicate function calls (helps with the {{closure}} pattern)
+                            if already_seen.contains(name.as_str()) {
+                                false
+                            } else {
+                                already_seen.insert(name.clone());
+                                true
+                            }
+                        })
+                        // .rev();
+                        // .chain(profile)
+                        .collect();
+
+                    let detailed_stack = profile
+                        .path()
+                        .iter()
+                        .chain(callstack.iter().rev())
+                        .cloned()
+                        .collect();
+
+                    // TODO De-scaffold detailed_stack below this profile's entry, or cut off and append this profile's stack.
+                    write_detailed_stack_alloc(size, false, &detailed_stack);
+                } else {
                     // Call the profile's record_allocation method directly
                     debug_log!("Calling record_allocation on Profile for {size} bytes in {module_path}::{fn_name} at line {line}");
-                    write_detailed_alloc(size, &ALLOC_START_PATTERN, current_backtrace, false);
-                    return true;
-                } else {
-                    profile.record_allocation(size, address);
-                    return true;
-                    // debug_log!(
-                    //     "Profile found but detailed_memory is false for {module_path}::{fn_name}"
-                    // );
+                    let _ = profile.record_allocation(size, address);
                 }
-            } else {
-                debug_log!("Profile reference is missing the actual Profile pointer for {module_path}::{fn_name}");
+                return true;
             }
+            debug_log!("Profile reference is missing the actual Profile pointer for {module_path}::{fn_name}");
         } else {
             debug_log!("No matching profile found for {module_path}::{fn_name} at line {line}");
         }
@@ -275,8 +311,7 @@ pub fn record_allocation(
 
         // Print list of registered modules to help diagnose issues
         {
-            let registry = PROFILE_REGISTRY.lock();
-            let modules = registry.get_module_paths();
+            let modules = PROFILE_REGISTRY.lock().get_module_paths();
             debug_log!("Available modules in registry: {modules:?}");
             flush_debug_log();
         }
@@ -284,9 +319,8 @@ pub fn record_allocation(
         // Now acquire the PROFILE_REGISTRY mutex
         let result;
         {
-            let registry = PROFILE_REGISTRY.lock();
             debug_log!("About to call record_allocation on registry");
-            result = registry.record_allocation(
+            result = PROFILE_REGISTRY.lock().record_allocation(
                 module_path,
                 fn_name,
                 line,
@@ -312,6 +346,7 @@ pub fn record_allocation(
 }
 
 /// Find a profile for a specific module path and line number
+#[must_use]
 pub fn find_profile(module_path: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
     with_allocator(Allocator::System, || {
         // Acquire the registry lock

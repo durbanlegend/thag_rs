@@ -16,7 +16,7 @@ use std::{
 
 #[cfg(feature = "full_profiling")]
 use crate::{
-    debug_log, static_lazy,
+    debug_log, get_root_module, static_lazy,
     task_allocator::{
         activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
         TaskMemoryContext, TASK_PATH_REGISTRY,
@@ -81,9 +81,9 @@ static_lazy! {
             };
         };
 
-        eprintln!("THAG_PROFILE environment variable found: {}", env_var);
+        eprintln!("THAG_PROFILE environment variable found: {env_var}");
         let parts: Vec<&str> = env_var.split(',').collect();
-        eprintln!("THAG_PROFILE parts: {:?}", parts);
+        eprintln!("THAG_PROFILE parts: {parts:?}");
         let mut errors = Vec::new();
 
         // Parse profile type (first element)
@@ -96,14 +96,14 @@ static_lazy! {
             None
         } else {
             let profile_type_str = parts.first().unwrap().trim();
-            eprintln!("THAG_PROFILE: Parsing profile type '{}'", profile_type_str);
+            eprintln!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
             match profile_type_str.parse::<ProfileType>() {
                 Ok(val) => {
-                    eprintln!("THAG_PROFILE: Successfully parsed profile type: {:?}", val);
+                    eprintln!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
                     Some(val)
                 },
                 Err(e) => {
-                    eprintln!("THAG_PROFILE: Failed to parse profile type: {}", e);
+                    eprintln!("THAG_PROFILE: Failed to parse profile type: {e}");
                     errors.push(e);
                     None
                 }
@@ -705,14 +705,13 @@ pub fn get_global_profile_type() -> ProfileType {
             // debug_log!(
             //     "get_global_profile_type: GLOBAL_PROFILE_TYPE not set, checking ProfileConfig"
             // );
-            let config_type = ProfileConfig::get()
-                .profile_type
-                .expect("Missing profile type");
             // debug_log!(
             //     "get_global_profile_type: returning {:?} from ProfileConfig",
             //     config_type
             // );
-            config_type
+            ProfileConfig::get()
+                .profile_type
+                .expect("Missing profile type")
         }
     }
 }
@@ -991,7 +990,7 @@ impl FromStr for ProfileType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim().to_lowercase();
-        eprintln!("ProfileType::from_str: parsing '{}'", trimmed);
+        eprintln!("ProfileType::from_str: parsing '{trimmed}'");
 
         match trimmed.as_str() {
             "time" => {
@@ -1009,7 +1008,7 @@ impl FromStr for ProfileType {
             _ => {
                 let err =
                     format!("Invalid profile type '{s}'. Expected 'time', 'memory', or 'both'");
-                eprintln!("ProfileType::from_str: error: {}", err);
+                eprintln!("ProfileType::from_str: error: {err}");
                 Err(err)
             }
         }
@@ -1077,19 +1076,19 @@ impl Profile {
 
     /// Get the start line of this profile
     #[must_use]
-    pub fn start_line(&self) -> Option<u32> {
+    pub const fn start_line(&self) -> Option<u32> {
         self.start_line
     }
 
     /// Get the end line of this profile, if available
     #[must_use]
-    pub fn end_line(&self) -> Option<u32> {
+    pub const fn end_line(&self) -> Option<u32> {
         self.end_line
     }
 
     /// Check if this profile uses detailed memory tracking
     #[must_use]
-    pub fn detailed_memory(&self) -> bool {
+    pub const fn detailed_memory(&self) -> bool {
         self.detailed_memory
     }
 
@@ -1115,6 +1114,7 @@ impl Profile {
     ///
     /// `true` if the allocation was recorded, `false` otherwise
     #[cfg(feature = "full_profiling")]
+    #[must_use]
     pub fn record_allocation(&self, size: usize, address: usize) -> bool {
         debug_log!("In Profile::record_allocation for size={size} for profile {self:?}");
         // if !self.detailed_memory {
@@ -1295,8 +1295,6 @@ impl Profile {
         detailed_memory: bool,
         module_path: String,
     ) -> Option<Self> {
-        use std::module_path;
-
         if !is_profiling_enabled() {
             return None;
         }
@@ -1495,6 +1493,11 @@ impl Profile {
         })
     }
 
+    #[must_use]
+    pub const fn path(&self) -> &Vec<String> {
+        &self.path
+    }
+
     /// Writes a profiling event to the specified profile file.
     ///
     /// This is a low-level function used by both time and memory profiling
@@ -1635,9 +1638,9 @@ impl Profile {
     }
 
     #[cfg(feature = "full_profiling")]
-    fn record_memory_change(&self, delta: usize) -> ProfileResult<()> {
+    fn record_memory_change(&self, delta: usize) {
         if delta == 0 {
-            return Ok(());
+            return;
         }
 
         debug_log!(
@@ -1655,8 +1658,6 @@ impl Profile {
         } else {
             debug_log!("Successfully wrote memory event for delta={}", delta);
         }
-
-        Ok(())
     }
 
     #[cfg(feature = "full_profiling")]
@@ -1743,6 +1744,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
 // }
 
 #[cfg(feature = "time_profiling")]
+#[must_use]
 pub fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
@@ -1808,19 +1810,26 @@ pub fn extract_alloc_callstack(
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
-        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|frame| !start_pattern.is_match(frame))
-        .take_while(|frame| !frame.contains(end_point))
-        .filter(|name| filter_scaffolding(name))
+        .filter_map(|symbol| {
+            Some((
+                symbol.name().map(|name| name.to_string()),
+                symbol.lineno().unwrap_or(0),
+            ))
+        })
+        .filter(|(maybe_frame, _)| maybe_frame.is_some())
+        .map(|(maybe_frame, lineno)| (maybe_frame.unwrap(), lineno))
+        .skip_while(|(frame, _)| !start_pattern.is_match(frame))
+        .take_while(|(frame, _)| !frame.contains(end_point))
+        .filter(|(frame, _)| filter_scaffolding(frame))
         // .inspect(|frame| {
         //     debug_log!("frame: {frame}");
         // })
-        .map(strip_hex_suffix)
-        .map(|mut name| {
+        .map(|(frame, lineno)| (strip_hex_suffix(frame), lineno))
+        .map(|(mut name, lineno)| {
             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-            clean_function_name(&mut name)
+            (clean_function_name(&mut name), lineno)
         })
-        .filter(|name| {
+        .filter(|(name, _)| {
             // Skip duplicate function calls (helps with the {{closure}} pattern)
             if already_seen.contains(name.as_str()) {
                 false
@@ -1829,6 +1838,7 @@ pub fn extract_alloc_callstack(
                 true
             }
         })
+        .map(|(frame, lineno)| format!("{frame}:{lineno}"))
         .collect();
     // debug_log!("Callstack: {callstack:#?}");
     // debug_log!("already_seen: {:#?}", already_seen);
@@ -1840,8 +1850,6 @@ pub fn extract_detailed_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    use crate::get_root_module;
-
     current_backtrace.resolve();
     let mut already_seen = HashSet::new();
 
@@ -1970,7 +1978,7 @@ impl Drop for Profile {
                     if let Some(memory_usage) = task.memory_usage() {
                         debug_log!("Task {} final memory_usage={memory_usage}", task.task_id);
                         if memory_usage > 0 {
-                            let _ = self.record_memory_change(memory_usage);
+                            let () = self.record_memory_change(memory_usage);
                         }
                     }
                 }

@@ -67,6 +67,7 @@ impl Document {
         }
     }
 
+    // #[profiled(detailed_memory = true)]
     #[profiled]
     fn calculate_sentiment(&mut self) -> f64 {
         // Very simple "sentiment analysis" - just for demonstration

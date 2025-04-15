@@ -15,7 +15,7 @@ use crate::{
         is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
         START_TIME,
     },
-    regex, Profile, ProfileType,
+    regex, Profile, ProfileRef, ProfileType,
 };
 use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;
@@ -214,32 +214,35 @@ fn record_alloc(address: usize, size: usize) {
     let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
     // debug_log!("Calling extract_callstack");
-    let mut current_backtrace = Backtrace::new_unresolved();
+    let mut current_backtrace = Backtrace::new();
 
-    // TODO phase out
-    let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
-    debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
-    let in_profile_code = cleaned_stack
-        .iter()
-        .any(|frame| frame.contains("Backtrace::new") || frame.contains("Profile::new"));
+    // TODO phase out - useful for debugging though
+    // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
+    // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
+    // let in_profile_code = cleaned_stack
+    //     .iter()
+    //     .any(|frame| frame.contains("Backtrace::new") || frame.contains("Profile::new"));
 
-    if in_profile_code {
-        debug_log!("Ignoring allocation request of size {size} for profiler code");
-        return;
-    }
+    // if in_profile_code {
+    //     debug_log!("Ignoring allocation request of size {size} for profiler code");
+    //     return;
+    // }
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-
     let module_paths = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_module_paths() };
     debug_log!("module_paths={module_paths:#?}");
 
-    let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
+    // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
+    let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> = Backtrace::frames(&current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
-        // .inspect(|symbol| {
-        //     debug_log!("symbol: {symbol:#?}");
-        // })
+        .inspect(|symbol| {
+            debug_log!("symbol: {symbol:#?}");
+        })
         .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
+        .inspect(|(maybe_filename, maybe_lineno, frame)| {
+            debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
+        })
         .filter(|(maybe_filename, maybe_lineno, frame)| {
             maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some()
         })
@@ -257,30 +260,52 @@ fn record_alloc(address: usize, size: usize) {
                 maybe_frame.unwrap().to_string(),
             )
         })
+        .inspect(|(filename, lineno, frame)| {
+            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
+        })
         .filter(|(filename, _, _)| (module_paths.contains(filename)))
         .inspect(|(filename, lineno, frame)| {
             debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
         })
         .map(|(filename, lineno, mut frame)| (filename, lineno, frame.clone(), clean_function_name(frame.as_mut_str())))
         .map(|(filename, lineno, frame, fn_name)| (filename.clone(), lineno, frame, fn_name.clone(), find_profile(&filename, &fn_name, lineno)))
-        .skip_while(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_none())
+        .inspect(|(_, _, _, _, maybe_profile_ref)| {
+            debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
+        })
+        .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
         .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap()))
         // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
         // .cloned()
-        .take(1)
-        .last() else {return};
+        .collect();
+    // .last() else {return};
+
+    if func_and_ancestors.is_empty() {
+        debug_log!("No eligible profile found");
+        return;
+    }
+
+    let in_profile_code = func_and_ancestors.iter().any(|(_, _, frame, _, _)| {
+        frame.contains("Backtrace::new") || frame.contains("Profile::new")
+    });
+
+    if in_profile_code {
+        debug_log!("Ignoring allocation request of size {size} for profiler code");
+        return;
+    }
+
+    let (filename, lineno, frame, fn_name, profile_ref) = &func_and_ancestors[0];
 
     debug_log!(
-        "Found filename (module_path)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}, profile_ref: {profile_ref:?}"
+        "Found filename (module_path)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}/*, profile_ref: {profile_ref:?}*/"
     );
 
     // Try to record the allocation in the new profile registry
     if !filename.is_empty()
-        && lineno > 0
+        && *lineno > 0
         && crate::mem_alloc::record_allocation(
-            &filename,
-            &fn_name,
-            lineno,
+            filename,
+            fn_name,
+            *lineno,
             size,
             address,
             &mut current_backtrace,
@@ -301,6 +326,9 @@ fn record_alloc(address: usize, size: usize) {
 
     // Fall back to traditional method
     current_backtrace.resolve();
+
+    let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
+    debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
 
     if cleaned_stack.is_empty() {
         debug_log!(

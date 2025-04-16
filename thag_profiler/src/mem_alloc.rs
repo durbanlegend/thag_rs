@@ -248,6 +248,7 @@ impl ProfileRegistry {
                     // TODO De-scaffold detailed_stack below this profile's entry, or cut off and append this profile's stack.
                     write_detailed_stack_alloc(size, false, &detailed_stack);
                 } else {
+                    // Not detailed memory
                     // Call the profile's record_allocation method directly
                     debug_log!("Calling record_allocation on Profile for {size} bytes in {module_path}::{fn_name} at line {line}");
                     let _ = profile.record_allocation(size, address);

@@ -1699,7 +1699,7 @@ impl Profile {
         );
         if let Some(memory_task) = &self.memory_task {
             record_alloc_for_task_id(address, size, memory_task.task_id);
-            debug_log!("Profile {identifier} successfully wrote memory event for delta={size}");
+            debug_log!("Profile {identifier}: task_id: {} successfully wrote memory event for delta={size}", memory_task.task_id);
         } else {
             debug_log!("Profile {identifier} could not retrieve &self.memory_task");
             return Err(ProfileError::General(format!(
@@ -2371,12 +2371,11 @@ macro_rules! profile {
     // Detailed memory profiling
     ($name:expr, detailed_memory) => {{
         $crate::with_allocator($crate::Allocator::System, || {
-            use paste::paste;
             use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
                 line!(),
-                paste! { [<end_ $name>]() },
+                $crate::paste::paste! { [<end_ $name>]() },
                 false,
                 module_path!().to_string(),
             )
@@ -2386,12 +2385,11 @@ macro_rules! profile {
     // Combination of detailed_memory and async_fn
     ($name:expr, detailed_memory, async_fn) => {{
         $crate::with_allocator($crate::Allocator::System, || {
-            use paste::paste;
             use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
                 line!(),
-                paste! { [<end_ $name>]() },
+                $crate::paste::paste! { [<end_ $name>]() },
                 true,
                 module_path!().to_string(),
             )
@@ -2401,12 +2399,11 @@ macro_rules! profile {
     // Async function with detailed memory (alternative order)
     ($name:expr, async_fn, detailed_memory) => {{
         $crate::with_allocator($crate::Allocator::System, || {
-            use paste::paste;
             use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
                 line!(),
-                paste! { [<end_ $name>]() },
+                $crate::paste::paste! { [<end_ $name>]() },
                 true,
                 module_path!().to_string(),
             )

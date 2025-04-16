@@ -70,6 +70,8 @@ pub use {
     // Only re-export what users need from task_allocator
 };
 
+pub use paste; // Re-export paste crate
+
 #[cfg(feature = "full_profiling")]
 pub use {
     mem_alloc::{find_profile, record_allocation, register_profile, ProfileRef, PROFILE_REGISTRY},

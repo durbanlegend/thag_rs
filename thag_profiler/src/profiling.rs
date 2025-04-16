@@ -1,4 +1,3 @@
-use crate::task_allocator::record_alloc_for_task_id;
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -14,14 +13,16 @@ use std::{
     time::Instant,
 };
 
+use crate::{debug_log, static_lazy, ProfileError};
+
 #[cfg(feature = "full_profiling")]
 use crate::{
-    debug_log, get_root_module, static_lazy,
+    get_root_module,
     task_allocator::{
-        activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack, TaskGuard,
-        TaskMemoryContext, TASK_PATH_REGISTRY,
+        activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack,
+        record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    with_allocator, Allocator, ProfileError,
+    with_allocator, Allocator,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -1021,7 +1022,7 @@ pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
     path: Vec<String>,
-    custom_name: Option<String>, // Custom section name when provided via profile!("name") macro
+    section_name: Option<String>, // Custom section name when provided via profile!("name") macro
     registered_name: String,
     fn_name: String,
     start_line: Option<u32>, // Source line where profile was created (for sections)
@@ -1100,8 +1101,8 @@ impl Profile {
 
     /// Get the custom name of this profile, if provided
     #[must_use]
-    pub fn custom_name(&self) -> Option<String> {
-        self.custom_name.clone()
+    pub fn section_name(&self) -> Option<String> {
+        self.section_name.clone()
     }
 
     /// Records a memory allocation in this profile
@@ -1166,17 +1167,22 @@ impl Profile {
     /// # Panics
     ///
     /// Panics if stack validation fails.
-    #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
+    #[allow(
+        clippy::inline_always,
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        unused_variables
+    )]
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
     pub fn new(
-        custom_name: Option<&str>,
+        section_name: Option<&str>,
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
-        // is_method: bool,
         detailed_memory: bool, // New parameter
         module_path: String,
         start_line: Option<u32>,
+        end_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
@@ -1198,7 +1204,7 @@ impl Profile {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
         }
 
-        // debug_log!("Current function/section: {custom_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+        // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
         let mut current_backtrace = Backtrace::new_unresolved();
@@ -1225,12 +1231,12 @@ impl Profile {
         debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
         register_profiled_function(&stack, &desc_fn_name);
 
-        // Determine if we should keep the custom name
-        let custom_name = custom_name.map(str::to_string);
+        // Determine if we should keep the section name
+        let section_name = section_name.map(str::to_string);
 
         // Debug output can be turned back on if needed for troubleshooting
         // debug_log!(
-        //     "DEBUG: Profile::new with custom_name='{custom_name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
+        //     "DEBUG: Profile::new with fn_name='{fn_name}', section_name={section_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
         // );
 
         // Create a basic profile structure that works for all configurations
@@ -1251,10 +1257,11 @@ impl Profile {
             profile_type,
             start: Some(Instant::now()),
             path,
-            custom_name,
+            section_name,
             registered_name: fn_name.to_string(),
+            fn_name: fn_name.to_string(),
             start_line,
-            end_line: end,
+            end_line,
             detailed_memory,
             module_path,
             #[cfg(feature = "full_profiling")]
@@ -1299,7 +1306,7 @@ impl Profile {
     #[cfg(feature = "full_profiling")]
     #[must_use]
     pub fn new(
-        custom_name: Option<&str>,
+        section_name: Option<&str>,
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
@@ -1330,7 +1337,7 @@ impl Profile {
             // eprintln!("requested_type={requested_type:?}");
 
             debug_log!("module_path={module_path}");
-            // debug_log!("Current function/section: {custom_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
+            // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
 
             // let fn_name = maybe_fn_name.unwrap();
@@ -1373,12 +1380,12 @@ impl Profile {
             debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
             register_profiled_function(&stack, &desc_fn_name);
 
-            // Determine if we should keep the custom name
-            let custom_name = custom_name.map(str::to_string);
+            // Determine if we should keep the section name
+            let section_name = section_name.map(str::to_string);
 
             // Debug output can be turned back on if needed for troubleshooting
             // debug_log!(
-            //     "DEBUG: Profile::new with custom_name='{custom_name}', fn_name='{fn_name}', custom_name={custom_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
+            //     "DEBUG: Profile::new with , fn_name='{fn_name}', section_name={section_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
             // );
 
             // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
@@ -1398,7 +1405,7 @@ impl Profile {
                     profile_type,
                     start: Some(Instant::now()),
                     path,
-                    custom_name,
+                    section_name,
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
                     start_line,
@@ -1469,7 +1476,7 @@ impl Profile {
                     profile_type,
                     start: Some(Instant::now()),
                     path,
-                    custom_name,
+                    section_name,
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
                     // start_line: Some(start_line),
@@ -1577,7 +1584,7 @@ impl Profile {
         let path = &self.path;
 
         if path.is_empty() {
-            debug_log!("DEBUG: Stack is empty for {:?}", self.custom_name);
+            debug_log!("DEBUG: Stack is empty for {:?}", self.section_name);
             return Err(ProfileError::General("Stack is empty".into()));
         }
 
@@ -1621,9 +1628,9 @@ impl Profile {
         let entry = format!("{stack} {op}{delta}");
 
         debug_log!(
-            "DEBUG: task_id: {} custom_name: {:?} write_memory_event: {entry}",
+            "DEBUG: task_id: {} section_name: {:?} write_memory_event: {entry}",
             self.memory_task.as_ref().unwrap().id(),
-            self.custom_name
+            self.section_name
         );
 
         // let paths = ProfilePaths::get();
@@ -1650,7 +1657,7 @@ impl Profile {
             .map(|(stack_str, fn_name_str)| {
                 get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
             })
-            .chain(self.custom_name.clone())
+            .chain(self.section_name.clone())
             .collect::<Vec<String>>()
             .join(";")
     }
@@ -1693,7 +1700,7 @@ impl Profile {
 
         // Record allocation
         // let result = self.write_memory_event_with_op(delta, '+');
-        let identifier = self.custom_name().map_or_else(
+        let identifier = self.section_name().map_or_else(
             || self.fn_name.clone(),
             |cust_name| format!("{}::{cust_name}", self.fn_name),
         );

@@ -69,6 +69,7 @@ impl Parse for ProfilingArgs {
                 mode: ProfilingMode::Enabled,
                 profile_type: Some(ProfileType::Both),
             },
+            #[allow(clippy::match_same_arms)]
             "yes" => Self {
                 mode: ProfilingMode::Enabled,
                 #[cfg(feature = "full_profiling")]

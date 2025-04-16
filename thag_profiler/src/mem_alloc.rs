@@ -54,7 +54,7 @@ impl ProfileRegistry {
         // Create a reference to this profile
         let profile_ref = ProfileRef {
             name: profile
-                .custom_name()
+                .section_name()
                 .unwrap_or_else(|| profile.registered_name().to_string()),
             detailed_memory: profile.detailed_memory(),
             profile: Some(static_profile),
@@ -241,7 +241,7 @@ impl ProfileRegistry {
                         .path()
                         .iter()
                         .cloned()
-                        .chain(profile.custom_name())
+                        .chain(profile.section_name())
                         .chain(callstack.iter().rev().cloned())
                         .collect();
 

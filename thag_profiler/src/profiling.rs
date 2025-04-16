@@ -1100,8 +1100,8 @@ impl Profile {
 
     /// Get the custom name of this profile, if provided
     #[must_use]
-    pub fn custom_name(&self) -> Option<&str> {
-        self.custom_name.as_deref()
+    pub fn custom_name(&self) -> Option<String> {
+        self.custom_name.clone()
     }
 
     /// Records a memory allocation in this profile
@@ -1290,7 +1290,12 @@ impl Profile {
     /// # Panics
     ///
     /// Panics if stack validation fails.
-    #[allow(clippy::inline_always, clippy::too_many_lines, unused_variables)]
+    #[allow(
+        clippy::inline_always,
+        clippy::too_many_arguments,
+        clippy::too_many_lines,
+        unused_variables
+    )]
     #[cfg(feature = "full_profiling")]
     #[must_use]
     pub fn new(
@@ -1302,6 +1307,7 @@ impl Profile {
         detailed_memory: bool,
         module_path: String,
         start_line: Option<u32>,
+        end_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
@@ -1396,7 +1402,7 @@ impl Profile {
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
                     start_line,
-                    end_line: None,
+                    end_line,
                     detailed_memory,
                     module_path,
                     memory_task: None,
@@ -1468,7 +1474,7 @@ impl Profile {
                     fn_name: fn_name.to_string(),
                     // start_line: Some(start_line),
                     start_line,
-                    end_line: None,
+                    end_line,
                     detailed_memory,
                     module_path,
                     memory_task: Some(memory_task),
@@ -1687,14 +1693,18 @@ impl Profile {
 
         // Record allocation
         // let result = self.write_memory_event_with_op(delta, '+');
+        let identifier = self.custom_name().map_or_else(
+            || self.fn_name.clone(),
+            |cust_name| format!("{}::{cust_name}", self.fn_name),
+        );
         if let Some(memory_task) = &self.memory_task {
             record_alloc_for_task_id(address, size, memory_task.task_id);
-            debug_log!("Successfully wrote memory event for delta={}", size);
+            debug_log!("Profile {identifier} successfully wrote memory event for delta={size}");
         } else {
-            debug_log!("Could not retrieve &self.memory_task");
-            return Err(ProfileError::General(
-                "Could not retrieve &self.memory_task".to_string(),
-            ));
+            debug_log!("Profile {identifier} could not retrieve &self.memory_task");
+            return Err(ProfileError::General(format!(
+                "Profile {identifier} could not retrieve &self.memory_task"
+            )));
         }
 
         Ok(())
@@ -2084,6 +2094,7 @@ impl ProfileSection {
                 false,
                 module_path!().to_string(),
                 None,
+                None,
             ),
             start_line: None,
             end_line: None,
@@ -2095,10 +2106,13 @@ impl ProfileSection {
     pub fn new_with_detailed_memory(
         name: Option<&str>,
         start_line: u32,
+        end_line: u32,
         is_async: bool,
         module_path: String,
     ) -> Self {
-        debug_log!("In ProfileSection::new_with_detailed_memory with start_line={start_line}");
+        debug_log!(
+            "In ProfileSection::new_with_detailed_memory with range={start_line}..{end_line}"
+        );
         Self {
             profile: Profile::new(
                 name,
@@ -2108,9 +2122,10 @@ impl ProfileSection {
                 true, // detailed_memory
                 module_path,
                 Some(start_line),
+                Some(end_line),
             ),
             start_line: Some(start_line),
-            end_line: None,
+            end_line: Some(end_line),
         }
     }
 
@@ -2343,20 +2358,25 @@ pub enum MemoryError {
 macro_rules! profile {
     // Basic profile!(name) - time profiling only
     ($name:expr) => {{
+        use $crate::end;
         $crate::ProfileSection::new(Some($name))
     }};
 
     // Section in async function
     ($name:expr, async_fn) => {{
+        use $crate::end;
         $crate::ProfileSection::new(Some($name))
     }};
 
     // Detailed memory profiling
     ($name:expr, detailed_memory) => {{
         $crate::with_allocator($crate::Allocator::System, || {
+            use paste::paste;
+            use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
                 line!(),
+                paste! { [<end_ $name>]() },
                 false,
                 module_path!().to_string(),
             )
@@ -2366,9 +2386,12 @@ macro_rules! profile {
     // Combination of detailed_memory and async_fn
     ($name:expr, detailed_memory, async_fn) => {{
         $crate::with_allocator($crate::Allocator::System, || {
+            use paste::paste;
+            use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
                 line!(),
+                paste! { [<end_ $name>]() },
                 true,
                 module_path!().to_string(),
             )
@@ -2378,9 +2401,12 @@ macro_rules! profile {
     // Async function with detailed memory (alternative order)
     ($name:expr, async_fn, detailed_memory) => {{
         $crate::with_allocator($crate::Allocator::System, || {
+            use paste::paste;
+            use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
                 line!(),
+                paste! { [<end_ $name>]() },
                 true,
                 module_path!().to_string(),
             )
@@ -2418,19 +2444,22 @@ macro_rules! profile_internal {
         // Within the crate itself, we should use relative paths
         {
             if $crate::PROFILING_FEATURE_ENABLED {
+                let start_line = line!() as u32;
+                let end_line = end_$name() as u32;
                 let profile = $crate::Profile::new(
                     $name,
                     None::<&str>,
                     $type,
                     $is_async,
-                    // $is_method,
                     $detailed_memory,
+                    module_path!(),
+                    Some(start_line),
+                    Some(end_line),
                 );
-                let start_line = line!() as u32;
                 $crate::ProfileSection {
                     profile,
                     start_line,
-                    end_line: None,
+                    end_line,
                 }
             } else {
                 $crate::ProfileSection::new($name)
@@ -2451,19 +2480,22 @@ macro_rules! profile_internal {
         use $crate::{with_allocator, Allocator, ProfileSection};
         with_allocator(Allocator::System, || -> ProfileSection {
             if $crate::PROFILING_FEATURE_ENABLED {
+                let start_line = line!() as u32;
+                let end_line = end_$name() as u32;
                 let profile = $crate::Profile::new(
                     $name,
                     None::<&str>,
                     $type,
                     $is_async,
-                    // $is_method,
                     $detailed_memory,
+                    module_path!(),
+                    Some(start_line),
+                    Some(end_line),
                 );
-                let start_line = line!() as u32;
                 $crate::ProfileSection {
                     profile,
                     start_line,
-                    end_line: None,
+                    end_line,
                 }
             } else {
                 $crate::ProfileSection::new($name)

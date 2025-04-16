@@ -53,10 +53,9 @@ impl ProfileRegistry {
 
         // Create a reference to this profile
         let profile_ref = ProfileRef {
-            name: profile.custom_name().map_or_else(
-                || profile.registered_name().to_string(),
-                ToString::to_string,
-            ),
+            name: profile
+                .custom_name()
+                .unwrap_or_else(|| profile.registered_name().to_string()),
             detailed_memory: profile.detailed_memory(),
             profile: Some(static_profile),
         };
@@ -181,7 +180,7 @@ impl ProfileRegistry {
         let function_ranges = self.module_functions.get(module_path).unwrap();
         if !function_ranges.contains_key(fn_name) {
             debug_log!("No function found for {fn_name} in module {module_path}. Available functions: {:?}",
-                function_ranges.keys().collect::<Vec<_>>());
+                    function_ranges.keys().collect::<Vec<_>>());
             return false;
         }
 
@@ -238,11 +237,12 @@ impl ProfileRegistry {
                         // .chain(profile)
                         .collect();
 
-                    let detailed_stack = profile
+                    let detailed_stack: Vec<String> = profile
                         .path()
                         .iter()
-                        .chain(callstack.iter().rev())
                         .cloned()
+                        .chain(profile.custom_name())
+                        .chain(callstack.iter().rev().cloned())
                         .collect();
 
                     // TODO De-scaffold detailed_stack below this profile's entry, or cut off and append this profile's stack.

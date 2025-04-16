@@ -244,7 +244,7 @@ fn record_alloc(address: usize, size: usize) {
         //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
         // })
         .filter(|(maybe_filename, maybe_lineno, frame)| {
-            maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some()
+            maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some() && !frame.as_ref().unwrap().to_string().starts_with('<')
         })
         .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
             (

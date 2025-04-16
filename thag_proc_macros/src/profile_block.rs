@@ -3,15 +3,15 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     braced,
-    parse::{Parse, ParseStream, Parser},
+    parse::{Parse, ParseStream},
     parse_macro_input,
     spanned::Spanned,
-    Block, Expr, Result, Token,
+    Expr, Result, Token,
 };
 
 struct ProfileBlockInput {
     name_expr: Expr,
-    detailed: bool,
+    mode: syn::Ident,
     block_tokens: proc_macro2::TokenStream,
 }
 
@@ -30,16 +30,16 @@ impl Parse for ProfileBlockInput {
         // Parse profiling mode
         let mode_ident: syn::Ident = input.parse()?;
         let mode_str = mode_ident.to_string();
-        let detailed = match mode_str.as_str() {
-            "detailed_memory" => true,
-            "memory" => false,
-            _ => {
-                return Err(syn::Error::new(
-                    mode_ident.span(),
-                    "Expected 'detailed_memory' or 'memory'",
-                ))
-            }
-        };
+        // let detailed = match mode_str.as_str() {
+        //     "detailed_memory" => true,
+        //     "memory" => false,
+        //     _ => {
+        //         return Err(syn::Error::new(
+        //             mode_ident.span(),
+        //             "Expected 'detailed_memory' or 'memory'",
+        //         ))
+        //     }
+        // };
 
         input.parse::<Token![,]>()?;
 
@@ -50,7 +50,7 @@ impl Parse for ProfileBlockInput {
 
         Ok(ProfileBlockInput {
             name_expr,
-            detailed,
+            mode: mode_ident,
             block_tokens,
         })
     }
@@ -60,41 +60,46 @@ pub fn profile_block_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ProfileBlockInput);
 
     let name_expr = &input.name_expr;
-    let detailed = input.detailed;
+    let mode = &input.mode;
     let block_tokens = &input.block_tokens;
 
-    // // Extract string literal if the expression is a string literal
-    // let name_str = if let Expr::Lit(expr_lit) = name_expr {
-    //     if let syn::Lit::Str(lit_str) = &expr_lit.lit {
-    //         lit_str.value()
-    //     } else {
-    //         return syn::Error::new(
-    //             expr_lit.lit.span(),
-    //             "Expected string literal for section name",
-    //         )
-    //         .to_compile_error()
-    //         .into();
-    //     }
-    // } else {
-    //     return syn::Error::new(name_expr.span(), "Expected string literal for section name")
-    //         .to_compile_error()
-    //         .into();
-    // };
+    let detailed = match mode.to_string().as_str() {
+        "detailed_memory" => true,
+        "memory" => false,
+        _ => {
+            return syn::Error::new(mode.span(), "Expected 'detailed_memory' or 'memory'")
+                .to_compile_error()
+                .into();
+        }
+    };
 
-    // let end_fn_name = format!("end_{}", name_str);
-    // let end_fn_ident = syn::Ident::new(&end_fn_name, name_expr.span());
+    // Convert name_expr to a string literal for paste
+    // This assumes name_expr is a string literal like "print_docs"
+    let name_str = if let Expr::Lit(lit_expr) = name_expr {
+        if let syn::Lit::Str(lit_str) = &lit_expr.lit {
+            lit_str.value()
+        } else {
+            return syn::Error::new(name_expr.span(), "Expected string literal for section name")
+                .to_compile_error()
+                .into();
+        }
+    } else {
+        return syn::Error::new(name_expr.span(), "Expected string literal for section name")
+            .to_compile_error()
+            .into();
+    };
+
+    // Create the function name identifier
+    let func_name = format!("end_{}", name_str);
+    let func_ident = syn::Ident::new(&func_name, name_expr.span());
 
     // Generate the transformed code
     let expanded = quote! {
        {
-            // Use paste to call the end function
-            let end_line = ::thag_profiler::paste::paste! {
-                [<end_ #name_expr>]()
-            };
+            let end_line = #func_ident();
 
             let _profile_guard = {
                 let start_line = line!();
-
                 ::thag_profiler::ProfileSection::new_with_detailed_memory(
                     Some(#name_expr),
                     start_line,
@@ -106,8 +111,13 @@ pub fn profile_block_impl(input: TokenStream) -> TokenStream {
 
             // Original block statements as raw tokens
             #block_tokens
-            ::thag_profiler::end!(#name_expr);
-        }
+
+            // Define the end function here, after the block
+            #[allow(non_snake_case)]
+            fn #func_ident() -> u32 {
+                line!()
+            }
+       }
     };
 
     expanded.into()

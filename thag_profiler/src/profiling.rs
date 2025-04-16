@@ -1173,7 +1173,7 @@ impl Profile {
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
-        is_method: bool,
+        // is_method: bool,
         detailed_memory: bool, // New parameter
         module_path: String,
         start_line: Option<u32>,
@@ -1298,7 +1298,7 @@ impl Profile {
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
-        _is_method: bool,
+        // _is_method: bool,
         detailed_memory: bool,
         module_path: String,
         start_line: Option<u32>,
@@ -2080,9 +2080,8 @@ impl ProfileSection {
                 name,
                 None::<&str>,
                 ProfileType::Time, // Since memory profiling can't track sections via backtrace
-                false,             // is_async
-                false,             // is_method
-                false,             // detailed_memory
+                false,
+                false,
                 module_path!().to_string(),
                 None,
             ),
@@ -2105,9 +2104,8 @@ impl ProfileSection {
                 name,
                 None::<&str>,
                 ProfileType::Memory, // Since memory profiling can't track sections via backtrace
-                is_async,            // is_method
-                false,               // detailed_memory
-                true,
+                is_async,
+                true, // detailed_memory
                 module_path,
                 Some(start_line),
             ),
@@ -2416,7 +2414,7 @@ macro_rules! profile {
 #[macro_export]
 #[cfg(not(feature = "full_profiling"))]
 macro_rules! profile_internal {
-    ($name:expr, $type:expr, $is_async:expr, $is_method:expr, $detailed_memory:expr) => {{
+    ($name:expr, $type:expr, $is_async:expr, $detailed_memory:expr) => {{
         // Within the crate itself, we should use relative paths
         {
             if $crate::PROFILING_FEATURE_ENABLED {
@@ -2425,7 +2423,7 @@ macro_rules! profile_internal {
                     None::<&str>,
                     $type,
                     $is_async,
-                    $is_method,
+                    // $is_method,
                     $detailed_memory,
                 );
                 let start_line = line!() as u32;
@@ -2440,8 +2438,8 @@ macro_rules! profile_internal {
         }
     }};
     // Backward compatibility for calls without $detailed_memory
-    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
-        $crate::profile_internal!($name, $type, $is_async, $is_method, false)
+    ($name:expr, $type:expr, $is_async:expr) => {{
+        $crate::profile_internal!($name, $type, $is_async, false)
     }};
 }
 
@@ -2449,7 +2447,7 @@ macro_rules! profile_internal {
 #[macro_export]
 #[cfg(feature = "full_profiling")]
 macro_rules! profile_internal {
-    ($name:expr, $type:expr, $is_async:expr, $is_method:expr, $detailed_memory:expr) => {{
+    ($name:expr, $type:expr, $is_async:expr, $detailed_memory:expr) => {{
         use $crate::{with_allocator, Allocator, ProfileSection};
         with_allocator(Allocator::System, || -> ProfileSection {
             if $crate::PROFILING_FEATURE_ENABLED {
@@ -2458,7 +2456,7 @@ macro_rules! profile_internal {
                     None::<&str>,
                     $type,
                     $is_async,
-                    $is_method,
+                    // $is_method,
                     $detailed_memory,
                 );
                 let start_line = line!() as u32;
@@ -2473,8 +2471,8 @@ macro_rules! profile_internal {
         })
     }};
     // Backward compatibility for calls without $detailed_memory
-    ($name:expr, $type:expr, $is_async:expr, $is_method:expr) => {{
-        $crate::profile_internal!($name, $type, $is_async, $is_method, false)
+    ($name:expr, $type:expr, $is_async:expr) => {{
+        $crate::profile_internal!($name, $type, $is_async, false)
     }};
 }
 

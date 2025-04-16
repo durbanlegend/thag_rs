@@ -6,7 +6,7 @@ use syn::{
     LitStr,
 };
 
-use syn::{parse_macro_input, ItemFn, Type};
+use syn::{parse_macro_input, ItemFn};
 
 use syn::{Attribute, FnArg, Generics, ReturnType, Visibility, WhereClause};
 
@@ -98,93 +98,6 @@ struct FunctionContext<'a> {
     profile_new: proc_macro2::TokenStream,
     // /// Whether the function is asynchronous
     // is_async: bool,
-    // /// Whether the function is a method
-    // is_method: bool,
-}
-
-/// Determines if a function is a method by checking for:
-/// 1. Explicit self parameter
-/// 2. Return type of Self (including references to Self)
-/// 3. Return type containing Self as a generic parameter (Result<Self>, Option<Self>, etc.)
-/// 4. Location within an impl block (when available)
-fn is_method(inputs: &[FnArg], output: &ReturnType) -> bool {
-    // Check for self parameter (the most reliable indicator)
-    let has_self_param = inputs.iter().any(|arg| matches!(arg, FnArg::Receiver(_)));
-    if has_self_param {
-        return true;
-    }
-
-    // Check for Self return type (including references and wrapped types)
-    let returns_self = match output {
-        ReturnType::Type(_, ty) => {
-            // Use our enhanced contains_self_type function
-            contains_self_type(ty)
-        }
-        ReturnType::Default => false,
-    };
-
-    // Consider functions named "new" as methods even if they don't have self parameters
-    // This helps with constructor methods like `fn new() -> Result<Self, Error>`
-    if returns_self {
-        return true;
-    }
-
-    false
-}
-
-/// Recursively checks if a type contains Self
-fn contains_self_type(ty: &Type) -> bool {
-    match ty {
-        // Handle reference types (&Self, &'static Self, etc.)
-        Type::Reference(type_reference) => contains_self_type(&type_reference.elem),
-
-        // Handle plain Self or paths containing Self (like module::Self)
-        Type::Path(type_path) => {
-            // Check if any path segment is exactly "Self"
-            let has_self_segment = type_path
-                .path
-                .segments
-                .iter()
-                .any(|segment| segment.ident == "Self");
-
-            if has_self_segment {
-                return true;
-            }
-
-            // Check for generic types that might contain Self (like Result<Self>)
-            type_path.path.segments.iter().any(|segment| {
-                // Check if this segment has generic parameters
-                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    // Examine each generic argument
-                    args.args.iter().any(|arg| {
-                        if let syn::GenericArgument::Type(inner_type) = arg {
-                            // Recursively check if the generic type contains Self
-                            contains_self_type(inner_type)
-                        } else {
-                            false
-                        }
-                    })
-                } else {
-                    false
-                }
-            })
-        }
-
-        // Handle tuple types like (Self, T)
-        Type::Tuple(tuple) => tuple.elems.iter().any(contains_self_type),
-
-        // Handle array types like [Self; N]
-        Type::Array(array) => contains_self_type(&array.elem),
-
-        // Handle pointer types like *const Self
-        Type::Ptr(ptr) => contains_self_type(&ptr.elem),
-
-        // Handle slices like &[Self]
-        Type::Slice(slice) => contains_self_type(&slice.elem),
-
-        // Handle other type variants
-        _ => false,
-    }
 }
 
 pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -199,28 +112,12 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         return item;
     }
 
-    let inputs = &input.sig.inputs;
-    let output = &input.sig.output;
+    // let inputs = &input.sig.inputs;
+    // let output = &input.sig.output;
     // let generics = &input.sig.generics;
     let is_async = input.sig.asyncness.is_some();
 
-    // Convert Punctuated to slice for is_method
-    let input_args: Vec<_> = inputs.iter().cloned().collect();
-    // Determine if this is a method
-    let is_method = is_method(&input_args, output);
-
-    // Debugging aid - uncomment to see method detection information
-    // This will show up in the compiler output and then stop compilation
-    // if fn_name == "new" {
-    //     let return_type = match output {
-    //         ReturnType::Type(_, ty) => format!("{:?}", ty),
-    //         ReturnType::Default => "()".to_string(),
-    //     };
-    //     return syn::Error::new(
-    //         input.sig.span(),
-    //         format!("DEBUG: fn_name={}, is_method={}, return_type={}", fn_name, is_method, return_type)
-    //     ).to_compile_error().into();
-    // }
+    // let input_args: Vec<_> = inputs.iter().cloned().collect();
 
     // Get generic parameters
     // let type_params: Vec<_> = generics
@@ -233,25 +130,19 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     //     })
     //     .collect();
 
-    // Generate profile name
-    // We no longer need to generate a profile name string to pass to Profile::new
-    // Just to identify the function in the attribute macro for debugging
-    // let profile_name =
-    //     generate_profile_name(fn_name, is_method, &args /*, &type_params, is_async */);
-
     // let module_path = module_path!();
     let fn_name_str = fn_name.to_string();
     let detailed_memory = args.detailed_memory;
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #is_method, #detailed_memory, module_path!().to_string(), None)
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), true, #detailed_memory, module_path!().to_string(), None)
     };
 
     #[cfg(feature = "full_profiling")]
     let profile_new = quote! {
         ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
-            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #is_method, #detailed_memory, module_path!().to_string(), None)
+            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), false, #detailed_memory, module_path!().to_string(), None)
         })
     };
 
@@ -266,7 +157,6 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         attrs: &input.attrs,
         profile_new,
         // is_async,
-        // is_method,
     };
 
     if is_async {
@@ -276,36 +166,6 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     .into()
 }
-
-// #[allow(dead_code)]
-// fn generate_profile_name(
-//     fn_name: &syn::Ident,
-//     is_method: bool,
-//     args: &ProfileArgs,
-//     // type_params: &[String],
-//     // is_async: bool,
-// ) -> String {
-//     let mut parts = Vec::new();
-
-//     if is_method {
-//         if let Some(impl_type) = &args.imp {
-//             parts.push(impl_type.to_string());
-//         }
-//     }
-
-//     // Add function name
-//     parts.push(fn_name.to_string());
-
-//     // Use a compile error to display debug information
-//     // This will show up in the compiler output and then stop compilation
-//     // To enable, uncomment the following line:
-//     // return syn::Error::new_spanned(
-//     //    fn_name,
-//     //    format!("DEBUG: Profile name: {}", parts.join("::"))
-//     // ).to_compile_error().into();
-
-//     parts.join("::")
-// }
 
 fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
     let FunctionContext {
@@ -319,7 +179,6 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         attrs,
         profile_new,
         // is_async,
-        // is_method: _,
     }: &FunctionContext<'_> = ctx;
 
     // let profile_type = resolve_profile_type(profile_type);
@@ -364,14 +223,11 @@ fn generate_async_wrapper(
         attrs,
         profile_new,
         // is_async,
-        // is_method: _,
     } = ctx;
 
     // let profile_type = resolve_profile_type(profile_type);
     // let maybe_fn_name = format!(r#"Some("{fn_name}")"#);
     // let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
-
-    // let is_method = ctx.is_method;
 
     quote! {
 

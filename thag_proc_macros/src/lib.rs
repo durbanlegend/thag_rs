@@ -1,6 +1,7 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
+mod end;
 mod file_navigator;
 mod fn_name;
 mod generate_theme_types;
@@ -17,6 +18,7 @@ mod profiled;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
+use crate::end::end_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
@@ -266,4 +268,24 @@ pub fn preload_themes(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn tool_errors(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
+}
+
+/// Creates a function with the name specified in the string literal
+/// that returns the line number where the function is called.
+///
+/// # Example
+///
+/// ```
+/// use thag_profiler::end;
+///
+/// // Intended for use with `profile!("my_section", detailed_memory)`,
+/// // so `profile!` can get section end line number
+/// println!("Current line: {}", end_my_section()); // prints the `end!` line number
+///
+/// end!("get_line");
+///
+/// ```
+#[proc_macro]
+pub fn end(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "end", &input, end_impl)
 }

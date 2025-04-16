@@ -14,9 +14,7 @@ pub fn end_impl(input: TokenStream) -> TokenStream {
 
     // Generate the function that returns line!()
     let expanded = quote! {
-        fn #func_name() -> u32 {
-            line!()
-        }
+        fn #func_name() -> u32 { line!() }
     };
 
     // Return the generated code

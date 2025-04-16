@@ -2333,7 +2333,11 @@ pub enum MemoryError {
     DeltaCalculationFailed,
 }
 
-/// Profile a section of code with customizable options
+/// Profile a section of code with customizable options.
+/// NB: The `name` arg must contain no embedded spaces since the matching `end!(name)`
+/// macro will generate a `fn end_<name>() -> u32 { line!() }` to pick up the end
+/// line number, and end_name will have to be a valid Rust function name in order to
+/// compile.
 ///
 /// # Examples
 ///
@@ -2381,7 +2385,8 @@ macro_rules! profile {
             use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
-                line!(),
+                line!(),    // Start line number
+                // Picks up end line number from `fn end_<section> -> u32 { line!) }` inserted by `end!` macro.
                 $crate::paste::paste! { [<end_ $name>]() },
                 false,
                 module_path!().to_string(),
@@ -2395,7 +2400,8 @@ macro_rules! profile {
             use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
-                line!(),
+                line!(),    // Start line number
+                // Picks up end line number from `fn end_<section> -> u32 { line!) }` inserted by `end!` macro.
                 $crate::paste::paste! { [<end_ $name>]() },
                 true,
                 module_path!().to_string(),
@@ -2409,7 +2415,8 @@ macro_rules! profile {
             use $crate::end;
             $crate::ProfileSection::new_with_detailed_memory(
                 Some($name),
-                line!(),
+                line!(),    // Start line number
+                // Picks up end line number from `fn end_<section> -> u32 { line!) }` inserted by `end!` macro.
                 $crate::paste::paste! { [<end_ $name>]() },
                 true,
                 module_path!().to_string(),

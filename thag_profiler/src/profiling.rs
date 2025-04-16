@@ -1116,7 +1116,13 @@ impl Profile {
     #[cfg(feature = "full_profiling")]
     #[must_use]
     pub fn record_allocation(&self, size: usize, address: usize) -> bool {
-        debug_log!("In Profile::record_allocation for size={size} for profile {self:?}");
+        debug_log!(
+            "In Profile::record_allocation for size={size} for profile {} of type {:?}, detailed_memory={}, task_id={}",
+            self.registered_name,
+            self.profile_type,
+            self.detailed_memory,
+            self.memory_task.as_ref().map_or("N/A".to_string(), |context| format!("{}", context.task_id))
+        );
         // if !self.detailed_memory {
         //     return false;
         // }
@@ -1170,6 +1176,7 @@ impl Profile {
         is_method: bool,
         detailed_memory: bool, // New parameter
         module_path: String,
+        start_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
@@ -1237,8 +1244,8 @@ impl Profile {
         );
 
         // Get current module path and line number
-        let module_path = std::module_path!().to_string();
-        let start_line = line!() as u32;
+        // let module_path = std::module_path!().to_string();
+        // let start_line = line!() as u32;
 
         Some(Self {
             profile_type,
@@ -1294,6 +1301,7 @@ impl Profile {
         _is_method: bool,
         detailed_memory: bool,
         module_path: String,
+        start_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
             return None;
@@ -1378,7 +1386,7 @@ impl Profile {
 
                 // Get current module path and line number
                 // let module_path = std::module_path!().to_string();
-                let start_line = line!();
+                // let start_line = line!();
 
                 let profile = Self {
                     profile_type,
@@ -1387,7 +1395,7 @@ impl Profile {
                     custom_name,
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
-                    start_line: None,
+                    start_line,
                     end_line: None,
                     detailed_memory,
                     module_path,
@@ -1398,7 +1406,7 @@ impl Profile {
                 // Register this profile with the new ProfileRegistry
                 // First log the details to avoid potential deadlock
                 debug_log!(
-                        "About to register profile in module {} with line range {}..None for detailed memory tracking",
+                        "About to register profile in module {} with line range {:?}..None for detailed memory tracking",
                         profile.module_path,
                         start_line,
                     );
@@ -1459,7 +1467,7 @@ impl Profile {
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
                     // start_line: Some(start_line),
-                    start_line: None,
+                    start_line,
                     end_line: None,
                     detailed_memory,
                     module_path,
@@ -1606,7 +1614,11 @@ impl Profile {
 
         let entry = format!("{stack} {op}{delta}");
 
-        debug_log!("DEBUG: write_memory_event: {entry}");
+        debug_log!(
+            "DEBUG: task_id: {} custom_name: {:?} write_memory_event: {entry}",
+            self.memory_task.as_ref().unwrap().id(),
+            self.custom_name
+        );
 
         // let paths = ProfilePaths::get();
         let memory_path = get_memory_path()?;
@@ -1796,6 +1808,7 @@ pub fn extract_profile_callstack(
 }
 
 #[cfg(feature = "full_profiling")]
+#[allow(clippy::missing_panics_doc)]
 pub fn extract_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
@@ -1810,11 +1823,11 @@ pub fn extract_alloc_callstack(
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
-        .filter_map(|symbol| {
-            Some((
+        .map(|symbol| {
+            (
                 symbol.name().map(|name| name.to_string()),
                 symbol.lineno().unwrap_or(0),
-            ))
+            )
         })
         .filter(|(maybe_frame, _)| maybe_frame.is_some())
         .map(|(maybe_frame, lineno)| (maybe_frame.unwrap(), lineno))
@@ -2051,8 +2064,8 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 #[derive(Debug)]
 pub struct ProfileSection {
     pub profile: Option<Profile>,
-    pub start_line: u32,       // Line number where section starts
-    pub end_line: Option<u32>, // Line number where section ends (if explicitly ended)
+    pub start_line: Option<u32>, // Line number where section starts
+    pub end_line: Option<u32>,   // Line number where section ends (if explicitly ended)
 }
 
 #[cfg(feature = "time_profiling")]
@@ -2061,7 +2074,7 @@ impl ProfileSection {
     pub fn new(name: Option<&str>) -> Self {
         // let profile_type = get_global_profile_type();
         // debug_log!("profile_type={profile_type:?}");
-        let start_line = line!();
+        // let start_line = line!();
         Self {
             profile: Profile::new(
                 name,
@@ -2071,34 +2084,41 @@ impl ProfileSection {
                 false,             // is_method
                 false,             // detailed_memory
                 module_path!().to_string(),
+                None,
             ),
-            start_line,
+            start_line: None,
             end_line: None,
         }
     }
 
     /// Creates a new profile section with detailed memory tracking
     #[must_use]
-    pub fn new_with_detailed_memory(name: Option<&str>) -> Self {
-        let start_line = line!();
+    pub fn new_with_detailed_memory(
+        name: Option<&str>,
+        start_line: u32,
+        is_async: bool,
+        module_path: String,
+    ) -> Self {
+        debug_log!("In ProfileSection::new_with_detailed_memory with start_line={start_line}");
         Self {
             profile: Profile::new(
                 name,
                 None::<&str>,
-                ProfileType::Time, // Since memory profiling can't track sections via backtrace
-                false,             // is_async
-                false,             // is_method
-                true,              // detailed_memory
-                module_path!().to_string(),
+                ProfileType::Memory, // Since memory profiling can't track sections via backtrace
+                is_async,            // is_method
+                false,               // detailed_memory
+                true,
+                module_path,
+                Some(start_line),
             ),
-            start_line,
+            start_line: Some(start_line),
             end_line: None,
         }
     }
 
-    pub fn end(mut self) {
+    pub fn end(mut self, end_line: u32) {
         // Record the end line
-        let end_line = line!();
+        // let end_line = line!();
         self.end_line = Some(end_line);
 
         // Update the profile's end_line if it exists
@@ -2227,6 +2247,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "FuturesOrdered<Fut>",
     "FuturesUnordered<Fut>",
     "ProfiledFuture",
+    "ProfileSection",
     "__rust_alloc",
     "__rust_realloc",
     "__rust_try",
@@ -2334,17 +2355,38 @@ macro_rules! profile {
 
     // Detailed memory profiling
     ($name:expr, detailed_memory) => {{
-        $crate::ProfileSection::new_with_detailed_memory(Some($name))
+        $crate::with_allocator($crate::Allocator::System, || {
+            $crate::ProfileSection::new_with_detailed_memory(
+                Some($name),
+                line!(),
+                false,
+                module_path!().to_string(),
+            )
+        })
     }};
 
     // Combination of detailed_memory and async_fn
     ($name:expr, detailed_memory, async_fn) => {{
-        $crate::ProfileSection::new_with_detailed_memory(Some($name))
+        $crate::with_allocator($crate::Allocator::System, || {
+            $crate::ProfileSection::new_with_detailed_memory(
+                Some($name),
+                line!(),
+                true,
+                module_path!().to_string(),
+            )
+        })
     }};
 
     // Async function with detailed memory (alternative order)
     ($name:expr, async_fn, detailed_memory) => {{
-        $crate::ProfileSection::new_with_detailed_memory(Some($name))
+        $crate::with_allocator($crate::Allocator::System, || {
+            $crate::ProfileSection::new_with_detailed_memory(
+                Some($name),
+                line!(),
+                true,
+                module_path!().to_string(),
+            )
+        })
     }};
 }
 

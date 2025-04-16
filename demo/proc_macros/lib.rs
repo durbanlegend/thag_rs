@@ -46,7 +46,7 @@ use std::fs;
 use std::path::Path;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, Token,
+    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, LitStr, Token,
 };
 
 #[proc_macro_attribute]
@@ -282,7 +282,9 @@ where
 
 #[proc_macro_derive(DocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, &input, |tokens| derive_doc_comment_impl(tokens))
+    intercept_and_debug(true, "derive_doc_comment", &input, |tokens| {
+        derive_doc_comment_impl(tokens)
+    })
 }
 
 /// Basic file embedding handles a file.
@@ -314,4 +316,39 @@ pub fn embed_file(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn load_static_map(input: TokenStream) -> TokenStream {
     intercept_and_debug(true, "load_static_map", &input, load_static_map_impl)
+}
+
+/// Creates a function with the name specified in the string literal
+/// that returns the line number where the function is called.
+///
+/// # Example
+///
+/// ```
+/// use your_crate::line_function;
+///
+/// line_function!("get_line");
+///
+/// fn main() {
+///     println!("Current line: {}", get_line()); // prints the current line number
+/// }
+/// ```
+#[proc_macro]
+pub fn end(input: TokenStream) -> TokenStream {
+    use quote::format_ident;
+    // Parse the input as a string literal
+    let func_name_lit = parse_macro_input!(input as LitStr);
+    let func_name_str = func_name_lit.value();
+
+    // Convert the string to an identifier
+    let func_name = format_ident!("end_{}", func_name_str);
+
+    // Generate the function that returns line!()
+    let expanded = quote! {
+        fn #func_name() -> u32 {
+            line!()
+        }
+    };
+
+    // Return the generated code
+    expanded.into()
 }

@@ -82,7 +82,7 @@ pub use {
 };
 
 #[cfg(feature = "time_profiling")]
-pub use thag_proc_macros::{enable_profiling, profiled};
+pub use thag_proc_macros::{enable_profiling, end, profiled};
 
 #[cfg(feature = "time_profiling")]
 pub use profiling::PROFILING_MUTEX;

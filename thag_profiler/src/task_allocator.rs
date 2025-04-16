@@ -230,19 +230,19 @@ fn record_alloc(address: usize, size: usize) {
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     let module_paths = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_module_paths() };
-    debug_log!("module_paths={module_paths:#?}");
+    // debug_log!("module_paths={module_paths:#?}");
 
     // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
     let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> = Backtrace::frames(&current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
-        .inspect(|symbol| {
-            debug_log!("symbol: {symbol:#?}");
-        })
+        // .inspect(|symbol| {
+        //     debug_log!("symbol: {symbol:#?}");
+        // })
         .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
-        .inspect(|(maybe_filename, maybe_lineno, frame)| {
-            debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
-        })
+        // .inspect(|(maybe_filename, maybe_lineno, frame)| {
+        //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
+        // })
         .filter(|(maybe_filename, maybe_lineno, frame)| {
             maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some()
         })
@@ -260,18 +260,18 @@ fn record_alloc(address: usize, size: usize) {
                 maybe_frame.unwrap().to_string(),
             )
         })
-        .inspect(|(filename, lineno, frame)| {
-            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
-        })
+        // .inspect(|(filename, lineno, frame)| {
+        //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
+        // })
         .filter(|(filename, _, _)| (module_paths.contains(filename)))
         .inspect(|(filename, lineno, frame)| {
             debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
         })
         .map(|(filename, lineno, mut frame)| (filename, lineno, frame.clone(), clean_function_name(frame.as_mut_str())))
         .map(|(filename, lineno, frame, fn_name)| (filename.clone(), lineno, frame, fn_name.clone(), find_profile(&filename, &fn_name, lineno)))
-        .inspect(|(_, _, _, _, maybe_profile_ref)| {
-            debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
-        })
+        // .inspect(|(_, _, _, _, maybe_profile_ref)| {
+        //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
+        // })
         .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
         .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap()))
         // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
@@ -293,10 +293,10 @@ fn record_alloc(address: usize, size: usize) {
         return;
     }
 
-    let (filename, lineno, frame, fn_name, profile_ref) = &func_and_ancestors[0];
+    let (filename, lineno, frame, fn_name, _profile_ref) = &func_and_ancestors[0];
 
     debug_log!(
-        "Found filename (module_path)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}/*, profile_ref: {profile_ref:?}*/"
+        "Found filename (module_path)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}"
     );
 
     // Try to record the allocation in the new profile registry
@@ -628,7 +628,11 @@ pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
         .ok()
         .and_then(|val| val.parse::<usize>().ok())
         .expect("Value specified for SIZE_TRACKING_THRESHOLD must be a valid integer");
-    debug_log!("*** Only memory allocations and deallocations exceeding the specified threshold of {threshold} bytes will be tracked.");
+    if threshold == 0 {
+        debug_log!("*** The SIZE_TRACKING_THRESHOLD environment variable is set or defaulted to 0, so all memory allocations and deallocations will be tracked.");
+    } else {
+        debug_log!("*** Only memory allocations and deallocations exceeding the specified threshold of {threshold} bytes will be tracked.");
+    }
     threshold
 });
 

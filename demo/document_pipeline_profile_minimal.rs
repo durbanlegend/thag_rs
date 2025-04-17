@@ -19,7 +19,9 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::{self, disable_profiling, enable_profiling, profile, profiled, ProfileType};
+use thag_profiler::{
+    self, disable_profiling, enable_profiling, end, profile, profiled, ProfileType,
+};
 
 struct Document {
     id: usize,
@@ -128,7 +130,10 @@ async fn process_document(mut doc: Document) -> Document {
     doc.calculate_sentiment();
 
     // Small async delay
+    profile!("delay", detailed_memory, async_fn);
+    let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
+    end!("delay");
 
     doc.is_processed = true;
     doc
@@ -167,8 +172,10 @@ async fn run_batch(count: usize) {
     );
 
     // Print results for verification
-    let section = profile!("section::print_docs", async_fn);
+    let print_docs = "Print Docs";
+    profile!(print_docs, detailed_memory, async_fn);
     for doc in &docs {
+        let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         // Small async delay
         sleep(Duration::from_millis(15)).await;
 
@@ -179,13 +186,12 @@ async fn run_batch(count: usize) {
             doc.sentiment_score
         );
     }
-    section.end();
+    end!(print_docs);
 }
 
 #[tokio::main]
 #[cfg_attr(debug_assertions, enable_profiling(runtime))]
 async fn main() {
-    // let section_a = profile!("section_a", detailed_memory, async_fn);
     println!(
         "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
         thag_profiler::PROFILING_MUTEX.is_locked()
@@ -196,26 +202,26 @@ async fn main() {
     // Only process small batches of different sizes for easy tracing
     run_batch(3).await;
 
-    println!("Switching profiling off");
-    disable_profiling();
+    // println!("Switching profiling off");
+    // disable_profiling();
 
+    let last_2 = profile!("last_2_batches");
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
-    println!("Switching only time profiling back on");
-    enable_profiling(true, Some(ProfileType::Time)).unwrap();
+    // println!("Switching only time profiling back on");
+    // enable_profiling(true, Some(ProfileType::Time)).unwrap();
+    drop(last_2);
 
-    // let section_b = profile!("section_b", async_fn);
+    let last_1 = profile!("last_batch");
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
+    last_1.end();
 
     println!("Profiling data written to folded files in current directory");
-
-    // section_a.end();
 
     println!(
         "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
         thag_profiler::PROFILING_MUTEX.is_locked()
     );
-    // section_b.end();
 }

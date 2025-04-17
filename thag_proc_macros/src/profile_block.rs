@@ -56,39 +56,63 @@ impl Parse for ProfileBlockInput {
     }
 }
 
-pub fn profile_block_impl(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as ProfileBlockInput);
+// pub fn profile_block_impl(input: TokenStream) -> TokenStream {
+pub fn profile_block_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ProfileBlockInput);
 
     let name_expr = &input.name_expr;
     let block_tokens = &input.block_tokens;
 
+    // Create the function name identifier
+    let name_str = if let Expr::Lit(lit_expr) = name_expr {
+        if let syn::Lit::Str(lit_str) = &lit_expr.lit {
+            lit_str.value()
+        } else {
+            return syn::Error::new(name_expr.span(), "Expected string literal for section name")
+                .to_compile_error()
+                .into();
+        }
+    } else {
+        return syn::Error::new(name_expr.span(), "Expected string literal for section name")
+            .to_compile_error()
+            .into();
+    };
+    let func_name = format!("end_{}", name_str);
+    let func_ident = syn::Ident::new(&func_name, name_expr.span());
+
     // Use Span::call_site() to get the call site location
-    let span = proc_macro2::Span::call_site();
+    let span = proc_macro2::Span::mixed_site();
+
+    let my_func = quote_spanned! {span=>
+
+        // Original block statements
+        #block_tokens
+
+        // Create a function at the call site that returns the end line
+        #[allow(non_snake_case)]
+        #[inline(never)]
+        fn #func_ident() -> u32 {
+            line!()
+        }
+    };
 
     // Generate the transformed code with explicit spans
     let expanded = quote_spanned! {span=>
         {
             // This should be the call site line
             let start_line = line!();
+            let end_line = #func_ident();
 
             // Get the end line by calling our function after the block
             let _profile_guard = ::thag_profiler::ProfileSection::new_with_detailed_memory(
                 Some(#name_expr),
                 start_line,
-                end_line_func(),
+                end_line,
                 true,
                 module_path!().to_string(),
             );
 
-            // Original block statements
-            #block_tokens
-
-            // Create a function at the call site that returns the end line
-            #[allow(non_snake_case)]
-            #[inline(never)]
-            fn end_line_func() -> u32 {
-                line!()
-            }
+            #my_func
         }
     };
 

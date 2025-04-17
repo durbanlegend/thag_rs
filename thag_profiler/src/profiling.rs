@@ -2136,16 +2136,9 @@ impl ProfileSection {
         }
     }
 
-    pub fn end(mut self, end_line: u32) {
-        // Record the end line
-        // let end_line = line!();
-        self.end_line = Some(end_line);
-
-        // Update the profile's end_line if it exists
-        if let Some(ref mut profile) = self.profile {
-            profile.end_line = Some(end_line);
-        }
-
+    // TODO redundant? Can just use drop(name);
+    pub fn end(self) {
+        drop(self);
         // Profile (if any) will be dropped here
     }
 
@@ -2425,6 +2418,16 @@ macro_rules! profile {
     }};
 }
 
+#[macro_export]
+#[cfg(feature = "time_profiling")]
+macro_rules! end {
+    ($name:expr) => {
+        $crate::paste::paste! {
+            fn [<end_ $name>]() -> u32 { line!() }
+        }
+    };
+}
+
 // No-op implementation for when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
 #[macro_export]
@@ -2519,26 +2522,26 @@ macro_rules! profile_internal {
     }};
 }
 
-#[macro_export]
-macro_rules! profile_block {
-    ($name:expr, $detailed:ident, $block:block) => {{
-        {
-            // Create profile section with start and end lines
-            let _profile_guard = $crate::ProfileSection::new_with_detailed_memory(
-                Some($name),
-                line!(),
-                $crate::paste::paste! { [<end_ $name>]() },
-                true,
-                module_path!().to_string(),
-            );
+// #[macro_export]
+// macro_rules! profile_block {
+//     ($name:expr, $detailed:ident, $block:block) => {{
+//         {
+//             // Create profile section with start and end lines
+//             let _profile_guard = $crate::ProfileSection::new_with_detailed_memory(
+//                 Some($name),
+//                 line!(),
+//                 $crate::paste::paste! { [<end_ $name>]() }(),
+//                 true,
+//                 module_path!().to_string(),
+//             );
 
-            // Execute the block
-            $block
-        }
+//             // Execute the block
+//             $block
+//         }
 
-        $crate::paste::paste! { fn [<end_ $name>]() -> u32 {{ line!() }} }
-    }};
-}
+//         $crate::paste::paste! { fn [<end_ $name>]() -> impl Fn() -> u32 {{ || line!() }} }
+//     }};
+// }
 
 #[derive(Default)]
 pub struct ProfileStats {

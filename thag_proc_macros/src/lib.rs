@@ -1,7 +1,7 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
-mod end;
+// mod end;
 mod file_navigator;
 mod fn_name;
 mod generate_theme_types;
@@ -16,18 +16,17 @@ mod enable_profiling;
 #[cfg(feature = "time_profiling")]
 mod profiled;
 
-#[cfg(feature = "time_profiling")]
-mod profile_block;
+// #[cfg(feature = "time_profiling")]
+// mod profile_block;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
-use crate::end::end_impl;
+// use crate::end::end_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
-use crate::profile_block::profile_block_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
@@ -38,6 +37,9 @@ use crate::enable_profiling::enable_profiling_impl;
 
 #[cfg(feature = "time_profiling")]
 use crate::profiled::profiled_impl;
+
+// #[cfg(feature = "time_profiling")]
+// use crate::profile_block::profile_block_impl;
 
 /// Generates a `Category` enum with predefined variants and utility implementations.
 ///
@@ -274,30 +276,36 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
 }
 
-/// Creates a function with the name specified in the string literal
-/// that returns the line number where the function is called.
-///
-/// # Example
-///
-/// ```
-/// use thag_profiler::end;
-///
-/// // Intended for use with `profile!("my_section", detailed_memory)`,
-/// // so `profile!` can get section end line number
-/// println!("Current line: {}", end_my_section()); // prints the `end!` line number
-///
-/// end!("get_line");
-///
-/// ```
-#[proc_macro]
-pub fn end(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "end", &input, end_impl)
-}
+// /// Creates a function with the name specified in the string literal
+// /// that returns the line number where the function is called.
+// ///
+// /// # Example
+// ///
+// /// ```
+// /// use thag_profiler::end;
+// ///
+// /// // Intended for use with `profile!("my_section", detailed_memory)`,
+// /// // so `profile!` can get section end line number
+// /// println!("Current line: {}", end_my_section()); // prints the `end!` line number
+// ///
+// /// end!("get_line");
+// ///
+// /// ```
+// #[proc_macro]
+// pub fn end(input: TokenStream) -> TokenStream {
+//     maybe_expand_proc_macro(true, "end", &input, end_impl)
+// }
 
-#[proc_macro]
-#[cfg(feature = "time_profiling")]
-pub fn profile_block(input: TokenStream) -> TokenStream {
-    // eprintln!("DEBUGLIB: profiled attribute macro called");
-    // Set to true to enable macro expansion output
-    maybe_expand_proc_macro(true, "profile_block", &input, profile_block_impl)
-}
+// #[cfg(feature = "time_profiling")]
+// #[proc_macro]
+// pub fn profile_block(input: TokenStream) -> TokenStream {
+//     maybe_expand_proc_macro(true, "profile_block", &input, profile_block_impl)
+// }
+
+// #[proc_macro_attribute]
+// #[cfg(feature = "time_profiling")]
+// pub fn profile_block(attr: TokenStream, item: TokenStream) -> TokenStream {
+//     // eprintln!("DEBUGLIB: profiled attribute macro called");
+//     // Set to true to enable macro expansion output
+//     maybe_expand_attr_macro(false, "profile_block", &attr, &item, profile_block_impl)
+// }

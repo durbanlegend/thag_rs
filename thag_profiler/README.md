@@ -8,7 +8,7 @@ A straightforward, accurate, lightweight cross-platform profiling library for Ru
 
 `thag_profiler` provides an automated instrumentation tool `thag-instrument` to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
 
-It also provides a `profile!` macro, in combination with an optional `end` call,  allowing _time_ profiling of any desired code section(s) within a function, including nested or even overlapping sections.
+It also provides a `profile!` macro, in combination with an optional `end` call,  allowing _time_ profiling of any desired code section(s) within a function, including nested sections.
 
 `thag_profiler`'s easy-to-use prompted analysis tool, `thag-analyze`, uses the `inquire` crate to help you select output for analysis and optionally filter out any unwanted functions, and the `inferno` crate to display the results in your browser as interactive flamegraphs and flamecharts. For memory profiles you can also choose to display memory statistics and an allocation size analysis.
 
@@ -21,7 +21,7 @@ It also provides a `profile!` macro, in combination with an optional `end` call,
 
 - **Single-attribute detailed memory profiling**: A deep dive into your app's complete memory allocations is possible simply by specifying `#[enable_profiling(runtime)]` in `fn main` and specifying detailed profiling via a `THAG_PROFILE` environment variable.
 
-- **Function and section profiling**: Time profiling can be applied to any number of specific code sections, down to single instructions.
+- **Function and section profiling**: Profiling can be applied to any number of specific code sections, down to single instructions.
 
 - **Async support**: Seamlessly works with `tokio` or other async code.
 
@@ -96,14 +96,28 @@ fn expensive_calculation() -> u64 {
     42
 }
 
-// Profile a specific section
+// Profile a specific section with `profile!` and obligatory matching `end!`
 fn complex_operation() {
     // Some code...
 
-    let section = profile!("expensive_part");
+    profile!("expensive_part");
     // Code to profile
     expensive_operation();
-    section.end();
+    end!("expensive_part");
+
+    // More code...
+}
+
+// Profile a specific section (alternative showing async function
+// as well as an identifier variable)
+async fn complex_operation() {
+    // Some code...
+
+    let exotic_section_name = profile!("Expensive Part");
+    profile!(exotic_section_name, async_fn);
+    // Code to profile
+    expensive_operation();
+    end!(exotic_section_name);
 
     // More code...
 }
@@ -376,7 +390,20 @@ code, which is likely not what you want.
 
 ### Code Section Profiling with `profile!`
 
-Use the `profile!` macro to profile specific sections of code:
+Time and memory section profiling are implemented slightly differently owing to more stringent requirements of memory profiling.
+Memory section profiling requires an `end!(<identifier>)` macro to mark the end of the section so that memory allocations can be
+accurately attributed to the correct section by line number.  In contrast, a time section profile is automatically scoped to the
+block it's declared in, i.e. it will go out of scope at the end of that block unless explicitly dropped beforehand.
+
+
+#### Time Profiling
+
+Use the `profile!` macro and optionally a `drop` call to time-profile specific sections of code. There is nothing to stop you
+nesting or overlapping sections, but the time spent in nested or overlapped sections will be overcounted. Specifically the time
+spent in each line of code will be counted once for each section that the line of code falls within. Unlike functions, sections
+will not be nested in the flamegraph, let alone overlapped, but will appear side by side as though they had run at different times.
+Best practice is therefore not to nest or overlap sections but always to drop the current section before starting a new one.
+
 
 ```rust
 use thag_profiler::profile;
@@ -385,7 +412,7 @@ fn complex_function() {
     // Basic usage
     let section = profile!("initialization");
     initialize_things();
-    section.end();
+    drop(section);
 }
 
 // Profiling a section of an async function, provide an `async_fn` arg for accurate collation
@@ -393,38 +420,64 @@ asyn fn async_complex_function() {
     // Basic usage
     let section = profile!("initialization", async_fn);
     initialize_things();
-    section.end();
+_    drop(section);
 
 }
 ```
 
-### Nesting and Overlapping Section Profiles
+#### Memory Profiling
 
-Section profiles can be nested to track hierarchical operations:
+Use the `profile!` macro and a matching `end!` macro to memory-profile specific sections of code.
 
 ```rust
-use thag_profiler::profile;
+use thag_profiler::{end, profile};
 
-fn complex_operation() {
-    let meal_section = profile!("3_course_meal");
+async fn complex_function() {
+    // Some code...
 
-    let starter_section = profile!("starter");
-    // Starter course code...
-    starter_section.end();
+    // Requesting detailed memory profiling for a section of an async function
+    profile!("initialize", detailed_memory, async_fn);
+    initialize_things();
+    end!("initialize");
 
-    let mains_section = profile!("main_course");
-    // Main course code...
-    mains_section.end();
-
-    let dessert_section = profile!("dessert");
-    // Dessert course code...
-    dessert_section.end();  // Optional if about to go out of scope anyway
-
-    meal_section.end();  // Optional if about to go out of scope anywa
 }
 ```
 
-There is nothing preventing you from overlapping section profiles if you so desire. They will of course still appear separately in the detailed time flamechart in the order of completion.
+The `end!` macro is mandatory and its argument must exactly match the first argument of `profile!`.
+This is because `end!()` inserts a one-line function (`end_initialize` in the above example)
+that evaluates the Rust standard `line!()` to return its own line number. The `profile` macro calls
+this function to determine the section end line number, which memory profiling needs in order to
+accurately attribute memory allocations to the correct section.
+
+Whereas time profiling typically assigns a variable to the `profile!` expression so that it can
+drop it at the end of the section, memory profiling doesn't normally need to do so.
+
+Instead of repeating the string literal section identifier in the `profile!` and `end` calls,
+you can assign it to a variable instead:
+
+```rust
+use thag_profiler::{end, profile};
+
+fn complex_operation() {
+    // Some code...
+
+    let exotic_section_name = profile!("Expensive Part");
+    profile!(exotic_section_name, async_fn);
+    // Code to profile
+    expensive_operation();
+    end!(exotic_section_name);
+
+    // More code...
+}
+
+NB: Nesting and overlapping of memory section profiles is not supported but will not be policed.
+This is to prevent undue complexity. While the nesting of functions is handled for us by
+the Rust backtrace, section nesting would require us to build a separate mechanism and
+integrate it with the backtrace mechanism.
+
+To prevent double-counting, memory allocations will be assigned only to the outermost of any
+nested profiles, and in the case of overlapping profiles to the first in sequence in the
+function, i.e. the one with lowest starting line number.
 
 ### Conditional Profiling
 

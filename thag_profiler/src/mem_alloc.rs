@@ -109,7 +109,13 @@ impl ProfileRegistry {
         );
     }
 
-    /// Find the most specific profile for a given module path and line number
+    /// Find the most specific legitimate profile for a given module path and line number, given that
+    /// nested and overlapping sections are not supported. Regardless of whether they are implemented
+    /// anyway, we will find the section (if any) with the lowest starting line number that encompasses
+    /// the line number `line` of the allocation request. This means that in the case of nested sections
+    /// we pick up only the outermost matching one and ignore the inner ones, while in the case of
+    /// overlapping sections, we pick up only the one that starts first/highest in the function and
+    ///
     /// Returns the profile reference if found
     pub fn find_profile(&self, module_path: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
         // Check if we have this module

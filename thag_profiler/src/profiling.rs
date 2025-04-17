@@ -2519,6 +2519,27 @@ macro_rules! profile_internal {
     }};
 }
 
+#[macro_export]
+macro_rules! profile_block {
+    ($name:expr, $detailed:ident, $block:block) => {{
+        {
+            // Create profile section with start and end lines
+            let _profile_guard = $crate::ProfileSection::new_with_detailed_memory(
+                Some($name),
+                line!(),
+                $crate::paste::paste! { [<end_ $name>]() },
+                true,
+                module_path!().to_string(),
+            );
+
+            // Execute the block
+            $block
+        }
+
+        $crate::paste::paste! { fn [<end_ $name>]() -> u32 {{ line!() }} }
+    }};
+}
+
 #[derive(Default)]
 pub struct ProfileStats {
     pub calls: HashMap<String, u64>,

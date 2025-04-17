@@ -17,7 +17,7 @@ mod enable_profiling;
 mod profiled;
 
 // #[cfg(feature = "time_profiling")]
-// mod profile_block;
+mod profile_fn;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
@@ -38,8 +38,8 @@ use crate::enable_profiling::enable_profiling_impl;
 #[cfg(feature = "time_profiling")]
 use crate::profiled::profiled_impl;
 
-// #[cfg(feature = "time_profiling")]
-// use crate::profile_block::profile_block_impl;
+#[cfg(feature = "time_profiling")]
+use crate::profile_fn::profile_fn_impl;
 
 /// Generates a `Category` enum with predefined variants and utility implementations.
 ///
@@ -296,16 +296,8 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
 //     maybe_expand_proc_macro(true, "end", &input, end_impl)
 // }
 
-// #[cfg(feature = "time_profiling")]
-// #[proc_macro]
-// pub fn profile_block(input: TokenStream) -> TokenStream {
-//     maybe_expand_proc_macro(true, "profile_block", &input, profile_block_impl)
-// }
-
-// #[proc_macro_attribute]
-// #[cfg(feature = "time_profiling")]
-// pub fn profile_block(attr: TokenStream, item: TokenStream) -> TokenStream {
-//     // eprintln!("DEBUGLIB: profiled attribute macro called");
-//     // Set to true to enable macro expansion output
-//     maybe_expand_attr_macro(false, "profile_block", &attr, &item, profile_block_impl)
-// }
+#[cfg(feature = "time_profiling")]
+#[proc_macro]
+pub fn profile_fn(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(true, "profile_fn", &input, profile_fn_impl)
+}

@@ -20,7 +20,7 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use thag_profiler::{
-    self, disable_profiling, enable_profiling, end, profile, profiled, ProfileType,
+    self, disable_profiling, enable_profiling, end, profile, profile_fn, profiled, ProfileType,
 };
 
 struct Document {
@@ -130,7 +130,7 @@ async fn process_document(mut doc: Document) -> Document {
     doc.calculate_sentiment();
 
     // Small async delay
-    profile!("delay", detailed_memory, async_fn);
+    profile_fn!("delay", time, mem_detail, async_fn);
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
     end!("delay");
@@ -172,12 +172,11 @@ async fn run_batch(count: usize) {
     );
 
     // Print results for verification
-    let print_docs = "Print Docs";
-    profile!(print_docs, detailed_memory, async_fn);
+    profile_fn!("print_docs", time, mem_detail, async_fn, unbounded);
     for doc in &docs {
         let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         // Small async delay
-        sleep(Duration::from_millis(15)).await;
+        sleep(Duration::from_millis(150)).await;
 
         println!(
             "Doc #{}: Word count: {}, Sentiment: {:.2}",
@@ -186,7 +185,7 @@ async fn run_batch(count: usize) {
             doc.sentiment_score
         );
     }
-    end!(print_docs);
+    // end!("print_docs");
 }
 
 #[tokio::main]

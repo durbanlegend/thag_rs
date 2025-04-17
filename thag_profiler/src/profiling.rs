@@ -1179,7 +1179,7 @@ impl Profile {
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
-        detailed_memory: bool, // New parameter
+        detailed_memory: bool,
         module_path: String,
         start_line: Option<u32>,
         end_line: Option<u32>,
@@ -1310,7 +1310,6 @@ impl Profile {
         _maybe_fn_name: Option<&str>,
         requested_type: ProfileType,
         is_async: bool,
-        // _is_method: bool,
         detailed_memory: bool,
         module_path: String,
         start_line: Option<u32>,

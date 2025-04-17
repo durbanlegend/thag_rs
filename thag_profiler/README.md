@@ -452,8 +452,10 @@ accurately attribute memory allocations to the correct section.
 Whereas time profiling typically assigns a variable to the `profile!` expression so that it can
 drop it at the end of the section, memory profiling doesn't normally need to do so.
 
+TODO: out if using proc macro:
+-----
 Instead of repeating the string literal section identifier in the `profile!` and `end` calls,
-you can assign it to a variable instead:
+you can assign it to a variable:
 
 ```rust
 use thag_profiler::{end, profile};
@@ -469,6 +471,8 @@ fn complex_operation() {
 
     // More code...
 }
+```
+-----
 
 NB: Nesting and overlapping of memory section profiles is not supported but will not be policed.
 This is to prevent undue complexity. While the nesting of functions is handled for us by

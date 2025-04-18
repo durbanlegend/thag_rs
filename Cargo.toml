@@ -151,11 +151,12 @@ build = [
 ]
 
 tui = [
-    "build",        # Full build capabilities
+    "build",                # Full build capabilities
     "ratatui",
     "scopeguard",
     "serde_json",
     "tui-textarea",
+    "thag_proc_macros/tui",
 ] # UI Features
 
 repl = [

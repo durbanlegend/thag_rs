@@ -9,6 +9,8 @@ mod palette_methods;
 mod preload_themes;
 mod repeat_dash;
 mod tool_errors;
+
+#[cfg(feature = "tui")]
 mod tui_keys;
 
 #[cfg(feature = "time_profiling")]
@@ -30,8 +32,6 @@ use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use crate::tool_errors::tool_errors_impl;
-use crate::tui_keys::key_impl;
-
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_file, parse_str, Expr};
@@ -44,6 +44,9 @@ use crate::profiled::profiled_impl;
 
 #[cfg(feature = "time_profiling")]
 use crate::profile::profile_impl;
+
+#[cfg(feature = "tui")]
+use crate::tui_keys::key_impl;
 
 /// Generates a `Category` enum with predefined variants and utility implementations.
 ///
@@ -139,6 +142,7 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
 }
 
 // Not public API. This is internal and to be used only by `key!`.
+#[cfg(feature = "tui")]
 #[doc(hidden)]
 #[proc_macro]
 pub fn key(input: TokenStream) -> TokenStream {

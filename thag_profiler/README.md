@@ -1,14 +1,14 @@
 # thag_profiler
 
-A straightforward, accurate, lightweight cross-platform profiling library for Rust applications that provides both time and memory profiling.
+A straightforward, accurate lightweight cross-platform profiling library for Rust applications that provides time and/or memory profiling.
 
 `thag_profiler` aims to lower the barriers to profiling by offering a quick and easy tool that produces clear and accurate flamegraphs for both synchronous and asynchronous code.
 
-`thag_profiler` provides an `#[enable_profiling]` attribute for your main method and a #`[profiled]` attribute for every function to be profiled.
+`thag_profiler` provides an `#[enable_profiling]` attribute for your main method, a #`[profiled]` attribute for every function to be profiled, and a `profile!` macro for code sections, allowing you to detect memory hotspots and break them out in detail.
 
 `thag_profiler` provides an automated instrumentation tool `thag-instrument` to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
 
-It also provides a `profile!` macro, in combination with an optional `end` call,  allowing _time_ profiling of any desired code section(s) within a function, including nested sections.
+Profiling options are highly configurable, with global runtime options as well as lower-level profile type overrides.
 
 `thag_profiler`'s easy-to-use prompted analysis tool, `thag-analyze`, uses the `inquire` crate to help you select output for analysis and optionally filter out any unwanted functions, and the `inferno` crate to display the results in your browser as interactive flamegraphs and flamecharts. For memory profiles you can also choose to display memory statistics and an allocation size analysis.
 
@@ -19,7 +19,7 @@ It also provides a `profile!` macro, in combination with an optional `end` call,
 
 - **Time and memory profiling**: Track execution time or memory usage, or both.
 
-- **Single-attribute detailed memory profiling**: A deep dive into your app's complete memory allocations is possible simply by specifying `#[enable_profiling(runtime)]` in `fn main` and specifying detailed profiling via a `THAG_PROFILE` environment variable.
+- **Accurate summary and detailed memory profiling**: All memory allocations are accurately tracked at line number level and ring-fenced from profiler code to avoid interference. They may be summarized by function or section, or broken out in detail where desired.
 
 - **Function and section profiling**: Profiling can be applied to any number of specific code sections, down to single instructions.
 
@@ -389,6 +389,16 @@ instrumented functions and sections in all threads, instead of only for child no
 code, which is likely not what you want.
 
 ### Code Section Profiling with `profile!`
+
+TODO Note: Section profiling profiling modes may not override the programe defaults set by `#[enable_profiling]`.
+1. **Easy to enable/disable profiling globally**: Developers can quickly turn on/off profiling without changing every profile section
+
+2. **Clean code organization**: Section profiling clearly shows intent and what *could* be profiled, even if it's currently overridden
+
+3. **Two-layer configuration**: Gives both fine-grained (per-section) and coarse-grained (global) control
+
+4. **Simplicity**: No need for complex conditional logic in each profiling section
+
 
 Time and memory section profiling are implemented slightly differently owing to more stringent requirements of memory profiling.
 Memory section profiling requires an `end!(<identifier>)` macro to mark the end of the section so that memory allocations can be

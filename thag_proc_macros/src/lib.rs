@@ -17,7 +17,7 @@ mod enable_profiling;
 mod profiled;
 
 // #[cfg(feature = "time_profiling")]
-mod profile_fn;
+mod profile;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
@@ -30,7 +30,8 @@ use crate::preload_themes::preload_themes_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
-use syn::parse_file;
+use quote::quote;
+use syn::{parse_file, parse_str, Expr};
 
 #[cfg(feature = "time_profiling")]
 use crate::enable_profiling::enable_profiling_impl;
@@ -39,7 +40,7 @@ use crate::enable_profiling::enable_profiling_impl;
 use crate::profiled::profiled_impl;
 
 #[cfg(feature = "time_profiling")]
-use crate::profile_fn::profile_fn_impl;
+use crate::profile::profile_impl;
 
 /// Generates a `Category` enum with predefined variants and utility implementations.
 ///
@@ -199,11 +200,12 @@ fn expand_output(name: &str, output: &TokenStream) {
     use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
     let output: proc_macro2::TokenStream = output.clone().into();
     let token_str = output.to_string();
+    let dash_line = "─".repeat(70);
+
+    // First try to parse as a file
     match parse_file(&token_str) {
-        Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
         Ok(syn_file) => {
             let pretty_output = prettyplease::unparse(&syn_file);
-            let dash_line = "─".repeat(70);
             eprintln!("{style_reset}{dash_line}{style_reset}");
             eprintln!(
                 "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
@@ -211,6 +213,23 @@ fn expand_output(name: &str, output: &TokenStream) {
             eprint!("{pretty_output}");
             eprintln!("{style_reset}{dash_line}{style_reset}");
         }
+        // If parsing as a file fails, try parsing as an expression
+        Err(_) => match parse_str::<Expr>(&token_str) {
+            Ok(expr) => {
+                // For expressions, we don't have a pretty printer, so just output the token string
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                            "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
+                        );
+                // eprintln!("{token_str}");
+                eprintln!("{}", quote!(#expr));
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+            Err(e) => {
+                eprintln!("Failed to parse tokens as file or expression: {e:?}");
+                eprintln!("Token string: {token_str}");
+            }
+        },
     }
 }
 
@@ -298,6 +317,6 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
 
 #[cfg(feature = "time_profiling")]
 #[proc_macro]
-pub fn profile_fn(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "profile_fn", &input, profile_fn_impl)
+pub fn profile(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(true, "profile", &input, profile_impl)
 }

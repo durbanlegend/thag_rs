@@ -251,7 +251,6 @@ impl ProfileRegistry {
                         .chain(callstack.iter().rev().cloned())
                         .collect();
 
-                    // TODO De-scaffold detailed_stack below this profile's entry, or cut off and append this profile's stack.
                     write_detailed_stack_alloc(size, false, &detailed_stack);
                 } else {
                     // Not detailed memory

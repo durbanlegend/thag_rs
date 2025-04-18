@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
@@ -8,7 +8,7 @@ use syn::{
     Ident, LitStr, Result, Token,
 };
 
-/// Arguments for the profile_fn macro
+/// Arguments for the `profile` macro
 struct ProfileArgs {
     name: LitStr,
     args: Punctuated<Ident, Token![,]>,
@@ -29,7 +29,7 @@ impl Parse for ProfileArgs {
     }
 }
 
-pub fn profile_fn_impl(input: TokenStream) -> TokenStream {
+pub fn profile_impl(input: TokenStream) -> TokenStream {
     let ProfileArgs { name, args } = parse_macro_input!(input as ProfileArgs);
 
     // Extract flags from args
@@ -60,8 +60,8 @@ pub fn profile_fn_impl(input: TokenStream) -> TokenStream {
         (quote! { Some(line!()) }, quote! { None })
     } else {
         // Memory with bounded - need end marker
-        let end_fn_name = format!("end_{}", name.value());
-        let end_fn_ident = format_ident!("{}", end_fn_name);
+        // let end_fn_name = format!("end_{}", name.value());
+        // let end_fn_ident = format_ident!("{}", end_fn_name);
         (
             quote! { Some(line!()) },
             quote! { Some(::thag_profiler::paste::paste! { [<end_ #name>]() }) },
@@ -69,6 +69,7 @@ pub fn profile_fn_impl(input: TokenStream) -> TokenStream {
     };
 
     // Generate the profile creation code
+    #[cfg(not(feature = "full_profiling"))]
     let expanded = quote! {
         ::thag_profiler::Profile::new(
             Some(#name),
@@ -80,6 +81,22 @@ pub fn profile_fn_impl(input: TokenStream) -> TokenStream {
             #start_line,
             #end_line
         )
+    };
+
+    #[cfg(feature = "full_profiling")]
+    let expanded = quote! {
+        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+            ::thag_profiler::Profile::new(
+                Some(#name),
+                None,
+                #profile_type,
+                #is_async,
+                #detailed_memory,
+                module_path!().to_string(),
+                #start_line,
+                #end_line
+            )
+        })
     };
 
     expanded.into()

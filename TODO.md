@@ -34,8 +34,7 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator.
 - [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling]
 - [ ]  Re-check for profiler code not ring-fenced
-- [ ]  Broaden section profiling to allow time/both.
-- [ ]  Consider alternative macro names for section time profiling since it has different rules
+- [ ]  Consider option for  deallocation in detail.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

@@ -764,7 +764,9 @@ Choose flamegraphs for a high-level view of resource usage and flamecharts for d
 
 **5. Verify changes**: Always verify automated changes with a diff tool
 
-**6. Async Function Profiling**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
+**6. Don't run with option `both`, as the memory profiling overhead may distort the relative execution times of the functions and sections**
+
+**7.Async Function Profiling**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
 
 ```rust
 async fn fetch_data() {

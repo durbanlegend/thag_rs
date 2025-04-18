@@ -66,16 +66,13 @@ impl ProfileRegistry {
         let end_line = profile.end_line();
 
         // First, ensure we have a module entry
-        let module_path = profile.module_path().to_string();
+        let file_name = profile.file_name().to_string();
         let fn_name = profile.fn_name().to_string();
 
-        debug_log!("About to register module_path={module_path}, fn_name={fn_name}, lines={start_line:?}..{end_line:?}");
+        debug_log!("About to register file_name={file_name}, fn_name={fn_name}, lines={start_line:?}..{end_line:?}");
 
         // Get or create the function ranges map for this module
-        let function_ranges = self
-            .module_functions
-            .entry(module_path.clone())
-            .or_default();
+        let function_ranges = self.module_functions.entry(file_name.clone()).or_default();
 
         // Get or create the range sections map for this function
         let range_sections = function_ranges.entry(fn_name.clone()).or_default();
@@ -83,10 +80,10 @@ impl ProfileRegistry {
         // Insert the profile reference at this line range
         range_sections.insert((start_line, end_line), profile_ref);
 
-        debug_log!("Successfully registered profile in module {module_path}, function {fn_name}, lines {start_line:?}..{end_line:?}");
+        debug_log!("Successfully registered profile in module {file_name}, function {fn_name}, lines {start_line:?}..{end_line:?}");
 
         // Verify it was stored correctly
-        if let Some(fr) = self.module_functions.get(&module_path) {
+        if let Some(fr) = self.module_functions.get(&file_name) {
             if let Some(rs) = fr.get(&fn_name) {
                 debug_log!(
                     "Verification: Found function_ranges with {} entries",
@@ -98,12 +95,12 @@ impl ProfileRegistry {
                 );
             }
         } else {
-            debug_log!("Verification FAILED: No entry found for module {module_path}");
+            debug_log!("Verification FAILED: No entry found for module {file_name}");
         }
 
         debug_log!(
             "Registered profile in module {} with line range {:?}-{:?}",
-            profile.module_path(),
+            profile.file_name(),
             start_line,
             end_line
         );
@@ -117,21 +114,21 @@ impl ProfileRegistry {
     /// overlapping sections, we pick up only the one that starts first/highest in the function and
     ///
     /// Returns the profile reference if found
-    pub fn find_profile(&self, module_path: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
+    pub fn find_profile(&self, file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
         // Check if we have this module
-        let Some(function_ranges) = self.module_functions.get(module_path) else {
-            debug_log!("Module not found in registry: {module_path}");
+        let Some(function_ranges) = self.module_functions.get(file_name) else {
+            debug_log!("Module not found in registry: {file_name}");
             return None;
         };
 
         // Check if we have this function
         let Some(range_sections) = function_ranges.get(fn_name) else {
-            debug_log!("Function {fn_name} not found in module {module_path}");
+            debug_log!("Function {fn_name} not found in module {file_name}");
             return None;
         };
 
         debug_log!(
-            "Found range_sections for {module_path}::{fn_name} with {} entries",
+            "Found range_sections for {file_name}::{fn_name} with {} entries",
             range_sections.len()
         );
 
@@ -151,15 +148,15 @@ impl ProfileRegistry {
 
         // If no specific match, try to find a whole-function profile (one with no line numbers)
         if let Some(profile_ref) = range_sections.get(&(None, None)) {
-            debug_log!("Found whole-function profile for {module_path}::{fn_name}");
+            debug_log!("Found whole-function profile for {file_name}::{fn_name}");
             return Some(profile_ref.clone());
         }
 
-        debug_log!("No profile found for {module_path}::{fn_name} at line {line}");
+        debug_log!("No profile found for {file_name}::{fn_name} at line {line}");
         None
     }
 
-    pub fn get_module_paths(&self) -> Vec<String> {
+    pub fn get_file_names(&self) -> Vec<String> {
         self.module_functions.keys().cloned().collect()
     }
 
@@ -167,7 +164,7 @@ impl ProfileRegistry {
     /// Returns true if allocation was recorded, false otherwise
     pub fn record_allocation(
         &self,
-        module_path: &str,
+        file_name: &str,
         fn_name: &str,
         line: u32,
         size: usize,
@@ -175,23 +172,25 @@ impl ProfileRegistry {
         current_backtrace: &mut Backtrace,
     ) -> bool {
         // Check first if we even have this module and function
-        if !self.module_functions.contains_key(module_path) {
+        if !self.module_functions.contains_key(file_name) {
             debug_log!(
-                "No module found for {module_path}. Available modules: {:?}",
+                "No module found for {file_name}. Available modules: {:?}",
                 self.module_functions.keys().collect::<Vec<_>>()
             );
             return false;
         }
 
-        let function_ranges = self.module_functions.get(module_path).unwrap();
+        let function_ranges = self.module_functions.get(file_name).unwrap();
         if !function_ranges.contains_key(fn_name) {
-            debug_log!("No function found for {fn_name} in module {module_path}. Available functions: {:?}",
-                    function_ranges.keys().collect::<Vec<_>>());
+            debug_log!(
+                "No function found for {fn_name} in module {file_name}. Available functions: {:?}",
+                function_ranges.keys().collect::<Vec<_>>()
+            );
             return false;
         }
 
         // Find the profile for this allocation
-        let profile_ref_opt = self.find_profile(module_path, fn_name, line);
+        let profile_ref_opt = self.find_profile(file_name, fn_name, line);
 
         // debug_log!("profile_ref_opt={profile_ref_opt:#?}");
 
@@ -255,14 +254,14 @@ impl ProfileRegistry {
                 } else {
                     // Not detailed memory
                     // Call the profile's record_allocation method directly
-                    debug_log!("Calling record_allocation on Profile for {size} bytes in {module_path}::{fn_name} at line {line}");
+                    debug_log!("Calling record_allocation on Profile for {size} bytes in {file_name}::{fn_name} at line {line}");
                     let _ = profile.record_allocation(size, address);
                 }
                 return true;
             }
-            debug_log!("Profile reference is missing the actual Profile pointer for {module_path}::{fn_name}");
+            debug_log!("Profile reference is missing the actual Profile pointer for {file_name}::{fn_name}");
         } else {
-            debug_log!("No matching profile found for {module_path}::{fn_name} at line {line}");
+            debug_log!("No matching profile found for {file_name}::{fn_name} at line {line}");
         }
 
         false
@@ -286,7 +285,7 @@ pub fn register_profile(profile: &Profile) {
     with_allocator(Allocator::System, || {
         // First log the information (acquires debug log mutex)
         debug_log!("Registering profile in registry: module={}, detailed_memory={}, start_line={:?}, end_line={:?}",
-            profile.module_path(), profile.detailed_memory(), profile.start_line(), profile.end_line());
+            profile.file_name(), profile.detailed_memory(), profile.start_line(), profile.end_line());
 
         // Then flush to ensure the debug log mutex is released before acquiring the PROFILE_REGISTRY mutex
         flush_debug_log();
@@ -299,7 +298,7 @@ pub fn register_profile(profile: &Profile) {
 
 /// Record an allocation with the global registry based on module path and line number
 pub fn record_allocation(
-    module_path: &str,
+    file_name: &str,
     fn_name: &str,
     line: u32,
     size: usize,
@@ -309,7 +308,7 @@ pub fn record_allocation(
     with_allocator(Allocator::System, || {
         // First log (acquires debug log mutex)
         debug_log!(
-            "Looking for profile to record allocation: module={module_path}, fn={fn_name}, line={line}, size={size}"
+            "Looking for profile to record allocation: module={file_name}, fn={fn_name}, line={line}, size={size}"
         );
 
         // Flush to release the debug log mutex
@@ -317,7 +316,7 @@ pub fn record_allocation(
 
         // Print list of registered modules to help diagnose issues
         {
-            let modules = PROFILE_REGISTRY.lock().get_module_paths();
+            let modules = PROFILE_REGISTRY.lock().get_file_names();
             debug_log!("Available modules in registry: {modules:?}");
             flush_debug_log();
         }
@@ -327,7 +326,7 @@ pub fn record_allocation(
         {
             debug_log!("About to call record_allocation on registry");
             result = PROFILE_REGISTRY.lock().record_allocation(
-                module_path,
+                file_name,
                 fn_name,
                 line,
                 size,
@@ -340,10 +339,10 @@ pub fn record_allocation(
         // Log after releasing the mutex
         if result {
             debug_log!(
-                "Successfully recorded allocation of {size} bytes in module {module_path}::{fn_name} at line {line}"
+                "Successfully recorded allocation of {size} bytes in module {file_name}::{fn_name} at line {line}"
             );
         } else {
-            debug_log!("No matching profile found to record allocation of {size} bytes in module {module_path}::{fn_name} at line {line}");
+            debug_log!("No matching profile found to record allocation of {size} bytes in module {file_name}::{fn_name} at line {line}");
         }
         flush_debug_log();
 
@@ -353,11 +352,11 @@ pub fn record_allocation(
 
 /// Find a profile for a specific module path and line number
 #[must_use]
-pub fn find_profile(module_path: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
+pub fn find_profile(file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
     with_allocator(Allocator::System, || {
         // Acquire the registry lock
         let registry = PROFILE_REGISTRY.lock();
         // Return the result
-        registry.find_profile(module_path, fn_name, line)
+        registry.find_profile(file_name, fn_name, line)
     })
 }

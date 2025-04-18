@@ -1028,7 +1028,7 @@ pub struct Profile {
     start_line: Option<u32>, // Source line where profile was created (for sections)
     end_line: Option<u32>,   // Source line where profile was ended (if section explicitly ended)
     detailed_memory: bool,   // Whether to do detailed memory profiling for this profile
-    module_path: String,     // Module path where this profile was created
+    file_name: String,       // Filename where this profile was created
     #[cfg(feature = "full_profiling")]
     memory_task: Option<TaskMemoryContext>,
     #[cfg(feature = "full_profiling")]
@@ -1065,8 +1065,8 @@ impl Profile {
     ///
     /// Get the module path of this profile
     #[must_use]
-    pub fn module_path(&self) -> &str {
-        &self.module_path
+    pub fn file_name(&self) -> &str {
+        &self.file_name
     }
 
     /// Get the start line of this profile
@@ -1180,7 +1180,7 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         detailed_memory: bool,
-        module_path: String,
+        file_name: String,
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
@@ -1250,7 +1250,7 @@ impl Profile {
         );
 
         // Get current module path and line number
-        // let module_path = std::module_path!().to_string();
+        // let file_name = std::file!().to_string();
         // let start_line = line!() as u32;
 
         Some(Self {
@@ -1263,7 +1263,7 @@ impl Profile {
             start_line,
             end_line,
             detailed_memory,
-            module_path,
+            file_name,
             #[cfg(feature = "full_profiling")]
             memory_task: None,
             #[cfg(feature = "full_profiling")]
@@ -1311,7 +1311,7 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         detailed_memory: bool,
-        module_path: String,
+        file_name: String,
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
@@ -1335,7 +1335,7 @@ impl Profile {
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
-            debug_log!("module_path={module_path}");
+            debug_log!("file_name={file_name}");
             // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
 
@@ -1397,7 +1397,7 @@ impl Profile {
                 debug_log!("NEW PROFILE: (Time) created for {:?}", path.join(" -> "));
 
                 // Get current module path and line number
-                // let module_path = std::module_path!().to_string();
+                // let file_name = std::file!().to_string();
                 // let start_line = line!();
 
                 let profile = Self {
@@ -1410,7 +1410,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    module_path,
+                    file_name,
                     memory_task: None,
                     memory_guard: None,
                 };
@@ -1419,7 +1419,7 @@ impl Profile {
                 // First log the details to avoid potential deadlock
                 debug_log!(
                         "About to register profile in module {} with line range {:?}..None for detailed memory tracking",
-                        profile.module_path,
+                        profile.file_name,
                         start_line,
                     );
 
@@ -1432,7 +1432,7 @@ impl Profile {
                 // Log again after registration completes
                 debug_log!(
                     "Successfully registered profile in module {} for detailed memory tracking",
-                    &profile.module_path
+                    &profile.file_name
                 );
                 // }
 
@@ -1468,7 +1468,7 @@ impl Profile {
             let profile = {
                 // Create the profile with necessary components
                 // Get current module path and line number
-                // let module_path = module_path!().to_string();
+                // let file_name = file!().to_string();
                 // let start_line = line!();
 
                 Self {
@@ -1482,7 +1482,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    module_path,
+                    file_name,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
                 }
@@ -1491,10 +1491,7 @@ impl Profile {
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            debug_log!(
-                "About to register profile in module {}",
-                profile.module_path,
-            );
+            debug_log!("About to register profile in module {}", profile.file_name,);
 
             // Flush logs before calling register_profile
             flush_debug_log();
@@ -1505,7 +1502,7 @@ impl Profile {
             // Log again after registration completes
             debug_log!(
                 "Successfully registered profile in module {} for detailed memory tracking",
-                &profile.module_path
+                &profile.file_name
             );
             // }
 
@@ -2032,7 +2029,7 @@ impl Drop for Profile {
             //     // First log the details to avoid potential deadlock
             //     debug_log!(
             //         "About to register profile in module {} with line range {}..{:?} for detailed memory tracking",
-            //         self.module_path,
+            //         self.file_name,
             //         self.start_line,
             //         self.end_line
             //     );
@@ -2046,7 +2043,7 @@ impl Drop for Profile {
             //     // Log again after registration completes
             //     debug_log!(
             //         "Successfully registered profile in module {} for detailed memory tracking",
-            //         self.module_path
+            //         self.file_name
             //     );
             // }
 
@@ -2098,7 +2095,7 @@ impl ProfileSection {
                 ProfileType::Time, // Since memory profiling can't track sections via backtrace
                 false,
                 false,
-                module_path!().to_string(),
+                file!().to_string(),
                 None,
                 None,
             ),
@@ -2114,7 +2111,7 @@ impl ProfileSection {
         start_line: u32,
         end_line: u32,
         is_async: bool,
-        module_path: String,
+        file_name: String,
     ) -> Self {
         debug_log!(
             "In ProfileSection::new_with_detailed_memory with range={start_line}..{end_line}"
@@ -2126,7 +2123,7 @@ impl ProfileSection {
                 ProfileType::Memory, // Since memory profiling can't track sections via backtrace
                 is_async,
                 true, // detailed_memory
-                module_path,
+                file_name,
                 Some(start_line),
                 Some(end_line),
             ),

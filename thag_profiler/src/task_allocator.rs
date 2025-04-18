@@ -229,20 +229,17 @@ fn record_alloc(address: usize, size: usize) {
     // }
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-    let module_paths = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_module_paths() };
-    // debug_log!("module_paths={module_paths:#?}");
+    let file_names = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_file_names() };
+    debug_log!("file_names={file_names:#?}");
 
     // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
     let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> = Backtrace::frames(&current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
-        // .inspect(|symbol| {
-        //     debug_log!("symbol: {symbol:#?}");
-        // })
         .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
-        // .inspect(|(maybe_filename, maybe_lineno, frame)| {
-        //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
-        // })
+        .inspect(|(maybe_filename, maybe_lineno, frame)| {
+            debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
+        })
         .filter(|(maybe_filename, maybe_lineno, frame)| {
             maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some() && !frame.as_ref().unwrap().to_string().starts_with('<')
         })
@@ -260,12 +257,12 @@ fn record_alloc(address: usize, size: usize) {
                 maybe_frame.unwrap().to_string(),
             )
         })
-        // .inspect(|(filename, lineno, frame)| {
-        //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
-        // })
-        .filter(|(filename, _, _)| (module_paths.contains(filename)))
         .inspect(|(filename, lineno, frame)| {
-            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, module_paths={module_paths:?}");
+            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+        })
+        .filter(|(filename, _, _)| (file_names.contains(filename)))
+        .inspect(|(filename, lineno, frame)| {
+            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
         })
         .map(|(filename, lineno, mut frame)| (filename, lineno, frame.clone(), clean_function_name(frame.as_mut_str())))
         .map(|(filename, lineno, frame, fn_name)| (filename.clone(), lineno, frame, fn_name.clone(), find_profile(&filename, &fn_name, lineno)))
@@ -296,7 +293,7 @@ fn record_alloc(address: usize, size: usize) {
     let (filename, lineno, frame, fn_name, _profile_ref) = &func_and_ancestors[0];
 
     debug_log!(
-        "Found filename (module_path)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}"
+        "Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}"
     );
 
     // Try to record the allocation in the new profile registry
@@ -377,7 +374,7 @@ fn record_alloc(address: usize, size: usize) {
 
     record_alloc_for_task_id(address, size, task_id);
 
-    if module_paths.is_empty() {
+    if file_names.is_empty() {
         return;
     }
 
@@ -513,7 +510,7 @@ fn record_dealloc(address: usize, size: usize) {
                 .iter()
                 .find(|frame| frame.contains("::profiling::Profile"))
         );
-        debug_log!("...current backtrace: {:#?}", current_backtrace);
+        // debug_log!("...current backtrace: {:#?}", current_backtrace);
         return;
     }
 
@@ -533,7 +530,7 @@ fn record_dealloc(address: usize, size: usize) {
                     .iter()
                     .find(|frame| frame.contains("::profiling::Profile"))
             );
-            debug_log!("...current backtrace: {:#?}", current_backtrace);
+            // debug_log!("...current backtrace: {:#?}", current_backtrace);
             return;
         }
 

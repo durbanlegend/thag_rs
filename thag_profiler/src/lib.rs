@@ -332,7 +332,7 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
     with_allocator(Allocator::System, || {
         PROFILEE.set(Profilee::new(root_module)).unwrap();
 
-        set_base_location(fn_name);
+        set_base_location(file!(), fn_name, line!());
         enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
@@ -359,25 +359,10 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
 pub const fn init_profiling(_root_module: &str, _maybe_profile_type: Option<ProfileType>) {}
 
 #[cfg(feature = "time_profiling")]
-fn set_base_location(fn_name: &str) {
-    // eprintln!("module_path!()={}", module_path!());
-    // TODO replace by function_name attribute macro
-    let this_function = format!("{}::{fn_name}", module_path!());
-    // eprintln!("this_function={this_function}");
-    let base_location = Box::leak(
-        Backtrace::frames(&Backtrace::new())
-            .iter()
-            .flat_map(BacktraceFrame::symbols)
-            .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-            .skip_while(|frame| {
-                !(frame.contains(&this_function)
-                    && strip_hex_suffix(frame.to_string()) == this_function)
-            })
-            .take(1)
-            .last()
-            .unwrap()
-            .into_boxed_str(),
-    );
+fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
+    let base_loc = format!("{file_name}::{fn_name}");
+    let base_location = Box::leak(base_loc.into_boxed_str());
+
     PROFILER.set(Profiler::new(base_location)).unwrap();
     // eprintln!("base_location={base_location}");
 }

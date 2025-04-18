@@ -183,7 +183,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     //     .as_ref()
     //     .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
-    let profile_section = profile!("infer_deps");
+    let profile_section = profile!("infer_deps", time);
     let rs_inferred_deps = if let Some(ref use_crates) = build_state.crates_finder {
         build_state.metadata_finder.as_ref().map_or_else(
             || infer_deps_from_source(rs_source),
@@ -193,10 +193,10 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
         infer_deps_from_source(rs_source)
     };
 
-    profile_section.end();
+    drop(profile_section);
     // debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
-    let profile_section = profile!("merge_manifest");
+    let profile_section = profile!("merge_manifest", time);
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         if !rs_inferred_deps.is_empty() {
             #[cfg(debug_assertions)]
@@ -224,7 +224,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
 
     // Reassign the merged manifest back to build_state
     build_state.cargo_manifest = Some(merged_manifest);
-    profile_section.end();
+    drop(profile_section);
 
     #[cfg(debug_assertions)]
     debug_timings(&start_merge_manifest, "Processed features");
@@ -276,7 +276,7 @@ pub fn extract(
 ) -> ThagResult<Manifest> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
-    profile!("parse_and_set_edition");
+    let _ = profile!("parse_and_set_edition", time);
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
@@ -285,7 +285,7 @@ pub fn extract(
     };
 
     {
-        profile!("set_edition");
+        let _ = profile!("set_edition", time);
         if let Some(package) = rs_manifest.package.as_mut() {
             package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
         }

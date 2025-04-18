@@ -206,7 +206,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
     if let Ok(tree) = {
-        profile!("to_ast_syn_parse_file");
+        let _ = profile!("to_ast_syn_parse_file", time);
         syn::parse_file(source_code)
     } {
         #[cfg(debug_assertions)]
@@ -216,7 +216,7 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
         }
         Some(Ast::File(tree))
     } else if let Ok(tree) = {
-        profile!("to_ast_syn_parse_expr");
+        let _ = profile!("to_ast_syn_parse_expr", time);
         extract_ast_expr(source_code)
     } {
         #[cfg(debug_assertions)]

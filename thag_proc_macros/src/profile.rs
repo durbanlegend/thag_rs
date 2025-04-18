@@ -17,15 +17,16 @@ struct ProfileArgs {
 impl Parse for ProfileArgs {
     fn parse(input: ParseStream) -> Result<Self> {
         let name: LitStr = input.parse()?;
-        let mut args = Punctuated::new();
 
         // Parse remaining arguments as identifiers separated by commas
-        if !input.is_empty() {
+        let args = if input.is_empty() {
+            Punctuated::new()
+        } else {
             input.parse::<Token![,]>()?;
-            args = input.parse_terminated(Ident::parse, Token![,])?;
-        }
+            input.parse_terminated(Ident::parse, Token![,])?
+        };
 
-        Ok(ProfileArgs { name, args })
+        Ok(Self { name, args })
     }
 }
 

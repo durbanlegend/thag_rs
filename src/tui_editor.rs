@@ -2,22 +2,23 @@ use crate::{
     code_utils::write_source,
     debug_log,
     file_dialog::{DialogMode, FileDialog, Status},
-    regex,
+    key, regex,
     stdin::edit_history,
     styling::Role,
     KeyCombination, ThagError, ThagResult,
 };
-use crokey::key;
-use crossterm::event::{
+// use crokey::key;
+// use crokey::crossterm::event::KeyEvent;
+use mockall::automock;
+use ratatui::crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
     KeyEvent, KeyEventKind,
 };
-use crossterm::terminal::{
+use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
-use mockall::automock;
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 pub use ratatui::style::Style as RataStyle;
@@ -74,12 +75,12 @@ pub struct CrosstermEventReader;
 impl EventReader for CrosstermEventReader {
     #[profiled]
     fn read_event(&self) -> ThagResult<Event> {
-        crossterm::event::read().map_err(Into::<ThagError>::into)
+        ratatui::crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 
     #[profiled]
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
-        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+        ratatui::crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 
@@ -121,7 +122,7 @@ pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
     let mut stdout = std::io::stdout().lock();
     enable_raw_mode()?;
 
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -559,7 +560,7 @@ pub fn tui_edit<R, F>(
 where
     R: EventReader + Debug,
     F: Fn(
-        KeyEvent,
+        ratatui::crossterm::event::KeyEvent,
         Option<&mut ManagedTerminal>,
         &mut TextArea,
         &mut EditData,
@@ -793,7 +794,7 @@ where
                     textarea.move_cursor(CursorMove::Head);
                 }
                 key!(f9) => {
-                    crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
+                    ratatui::crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
                     textarea.remove_line_number();
                     textarea.set_block(
                         Block::default()
@@ -803,7 +804,7 @@ where
                     );
                 }
                 key!(f10) => {
-                    crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
+                    ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
                     textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
                     textarea.set_block(
                         Block::default()
@@ -885,7 +886,7 @@ where
             }
         } else {
             // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
-            let input = Input::from(event);
+            let input = tui_textarea::Input::from(event);
             textarea.input(input);
         }
     }
@@ -916,7 +917,7 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    if !matches!(key_event.kind, KeyEventKind::Press) {
+    if !matches!(key_event.kind, event::KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
 
@@ -1255,7 +1256,7 @@ pub fn normalize_newlines(input: &str) -> String {
 #[profiled]
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
     disable_raw_mode()?;
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
@@ -1308,7 +1309,7 @@ pub fn save_if_changed(
 //     textarea: &mut TextArea<'_>,
 //     history_path: &Option<PathBuf>,
 // ) -> ThagResult<()> {
-//     profile!("save_if_changed");
+//     let save_if_changed = profile!("save_if_changed", time);
 //     debug_log!("save_if_changed...");
 //     if textarea.is_empty() {
 //         debug_log!("nothing to save(1)...");

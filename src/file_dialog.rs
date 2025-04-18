@@ -1,12 +1,10 @@
 use crate::styling::Role;
 use crate::{
-    debug_log, key_mappings, lazy_static_var,
+    debug_log, key, key_mappings, lazy_static_var,
     tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
     KeyCombination,
 };
-// #[cfg(feature = "profiling")]
-use crokey::key;
-use crossterm::{
+use ratatui::crossterm::{
     cursor::{Hide, Show},
     event::{KeyCode, KeyEvent, KeyEventKind},
     execute,

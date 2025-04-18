@@ -97,7 +97,7 @@ generate_styles!(
 /// This function will bubble up any i/o errors encountered.
 #[must_use]
 pub fn coloring<'a>() -> (Option<&'a ColorSupport>, &'a TermTheme) {
-    profile!("coloring");
+    let coloring = profile!("coloring", time);
 
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
@@ -230,7 +230,7 @@ macro_rules! generate_styles {
         ) -> fn(Lvl) -> Style {
             use std::sync::OnceLock;
             static STYLE_MAPPING: OnceLock<fn(Lvl) -> Style> = OnceLock::new();
-            profile!("init_styles");
+            let init_styles = profile!("init_styles", time);
 
             *STYLE_MAPPING.get_or_init(|| match (term_theme, color_support) {
                 $(
@@ -248,7 +248,7 @@ macro_rules! generate_styles {
 /// palette to be chosen.
 #[must_use]
 pub fn get_term_theme() -> &'static TermTheme {
-    profile!("get_term_theme");
+    let get_term_theme = profile!("get_term_theme", time);
     coloring().1
 }
 

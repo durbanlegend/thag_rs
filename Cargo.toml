@@ -36,7 +36,6 @@ cargo_toml = { version = "0.22.1", optional = true }
 # dirs = { version = "6.0.0", optional = true }
 chrono = "0.4.39"
 clap = { version = "4.5.36", features = ["cargo", "derive"], optional = true }
-crokey = { version = "1.1.0", optional = true }
 crossterm = { version = "0.29", features = ["use-dev-tty"], optional = true }
 directories = "6.0"
 document-features = "0.2.10"
@@ -64,7 +63,7 @@ serde_merge = { version = "0.1.3", optional = true }
 # serde_with = { version = "3.11.0", optional = true }
 side-by-side-diff = { version = "0.1.2", optional = true }
 simplelog = { version = "0.12.2", optional = true }
-# strict = "0.2.0"
+strict = "0.2.0"
 strum = { version = "0.27.1", features = ["derive", "phf"] }
 supports-color = { version = "3.0.2", optional = true }
 syn = { version = "2", features = [
@@ -153,7 +152,6 @@ build = [
 
 tui = [
     "build",        # Full build capabilities
-    "crokey",
     "ratatui",
     "scopeguard",
     "serde_json",
@@ -201,7 +199,6 @@ profiling = ["thag_profiler/full_profiling", "thag_proc_macros/full_profiling"]
 #     │       │
 #     │       ├── ratatui                        # TUI framework
 #     │       ├── tui-textarea                   # Text editing widget
-#     │       ├── crokey                         # Keyboard handling
 #     │       ├── serde_json                     # JSON support
 #     │       └── scopeguard                     # Resource cleanup (shared with color_detect)
 #     │

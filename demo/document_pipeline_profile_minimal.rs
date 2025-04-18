@@ -20,7 +20,8 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use thag_profiler::{
-    self, disable_profiling, enable_profiling, end, profile, profile_fn, profiled, ProfileType,
+    self, /*, disable_profiling*/
+    enable_profiling, end, profile, profiled, /*, ProfileType */
 };
 
 struct Document {
@@ -130,7 +131,8 @@ async fn process_document(mut doc: Document) -> Document {
     doc.calculate_sentiment();
 
     // Small async delay
-    profile_fn!("delay", time, mem_detail, async_fn);
+    profile!("delay", time, mem_detail, async_fn)
+        .expect("Failed to initialize section profile `delay`");
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
     end!("delay");
@@ -172,7 +174,8 @@ async fn run_batch(count: usize) {
     );
 
     // Print results for verification
-    profile_fn!("print_docs", time, mem_detail, async_fn, unbounded);
+    profile!("print_docs", time, mem_detail, async_fn, unbounded)
+        .expect("Failed to initialize section profile `print_docs`");
     for doc in &docs {
         let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         // Small async delay
@@ -204,7 +207,7 @@ async fn main() {
     // println!("Switching profiling off");
     // disable_profiling();
 
-    let last_2 = profile!("last_2_batches");
+    let last_2 = profile!("last_2_batches", time, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
@@ -212,10 +215,12 @@ async fn main() {
     // enable_profiling(true, Some(ProfileType::Time)).unwrap();
     drop(last_2);
 
-    let last_1 = profile!("last_batch");
+    let _section_name = profile!("last_batch", time, async_fn)
+        .unwrap()
+        .section_name();
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
-    last_1.end();
+    end!(_section_name);
 
     println!("Profiling data written to folded files in current directory");
 

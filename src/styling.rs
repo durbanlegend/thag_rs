@@ -781,7 +781,7 @@ impl TermAttributes {
     #[profiled(imp = "TermAttributes")]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
-            profile!("INSTANCE::get_or_init");
+            let _instance_get_or_init_profile = profile!("instance_get_or_init", time);
             #[cfg(feature = "config")]
             let Some(_config) = maybe_config() else {
                 panic!("Error initializing configuration")
@@ -805,7 +805,7 @@ impl TermAttributes {
                         color_support: support,
                         theme,
                         term_bg_hex: None,
-                        term_bg_rgb: None::<(u8, u8, u8)>,
+                        term_bg_rgb: bg_rgb,
                         term_bg_luma: match bg_luma {
                             TermBgLuma::Light => TermBgLuma::Light,
                             TermBgLuma::Dark | TermBgLuma::Undetermined => TermBgLuma::Dark,
@@ -817,10 +817,10 @@ impl TermAttributes {
                         Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
                             .expect("Failed to load basic dark theme");
                     Self {
-                        how_initialized: HowInitialized::Configured,
+                        how_initialized: HowInitialized::Defaulted,
                         color_support: ColorSupport::Basic,
                         term_bg_hex: None,
-                        term_bg_rgb: None::<(u8, u8, u8)>,
+                        term_bg_rgb: None,
                         term_bg_luma: TermBgLuma::Dark,
                         theme,
                     }
@@ -868,7 +868,7 @@ impl TermAttributes {
                             Self {
                                 how_initialized: HowInitialized::Configured,
                                 color_support,
-                                term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)), // term_bg_rgb.map(|rgb: (u8, u8, u8)| rgb_to_hex(&rgb)),
+                                term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)),
                                 term_bg_rgb: Some(term_bg_rgb),
                                 term_bg_luma,
                                 theme,
@@ -883,7 +883,7 @@ impl TermAttributes {
                                 how_initialized: HowInitialized::Defaulted,
                                 color_support: ColorSupport::Basic,
                                 term_bg_hex: None,
-                                term_bg_rgb: None::<(u8, u8, u8)>,
+                                term_bg_rgb: None,
                                 term_bg_luma: TermBgLuma::Dark,
                                 theme,
                             }
@@ -898,7 +898,7 @@ impl TermAttributes {
                             how_initialized: HowInitialized::Defaulted,
                             color_support: ColorSupport::Basic,
                             term_bg_hex: None,
-                            term_bg_rgb: None::<(u8, u8, u8)>,
+                            term_bg_rgb: None,
                             term_bg_luma: TermBgLuma::Dark,
                             theme,
                         }
@@ -2107,7 +2107,7 @@ fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Ve
 //     eligible_themes: &Vec<(&str, &ThemeIndex)>,
 //     term_bg_rgb: (u8, u8, u8),
 // ) -> Vec<String> {
-//     profile!("get_reduced_palette_matches");
+//     profile!("get_reduced_palette_matches", time);
 //     eligible_themes
 //         .iter()
 //         .filter(|(_, idx)| idx.matches_background(term_bg_rgb))
@@ -2271,7 +2271,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     }
 
     // Find closest color in the 6x6x6 color cube (16-231)
-    let profile_find_closest = profile!("find_closest");
+    let profile_find_closest = profile!("find_closest", time);
     let find_closest = |v: u8| {
         u8::try_from(
             STEPS
@@ -2282,7 +2282,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
         )
         .map_or(0, |v| v)
     };
-    profile_find_closest.end();
+    drop(profile_find_closest);
 
     let r_idx = find_closest(r);
     let g_idx = find_closest(g);

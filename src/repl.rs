@@ -2,7 +2,7 @@
 use crate::{
     builder::process_expr,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
-    cvprtln, get_verbosity, lazy_static_var,
+    cvprtln, get_verbosity, key, lazy_static_var,
     manifest::extract,
     regex,
     styling::{
@@ -18,8 +18,8 @@ use crate::{
     KeyDisplayLine, ProcFlags, ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
-use crokey::key;
-use crossterm::event::{KeyEvent, KeyEventKind};
+use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
+// use crokey::key;
 use edit::edit_file;
 use nu_ansi_term::Color as NuColor;
 use ratatui::style::Color;

@@ -513,6 +513,7 @@ fn record_dealloc(address: usize, size: usize) {
                 .iter()
                 .find(|frame| frame.contains("::profiling::Profile"))
         );
+        debug_log!("...current backtrace: {:#?}", current_backtrace);
         return;
     }
 
@@ -532,6 +533,7 @@ fn record_dealloc(address: usize, size: usize) {
                     .iter()
                     .find(|frame| frame.contains("::profiling::Profile"))
             );
+            debug_log!("...current backtrace: {:#?}", current_backtrace);
             return;
         }
 

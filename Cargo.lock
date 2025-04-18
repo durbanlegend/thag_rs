@@ -630,32 +630,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crokey"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "520e83558f4c008ac06fa6a86e5c1d4357be6f994cce7434463ebcdaadf47bb1"
-dependencies = [
- "crokey-proc_macros",
- "crossterm 0.28.1",
- "once_cell",
- "serde",
- "strict",
-]
-
-[[package]]
-name = "crokey-proc_macros"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "370956e708a1ce65fe4ac5bb7185791e0ece7485087f17736d54a23a0895049f"
-dependencies = [
- "crossterm 0.28.1",
- "proc-macro2 1.0.95",
- "quote 1.0.40",
- "strict",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "crossbeam-channel"
 version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1169,17 +1143,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "futures-macro"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
-dependencies = [
- "proc-macro2 1.0.95",
- "quote 1.0.40",
- "syn 2.0.99",
-]
-
-[[package]]
 name = "futures-sink"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1200,7 +1163,6 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-io",
- "futures-macro",
  "futures-sink",
  "futures-task",
  "memchr",
@@ -2832,17 +2794,6 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.109"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
-dependencies = [
- "proc-macro2 1.0.95",
- "quote 1.0.40",
- "unicode-ident",
-]
-
-[[package]]
-name = "syn"
 version = "2.0.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e02e925281e18ffd9d640e234264753c43edc62d64b2d4cf898f1bc5e75f3fc2"
@@ -2928,10 +2879,12 @@ checksum = "f18aa187839b2bdb1ad2fa35ead8c4c2976b64e4363c386d45ac0f7ee85c9233"
 name = "thag_proc_macros"
 version = "0.1.2"
 dependencies = [
+ "crossterm 0.29.0",
  "inline_colorization",
  "prettyplease",
  "proc-macro2 1.0.95",
  "quote 1.0.40",
+ "strict",
  "syn 2.0.99",
  "toml",
 ]
@@ -2943,7 +2896,6 @@ dependencies = [
  "backtrace",
  "chrono",
  "dirs",
- "futures",
  "inferno",
  "inquire",
  "once_cell",
@@ -2971,7 +2923,6 @@ dependencies = [
  "chrono",
  "clap",
  "criterion",
- "crokey",
  "crossterm 0.29.0",
  "directories",
  "document-features",
@@ -2999,6 +2950,7 @@ dependencies = [
  "serial_test",
  "side-by-side-diff",
  "simplelog",
+ "strict",
  "strum 0.27.1",
  "supports-color",
  "syn 2.0.99",

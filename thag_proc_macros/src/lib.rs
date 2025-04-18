@@ -9,6 +9,7 @@ mod palette_methods;
 mod preload_themes;
 mod repeat_dash;
 mod tool_errors;
+mod tui_keys;
 
 #[cfg(feature = "time_profiling")]
 mod enable_profiling;
@@ -29,6 +30,8 @@ use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
 use crate::repeat_dash::repeat_dash_impl;
 use crate::tool_errors::tool_errors_impl;
+use crate::tui_keys::key_impl;
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_file, parse_str, Expr};
@@ -133,6 +136,13 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
     // });
 
     maybe_expand_proc_macro(false, "category_enum", &input, category_enum_impl)
+}
+
+// Not public API. This is internal and to be used only by `key!`.
+#[doc(hidden)]
+#[proc_macro]
+pub fn key(input: TokenStream) -> TokenStream {
+    key_impl(input)
 }
 
 /// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.

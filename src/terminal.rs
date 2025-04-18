@@ -5,7 +5,7 @@
 
 use crate::styling::{ColorSupport, TermBgLuma};
 use crate::{lazy_static_var, vlog, ThagError, ThagResult, V};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
+use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use std::io::{stdout, Write};
 use supports_color::Stream;
 use thag_profiler::profiled;

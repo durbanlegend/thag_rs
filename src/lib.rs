@@ -116,6 +116,8 @@ pub mod terminal; // Colour support and theme detection
 /// TUI file dialog
 #[cfg(feature = "tui")]
 pub mod file_dialog;
+#[cfg(feature = "tui")]
+pub mod keys;
 /// Paste-and-run and standard input handling
 #[cfg(feature = "tui")]
 pub mod stdin;
@@ -179,7 +181,7 @@ pub use config::{
 
 #[cfg(feature = "tui")]
 pub use {
-    crokey::KeyCombination,
+    keys::KeyCombination,
     tui_editor::{CrosstermEventReader, EventReader, KeyDisplayLine, MockEventReader},
 };
 
@@ -208,3 +210,25 @@ pub const TOML_NAME: &str = "Cargo.toml";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
+
+/// Copied from `crokey` under MIT licence.
+/// Copyright (c) 2022 Canop
+///
+pub mod __private {
+    pub use ratatui::crossterm;
+    pub use strict::OneToThree;
+    pub use thag_proc_macros::key;
+
+    pub use crate::KeyCombination;
+    use ratatui::crossterm::event::KeyModifiers;
+    pub const MODS: KeyModifiers = KeyModifiers::NONE;
+    pub const MODS_CTRL: KeyModifiers = KeyModifiers::CONTROL;
+    pub const MODS_ALT: KeyModifiers = KeyModifiers::ALT;
+    pub const MODS_SHIFT: KeyModifiers = KeyModifiers::SHIFT;
+    pub const MODS_CTRL_ALT: KeyModifiers = KeyModifiers::CONTROL.union(KeyModifiers::ALT);
+    pub const MODS_ALT_SHIFT: KeyModifiers = KeyModifiers::ALT.union(KeyModifiers::SHIFT);
+    pub const MODS_CTRL_SHIFT: KeyModifiers = KeyModifiers::CONTROL.union(KeyModifiers::SHIFT);
+    pub const MODS_CTRL_ALT_SHIFT: KeyModifiers = KeyModifiers::CONTROL
+        .union(KeyModifiers::ALT)
+        .union(KeyModifiers::SHIFT);
+}

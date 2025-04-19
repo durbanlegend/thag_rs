@@ -1,7 +1,7 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
-// mod end;
+mod end;
 mod file_navigator;
 mod fn_name;
 mod generate_theme_types;
@@ -24,7 +24,7 @@ mod profile;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
-// use crate::end::end_impl;
+use crate::end::end_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
@@ -235,13 +235,17 @@ fn expand_output(name: &str, output: &TokenStream) {
                 eprintln!(
                             "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
                         );
-                // eprintln!("{token_str}");
                 eprintln!("{}", quote!(#expr));
                 eprintln!("{style_reset}{dash_line}{style_reset}");
             }
-            Err(e) => {
-                eprintln!("Failed to parse tokens as file or expression: {e:?}");
+            Err(_e) => {
+                // eprintln!("Failed to parse tokens as file or expression: {e:?}");
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                            "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
+                        );
                 eprintln!("Token string: {token_str}");
+                eprintln!("{style_reset}{dash_line}{style_reset}");
             }
         },
     }
@@ -309,25 +313,25 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
 }
 
-// /// Creates a function with the name specified in the string literal
-// /// that returns the line number where the function is called.
-// ///
-// /// # Example
-// ///
-// /// ```
-// /// use thag_profiler::end;
-// ///
-// /// // Intended for use with `profile!("my_section", detailed_memory)`,
-// /// // so `profile!` can get section end line number
-// /// println!("Current line: {}", end_my_section()); // prints the `end!` line number
-// ///
-// /// end!("get_line");
-// ///
-// /// ```
-// #[proc_macro]
-// pub fn end(input: TokenStream) -> TokenStream {
-//     maybe_expand_proc_macro(true, "end", &input, end_impl)
-// }
+/// Creates a function with the name specified in the string literal
+/// that returns the line number where the function is called.
+///
+/// # Example
+///
+/// ```
+/// use thag_profiler::end;
+///
+/// // Intended for use with `profile!("my_section", detailed_memory)`,
+/// // so `profile!` can get section end line number
+/// println!("Current line: {}", end_my_section()); // prints the `end!` line number
+///
+/// end!("get_line");
+///
+/// ```
+#[proc_macro]
+pub fn end(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(true, "end", &input, end_impl)
+}
 
 #[cfg(feature = "time_profiling")]
 #[proc_macro]

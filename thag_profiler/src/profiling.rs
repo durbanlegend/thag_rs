@@ -13,7 +13,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{debug_log, static_lazy, ProfileError};
+use crate::{debug_log, static_lazy, task_allocator::current_allocator, ProfileError};
 
 #[cfg(feature = "full_profiling")]
 use crate::{
@@ -1992,10 +1992,53 @@ impl Drop for Profile {
 
             // Handle memory profiling
             if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
+                // let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
+                // let mut already_seen = HashSet::new();
+
+                // let cleaned_stack_trace: Vec<String> = Backtrace::frames(&Backtrace::new())
+                //     .iter()
+                //     .flat_map(BacktraceFrame::symbols)
+                //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+                //     .skip_while(|name| !name.contains("drop") || name.contains("{{closure}}"))
+                //     // Be careful, this is very sensitive to changes in the function signatures of this module.
+                //     .skip(1)
+                //     .take_while(|name| !name.contains(end_point))
+                //     .filter(|name| filter_scaffolding(name))
+                //     .map(strip_hex_suffix)
+                //     .map(|mut name| {
+                //         // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+                //         clean_function_name(&mut name)
+                //     })
+                //     // TODO May be problematic? - this will collapse legitimate nesting, but protects against recursion
+                //     .filter(|name| {
+                //         // Skip duplicate function calls (helps with the {{closure}} pattern)
+                //         if already_seen.contains(name.as_str()) {
+                //             false
+                //         } else {
+                //             already_seen.insert(name.clone());
+                //             true
+                //         }
+                //     })
+                //     // .map(|(_, name)| name.clone())
+                //     .collect();
+
                 // debug_log!(
-                //     "In drop for Profile with memory profiling: {}",
+                //     "In drop for Profile with memory profiling: {}, cleaned stack trace={cleaned_stack_trace:#?}",
                 //     self.registered_name
                 // );
+
+                let start_line = self.start_line();
+                let end_line = self.end_line();
+                let type_desc = match (start_line, end_line) {
+                    (None, None) => "function",
+                    (None, Some(_)) => "unexpected",
+                    (Some(_), None) => "unbounded section, so dropped by user code, but allocation tracker should filter deallocations",
+                    (Some(_), Some(_)) => "bounded section",
+                };
+                debug_log!(
+                    "In drop for Profile with memory profiling: {}. Type is {type_desc}.",
+                    self.registered_name
+                );
 
                 // First drop the guard to exit the task context
                 self.memory_guard = None;
@@ -2022,30 +2065,6 @@ impl Drop for Profile {
                     );
                 }
             }
-
-            // // Register this profile with the new ProfileRegistry
-            // // This only happens if the profile has an end_line, meaning it was properly ended
-            // if self.detailed_memory && self.end_line.is_some() {
-            //     // First log the details to avoid potential deadlock
-            //     debug_log!(
-            //         "About to register profile in module {} with line range {}..{:?} for detailed memory tracking",
-            //         self.file_name,
-            //         self.start_line,
-            //         self.end_line
-            //     );
-
-            //     // Flush logs before calling register_profile
-            //     flush_debug_log();
-
-            //     // Now register the profile
-            //     crate::mem_alloc::register_profile(self);
-
-            //     // Log again after registration completes
-            //     debug_log!(
-            //         "Successfully registered profile in module {} for detailed memory tracking",
-            //         self.file_name
-            //     );
-            // }
 
             debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
             flush_debug_log();
@@ -2322,15 +2341,19 @@ pub enum MemoryError {
     DeltaCalculationFailed,
 }
 
-#[macro_export]
-#[cfg(feature = "time_profiling")]
-macro_rules! end {
-    ($name:expr) => {
-        $crate::paste::paste! {
-            fn [<end_ $name>]() -> u32 { line!() }
-        }
-    };
-}
+// #[macro_export]
+// #[cfg(feature = "time_profiling")]
+// macro_rules! end {
+//     ($name:expr) => {
+//         $crate::paste::paste! {
+//             fn [<end_ $name>]() -> u32 { line!() }
+
+//             ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+//                 drop(section_profile);
+//             });
+//         };
+//     };
+// }
 
 #[derive(Default)]
 pub struct ProfileStats {

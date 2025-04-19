@@ -72,7 +72,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
     // Generate the profile creation code
     #[cfg(not(feature = "full_profiling"))]
     let expanded = quote! {
-        ::thag_profiler::Profile::new(
+        let section_profile = ::thag_profiler::Profile::new(
             Some(#name),
             None,
             #profile_type,
@@ -81,12 +81,12 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
             module_path!().to_string(),
             #start_line,
             #end_line
-        )
+        );
     };
 
     #[cfg(feature = "full_profiling")]
     let expanded = quote! {
-        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+        let section_profile = ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
             ::thag_profiler::Profile::new(
                 Some(#name),
                 None,
@@ -97,7 +97,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
                 #start_line,
                 #end_line
             )
-        })
+        });
     };
 
     expanded.into()

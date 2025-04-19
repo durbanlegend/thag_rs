@@ -15,6 +15,11 @@ pub fn end_impl(input: TokenStream) -> TokenStream {
     // Generate the function that returns line!()
     let expanded = quote! {
         fn #func_name() -> u32 { line!() }
+
+        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+            drop(section_profile);
+        });
+
     };
 
     // Return the generated code

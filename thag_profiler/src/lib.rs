@@ -49,12 +49,6 @@ mod mem_alloc;
 use std::fmt::Display;
 
 #[cfg(feature = "time_profiling")]
-use backtrace::{Backtrace, BacktraceFrame};
-
-// #[cfg(feature = "time_profiling")]
-// pub use crate::profiling::{disable_profiling, enable_profiling};
-
-#[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
 // Re-exports
@@ -84,7 +78,7 @@ pub use {
 };
 
 #[cfg(feature = "time_profiling")]
-pub use thag_proc_macros::{enable_profiling, profile, profiled};
+pub use thag_proc_macros::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "time_profiling")]
 pub use profiling::PROFILING_MUTEX;

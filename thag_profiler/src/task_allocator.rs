@@ -233,47 +233,69 @@ fn record_alloc(address: usize, size: usize) {
     debug_log!("file_names={file_names:#?}");
 
     // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
-    let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> = Backtrace::frames(&current_backtrace)
-        .iter()
-        .flat_map(BacktraceFrame::symbols)
-        .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
-        .inspect(|(maybe_filename, maybe_lineno, frame)| {
-            debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
-        })
-        .filter(|(maybe_filename, maybe_lineno, frame)| {
-            maybe_filename.is_some() && maybe_lineno.is_some() && frame.is_some() && !frame.as_ref().unwrap().to_string().starts_with('<')
-        })
-        .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
-            (
-                maybe_filename
-                    .unwrap()
-                    .to_owned()
-                    .as_path()
-                    .file_stem()
-                    .unwrap()
-                    .to_string_lossy()
-                    .to_string(),
-                maybe_lineno.unwrap(),
-                maybe_frame.unwrap().to_string(),
-            )
-        })
-        .inspect(|(filename, lineno, frame)| {
-            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-        })
-        .filter(|(filename, _, _)| (file_names.contains(filename)))
-        .inspect(|(filename, lineno, frame)| {
-            debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-        })
-        .map(|(filename, lineno, mut frame)| (filename, lineno, frame.clone(), clean_function_name(frame.as_mut_str())))
-        .map(|(filename, lineno, frame, fn_name)| (filename.clone(), lineno, frame, fn_name.clone(), find_profile(&filename, &fn_name, lineno)))
-        // .inspect(|(_, _, _, _, maybe_profile_ref)| {
-        //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
-        // })
-        .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
-        .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap()))
-        // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
-        // .cloned()
-        .collect();
+    let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> =
+        Backtrace::frames(&current_backtrace)
+            .iter()
+            .flat_map(BacktraceFrame::symbols)
+            .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
+            // .inspect(|(maybe_filename, maybe_lineno, frame)| {
+            //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
+            // })
+            .filter(|(maybe_filename, maybe_lineno, frame)| {
+                maybe_filename.is_some()
+                    && maybe_lineno.is_some()
+                    && frame.is_some()
+                    && !frame.as_ref().unwrap().to_string().starts_with('<')
+            })
+            .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
+                (
+                    maybe_filename
+                        .unwrap()
+                        .to_owned()
+                        .as_path()
+                        .file_stem()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string(),
+                    maybe_lineno.unwrap(),
+                    maybe_frame.unwrap().to_string(),
+                )
+            })
+            // .inspect(|(filename, lineno, frame)| {
+            //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+            // })
+            .filter(|(filename, _, _)| (file_names.contains(filename)))
+            // .inspect(|(_, _, _)| {
+            //     // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+            //     debug_log!("***File names match");
+            // })
+            .map(|(filename, lineno, mut frame)| {
+                (
+                    filename,
+                    lineno,
+                    frame.clone(),
+                    clean_function_name(frame.as_mut_str()),
+                )
+            })
+            .map(|(filename, lineno, frame, fn_name)| {
+                (
+                    filename.clone(),
+                    lineno,
+                    frame,
+                    fn_name.clone(),
+                    find_profile(&filename, &fn_name, lineno),
+                )
+            })
+            // .inspect(|(_, _, _, _, maybe_profile_ref)| {
+            //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
+            // })
+            .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
+            .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| {
+                (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap())
+            })
+            // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
+            // .cloned()
+            .collect();
     // .last() else {return};
 
     if func_and_ancestors.is_empty() {
@@ -505,7 +527,7 @@ fn record_dealloc(address: usize, size: usize) {
 
     if in_profile_code {
         debug_log!(
-            "Ignoring deallocation request of size {size} for profiler code: frame={:?}",
+            "Summary memory tracking ignoring deallocation request of size {size} for profiler code: frame={:?}",
             cleaned_stack
                 .iter()
                 .find(|frame| frame.contains("::profiling::Profile"))
@@ -525,7 +547,7 @@ fn record_dealloc(address: usize, size: usize) {
 
         if in_profile_code {
             debug_log!(
-                "Ignoring deallocation request of size {size} for profiler code: frame={:?}",
+                "Detailed memory tracking ignoring detailed deallocation request of size {size} for profiler code: frame={:?}",
                 detailed_stack
                     .iter()
                     .find(|frame| frame.contains("::profiling::Profile"))

@@ -192,7 +192,13 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
 
             // We pass None for the name as we rely on the backtrace to identify the function
             let profile = #profile_new;
-            #body
+            let result = { #body };
+
+            ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+                drop(profile);
+            });
+
+            result
         }
     }
 }
@@ -249,7 +255,12 @@ fn generate_async_wrapper(
                     let this = unsafe { self.as_mut().get_unchecked_mut() };
                     let result = unsafe { Pin::new_unchecked(&mut this.inner) }.poll(cx);
                     if result.is_ready() {
-                        this._profile.take();
+                        // Take the profile out so we can explicitly drop it with the System allocator
+                        if let Some(profile) = this._profile.take() {
+                            ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+                                drop(profile);
+                            });
+                        }
                     }
                     result
                 }

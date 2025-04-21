@@ -1,8 +1,8 @@
 use crate::{
     debug_log, flush_debug_log,
+    mem_tracking::{with_allocator, write_detailed_stack_alloc, Allocator},
     profiling::{clean_function_name, Profile},
     regex, strip_hex_suffix,
-    task_allocator::{with_allocator, write_detailed_stack_alloc, Allocator},
 };
 use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;

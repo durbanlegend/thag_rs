@@ -41,10 +41,10 @@ mod logging;
 pub mod profiling;
 
 #[cfg(feature = "full_profiling")]
-mod task_allocator;
+mod mem_tracking;
 
 #[cfg(feature = "full_profiling")]
-mod mem_alloc;
+mod mem_attribution;
 
 use std::fmt::Display;
 
@@ -68,13 +68,15 @@ pub use paste; // Re-export paste crate
 
 #[cfg(feature = "full_profiling")]
 pub use {
-    mem_alloc::{find_profile, record_allocation, register_profile, ProfileRef, PROFILE_REGISTRY},
-    profiling::extract_path,
-    task_allocator::{
+    mem_attribution::{
+        find_profile, record_allocation, register_profile, ProfileRef, PROFILE_REGISTRY,
+    },
+    mem_tracking::{
         create_memory_task, find_matching_task_id, get_last_active_task, get_task_memory_usage,
         trim_backtrace, with_allocator, Allocator, Dispatcher, TaskAwareAllocator, TaskGuard,
         TaskMemoryContext, ALLOC_REGISTRY,
     },
+    profiling::extract_path,
 };
 
 #[cfg(feature = "time_profiling")]
@@ -343,7 +345,7 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
             );
         } else {
             debug_log!("Initializing memory profiling");
-            task_allocator::initialize_memory_profiling();
+            mem_tracking::initialize_memory_profiling();
         }
     });
 }
@@ -404,7 +406,7 @@ pub fn finalize_profiling() {
         enable_profiling(false, None).expect("Failed to finalize profiling");
 
         if global_profile_type != ProfileType::Time {
-            task_allocator::finalize_memory_profiling();
+            mem_tracking::finalize_memory_profiling();
         }
 
         // Final flush to ensure all data is written

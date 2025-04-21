@@ -229,7 +229,11 @@ fn record_alloc(address: usize, size: usize) {
     // }
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-    let file_names = { crate::mem_alloc::PROFILE_REGISTRY.lock().get_file_names() };
+    let file_names = {
+        crate::mem_attribution::PROFILE_REGISTRY
+            .lock()
+            .get_file_names()
+    };
     debug_log!("file_names={file_names:#?}");
 
     // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
@@ -321,7 +325,7 @@ fn record_alloc(address: usize, size: usize) {
     // Try to record the allocation in the new profile registry
     if !filename.is_empty()
         && *lineno > 0
-        && crate::mem_alloc::record_allocation(
+        && crate::mem_attribution::record_allocation(
             filename,
             fn_name,
             *lineno,

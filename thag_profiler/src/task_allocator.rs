@@ -11,7 +11,7 @@ use crate::{
     is_detailed_memory, lazy_static_var,
     profiling::{
         clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
-        get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
+        get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path, get_reg_desc_name,
         is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
         START_TIME,
     },
@@ -461,7 +461,13 @@ pub fn write_detailed_stack_alloc(
         // format!("[out_of_bounds] +{}", size)
         format!("[out_of_bounds] +{size}")
     } else {
-        format!("{} +{size}", detailed_stack.join(";"))
+        let descr_stack = &detailed_stack
+            .iter()
+            .map(|raw_str| get_reg_desc_name(raw_str).unwrap_or_else(|| raw_str.to_string()))
+            .collect::<Vec<String>>()
+            .join(";");
+
+        format!("{} +{size}", descr_stack)
     };
 
     let (memory_path, file) = if write_to_detail_file {

@@ -13,7 +13,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{debug_log, static_lazy, task_allocator::current_allocator, ProfileError};
+use crate::{debug_log, static_lazy, ProfileError};
 
 #[cfg(feature = "full_profiling")]
 use crate::{

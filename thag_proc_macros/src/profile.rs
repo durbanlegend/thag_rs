@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
@@ -61,18 +61,19 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
         (quote! { Some(line!()) }, quote! { None })
     } else {
         // Memory with bounded - need end marker
-        // let end_fn_name = format!("end_{}", name.value());
-        // let end_fn_ident = format_ident!("{}", end_fn_name);
         (
             quote! { Some(line!()) },
             quote! { Some(::thag_profiler::paste::paste! { [<end_ #name>]() }) },
         )
     };
 
+    let profile_id_str = name.value();
+    let profile_id = format_ident!("{profile_id_str}");
+
     // Generate the profile creation code
     #[cfg(not(feature = "full_profiling"))]
     let expanded = quote! {
-        let section_profile = ::thag_profiler::Profile::new(
+        let #profile_id = ::thag_profiler::Profile::new(
             Some(#name),
             None,
             #profile_type,
@@ -86,7 +87,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
 
     #[cfg(feature = "full_profiling")]
     let expanded = quote! {
-        let section_profile = ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+        let #profile_id = ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
             ::thag_profiler::Profile::new(
                 Some(#name),
                 None,

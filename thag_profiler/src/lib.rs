@@ -61,20 +61,18 @@ pub use {
         ProfileType,
     },
     thag_proc_macros::fn_name,
-    // Only re-export what users need from task_allocator
+    // Only re-export what users need from mem_tracking
 };
 
 pub use paste; // Re-export paste crate
 
 #[cfg(feature = "full_profiling")]
 pub use {
-    mem_attribution::{
-        find_profile, record_allocation, register_profile, ProfileRef, PROFILE_REGISTRY,
-    },
+    mem_attribution::{find_profile, register_profile, ProfileRef, PROFILE_REGISTRY},
     mem_tracking::{
         create_memory_task, find_matching_task_id, get_last_active_task, get_task_memory_usage,
-        trim_backtrace, with_allocator, Allocator, Dispatcher, TaskAwareAllocator, TaskGuard,
-        TaskMemoryContext, ALLOC_REGISTRY,
+        record_allocation, trim_backtrace, with_allocator, Allocator, Dispatcher,
+        TaskAwareAllocator, TaskGuard, TaskMemoryContext, ALLOC_REGISTRY,
     },
     profiling::extract_path,
 };

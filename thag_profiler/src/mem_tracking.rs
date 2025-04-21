@@ -34,7 +34,7 @@ use std::{
 };
 
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
-    LazyLock::new(|| regex!("thag_profiler::task_allocator.+Dispatcher"));
+    LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
 // ========== MEMORY ALLOCATOR DEFINITION ==========
 
@@ -325,7 +325,7 @@ fn record_alloc(address: usize, size: usize) {
     // Try to record the allocation in the new profile registry
     if !filename.is_empty()
         && *lineno > 0
-        && crate::mem_attribution::record_allocation(
+        && record_allocation(
             filename,
             fn_name,
             *lineno,
@@ -444,6 +444,57 @@ pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
     );
 }
 
+/// Record an allocation with the profile registry based on module path and line number
+pub fn record_allocation(
+    file_name: &str,
+    fn_name: &str,
+    line: u32,
+    size: usize,
+    address: usize,
+    current_backtrace: &mut Backtrace,
+) -> bool {
+    with_allocator(Allocator::System, || {
+        // First log (acquires debug log mutex)
+        debug_log!(
+            "Looking for profile to record allocation: module={file_name}, fn={fn_name}, line={line}, size={size}"
+        );
+
+        // Flush to release the debug log mutex
+        flush_debug_log();
+
+        // Print list of registered modules to help diagnose issues
+        {
+            let modules = crate::mem_attribution::PROFILE_REGISTRY
+                .lock()
+                .get_file_names();
+            debug_log!("Available modules in registry: {modules:?}");
+            flush_debug_log();
+        }
+
+        // Now acquire the PROFILE_REGISTRY mutex
+        let result;
+        {
+            debug_log!("About to call record_allocation on registry");
+            result = crate::mem_attribution::PROFILE_REGISTRY
+                .lock()
+                .record_allocation(file_name, fn_name, line, size, address, current_backtrace);
+            debug_log!("record_allocation on registry returned {result}");
+        }
+
+        // Log after releasing the mutex
+        if result {
+            debug_log!(
+                "Successfully recorded allocation of {size} bytes in module {file_name}::{fn_name} at line {line}"
+            );
+        } else {
+            debug_log!("No matching profile found to record allocation of {size} bytes in module {file_name}::{fn_name} at line {line}");
+        }
+        flush_debug_log();
+
+        result
+    })
+}
+
 pub fn write_detailed_alloc(
     size: usize,
     start_pattern: &Regex,
@@ -525,7 +576,7 @@ fn record_dealloc(address: usize, size: usize) {
     // let start_ident = Instant::now();
     // let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
-    let start_pattern: &Regex = regex!("thag_profiler::task_allocator.+Dispatcher");
+    let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
 
     // debug_log!("Calling extract_callstack");
     let mut current_backtrace = Backtrace::new_unresolved();

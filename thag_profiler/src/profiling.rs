@@ -1328,7 +1328,7 @@ impl Profile {
         }
 
         // For full profiling (specifically memory), run this method using the system allocator
-        // so as not to clog the allocation tracking in mod task_allocator.
+        // so as not to clog the allocation tracking in mod mem_tracking.
         with_allocator(Allocator::System, || -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
@@ -2283,7 +2283,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "core::",
     "core::ops::function::FnOnce::call_once",
     "hashbrown",
-    "task_allocator::with_allocator",
+    "mem_tracking::with_allocator",
     "mio::",
     "std::panic::catch_unwind",
     "std::panicking",
@@ -2293,7 +2293,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "std::sys::sync::",
     "std::sys::thread_local",
     "std::thread",
-    "task_allocator::MultiAllocator::with",
+    "mem_tracking::MultiAllocator::with",
     // "Profile::new",
 ];
 

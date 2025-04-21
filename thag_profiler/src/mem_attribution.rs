@@ -207,7 +207,7 @@ impl ProfileRegistry {
                 if profile_ref.detailed_memory {
                     // let detailed_stack =
                     //     extract_detailed_alloc_callstack(&ALLOC_START_PATTERN, current_backtrace);
-                    let start_pattern: &Regex = regex!("thag_profiler::task_allocator.+Dispatcher");
+                    let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
                     let end_point = profile.fn_name();
                     current_backtrace.resolve();
                     let mut already_seen = HashSet::new();
@@ -294,60 +294,6 @@ pub fn register_profile(profile: &Profile) {
         let mut registry = PROFILE_REGISTRY.lock();
         registry.register_profile(profile);
     });
-}
-
-/// Record an allocation with the global registry based on module path and line number
-pub fn record_allocation(
-    file_name: &str,
-    fn_name: &str,
-    line: u32,
-    size: usize,
-    address: usize,
-    current_backtrace: &mut Backtrace,
-) -> bool {
-    with_allocator(Allocator::System, || {
-        // First log (acquires debug log mutex)
-        debug_log!(
-            "Looking for profile to record allocation: module={file_name}, fn={fn_name}, line={line}, size={size}"
-        );
-
-        // Flush to release the debug log mutex
-        flush_debug_log();
-
-        // Print list of registered modules to help diagnose issues
-        {
-            let modules = PROFILE_REGISTRY.lock().get_file_names();
-            debug_log!("Available modules in registry: {modules:?}");
-            flush_debug_log();
-        }
-
-        // Now acquire the PROFILE_REGISTRY mutex
-        let result;
-        {
-            debug_log!("About to call record_allocation on registry");
-            result = PROFILE_REGISTRY.lock().record_allocation(
-                file_name,
-                fn_name,
-                line,
-                size,
-                address,
-                current_backtrace,
-            );
-            debug_log!("record_allocation on registry returned {result}");
-        }
-
-        // Log after releasing the mutex
-        if result {
-            debug_log!(
-                "Successfully recorded allocation of {size} bytes in module {file_name}::{fn_name} at line {line}"
-            );
-        } else {
-            debug_log!("No matching profile found to record allocation of {size} bytes in module {file_name}::{fn_name} at line {line}");
-        }
-        flush_debug_log();
-
-        result
-    })
 }
 
 /// Find a profile for a specific module path and line number

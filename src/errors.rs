@@ -79,6 +79,15 @@ impl From<FromUtf8Error> for ThagError {
 impl From<io::Error> for ThagError {
     #[profiled]
     fn from(err: io::Error) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            // Get more details about the error in debug mode
+            use std::backtrace::Backtrace;
+            eprintln!("IO Error: {err}");
+            eprintln!("Kind: {:?}", err.kind());
+            eprintln!("Raw OS Error: {:?}", err.raw_os_error());
+            eprintln!("Location: {}", Backtrace::capture());
+        }
         Self::Io(err)
     }
 }

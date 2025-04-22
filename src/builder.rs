@@ -1290,18 +1290,17 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     });
 
     #[allow(clippy::option_if_let_else)]
-    let executable_name = if let Some(name) = name_option {
+    let executable_stem = if let Some(name) = name_option {
         name
     } else {
-        #[cfg(target_os = "windows")]
-        {
-            format!("{}.exe", build_state.source_stem)
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            build_state.source_stem.to_string()
-        }
+        build_state.source_stem.to_string()
     };
+
+    #[cfg(target_os = "windows")]
+    let executable_name = format!("{executable_stem}.exe");
+
+    #[cfg(not(target_os = "windows"))]
+    let executable_name = executable_stem;
 
     let executable_path = &build_state
         .target_dir_path

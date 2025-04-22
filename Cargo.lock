@@ -2917,6 +2917,7 @@ name = "thag_rs"
 version = "0.1.9"
 dependencies = [
  "assert_cmd",
+ "backtrace",
  "bitflags 2.9.0",
  "cargo-lookup",
  "cargo_toml",

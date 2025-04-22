@@ -1309,7 +1309,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
         .join(&executable_name);
     let output_path = cargo_bin_path.join(&build_state.source_stem);
     debug_log!("executable_path={executable_path:#?}, output_path={output_path:#?}");
+    #[cfg(not(target_os = "windows"))]
     fs::rename(executable_path, output_path)?;
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, rename can fail across drives/volumes, so use copy+delete instead
+        fs::copy(executable_path, &output_path)?;
+        fs::remove_file(executable_path)?;
+    }
 
     // let dash_line = "─".repeat(&FLOWER_BOX_LEN);
     repeat_dash!(70);

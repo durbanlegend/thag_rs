@@ -1290,35 +1290,40 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     });
 
     #[allow(clippy::option_if_let_else)]
-    let executable_name = if let Some(name) = name_option {
+    let executable_stem = if let Some(name) = name_option {
         name
     } else {
         build_state.source_stem.to_string()
     };
 
-    #[cfg(target_os = "windows")]
-    let executable_name = format!("{executable_name}.exe");
-
-    let executable_path = &build_state
-        .target_dir_path
-        .join("target/release")
-        .join(&executable_name);
-
+    // #[cfg(target_os = "windows")]
+    let release_path = &build_state.target_dir_path.join("target/release");
     let output_path = cargo_bin_path.join(&build_state.source_stem);
-    #[cfg(target_os = "windows")]
-    {
-        let mut output_path = output_path.clone();
-        output_path.push(".exe");
-    }
 
-    debug_log!("executable_path={executable_path:#?}, output_path={output_path:#?}");
     #[cfg(not(target_os = "windows"))]
-    fs::rename(executable_path, output_path)?;
+    {
+        let executable_path = release_path.join(&executable_name);
+        debug_log!("executable_path={executable_path:#?},  output_path={output_path:#?}");
+        fs::rename(executable_path, output_path)?;
+    }
+    
     #[cfg(target_os = "windows")]
     {
+        let executable_name = format!("{executable_stem}.exe");
+        let executable_path = release_path.join(&executable_name);
+        let pdb_name = format!("{executable_stem}.pdb");
+        let pdb_path = release_path.join(pdb_name);
+        let mut output_path_exe = output_path.clone();
+        output_path_exe.set_extension("exe");
+        let mut output_path_pdb = output_path.clone();
+        output_path_pdb.set_extension("pdb");
+
+        debug_log!("executable_path={executable_path:#?}, pdb_path={pdb_path:#?}, output_path_exe={output_path_exe:#?}, output_path_pdb={output_path_pdb:#?}");
+        eprintln!("executable_path={executable_path:#?}, pdb_path={pdb_path:#?}, output_path_exe={output_path_exe:#?}, output_path_pdb={output_path_pdb:#?}");
         // On Windows, rename can fail across drives/volumes, so use copy+delete instead
-        fs::copy(executable_path, &output_path)?;
-        fs::remove_file(executable_path)?;
+        fs::copy(executable_path, &output_path_exe)?;
+        fs::copy(pdb_path, &output_path_pdb)?;
+        // fs::remove_file(executable_path)?;
     }
 
     // let dash_line = "─".repeat(&FLOWER_BOX_LEN);
@@ -1327,7 +1332,7 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
 
     vlog!(
         V::QQ,
-        "Executable built and moved to ~/{cargo_bin_subdir}/{executable_name}"
+        "Executable built and moved to ~/{cargo_bin_subdir}/{executable_stem}"
     );
 
     cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");

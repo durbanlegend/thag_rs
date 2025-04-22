@@ -36,7 +36,6 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Check if profile! should still be using module_path!().
-- [ ]  Better name for mem_alloc module? E.g. registry?
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

@@ -1315,6 +1315,8 @@ impl Profile {
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
+        use crate::mem_attribution::register_profile;
+
         if !is_profiling_enabled() {
             return None;
         }
@@ -1427,7 +1429,7 @@ impl Profile {
                 flush_debug_log();
 
                 // Now register the profile
-                crate::mem_attribution::register_profile(&profile);
+                register_profile(&profile);
 
                 // Log again after registration completes
                 debug_log!(
@@ -1497,7 +1499,7 @@ impl Profile {
             flush_debug_log();
 
             // Now register the profile
-            crate::mem_attribution::register_profile(&profile);
+            register_profile(&profile);
 
             // Log again after registration completes
             debug_log!(

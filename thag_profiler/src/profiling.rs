@@ -653,6 +653,9 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
                 debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
             }
         }
+        ProfileType::None => {
+            debug_log!("ProfileType::None selected: no profiling will be done");
+        }
     }
     flush_debug_log();
     Ok(true)
@@ -712,7 +715,7 @@ pub fn get_global_profile_type() -> ProfileType {
             // );
             ProfileConfig::get()
                 .profile_type
-                .expect("Missing profile type")
+                .unwrap_or(ProfileType::None)
         }
     }
 }
@@ -744,6 +747,7 @@ fn set_global_profile_type(profile_type: ProfileType) {
         ProfileType::Time => 1,
         ProfileType::Memory => 2,
         ProfileType::Both => 3,
+        ProfileType::None => 0,
     };
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
     debug_log!("set_global_profile_type (full): stored value={}", value);
@@ -961,6 +965,7 @@ pub enum ProfileType {
     Memory,
     #[default]
     Both,
+    None,
 }
 
 impl ProfileType {
@@ -982,6 +987,7 @@ impl Display for ProfileType {
             Self::Time => write!(f, "time"),
             Self::Memory => write!(f, "memory"),
             Self::Both => write!(f, "both"),
+            Self::None => write!(f, "none"),
         }
     }
 }
@@ -1987,7 +1993,7 @@ impl Drop for Profile {
                             let _ = self.write_time_event(elapsed);
                         }
                     }
-                    ProfileType::Memory => (),
+                    ProfileType::Memory | ProfileType::None => (),
                 }
             }
             debug_log!("Time to write event: {}ms", start.elapsed().as_millis());

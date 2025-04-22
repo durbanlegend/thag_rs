@@ -23,6 +23,8 @@ pub enum ProfileType {
     Memory,
     #[default]
     Both,
+    #[allow(dead_code)]
+    None, // This variant is used in the codebase even though the diagnostic says otherwise
 }
 
 /// Configuration for `enable_profiling` attribute macro
@@ -241,7 +243,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         Some(ProfileType::Time) => quote! {
             Some(ProfileType::Time)
         },
-        None => quote! {
+        Some(ProfileType::None) | None => quote! {
             None
         },
     };

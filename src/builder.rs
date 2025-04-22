@@ -504,7 +504,7 @@ impl ScriptState {
 // #[profiled]
 pub fn execute(args: &mut Cli) -> ThagResult<()> {
     // Instrument the entire function
-    // let execute = profile!("execute", time);
+    // profile!("execute", time);
 
     let start = Instant::now();
 
@@ -641,7 +641,7 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> ThagResult<()> {
-    // let process = profile!("process", time);
+    // profile!("process", time);
     let is_repl = args.repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -1003,7 +1003,7 @@ pub fn generate(
     vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
-        let _profile_section = profile!("transform_snippet", time);
+        profile!("transform_snippet", time);
         // TODO make this configurable
         let rs_source: &str = {
             #[cfg(feature = "format_snippet")]
@@ -1331,7 +1331,7 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
 /// that runs the user script.
 #[profiled]
 pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) -> ThagResult<()> {
-    // let run = profile!("run", time);
+    // profile!("run", time);
 
     let start_run = Instant::now();
     #[cfg(debug_assertions)]

@@ -50,7 +50,7 @@ pub enum Theme {
 #[cfg(not(target_os = "windows"))]
 #[must_use]
 pub fn terminal() -> Terminal {
-    let terminal = profile!("terminal", time);
+    profile!("terminal", time);
     if env::var("INSIDE_EMACS").is_ok() {
         return Terminal::Emacs;
     }
@@ -70,7 +70,7 @@ pub fn terminal() -> Terminal {
 /// get detected terminal
 #[cfg(target_os = "windows")]
 pub fn terminal() -> Terminal {
-    let terminal = profile!("terminal", time);
+    profile!("terminal", time);
     // Although xterm OSC is MS's roadmap, as of 2024-10-16, only Windows Terminal 1.22 (preview)
     // supports *querying* rgb values. In the mean time, there is effectively no way to query
     // Windows color schemes.
@@ -111,7 +111,7 @@ pub fn terminal() -> Terminal {
 /// This function will return an error if the terminal is of type Emacs.
 #[cfg(not(target_os = "windows"))]
 pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
-    let rgb = profile!("rgb", time);
+    profile!("rgb", time);
     let term = terminal();
 
     let rgb = match term {
@@ -131,7 +131,7 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
 /// get background color by `RGB`
 #[cfg(target_os = "windows")]
 pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
-    let rgb = profile!("rgb", time);
+    profile!("rgb", time);
     let term = terminal();
     let rgb = match term {
         Terminal::Emacs => Err(ThagError::UnsupportedTerm),
@@ -155,7 +155,7 @@ pub fn rgb(timeout: Duration) -> ThagResult<Rgb> {
 ///
 /// This function will bubble up any errors returned by `rgb`.
 pub fn theme(timeout: Duration) -> ThagResult<Theme> {
-    let theme = profile!("theme", time);
+    profile!("theme", time);
     let rgb = rgb(timeout)?;
 
     // ITU-R BT.601
@@ -174,7 +174,7 @@ pub fn theme(timeout: Duration) -> ThagResult<Theme> {
 // Function to enable virtual terminal processing for Windows
 #[cfg(target_os = "windows")]
 fn enable_virtual_terminal_processing() -> bool {
-    let enable_virtual_terminal_processing = profile!("enable_virtual_terminal_processing", time);
+    profile!("enable_virtual_terminal_processing", time);
     lazy_static_fn!(
         bool,
         deref
@@ -202,7 +202,7 @@ fn enable_virtual_terminal_processing() -> bool {
 }
 
 fn from_xterm(term: Terminal, timeout: Duration) -> ThagResult<Rgb> {
-    let from_xterm = profile!("from_xterm", time);
+    profile!("from_xterm", time);
     if !std::io::stdin().is_terminal()
         || !std::io::stdout().is_terminal()
         || !std::io::stderr().is_terminal()
@@ -267,7 +267,7 @@ where
     R: EventReader + Debug,
     W: Write + Debug,
 {
-    let query_xterm = profile!("query_xterm", time);
+    profile!("query_xterm", time);
     // Query by XTerm control sequence
     let query = match term {
         Terminal::Tmux => "\x1bPtmux;\x1b\x1b]11;?\x07\x1b\\",
@@ -337,7 +337,7 @@ where
 }
 
 fn decode_unterminated(response: &str) -> ThagResult<&str> {
-    let decode_unterminated = profile!("decode_unterminated", time);
+    profile!("decode_unterminated", time);
     let resp_start = response
         .find("rgb:")
         .ok_or("Required string `rgb:` not found in response")?;
@@ -371,7 +371,7 @@ fn decode_unterminated(response: &str) -> ThagResult<&str> {
 }
 
 fn parse_response(response: &str, start_time: Instant) -> ThagResult<Rgb> {
-    let parse_response = profile!("parse_response", time);
+    profile!("parse_response", time);
     // debug!("response={response}\r");
     let (r, g, b) = extract_rgb(response)?;
     let elapsed = start_time.elapsed();
@@ -381,7 +381,7 @@ fn parse_response(response: &str, start_time: Instant) -> ThagResult<Rgb> {
 }
 
 fn extract_rgb(response: &str) -> ThagResult<(u16, u16, u16)> {
-    let extract_rgb = profile!("extract_rgb", time);
+    profile!("extract_rgb", time);
     let rgb_str = response
         .split_at(
             response
@@ -396,7 +396,7 @@ fn extract_rgb(response: &str) -> ThagResult<(u16, u16, u16)> {
 }
 
 fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    let restore_raw_status = profile!("restore_raw_status", time);
+    profile!("restore_raw_status", time);
     let raw_now = is_raw_mode_enabled()?;
     if raw_now == raw_before {
         return Ok(());
@@ -416,7 +416,7 @@ fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
 /// This function will return an error if Rust has decided that the "terminal" is not a terminal.
 // Helper function to discard extra characters
 fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
-    let clear_stdin = profile!("clear_stdin", time);
+    profile!("clear_stdin", time);
     while poll(Duration::from_millis(10))? {
         if let Event::Key(c) = read()? {
             // Discard the input by simply reading it
@@ -433,7 +433,7 @@ fn clear_stdin() -> Result<(), Box<dyn std::error::Error>> {
 /// This function will return an `UnsupportedTerm` error if there is no environment variable `COLORFGBG`,
 /// or a `FromStr` error if the value of that variable can not be parsed into integers.
 fn from_env_colorfgbg() -> ThagResult<Rgb> {
-    let from_env_colorfgbg = profile!("from_env_colorfgbg", time);
+    profile!("from_env_colorfgbg", time);
     let var = env::var("COLORFGBG").map_err(|_| ThagError::UnsupportedTerm)?;
     let fgbg: Vec<_> = var.split(';').collect();
     let bg = fgbg.get(1).ok_or(ThagError::UnsupportedTerm)?;
@@ -492,9 +492,9 @@ fn from_env_colorfgbg() -> ThagResult<Rgb> {
 ///
 /// This function will return a `FromStr` error if it fails to parse a hex colour code.
 fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
-    let decode_x11_color = profile!("decode_x11_color", time);
+    profile!("decode_x11_color", time);
     fn decode_hex(s: &str) -> ThagResult<u16> {
-        let decode_hex = profile!("decode_hex", time);
+        profile!("decode_hex", time);
         // debug!("s={s}\r");
         let len = s.len();
         let mut ret = u16::from_str_radix(s, 16).map_err(|_| s.to_string())?;
@@ -527,7 +527,7 @@ fn decode_x11_color(s: &str) -> ThagResult<(u16, u16, u16)> {
 /// This function will bubble up any errors returned by the Windows API.
 #[cfg(target_os = "windows")]
 fn from_winapi() -> ThagResult<Rgb> {
-    let from_winapi = profile!("from_winapi", time);
+    profile!("from_winapi", time);
     use winapi::um::wincon;
 
     debug!("In from_winapi()\r");

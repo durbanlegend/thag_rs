@@ -1309,7 +1309,7 @@ pub fn save_if_changed(
 //     textarea: &mut TextArea<'_>,
 //     history_path: &Option<PathBuf>,
 // ) -> ThagResult<()> {
-//     let save_if_changed = profile!("save_if_changed", time);
+//     profile!("save_if_changed", time);
 //     debug_log!("save_if_changed...");
 //     if textarea.is_empty() {
 //         debug_log!("nothing to save(1)...");

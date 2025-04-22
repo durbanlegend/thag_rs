@@ -293,17 +293,16 @@ impl std::fmt::Display for ThagError {
 impl Error for ThagError {
     #[profiled]
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            // The cause is the underlying implementation error type. Is implicitly
-            // cast to the trait object `&error::Error`. This works because the
-            // underlying type already implements the `Error` trait.
+        // Force all match arms to return the same type by providing an explicit type annotation
+        let result: Option<&(dyn Error + 'static)> = match self {
             #[cfg(feature = "bitflags")]
             Self::BitFlagsParse(e) => Some(e),
             Self::Cancelled => None,
             #[cfg(feature = "clap")]
             Self::ClapError(e) => Some(e),
             Self::Command(_) => None,
-            Self::Dyn(e) => Some(&**e),
+            // Use as_ref() to convert from Box<dyn Error + Send + Sync> to &dyn Error
+            Self::Dyn(e) => Some(e.as_ref()),
             Self::FromStr(_) => None,
             Self::FromUtf8(e) => Some(e),
             Self::Io(e) => Some(e),
@@ -331,7 +330,8 @@ impl Error for ThagError {
             Self::UnsupportedTerm(_) => None,
             Self::Validation(_) => None,
             Self::VarError(e) => Some(e),
-        }
+        };
+        result
     }
 }
 

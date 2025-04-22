@@ -10,7 +10,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, AnsiCodeDerive, PaletteMethods};
-use thag_profiler::{enable_profiling, profile, profiled};
+use thag_profiler::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg_rgb, is_light_color};
@@ -781,7 +781,7 @@ impl TermAttributes {
     #[profiled(imp = "TermAttributes")]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
-            let _instance_get_or_init_profile = profile!("instance_get_or_init", time);
+            profile!("instance_get_or_init", time);
             #[cfg(feature = "config")]
             let Some(_config) = maybe_config() else {
                 panic!("Error initializing configuration")
@@ -2271,7 +2271,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     }
 
     // Find closest color in the 6x6x6 color cube (16-231)
-    let profile_find_closest = profile!("find_closest", time);
+    profile!("find_closest_section", time);
     let find_closest = |v: u8| {
         u8::try_from(
             STEPS
@@ -2282,7 +2282,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
         )
         .map_or(0, |v| v)
     };
-    drop(profile_find_closest);
+    end!("find_closest_section");
 
     let r_idx = find_closest(r);
     let g_idx = find_closest(g);

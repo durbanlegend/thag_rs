@@ -27,7 +27,7 @@ pub struct ColorLevel {
 
 #[cfg(target_os = "windows")]
 pub fn get_color_level() -> Option<ColorSupport> {
-    let get_color_level = profile!("get_color_level", time);
+    profile!("get_color_level", time);
     let color_level = translate_level(supports_color());
     match color_level {
         Some(color_level) => {
@@ -46,7 +46,7 @@ pub fn get_color_level() -> Option<ColorSupport> {
 pub fn get_color_level() -> Option<ColorSupport> {
     use crate::styling::ColorSupport;
 
-    let get_color_level = profile!("get_color_level", time);
+    profile!("get_color_level", time);
     #[cfg(debug_assertions)]
     debug_log!("About to call supports_color");
     let color_level = supports_color::on(Stream::Stdout);
@@ -61,7 +61,7 @@ pub fn get_color_level() -> Option<ColorSupport> {
 
 #[cfg(target_os = "windows")]
 fn env_force_color() -> usize {
-    let env_force_color = profile!("env_force_color", time);
+    profile!("env_force_color", time);
     if let Ok(force) = env::var("FORCE_COLOR") {
         match force.as_ref() {
             "true" | "" => 1,
@@ -77,7 +77,7 @@ fn env_force_color() -> usize {
 
 #[cfg(target_os = "windows")]
 fn env_no_color() -> bool {
-    let env_no_color = profile!("env_no_color", time);
+    profile!("env_no_color", time);
     match as_str(&env::var("NO_COLOR")) {
         Ok("0") | Err(_) => false,
         Ok(_) => true,
@@ -109,7 +109,7 @@ fn translate_level(level: usize) -> Option<ColorLevel> {
 
 #[cfg(target_os = "windows")]
 fn supports_color() -> usize {
-    let supports_color = profile!("supports_color", time);
+    profile!("supports_color", time);
     let force_color = env_force_color();
     if force_color > 0 {
         force_color
@@ -171,7 +171,7 @@ fn check_256_color(term: &str) -> bool {
 ///
 /// This function will bubble up any errors returned by `termbg`.
 pub fn resolve_term_theme() -> ThagResult<TermTheme> {
-    let resolve_term_theme = profile!("resolve_term_theme", time);
+    profile!("resolve_term_theme", time);
     let raw_before = terminal::is_raw_mode_enabled()?;
     #[cfg(debug_assertions)]
     debug_log!("About to call termbg");
@@ -190,7 +190,7 @@ pub fn resolve_term_theme() -> ThagResult<TermTheme> {
 }
 
 fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    let maybe_restore_raw_status = profile!("maybe_restore_raw_status", time);
+    profile!("maybe_restore_raw_status", time);
     let raw_after = terminal::is_raw_mode_enabled()?;
     if raw_before == raw_after {
         debug_log!("No need to restore raw status");
@@ -207,7 +207,7 @@ fn maybe_restore_raw_status(raw_before: bool) -> ThagResult<()> {
 ///
 /// This function will bubble up any errors returned by `crossterm`.
 pub fn restore_raw_status(raw_before: bool) -> ThagResult<()> {
-    let restore_raw_status = profile!("restore_raw_status", time);
+    profile!("restore_raw_status", time);
     if raw_before {
         terminal::enable_raw_mode()?;
     } else {

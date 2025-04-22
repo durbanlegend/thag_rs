@@ -12,7 +12,7 @@ use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
 use thag_rs::{execute, get_args, ThagResult};
 
-#[enable_profiling(runtime)] // default Both
+#[enable_profiling(yes)] // default Both
 pub fn main() -> ThagResult<()> {
     if cfg!(feature = "profiling") {
         println!("Enabling profiling..."); // Debug output

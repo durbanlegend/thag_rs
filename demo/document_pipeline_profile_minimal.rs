@@ -131,7 +131,7 @@ async fn process_document(mut doc: Document) -> Document {
     doc.calculate_sentiment();
 
     // Small async delay
-    profile!("delay", time, mem_detail, async_fn);
+    profile!("delay", time, mem_summary, async_fn);
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
     end!("delay");
@@ -173,7 +173,7 @@ async fn run_batch(count: usize) {
     );
 
     // Print results for verification
-    profile!("print_docs", time, mem_detail, async_fn, unbounded);
+    profile!("print_docs", time, mem_summary, async_fn, unbounded);
     // profile!("print_docs", time, mem_detail, async_fn);
     for doc in &docs {
         let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -206,15 +206,15 @@ async fn main() {
     // println!("Switching profiling off");
     // disable_profiling();
 
-    profile!("last_2_batches", time, async_fn);
+    profile!("second_batch", time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
     // println!("Switching only time profiling back on");
     // enable_profiling(true, Some(ProfileType::Time)).unwrap();
-    end!("last_2_batches");
+    end!("second_batch");
 
-    profile!("last_batch", time, async_fn);
+    profile!("last_batch", time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
     end!("last_batch");

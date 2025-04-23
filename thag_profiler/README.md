@@ -4,7 +4,7 @@ A straightforward, accurate lightweight cross-platform profiling library for Rus
 
 `thag_profiler` aims to lower the barriers to profiling by offering a quick and easy tool that produces clear and accurate flamegraphs for both synchronous and asynchronous code.
 
-`thag_profiler` provides an `#[enable_profiling]` attribute for your main method, a #`[profiled]` attribute for every function to be profiled, and a `profile!` macro for code sections, allowing you to detect memory hotspots and break them out in detail.
+`thag_profiler` provides an `#[enable_profiling]` attribute for your main method, a #`[profiled]` attribute for every function to be profiled, a combinination of `profile!`and optional `end!` macros for code sections, and a choice of detailed or summary memory profiling, allowing you to detect memory hotspots and break them out in detail.
 
 `thag_profiler` provides an automated instrumentation tool `thag-instrument` to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
 
@@ -17,9 +17,9 @@ Profiling options are highly configurable, with global runtime options as well a
 
 - **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are disabled
 
-- **Time and memory profiling**: Track execution time or memory usage, or both.
+- **Execution time profiling**: Low-overhead profiling to highlight hotspots.
 
-- **Accurate summary and detailed memory profiling**: All memory allocations are accurately tracked at line number level and ring-fenced from profiler code to avoid interference. They may be summarized by function or section, or broken out in detail where desired.
+- **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code to avoid interference. They may be summarized by function or section, or broken out in detail where desired.
 
 - **Function and section profiling**: Profiling can be applied to any number of specific code sections, down to single instructions.
 
@@ -65,7 +65,7 @@ cargo install thag_profiler --no-default-features --features=analyze-tool --bin 
 
 #### a. Automatically instrument your code for profiling:
 
-Replace `2021` with your project's Rust edition:
+Replace `2021` below with your project's Rust edition:
 
 ```bash
 thag-instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
@@ -96,7 +96,7 @@ fn expensive_calculation() -> u64 {
     42
 }
 
-// Profile a specific section with `profile!` and obligatory matching `end!`
+// Profile a specific section with `profile!` and matching `end!`
 fn complex_operation() {
     // Some code...
 
@@ -108,37 +108,84 @@ fn complex_operation() {
     // More code...
 }
 
-// Profile a specific section (alternative showing async function
-// as well as an identifier variable)
-async fn complex_operation() {
+// Profile a specific section of an async function
+async fn complex_async_operation() {
     // Some code...
 
-    let exotic_section_name = profile!("Expensive Part");
-    profile!(exotic_section_name, async_fn);
+    profile!("expensive_part", async_fn);
     // Code to profile
     expensive_operation();
-    end!(exotic_section_name);
+    end!("expensive_part");
 
     // More code...
 }
+
+// Profile the remainder of a function
+fn complex_operation() {
+    // Some code...
+
+    // Must be scoped to end of function
+    profile!("rest_of_function", unbounded);
+    // All code to end of function will be profiled
+}
+
+// INCORRECT:
+fn complex_operation() {
+    // Some code...
+
+    {
+        // Unbounded keyword misused here
+        profile!("rest_of_block", unbounded);
+    }  // Profile will be dropped here unknown to allocation tracker
+
+    // The following section profiling may not work correctly due to the above
+    profile!("another_section");
+    expensive_operation();
+    end!("another_section");
+}
 ```
+
 For a section in a profiled async function, it's best to add `async_fn` as a second argument as described further below, to tie the section to the async function instance in the flamegraphs, otherwise the section causes the parent function to appear a second time in the flamegraph without its async identifier, as we have no way to link the two automatically.
 
-### 2. Enable Profiling in Your Build
+### 2. Enable the Profiling Feature
 
-#### Manifest info
+The profiling feature must be enabled via manifest info, which may specify it as a default or require it to be specified at runtime.
 
-##### In scripts run with the `thag` script runner
+#### In regular Cargo projects
 
-When using `thag_profiler` in scripts, you have two options:
+You have two options:
 
-**1. Enable via command line** (recommended):
+  **1. Cargo.toml and command line**:
 
-  ```bash
-  cargo run bank/mem_prof.rs --features=my_profiling
-  ```
+    ```toml
+    [dependencies]
+    thag_profiler = { version = "0.1" }
 
-  With this script configuration:
+    [features]
+    my_profiling = ["thag_profiler/time_profiling"]
+    ```
+
+    Then run with:
+    ```bash
+    cargo run --features my_profiling
+    ```
+
+  **OR**
+
+  **2. Cargo.toml only**:
+
+    ```toml
+    [dependencies]
+    thag_profiler = { version = "0.1", features = ["full_profiling"] }
+    ```
+
+#### In scripts run with the `thag` script runner
+
+When using `thag_profiler` in `thag` scripts, you have to same two options, only using a `toml` block in place of a `Cargo.toml`:
+
+**1. Manifest and command line**:
+
+  Sample script configuration:
 
   ```toml
   /*[toml]
@@ -153,54 +200,34 @@ When using `thag_profiler` in scripts, you have two options:
   my_profiling = ["thag_profiler/full_profiling"]
   ```
 
-**OR**
+  Then run with:
 
-**2. Enable directly in the dependency**:
-
-```rust
-/*[toml]
-[dependencies]
-thag_profiler = { version = "0.1", features = ["time_profiling"] }
-*/
-```
-
-##### In Regular Cargo Projects
-
-In standard Cargo projects, the same options apply, only directly in Cargo.toml:
-
-**1. Use feature propagation**:
-   ```toml
-   [dependencies]
-   thag_profiler = { version = "0.1" }
-
-   [features]
-   my_profiling = ["thag_profiler/time_profiling"]
-   ```
-
-   Then run with:
-   ```bash
-   cargo run --features my_profiling
-   ```
+  ```bash
+  cargo run bank/mem_prof.rs --features=my_profiling
+  ```
 
 **OR**
 
-**2. Enable directly in the dependency**:
-   ```toml
-   [dependencies]
-   thag_profiler = { version = "0.1", features = ["full_profiling"] }
-   ```
+**2. Manifest only**:
 
-#### In code
+  ```rust
+  /*[toml]
+  [dependencies]
+  thag_profiler = { version = "0.1", features = ["time_profiling"] }
+  */
+  ```
+
+### 3. Enable Profiling at Runtime
 
 **EITHER**
 
-**1. With an attribute (recommended)**
+**1. Enable profiling with an attribute (recommended)**
 
 Enable profiling by adding the `#[enable_profiling]` attribute to your `main` function.
 
-The attribute is recommended because it is the only way to obtain the zero-cost abstraction of unused profiling code, and to ensure that in the case of memory profiling, profiler code is excluded at compile time from interfering with the tracking of memory allocations and deallocations by profiled code.
+The attribute is recommended because it is the only way to obtain the zero-cost abstraction of unused profiling code, and because it ensures the clean compile-time ring-fencing of memory profiler code from profiled code.
 
-NB: the `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute should not be specified on the same function.
+NB: the `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute need not and should not be specified on the same function.
 
 **#[enable_profiling] arguments**
 The following optional arguments are available:
@@ -230,8 +257,8 @@ fn main() {
 
     THAG_PROFILER=<profile_type>,[<output_dir>],{<debug_level>],[<detail>]
 
-    where `<profile_type>` = `both`, `memory` or `time`
-          `<output_dir>` (optional) = output directory for `.folded` files.
+    where `<profile_type>`           = `both`, `memory` or `time`
+          `<output_dir>` (optional)  = output directory for `.folded` files.
           `<debug_level>` (optional) = `none` (default) - no debug log
                                        `announce` - display debug log path in user output
                                        `quiet` - log without displaying location.
@@ -245,18 +272,18 @@ E.g.:
 ```bash
 THAG_PROFILER=both,$TMPDIR,announce,true cargo run
 
-Specifies both memory and time profiling, `.folded` files to $TMPDIR, debug log path to be written to user program output, extra `.folded` files for detailed memory allocations and deallocations required.
+    Specifies both memory and time profiling, `.folded` files to $TMPDIR, debug log path to be written to user program output, extra `.folded` files for detailed memory allocations and deallocations required.
 
 
 THAG_PROFILER=time cargo run
 
-Specifies time profiling only, `.folded` files to current directory, no debug log, no detailed memory files as not applicable to time profiling.
+    Specifies time profiling only, `.folded` files to current directory, no debug log, no detailed memory files as not applicable to time profiling.
 
 
 THAG_PROFILE=memory,,quiet thag demo/document_pipeline_profile_minimal.rs  -ft
 
-Runs `thag` demo script document_pipeline_profile_minimal.rs with forced rebuild (-f) and timings (-t),
-memory profiling only, debug logging without announcing the log file path, and no detailed output `.folded` files.
+    Runs `thag` demo script document_pipeline_profile_minimal.rs with forced rebuild (-f) and timings (-t),
+    memory profiling only, debug logging without announcing the log file path, and no detailed output `.folded` files.
 ```
 
 The `main` function will be taken to be the root of the profiling callstack.
@@ -271,7 +298,7 @@ fn main() {
 **OR**
 
 
-**2. Programmatically**
+**2. Enable profiling programmatically**
 
 This is not recommended as it cannot be as clean and efficient as an attribute macro
 and lacks the same rich set of options.
@@ -288,9 +315,9 @@ fn main() {
 }
 ```
 
-### 3. Run Your Application
+### 4. Run Your Application
 
-### 4. Analyze Results
+### 5. Analyze Results
 
 After running your application with profiling enabled, folded stack files will be generated in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILER` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
 
@@ -390,7 +417,6 @@ code, which is likely not what you want.
 
 ### Code Section Profiling with `profile!`
 
-TODO Note: Section profiling profiling modes may not override the programe defaults set by `#[enable_profiling]`.
 1. **Easy to enable/disable profiling globally**: Developers can quickly turn on/off profiling without changing every profile section
 
 2. **Clean code organization**: Section profiling clearly shows intent and what *could* be profiled, even if it's currently overridden
@@ -399,99 +425,79 @@ TODO Note: Section profiling profiling modes may not override the programe defau
 
 4. **Simplicity**: No need for complex conditional logic in each profiling section
 
+NB: Section profiling modes will be overridden by the program defaults set by `#[enable_profiling]`.
 
-Time and memory section profiling are implemented slightly differently owing to more stringent requirements of memory profiling.
-Memory section profiling requires an `end!(<identifier>)` macro to mark the end of the section so that memory allocations can be
-accurately attributed to the correct section by line number.  In contrast, a time section profile is automatically scoped to the
-block it's declared in, i.e. it will go out of scope at the end of that block unless explicitly dropped beforehand.
+#### Format
 
-
-#### Time Profiling
-
-Use the `profile!` macro and optionally a `drop` call to time-profile specific sections of code. There is nothing to stop you
-nesting or overlapping sections, but the time spent in nested or overlapped sections will be overcounted. Specifically the time
-spent in each line of code will be counted once for each section that the line of code falls within. Unlike functions, sections
-will not be nested in the flamegraph, let alone overlapped, but will appear side by side as though they had run at different times.
-Best practice is therefore not to nest or overlap sections but always to drop the current section before starting a new one.
-
-
-```rust
-use thag_profiler::profile;
-
-fn complex_function() {
-    // Basic usage
-    let section = profile!("initialization");
-    initialize_things();
-    drop(section);
-}
-
-// Profiling a section of an async function, provide an `async_fn` arg for accurate collation
-asyn fn async_complex_function() {
-    // Basic usage
-    let section = profile!("initialization", async_fn);
-    initialize_things();
-_    drop(section);
-
-}
+```Rust
+profile!("name" [, flag1, flag2, ...]);
 ```
 
-#### Memory Profiling
+Parameters
 
-Use the `profile!` macro and a matching `end!` macro to memory-profile specific sections of code.
+- **name**: A string literal that identifies the profiling section
+- **flags**: Optional comma-separated identifiers that control profiling behavior
 
-```rust
-use thag_profiler::{end, profile};
+#### Available Flags
 
-async fn complex_function() {
-    // Some code...
+| Flag | Description |
+|------|-------------|
+| `time` | Enable time profiling for this section |
+| `mem_summary` | Enable basic memory usage tracking |
+| `mem_detail` | Enable detailed memory allocation tracking |
+| `async_fn` | Mark that this profile is for an async function |
+| `unbounded` | This is equivalent to an `end!` macro at the end of the function |
 
-    // Requesting detailed memory profiling for a section of an async function
-    profile!("initialize", detailed_memory, async_fn);
-    initialize_things();
-    end!("initialize");
+#### Profile Types
 
-}
-```
+The macro automatically determines the type of profiling based on the flags provided:
 
-The `end!` macro is mandatory and its argument must exactly match the first argument of `profile!`.
-This is because `end!()` inserts a one-line function (`end_initialize` in the above example)
-that evaluates the Rust standard `line!()` to return its own line number. The `profile` macro calls
-this function to determine the section end line number, which memory profiling needs in order to
-accurately attribute memory allocations to the correct section.
+- **Time only**: When only the `time` flag is present
+- **Memory only**: When `mem_summary` or `mem_detail` is present without `time`
+- **Both**: When `time` is combined with either `mem_summary` or `mem_detail`
 
-Whereas time profiling typically assigns a variable to the `profile!` expression so that it can
-drop it at the end of the section, memory profiling doesn't normally need to do so.
-
-TODO: out if using proc macro:
------
-Instead of repeating the string literal section identifier in the `profile!` and `end` calls,
-you can assign it to a variable:
+#### Examples
 
 ```rust
-use thag_profiler::{end, profile};
+// Basic time profiling
+profile!("calculate_result", time);
 
-fn complex_operation() {
-    // Some code...
+// Memory usage summary
+profile!("load_data", mem_summary);
 
-    let exotic_section_name = profile!("Expensive Part");
-    profile!(exotic_section_name, async_fn);
-    // Code to profile
-    expensive_operation();
-    end!(exotic_section_name);
+// Detailed memory tracking
+profile!("process_image", mem_detail);
 
-    // More code...
-}
+// Both time and memory profiling
+profile!("generate_report", time, mem_detail);
+
+// Async function profiling
+profile!("fetch_data", time, async_fn);
+
+// Unbounded memory profile (must be manually ended)
+profile!("long_running_task", mem_summary, unbounded);
 ```
------
 
-NB: Nesting and overlapping of memory section profiles is not supported but will not be policed.
-This is to prevent undue complexity. While the nesting of functions is handled for us by
-the Rust backtrace, section nesting would require us to build a separate mechanism and
-integrate it with the backtrace mechanism.
+#### Notes
 
-To prevent double-counting, memory allocations will be assigned only to the outermost of any
-nested profiles, and in the case of overlapping profiles to the first in sequence in the
-function, i.e. the one with lowest starting line number.
+- The macro captures source location information automatically for accurate profiling results
+
+Section profiling requires either:
+
+1. Recommended: An `end!(<identifier>)` macro to drop the profile outside of user code and to mark the end of the section so that memory allocations can be
+accurately attributed to the correct section by line number. This macro invocation must not be outside the normal Rust scope of the `profile!` macro.
+
+The `<identifier>` must be the identical string literal used in the matching `profile!` macro call.
+
+OR:
+
+2. An `unbounded` argument to allow the profile to be dropped at the end of the _function_ and to assist memory profiling. This is not preferred because:
+
+a. The profile inevitably gets dropped in user code, leaving it up to the tracker to identify and filter out its allocations in the first place. This is not as clean and precise as using the `end!` mechanism, and thus creates more overhead and greater exposure to any potential loopholes in the filtering algorithm.
+
+b. It has limited applicability and is open to misuse. It may only be used to profile the remainder of a function. For more limited scopes you must use an `end!` macro.
+
+The 'unbounded` option may be dropped in future.
 
 ### Conditional Profiling
 
@@ -516,12 +522,12 @@ fn complex_operation() { /* ... */ }
 fn process_data(data: &[u8]) {
     // Only include profiling in debug builds
     #[cfg(debug_assertions)]
-    let process_section = profile!("process_data");
+    profile!("process_data");
 
     // Your code here...
 
     #[cfg(debug_assertions)]
-    process_section.end();
+    end!("process_data");
 
     ...
 }
@@ -578,6 +584,21 @@ allocations may be attributed to parent tasks rather than to the exact function 
    across your entire application stack, revealing hidden costs from dependencies like async runtimes.
 
 Detailed memory profiling will allow you to drill down into these allocations as well as the resulting deallocations.
+
+### Windows Memory Profiling
+
+For memory profiling on Windows, your application requires:
+
+1. Debug information in the executable, which can be enabled with:
+
+   ```toml
+   [profile.release]
+   debug = true
+   strip = false
+   ```
+
+2. PDB files generated by the build must be distributed alongside the executable.
+   These files contain the debug information needed for accurate profiling.
 
 ### Async Compatibility
 
@@ -771,12 +792,12 @@ Choose flamegraphs for a high-level view of resource usage and flamecharts for d
 ```rust
 async fn fetch_data() {
     // Tell the profiler this section is within an async function
-    let section = profile!("database_query", async_fn);
+    profile!("database_query", async_fn);
 
     // Async operations...
     let result = query_database().await;
 
-    section.end();
+    end!("database_query");
 }
 ```
 
@@ -837,13 +858,29 @@ This is important because `thag_profiler` maintains some global state that isn't
 
 ### Common Issues
 
-**1. Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory
+**1. Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory.
 
-**2. Test failures**: Profiled tests must use serialization
+Ensure your code is compiled with the `debug` option while profiling. E.g. in release mode:
 
-**3. Performance impact**: Memory profiling adds significant overhead
+```toml
+[profile.release]
+debug = true
+strip = false
+```
 
-**4. File redirect issues**: Never redirect output from the instrumentation tools back to the input file
+Ensure that unbounded section profiles do not go out of scope before the end of the current _function_.
+
+Ensure that bounded section profiles do not go out of scope before the `end!` macro.
+
+**2. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections.
+
+**3. Test failures**: Profiled tests must use serialization
+
+**4. Performance impact**: Memory profiling adds significant overhead.
+
+Consider using SIZE_TRACKING_THRESHOLD=n as discussed above to ignore small allocations of integer `n` bytes or smaller.
+
+**5. File redirect issues**: Never redirect output from the instrumentation tools back to the input file
 
 ### Inspecting Profile Files
 

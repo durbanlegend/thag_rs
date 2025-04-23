@@ -1251,8 +1251,9 @@ impl Profile {
         }
 
         debug_log!(
-            "NEW PROFILE: (Time) created for {:?}",
-            path.join(" -> ") // path.last().map_or("", |v| v),
+            "NEW PROFILE: (Time) created for {}\ndesc_stack = {}",
+            path.join(" -> "),
+            self.build_stack(path)
         );
 
         // Get current module path and line number
@@ -1359,8 +1360,6 @@ impl Profile {
                 &mut current_backtrace,
             );
 
-            // debug_log!("cleaned_stack={cleaned_stack:#?}");
-
             if cleaned_stack.is_empty() {
                 debug_log!("Empty cleaned stack found");
                 return None;
@@ -1370,7 +1369,9 @@ impl Profile {
             let fn_name = &cleaned_stack[0];
 
             #[cfg(not(target_os = "windows"))]
-            let desc_fn_name = if is_async {
+            let desc_fn_name = if section_name.is_some() && is_profiled_function(fn_name) {
+                get_reg_desc_name(fn_name).unwrap_or(fn_name.to_string())
+            } else if is_async {
                 format!("async::{fn_name}")
             } else {
                 fn_name.to_string()
@@ -1378,6 +1379,15 @@ impl Profile {
 
             #[cfg(target_os = "windows")]
             let desc_fn_name = fn_name; // Windows already highlights async functions
+
+            // if let Some("print_docs") = section_name {
+            //     debug_log!("cleaned_stack={cleaned_stack:#?}");
+            //     debug_log!(
+            //         "is_profiled_function({fn_name})={:#?}",
+            //         is_profiled_function(fn_name)
+            //     );
+            //     debug_log!("desc_fn_name={desc_fn_name:#?}");
+            // }
 
             let path = extract_path(&cleaned_stack, Some(fn_name));
 
@@ -1402,7 +1412,11 @@ impl Profile {
                 //     "Memory profiling enabled but only time profiling will be profiled as requested."
                 // );
 
-                debug_log!("NEW PROFILE: (Time) created for {:?}", path.join(" -> "));
+                debug_log!(
+                    "NEW PROFILE: (Time) created for {}\ndesc_stack = {}",
+                    path.join(" -> "),
+                    build_stack(&path, section_name.clone(), " -> ")
+                );
 
                 // Get current module path and line number
                 // let file_name = std::file!().to_string();
@@ -1466,8 +1480,9 @@ impl Profile {
             push_task_to_stack(thread::current().id(), task_id);
 
             debug_log!(
-                "NEW PROFILE: Task {task_id} created for {:?}",
-                path.join(" -> ") // path.last().map_or("", |v| v),
+                "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",
+                path.join(" -> "),
+                build_stack(&path, section_name.clone(), " -> ")
             );
 
             // Create memory guard
@@ -1646,24 +1661,25 @@ impl Profile {
     #[cfg(feature = "time_profiling")]
     #[must_use]
     pub fn build_stack(&self, path: &[String]) -> std::string::String {
-        let mut vanilla_stack = String::new();
+        // let mut vanilla_stack = String::new();
 
-        path.iter()
-            .map(|fn_name_str| {
-                let stack_str = if vanilla_stack.is_empty() {
-                    fn_name_str.to_string()
-                } else {
-                    format!("{vanilla_stack};{fn_name_str}")
-                };
-                vanilla_stack.clone_from(&stack_str);
-                (stack_str, fn_name_str)
-            })
-            .map(|(stack_str, fn_name_str)| {
-                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
-            })
-            .chain(self.section_name.clone())
-            .collect::<Vec<String>>()
-            .join(";")
+        // path.iter()
+        //     .map(|fn_name_str| {
+        //         let stack_str = if vanilla_stack.is_empty() {
+        //             fn_name_str.to_string()
+        //         } else {
+        //             format!("{vanilla_stack};{fn_name_str}")
+        //         };
+        //         vanilla_stack.clone_from(&stack_str);
+        //         (stack_str, fn_name_str)
+        //     })
+        //     .map(|(stack_str, fn_name_str)| {
+        //         get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
+        //     })
+        //     .chain(self.section_name.clone())
+        //     .collect::<Vec<String>>()
+        //     .join(";")
+        build_stack(path, self.section_name.clone(), ";")
     }
 
     #[cfg(feature = "full_profiling")]
@@ -1736,6 +1752,34 @@ impl Profile {
             .as_ref()
             .and_then(|task| get_task_memory_usage(task.id()))
     }
+}
+
+/// Convert function names in the stack into their descriptive names.
+#[cfg(feature = "time_profiling")]
+#[must_use]
+pub fn build_stack(
+    path: &[String],
+    maybe_section_name: Option<String>,
+    sep: &str,
+) -> std::string::String {
+    let mut vanilla_stack = String::new();
+
+    path.iter()
+        .map(|fn_name_str| {
+            let stack_str = if vanilla_stack.is_empty() {
+                fn_name_str.to_string()
+            } else {
+                format!("{vanilla_stack};{fn_name_str}")
+            };
+            vanilla_stack.clone_from(&stack_str);
+            (stack_str, fn_name_str)
+        })
+        .map(|(stack_str, fn_name_str)| {
+            get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
+        })
+        .chain(maybe_section_name)
+        .collect::<Vec<String>>()
+        .join(sep)
 }
 
 #[must_use]

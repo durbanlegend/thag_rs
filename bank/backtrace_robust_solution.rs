@@ -1,6 +1,7 @@
 /*[toml]
 [profile.release]
 debug = true
+strip = false
 */
 use backtrace::{Backtrace, BacktraceSymbol};
 

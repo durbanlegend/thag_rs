@@ -97,6 +97,32 @@ impl Parse for ProfilingArgs {
     }
 }
 
+/// Detect if a function body appears to have been transformed by tokio::main
+fn detect_tokio_main_expansion(body: &syn::Block) -> bool {
+    // Look for patterns like: let body = async { ... }
+    for stmt in &body.stmts {
+        if let syn::Stmt::Local(local) = stmt {
+            // Check if this is a "let body = ..." statement
+            if let syn::Pat::Ident(pat_ident) = &local.pat {
+                if pat_ident.ident == "body" {
+                    // Check if it's assigned an async expression
+                    if let Some(init) = &local.init {
+                        if let syn::Expr::Async(_) = &*init.expr {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Alternative approach: look for tokio runtime initialization
+    let body_str = quote!(#body).to_string();
+    body_str.contains("tokio::runtime")
+        || body_str.contains("Runtime::new")
+        || body_str.contains("let body = async") // Simpler string-based detection
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     assert!(cfg!(feature = "time_profiling"));
@@ -104,8 +130,14 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let args = parse_macro_input!(attr as ProfilingArgs);
     let input = parse_macro_input!(item as ItemFn);
 
-    // Check if the function is async
-    let is_async = input.sig.asyncness.is_some();
+    // Check if the function is explicitly async
+    let is_explicitly_async = input.sig.asyncness.is_some();
+
+    // Check if the function body appears to have been transformed by tokio::main
+    let is_tokio_transformed = detect_tokio_main_expansion(&input.block);
+
+    // Function is async if it's either explicitly marked async or shows signs of tokio transformation
+    let is_async = is_explicitly_async || is_tokio_transformed;
 
     // Get function details
     let fn_name = &input.sig.ident;
@@ -117,7 +149,19 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let block = &input.block;
     let attrs = &input.attrs;
 
+    // let body = quote!(#block);
+    // eprintln!("body={body:#?}");
+    // let is_async = if is_async { true } else {
+    //     let
+    // };
+
     for attr in attrs {
+        // assert_ne!(
+        //     quote!(#attr).to_string().as_str(),
+        //     "#[async_std :: main]",
+        //     "#[async_std::main] if present must appear before #[enable_profiling] for correct expansion."
+        // );
+        eprintln!("attr={}", quote!(#attr));
         assert_ne!(
             quote!(#attr).to_string().as_str(),
             "#[tokio :: main]",
@@ -215,9 +259,13 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
     };
 
-    let async_token = if is_async { quote!(async) } else { quote!() };
+    let async_token = if is_async && !(fn_name == "main" && is_tokio_transformed) {
+        quote!(async)
+    } else {
+        quote!()
+    };
 
-    let wrapped_block = if is_async {
+    let wrapped_block = if is_async && !(fn_name == "main" && is_tokio_transformed) {
         quote! {
             // For async functions, we need to use an async block
             let result = async {

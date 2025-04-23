@@ -10,10 +10,10 @@ use crate::{
     debug_log, extract_path, find_profile, flush_debug_log, get_global_profile_type,
     is_detailed_memory, lazy_static_var,
     profiling::{
-        clean_function_name, extract_alloc_callstack, extract_detailed_alloc_callstack,
-        get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path, get_reg_desc_name,
-        is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
-        START_TIME,
+        build_stack, clean_function_name, extract_alloc_callstack,
+        extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
+        get_memory_path, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
+        MemoryProfileFile, START_TIME,
     },
     regex, Profile, ProfileRef, ProfileType,
 };
@@ -516,13 +516,10 @@ pub fn write_detailed_stack_alloc(
         // format!("[out_of_bounds] +{}", size)
         format!("[out_of_bounds] +{size}")
     } else {
-        let descr_stack = &detailed_stack
-            .iter()
-            .map(|raw_str| get_reg_desc_name(raw_str).unwrap_or_else(|| raw_str.to_string()))
-            .collect::<Vec<String>>()
-            .join(";");
+        let descr_stack = build_stack(detailed_stack, None, ";");
 
-        format!("{} +{size}", descr_stack)
+        debug_log!("descr_stack={descr_stack}");
+        format!("{descr_stack} +{size}")
     };
 
     let (memory_path, file) = if write_to_detail_file {
@@ -1187,14 +1184,14 @@ fn write_memory_profile_data() {
                 let binding = TASK_PATH_REGISTRY.lock();
 
                 // Dump all entries for debugging
-                for (id, path) in binding.iter() {
-                    debug_log!("Registry entry: task {id}: path: {:?}", path);
-                }
+                // for (id, path) in binding.iter() {
+                //     debug_log!("Registry entry: task {id}: path: {:?}", path);
+                // }
 
                 // Get all entries from the registry
                 binding
                     .iter()
-                    .map(|(task_id, pat)| (*task_id, pat.clone()))
+                    .map(|(task_id, path)| (*task_id, path.clone()))
                     .collect()
             };
 
@@ -1216,7 +1213,8 @@ fn write_memory_profile_data() {
                     continue;
                 }
 
-                let path_str = path.join(";");
+                // let path_str = path.join(";");
+                let path_str = build_stack(path, None, ";");
                 if already_written.contains(&path_str) {
                     continue;
                 }

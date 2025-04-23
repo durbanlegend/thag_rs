@@ -17,9 +17,9 @@ nanorand = { version = "0.7", features = ["getrandom"], optional = true }
 # flume = "0.11"
 flume = { version = "0.11", features = ["async"] }
 rustix = "0.37.19"
-thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }
-# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
 */
 
 /// Published example from the `flume` channel crate.
@@ -41,8 +41,8 @@ async fn main() {
 
     // Check if profiling is enabled
     println!(
-        "PROFILING_FEATURE_ENABLED = {}",
-        thag_profiler::PROFILING_ENABLED
+        "is_profiling_enabled() = {}",
+        thag_profiler::is_profiling_enabled()
     );
 
     if cfg!(feature = "profiling") {
@@ -58,20 +58,18 @@ async fn main() {
 async fn perform() {
     let (tx, rx) = flume::bounded(1);
 
-    let outer_section = profile!("outer_async_operation", async);
+    profile!("outer_async_operation", time, mem_summary, async_fn);
     let t = async_std::task::spawn(async move {
-        let inner_section = profile!("inner_async_operation", async);
         while let Ok(msg) = rx.recv_async().await {
             println!("Received: {}", msg);
         }
-        inner_section.end();
     });
-    outer_section.end();
+    end!("outer_async_operation");
 
-    let section = profile!("send_async", async);
+    profile!("send_async", time, mem_detail, async_fn);
     tx.send_async("Hello, world!").await.unwrap();
     tx.send_async("How are you today?").await.unwrap();
-    section.end();
+    end!("send_async");
 
     drop(tx);
 

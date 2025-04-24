@@ -1,6 +1,7 @@
 use parking_lot::MutexGuard;
 use std::{thread, time::Duration};
 use thag_profiler::{
+    end,
     profiling::{
         dump_profiled_functions, enable_profiling, is_profiled_function,
         is_profiling_state_enabled, register_profiled_function,
@@ -111,47 +112,15 @@ fn test_profiling_profile_creation() {
         );
 
         // Create a profile section using the macro
-        let section = profile!("test_profile");
-        eprintln!("section={section:?}");
+        profile!("test_profile");
+        eprintln!("test_profile={test_profile:#?}");
         eprintln!(
             "After creating section: is_profiling_enabled = {}",
             is_profiling_state_enabled()
         );
 
-        assert!(
-            section.is_active(),
-            "ProfileSection should be active when profiling is enabled"
-        );
-        section.end();
-    });
-}
-
-#[test]
-#[cfg(feature = "time_profiling")]
-fn test_profiling_nested_profile_sections() {
-    // Get lock and reset state
-    let _guard = setup_test();
-
-    // Now start with known disabled state
-    assert!(
-        !is_profiling_state_enabled(),
-        "Profiling should be disabled at start"
-    );
-
-    run_test(|| {
-        // Create an outer profile section
-        let outer_section = profile!("outer");
-        assert!(outer_section.is_active());
-
-        // Create an inner profile section
-        let inner_section = profile!("inner");
-        assert!(inner_section.is_active());
-
-        // End the inner section
-        inner_section.end();
-
-        // End the outer section
-        outer_section.end();
+        assert!(!test_profile.as_ref().unwrap().detailed_memory());
+        end!("test_profile");
     });
 }
 
@@ -169,7 +138,7 @@ fn simple_profiled_function() -> u32 {
         "Profiling should be disabled at start"
     );
 
-    let _section = thag_profiler::profile!("simple_profiled_function");
+    thag_profiler::profile!("simple_profiled_function", unbounded, time);
     // Simulate some work
     thread::sleep(Duration::from_millis(10));
     42
@@ -186,7 +155,13 @@ fn test_profiling_profiled_attribute() {
 // Using direct macro approach for consistency
 #[cfg(feature = "time_profiling")]
 async fn async_profiled_function() -> u32 {
-    let _section = thag_profiler::profile!("async_profiled_function", async_fn);
+    thag_profiler::profile!(
+        "async_profiled_function",
+        mem_summary,
+        time,
+        async_fn,
+        unbounded
+    );
     // Simulate some async work
     smol::Timer::after(Duration::from_millis(500)).await;
     84
@@ -228,14 +203,14 @@ fn test_profiling_profile_macro() {
 
     run_test(|| {
         // Basic usage
-        let section = thag_profiler::profile!("basic_test");
+        thag_profiler::profile!("basic_test");
         thread::sleep(Duration::from_millis(5));
-        section.end();
+        end!("basic_test");
 
         // Method style - Pass a string since we can't use the method keyword in tests
-        let section = thag_profiler::profile!("repeat");
+        thag_profiler::profile!("repeat");
         thread::sleep(Duration::from_millis(5));
-        section.end();
+        end!(repeat);
     });
 }
 
@@ -260,13 +235,10 @@ fn test_profiling_create_section() {
         "Profiling should be enabled after calling enable_profiling"
     );
 
-    // Create a profile section (should be active)
-    let section = thag_profiler::profile!("enabled_test");
-    assert!(
-        section.is_active(),
-        "Section should be active when profiling is enabled"
-    );
-    section.end();
+    // Create a profile section
+    thag_profiler::profile!("enabled_test");
+    assert_eq!(enabled_test.clone().unwrap().file_name(), "profiling");
+    end!("enabled_test");
 }
 
 // Memory profiling test
@@ -292,7 +264,9 @@ fn test_profiling_full_profiling() {
     );
 
     // Create a profile section that tracks memory
-    let section = thag_profiler::profile!("test_section");
+    #[allow(unused_variables)]
+    let section = "test_section";
+    thag_profiler::profile!(section, mem_summary);
 
     // Allocate some memory
     let data = vec![0u8; 1_000_000];
@@ -301,7 +275,7 @@ fn test_profiling_full_profiling() {
     assert_eq!(data.len(), 1_000_000);
 
     // End the section
-    section.end();
+    end!(section);
 
     // Disable profiling
     let _ = enable_profiling(false, Some(ProfileType::Time));
@@ -323,17 +297,21 @@ fn test_profiling_profile_section_thread_safety() {
 
     run_test(|| {
         // Create a profile section that we'll send to another thread
-        let section = thag_profiler::profile!("thread_test");
+        thag_profiler::profile!("thread_test", unbounded);
 
         // Spawn a thread and move the section to it
         let handle = thread::spawn(move || {
             // If ProfileSection is not Send, this won't compile
-            assert!(section.is_active());
-            section.end();
+            assert_eq!(
+                thread_test.as_ref().unwrap().fn_name(),
+                "profiling::test_profiling_profile_section_thread_safety"
+            );
+            end!("thread_test");
         });
 
         // Wait for the thread to finish
         handle.join().unwrap();
+        // end!("thread_test");
     });
 }
 

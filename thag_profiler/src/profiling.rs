@@ -1370,7 +1370,7 @@ impl Profile {
 
             #[cfg(not(target_os = "windows"))]
             let desc_fn_name = if section_name.is_some() && is_profiled_function(fn_name) {
-                get_reg_desc_name(fn_name).unwrap_or(fn_name.to_string())
+                get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string())
             } else if is_async {
                 format!("async::{fn_name}")
             } else {

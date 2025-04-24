@@ -435,7 +435,7 @@ profile!("name" [, flag1, flag2, ...]);
 
 Parameters
 
-- **name**: A string literal that identifies the profiling section
+- **name**: A string literal or a `&str` variable that identifies the profiling section
 - **flags**: Optional comma-separated identifiers that control profiling behavior
 
 #### Available Flags
@@ -487,7 +487,7 @@ Section profiling requires either:
 1. Recommended: An `end!(<identifier>)` macro to drop the profile outside of user code and to mark the end of the section so that memory allocations can be
 accurately attributed to the correct section by line number. This macro invocation must not be outside the normal Rust scope of the `profile!` macro.
 
-The `<identifier>` must be the identical string literal used in the matching `profile!` macro call.
+The `<identifier>` must be a string literal or &str value identical to that used in the matching `profile!` macro call.
 
 OR:
 

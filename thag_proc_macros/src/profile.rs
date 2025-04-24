@@ -10,13 +10,21 @@ use syn::{
 
 /// Arguments for the `profile` macro
 struct ProfileArgs {
-    name: LitStr,
+    name: String,
     args: Punctuated<Ident, Token![,]>,
 }
 
 impl Parse for ProfileArgs {
     fn parse(input: ParseStream) -> Result<Self> {
-        let name: LitStr = input.parse()?;
+        // let name: LitStr = input.parse()?;
+        let name = {
+            // Try parsing as a string literal first
+            if input.peek(LitStr) {
+                input.parse::<LitStr>()?.value()
+            } else {
+                input.parse::<Ident>()?.to_string()
+            }
+        };
 
         // Parse remaining arguments as identifiers separated by commas
         let args = if input.is_empty() {
@@ -61,14 +69,12 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
         (quote! { Some(line!()) }, quote! { None })
     } else {
         // Memory with bounded - need end marker
-        (
-            quote! { Some(line!()) },
-            quote! { Some(::thag_profiler::paste::paste! { [<end_ #name>]() }) },
-        )
+        // Convert the string to an identifier
+        let end_line_fn = format_ident!("end_{name}");
+        (quote! { Some(line!()) }, quote! { Some(#end_line_fn()) })
     };
 
-    let profile_id_str = name.value();
-    let profile_id = format_ident!("{profile_id_str}");
+    let profile_id = format_ident!("{name}");
 
     // Generate the profile creation code
     #[cfg(not(feature = "full_profiling"))]

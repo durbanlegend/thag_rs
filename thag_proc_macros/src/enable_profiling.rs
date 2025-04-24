@@ -97,7 +97,7 @@ impl Parse for ProfilingArgs {
     }
 }
 
-/// Detect if a function body appears to have been transformed by tokio::main
+/// Detect if a function body appears to have been transformed by `tokio::main`
 fn detect_tokio_main_expansion(body: &syn::Block) -> bool {
     // Look for patterns like: let body = async { ... }
     for stmt in &body.stmts {

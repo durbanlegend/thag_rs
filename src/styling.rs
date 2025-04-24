@@ -2700,7 +2700,7 @@ mod tests {
     use std::sync::Mutex;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
-    static BLACK_BG: &'static (u8, u8, u8) = &(0, 0, 0);
+    static BLACK_BG: &(u8, u8, u8) = &(0, 0, 0);
 
     impl TermAttributes {
         #[profiled]
@@ -2716,11 +2716,11 @@ mod tests {
                 ) => "basic_dark",
                 (ColorSupport::None, _) => "none",
                 (ColorSupport::Color256, TermBgLuma::Light) => "github",
-                (ColorSupport::Color256, TermBgLuma::Dark) => "dracula",
-                (ColorSupport::Color256, TermBgLuma::Undetermined) => "dracula",
+                (
+                    ColorSupport::Color256 | ColorSupport::TrueColor,
+                    TermBgLuma::Dark | TermBgLuma::Undetermined,
+                ) => "dracula",
                 (ColorSupport::TrueColor, TermBgLuma::Light) => "one-light",
-                (ColorSupport::TrueColor, TermBgLuma::Dark) => "dracula",
-                (ColorSupport::TrueColor, TermBgLuma::Undetermined) => "dracula",
             };
             let theme = Theme::get_theme_with_color_support(theme_name, color_support)
                 .expect("Failed to load or resolve builtin theme {theme_name}");

@@ -7,8 +7,8 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, find_profile, flush_debug_log, get_global_profile_type,
-    is_detailed_memory, lazy_static_var,
+    debug_log, extract_path, file_stem_from_path, find_profile, flush_debug_log,
+    get_global_profile_type, is_detailed_memory, lazy_static_var,
     profiling::{
         build_stack, clean_function_name, extract_alloc_callstack,
         extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
@@ -184,10 +184,10 @@ fn record_alloc(address: usize, size: usize) {
 
     let profile_type = get_global_profile_type();
     if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
-        debug_log!(
-            "Skipping allocation recording because profile_type={:?}",
-            profile_type
-        );
+        // debug_log!(
+        //     "Skipping allocation recording because profile_type={:?}",
+        //     profile_type
+        // );
         return;
     }
 
@@ -251,16 +251,12 @@ fn record_alloc(address: usize, size: usize) {
                     && frame.is_some()
                     && !frame.as_ref().unwrap().to_string().starts_with('<')
             })
+            // .inspect(|(maybe_filename, _, maybe_frame)| {
+            //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_frame: {maybe_frame:?}, maybe_frame: {maybe_frame:?}, file_names={file_names:?}");
+            // })
             .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
                 (
-                    maybe_filename
-                        .unwrap()
-                        .to_owned()
-                        .as_path()
-                        .file_stem()
-                        .unwrap()
-                        .to_string_lossy()
-                        .to_string(),
+                    file_stem_from_path(maybe_filename.unwrap()),
                     maybe_lineno.unwrap(),
                     maybe_frame.unwrap().to_string(),
                 )

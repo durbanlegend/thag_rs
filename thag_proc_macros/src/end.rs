@@ -16,12 +16,12 @@ impl Parse for ProfileIdentifier {
         // Try parsing as a string literal first
         if input.peek(LitStr) {
             let lit: LitStr = input.parse()?;
-            return Ok(ProfileIdentifier { value: lit.value() });
+            return Ok(Self { value: lit.value() });
         }
 
         // If not a string, try parsing as an identifier
         let ident: Ident = input.parse()?;
-        Ok(ProfileIdentifier {
+        Ok(Self {
             value: ident.to_string(),
         })
     }

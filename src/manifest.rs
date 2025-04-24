@@ -276,20 +276,20 @@ pub fn extract(
 ) -> ThagResult<Manifest> {
     let maybe_rs_toml = extract_toml_block(rs_full_source);
 
-    profile!("parse_and_set_edition", time);
+    profile!("parse", mem_summary, time);
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
         // debug_log!("rs_toml_str={rs_toml_str}");
         Manifest::from_str(&rs_toml_str)?
     } else {
         Manifest::from_str("")?
     };
+    end!("parse");
 
-    {
-        profile!("set_edition", time);
-        if let Some(package) = rs_manifest.package.as_mut() {
-            package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
-        }
+    profile!("set_edition", mem_summary, time);
+    if let Some(package) = rs_manifest.package.as_mut() {
+        package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
     }
+    end!("set_edition");
 
     // debug_log!("rs_manifest={rs_manifest:#?}");
 

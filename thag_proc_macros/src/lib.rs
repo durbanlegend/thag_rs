@@ -244,7 +244,7 @@ fn expand_output(name: &str, output: &TokenStream) {
                 eprintln!(
                             "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
                         );
-                eprintln!("Token string: {token_str}");
+                eprintln!("{token_str}");
                 eprintln!("{style_reset}{dash_line}{style_reset}");
             }
         },

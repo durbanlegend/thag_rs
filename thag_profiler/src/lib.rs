@@ -46,7 +46,7 @@ mod mem_tracking;
 #[cfg(feature = "full_profiling")]
 mod mem_attribution;
 
-use std::fmt::Display;
+use std::{fmt::Display, path::Path};
 
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
@@ -57,7 +57,8 @@ pub use {
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
         disable_profiling, enable_profiling, get_config_profile_type, get_global_profile_type,
-        is_detailed_memory, is_profiling_enabled, strip_hex_suffix, Profile, ProfileSection,
+        is_detailed_memory, is_profiling_enabled, strip_hex_suffix,
+        Profile, /* ProfileSection,*/
         ProfileType,
     },
     thag_proc_macros::fn_name,
@@ -135,42 +136,19 @@ pub fn get_root_module() -> Option<&'static str> {
     PROFILEE.get().map(|profilee| profilee.root_module)
 }
 
-#[cfg(test)]
-mod feature_tests {
-    use crate::profiling::is_profiling_enabled;
+#[must_use]
+pub fn file_stem_from_path_str(file_name: &'static str) -> String {
+    file_stem_from_path(Path::new(file_name))
+}
 
-    #[test]
-    fn test_profiling_feature_flag_behavior() {
-        // This test verifies the behavior of profiling features
-
-        #[cfg(feature = "time_profiling")]
-        {
-            // When compiled with the "time_profiling" feature but profiling is disabled at runtime,
-            // is_profiling_enabled() should return false in test mode due to our special handling
-            assert!(!is_profiling_enabled(),
-                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
-
-            // We can enable profiling and it should work
-            // Force set the state directly rather than using enable_profiling which might have side effects
-            crate::profiling::force_set_profiling_state(true);
-            assert!(
-                is_profiling_enabled(),
-                "After enabling profiling, is_profiling_enabled() should return true"
-            );
-
-            // Clean up
-            crate::profiling::force_set_profiling_state(false);
-        }
-
-        #[cfg(not(feature = "time_profiling"))]
-        {
-            // When compiled without the "time_profiling" feature, is_profiling_enabled() should always return false
-            assert!(
-                !is_profiling_enabled(),
-                "Without profiling feature, is_profiling_enabled() should always return false"
-            );
-        }
-    }
+/// Extract the file stem from a Path.
+///
+/// # Panics
+///
+/// Panics if `Path::file_stem()`    does not return a valid file stem.
+#[must_use]
+pub fn file_stem_from_path(path: &Path) -> String {
+    path.file_stem().unwrap().to_string_lossy().to_string()
 }
 
 #[cfg(feature = "time_profiling")]
@@ -417,3 +395,41 @@ pub fn finalize_profiling() {
 
 #[cfg(not(feature = "time_profiling"))]
 pub const fn finalize_profiling() {}
+
+#[cfg(test)]
+mod feature_tests {
+    use crate::profiling::is_profiling_enabled;
+
+    #[test]
+    fn test_profiling_feature_flag_behavior() {
+        // This test verifies the behavior of profiling features
+
+        #[cfg(feature = "time_profiling")]
+        {
+            // When compiled with the "time_profiling" feature but profiling is disabled at runtime,
+            // is_profiling_enabled() should return false in test mode due to our special handling
+            assert!(!is_profiling_enabled(),
+                "With profiling feature enabled but disabled at runtime, is_profiling_enabled() should return false in test mode");
+
+            // We can enable profiling and it should work
+            // Force set the state directly rather than using enable_profiling which might have side effects
+            crate::profiling::force_set_profiling_state(true);
+            assert!(
+                is_profiling_enabled(),
+                "After enabling profiling, is_profiling_enabled() should return true"
+            );
+
+            // Clean up
+            crate::profiling::force_set_profiling_state(false);
+        }
+
+        #[cfg(not(feature = "time_profiling"))]
+        {
+            // When compiled without the "time_profiling" feature, is_profiling_enabled() should always return false
+            assert!(
+                !is_profiling_enabled(),
+                "Without profiling feature, is_profiling_enabled() should always return false"
+            );
+        }
+    }
+}

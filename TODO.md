@@ -21,21 +21,19 @@
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event. Not necessary.
 - [ ]  Worked example - e.g. syn as dependency - no need to do this with dependencies now that we have detailed profiling.
-- [ ]  Document use of `THAG_PROFILE=<type,dir,log,detail>, e.g. THAG_PROFILE=both,,announce,true demo/syn_dump_syntax.rs -- demo/hello_main.rs
 - [ ]  profile_type arg on enable_profiling now redundant
-- [ ]  Docs and impl: don't allow profiling of sections for memory due to backtrace matching issue.
 - [ ]  Docs: should be able to #[enable_profiling] on any 1 function, and all profiled functions should be included.
        If the decorated function is not the root of all the profiled functions, then the root will be the standard "all".
-- [ ]  Make MINIMUM_TRACKED_SIZE a configurable option (default 0)? or remove it altogether?
 - [ ]  lazy_static variable in #[enable_profiling] using backtrace to establish root. For the programmatic call to profiling::enable_profiling,
 look for an alternative or cater for and put up with the overhead of not having this baseline.
 - [ ]  Perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Debug Esc at all places in thag-analyze.
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator.
-- [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling]
+- [ ]  Shorten profile_type arg of #[profiled] to same format as for #[enable_profiling] - or rather #[profile]?
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Unbounded profiles must only go out of scope at the end of the _function_.
+
 
 I'm trying to figure out further unit testing of thag_profiler, including thag_proc_macros modules enable_profiling, profile and profiled. thag_proc_macros::lib has a fn maybe_expand_proc_macro<F> that
 

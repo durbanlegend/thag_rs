@@ -1302,11 +1302,11 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        let executable_path = release_path.join(&executable_name);
+        let executable_path = release_path.join(&executable_stem);
         debug_log!("executable_path={executable_path:#?},  output_path={output_path:#?}");
         fs::rename(executable_path, output_path)?;
     }
-    
+
     #[cfg(target_os = "windows")]
     {
         let executable_name = format!("{executable_stem}.exe");

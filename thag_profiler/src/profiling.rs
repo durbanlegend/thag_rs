@@ -13,7 +13,10 @@ use std::{
     time::Instant,
 };
 
-use crate::{debug_log, static_lazy, ProfileError};
+use crate::{
+    debug_log, file_stem_from_path_str, mem_attribution::register_profile, static_lazy,
+    ProfileError,
+};
 
 #[cfg(feature = "full_profiling")]
 use crate::{
@@ -1022,6 +1025,11 @@ impl FromStr for ProfileType {
     }
 }
 
+/// The Profile struct represents one profiled execution of a function or section of code.
+///
+/// Its logical key is the same call hierarchy that will be reflected in the flamegraph, namely
+/// the callstack from the (main) function to the current function, but with all unprofiled
+/// functions removed.
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Profile {
@@ -1186,7 +1194,7 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         detailed_memory: bool,
-        file_name: String,
+        file_name: &'static str,
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
@@ -1256,9 +1264,7 @@ impl Profile {
             self.build_stack(path)
         );
 
-        // Get current module path and line number
-        // let file_name = std::file!().to_string();
-        // let start_line = line!() as u32;
+        let file_name = file_stem_from_path_str(file_name);
 
         Some(Self {
             profile_type,
@@ -1318,12 +1324,10 @@ impl Profile {
         requested_type: ProfileType,
         is_async: bool,
         detailed_memory: bool,
-        file_name: String,
+        file_name: &'static str,
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
-        use crate::mem_attribution::register_profile;
-
         if !is_profiling_enabled() {
             return None;
         }
@@ -1344,7 +1348,10 @@ impl Profile {
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
+            let file_name = file_stem_from_path_str(file_name);
+
             debug_log!("file_name={file_name}");
+
             // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
 
@@ -2143,105 +2150,6 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 
     false
 }
-
-#[cfg(feature = "time_profiling")]
-#[derive(Debug)]
-pub struct ProfileSection {
-    pub profile: Option<Profile>,
-    pub start_line: Option<u32>, // Line number where section starts
-    pub end_line: Option<u32>,   // Line number where section ends (if explicitly ended)
-}
-
-#[cfg(feature = "time_profiling")]
-impl ProfileSection {
-    #[must_use]
-    pub fn new(name: Option<&str>) -> Self {
-        // let profile_type = get_global_profile_type();
-        // debug_log!("profile_type={profile_type:?}");
-        // let start_line = line!();
-        Self {
-            profile: Profile::new(
-                name,
-                None::<&str>,
-                ProfileType::Time, // Since memory profiling can't track sections via backtrace
-                false,
-                false,
-                file!().to_string(),
-                None,
-                None,
-            ),
-            start_line: None,
-            end_line: None,
-        }
-    }
-
-    /// Creates a new profile section with detailed memory tracking
-    #[must_use]
-    pub fn new_with_detailed_memory(
-        name: Option<&str>,
-        start_line: u32,
-        end_line: u32,
-        is_async: bool,
-        file_name: String,
-    ) -> Self {
-        debug_log!(
-            "In ProfileSection::new_with_detailed_memory with range={start_line}..{end_line}"
-        );
-        Self {
-            profile: Profile::new(
-                name,
-                None::<&str>,
-                ProfileType::Memory, // Since memory profiling can't track sections via backtrace
-                is_async,
-                true, // detailed_memory
-                file_name,
-                Some(start_line),
-                Some(end_line),
-            ),
-            start_line: Some(start_line),
-            end_line: Some(end_line),
-        }
-    }
-
-    // TODO redundant? Can just use drop(name);
-    pub fn end(self) {
-        drop(self);
-        // Profile (if any) will be dropped here
-    }
-
-    #[must_use]
-    pub const fn is_active(&self) -> bool {
-        self.profile.is_some()
-    }
-}
-
-// Dummy implementation when profiling is disabled
-#[cfg(not(feature = "time_profiling"))]
-pub struct ProfileSection;
-
-#[cfg(not(feature = "time_profiling"))]
-impl ProfileSection {
-    #[must_use]
-    pub const fn new(_name: Option<&str>) -> Self {
-        Self
-    }
-
-    #[must_use]
-    pub const fn new_with_detailed_memory(_name: Option<&str>) -> Self {
-        Self
-    }
-
-    pub const fn end(self) {}
-
-    #[must_use]
-    pub const fn is_active(&self) -> bool {
-        false
-    }
-}
-
-// This is just for clarity - removing the PhantomData marker should be enough
-unsafe impl Send for Profile {}
-unsafe impl Send for ProfileSection {}
 
 /// Register a function name with the profiling registry
 ///

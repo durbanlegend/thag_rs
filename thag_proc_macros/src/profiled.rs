@@ -136,13 +136,13 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, #detailed_memory, module_path!().to_string(), None, None)
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, #detailed_memory, file!(), None, None)
     };
 
     #[cfg(feature = "full_profiling")]
     let profile_new = quote! {
         ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
-            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, #detailed_memory, module_path!().to_string(), None, None)
+            ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, #detailed_memory, file!(), None, None)
         })
     };
 

@@ -85,7 +85,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
             #profile_type,
             #is_async,
             #detailed_memory,
-            module_path!().to_string(),
+            file!(),
             #start_line,
             #end_line
         );
@@ -100,7 +100,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
                 #profile_type,
                 #is_async,
                 #detailed_memory,
-                module_path!().to_string(),
+                file!(),
                 #start_line,
                 #end_line
             )

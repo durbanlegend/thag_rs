@@ -12,13 +12,8 @@ use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
 use thag_rs::{execute, get_args, ThagResult};
 
-#[enable_profiling(yes)] // default Both
+#[enable_profiling(runtime)]
 pub fn main() -> ThagResult<()> {
-    if cfg!(feature = "profiling") {
-        println!("Enabling profiling..."); // Debug output
-        profiling::enable_profiling(true, Some(profiling::ProfileType::Both))?;
-    }
-
     #[cfg(debug_assertions)]
     let start = Instant::now();
     let cli = RefCell::new(get_args()); // Wrap args in a RefCell

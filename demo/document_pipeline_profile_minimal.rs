@@ -55,7 +55,7 @@ impl Document {
     }
 
     // #[profiled]
-    #[profiled(detailed_memory = true)]
+    #[profiled(both, mem_detail)]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation with fixed duration
         std::thread::sleep(Duration::from_millis(20));
@@ -174,10 +174,10 @@ async fn run_batch(count: usize) {
 
     // Print results for verification
     profile!("print_docs", time, mem_summary, async_fn, unbounded);
-    // profile!("print_docs", time, mem_detail, async_fn);
     for doc in &docs {
         let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         // Small async delay
+        // profile!("print_docs", time, mem_detail, async_fn);
         sleep(Duration::from_millis(150)).await;
 
         println!(
@@ -206,6 +206,7 @@ async fn main() {
     // println!("Switching profiling off");
     // disable_profiling();
 
+    // profile!("second_batch", global, async_fn);
     profile!("second_batch", time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(2).await;

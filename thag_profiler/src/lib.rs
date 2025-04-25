@@ -78,7 +78,7 @@ pub use {
     profiling::extract_path,
 };
 
-#[cfg(feature = "time_profiling")]
+// #[cfg(feature = "time_profiling")]
 pub use thag_proc_macros::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "time_profiling")]
@@ -288,7 +288,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
     PROFILEE.set(Profilee::new(root_module)).unwrap();
 
-    set_base_location(fn_name);
+    set_base_location(file!(), fn_name, line!());
     enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
 }
 

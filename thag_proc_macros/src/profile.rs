@@ -16,9 +16,8 @@ struct ProfileArgs {
 
 impl Parse for ProfileArgs {
     fn parse(input: ParseStream) -> Result<Self> {
-        // let name: LitStr = input.parse()?;
+        // Try parsing as a string literal first
         let name = {
-            // Try parsing as a string literal first
             if input.peek(LitStr) {
                 input.parse::<LitStr>()?.value()
             } else {
@@ -47,14 +46,17 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
     let has_mem_detail = args.iter().any(|arg| arg == "mem_detail");
     let is_async = args.iter().any(|arg| arg == "async_fn");
     let is_unbounded = args.iter().any(|arg| arg == "unbounded");
+    let use_global = args.iter().any(|arg| arg == "global");
 
     // Determine profile type
-    let profile_type = if has_time && (has_mem_summary || has_mem_detail) {
+    let profile_type = if use_global {
+        quote! { ::thag_profiler::get_global_profile_type() }
+    } else if has_time && (has_mem_summary || has_mem_detail) {
         quote! { ::thag_profiler::ProfileType::Both }
     } else if has_time {
         quote! { ::thag_profiler::ProfileType::Time }
     } else {
-        quote! { ::thag_profiler::ProfileType::Memory }
+        quote! { ::thag_profiler::get_global_profile_type() }
     };
 
     // Determine if detailed memory is enabled

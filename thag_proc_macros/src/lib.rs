@@ -1,7 +1,6 @@
 #![allow(clippy::missing_panics_doc)]
 mod ansi_code_derive;
 mod category_enum;
-mod end;
 mod file_navigator;
 mod fn_name;
 mod generate_theme_types;
@@ -19,12 +18,14 @@ mod enable_profiling;
 #[cfg(feature = "time_profiling")]
 mod profiled;
 
-// #[cfg(feature = "time_profiling")]
+#[cfg(feature = "time_profiling")]
 mod profile;
+
+#[cfg(feature = "time_profiling")]
+mod end;
 
 use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
-use crate::end::end_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
@@ -44,6 +45,9 @@ use crate::profiled::profiled_impl;
 
 #[cfg(feature = "time_profiling")]
 use crate::profile::profile_impl;
+
+#[cfg(feature = "time_profiling")]
+use crate::end::end_impl;
 
 #[cfg(feature = "tui")]
 use crate::tui_keys::key_impl;
@@ -263,17 +267,29 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
     )
 }
 
+#[cfg(not(feature = "time_profiling"))]
+#[proc_macro_attribute]
+pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
 #[proc_macro_attribute]
 pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
     maybe_expand_attr_macro(false, "fn_name", &attr, &item, fn_name_impl)
 }
 
-#[proc_macro_attribute]
 #[cfg(feature = "time_profiling")]
+#[proc_macro_attribute]
 pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
     // eprintln!("DEBUGLIB: profiled attribute macro called");
     // Set to true to enable macro expansion output
     maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
+}
+
+#[cfg(not(feature = "time_profiling"))]
+#[proc_macro_attribute]
+pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
 }
 
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct
@@ -328,13 +344,28 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
 /// end!("get_line");
 ///
 /// ```
+#[cfg(feature = "time_profiling")]
 #[proc_macro]
 pub fn end(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "end", &input, end_impl)
+    maybe_expand_proc_macro(false, "end", &input, end_impl)
+}
+
+#[cfg(not(feature = "time_profiling"))]
+#[proc_macro]
+pub fn end(_input: TokenStream) -> TokenStream {
+    // Return an empty token stream to make this a no-op
+    TokenStream::new()
 }
 
 #[cfg(feature = "time_profiling")]
 #[proc_macro]
 pub fn profile(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "profile", &input, profile_impl)
+    maybe_expand_proc_macro(false, "profile", &input, profile_impl)
+}
+
+#[cfg(not(feature = "time_profiling"))]
+#[proc_macro]
+pub fn profile(_input: TokenStream) -> TokenStream {
+    // Return an empty token stream to make this a no-op
+    TokenStream::new()
 }

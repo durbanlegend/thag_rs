@@ -13,14 +13,12 @@ use std::{
     time::Instant,
 };
 
-use crate::{
-    debug_log, file_stem_from_path_str, mem_attribution::register_profile, static_lazy,
-    ProfileError,
-};
+use crate::{debug_log, static_lazy, ProfileError};
 
 #[cfg(feature = "full_profiling")]
 use crate::{
     get_root_module,
+    mem_attribution::register_profile,
     mem_tracking::{
         activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack,
         record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
@@ -38,7 +36,7 @@ use std::thread;
 use backtrace::{Backtrace, BacktraceFrame};
 
 #[cfg(feature = "time_profiling")]
-use crate::{flush_debug_log, get_base_location, ProfileResult};
+use crate::{file_stem_from_path_str, flush_debug_log, get_base_location, ProfileResult};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -580,6 +578,9 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
         }
         ProfileType::Memory | ProfileType::Both => panic!(
             "Profile type `{profile_type:?}` requested but feature `full_profiling` is not enabled",
+        ),
+        ProfileType::None => eprintln!(
+            "Profile type `{profile_type:?}` requested - no profiling will be done despite feature `time_profiling` being enabled",
         ),
     }
     flush_debug_log();
@@ -1261,7 +1262,7 @@ impl Profile {
         debug_log!(
             "NEW PROFILE: (Time) created for {}\ndesc_stack = {}",
             path.join(" -> "),
-            self.build_stack(path)
+            build_stack(&path, section_name.as_ref(), " -> ")
         );
 
         let file_name = file_stem_from_path_str(file_name);
@@ -1422,7 +1423,7 @@ impl Profile {
                 debug_log!(
                     "NEW PROFILE: (Time) created for {}\ndesc_stack = {}",
                     path.join(" -> "),
-                    build_stack(&path, section_name.clone(), " -> ")
+                    build_stack(&path, section_name.as_ref(), " -> ")
                 );
 
                 // Get current module path and line number
@@ -1489,7 +1490,7 @@ impl Profile {
             debug_log!(
                 "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",
                 path.join(" -> "),
-                build_stack(&path, section_name.clone(), " -> ")
+                build_stack(&path, section_name.as_ref(), " -> ")
             );
 
             // Create memory guard
@@ -1686,7 +1687,7 @@ impl Profile {
         //     .chain(self.section_name.clone())
         //     .collect::<Vec<String>>()
         //     .join(";")
-        build_stack(path, self.section_name.clone(), ";")
+        build_stack(path, self.section_name.as_ref(), ";")
     }
 
     #[cfg(feature = "full_profiling")]
@@ -1766,7 +1767,7 @@ impl Profile {
 #[must_use]
 pub fn build_stack(
     path: &[String],
-    maybe_section_name: Option<String>,
+    maybe_section_name: Option<&String>,
     sep: &str,
 ) -> std::string::String {
     let mut vanilla_stack = String::new();
@@ -1784,7 +1785,7 @@ pub fn build_stack(
         .map(|(stack_str, fn_name_str)| {
             get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
         })
-        .chain(maybe_section_name)
+        .chain(maybe_section_name.cloned())
         .collect::<Vec<String>>()
         .join(sep)
 }
@@ -2017,7 +2018,7 @@ impl Drop for Profile {
                     let elapsed = start.elapsed();
                     let _ = self.write_time_event(elapsed);
                 }
-                ProfileType::Memory => (),
+                ProfileType::Memory | ProfileType::None => todo!(),
             }
         }
         debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
@@ -2054,38 +2055,6 @@ impl Drop for Profile {
                 // let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
                 // let mut already_seen = HashSet::new();
 
-                // let cleaned_stack_trace: Vec<String> = Backtrace::frames(&Backtrace::new())
-                //     .iter()
-                //     .flat_map(BacktraceFrame::symbols)
-                //     .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-                //     .skip_while(|name| !name.contains("drop") || name.contains("{{closure}}"))
-                //     // Be careful, this is very sensitive to changes in the function signatures of this module.
-                //     .skip(1)
-                //     .take_while(|name| !name.contains(end_point))
-                //     .filter(|name| filter_scaffolding(name))
-                //     .map(strip_hex_suffix)
-                //     .map(|mut name| {
-                //         // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-                //         clean_function_name(&mut name)
-                //     })
-                //     // TODO May be problematic? - this will collapse legitimate nesting, but protects against recursion
-                //     .filter(|name| {
-                //         // Skip duplicate function calls (helps with the {{closure}} pattern)
-                //         if already_seen.contains(name.as_str()) {
-                //             false
-                //         } else {
-                //             already_seen.insert(name.clone());
-                //             true
-                //         }
-                //     })
-                //     // .map(|(_, name)| name.clone())
-                //     .collect();
-
-                // debug_log!(
-                //     "In drop for Profile with memory profiling: {}, cleaned stack trace={cleaned_stack_trace:#?}",
-                //     self.registered_name
-                // );
-
                 let start_line = self.start_line();
                 let end_line = self.end_line();
                 let type_desc = match (start_line, end_line) {
@@ -2095,8 +2064,8 @@ impl Drop for Profile {
                     (Some(_), Some(_)) => "bounded section",
                 };
                 debug_log!(
-                    "In drop for Profile with memory profiling: {}. Type is {type_desc}.",
-                    self.registered_name
+                    "In drop for Profile with memory profiling: {}. Type is {type_desc}",
+                    build_stack(&self.path, self.section_name.as_ref(), " -> ")
                 );
 
                 // First drop the guard to exit the task context

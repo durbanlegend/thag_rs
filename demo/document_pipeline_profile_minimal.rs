@@ -131,7 +131,7 @@ async fn process_document(mut doc: Document) -> Document {
     doc.calculate_sentiment();
 
     // Small async delay
-    profile!("delay", time, mem_summary, async_fn);
+    profile!("delay", both, async_fn);
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
     end!("delay");

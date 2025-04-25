@@ -1,8 +1,7 @@
 /*[toml]
 [dependencies]
-#crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
 ratatui = "0.27.0"
-thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
+thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["time_profiling"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }
 # thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
@@ -544,7 +543,7 @@ impl<'a> Editor<'a> {
     }
 }
 
-#[profiled]
+#[profiled(detailed_memory = true)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
     let inner = area.inner(Margin {
@@ -621,7 +620,7 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 }
 
 #[allow(dead_code)]
-#[enable_profiling]
+#[enable_profiling(time)]
 fn main() -> io::Result<()> {
     Editor::new(env::args_os().skip(1))?.run()
 }

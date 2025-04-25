@@ -42,8 +42,8 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
     let ProfileArgs { name, args } = parse_macro_input!(input as ProfileArgs);
 
     // Extract flags from args
-    let has_time = args.iter().any(|arg| arg == "time");
-    let has_mem_summary = args.iter().any(|arg| arg == "mem_summary");
+    let has_time = args.iter().any(|arg| arg == "time" || arg == "both");
+    let has_mem_summary = args.iter().any(|arg| arg == "mem_summary" || arg == "both");
     let has_mem_detail = args.iter().any(|arg| arg == "mem_detail");
     let is_async = args.iter().any(|arg| arg == "async_fn");
     let is_unbounded = args.iter().any(|arg| arg == "unbounded");

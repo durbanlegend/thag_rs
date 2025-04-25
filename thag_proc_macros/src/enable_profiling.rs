@@ -156,11 +156,11 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     // };
 
     for attr in attrs {
-        // assert_ne!(
-        //     quote!(#attr).to_string().as_str(),
-        //     "#[async_std :: main]",
-        //     "#[async_std::main] if present must appear before #[enable_profiling] for correct expansion."
-        // );
+        assert_ne!(
+            quote!(#attr).to_string().as_str(),
+            "#[async_std :: main]",
+            "#[async_std::main] if present must appear before #[enable_profiling] for correct expansion."
+        );
         eprintln!("attr={}", quote!(#attr));
         assert_ne!(
             quote!(#attr).to_string().as_str(),

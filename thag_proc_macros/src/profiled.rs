@@ -97,12 +97,44 @@ impl Parse for ProfileArgs {
                         let _: syn::Token![=] = input.parse()?;
                         let lit: LitStr = input.parse()?;
                         args.imp = Some(lit.value());
-                        continue;
+                        continue; // Continue to next parameter
+                    } else if ident == "detailed_memory" {
+                        // For backward compatibility
+                        let _: syn::Token![=] = input.parse()?;
+                        let lit: syn::LitBool = input.parse()?;
+                        args.mem_detail = lit.value;
+                        continue; // Continue to next parameter
+                    } else if ident == "profile_type" {
+                        // For backward compatibility
+                        let _: syn::Token![=] = input.parse()?;
+                        let lit: LitStr = input.parse()?;
+                        match lit.value().as_str() {
+                            "time" => args.time = true,
+                            "memory" => args.mem_summary = true,
+                            "both" => args.both = true,
+                            "global" => args.global = true,
+                            _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
+                        }
+                        continue; // Continue to next parameter
                     }
                     return Err(syn::Error::new(
                         ident.span(),
                         format!("unexpected parameter: {ident}"),
                     ));
+                }
+
+                // Check for imp parameter with parentheses syntax: imp("value")
+                if input.peek(syn::Ident) && input.peek2(syn::token::Paren) {
+                    let ident: syn::Ident = input.parse()?;
+                    if ident == "imp" {
+                        // Parse parenthesized content
+                        let content;
+                        let _parentheses = syn::parenthesized!(content in input);
+                        // Parse string literal inside parentheses
+                        let lit: LitStr = content.parse()?;
+                        args.imp = Some(lit.value());
+                        continue;
+                    }
                 }
 
                 // Parse as flag
@@ -114,6 +146,10 @@ impl Parse for ProfileArgs {
                     "both" => args.both = true,
                     "global" => args.global = true,
                     "test" => args.test = true,
+                    "imp" => {
+                        // Handle imp without a value (just for safety)
+                        args.imp = Some(String::new());
+                    },
                     _ => {
                         return Err(syn::Error::new(
                             flag.span(),
@@ -134,7 +170,24 @@ impl Parse for ProfileArgs {
 }
 
 pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(attr as ProfileArgs);
+    // Print the raw attribute TokenStream to help debug
+    eprintln!("Raw attribute tokens: {}", attr.to_string());
+
+    let args = match syn::parse::<ProfileArgs>(attr.clone()) {
+        Ok(args) => {
+            // Print parsed arguments for debugging
+            eprintln!("Parsed attributes - imp: {:?}, time: {}, mem_summary: {}, mem_detail: {}, both: {}, global: {}, test: {}", 
+                     args.imp, args.time, args.mem_summary, args.mem_detail, args.both, args.global, args.test);
+            args
+        }
+        Err(e) => {
+            eprintln!("Error parsing profiled attributes: {}", e);
+            eprintln!("Raw attribute tokens: {}", attr.to_string());
+            // Return the original function without any changes
+            return item;
+        }
+    };
+
     let item_clone = item.clone();
     let input = parse_macro_input!(item_clone as ItemFn);
 
@@ -148,13 +201,27 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let is_async = input.sig.asyncness.is_some();
 
+    // Print detailed flags for debugging
+    eprintln!("Profile type determination - both: {}, time: {}, mem_summary: {}, mem_detail: {}", 
+             args.both, args.time, args.mem_summary, args.mem_detail);
+
     // Determine profile type based on flags
+    #[cfg(feature = "full_profiling")]
     let profile_type = if args.both || (args.time && (args.mem_summary || args.mem_detail)) {
         quote! { ::thag_profiler::ProfileType::Both }
     } else if args.time {
         quote! { ::thag_profiler::ProfileType::Time }
     } else if args.mem_summary || args.mem_detail {
         quote! { ::thag_profiler::ProfileType::Memory }
+    } else {
+        // Default to global
+        quote! { ::thag_profiler::get_global_profile_type() }
+    };
+
+    // When not using full_profiling, always use Time or Global regardless of memory settings
+    #[cfg(not(feature = "full_profiling"))]
+    let profile_type = if args.time {
+        quote! { ::thag_profiler::ProfileType::Time }
     } else {
         // Default to global
         quote! { ::thag_profiler::get_global_profile_type() }
@@ -279,8 +346,9 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
     // If this is a test function, add a debug message
     let fn_name_str = fn_name.to_string();
     let debug_msg = if *is_test_fn {
+        // Use a simple println instead of debug_log to avoid any import issues
         quote! {
-            ::thag_profiler::debug_log!("Using cloned profile for test function: {}", #fn_name_str);
+            println!("Using cloned profile for test function: {}", #fn_name_str);
         }
     } else {
         quote! {}

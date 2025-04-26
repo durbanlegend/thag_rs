@@ -24,14 +24,14 @@
 //!
 //! // Time profiling
 //! {
-//!     let _p = Profile::new(Some("my_function"), None, ProfileType::Time, false, false, false);
+//!     let _p = Profile::new(Some("my_function"), None, ProfileType::Time, false, false, file!(), None, None);
 //!     // Code to profile...
 //! }
 //!
 //! // Memory profiling (requires `full_profiling` feature)
 //! #[cfg(feature = "full_profiling")]
 //! {
-//!     let _p = Profile::new(Some("memory_intensive_function"), None, ProfileType::Memory, false, false, true);
+//!     let _p = Profile::new(Some("memory_intensive_function"), None, ProfileType::Memory, false, false, file!(), None, None);
 //!     // Code to profile memory usage...
 //! }
 //! ```

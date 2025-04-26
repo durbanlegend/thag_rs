@@ -1063,14 +1063,14 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, false);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, file!(), None, None);
     ///     // Code to profile...
     /// }
     ///
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, true);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, file!(), None, None);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```
@@ -1175,7 +1175,7 @@ impl Profile {
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, true);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, file!(), None, None);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```
@@ -1298,14 +1298,14 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, false);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, file!(), None, None);
     ///     // Code to profile...
     /// }
     ///
     /// // With memory profiling (requires `full_profiling` feature)
     /// #[cfg(feature = "full_profiling")]
     /// {
-    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, true);
+    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, file!(), None, None);
     ///     // Code to profile with memory tracking...
     /// }
     /// ```

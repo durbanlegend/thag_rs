@@ -361,6 +361,79 @@ impl MyStruct {
 
 #### Attribute Options
 
+The `#[profiled]` attribute macro accepts several arguments that configure how profiling is performed.
+
+##### Usage
+
+```rust
+#[profiled]
+fn my_function() { ... }
+
+// With arguments
+#[profiled(time, mem_detail)]
+fn my_memory_intensive_function() { ... }
+```
+
+##### Available Arguments
+
+| Argument | Description | Feature Required |
+|----------|-------------|------------------|
+| `time` | Enables time/performance profiling | `time_profiling` |
+| `mem_summary` | Enables basic memory profiling | `full_profiling` |
+| `mem_detail` | Enables detailed memory profiling | `full_profiling` |
+| `both` | Shorthand to enable both time and memory profiling | `full_profiling` |
+| `global` | Uses the global profile type setting | Any profiling feature |
+| `test` | Special flag for testing - enables clone of profile for test access | Any profiling feature |
+
+##### Notes
+
+- **Argument Order**: The order of arguments doesn't matter - `#[profiled(time, mem_detail)]` is equivalent to `#[profiled(mem_detail, time)]`.
+
+- **Default Behavior**: If no arguments are provided, the macro defaults to using the global profile type setting.
+
+- **Feature Flags**: Memory-related profiling options require the `full_profiling` feature to be enabled. If only `time_profiling` is enabled, all memory profiling arguments are ignored.
+
+- **Combined Profiling**: Using both `time` and any memory option (e.g., `mem_detail` or `mem_summary`) is equivalent to using `both`.
+
+##### Examples
+
+```rust
+// Basic time profiling
+#[profiled(time)]
+fn time_sensitive_function() { ... }
+
+// Detailed memory profiling
+#[profiled(mem_detail)]
+fn memory_intensive_function() { ... }
+
+// Both time and memory profiling
+#[profiled(both)]
+// Or equivalently:
+#[profiled(time, mem_detail)]
+fn complex_function() { ... }
+
+// Use the global profile type
+#[profiled(global)]
+fn standard_function() { ... }
+
+// Default - equivalent to global
+#[profiled]
+fn simple_function() { ... }
+
+// Special case for tests
+#[profiled(time, test)]
+async fn function_for_testing() { ... }
+```
+
+##### Testing Async Functions
+
+For testing async functions with the `#[profiled]` attribute, use one of these approaches:
+
+1. Add the `test` argument: `#[profiled(time, test)]`
+2. Add a `_test` suffix to your function name: `async fn my_function_test()`
+
+Both methods allow accessing the profile variable inside async function bodies during tests.
+
 The `#[profiled]` attribute supports a profile_type option:
 
 ```rust
@@ -371,21 +444,17 @@ fn allocating_function() { /* ... */ }
 
 #### Order of attributes
 
-If both `#[enable_profiling]` and `#[profiled]` attributes are used, they should be specified in that order.
+If `#[enable_profiling]` is used in conjunction with either `#[tokio::main]` or `#[async_std::main]`, then `#[enable_profiling]` must appear _after_ the other attribute.
 
-```rust
-#[enable_profiling]
-#[profiled]
-fn main() { /* ... */ }
-```
+#### Interaction with features
 
-If used to decorate a main function that has the attribute `#[tokio::main]`, they should come before `#[tokio::main]`.
+If only the `time_profiling` feature is enabled, any memory profiling-specific arguments will be invalid because they depend on the `full_profiling` feature. In this case they will be ignored rather than raise an error.
 
-```rust
-#[enable_profiling]
-#[profiled]
-#[tokio::main]
-async fn main() { /* ... */ }
+E.g.:
+
+```Rust
+#[cfg(feature = "time_profiling")]
+#[profiled(detailed_memory=true)]
 ```
 
 ### Controlling Profiling at Runtime

@@ -33,7 +33,7 @@ struct Document {
 }
 
 impl Document {
-    #[profiled(imp = "Document")]
+    #[profiled]
     fn new(id: usize, content: String) -> Self {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(10));

@@ -1214,12 +1214,15 @@ impl Profile {
         }
 
         // Try allowing overrides
-        let profile_type = requested_type;
-        // eprintln!("requested_type={requested_type:?}");
-
-        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+        let profile_type = if matches!(requested_type, ProfileType::Memory | ProfileType::Both) {
             debug_log!("Memory profiling requested but the 'full_profiling' feature is not enabled. Only time will be profiled.");
-        }
+            ProfileType::Time
+        } else {
+            requested_type
+        };
+
+        let detailed_memory = detailed_memory
+            && (profile_type == ProfileType::Memory || profile_type == ProfileType::Both);
 
         // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";

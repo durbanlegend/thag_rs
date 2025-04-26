@@ -175,7 +175,7 @@ async fn profiled_function_both_async_test() {
 
 // Test with legacy param syntax - profile_type
 #[cfg(feature = "time_profiling")]
-#[profiled(profile_type="time")]
+#[profiled(profile_type = "time")]
 fn profiled_function_legacy_params_test() {
     let profile = profile.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Time);
@@ -188,21 +188,41 @@ fn profiled_function_legacy_params_test() {
 
 // Test with legacy detailed_memory param
 #[cfg(feature = "time_profiling")]
-#[profiled(detailed_memory=true)]
+#[profiled(detailed_memory = true)]
 fn profiled_function_detailed_memory_test() {
     let profile = profile.as_ref().unwrap();
+
+    #[cfg(not(feature = "full_profiling"))]
     // Should use the global profile type (Time)
     assert_eq!(profile.get_profile_type(), ProfileType::Time);
+
+    #[cfg(feature = "full_profiling")]
+    assert_eq!(profile.get_profile_type(), ProfileType::Memory);
+
+    #[cfg(not(feature = "full_profiling"))]
+    assert!(!profile.is_detailed_memory());
+
+    #[cfg(feature = "full_profiling")]
     assert!(profile.is_detailed_memory());
 }
 
 // Test with both legacy params
 #[cfg(feature = "time_profiling")]
-#[profiled(profile_type="time", detailed_memory=true)]
+#[profiled(profile_type = "time", detailed_memory = true)]
 fn profiled_function_both_legacy_params_test() {
     let profile = profile.as_ref().unwrap();
+
+    #[cfg(feature = "full_profiling")]
+    assert_eq!(profile.get_profile_type(), ProfileType::Both);
+
+    #[cfg(not(feature = "full_profiling"))]
     assert_eq!(profile.get_profile_type(), ProfileType::Time);
+
+    #[cfg(feature = "full_profiling")]
     assert!(profile.is_detailed_memory());
+
+    #[cfg(not(feature = "full_profiling"))]
+    assert!(!profile.is_detailed_memory());
 }
 
 #[test]

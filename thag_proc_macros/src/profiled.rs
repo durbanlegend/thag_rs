@@ -14,8 +14,7 @@ use syn::{Attribute, FnArg, Generics, ReturnType, Visibility, WhereClause};
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Default)]
 struct ProfileArgs {
-    /// The implementing type (e.g., "`MyStruct`") - kept for backwards compatibility
-    imp: Option<String>,
+    // imp parameter removed - not needed
     /// Flag for time profiling
     time: bool,
     /// Flag for memory summary profiling
@@ -48,10 +47,6 @@ impl Parse for ProfileArgs {
 
                 let ident_str = ident.to_string();
                 match ident_str.as_str() {
-                    "imp" => {
-                        let lit: LitStr = input.parse()?;
-                        args.imp = Some(lit.value());
-                    }
                     // For backward compatibility
                     "detailed_memory" => {
                         let lit: syn::LitBool = input.parse()?;
@@ -90,15 +85,9 @@ impl Parse for ProfileArgs {
                 }
                 first = false;
 
-                // Check for imp parameter with a different syntax
                 if input.peek(syn::Ident) && input.peek2(syn::Token![=]) {
                     let ident: syn::Ident = input.parse()?;
-                    if ident == "imp" {
-                        let _: syn::Token![=] = input.parse()?;
-                        let lit: LitStr = input.parse()?;
-                        args.imp = Some(lit.value());
-                        continue; // Continue to next parameter
-                    } else if ident == "detailed_memory" {
+                    if ident == "detailed_memory" {
                         // For backward compatibility
                         let _: syn::Token![=] = input.parse()?;
                         let lit: syn::LitBool = input.parse()?;
@@ -123,20 +112,6 @@ impl Parse for ProfileArgs {
                     ));
                 }
 
-                // Check for imp parameter with parentheses syntax: imp("value")
-                if input.peek(syn::Ident) && input.peek2(syn::token::Paren) {
-                    let ident: syn::Ident = input.parse()?;
-                    if ident == "imp" {
-                        // Parse parenthesized content
-                        let content;
-                        let _parentheses = syn::parenthesized!(content in input);
-                        // Parse string literal inside parentheses
-                        let lit: LitStr = content.parse()?;
-                        args.imp = Some(lit.value());
-                        continue;
-                    }
-                }
-
                 // Parse as flag
                 let flag: syn::Ident = input.parse()?;
                 match flag.to_string().as_str() {
@@ -146,10 +121,6 @@ impl Parse for ProfileArgs {
                     "both" => args.both = true,
                     "global" => args.global = true,
                     "test" => args.test = true,
-                    "imp" => {
-                        // Handle imp without a value (just for safety)
-                        args.imp = Some(String::new());
-                    },
                     _ => {
                         return Err(syn::Error::new(
                             flag.span(),
@@ -176,8 +147,8 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let args = match syn::parse::<ProfileArgs>(attr.clone()) {
         Ok(args) => {
             // Print parsed arguments for debugging
-            eprintln!("Parsed attributes - imp: {:?}, time: {}, mem_summary: {}, mem_detail: {}, both: {}, global: {}, test: {}", 
-                     args.imp, args.time, args.mem_summary, args.mem_detail, args.both, args.global, args.test);
+            eprintln!("Parsed attributes - time: {}, mem_summary: {}, mem_detail: {}, both: {}, global: {}, test: {}",
+                     args.time, args.mem_summary, args.mem_detail, args.both, args.global, args.test);
             args
         }
         Err(e) => {
@@ -202,8 +173,10 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let is_async = input.sig.asyncness.is_some();
 
     // Print detailed flags for debugging
-    eprintln!("Profile type determination - both: {}, time: {}, mem_summary: {}, mem_detail: {}", 
-             args.both, args.time, args.mem_summary, args.mem_detail);
+    eprintln!(
+        "Profile type determination - both: {}, time: {}, mem_summary: {}, mem_detail: {}",
+        args.both, args.time, args.mem_summary, args.mem_detail
+    );
 
     // Determine profile type based on flags
     #[cfg(feature = "full_profiling")]
@@ -218,14 +191,9 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! { ::thag_profiler::get_global_profile_type() }
     };
 
-    // When not using full_profiling, always use Time or Global regardless of memory settings
+    // When not using full_profiling, always use Time regardless of memory settings
     #[cfg(not(feature = "full_profiling"))]
-    let profile_type = if args.time {
-        quote! { ::thag_profiler::ProfileType::Time }
-    } else {
-        // Default to global
-        quote! { ::thag_profiler::get_global_profile_type() }
-    };
+    let profile_type = quote! { ::thag_profiler::ProfileType::Time };
 
     // Determine if detailed memory profiling is enabled
     let detailed_memory = args.mem_detail;

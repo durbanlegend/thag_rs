@@ -1,3 +1,4 @@
+#[cfg(feature = "full_profiling")]
 use thag_profiler::create_memory_task;
 
 #[test]

@@ -178,6 +178,18 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         })
     };
 
+    #[cfg(not(feature = "full_profiling"))]
+    let profile_drop = quote! {
+        drop(profile);
+    };
+
+    #[cfg(feature = "full_profiling")]
+    let profile_drop = quote! {
+        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+            drop(profile);
+        });
+    };
+
     let ctx = FunctionContext {
         vis: &input.vis,
         fn_name,
@@ -188,6 +200,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         body: &input.block,
         attrs: &input.attrs,
         profile_new,
+        profile_drop,
         is_test_fn,
     };
 
@@ -210,6 +223,7 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         body,
         attrs,
         profile_new,
+        profile_drop,
         is_test_fn: _,
     }: &FunctionContext<'_> = ctx;
 
@@ -220,9 +234,7 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
             let profile = #profile_new;
             let result = { #body };
 
-            ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
-                drop(profile);
-            });
+            #profile_drop
 
             result
         }
@@ -240,6 +252,7 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         body,
         attrs,
         profile_new,
+        profile_drop,
         is_test_fn,
     } = ctx;
 
@@ -294,9 +307,7 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
                     if result.is_ready() {
                         // Take the profile out so we can explicitly drop it with the System allocator
                         if let Some(profile) = this._profile.take() {
-                            ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
-                                drop(profile);
-                            });
+                            #profile_drop
                         }
                     }
                     result
@@ -338,6 +349,8 @@ struct FunctionContext<'a> {
     attrs: &'a Vec<Attribute>,
     /// Profile instantiation, avoiding allocation tracking if memory profiling
     profile_new: proc_macro2::TokenStream,
+    /// Profile drop, avoiding allocation tracking if memory profiling
+    profile_drop: proc_macro2::TokenStream,
     /// Is this a test function (either by name convention or explicit flag)
     is_test_fn: bool,
 }

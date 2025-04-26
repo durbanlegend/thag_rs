@@ -36,6 +36,7 @@ pub fn end_impl(input: TokenStream) -> TokenStream {
     // Convert the string to an identifier
     let func_name = format_ident!("end_{profile_id_str}");
 
+    #[cfg(feature = "full_profiling")]
     let expanded = quote! {
         fn #func_name() -> u32 { line!() }
 
@@ -44,6 +45,15 @@ pub fn end_impl(input: TokenStream) -> TokenStream {
                 drop(profile);
             }
         });
+    };
+
+    #[cfg(not(feature = "full_profiling"))]
+    let expanded = quote! {
+        fn #func_name() -> u32 { line!() }
+
+        if let Some(profile) = #profile_id {
+            drop(profile);
+        }
     };
 
     expanded.into()

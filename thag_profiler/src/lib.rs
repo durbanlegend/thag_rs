@@ -23,6 +23,7 @@
 //! use thag_profiler::{Profile, ProfileType};
 //!
 //! // Time profiling
+//! #[cfg(feature = "time_profiling")]
 //! {
 //!     let _p = Profile::new(Some("my_function"), None, ProfileType::Time, false, false, file!(), None, None);
 //!     // Code to profile...

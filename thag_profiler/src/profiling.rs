@@ -1062,6 +1062,7 @@ impl Profile {
     /// use thag_profiler::{Profile, ProfileType};
     ///
     /// // Time profiling only
+    /// #[cfg(feature = "time_profiling")]
     /// {
     ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, file!(), None, None);
     ///     // Code to profile...
@@ -1168,7 +1169,7 @@ impl Profile {
     ///
     /// // Time profiling only
     /// {
-    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, false);
+    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, file!(), None, None);
     ///     // Code to profile...
     /// }
     ///

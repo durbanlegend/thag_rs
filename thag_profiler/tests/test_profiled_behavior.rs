@@ -1,4 +1,5 @@
 // In thag_profiler/tests/test_profiled_behavior.rs
+#[cfg(feature = "time_profiling")]
 use thag_profiler::{
     enable_profiling, file_stem_from_path_str, profiled,
     profiling::{get_reg_desc_name, is_profiled_function},
@@ -6,7 +7,7 @@ use thag_profiler::{
 };
 
 // Add _test suffix to signal to profiled macro that this is a test function
-#[allow(unused_must_use)]
+#[cfg(feature = "time_profiling")]
 #[profiled(time)]
 async fn profiled_function_time_test() {
     // Direct access to the 'profile' variable created by the macro
@@ -32,7 +33,7 @@ async fn profiled_function_time_test() {
 }
 
 // Alternatively, use the explicit 'test' flag
-#[allow(unused_must_use)]
+#[cfg(feature = "time_profiling")]
 #[profiled(time, test)]
 async fn profiled_function_with_test_flag() {
     // Direct access to the 'profile' variable created by the macro
@@ -48,6 +49,7 @@ async fn profiled_function_with_test_flag() {
     assert_eq!(profile.registered_name(), fn_name);
 }
 
+#[cfg(feature = "full_profiling")]
 #[profiled(mem_detail)]
 fn profiled_function_memory() {
     let profile = profile.as_ref().unwrap();
@@ -66,10 +68,16 @@ fn profiled_function_memory() {
 }
 
 #[test]
+#[cfg(feature = "time_profiling")]
 fn test_profiled_behavior() {
+    #[cfg(feature = "full_profiling")]
     let _ = enable_profiling(true, Some(ProfileType::Memory));
 
+    #[cfg(not(feature = "full_profiling"))]
+    let _ = enable_profiling(true, Some(ProfileType::Time));
+
     // Test the synchronous profiled function
+    #[cfg(feature = "full_profiling")]
     profiled_function_memory();
 
     // Use async-std to create a runtime for async functions

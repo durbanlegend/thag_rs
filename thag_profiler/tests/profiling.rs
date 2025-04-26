@@ -1,13 +1,11 @@
-use parking_lot::MutexGuard;
 use std::{thread, time::Duration};
-use thag_profiler::{
-    end,
-    profiling::{
-        dump_profiled_functions, enable_profiling, is_profiled_function,
-        is_profiling_state_enabled, register_profiled_function,
-    },
-    ProfileType,
+use thag_profiler::profiling::{
+    dump_profiled_functions, is_profiled_function, is_profiling_state_enabled,
+    register_profiled_function,
 };
+
+#[cfg(feature = "time_profiling")]
+use parking_lot::MutexGuard;
 
 #[cfg(feature = "time_profiling")]
 use std::panic;
@@ -16,7 +14,7 @@ use std::panic;
 use thag_profiler::{with_allocator, Allocator};
 
 #[cfg(feature = "time_profiling")]
-use thag_profiler::{profile, PROFILING_MUTEX};
+use thag_profiler::{end, profile, profiling::enable_profiling, ProfileType, PROFILING_MUTEX};
 
 #[cfg(feature = "time_profiling")]
 struct TestGuard;
@@ -52,6 +50,16 @@ fn setup_test() -> MutexGuard<'static, ()> {
 
     guard
 }
+
+// #[cfg(not(feature = "time_profiling"))]
+// fn setup_test() -> MutexGuard<'static, ()> {
+//     let guard = PROFILING_MUTEX.lock();
+
+//     // Reset profiling state completely
+//     let _ = enable_profiling(false, Some(ProfileType::Time));
+
+//     guard
+// }
 
 #[cfg(feature = "time_profiling")]
 fn run_test<T>(test: T)
@@ -130,6 +138,7 @@ fn test_profiling_profile_creation() {
 // because the #[profiled] attribute has path resolution issues
 fn simple_profiled_function() -> u32 {
     // Get lock and reset state
+    #[cfg(feature = "time_profiling")]
     let _guard = setup_test();
 
     // Now start with known disabled state
@@ -318,6 +327,7 @@ fn test_profiling_profile_section_thread_safety() {
 #[test]
 fn test_profiling_profiled_function_registration() {
     // Get lock and reset state
+    #[cfg(feature = "time_profiling")]
     let _guard = setup_test();
 
     // Now start with known disabled state

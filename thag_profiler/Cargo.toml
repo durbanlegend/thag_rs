@@ -25,6 +25,7 @@ regex = "1.11.1"
 serial_test = { version = "3.2.0", features = ["file_locks"] }
 smol = "2.0.2"
 tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
+async-std = { version = "1.12.0", features = ["attributes"] }
 
 [features]
 analyze-tool = ["dirs", "inferno", "inquire", "ra_ap_syntax", "serde_json"]

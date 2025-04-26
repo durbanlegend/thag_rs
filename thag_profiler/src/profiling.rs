@@ -850,7 +850,7 @@ pub fn enable_profiling(
 #[cfg(not(feature = "time_profiling"))]
 pub const fn enable_profiling(
     _enabled: bool,
-    _profile_type: ProfileType,
+    _maybe_profile_type: Option<ProfileType>,
 ) -> Result<(), ProfileError> {
     // No-op implementation
     Ok(())
@@ -1208,6 +1208,7 @@ impl Profile {
         if is_test_mode_active() {
             // If this is from an attribute in a test, don't create a profile
             // Our safe wrapper will handle profiling instead
+            eprintln!("Test mode is active, returning None");
             return None;
         }
 
@@ -1338,6 +1339,7 @@ impl Profile {
         if is_test_mode_active() {
             // If this is from an attribute in a test, don't create a profile
             // Our safe wrapper will handle profiling instead
+            eprintln!("Test mode is active, returning None");
             return None;
         }
 
@@ -1760,6 +1762,15 @@ impl Profile {
             .as_ref()
             .and_then(|task| get_task_memory_usage(task.id()))
     }
+
+    // Public methods for testing
+    pub fn get_profile_type(&self) -> ProfileType {
+        self.profile_type
+    }
+
+    pub fn is_detailed_memory(&self) -> bool {
+        self.detailed_memory
+    }
 }
 
 /// Convert function names in the stack into their descriptive names.
@@ -2143,7 +2154,7 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
         if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
             lock.insert(name, desc_name);
         } else {
-            debug_log!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("register_profiled_function failed to acquire lock on PROFILED_FUNCTIONS");
         }
     }
     // debug_log!("Profiled functions: {:#?}", dump_profiled_functions());
@@ -2159,7 +2170,7 @@ pub fn is_profiled_function(name: &str) -> bool {
     // debug_log!("Checking if function is profiled: {}", name);
     let contains_key = PROFILED_FUNCTIONS.try_lock().map_or_else(
         || {
-            debug_log!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("is_profiled_function failed to acquire lock on PROFILED_FUNCTIONS");
             false
         },
         |lock| lock.contains_key(name),
@@ -2176,7 +2187,7 @@ pub fn get_reg_desc_name(name: &str) -> Option<String> {
     // );
     let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_lock().map_or_else(
         || {
-            debug_log!("Failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("get_reg_desc_name failed to acquire lock on PROFILED_FUNCTIONS");
             None
         },
         |lock| lock.get(name).cloned(),

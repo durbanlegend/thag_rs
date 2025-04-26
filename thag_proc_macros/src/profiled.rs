@@ -26,6 +26,8 @@ struct ProfileArgs {
     both: bool,
     /// Flag for using global profiling settings
     global: bool,
+    /// Flag for creating profile clone for testing
+    test: bool,
 }
 
 impl Parse for ProfileArgs {
@@ -111,6 +113,7 @@ impl Parse for ProfileArgs {
                     "mem_detail" => args.mem_detail = true,
                     "both" => args.both = true,
                     "global" => args.global = true,
+                    "test" => args.test = true,
                     _ => {
                         return Err(syn::Error::new(
                             flag.span(),
@@ -136,14 +139,14 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item_clone as ItemFn);
 
     let fn_name = &input.sig.ident;
+    let fn_name_str = fn_name.to_string();
 
-    if fn_name.to_string().as_str() == "main" {
+    if fn_name_str == "main" {
         eprintln!("`main` function may only be profiled through #[enable_function] attribute - ignoring #[profiled] attribute");
         return item;
     }
 
     let is_async = input.sig.asyncness.is_some();
-    let fn_name_str = fn_name.to_string();
 
     // Determine profile type based on flags
     let profile_type = if args.both || (args.time && (args.mem_summary || args.mem_detail)) {
@@ -159,6 +162,9 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Determine if detailed memory profiling is enabled
     let detailed_memory = args.mem_detail;
+
+    // Check if this is a test function by name or by explicit flag
+    let is_test_fn = args.test || fn_name_str.ends_with("_test");
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_new = quote! {
@@ -182,6 +188,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         body: &input.block,
         attrs: &input.attrs,
         profile_new,
+        is_test_fn,
     };
 
     if is_async {
@@ -203,6 +210,7 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         body,
         attrs,
         profile_new,
+        is_test_fn: _,
     }: &FunctionContext<'_> = ctx;
 
     quote! {
@@ -232,7 +240,38 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         body,
         attrs,
         profile_new,
+        is_test_fn,
     } = ctx;
+
+    // For test functions or functions with _test suffix, create a clone
+    // to make profile available inside the function body
+    let profile_setup = if *is_test_fn {
+        quote! {
+            let profile = #profile_new;
+            let profile_for_future = profile.clone();
+        }
+    } else {
+        quote! {
+            let profile = #profile_new;
+        }
+    };
+
+    // Choose the right profile for the future
+    let future_profile = if *is_test_fn {
+        quote! { profile_for_future }
+    } else {
+        quote! { profile }
+    };
+
+    // If this is a test function, add a debug message
+    let fn_name_str = fn_name.to_string();
+    let debug_msg = if *is_test_fn {
+        quote! {
+            ::thag_profiler::debug_log!("Using cloned profile for test function: {}", #fn_name_str);
+        }
+    } else {
+        quote! {}
+    };
 
     quote! {
         #(#attrs)*
@@ -264,10 +303,13 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
                 }
             }
 
+            #debug_msg
+            #profile_setup
+
             let future = async #body;
             ProfiledFuture {
                 inner: future,
-                _profile: #profile_new,
+                _profile: #future_profile,
             }.await
         }
     }
@@ -296,4 +338,6 @@ struct FunctionContext<'a> {
     attrs: &'a Vec<Attribute>,
     /// Profile instantiation, avoiding allocation tracking if memory profiling
     profile_new: proc_macro2::TokenStream,
+    /// Is this a test function (either by name convention or explicit flag)
+    is_test_fn: bool,
 }

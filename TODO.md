@@ -53,6 +53,8 @@ cargo run -p thag_profiler --features=analyze-tool --bin thag-analyze -- .
 cd thag_profiler
 cargo test --test profiling --features full_profiling
 cargo test --lib
+cargo test --package thag_profiler --test test_profiled_behavior
+THAG_PROFILE=both,,announce cargo test --package thag_profiler --test test_profiled_behavior --features=full_profiling -- --nocapture
 
 Worked example: TODO replace: serde
 Don't use a crate that is called by other dependencies, otherwise there may be conflicts.

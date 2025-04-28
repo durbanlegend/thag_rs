@@ -60,6 +60,70 @@ static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 #[cfg(feature = "time_profiling")]
 pub static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 
+/// Profiling capability flags (bitflags pattern) for determining which profiling types are supported
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ProfileCapability(u8);
+
+#[allow(dead_code)]
+impl ProfileCapability {
+    const NONE: Self = Self(0);
+    const TIME: Self = Self(1);
+    const MEMORY: Self = Self(2);
+    const BOTH: Self = Self(3); // TIME | MEMORY
+
+    /// Returns the capabilities available based on enabled features
+    #[must_use]
+    const fn available() -> Self {
+        #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
+        {
+            return Self::TIME;
+        }
+
+        #[cfg(feature = "full_profiling")]
+        {
+            return Self::BOTH;
+        }
+
+        // If no profiling features are enabled
+        #[cfg(all(not(feature = "time_profiling"), not(feature = "full_profiling")))]
+        {
+            return Self::NONE;
+        }
+    }
+
+    /// Checks if the given profile type is supported by the available capabilities
+    const fn supports(&self, profile_type: ProfileType) -> bool {
+        match profile_type {
+            ProfileType::Time => (self.0 & Self::TIME.0) == Self::TIME.0,
+            ProfileType::Memory => (self.0 & Self::MEMORY.0) == Self::MEMORY.0,
+            ProfileType::Both => (self.0 & Self::BOTH.0) == Self::BOTH.0,
+            ProfileType::None => true,
+        }
+    }
+
+    /// Convert from ProfileType to capabilities
+    const fn from_profile_type(profile_type: ProfileType) -> Self {
+        match profile_type {
+            ProfileType::Time => Self::TIME,
+            ProfileType::Memory => Self::MEMORY,
+            ProfileType::Both => Self::BOTH,
+            ProfileType::None => Self::NONE,
+        }
+    }
+
+    /// Returns the intersection of the requested profile type and available capabilities
+    const fn intersection(&self, profile_type: ProfileType) -> Self {
+        Self(self.0 & Self::from_profile_type(profile_type).0)
+    }
+}
+
+/// Checks if a profile type is valid for the current feature set
+#[cfg(any(feature = "time_profiling", feature = "full_profiling"))]
+fn is_valid_profile_type(profile_type: ProfileType) -> bool {
+    ProfileCapability::available().supports(profile_type)
+}
+
 // Compile-time feature check - always use the runtime state in tests
 #[cfg(all(feature = "time_profiling", not(test)))]
 const PROFILING_FEATURE: bool = true;
@@ -69,6 +133,8 @@ const PROFILING_FEATURE: bool = true;
 const PROFILING_FEATURE: bool = false;
 
 static GLOBAL_PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+
+// Implementation for ProfileCapability is defined above
 
 static_lazy! {
     ProfileConfig: ProfileConfiguration = {
@@ -557,37 +623,47 @@ pub fn get_memory_path() -> ProfileResult<&'static str> {
 
 /// Initializes profile files based on the specified profile type.
 ///
-/// This function handles the initialization sequence for both profiling files:
-/// - For Time profiling: creates and initializes the time profile file
-/// - For Memory profiling: creates and initializes memory profile file
-/// - For Both: initializes both files
+/// This function handles the initialization sequence for profiling files
+/// based on enabled features and requested profile type.
 ///
 /// # Arguments
 /// * `profile_type` - The type of profiling to initialize files for
 ///
 /// # Errors
 /// Returns a `ProfileError` if any file operations fail
-#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
-    let time_path = get_time_path()?;
-    match profile_type {
-        ProfileType::Time => {
-            TimeProfileFile::init();
-            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            debug_log!("Time profile will be written to {time_path}");
+    // Get available capabilities based on enabled features
+    let available_caps = ProfileCapability::available();
+
+    // Check if the requested profile type is supported
+    if !available_caps.supports(profile_type) {
+        // Handle unsupported profile types
+        if matches!(profile_type, ProfileType::Memory | ProfileType::Both) {
+            panic!(
+                "Profile type `{profile_type:?}` requested but feature `full_profiling` is not enabled",
+            );
         }
-        ProfileType::Memory | ProfileType::Both => panic!(
-            "Profile type `{profile_type:?}` requested but feature `full_profiling` is not enabled",
-        ),
-        ProfileType::None => eprintln!(
-            "Profile type `{profile_type:?}` requested - no profiling will be done despite feature `time_profiling` being enabled",
-        ),
+
+        if profile_type == ProfileType::None {
+            debug_log!("ProfileType::None selected: no profiling will be done");
+            return Ok(());
+        }
     }
+
+    // Initialize time profiling
+    if matches!(profile_type, ProfileType::Time) {
+        let time_path = get_time_path()?;
+        TimeProfileFile::init();
+        initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+        debug_log!("Time profile will be written to {time_path}");
+    }
+
     flush_debug_log();
     Ok(())
 }
 
-/// Initializes profile files once only, based on the specified profile type.
+/// Initializes profile files based on the specified profile type.
 ///
 /// This function handles the initialization sequence for both profiling files:
 /// - For Time profiling: creates and initializes the time profile file
@@ -601,66 +677,54 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
 /// Returns a `ProfileError` if any file operations fail
 #[cfg(feature = "full_profiling")]
 fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
-    let time_path = get_time_path()?;
-    let memory_path = get_memory_path()?;
-    let memory_detail_path = get_memory_detail_path()?;
-    let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
+    // Get available capabilities based on enabled features
+    let available_caps = ProfileCapability::available();
 
-    eprintln!("In initialize_profile_files for profile_type={profile_type:?}");
+    debug_log!("In initialize_profile_files for profile_type={profile_type:?}");
 
-    match profile_type {
-        ProfileType::Time => {
-            TimeProfileFile::init();
-            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            debug_log!("Time profile will be written to {time_path}");
-        }
-        ProfileType::Memory => {
-            MemoryProfileFile::init();
-            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
-            debug_log!("Memory profile will be written to {memory_path}");
+    // Early return for ProfileType::None
+    if profile_type == ProfileType::None {
+        debug_log!("ProfileType::None selected: no profiling will be done");
+        flush_debug_log();
+        return Ok(true);
+    }
 
-            if is_detailed_memory() {
-                MemoryDetailFile::init();
-                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-                debug_log!("Memory detail will be written to {memory_detail_path}");
-                MemoryDetailDeallocFile::init();
-                initialize_file(
-                    "Memory Detail Dealloc",
-                    memory_detail_dealloc_path,
-                    MemoryDetailDeallocFile::get(),
-                )?;
-                debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
-            }
-        }
-        ProfileType::Both => {
-            // Initialize both main files and memory detail if requested
-            TimeProfileFile::init();
-            MemoryProfileFile::init();
+    // Check the intersection of requested and available capabilities
+    let actual_caps = available_caps.intersection(profile_type);
 
-            // Reset both files and initialize headers, scoped to release locks ASAP
-            initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
-            initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+    // Initialize files based on the actual capabilities
+    // Initialize time profiling if needed
+    if (actual_caps.0 & ProfileCapability::TIME.0) != 0 {
+        let time_path = get_time_path()?;
+        TimeProfileFile::init();
+        initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+        debug_log!("Time profile will be written to {time_path}");
+    }
 
-            debug_log!("Time profile will be written to {time_path}");
-            debug_log!("Memory profile will be written to {memory_path}");
+    // Initialize memory profiling if needed
+    if (actual_caps.0 & ProfileCapability::MEMORY.0) != 0 {
+        let memory_path = get_memory_path()?;
+        let memory_detail_path = get_memory_detail_path()?;
+        let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
 
-            if is_detailed_memory() {
-                MemoryDetailFile::init();
-                initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
-                debug_log!("Memory detail will be written to {memory_detail_path}");
-                MemoryDetailDeallocFile::init();
-                initialize_file(
-                    "Memory Detail Dealloc",
-                    memory_detail_dealloc_path,
-                    MemoryDetailDeallocFile::get(),
-                )?;
-                debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
-            }
-        }
-        ProfileType::None => {
-            debug_log!("ProfileType::None selected: no profiling will be done");
+        MemoryProfileFile::init();
+        initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+        debug_log!("Memory profile will be written to {memory_path}");
+
+        if is_detailed_memory() {
+            MemoryDetailFile::init();
+            initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+            debug_log!("Memory detail will be written to {memory_detail_path}");
+            MemoryDetailDeallocFile::init();
+            initialize_file(
+                "Memory Detail Dealloc",
+                memory_detail_dealloc_path,
+                MemoryDetailDeallocFile::get(),
+            )?;
+            debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
         }
     }
+
     flush_debug_log();
     Ok(true)
 }
@@ -678,45 +742,23 @@ fn initialize_file(
 
 /// Returns the global profile type.
 ///
-/// # Panics
-///
-// /// Panics if `enable_profiling` fails.
-// Modify get_global_profile_type to use the config:
+/// This function maps between the stored value in the atomic and the corresponding
+/// `ProfileType`. If no global type is set, it returns the value from the profile
+/// configuration.
 pub fn get_global_profile_type() -> ProfileType {
     let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
-    // debug_log!(
-    //     "get_global_profile_type: GLOBAL_PROFILE_TYPE={}",
-    //     global_value
-    // );
 
+    // Map the stored value to a ProfileType using the bitflags pattern
     match global_value {
-        1 => {
-            // debug_log!(
-            //     "get_global_profile_type: returning ProfileType::Time from GLOBAL_PROFILE_TYPE"
-            // );
-            ProfileType::Time
-        }
-        2 => {
-            // debug_log!(
-            //     "get_global_profile_type: returning ProfileType::Memory from GLOBAL_PROFILE_TYPE"
-            // );
-            ProfileType::Memory
-        }
-        3 => {
-            // debug_log!(
-            //     "get_global_profile_type: returning ProfileType::Both from GLOBAL_PROFILE_TYPE"
-            // );
-            ProfileType::Both
-        }
+        0 => ProfileConfig::get()
+            .profile_type
+            .unwrap_or(ProfileType::None),
+        1 => ProfileType::Time,
+        2 => ProfileType::Memory,
+        3 => ProfileType::Both,
         _ => {
-            // Then check environment variables
-            // debug_log!(
-            //     "get_global_profile_type: GLOBAL_PROFILE_TYPE not set, checking ProfileConfig"
-            // );
-            // debug_log!(
-            //     "get_global_profile_type: returning {:?} from ProfileConfig",
-            //     config_type
-            // );
+            // Should never happen, but handle gracefully if it does
+            debug_log!("Unexpected GLOBAL_PROFILE_TYPE value: {}", global_value);
             ProfileConfig::get()
                 .profile_type
                 .unwrap_or(ProfileType::None)
@@ -726,35 +768,26 @@ pub fn get_global_profile_type() -> ProfileType {
 
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 fn set_global_profile_type(profile_type: ProfileType) {
-    debug_log!(
-        "set_global_profile_type (time-only): profile_type={:?}",
-        profile_type
-    );
-    let value = match profile_type {
-        ProfileType::Time => 1,
-        _ => panic!(r#"Memory profiling may not be set for feature "time_profiling" "#),
-    };
+    if !is_valid_profile_type(profile_type) {
+        panic!(r#"Memory profiling may not be set for feature "time_profiling" "#);
+    }
+
+    // For time_profiling only, we can only set TIME
+    let value = ProfileCapability::from_profile_type(profile_type).0;
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-    debug_log!(
-        "set_global_profile_type (time-only): stored value={}",
-        value
-    );
+    debug_log!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
 }
 
 #[cfg(feature = "full_profiling")]
 fn set_global_profile_type(profile_type: ProfileType) {
-    debug_log!(
-        "set_global_profile_type (full): profile_type={:?}",
-        profile_type
-    );
-    let value = match profile_type {
-        ProfileType::Time => 1,
-        ProfileType::Memory => 2,
-        ProfileType::Both => 3,
-        ProfileType::None => 0,
-    };
+    if !is_valid_profile_type(profile_type) {
+        panic!("Invalid profile type {profile_type:?} for feature set");
+    }
+
+    // Map profile type directly to storage value using the bitflags pattern
+    let value = ProfileCapability::from_profile_type(profile_type).0;
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-    debug_log!("set_global_profile_type (full): stored value={}", value);
+    debug_log!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
 }
 
 /// Enables or disables profiling with the specified profile type.

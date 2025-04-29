@@ -242,7 +242,7 @@ The following optional arguments are available:
 
 - `yes`: (Default) Enables profiling according to the feature specified in the `thag_profiler` dependency, which must be either `full_profiling` or `time_profiling`.
 
-- `runtime`: Specifies that a detailed specification will be provided via the `THAG_PROFILER` environment variable.
+- `runtime`: Specifies that a detailed specification will be provided via the `THAG_PROFILE` environment variable.
 
 E.g.:
 
@@ -253,9 +253,9 @@ fn main() {
 }
 ```
 
-**Format of the `THAG_PROFILER` environment variable to be used with `#[enable_profiling(runtime)]`**
+**Format of the `THAG_PROFILE` environment variable to be used with `#[enable_profiling(runtime)]`**
 
-    THAG_PROFILER=<profile_type>,[<output_dir>],{<debug_level>],[<detail>]
+    THAG_PROFILE=<profile_type>,[<output_dir>],{<debug_level>],[<detail>]
 
     where `<profile_type>`           = `both`, `memory` or `time`
           `<output_dir>` (optional)  = output directory for `.folded` files.
@@ -270,12 +270,12 @@ fn main() {
 E.g.:
 
 ```bash
-THAG_PROFILER=both,$TMPDIR,announce,true cargo run
+THAG_PROFILE=both,$TMPDIR,announce,true cargo run
 
     Specifies both memory and time profiling, `.folded` files to $TMPDIR, debug log path to be written to user program output, extra `.folded` files for detailed memory allocations and deallocations required.
 
 
-THAG_PROFILER=time cargo run
+THAG_PROFILE=time cargo run
 
     Specifies time profiling only, `.folded` files to current directory, no debug log, no detailed memory files as not applicable to time profiling.
 
@@ -319,7 +319,7 @@ fn main() {
 
 ### 5. Analyze Results
 
-After running your application with profiling enabled, folded stack files will be generated in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILER` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
+After running your application with profiling enabled, folded stack files will be generated in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILE` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
 
 Use the included analysis tool to visualize the results:
 

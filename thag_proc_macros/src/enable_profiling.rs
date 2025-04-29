@@ -306,7 +306,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 Some(PROFILING_MUTEX.lock())
             } else {None};
 
-            init_profiling(module_path!(), #profile_type);
+            if should_profile {
+                init_profiling(module_path!(), #profile_type);
+            }
 
             let maybe_profile = if should_profile {
                 #profile_new
@@ -342,7 +344,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 } else {None}
             });
 
-            init_profiling(module_path!(), #profile_type);  // Already uses with_allocator(Allocator::System... internally
+            if should_profile {
+                init_profiling(module_path!(), #profile_type);   // Already uses with_allocator(Allocator::System... internally
+            }
 
             let maybe_profile = with_allocator(Allocator::System, || {
                 if should_profile {
@@ -370,6 +374,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             #wrapped_block
         },
         ProfilingMode::Disabled => quote! {
+            enable_profiling(false, None).expect("Failed to disable profiling");
+
             #wrapped_block
         },
     };

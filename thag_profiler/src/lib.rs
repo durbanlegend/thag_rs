@@ -287,7 +287,18 @@ pub fn thousands<T: Display>(n: T) -> String {
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
-    PROFILEE.set(Profilee::new(root_module)).unwrap();
+    // Only set PROFILEE if it hasn't been set already
+    // This allows multiple test functions to call init_profiling
+    if PROFILEE.get().is_none() {
+        PROFILEE.set(Profilee::new(root_module)).unwrap();
+    } else if PROFILEE.get().unwrap().root_module != root_module {
+        // If already set but with a different root_module, just log it and continue
+        eprintln!(
+            "Warning: PROFILEE already set with root_module={}, not changing to {}",
+            PROFILEE.get().unwrap().root_module,
+            root_module
+        );
+    }
 
     set_base_location(file!(), fn_name, line!());
     enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
@@ -303,25 +314,38 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
     with_allocator(Allocator::System, || {
-        PROFILEE.set(Profilee::new(root_module)).unwrap();
+        eprintln!("root_module={root_module}, maybe_profile_type={maybe_profile_type:#?}");
+
+        // Only set PROFILEE if it hasn't been set already
+        // This allows multiple test functions to call init_profiling
+        if PROFILEE.get().is_none() {
+            PROFILEE.set(Profilee::new(root_module)).unwrap();
+        } else if PROFILEE.get().unwrap().root_module != root_module {
+            // If already set but with a different root_module, just log it and continue
+            eprintln!(
+                "Warning: PROFILEE already set with root_module={}, not changing to {}",
+                PROFILEE.get().unwrap().root_module,
+                root_module
+            );
+        }
 
         set_base_location(file!(), fn_name, line!());
         enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
 
-        debug_log!(
+        eprintln!(
             "In init_profiling with global_profile_type={:?}",
             global_profile_type
         );
 
         if global_profile_type == ProfileType::Time {
-            debug_log!(
+            eprintln!(
                 "Skipping memory profiling initialization because global_profile_type={:?}",
                 global_profile_type
             );
         } else {
-            debug_log!("Initializing memory profiling");
+            eprintln!("Initializing memory profiling");
             mem_tracking::initialize_memory_profiling();
         }
     });
@@ -336,7 +360,18 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
     let base_loc = format!("{file_name}::{fn_name}");
     let base_location = Box::leak(base_loc.into_boxed_str());
 
-    PROFILER.set(Profiler::new(base_location)).unwrap();
+    // Only set PROFILER if it hasn't been set already
+    // This allows multiple test functions to call set_base_location
+    if PROFILER.get().is_none() {
+        PROFILER.set(Profiler::new(base_location)).unwrap();
+    } else if PROFILER.get().unwrap().base_location != base_location {
+        // If already set but with a different base_location, just log it and continue
+        eprintln!(
+            "Warning: PROFILER already set with base_location={}, not changing to {}",
+            PROFILER.get().unwrap().base_location,
+            base_location
+        );
+    }
     // eprintln!("base_location={base_location}");
 }
 
@@ -370,7 +405,7 @@ pub fn finalize_profiling() {
 ///
 /// # Panics
 ///
-/// This function panics if profiling cannot be enabled.
+/// This function panics if profiling cannot be disabled.
 #[cfg(feature = "full_profiling")]
 pub fn finalize_profiling() {
     with_allocator(Allocator::System, || {
@@ -396,6 +431,57 @@ pub fn finalize_profiling() {
 
 #[cfg(not(feature = "time_profiling"))]
 pub const fn finalize_profiling() {}
+
+/// Resets profiling configuration state for tests.
+///
+/// This function should be used at the beginning of tests that need to control
+/// profiling configuration. It ensures that the profiling system reads the
+/// latest environment variables rather than using cached configurations.
+#[cfg(feature = "time_profiling")]
+pub fn reset_profiling_config_for_tests() {
+    // We need different implementation paths for unit tests vs integration tests
+    #[cfg(test)]
+    {
+        // Unit tests can directly call the internal function
+        profiling::reset_profile_config_for_tests();
+    }
+
+    // For integration tests which are compiled as separate crates and
+    // can't access the internal implementation
+    #[cfg(not(test))]
+    {
+        // Implement reset logic directly here for integration tests
+        use std::env;
+        use std::sync::atomic::Ordering;
+
+        eprintln!("Integration test: Resetting profile configuration from environment variables");
+
+        // First, parse the environment configuration
+        let env_var = env::var("THAG_PROFILE").ok();
+        let profile_type = if let Some(env_var) = env_var {
+            let parts: Vec<&str> = env_var.split(',').collect();
+            if !parts.is_empty() && !parts[0].trim().is_empty() {
+                match parts[0].trim() {
+                    "time" => Some(profiling::ProfileType::Time),
+                    "memory" => Some(profiling::ProfileType::Memory),
+                    "both" => Some(profiling::ProfileType::Both),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // Update the global profile type to match
+        if let Some(profile_type) = profile_type {
+            let value = profiling::ProfileCapability::from_profile_type(profile_type).0;
+            profiling::GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
+            eprintln!("Set global profile type to {:?}", profile_type);
+        }
+    }
+}
 
 #[cfg(test)]
 mod feature_tests {

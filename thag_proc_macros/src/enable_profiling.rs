@@ -192,7 +192,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, init_profiling, PROFILING_MUTEX};
+                use ::thag_profiler::{finalize_profiling, get_config_profile_type, init_profiling, PROFILING_MUTEX};
 
                 let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
                 eprintln!("should_profile={should_profile}");
@@ -205,7 +205,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             }
         }
         ProfilingMode::Disabled => {
-            quote! {}
+            quote! {
+                thag_profiler::enable_profiling(false, None).expect("Failed to disable profiling");
+            }
         }
     };
 
@@ -213,7 +215,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, init_profiling, with_allocator, Allocator, PROFILING_MUTEX};
+                use ::thag_profiler::{finalize_profiling, get_config_profile_type, init_profiling, with_allocator, Allocator, PROFILING_MUTEX};
 
                 let should_profile = with_allocator(Allocator::System, || {
                     std::env::var("THAG_PROFILE").ok().is_some()
@@ -227,7 +229,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             }
         }
         ProfilingMode::Disabled => {
-            quote! {}
+            quote! {
+                thag_profiler::enable_profiling(false, None).expect("Failed to disable profiling");
+            }
         }
     };
 
@@ -296,8 +300,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         },
     };
 
-    // let profile_type = args.profile_type;
-
     #[cfg(not(feature = "full_profiling"))]
     let wrapped_block = match args.mode {
         ProfilingMode::Runtime => quote! {
@@ -307,7 +309,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             } else {None};
 
             if should_profile {
-                init_profiling(module_path!(), #profile_type);
+                eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), get_config_profile_type());
+                init_profiling(module_path!(), Some(get_config_profile_type()));
             }
 
             let maybe_profile = if should_profile {
@@ -345,7 +348,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             });
 
             if should_profile {
-                init_profiling(module_path!(), #profile_type);   // Already uses with_allocator(Allocator::System... internally
+                eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), get_config_profile_type());
+                init_profiling(module_path!(), Some(get_config_profile_type()));   // Already uses with_allocator(Allocator::System... internally
             }
 
             let maybe_profile = with_allocator(Allocator::System, || {

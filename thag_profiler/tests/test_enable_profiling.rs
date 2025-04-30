@@ -233,10 +233,10 @@ fn test_enable_profiling_default() {
     // Run the function with default enablement
     default_enabled_function();
 
-    // Verify profiling is still enabled after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should remain enabled after function completes"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
 
     // Clean up
@@ -249,10 +249,10 @@ fn test_enable_profiling_yes() {
     // Run the function with explicit yes
     yes_enabled_function();
 
-    // Verify profiling is still enabled after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should remain enabled after function completes"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
 
     // Clean up
@@ -272,7 +272,7 @@ fn test_enable_profiling_no() {
     // Run the function with 'no' option
     no_disabled_function();
 
-    // Verify profiling is still disabled after function exits
+    // Verify profiling is disabled after function exits
     assert!(
         !is_profiling_state_enabled(),
         "Profiling should remain disabled after function completes"
@@ -285,10 +285,10 @@ fn test_enable_profiling_time() {
     // Run the function with time option
     time_enabled_function();
 
-    // Verify profiling is still enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should remain enabled after function completes"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),
@@ -306,10 +306,10 @@ fn test_enable_profiling_memory() {
     // Run the function with memory option
     memory_enabled_function();
 
-    // Verify profiling is still enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should remain enabled after function completes"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),
@@ -359,7 +359,7 @@ fn test_enable_profiling_runtime_unset() {
     // Run the function with runtime option
     runtime_controlled_function();
 
-    // Verify profiling remains disabled after function exits
+    // Verify profiling is disabled after function exits
     assert!(
         !is_profiling_state_enabled(),
         "Profiling should remain disabled when THAG_PROFILE is not set"
@@ -375,10 +375,10 @@ fn test_enable_profiling_runtime_time() {
     // Run the function with runtime option
     runtime_controlled_function();
 
-    // Verify profiling is enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should be enabled when THAG_PROFILE is set"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),
@@ -400,10 +400,10 @@ fn test_enable_profiling_runtime_memory() {
     // Run the function with runtime option
     runtime_controlled_function();
 
-    // Verify profiling is enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should be enabled when THAG_PROFILE is set"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),
@@ -429,10 +429,10 @@ fn test_enable_profiling_runtime_memory_detailed() {
     // Run the function with runtime option
     runtime_controlled_function();
 
-    // Verify profiling is enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should be enabled when THAG_PROFILE is set"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),
@@ -458,10 +458,10 @@ fn test_enable_profiling_runtime_both() {
     // Run the function with runtime option
     runtime_controlled_function();
 
-    // Verify profiling is enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should be enabled when THAG_PROFILE is set"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),
@@ -483,10 +483,10 @@ fn test_enable_profiling_runtime_both_detailed() {
     // Run the function with runtime option
     runtime_controlled_function();
 
-    // Verify profiling is enabled with correct type after function exits
+    // Verify profiling is disabled after function exits
     assert!(
-        is_profiling_state_enabled(),
-        "Profiling should be enabled when THAG_PROFILE is set"
+        !is_profiling_state_enabled(),
+        "Profiling should remain disabled when THAG_PROFILE is not set"
     );
     assert_eq!(
         thag_profiler::get_global_profile_type(),

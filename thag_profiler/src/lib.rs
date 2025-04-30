@@ -52,6 +52,8 @@ use std::{fmt::Display, path::Path};
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
+use profiling::ProfileConfiguration;
+
 // Re-exports
 pub use {
     errors::{ProfileError, ProfileResult},
@@ -286,7 +288,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// This function panics if profiling cannot be enabled.
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 #[fn_name]
-pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
+pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
     // Only set PROFILEE if it hasn't been set already
     // This allows multiple test functions to call init_profiling
     if PROFILEE.get().is_none() {
@@ -301,7 +303,8 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
     }
 
     set_base_location(file!(), fn_name, line!());
-    enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
+    enable_profiling(true, profile_config.profile_type).expect("Failed to enable profiling");
+    eprintln!("Exiting init_profiling");
 }
 
 /// Initialize the profiling system.
@@ -312,9 +315,9 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
 /// This function panics if profiling cannot be enabled.
 #[cfg(feature = "full_profiling")]
 #[fn_name]
-pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<ProfileType>) {
+pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
     with_allocator(Allocator::System, || {
-        eprintln!("root_module={root_module}, maybe_profile_type={maybe_profile_type:#?}");
+        eprintln!("root_module={root_module}, profile_config={profile_config:#?}");
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling
@@ -330,7 +333,8 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
         }
 
         set_base_location(file!(), fn_name, line!());
-        enable_profiling(true, maybe_profile_type).expect("Failed to enable profiling");
+
+        enable_profiling(true, profile_config.profile_type).expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
 
@@ -349,11 +353,12 @@ pub fn init_profiling(root_module: &'static str, maybe_profile_type: Option<Prof
             mem_tracking::initialize_memory_profiling();
         }
     });
+    eprintln!("Exiting init_profiling");
 }
 
 // Provide no-op versions when profiling is disabled
 #[cfg(not(feature = "time_profiling"))]
-pub const fn init_profiling(_root_module: &str, _maybe_profile_type: Option<ProfileType>) {}
+pub fn init_profiling(_root_module: &str, _profile_config: ProfileConfiguration) {}
 
 #[cfg(feature = "time_profiling")]
 fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
@@ -432,56 +437,56 @@ pub fn finalize_profiling() {
 #[cfg(not(feature = "time_profiling"))]
 pub const fn finalize_profiling() {}
 
-/// Resets profiling configuration state for tests.
-///
-/// This function should be used at the beginning of tests that need to control
-/// profiling configuration. It ensures that the profiling system reads the
-/// latest environment variables rather than using cached configurations.
-#[cfg(feature = "time_profiling")]
-pub fn reset_profiling_config_for_tests() {
-    // We need different implementation paths for unit tests vs integration tests
-    #[cfg(test)]
-    {
-        // Unit tests can directly call the internal function
-        profiling::reset_profile_config_for_tests();
-    }
+// /// Resets profiling configuration state for tests.
+// ///
+// /// This function should be used at the beginning of tests that need to control
+// /// profiling configuration. It ensures that the profiling system reads the
+// /// latest environment variables rather than using cached configurations.
+// #[cfg(feature = "time_profiling")]
+// pub fn reset_profiling_config_for_tests() {
+//     // We need different implementation paths for unit tests vs integration tests
+//     #[cfg(test)]
+//     {
+//         // Unit tests can directly call the internal function
+//         profiling::reset_profile_config_for_tests();
+//     }
 
-    // For integration tests which are compiled as separate crates and
-    // can't access the internal implementation
-    #[cfg(not(test))]
-    {
-        // Implement reset logic directly here for integration tests
-        use std::env;
-        use std::sync::atomic::Ordering;
+//     // For integration tests which are compiled as separate crates and
+//     // can't access the internal implementation
+//     #[cfg(not(test))]
+//     {
+//         // Implement reset logic directly here for integration tests
+//         use std::env;
+//         use std::sync::atomic::Ordering;
 
-        eprintln!("Integration test: Resetting profile configuration from environment variables");
+//         eprintln!("Integration test: Resetting profile configuration from environment variables");
 
-        // First, parse the environment configuration
-        let env_var = env::var("THAG_PROFILE").ok();
-        let profile_type = if let Some(env_var) = env_var {
-            let parts: Vec<&str> = env_var.split(',').collect();
-            if !parts.is_empty() && !parts[0].trim().is_empty() {
-                match parts[0].trim() {
-                    "time" => Some(profiling::ProfileType::Time),
-                    "memory" => Some(profiling::ProfileType::Memory),
-                    "both" => Some(profiling::ProfileType::Both),
-                    _ => None,
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+//         // First, parse the environment configuration
+//         let env_var = env::var("THAG_PROFILE").ok();
+//         let profile_type = if let Some(env_var) = env_var {
+//             let parts: Vec<&str> = env_var.split(',').collect();
+//             if !parts.is_empty() && !parts[0].trim().is_empty() {
+//                 match parts[0].trim() {
+//                     "time" => Some(profiling::ProfileType::Time),
+//                     "memory" => Some(profiling::ProfileType::Memory),
+//                     "both" => Some(profiling::ProfileType::Both),
+//                     _ => None,
+//                 }
+//             } else {
+//                 None
+//             }
+//         } else {
+//             None
+//         };
 
-        // Update the global profile type to match
-        if let Some(profile_type) = profile_type {
-            let value = profiling::ProfileCapability::from_profile_type(profile_type).0;
-            profiling::GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-            eprintln!("Set global profile type to {:?}", profile_type);
-        }
-    }
-}
+//         // Update the global profile type to match
+//         if let Some(profile_type) = profile_type {
+//             let value = profiling::ProfileCapability::from_profile_type(profile_type).0;
+//             profiling::GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
+//             eprintln!("Set global profile type to {:?}", profile_type);
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod feature_tests {

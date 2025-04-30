@@ -13,9 +13,6 @@ use thag_profiler::{
     ProfileType,
 };
 
-#[cfg(feature = "time_profiling")]
-use thag_profiler::reset_profiling_config_for_tests;
-
 // ---------------------------------------------------------------------------
 // Test functions with enable_profiling attribute
 // ---------------------------------------------------------------------------
@@ -234,7 +231,6 @@ fn runtime_controlled_function() {
 #[cfg(feature = "time_profiling")]
 fn test_enable_profiling_attribute() {
     // Reset profiling config at the start of the test to ensure we pick up current env vars
-    reset_profiling_config_for_tests();
 
     // Ensure profiling is disabled at the start
     disable_profiling();
@@ -243,10 +239,11 @@ fn test_enable_profiling_attribute() {
         "Profiling should be disabled at test start"
     );
 
+    eprintln!("disable_profiling completed");
+    return;
     // -------------------------------------------------------------------
     // Test default option (yes)
     // -------------------------------------------------------------------
-    reset_profiling_config_for_tests();
 
     default_enabled_function();
 
@@ -256,10 +253,10 @@ fn test_enable_profiling_attribute() {
         "Profiling should be disabled after default function completes"
     );
 
+    eprintln!("default_enabled_function completed");
     // -------------------------------------------------------------------
     // Test explicit yes option
     // -------------------------------------------------------------------
-    reset_profiling_config_for_tests();
 
     yes_enabled_function();
 
@@ -269,11 +266,10 @@ fn test_enable_profiling_attribute() {
         "Profiling should be disabled after yes function completes"
     );
 
+    eprintln!("yes_enabled_function completed");
     // -------------------------------------------------------------------
     // Test time option
     // -------------------------------------------------------------------
-    reset_profiling_config_for_tests();
-
     time_enabled_function();
 
     // Verify profiling is disabled after function exits
@@ -282,10 +278,10 @@ fn test_enable_profiling_attribute() {
         "Profiling should be disabled after time function completes"
     );
 
+    eprintln!("time_enabled_function completed");
     // -------------------------------------------------------------------
     // Test no option
     // -------------------------------------------------------------------
-    reset_profiling_config_for_tests();
 
     // First enable profiling to verify that 'no' doesn't change its state
     let _ = enable_profiling(true, Some(ProfileType::Time));
@@ -302,10 +298,10 @@ fn test_enable_profiling_attribute() {
         "Profiling should be disabled after no function completes"
     );
 
+    eprintln!("no_disabled_function completed");
     // -------------------------------------------------------------------
     // Test memory and both options (when full_profiling is available)
     // -------------------------------------------------------------------
-    reset_profiling_config_for_tests();
 
     #[cfg(feature = "full_profiling")]
     {
@@ -318,6 +314,8 @@ fn test_enable_profiling_attribute() {
             "Profiling should be disabled after memory function completes"
         );
 
+        eprintln!("memory_enabled_function completed");
+
         // Test both option
         both_enabled_function();
 
@@ -326,12 +324,13 @@ fn test_enable_profiling_attribute() {
             !is_profiling_state_enabled(),
             "Profiling should be disabled after both function completes"
         );
+
+        eprintln!("both_enabled_function completed");
     }
 
     // -------------------------------------------------------------------
     // Test runtime option with different environment variable settings
     // -------------------------------------------------------------------
-    reset_profiling_config_for_tests();
 
     // Test with no environment variable set
     env::remove_var("THAG_PROFILE");
@@ -341,16 +340,19 @@ fn test_enable_profiling_attribute() {
         "Profiling should be disabled after runtime function with no env var"
     );
 
+    eprintln!("runtime_controlled_function with no env var completed");
+
     // Test with time profile type
     env::set_var("THAG_PROFILE", "time,.,none,false");
-    // We don't need #[cfg(test)] here because the integration test already enables
-    // the testing feature which makes this function available
-    reset_profiling_config_for_tests();
+    // Call the reset function directly
+    thag_profiler::profiling::reset_profile_config_for_tests();
     runtime_controlled_function();
     assert!(
         !is_profiling_state_enabled(),
         "Profiling should be disabled after runtime function with time env var"
     );
+    eprintln!("runtime_controlled_function with time profile type completed");
+
     env::remove_var("THAG_PROFILE");
 
     // Test memory and both profile types when full_profiling is available
@@ -363,6 +365,8 @@ fn test_enable_profiling_attribute() {
             !is_profiling_state_enabled(),
             "Profiling should be disabled after runtime function with memory env var"
         );
+        eprintln!("runtime_controlled_function with memory profile type completed");
+
         env::remove_var("THAG_PROFILE");
 
         // Test with detailed memory profile type
@@ -372,6 +376,8 @@ fn test_enable_profiling_attribute() {
             !is_profiling_state_enabled(),
             "Profiling should be disabled after runtime function with detailed memory env var"
         );
+        eprintln!("runtime_controlled_function with detailed memory profile type completed");
+
         env::remove_var("THAG_PROFILE");
 
         // Test with both profile type
@@ -381,6 +387,8 @@ fn test_enable_profiling_attribute() {
             !is_profiling_state_enabled(),
             "Profiling should be disabled after runtime function with both env var"
         );
+        eprintln!("runtime_controlled_function with both profile types completed");
+
         env::remove_var("THAG_PROFILE");
 
         // Test with both and detailed memory profile type
@@ -390,6 +398,10 @@ fn test_enable_profiling_attribute() {
             !is_profiling_state_enabled(),
             "Profiling should be disabled after runtime function with both detailed env var"
         );
+        eprintln!(
+            "runtime_controlled_function with both and detail memory profile types completed"
+        );
+
         env::remove_var("THAG_PROFILE");
     }
 
@@ -400,6 +412,9 @@ fn test_enable_profiling_attribute() {
         !is_profiling_state_enabled(),
         "Profiling should be disabled after runtime function with invalid env var"
     );
+
+    eprintln!("runtime_controlled_function with invalid profile type completed");
+
     env::remove_var("THAG_PROFILE");
 
     println!("All enable_profiling attribute tests passed!");

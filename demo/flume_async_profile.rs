@@ -35,7 +35,7 @@ use thag_profiler::{self, enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "async")]
 #[async_std::main]
-#[enable_profiling]
+#[enable_profiling(no)]
 async fn main() {
     // Check if profiling is enabled
     println!(

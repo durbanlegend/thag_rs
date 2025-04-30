@@ -137,110 +137,39 @@ pub static GLOBAL_PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Ti
 
 // Implementation for ProfileCapability is defined above
 
-static_lazy! {
-    ProfileConfig: ProfileConfiguration = {
-        let Ok(env_var) = env::var("THAG_PROFILE") else {
-            eprintln!("THAG_PROFILE environment variable not found, returning disabled config");
-            return ProfileConfiguration {
-                enabled: false,
-                profile_type: None,
-                output_dir: None,
-                debug_level: None,
-                detailed_memory: false,
-            };
-        };
+// In-memory cache for profile configuration
+static PROFILE_CONFIG_CACHE: Mutex<Option<ProfileConfiguration>> = Mutex::new(None);
 
-        eprintln!("THAG_PROFILE environment variable found: {env_var}");
-        let parts: Vec<&str> = env_var.split(',').collect();
-        eprintln!("THAG_PROFILE parts: {parts:?}");
-        let mut errors = Vec::new();
-
-        // Parse profile type (first element)
-        let profile_type = if parts.first().map_or("", |s| *s).trim().is_empty() {
-            errors.push(
-                "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
-                    .to_string(),
-            );
-            eprintln!("THAG_PROFILE: First element is empty");
-            None
-        } else {
-            let profile_type_str = parts.first().unwrap().trim();
-            eprintln!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
-            match profile_type_str.parse::<ProfileType>() {
-                Ok(val) => {
-                    eprintln!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
-                    Some(val)
-                },
-                Err(e) => {
-                    eprintln!("THAG_PROFILE: Failed to parse profile type: {e}");
-                    errors.push(e);
-                    None
-                }
-            }
-        };
-
-        // Parse output directory (second element)
-        let output_dir = if parts.get(1).map_or("", |s| *s).trim().is_empty() {
-            Some(PathBuf::from(".")) // Default to current directory if empty
-        } else {
-            Some(PathBuf::from(parts.get(1).unwrap().trim()))
-        };
-
-        // Parse debug log (third element)
-        let debug_level = if parts.get(2).map_or("", |s| *s).trim().is_empty() {
-            errors.push(
-                "Third element (debug log) is empty. Expected 'none', 'quiet', or 'announce'"
-                    .to_string(),
-            );
-            None
-        } else {
-            match parts.get(2).unwrap().parse::<DebugLevel>() {
-                Ok(val) => Some(val),
-                Err(e) => {
-                    errors.push(e);
-                    None
-                }
-            }
-        };
-
-        // Parse detailed memory (fourth element)
-        let detailed_memory = parts.get(3).is_some_and(|val| if val.trim().is_empty() {
-            false // Default if empty
-        } else if let Ok(val) = val.trim().parse::<bool>() {
-            // Validate that detailed memory is only true for Memory or Both profile types
-            if val
-                && profile_type
-                    .as_ref().is_some_and(|pt| *pt == ProfileType::Time)
-            {
-                errors.push(
-                    "Detailed memory profiling can only be enabled with profile_type=memory or profile_type=both"
-                        .to_string(),
-                );
-                false
-            } else {
-                val
-            }
-        } else {
-            errors.push(format!(
-                "Failed to parse '{val}' as boolean for detailed memory flag. Expected 'true' or 'false'"
-            ));
-            false
-        });
-
-        // If there are errors, return them
-        if !errors.is_empty() {
-            eprintln!("THAG_PROFILE errors:{errors:#?}");
-        }
-
-        // All good, config is enabled
-        ProfileConfiguration {
-            enabled: true, // Assume enabled if all elements are valid
-            profile_type,
-            output_dir,
-            debug_level,
-            detailed_memory,
+/// Gets the current profile configuration
+///
+/// This function returns the current profile configuration, reading from
+/// the environment if necessary. This ensures that any changes to the
+/// environment variables are picked up immediately.
+#[must_use]
+pub fn get_profile_config() -> ProfileConfiguration {
+    // First check if we have a cached configuration
+    {
+        let cache = PROFILE_CONFIG_CACHE.lock();
+        if let Some(config) = &*cache {
+            return config.clone();
         }
     }
+
+    // No cached config, create one
+    let config = parse_env_profile_config();
+
+    // Cache the config for future use
+    let mut cache = PROFILE_CONFIG_CACHE.lock();
+    *cache = Some(config.clone());
+
+    config
+}
+
+/// Clears the cached profile configuration, forcing a fresh read from environment
+/// on the next call to `get_profile_config()`
+pub fn clear_profile_config_cache() {
+    let mut cache = PROFILE_CONFIG_CACHE.lock();
+    *cache = None;
 }
 
 #[allow(dead_code)]
@@ -278,7 +207,7 @@ impl FromStr for DebugLevel {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProfileConfiguration {
     enabled: bool,
     profile_type: Option<ProfileType>,
@@ -319,63 +248,60 @@ impl Default for ProfileConfiguration {
     }
 }
 
-/// Forces reinitialization of profile settings for testing purposes.
+/// Resets the profile configuration for testing purposes.
 ///
-/// This function will clear the existing static state and allow environment variables
-/// to be re-read. This is primarily intended for test cases that need to modify
-/// profile settings between test runs.
+/// This function is primarily intended for test cases that need to work with
+/// different profile configurations between runs. It:
+/// 1. Clears the config cache, forcing a reload of the configuration from environment
+/// 2. Updates the global profile type to match the new configuration
 ///
-/// # Safety
-///
-/// This function explicitly uses unsafe code to modify static state, which is
-/// generally unsafe. It should ONLY be used in test code, and ideally in tests
-/// marked with `#[serial]` to prevent concurrent access issues.
-#[cfg(any(test, feature = "testing"))]
-pub fn reset_profile_config_for_tests() {
-    use std::sync::atomic::Ordering;
+/// After calling this function, the next call to `get_profile_config()` will
+/// read the latest values from the environment.
+// #[cfg(any(test, feature = "time_profiling"))]
+// pub fn reset_profile_config_for_tests() {
+//     use std::sync::atomic::Ordering;
 
-    // First, create a new configuration based on current environment
-    let new_config = parse_env_profile_config();
+//     // First, clear the cached configuration
+//     clear_profile_config_cache();
 
-    // Update the global profile type to match the new config
-    if let Some(profile_type) = new_config.profile_type {
-        // Directly update GLOBAL_PROFILE_TYPE since the set_global_profile_type function 
-        // is conditionally compiled based on features
-        let value = ProfileCapability::from_profile_type(profile_type).0;
-        GLOBAL_PROFILE_TYPE.store(value, std::sync::atomic::Ordering::SeqCst);
-        debug_log!("Reset global profile type to {:?}", profile_type);
-    }
+//     // Get the fresh configuration
+//     let config = get_profile_config();
 
-    // We need to clear/reinitialize other static state too
-    // Since we can't actually reset the OnceLock, we use unsafe to modify the value
-    // directly, which is the best option we have for testing purposes
-    // In real code, we would use interior mutability with atomic or mutex-protected access.
-    // Since this is test-only code, and we have no other way to reset a OnceLock,
-    // we're using an alternative approach - we update the global profile type which
-    // will be used by the functions that matter.
-    // No direct modification of the OnceLock value - we rely on functions checking GLOBAL_PROFILE_TYPE
+//     // Update the global profile type to match the new config
+//     if let Some(profile_type) = config.profile_type {
+//         // Directly update GLOBAL_PROFILE_TYPE to ensure consistency
+//         let value = ProfileCapability::from_profile_type(profile_type).0;
+//         GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
+//         debug_log!("Reset global profile type to {:?}", profile_type);
+//     }
 
-    debug_log!("Profile configuration has been reset from environment variables");
-}
+//     debug_log!("Profile configuration has been reset from environment variables");
+// }
 
 /// Internal helper function to parse THAG_PROFILE environment variable
 /// into a ProfileConfiguration
-#[cfg(any(test, feature = "testing"))]
-fn parse_env_profile_config() -> ProfileConfiguration {
+pub fn parse_env_profile_config() -> ProfileConfiguration {
     let Ok(env_var) = env::var("THAG_PROFILE") else {
-        debug_log!("THAG_PROFILE environment variable not found, returning disabled config");
+        eprintln!("THAG_PROFILE environment variable not found, returning disabled config");
+        let profile_type = if cfg!(feature = "full_profiling") {
+            Some(ProfileType::Both)
+        } else if cfg!(feature = "time_profiling") {
+            Some(ProfileType::Time)
+        } else {
+            None
+        };
         return ProfileConfiguration {
             enabled: false,
-            profile_type: None,
+            profile_type,
             output_dir: None,
             debug_level: None,
             detailed_memory: false,
         };
     };
 
-    debug_log!("THAG_PROFILE environment variable found: {env_var}");
+    eprintln!("THAG_PROFILE environment variable found: {env_var}");
     let parts: Vec<&str> = env_var.split(',').collect();
-    debug_log!("THAG_PROFILE parts: {parts:?}");
+    eprintln!("THAG_PROFILE parts: {parts:?}");
     let mut errors = Vec::new();
 
     // Parse profile type (first element)
@@ -384,18 +310,18 @@ fn parse_env_profile_config() -> ProfileConfiguration {
             "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
                 .to_string(),
         );
-        debug_log!("THAG_PROFILE: First element is empty");
+        eprintln!("THAG_PROFILE: First element is empty");
         None
     } else {
         let profile_type_str = parts.first().unwrap().trim();
-        debug_log!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
+        eprintln!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
         match profile_type_str.parse::<ProfileType>() {
             Ok(val) => {
-                debug_log!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
+                eprintln!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
                 Some(val)
             }
             Err(e) => {
-                debug_log!("THAG_PROFILE: Failed to parse profile type: {e}");
+                eprintln!("THAG_PROFILE: Failed to parse profile type: {e}");
                 errors.push(e);
                 None
             }
@@ -452,7 +378,7 @@ fn parse_env_profile_config() -> ProfileConfiguration {
 
     // If there are errors, return them
     if !errors.is_empty() {
-        debug_log!("THAG_PROFILE errors:{errors:#?}");
+        eprintln!("THAG_PROFILE errors:{errors:#?}");
     }
 
     ProfileConfiguration {
@@ -490,17 +416,18 @@ impl Display for ProfileConfiguration {
 
 #[must_use]
 pub fn get_debug_level() -> DebugLevel {
-    ProfileConfig::get().debug_level.unwrap_or_default()
+    get_profile_config().debug_level.unwrap_or_default()
 }
 
 #[must_use]
 pub fn is_detailed_memory() -> bool {
-    ProfileConfig::get().detailed_memory
+    get_profile_config().detailed_memory
 }
 
 #[must_use]
 pub fn get_config_profile_type() -> ProfileType {
-    ProfileConfig::get().profile_type.unwrap_or_default()
+    // parse_env_profile_config().profile_type.unwrap_or_default()
+    get_profile_config().profile_type.unwrap_or_default()
 }
 
 // Global registry of profiled functions
@@ -584,7 +511,7 @@ fn get_time_path() -> ProfileResult<&'static str> {
 
             let result = PATH_RESULT.get_or_init(|| {
                 let paths = ProfilePaths::get();
-                let config = ProfileConfig::get();
+                let config = get_profile_config();
 
                 let path = if let Some(dir) = &config.output_dir {
                     let dir_path = PathBuf::from(dir);
@@ -630,7 +557,7 @@ pub fn get_memory_detail_path() -> ProfileResult<&'static str> {
 
             let result = PATH_RESULT.get_or_init(|| {
                 let paths = ProfilePaths::get();
-                let config = ProfileConfig::get();
+                let config = get_profile_config();
 
                 let path = if let Some(dir) = &config.output_dir {
                     let dir_path = PathBuf::from(dir);
@@ -682,7 +609,7 @@ pub fn get_memory_detail_dealloc_path() -> ProfileResult<&'static str> {
 
             let result = PATH_RESULT.get_or_init(|| {
                 let paths = ProfilePaths::get();
-                let config = ProfileConfig::get();
+                let config = get_profile_config();
 
                 let path = if let Some(dir) = &config.output_dir {
                     let dir_path = PathBuf::from(dir);
@@ -734,7 +661,7 @@ pub fn get_memory_path() -> ProfileResult<&'static str> {
 
             let result = PATH_RESULT.get_or_init(|| {
                 let paths = ProfilePaths::get();
-                let config = ProfileConfig::get();
+                let config = get_profile_config();
 
                 let path = if let Some(dir) = &config.output_dir {
                     let dir_path = PathBuf::from(dir);
@@ -901,7 +828,7 @@ pub fn get_global_profile_type() -> ProfileType {
 
     // Map the stored value to a ProfileType using the bitflags pattern
     match global_value {
-        0 => ProfileConfig::get()
+        0 => get_profile_config()
             .profile_type
             .unwrap_or(ProfileType::None),
         1 => ProfileType::Time,
@@ -910,7 +837,7 @@ pub fn get_global_profile_type() -> ProfileType {
         _ => {
             // Should never happen, but handle gracefully if it does
             debug_log!("Unexpected GLOBAL_PROFILE_TYPE value: {}", global_value);
-            ProfileConfig::get()
+            get_profile_config()
                 .profile_type
                 .unwrap_or(ProfileType::None)
         }
@@ -964,7 +891,7 @@ pub fn enable_profiling(
     enabled: bool,
     maybe_profile_type: Option<ProfileType>,
 ) -> ProfileResult<()> {
-    // When running tests (either unit or integration), we want to ensure our configuration 
+    // When running tests (either unit or integration), we want to ensure our configuration
     // is up-to-date with the latest environment variables
     #[cfg(test)]
     {
@@ -973,7 +900,7 @@ pub fn enable_profiling(
     }
 
     // Check if the operation is a no-op due to environment settings
-    let config = ProfileConfig::get();
+    let config = get_profile_config();
     if enabled != config.enabled {
         debug_log!(
             "Caution: `enable_profiling` attribute or function `enabled={enabled}` call overriding configured value"
@@ -2665,14 +2592,19 @@ mod tests {
 
         // First set to "time"
         env::set_var("THAG_PROFILE", "time,.,none,false");
-        reset_profile_config_for_tests();
+        // reset_profile_config_for_tests();
 
         // Check that it's set to Time
         assert_eq!(get_config_profile_type(), ProfileType::Time);
+        assert_eq!(get_profile_config().profile_type, Some(ProfileType::Time));
+
+        // Verify that the global type was also updated
+        assert_eq!(get_global_profile_type(), ProfileType::Time);
 
         // Now change to "both"
         env::set_var("THAG_PROFILE", "both,.,none,false");
-        reset_profile_config_for_tests();
+
+        clear_profile_config_cache();
 
         // Check that it picked up the change
         assert_eq!(get_config_profile_type(), ProfileType::Both);
@@ -2685,7 +2617,7 @@ mod tests {
         }
 
         // Reset one more time to restore state
-        reset_profile_config_for_tests();
+        // reset_profile_config_for_tests();
     }
 
     // Function registry tests

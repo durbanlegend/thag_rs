@@ -192,11 +192,10 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, get_config_profile_type, init_profiling, PROFILING_MUTEX};
+                use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, PROFILING_MUTEX};
 
                 let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
                 eprintln!("should_profile={should_profile}");
-
             }
         }
         ProfilingMode::Enabled => {
@@ -215,12 +214,15 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, get_config_profile_type, init_profiling, with_allocator, Allocator, PROFILING_MUTEX};
+                use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, with_allocator, Allocator, PROFILING_MUTEX};
 
                 let should_profile = with_allocator(Allocator::System, || {
                     std::env::var("THAG_PROFILE").ok().is_some()
                 });
 
+                with_allocator(Allocator::System, || {
+                    eprintln!("should_profile={should_profile}");
+                });
             }
         }
         ProfilingMode::Enabled => {
@@ -309,8 +311,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             } else {None};
 
             if should_profile {
-                eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), get_config_profile_type());
-                init_profiling(module_path!(), Some(get_config_profile_type()));
+                eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), parse_env_profile_config());
+                init_profiling(module_path!(), Some(parse_env_profile_config()));
             }
 
             let maybe_profile = if should_profile {
@@ -348,8 +350,10 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             });
 
             if should_profile {
-                eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), get_config_profile_type());
-                init_profiling(module_path!(), Some(get_config_profile_type()));   // Already uses with_allocator(Allocator::System... internally
+                with_allocator(Allocator::System, || {
+                    eprintln!("Calling init_profiling({}, parse_env_profile_config())", module_path!());
+                });
+                init_profiling(module_path!(), parse_env_profile_config());   // Already uses with_allocator(Allocator::System... internally
             }
 
             let maybe_profile = with_allocator(Allocator::System, || {

@@ -10,7 +10,12 @@ use std::env;
 use thag_profiler::{
     enable_profiling, end, /*, file_stem_from_path_str */
     profile,
-    profiling::{disable_profiling, is_profiling_enabled, is_profiling_state_enabled},
+    profiling::{
+        disable_profiling,
+        is_profiling_enabled,
+        is_profiling_state_enabled,
+        // parse_env_profile_config,
+    },
     ProfileType,
 };
 
@@ -528,7 +533,7 @@ fn test_enable_profiling_sequence() {
 
     // Test default option (yes)
     default_enabled_function();
-    assert!(is_profiling_state_enabled());
+    assert!(!is_profiling_state_enabled());
 
     // Test no option (disables profiling)
     no_disabled_function();

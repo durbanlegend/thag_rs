@@ -216,6 +216,16 @@ pub struct ProfileConfiguration {
     detailed_memory: bool,
 }
 
+impl ProfileConfiguration {
+    pub fn profile_type(&self) -> Option<ProfileType> {
+        self.profile_type
+    }
+
+    pub fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
+        self.profile_type = profile_type;
+    }
+}
+
 impl Default for ProfileConfiguration {
     #[cfg(feature = "time_profiling")]
     fn default() -> Self {
@@ -247,36 +257,6 @@ impl Default for ProfileConfiguration {
         }
     }
 }
-
-/// Resets the profile configuration for testing purposes.
-///
-/// This function is primarily intended for test cases that need to work with
-/// different profile configurations between runs. It:
-/// 1. Clears the config cache, forcing a reload of the configuration from environment
-/// 2. Updates the global profile type to match the new configuration
-///
-/// After calling this function, the next call to `get_profile_config()` will
-/// read the latest values from the environment.
-// #[cfg(any(test, feature = "time_profiling"))]
-// pub fn reset_profile_config_for_tests() {
-//     use std::sync::atomic::Ordering;
-
-//     // First, clear the cached configuration
-//     clear_profile_config_cache();
-
-//     // Get the fresh configuration
-//     let config = get_profile_config();
-
-//     // Update the global profile type to match the new config
-//     if let Some(profile_type) = config.profile_type {
-//         // Directly update GLOBAL_PROFILE_TYPE to ensure consistency
-//         let value = ProfileCapability::from_profile_type(profile_type).0;
-//         GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-//         debug_log!("Reset global profile type to {:?}", profile_type);
-//     }
-
-//     debug_log!("Profile configuration has been reset from environment variables");
-// }
 
 /// Internal helper function to parse THAG_PROFILE environment variable
 /// into a ProfileConfiguration
@@ -896,7 +876,7 @@ pub fn enable_profiling(
     #[cfg(test)]
     {
         debug_log!("Unit test: Resetting profile config to ensure latest env vars are used");
-        reset_profile_config_for_tests();
+        clear_profile_config_cache();
     }
 
     // Check if the operation is a no-op due to environment settings
@@ -2570,7 +2550,7 @@ mod tests {
     use super::*;
     use regex::Regex;
     use serial_test::serial;
-    use std::env;
+    // use std::env;
     use std::time::Duration;
 
     // Basic profiling tests
@@ -2582,42 +2562,6 @@ mod tests {
         assert_eq!(ProfileType::from_str("memory"), Some(ProfileType::Memory));
         assert_eq!(ProfileType::from_str("both"), Some(ProfileType::Both));
         assert_eq!(ProfileType::from_str("invalid"), None);
-    }
-
-    #[test]
-    #[serial]
-    fn test_reset_profile_config_picks_up_env_changes() {
-        // Save original env var if it exists
-        let original = env::var("THAG_PROFILE").ok();
-
-        // First set to "time"
-        env::set_var("THAG_PROFILE", "time,.,none,false");
-        // reset_profile_config_for_tests();
-
-        // Check that it's set to Time
-        assert_eq!(get_config_profile_type(), ProfileType::Time);
-        assert_eq!(get_profile_config().profile_type, Some(ProfileType::Time));
-
-        // Verify that the global type was also updated
-        assert_eq!(get_global_profile_type(), ProfileType::Time);
-
-        // Now change to "both"
-        env::set_var("THAG_PROFILE", "both,.,none,false");
-
-        clear_profile_config_cache();
-
-        // Check that it picked up the change
-        assert_eq!(get_config_profile_type(), ProfileType::Both);
-
-        // Restore original env var or remove it
-        if let Some(val) = original {
-            env::set_var("THAG_PROFILE", val);
-        } else {
-            env::remove_var("THAG_PROFILE");
-        }
-
-        // Reset one more time to restore state
-        // reset_profile_config_for_tests();
     }
 
     // Function registry tests

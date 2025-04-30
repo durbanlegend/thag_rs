@@ -52,17 +52,15 @@ use std::{fmt::Display, path::Path};
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
-use profiling::ProfileConfiguration;
-
 // Re-exports
 pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
         disable_profiling, enable_profiling, get_config_profile_type, get_global_profile_type,
-        is_detailed_memory, is_profiling_enabled, strip_hex_suffix,
+        is_detailed_memory, is_profiling_enabled, parse_env_profile_config, strip_hex_suffix,
         Profile, /* ProfileSection,*/
-        ProfileType,
+        ProfileConfiguration, ProfileType,
     },
     thag_proc_macros::fn_name,
     // Only re-export what users need from mem_tracking
@@ -303,7 +301,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
     }
 
     set_base_location(file!(), fn_name, line!());
-    enable_profiling(true, profile_config.profile_type).expect("Failed to enable profiling");
+    enable_profiling(true, profile_config.profile_type()).expect("Failed to enable profiling");
     eprintln!("Exiting init_profiling");
 }
 
@@ -334,7 +332,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 
         set_base_location(file!(), fn_name, line!());
 
-        enable_profiling(true, profile_config.profile_type).expect("Failed to enable profiling");
+        enable_profiling(true, profile_config.profile_type()).expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
 
@@ -523,5 +521,67 @@ mod feature_tests {
                 "Without profiling feature, is_profiling_enabled() should always return false"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod config_tests {
+    use super::*;
+    use std::env;
+
+    /// Tests that resetting profile config picks up environment variable changes
+    /// This test is isolated to avoid interfering with other tests
+    #[test]
+    fn test_profile_config_picks_up_env_changes() {
+        // Save original env var if it exists
+        let original = env::var("THAG_PROFILE").ok();
+
+        // First set to "time"
+        env::set_var("THAG_PROFILE", "time,.,none,false");
+
+        // Clear the cache to force reloading from environment
+        profiling::clear_profile_config_cache();
+
+        // Check that it's set to Time
+        assert_eq!(
+            profiling::get_config_profile_type(),
+            profiling::ProfileType::Time
+        );
+        assert_eq!(get_config_profile_type(), profiling::ProfileType::Time);
+
+        // Verify that the global type was also updated
+        assert_eq!(
+            profiling::get_global_profile_type(),
+            profiling::ProfileType::Time
+        );
+
+        // Now change to "both"
+        env::set_var("THAG_PROFILE", "both,.,none,false");
+
+        // Clear the cache again to force reloading
+        profiling::clear_profile_config_cache();
+
+        // Check that it picked up the change
+        assert_eq!(
+            profiling::get_config_profile_type(),
+            profiling::ProfileType::Both
+        );
+        assert_eq!(get_config_profile_type(), profiling::ProfileType::Both);
+
+        // Verify that the global type was also updated
+        assert_eq!(
+            profiling::get_global_profile_type(),
+            profiling::ProfileType::Both
+        );
+
+        // Restore original env var or remove it
+        if let Some(val) = original {
+            env::set_var("THAG_PROFILE", val);
+        } else {
+            env::remove_var("THAG_PROFILE");
+        }
+
+        // Clear the cache once more to restore state
+        profiling::clear_profile_config_cache();
     }
 }

@@ -8,8 +8,12 @@ use std::env;
 
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    enable_profiling, end, file_stem_from_path_str, profile,
-    profiling::{disable_profiling, is_profiling_enabled, is_profiling_state_enabled},
+    enable_profiling, end, /*, file_stem_from_path_str */
+    profile,
+    profiling::{
+        disable_profiling, is_profiling_enabled, is_profiling_state_enabled,
+        parse_env_profile_config,
+    },
     ProfileType,
 };
 
@@ -233,6 +237,8 @@ fn test_enable_profiling_attribute() {
     // Reset profiling config at the start of the test to ensure we pick up current env vars
 
     // Ensure profiling is disabled at the start
+
+    use thag_profiler::profiling::clear_profile_config_cache;
     disable_profiling();
     assert!(
         !is_profiling_state_enabled(),
@@ -240,7 +246,7 @@ fn test_enable_profiling_attribute() {
     );
 
     eprintln!("disable_profiling completed");
-    return;
+
     // -------------------------------------------------------------------
     // Test default option (yes)
     // -------------------------------------------------------------------
@@ -334,6 +340,10 @@ fn test_enable_profiling_attribute() {
 
     // Test with no environment variable set
     env::remove_var("THAG_PROFILE");
+
+    // Call the clear function directly
+    clear_profile_config_cache();
+
     runtime_controlled_function();
     assert!(
         !is_profiling_state_enabled(),
@@ -344,8 +354,10 @@ fn test_enable_profiling_attribute() {
 
     // Test with time profile type
     env::set_var("THAG_PROFILE", "time,.,none,false");
-    // Call the reset function directly
-    thag_profiler::profiling::reset_profile_config_for_tests();
+
+    // Call the clear function directly
+    clear_profile_config_cache();
+
     runtime_controlled_function();
     assert!(
         !is_profiling_state_enabled(),
@@ -360,6 +372,10 @@ fn test_enable_profiling_attribute() {
     {
         // Test with memory profile type
         env::set_var("THAG_PROFILE", "memory,.,quiet,false");
+
+        // Call the clear function directly
+        clear_profile_config_cache();
+
         runtime_controlled_function();
         assert!(
             !is_profiling_state_enabled(),
@@ -371,6 +387,10 @@ fn test_enable_profiling_attribute() {
 
         // Test with detailed memory profile type
         env::set_var("THAG_PROFILE", "memory,.,announce,true");
+
+        // Call the clear function directly
+        clear_profile_config_cache();
+
         runtime_controlled_function();
         assert!(
             !is_profiling_state_enabled(),
@@ -382,6 +402,10 @@ fn test_enable_profiling_attribute() {
 
         // Test with both profile type
         env::set_var("THAG_PROFILE", "both,.,none,false");
+
+        // Call the clear function directly
+        clear_profile_config_cache();
+
         runtime_controlled_function();
         assert!(
             !is_profiling_state_enabled(),
@@ -393,6 +417,10 @@ fn test_enable_profiling_attribute() {
 
         // Test with both and detailed memory profile type
         env::set_var("THAG_PROFILE", "both,.,announce,true");
+
+        // Call the clear function directly
+        clear_profile_config_cache();
+
         runtime_controlled_function();
         assert!(
             !is_profiling_state_enabled(),
@@ -407,6 +435,10 @@ fn test_enable_profiling_attribute() {
 
     // Test with invalid profile type
     env::set_var("THAG_PROFILE", "invalid,.,none,false");
+
+    // Call the clear function directly
+    clear_profile_config_cache();
+
     runtime_controlled_function();
     assert!(
         !is_profiling_state_enabled(),

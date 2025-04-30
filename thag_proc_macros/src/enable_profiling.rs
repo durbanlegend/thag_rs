@@ -200,7 +200,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Enabled => {
             quote! {
-                use thag_profiler::{disable_profiling, finalize_profiling, init_profiling, ProfileType, PROFILING_MUTEX};
+                use thag_profiler::{disable_profiling, finalize_profiling, init_profiling, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
         ProfilingMode::Disabled => {
@@ -227,7 +227,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Enabled => {
             quote! {
-                use ::thag_profiler::{disable_profiling, enable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileType, PROFILING_MUTEX};
+                use ::thag_profiler::{disable_profiling, enable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
         ProfilingMode::Disabled => {
@@ -312,7 +312,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             if should_profile {
                 eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), parse_env_profile_config());
-                init_profiling(module_path!(), Some(parse_env_profile_config()));
+                init_profiling(module_path!(), parse_env_profile_config());
             }
 
             let maybe_profile = if should_profile {
@@ -323,17 +323,21 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             #wrapped_block
         },
-        ProfilingMode::Enabled => quote! {
-            // Acquire the mutex to ensure only one instance can be profiling at a time
-            let _guard = PROFILING_MUTEX.lock();
+        ProfilingMode::Enabled => {
+            quote! {
+                // Acquire the mutex to ensure only one instance can be profiling at a time
+                let _guard = PROFILING_MUTEX.lock();
 
-            // Initialize profiling
-            init_profiling(module_path!(), #profile_type);
+                // Initialize profiling
+                let mut profile_config = ProfileConfiguration::default();
+                profile_config.set_profile_type(#profile_type);
+                init_profiling(module_path!(), profile_config);
 
-            let profile = #profile_new;
+                let profile = #profile_new;
 
-            #wrapped_block
-        },
+                #wrapped_block
+            }
+        }
         ProfilingMode::Disabled => quote! {
             #wrapped_block
         },
@@ -373,7 +377,13 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             });
 
             // Initialize profiling
-            init_profiling(module_path!(), #profile_type);  // Already uses with_allocator(Allocator::System... internally
+            let mut profile_config = with_allocator(Allocator::System, || {
+                // ProfileConfiguration { profile_type: #profile_type, ..Default::default() };
+                let profile_config = ProfileConfiguration::default();
+                profile_config.set_profile_type(#profile_type);
+                profile_config
+            });
+            init_profiling(module_path!(), profile_config);  // Already uses with_allocator(Allocator::System... internally
 
             let profile = with_allocator(Allocator::System, || {
                 #profile_new

@@ -377,9 +377,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             });
 
             // Initialize profiling
-            let mut profile_config = with_allocator(Allocator::System, || {
+            let profile_config = with_allocator(Allocator::System, || {
                 // ProfileConfiguration { profile_type: #profile_type, ..Default::default() };
-                let profile_config = ProfileConfiguration::default();
+                let mut profile_config = ProfileConfiguration::default();
                 profile_config.set_profile_type(#profile_type);
                 profile_config
             });

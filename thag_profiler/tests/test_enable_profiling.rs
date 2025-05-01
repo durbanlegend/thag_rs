@@ -228,9 +228,15 @@ fn runtime_controlled_function() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Main test function - follows pattern from test_profiled_behavior.rs
+// ---------------------------------------------------------------------------
+
 #[test]
 #[cfg(feature = "time_profiling")]
 fn test_enable_profiling_full_sequence() {
+    use thag_profiler::profiling::clear_profile_config_cache;
+
     let max_profile_type = if cfg!(feature = "full_profiling") {
         ProfileType::Both
     } else {
@@ -240,8 +246,15 @@ fn test_enable_profiling_full_sequence() {
     // Ensure clean state to start
     env::remove_var("THAG_PROFILE");
     disable_profiling();
+    assert!(
+        !is_profiling_state_enabled(),
+        "Profiling should be disabled at test start"
+    );
 
+    // -------------------------------------------------------------------
     // 1. Test default (yes) option
+    // -------------------------------------------------------------------
+
     eprintln!("Testing default enabled function...");
     default_enabled_function();
     assert!(
@@ -250,7 +263,10 @@ fn test_enable_profiling_full_sequence() {
     );
     assert_eq!(thag_profiler::get_global_profile_type(), max_profile_type);
 
+    // -------------------------------------------------------------------
     // 2. Test explicit yes option
+    // -------------------------------------------------------------------
+
     eprintln!("Testing yes enabled function...");
     disable_profiling(); // Reset state before each test
     yes_enabled_function();
@@ -259,7 +275,10 @@ fn test_enable_profiling_full_sequence() {
         "Profiling should be disabled after function"
     );
 
+    // -------------------------------------------------------------------
     // 3. Test no option
+    // -------------------------------------------------------------------
+
     eprintln!("Testing no disabled function...");
     let _ = enable_profiling(true, Some(ProfileType::Time)); // First enable it
     no_disabled_function();
@@ -268,7 +287,10 @@ fn test_enable_profiling_full_sequence() {
         "Profiling should be disabled after function"
     );
 
+    // -------------------------------------------------------------------
     // 4. Test time option
+    // -------------------------------------------------------------------
+
     eprintln!("Testing time enabled function...");
     disable_profiling();
     time_enabled_function();
@@ -277,7 +299,10 @@ fn test_enable_profiling_full_sequence() {
         "Profiling should be disabled after function"
     );
 
+    // -------------------------------------------------------------------
     // 5. Test memory option (when available)
+    // -------------------------------------------------------------------
+
     #[cfg(feature = "full_profiling")]
     {
         eprintln!("Testing memory enabled function...");
@@ -289,7 +314,10 @@ fn test_enable_profiling_full_sequence() {
         );
     }
 
+    // -------------------------------------------------------------------
     // 6. Test both option (when available)
+    // -------------------------------------------------------------------
+
     #[cfg(feature = "full_profiling")]
     {
         eprintln!("Testing both enabled function...");
@@ -301,33 +329,42 @@ fn test_enable_profiling_full_sequence() {
         );
     }
 
+    // -------------------------------------------------------------------
     // 7. Test runtime with no env var
+    // -------------------------------------------------------------------
+
     eprintln!("Testing runtime with no env var...");
     env::remove_var("THAG_PROFILE");
     disable_profiling();
-    thag_profiler::profiling::clear_profile_config_cache();
+    clear_profile_config_cache();
     runtime_controlled_function();
     assert!(
         !is_profiling_state_enabled(),
         "Profiling should be disabled after function"
     );
 
+    // -------------------------------------------------------------------
     // 8. Test runtime with time profile
+    // -------------------------------------------------------------------
+
     eprintln!("Testing runtime with time profile...");
     env::set_var("THAG_PROFILE", "time,.,none,false");
     disable_profiling();
-    thag_profiler::profiling::clear_profile_config_cache();
+    clear_profile_config_cache();
     runtime_controlled_function();
     assert!(
         !is_profiling_state_enabled(),
         "Profiling should be disabled after function"
     );
 
+    // -------------------------------------------------------------------
     // 9. Test runtime with invalid profile
-    eprintln!("Testing runtime with invalid profile...");
+    // -------------------------------------------------------------------
+
+   eprintln!("Testing runtime with invalid profile...");
     env::set_var("THAG_PROFILE", "invalid,.,none,false");
     disable_profiling();
-    thag_profiler::profiling::clear_profile_config_cache();
+    clear_profile_config_cache();
     // This might fail if runtime_controlled_function doesn't handle invalid types well
     // Consider adding a try-catch here if necessary
     let _result = std::panic::catch_unwind(|| {
@@ -340,22 +377,28 @@ fn test_enable_profiling_full_sequence() {
         "Profiling should be disabled after function"
     );
 
+    // -------------------------------------------------------------------
     // 10. Test runtime option with detailed memory
+    // -------------------------------------------------------------------
+
     #[cfg(feature = "full_profiling")]
     {
         env::set_var("THAG_PROFILE", "both,.,none,true");
-        thag_profiler::profiling::clear_profile_config_cache();
+        clear_profile_config_cache();
         runtime_controlled_function();
         assert!(!is_profiling_state_enabled());
         assert_eq!(thag_profiler::get_global_profile_type(), max_profile_type);
         assert!(thag_profiler::is_detailed_memory());
     }
 
+    // -------------------------------------------------------------------
     // 11. Test runtime option without detailed memory
+    // -------------------------------------------------------------------
+
     #[cfg(feature = "full_profiling")]
     {
         env::set_var("THAG_PROFILE", "memory,.,quiet,false");
-        thag_profiler::profiling::clear_profile_config_cache();
+        clear_profile_config_cache();
 
         // Run the function with runtime option
         runtime_controlled_function();
@@ -376,12 +419,15 @@ fn test_enable_profiling_full_sequence() {
         );
     }
 
+    // -------------------------------------------------------------------
     // 12. Test runtime option with detailed memory
+    // -------------------------------------------------------------------
+
     #[cfg(feature = "full_profiling")]
     {
         // Set the environment variable for detailed memory profiling
         env::set_var("THAG_PROFILE", "memory,.,announce,true");
-        thag_profiler::profiling::clear_profile_config_cache();
+        clear_profile_config_cache();
 
         // Run the function with runtime option
         runtime_controlled_function();

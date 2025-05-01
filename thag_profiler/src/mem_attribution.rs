@@ -41,6 +41,16 @@ pub struct ProfileRef {
     profile: Option<&'static Profile>,
 }
 
+impl ProfileRef {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn detailed_memory(&self) -> bool {
+        self.detailed_memory
+    }
+}
+
 impl ProfileRegistry {
     /// Register a profile with the registry
     pub fn register_profile(&mut self, profile: &Profile) {

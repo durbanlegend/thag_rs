@@ -42,10 +42,10 @@ mod logging;
 pub mod profiling;
 
 #[cfg(feature = "full_profiling")]
-mod mem_tracking;
+pub mod mem_tracking;
 
 #[cfg(feature = "full_profiling")]
-mod mem_attribution;
+pub mod mem_attribution;
 
 use std::{fmt::Display, path::Path};
 

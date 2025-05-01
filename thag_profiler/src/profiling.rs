@@ -1037,8 +1037,9 @@ pub fn is_profiling_enabled() -> bool {
     //     cfg!(test),
     //     cfg!(feature = "time_profiling")
     // );
-    // In test mode, only use the runtime state to allow enable/disable testing
-    eprintln!("cfg!(test)={}", cfg!(test));
+    // In test mode, only use the runtime state to allow enable/disable testing.
+    // Note that cfg(test) only applies to internal tests, not to external dirs like test/.
+    // eprintln!("cfg!(test)={}", cfg!(test));
 
     #[cfg(test)]
     let enabled = PROFILING_STATE.load(Ordering::SeqCst);

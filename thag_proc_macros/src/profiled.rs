@@ -142,18 +142,18 @@ impl Parse for ProfileArgs {
 
 pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Print the raw attribute TokenStream to help debug
-    eprintln!("Raw attribute tokens: {attr}");
+    // eprintln!("Raw attribute tokens: {attr}");
 
     let args = match syn::parse::<ProfileArgs>(attr.clone()) {
         Ok(args) => {
             // Print parsed arguments for debugging
-            eprintln!("Parsed attributes - time: {}, mem_summary: {}, mem_detail: {}, both: {}, global: {}, test: {}",
-                     args.time, args.mem_summary, args.mem_detail, args.both, args.global, args.test);
+            // eprintln!("Parsed attributes - time: {}, mem_summary: {}, mem_detail: {}, both: {}, global: {}, test: {}",
+            //          args.time, args.mem_summary, args.mem_detail, args.both, args.global, args.test);
             args
         }
         Err(e) => {
             eprintln!("Error parsing profiled attributes: {e}");
-            eprintln!("Raw attribute tokens: {attr}");
+            // eprintln!("Raw attribute tokens: {attr}");
             // Return the original function without any changes
             return item;
         }
@@ -173,10 +173,10 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     let is_async = input.sig.asyncness.is_some();
 
     // Print detailed flags for debugging
-    eprintln!(
-        "Profile type determination - both: {}, time: {}, mem_summary: {}, mem_detail: {}",
-        args.both, args.time, args.mem_summary, args.mem_detail
-    );
+    // eprintln!(
+    //     "Profile type determination - both: {}, time: {}, mem_summary: {}, mem_detail: {}",
+    //     args.both, args.time, args.mem_summary, args.mem_detail
+    // );
 
     // Determine profile type based on flags
     #[cfg(feature = "full_profiling")]

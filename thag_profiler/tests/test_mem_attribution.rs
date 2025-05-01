@@ -5,14 +5,12 @@ use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str,
     mem_attribution::{find_profile, register_profile, PROFILE_REGISTRY},
     profile, profiled,
-    profiling::{DebugLevel, Profile, ProfileType},
+    profiling::{Profile, ProfileType},
+    with_allocator, Allocator,
 };
 
 #[cfg(feature = "full_profiling")]
-use std::{
-    env::current_dir,
-    sync::{LazyLock, Mutex},
-};
+use std::sync::{LazyLock, Mutex};
 
 #[cfg(feature = "full_profiling")]
 static TEST_ALLOCATIONS: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(Vec::new()));
@@ -33,7 +31,7 @@ fn mem_attribution_whole_function() {
     assert_eq!(data.len() + data2.len(), 3072);
 
     // Verify profile registration
-    eprintln!("profile={profile:#?}");
+    // eprintln!("profile={profile:#?}");
     let profile = profile.as_ref().unwrap();
     let file_name = profile.file_name();
     let fn_name = profile.fn_name();
@@ -194,7 +192,6 @@ fn mem_attribution_registry_functions() {
         *registry = Default::default();
     }
 
-    dbg!();
     // Create a profile manually
     let file_name = file_stem_from_path_str(file!());
     let fn_name = "registry_test";
@@ -211,22 +208,17 @@ fn mem_attribution_registry_functions() {
     )
     .unwrap();
 
-    dbg!();
-
     // Register the profile
     register_profile(&profile);
-    dbg!();
 
-    // // Verify file names in registry
-    // {
-    //     let file_names = PROFILE_REGISTRY.lock().get_file_names();
-    //     dbg!();
-    //     assert!(
-    //         file_names.contains(&file_name.to_string()),
-    //         "Registry should contain our file name"
-    //     );
-    // }
-    // dbg!();
+    // Verify file names in registry
+    with_allocator(Allocator::System, || {
+        let file_names = PROFILE_REGISTRY.lock().get_file_names();
+        assert!(
+            file_names.contains(&file_name.to_string()),
+            "Registry should contain our file name"
+        );
+    });
 
     let fn_name = profile.fn_name();
 
@@ -307,7 +299,7 @@ fn mem_attribution_overlapping_profiles() {
 fn mem_attribution_record_allocation() {
     // Create a profile with specific line numbers
     let file_name = file_stem_from_path_str(file!());
-    let fn_name = "record_alloc_test";
+    let fn_name = format!("{file_name}::mem_attribution_record_allocation");
 
     profile!("record_alloc_section", mem_detail);
 
@@ -320,24 +312,27 @@ fn mem_attribution_record_allocation() {
     backtrace.resolve();
 
     // Access registry directly to test record_allocation
-    {
-        let registry = PROFILE_REGISTRY.lock();
-
+    with_allocator(Allocator::System, || {
         // Test valid allocation
-        let valid = registry.record_allocation(
+        // assert!(!PROFILE_REGISTRY.is_locked());
+        let valid = PROFILE_REGISTRY.lock().record_allocation(
             &file_name,
-            fn_name,
+            &fn_name,
             start_line + 1, // Line within range
             1024,           // Size
             0xDEADBEEF,     // Fake address
             &mut backtrace,
         );
-        assert!(valid, "Should successfully record allocation within range");
+
+        assert!(
+            valid,
+            "Should have successfully recorded allocation within range"
+        );
 
         // Test allocation for non-existent file
-        let invalid_file = registry.record_allocation(
+        let invalid_file = PROFILE_REGISTRY.lock().record_allocation(
             "nonexistent_file",
-            fn_name,
+            &fn_name,
             start_line,
             1024,
             0xDEADBEEF,
@@ -345,11 +340,11 @@ fn mem_attribution_record_allocation() {
         );
         assert!(
             !invalid_file,
-            "Should not record allocation for non-existent file"
+            "Should not have recorded allocation for non-existent file"
         );
 
         // Test allocation for non-existent function
-        let invalid_fn = registry.record_allocation(
+        let invalid_fn = PROFILE_REGISTRY.lock().record_allocation(
             &file_name,
             "nonexistent_function",
             start_line,
@@ -359,13 +354,13 @@ fn mem_attribution_record_allocation() {
         );
         assert!(
             !invalid_fn,
-            "Should not record allocation for non-existent function"
+            "Should not have recorded allocation for non-existent function"
         );
 
         // Test allocation outside line range
-        let out_of_range = registry.record_allocation(
+        let out_of_range = PROFILE_REGISTRY.lock().record_allocation(
             &file_name,
-            fn_name,
+            &fn_name,
             start_line - 10, // Before range
             1024,
             0xDEADBEEF,
@@ -373,9 +368,9 @@ fn mem_attribution_record_allocation() {
         );
         assert!(
             !out_of_range,
-            "Should not record allocation outside line range"
+            "Should not have recorded allocation outside line range"
         );
-    }
+    });
 
     end!(record_alloc_section);
 }
@@ -388,24 +383,12 @@ fn mem_attribution_record_allocation() {
 #[cfg(feature = "full_profiling")]
 #[enable_profiling]
 fn test_mem_attribution_full_sequence() {
-    use thag_profiler::{
-        profiling::{get_debug_level, get_profile_config, set_profile_config},
-        ProfileConfiguration, ProfileType,
-    };
+    use thag_profiler::{profiling::set_profile_config, ProfileConfiguration};
 
     // Set debug logging off
     let _ = set_profile_config(
         ProfileConfiguration::try_from(vec!["both", "", "announce"].as_slice()).unwrap(),
     );
-
-    // env::set_var("THAG_PROFILE", "both,.,announce");
-    // clear_profile_config_cache();
-    // let _ = get_profile_config();
-    // eprintln!(
-    //     "debug log level={}, debug log path={:?}",
-    //     get_debug_level(),
-    //     get_debug_log_path()
-    // );
 
     // Ensure we start with a clean profiling state
 

@@ -57,9 +57,9 @@ pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        disable_profiling, enable_profiling, get_config_profile_type, get_global_profile_type,
-        is_detailed_memory, is_profiling_enabled, parse_env_profile_config, strip_hex_suffix,
-        Profile, /* ProfileSection,*/
+        clear_profile_config_cache, disable_profiling, enable_profiling, get_config_profile_type,
+        get_global_profile_type, is_detailed_memory, is_profiling_enabled,
+        parse_env_profile_config, strip_hex_suffix, Profile, /* ProfileSection,*/
         ProfileConfiguration, ProfileType,
     },
     thag_proc_macros::fn_name,
@@ -336,15 +336,11 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 
         let global_profile_type = get_global_profile_type();
 
-        eprintln!(
-            "In init_profiling with global_profile_type={:?}",
-            global_profile_type
-        );
+        eprintln!("In init_profiling with global_profile_type={global_profile_type:?}");
 
         if global_profile_type == ProfileType::Time {
             eprintln!(
-                "Skipping memory profiling initialization because global_profile_type={:?}",
-                global_profile_type
+                "Skipping memory profiling initialization because global_profile_type={global_profile_type:?}"
             );
         } else {
             eprintln!("Initializing memory profiling");

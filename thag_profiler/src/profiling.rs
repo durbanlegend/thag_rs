@@ -14,7 +14,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{debug_log, static_lazy, ProfileError};
+use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 
 #[cfg(feature = "full_profiling")]
 use crate::{
@@ -37,7 +37,7 @@ use std::thread;
 use backtrace::{Backtrace, BacktraceFrame};
 
 #[cfg(feature = "time_profiling")]
-use crate::{file_stem_from_path_str, flush_debug_log, get_base_location, ProfileResult};
+use crate::{file_stem_from_path_str, flush_debug_log, get_base_location};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -78,18 +78,18 @@ impl ProfileCapability {
     const fn available() -> Self {
         #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
         {
-            return Self::TIME;
+            Self::TIME
         }
 
         #[cfg(feature = "full_profiling")]
         {
-            return Self::BOTH;
+            Self::BOTH
         }
 
         // If no profiling features are enabled
         #[cfg(all(not(feature = "time_profiling"), not(feature = "full_profiling")))]
         {
-            return Self::NONE;
+            Self::NONE
         }
     }
 
@@ -103,7 +103,8 @@ impl ProfileCapability {
         }
     }
 
-    /// Convert from ProfileType to capabilities
+    /// Convert from `ProfileType` to capabilities
+    #[must_use]
     pub const fn from_profile_type(profile_type: ProfileType) -> Self {
         match profile_type {
             ProfileType::Time => Self::TIME,
@@ -114,14 +115,14 @@ impl ProfileCapability {
     }
 
     /// Returns the intersection of the requested profile type and available capabilities
-    const fn intersection(&self, profile_type: ProfileType) -> Self {
+    const fn intersection(self, profile_type: ProfileType) -> Self {
         Self(self.0 & Self::from_profile_type(profile_type).0)
     }
 }
 
 /// Checks if a profile type is valid for the current feature set
 #[cfg(any(feature = "time_profiling", feature = "full_profiling"))]
-fn is_valid_profile_type(profile_type: ProfileType) -> bool {
+const fn is_valid_profile_type(profile_type: ProfileType) -> bool {
     ProfileCapability::available().supports(profile_type)
 }
 
@@ -156,7 +157,7 @@ pub fn get_profile_config() -> ProfileConfiguration {
     }
 
     // No cached config, create one
-    let config = parse_env_profile_config();
+    let config = parse_env_profile_config().expect("Expected environment variable `THAG_PROFILE={time|memory|both},[dir],{none}quiet|announce}[,true|false]`");
     // eprintln!("No cached config - setting config to {:#?}", config);
     // eprintln!("{:?}", backtrace::Backtrace::new());
 
@@ -172,6 +173,15 @@ pub fn get_profile_config() -> ProfileConfiguration {
 pub fn clear_profile_config_cache() {
     let mut cache = PROFILE_CONFIG_CACHE.lock();
     *cache = None;
+}
+
+/// Sets the profile configuration
+///
+/// This function updates the profile configuration with a new value.
+#[must_use]
+pub fn set_profile_config(config: ProfileConfiguration) {
+    let mut cache = PROFILE_CONFIG_CACHE.lock();
+    *cache = Some(config);
 }
 
 #[allow(dead_code)]
@@ -218,6 +228,99 @@ pub struct ProfileConfiguration {
     detailed_memory: bool,
 }
 
+impl TryFrom<&[&str]> for ProfileConfiguration {
+    type Error = ProfileError;
+
+    fn try_from(value: &[&str]) -> Result<Self, Self::Error> {
+        let mut errors = Vec::new();
+
+        // Parse profile type (first element)
+        let profile_type = if value.first().map_or("", |s| *s).trim().is_empty() {
+            errors.push(
+                "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
+                    .to_string(),
+            );
+            eprintln!("THAG_PROFILE: First element is empty");
+            None
+        } else {
+            let profile_type_str = value.first().unwrap().trim();
+            eprintln!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
+            match profile_type_str.parse::<ProfileType>() {
+                Ok(val) => {
+                    eprintln!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
+                    Some(val)
+                }
+                Err(e) => {
+                    eprintln!("THAG_PROFILE: Failed to parse profile type: {e}");
+                    errors.push(e);
+                    None
+                }
+            }
+        };
+
+        // Parse output directory (second element)
+        let output_dir = if value.get(1).map_or("", |s| *s).trim().is_empty() {
+            Some(PathBuf::from(".")) // Default to current directory if empty
+        } else {
+            Some(PathBuf::from(value.get(1).unwrap().trim()))
+        };
+
+        // Parse debug log (third element)
+        let debug_level = if value.get(2).map_or("", |s| *s).trim().is_empty() {
+            errors.push(
+                "Third element (debug log) is empty. Expected 'none', 'quiet', or 'announce'"
+                    .to_string(),
+            );
+            None
+        } else {
+            match value.get(2).unwrap().parse::<DebugLevel>() {
+                Ok(val) => Some(val),
+                Err(e) => {
+                    errors.push(e);
+                    None
+                }
+            }
+        };
+
+        // Parse detailed memory (fourth element)
+        let detailed_memory = value.get(3).is_some_and(|val| if val.trim().is_empty() {
+            false // Default if empty
+        } else if let Ok(val) = val.trim().parse::<bool>() {
+            // Validate that detailed memory is only true for Memory or Both profile types
+            if val
+                && profile_type
+                    .as_ref().is_some_and(|pt| *pt == ProfileType::Time)
+            {
+                errors.push(
+                    "Detailed memory profiling can only be enabled with profile_type=memory or profile_type=both"
+                        .to_string(),
+                );
+                false
+            } else {
+                val
+            }
+        } else {
+            errors.push(format!(
+                "Failed to parse '{val}' as boolean for detailed memory flag. Expected 'true' or 'false'"
+            ));
+            false
+        });
+
+        // If there are errors, return them
+        if !errors.is_empty() {
+            eprintln!("THAG_PROFILE errors:{errors:#?}");
+        }
+
+        Ok(Self {
+            enabled: true, // Assume enabled if all elements are valid
+            profile_type,
+            output_dir,
+            debug_level,
+            detailed_memory,
+        })
+    }
+}
+
 impl ProfileConfiguration {
     pub fn profile_type(&self) -> Option<ProfileType> {
         self.profile_type
@@ -260,9 +363,9 @@ impl Default for ProfileConfiguration {
     }
 }
 
-/// Internal helper function to parse THAG_PROFILE environment variable
+/// Internal helper function to parse `THAG_PROFILE` environment variable
 /// into a ProfileConfiguration
-pub fn parse_env_profile_config() -> ProfileConfiguration {
+pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
     let Ok(env_var) = env::var("THAG_PROFILE") else {
         eprintln!("THAG_PROFILE environment variable not found, returning disabled config");
         let profile_type = if cfg!(feature = "full_profiling") {
@@ -272,104 +375,19 @@ pub fn parse_env_profile_config() -> ProfileConfiguration {
         } else {
             None
         };
-        return ProfileConfiguration {
+        return Ok(ProfileConfiguration {
             enabled: false,
             profile_type,
             output_dir: None,
             debug_level: None,
             detailed_memory: false,
-        };
+        });
     };
 
     eprintln!("THAG_PROFILE environment variable found: {env_var}");
     let parts: Vec<&str> = env_var.split(',').collect();
     eprintln!("THAG_PROFILE parts: {parts:?}");
-    let mut errors = Vec::new();
-
-    // Parse profile type (first element)
-    let profile_type = if parts.first().map_or("", |s| *s).trim().is_empty() {
-        errors.push(
-            "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
-                .to_string(),
-        );
-        eprintln!("THAG_PROFILE: First element is empty");
-        None
-    } else {
-        let profile_type_str = parts.first().unwrap().trim();
-        eprintln!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
-        match profile_type_str.parse::<ProfileType>() {
-            Ok(val) => {
-                eprintln!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
-                Some(val)
-            }
-            Err(e) => {
-                eprintln!("THAG_PROFILE: Failed to parse profile type: {e}");
-                errors.push(e);
-                None
-            }
-        }
-    };
-
-    // Parse output directory (second element)
-    let output_dir = if parts.get(1).map_or("", |s| *s).trim().is_empty() {
-        Some(PathBuf::from(".")) // Default to current directory if empty
-    } else {
-        Some(PathBuf::from(parts.get(1).unwrap().trim()))
-    };
-
-    // Parse debug log (third element)
-    let debug_level = if parts.get(2).map_or("", |s| *s).trim().is_empty() {
-        errors.push(
-            "Third element (debug log) is empty. Expected 'none', 'quiet', or 'announce'"
-                .to_string(),
-        );
-        None
-    } else {
-        match parts.get(2).unwrap().parse::<DebugLevel>() {
-            Ok(val) => Some(val),
-            Err(e) => {
-                errors.push(e);
-                None
-            }
-        }
-    };
-
-    // Parse detailed memory (fourth element)
-    let detailed_memory = parts.get(3).is_some_and(|val| if val.trim().is_empty() {
-        false // Default if empty
-    } else if let Ok(val) = val.trim().parse::<bool>() {
-        // Validate that detailed memory is only true for Memory or Both profile types
-        if val
-            && profile_type
-                .as_ref().is_some_and(|pt| *pt == ProfileType::Time)
-        {
-            errors.push(
-                "Detailed memory profiling can only be enabled with profile_type=memory or profile_type=both"
-                    .to_string(),
-            );
-            false
-        } else {
-            val
-        }
-    } else {
-        errors.push(format!(
-            "Failed to parse '{val}' as boolean for detailed memory flag. Expected 'true' or 'false'"
-        ));
-        false
-    });
-
-    // If there are errors, return them
-    if !errors.is_empty() {
-        eprintln!("THAG_PROFILE errors:{errors:#?}");
-    }
-
-    ProfileConfiguration {
-        enabled: true, // Assume enabled if all elements are valid
-        profile_type,
-        output_dir,
-        debug_level,
-        detailed_memory,
-    }
+    ProfileConfiguration::try_from(parts.as_slice())
 }
 
 impl Display for ProfileConfiguration {
@@ -1117,6 +1135,10 @@ impl FromStr for ProfileType {
             "both" => {
                 eprintln!("ProfileType::from_str: matched 'both'");
                 Ok(Self::Both)
+            }
+            "none" => {
+                eprintln!("ProfileType::from_str: matched 'none'");
+                Ok(Self::None)
             }
             _ => {
                 let err =

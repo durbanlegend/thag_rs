@@ -124,8 +124,15 @@ impl ProfileRegistry {
     /// overlapping sections, we pick up only the one that starts first/highest in the function and
     ///
     /// Returns the profile reference if found
+    #[must_use]
     pub fn find_profile(&self, file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
         // Check if we have this module
+        // if file_name == "test_mem_attribution" && line == 150 {
+        //     eprintln!(
+        //         "Searching for file_name {file_name}, fn_name {fn_name} in self.module_functions: {:#?}",
+        //         self.module_functions
+        //     );
+        // }
         let Some(function_ranges) = self.module_functions.get(file_name) else {
             debug_log!("Module not found in registry: {file_name}");
             return None;
@@ -144,6 +151,15 @@ impl ProfileRegistry {
 
         // First look for a specific line range match
         // We want a range where start_line <= line <= end_line (or end_line is None)
+        // if !range_sections.is_empty() {
+        //     eprintln!("Range search order:");
+        //     range_sections
+        //         .iter()
+        //         .rev()
+        //         .for_each(|(&(start_line, end_line), _profile_ref)| {
+        //             eprintln!("{start_line:#?}..{end_line:#?}")
+        //         });
+        // }
         for (&(start_line, end_line), profile_ref) in range_sections.iter().rev() {
             if start_line.is_some()
                 && start_line.unwrap() <= line
@@ -172,6 +188,10 @@ impl ProfileRegistry {
 
     /// Add an allocation to a profile based on module path and line number
     /// Returns true if allocation was recorded, false otherwise
+    ///
+    /// # Panics
+    ///
+    /// Panics if it can't unwrap after get on a filename that is supposed to have been pre-checked.
     pub fn record_allocation(
         &self,
         file_name: &str,

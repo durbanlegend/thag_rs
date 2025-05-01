@@ -142,7 +142,7 @@ impl Parse for ProfileArgs {
 
 pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Print the raw attribute TokenStream to help debug
-    eprintln!("Raw attribute tokens: {}", attr.to_string());
+    eprintln!("Raw attribute tokens: {attr}");
 
     let args = match syn::parse::<ProfileArgs>(attr.clone()) {
         Ok(args) => {
@@ -152,8 +152,8 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
             args
         }
         Err(e) => {
-            eprintln!("Error parsing profiled attributes: {}", e);
-            eprintln!("Raw attribute tokens: {}", attr.to_string());
+            eprintln!("Error parsing profiled attributes: {e}");
+            eprintln!("Raw attribute tokens: {attr}");
             // Return the original function without any changes
             return item;
         }

@@ -157,6 +157,8 @@ pub fn get_profile_config() -> ProfileConfiguration {
 
     // No cached config, create one
     let config = parse_env_profile_config();
+    // eprintln!("No cached config - setting config to {:#?}", config);
+    // eprintln!("{:?}", backtrace::Backtrace::new());
 
     // Cache the config for future use
     let mut cache = PROFILE_CONFIG_CACHE.lock();

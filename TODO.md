@@ -61,6 +61,8 @@ THAG_PROFILE=both,,announce cargo test --package thag_profiler --test test_profi
 
   cargo test --features=full_profiling logging::tests::test_logging_functionality -- --nocapture
 
+cargo test --features=analyze-tool,time_profiling errors::tests  -- --nocapture
+
 Worked example: TODO replace: serde
 Don't use a crate that is called by other dependencies, otherwise there may be conflicts.
 1. Clone repo

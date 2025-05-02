@@ -29,7 +29,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         LazyLock,
     },
-    thread::{self, ThreadId},
+    thread,
     time::Instant,
 };
 
@@ -756,16 +756,15 @@ pub static ALLOC_REGISTRY: LazyLock<Mutex<AllocationRegistry>> =
 struct ProfileRegistry {
     /// Set of active task IDs
     active_profiles: BTreeSet<usize>,
-
-    /// Thread ID -> Stack of active task IDs (most recent on top)
-    thread_task_stacks: HashMap<ThreadId, Vec<usize>>,
+    // /// Thread ID -> Stack of active task IDs (most recent on top)
+    // thread_task_stacks: HashMap<ThreadId, Vec<usize>>,
 }
 
 impl ProfileRegistry {
     fn new() -> Self {
         Self {
             active_profiles: BTreeSet::new(),
-            thread_task_stacks: HashMap::new(),
+            // thread_task_stacks: HashMap::new(),
         }
     }
 
@@ -789,25 +788,25 @@ impl ProfileRegistry {
         self.active_profiles.iter().next_back().copied()
     }
 
-    /// Add a task to a thread's stack
-    fn push_task_to_stack(&mut self, thread_id: ThreadId, task_id: usize) {
-        let stack = self.thread_task_stacks.entry(thread_id).or_default();
-        stack.push(task_id);
-    }
+    // /// Add a task to a thread's stack
+    // fn push_task_to_stack(&mut self, thread_id: ThreadId, task_id: usize) {
+    //     let stack = self.thread_task_stacks.entry(thread_id).or_default();
+    //     stack.push(task_id);
+    // }
 
-    /// Remove a task from a thread's stack
-    fn pop_task_from_stack(&mut self, thread_id: ThreadId, task_id: usize) {
-        if let Some(stack) = self.thread_task_stacks.get_mut(&thread_id) {
-            if let Some(pos) = stack.iter().position(|id| *id == task_id) {
-                stack.remove(pos);
+    // /// Remove a task from a thread's stack
+    // fn pop_task_from_stack(&mut self, thread_id: ThreadId, task_id: usize) {
+    //     if let Some(stack) = self.thread_task_stacks.get_mut(&thread_id) {
+    //         if let Some(pos) = stack.iter().position(|id| *id == task_id) {
+    //             stack.remove(pos);
 
-                // Remove empty stack
-                if stack.is_empty() {
-                    self.thread_task_stacks.remove(&thread_id);
-                }
-            }
-        }
-    }
+    //             // Remove empty stack
+    //             if stack.is_empty() {
+    //                 self.thread_task_stacks.remove(&thread_id);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 // Global profile registry
@@ -836,24 +835,24 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
     ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
 }
 
-/// Add a task to a thread's stack
-pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-    with_allocator(Allocator::System, || {
-        PROFILE_REGISTRY
-            .lock()
-            .push_task_to_stack(thread_id, task_id);
-    });
-}
+// /// Add a task to a thread's stack
+// pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
+//     with_allocator(Allocator::System, || {
+//         PROFILE_REGISTRY
+//             .lock()
+//             .push_task_to_stack(thread_id, task_id);
+//     });
+// }
 
-/// Remove a task from a thread's stack
-#[allow(dead_code)]
-pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-    with_allocator(Allocator::System, || {
-        PROFILE_REGISTRY
-            .lock()
-            .pop_task_from_stack(thread_id, task_id);
-    });
-}
+// /// Remove a task from a thread's stack
+// #[allow(dead_code)]
+// pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
+//     with_allocator(Allocator::System, || {
+//         PROFILE_REGISTRY
+//             .lock()
+//             .pop_task_from_stack(thread_id, task_id);
+//     });
+// }
 
 /// Get active tasks
 pub fn get_active_tasks() -> Vec<usize> {
@@ -891,16 +890,16 @@ impl TaskMemoryContext {
         get_task_memory_usage(self.task_id)
     }
 
-    /// Enter this task context for memory tracking
-    ///
-    /// # Errors
-    ///
-    /// This function will bubble up any errors encountered (TODO: do we need a Result wrapper?)
-    pub fn enter(&self) -> crate::ProfileResult<TaskGuard> {
-        // Push to thread stack
-        push_task_to_stack(thread::current().id(), self.task_id);
-        Ok(TaskGuard::new(self.task_id))
-    }
+    // /// Enter this task context for memory tracking
+    // ///
+    // /// # Errors
+    // ///
+    // /// This function will bubble up any errors encountered (TODO: do we need a Result wrapper?)
+    // pub fn enter(&self) -> crate::ProfileResult<TaskGuard> {
+    //     // Push to thread stack
+    //     push_task_to_stack(thread::current().id(), self.task_id);
+    //     Ok(TaskGuard::new(self.task_id))
+    // }
 }
 
 // Provide a dummy TaskMemoryContext type for when full_profiling is disabled
@@ -967,10 +966,10 @@ impl Drop for TaskGuard {
             debug_log!("Deactivating task {}", self.task_id);
             PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
 
-            // Remove from thread stack
-            PROFILE_REGISTRY
-                .lock()
-                .pop_task_from_stack(thread::current().id(), self.task_id);
+            // // Remove from thread stack
+            // PROFILE_REGISTRY
+            //     .lock()
+            //     .pop_task_from_stack(thread::current().id(), self.task_id);
 
             // Flush logs directly
             if let Some(logger) = crate::DebugLogger::get() {

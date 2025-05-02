@@ -21,7 +21,7 @@ use crate::{
     get_root_module,
     mem_attribution::register_profile,
     mem_tracking::{
-        activate_task, create_memory_task, get_task_memory_usage, push_task_to_stack,
+        activate_task, create_memory_task, get_task_memory_usage, /* push_task_to_stack, */
         record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
     with_allocator, Allocator,
@@ -29,9 +29,6 @@ use crate::{
 
 #[cfg(feature = "full_profiling")]
 use regex::Regex;
-
-#[cfg(feature = "full_profiling")]
-use std::thread;
 
 #[cfg(feature = "time_profiling")]
 use backtrace::{Backtrace, BacktraceFrame};
@@ -1616,7 +1613,7 @@ impl Profile {
             activate_task(task_id);
 
             // Add to thread stack
-            push_task_to_stack(thread::current().id(), task_id);
+            // push_task_to_stack(thread::current().id(), task_id);
 
             debug_log!(
                 "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",

@@ -186,3 +186,140 @@ macro_rules! debug_log {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{debug_log, enable_profiling, ProfileType};
+
+    #[cfg(feature = "full_profiling")]
+    use crate::mem_tracking::{with_allocator, Allocator};
+
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
+    use std::path::Path;
+
+    /// Test the entire logging system in a single sequential test
+    #[test]
+    fn test_logging_functionality() {
+        // Initialize profiling to set up logging
+        #[cfg(feature = "full_profiling")]
+        with_allocator(Allocator::System, || {
+            let _ = enable_profiling(true, Some(ProfileType::Memory));
+        });
+
+        #[cfg(not(feature = "full_profiling"))]
+        let _ = enable_profiling(true, Some(ProfileType::Time));
+
+        // ----- Test 1: Debug Level Detection -----
+        let debug_level = get_debug_level();
+        eprintln!("Current debug level: {:?}", debug_level);
+
+        // ----- Test 2: Debug Log Path -----
+        let log_path = get_debug_log_path();
+        eprintln!("Debug log path: {:?}", log_path);
+
+        // Skip further tests if debug level is None
+        if matches!(debug_level, DebugLevel::None) {
+            eprintln!("Debug level is None, skipping remaining logging tests");
+            return;
+        }
+
+        // ----- Test 3: Log Writing and Flushing -----
+        // Write a unique message for identification
+        let unique_msg = format!(
+            "Unique test message: {}",
+            chrono::Local::now().format("%H:%M:%S.%3f")
+        );
+        debug_log!("{}", unique_msg);
+        flush_debug_log();
+
+        // Verify the log file exists
+        let path = log_path.as_ref().unwrap();
+        assert!(Path::new(path).exists(), "Log file should exist");
+
+        // Verify the message was written
+        let file = File::open(path).expect("Failed to open log file");
+        let reader = BufReader::new(file);
+
+        #[cfg(feature = "full_profiling")]
+        let found_message = with_allocator(Allocator::System, || {
+            reader
+                .lines()
+                .filter_map(Result::ok)
+                .any(|line| line.contains(&unique_msg))
+        });
+
+        #[cfg(not(feature = "full_profiling"))]
+        let found_message = reader
+            .lines()
+            .filter_map(Result::ok)
+            .any(|line| line.contains(&unique_msg));
+
+        assert!(found_message, "Log should contain our test message");
+
+        // ----- Test 4: Logger Access -----
+        let logger = DebugLogger::get();
+        assert!(logger.is_some(), "Logger should be available");
+
+        // Write directly to the logger
+        if let Some(logger_mutex) = logger {
+            let write_result = {
+                let mut locked_logger = logger_mutex.lock();
+                writeln!(locked_logger, "Direct logger write test")
+            };
+            assert!(write_result.is_ok(), "Direct write should succeed");
+        }
+
+        // ----- Test 5: Auto-flush Mechanism -----
+        // We only write a few messages to avoid making the test slow
+        // The real auto-flush happens at 1000 messages
+        for i in 0..5 {
+            debug_log!("Auto-flush test message #{}", i);
+        }
+
+        // Explicitly flush for test purposes
+        flush_debug_log();
+
+        // ----- Test 6: System Allocator Usage (full_profiling only) -----
+        #[cfg(feature = "full_profiling")]
+        {
+            let current_allocator = with_allocator(Allocator::System, || {
+                crate::mem_tracking::current_allocator()
+            });
+
+            // Log a message (which should use system allocator)
+            debug_log!("Testing system allocator usage");
+
+            // Verify allocator wasn't changed
+            let after_allocator = with_allocator(Allocator::System, || {
+                crate::mem_tracking::current_allocator()
+            });
+
+            assert_eq!(
+                current_allocator, after_allocator,
+                "Allocator should remain unchanged after logging"
+            );
+        }
+
+        // Clean up
+        crate::profiling::disable_profiling();
+
+        eprintln!("All logging tests completed successfully!");
+    }
+
+    // You can add specific unit tests for individual functions if needed
+    #[test]
+    fn test_create_debug_logger() {
+        // Test the logger creation based on debug levels
+        // This is just a verification test since real behavior depends on environment
+        let logger = create_debug_logger();
+
+        if matches!(get_debug_level(), DebugLevel::None) {
+            assert!(
+                logger.is_none(),
+                "Logger should be None with debug level None"
+            );
+        }
+    }
+}

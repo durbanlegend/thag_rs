@@ -72,7 +72,7 @@ impl ProfileCapability {
 
     /// Returns the capabilities available based on enabled features
     #[must_use]
-    const fn available() -> Self {
+    pub const fn available() -> Self {
         #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
         {
             Self::TIME
@@ -91,7 +91,7 @@ impl ProfileCapability {
     }
 
     /// Checks if the given profile type is supported by the available capabilities
-    const fn supports(&self, profile_type: ProfileType) -> bool {
+    pub const fn supports(&self, profile_type: ProfileType) -> bool {
         match profile_type {
             ProfileType::Time => (self.0 & Self::TIME.0) == Self::TIME.0,
             ProfileType::Memory => (self.0 & Self::MEMORY.0) == Self::MEMORY.0,
@@ -112,7 +112,7 @@ impl ProfileCapability {
     }
 
     /// Returns the intersection of the requested profile type and available capabilities
-    const fn intersection(self, profile_type: ProfileType) -> Self {
+    pub const fn intersection(self, profile_type: ProfileType) -> Self {
         Self(self.0 & Self::from_profile_type(profile_type).0)
     }
 }
@@ -306,6 +306,7 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
         // If there are errors, return them
         if !errors.is_empty() {
             eprintln!("THAG_PROFILE errors:{errors:#?}");
+            return Err(ProfileError::General(errors.join("\n")));
         }
 
         Ok(Self {
@@ -319,12 +320,24 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
 }
 
 impl ProfileConfiguration {
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
     pub fn profile_type(&self) -> Option<ProfileType> {
         self.profile_type
     }
 
     pub fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
         self.profile_type = profile_type;
+    }
+
+    pub fn debug_level(&self) -> Option<DebugLevel> {
+        self.debug_level
+    }
+
+    pub fn is_detailed_memory(&self) -> bool {
+        self.detailed_memory
     }
 }
 
@@ -500,7 +513,7 @@ pub struct ProfileFilePaths {
 }
 
 #[cfg(feature = "time_profiling")]
-fn get_time_path() -> ProfileResult<&'static str> {
+pub fn get_time_path() -> ProfileResult<&'static str> {
     struct TimePathHolder;
     impl TimePathHolder {
         fn get() -> ProfileResult<&'static str> {
@@ -818,10 +831,10 @@ fn initialize_file(
 pub fn get_global_profile_type() -> ProfileType {
     let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
 
-    // eprintln!(
-    //     "get_global_profile_type: global_value={global_value}",
-    //     // backtrace::Backtrace::new()
-    // );
+    eprintln!(
+        "get_global_profile_type: global_value={global_value}",
+        // backtrace::Backtrace::new()
+    );
 
     // Map the stored value to a ProfileType using the bitflags pattern
     match global_value {
@@ -1947,6 +1960,10 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
         .fold(vec![], |stack: Vec<String>, fn_name_str| {
             let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
             let stack_str = new_vec.join(";");
+            eprintln!(
+                "stack={stack:#?}; stack_str={stack_str}, is_profiled_function(&stack_str)={}",
+                is_profiled_function(&stack_str)
+            );
             if is_profiled_function(&stack_str) {
                 new_vec
             } else {
@@ -1973,9 +1990,7 @@ pub fn filter_scaffolding(name: &str) -> bool {
 
 #[cfg(feature = "time_profiling")]
 pub fn extract_profile_callstack(
-    // maybe_fn_name: Option<&str>,
-    // fn_name: &str,
-    _start_pattern: &str,
+    start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
     current_backtrace.resolve();
@@ -1990,7 +2005,7 @@ pub fn extract_profile_callstack(
         .iter()
         .flat_map(BacktraceFrame::symbols)
         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|name| !name.contains("Profile::new") || name.contains("{{closure}}"))
+        .skip_while(|name| !name.contains(start_pattern) || name.contains("{{closure}}"))
         // Be careful, this is very sensitive to changes in the function signatures of this module.
         .skip(1)
         .take_while(|name| !name.contains(end_point))

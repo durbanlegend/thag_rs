@@ -1,4 +1,41 @@
-// In thag_profiler/tests/test_profiled_behavior.rs
+/// # Test Suite for #[profiled] Attribute Macro
+///
+/// This test suite verifies the behavior of the `#[profiled]` attribute macro across different configurations and use cases:
+///
+/// ## Key Areas Tested
+///
+/// 1. **Profile Types**:
+///    - Time profiling with `time` flag
+///    - Memory profiling with `mem_summary` and `mem_detail` flags
+///    - Combined time and memory profiling with `both` flag
+///    - Global profile type with `global` flag (uses whatever is set globally)
+///    - Default behavior with no flags
+///
+/// 2. **Special Variants**:
+///    - Async function profiling
+///    - Test-specific behavior with `test` flag
+///    - Legacy parameter syntax (`profile_type = "..."`)
+///    - Detailed memory tracking control
+///
+/// 3. **Profile Attributes**:
+///    - Function name and registration
+///    - File name determination
+///    - Start/end line tracking
+///    - Registration in the profiled function registry
+///
+/// 4. **Combinations and Interactions**:
+///    - Different combinations of time and memory profiling
+///    - Legacy and modern parameter styles
+///    - Synchronous and asynchronous function handling
+///
+/// ## Test Design Notes
+///
+/// - All tests are run from a single `test_profiled_behavior` function
+/// - A mix of synchronous and asynchronous test functions
+/// - Appropriate feature gates for time_profiling and full_profiling
+/// - Direct access to profile variables created by the macro
+/// - Explicit verification of profile properties
+/// - Uses async-std for testing async functions
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
     enable_profiling, file_stem_from_path_str, profiled,

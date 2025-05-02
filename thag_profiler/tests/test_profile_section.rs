@@ -1,4 +1,40 @@
-// Tests for the profile! and end! macros
+/// # Test Suite for profile! and end! Macros
+///
+/// This test suite verifies the behavior of the `profile!` and `end!` macros for creating profiled sections:
+///
+/// ## Key Areas Tested
+///
+/// 1. **Section Types**:
+///    - Time profiling sections
+///    - Memory profiling sections (summary and detailed)
+///    - Combined time and memory profiling sections
+///    - Global profile type sections
+///
+/// 2. **Section Properties**:
+///    - Section naming and identification
+///    - Start and end line tracking
+///    - File name association
+///    - Profile type detection and configuration
+///    - Detailed memory flag handling
+///
+/// 3. **Special Patterns**:
+///    - Nested sections with different profile types
+///    - Unbounded sections (without explicit end)
+///    - Section scope and lifetime behavior
+///
+/// 4. **Memory Tracking**:
+///    - Memory allocation tracking within sections
+///    - Different allocation patterns and sizes
+///    - Detailed vs summary memory profiling
+///
+/// ## Test Design Notes
+///
+/// - All tests execute within a single test function for sequential execution
+/// - Properly initializes profiling state before tests
+/// - Various allocation patterns to test memory tracking
+/// - Manual verification that profiles are properly disposed
+/// - Feature-specific tests for full_profiling capability
+/// - Explicit assertions on profile properties
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str, profile, /*, Profile */

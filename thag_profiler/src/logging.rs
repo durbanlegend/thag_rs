@@ -187,6 +187,31 @@ macro_rules! debug_log {
     };
 }
 
+/// This test suite provides comprehensive coverage for the logging module:
+///
+/// E.g.:
+///
+/// ```bash
+/// cargo test --features=time_profiling logging -- --nocapture
+/// ```
+///
+/// 1. **Feature-gated tests**: Tests are conditionally compiled for `time_profiling` or `full_profiling` features
+/// 2. **Debug level detection**: Verifies the debug level can be correctly determined
+/// 3. **Debug log path**: Tests that the debug log path matches the expected format
+/// 4. **Log file creation**: Ensures the log file is created with appropriate settings
+/// 5. **Write and flush operations**: Validates logs can be written and explicitly flushed
+/// 6. **Auto-flushing**: Tests the automatic flushing that happens every 1000 log messages
+/// 7. **System allocator usage**: For `full_profiling`, verifies that logging operations use the system allocator
+/// 8. **Logger initialization**: Tests that the `DebugLogger` static is properly initialized
+///
+/// All tests are organized into individual functions that are called sequentially from a single `#[test]` function to avoid concurrency issues with the global state. The tests handle different debug levels and feature flag combinations appropriately.
+///
+/// Key features of this test design:
+///
+/// 1. **Safe allocator usage**: When `full_profiling` is enabled, operations use `with_allocator(Allocator::System, ...)` to prevent recursive tracking
+/// 2. **Conditional testing**: Tests skip or modify behavior based on the active debug level
+/// 3. **Minimal side effects**: Tests avoid disrupting the global state in ways that could affect other tests
+/// 4. **Feature compatibility**: Tests work with both `time_profiling` and `full_profiling` feature flags
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,28 @@
-// In thag_profiler/tests/test_mem_attribution.rs
-
+/// This test file follows the pattern of using a single test function that sequentially runs multiple test cases to avoid concurrency issues with the global state.
+/// The tests cover various aspects of the `mem_attribution` module:
+///
+/// ```bash
+/// THAG_PROFILE=both,,announce cargo test --features=full_profiling --test test_mem_attribution -- --nocapture
+/// ```
+///
+/// 1. **Whole function profiling** - Tests profile registration for entire functions
+/// 2. **Section profiling** - Tests profile registration for code sections with line numbers
+/// 3. **Nested sections** - Tests how nested profile sections are handled
+/// 4. **Persistent allocations** - Tests tracking of long-lived allocations
+/// 5. **Manual profile creation** - Tests directly creating and registering profiles
+/// 6. **Registry functions** - Tests the core registry functionality
+/// 7. **Overlapping profiles** - Tests how overlapping profile ranges are handled
+/// 8. **Record allocation** - Tests the record_allocation function directly
+///
+/// Each test function focuses on a specific aspect of the memory attribution system, and the main test function (`test_mem_attribution_full_sequence`) runs them all in sequence with appropriate logging.
+///
+/// Some key points about this testing approach:
+///
+/// 1. The test is conditional on the `full_profiling` feature being enabled
+/// 2. It uses a static `TEST_ALLOCATIONS` to test persistence of allocations across test functions
+/// 3. It directly tests the registry's functionality through both the public API and direct access to the registry
+/// 4. It covers edge cases like overlapping profiles and out-of-range line numbers
+///
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str,

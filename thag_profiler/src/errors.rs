@@ -46,6 +46,22 @@ impl From<inquire::InquireError> for ProfileError {
 pub type ProfileResult<T> = Result<T, ProfileError>;
 
 #[cfg(test)]
+/// Test suite for the `errors.rs` module provides more comprehensive coverage:
+///
+/// ```bash
+/// cargo test --features=analyze-tool,time_profiling errors -- --nocapture
+/// ```
+///
+/// 1. **Display Implementation**: Tests the `Display` implementation for all error variants.
+/// 2. **From Implementations**: Tests the conversion functions for creating different types of errors.
+/// 3. **Conversion from IO Error**: Tests the `From<std::io::Error>` implementation.
+/// 4. **Result Type**: Tests the `ProfileResult` type alias.
+/// 5. **Clone and Debug**: Tests the `Clone` and `Debug` trait implementations.
+/// 6. **Error Trait**: Tests the implementation of the standard library's `Error` trait.
+/// 7. **Inquire Error Conversion**: Tests the conversion from `inquire::InquireError` when the `analyze-tool` feature is enabled.
+///
+/// These tests are designed to be simple, independent units that don't rely on global state, so they can safely run concurrently.
+/// They cover all the key functionality of the `errors.rs` module, including the error variants, conversions, and trait implementations.
 mod tests {
     use super::*;
     use std::io::{Error as IoError, ErrorKind};

@@ -1,5 +1,27 @@
-// In thag_profiler/tests/test_mem_tracking.rs
-
+/// Each test is executed sequentially in the main test function to avoid concurrency issues with global state.
+/// This approach ensures that tests run reliably and without interference.
+///
+/// ```bash
+/// THAG_PROFILE=both,,announce cargo test --features=full_profiling --test test_mem_tracking -- --nocapture
+/// ```
+///
+/// 1. Individual test functions for each aspect of the memory tracking system
+/// 2. A single main `#[test]` function that runs all the tests sequentially
+/// 3. Use of `with_allocator(Allocator::System, || { ... })` to prevent infinite recursion
+/// 4. A safe approach to testing persistent allocations using a `Mutex`
+/// 5. Proper state initialization and cleanup
+///
+/// The test covers key functionality like:
+///
+/// - Task creation and memory tracking
+/// - Task contexts and memory usage reporting
+/// - Thread task stacks and tracking
+/// - Task path registry and matching
+/// - Allocation registry functionality
+/// - `with_allocator` behavior
+/// - Task state and ID generation
+/// - Memory profiling lifecycle
+///
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     enable_profiling,

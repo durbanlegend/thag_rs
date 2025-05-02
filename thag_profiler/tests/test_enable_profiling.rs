@@ -1,8 +1,40 @@
-//! Tests for the #[enable_profiling] attribute macro.
-//!
-//! These tests verify that the enable_profiling attribute macro correctly enables
-//! and disables profiling with different options.
-
+/// # Test Suite for #[enable_profiling] Attribute Macro
+///
+/// This test suite verifies that the `#[enable_profiling]` attribute macro correctly enables and disables profiling with different options:
+///
+/// ## Key Areas Tested
+///
+/// 1. **Default Behavior**: Verifies that with no options, profiling is enabled using appropriate defaults based on feature flags.
+///
+/// 2. **Explicit Settings**:
+///    - `yes` option: Explicitly enable profiling
+///    - `no` option: Explicitly disable profiling
+///    - `time` option: Enable time-only profiling
+///    - `memory` option: Enable memory-only profiling (with full_profiling feature)
+///    - `both` option: Enable both time and memory profiling (with full_profiling feature)
+///
+/// 3. **Runtime Control**:
+///    - Environment variable configuration through `THAG_PROFILE`
+///    - Handling valid and invalid profile types
+///    - Configuration of detailed memory settings
+///
+/// 4. **Sequential Testing**:
+///    - All tests run in a single sequence to avoid global state conflicts
+///    - Tests include proper reset between test cases
+///    - Complete coverage of environment variable interactions
+///
+/// 5. **Feature Compatibility**:
+///    - Tests that adapt based on available features (time_profiling, full_profiling)
+///    - Appropriate feature-specific assertions
+///
+/// ## Test Design Notes
+///
+/// - Uses a single `#[test]` function to ensure sequential execution
+/// - Clears environment state between test cases
+/// - Explicit check for profile type limitations based on features
+/// - Handles potential panics in edge cases like invalid environment values
+/// - Validates proper profiling state cleanup after each function completes
+///
 #[cfg(feature = "time_profiling")]
 use std::env;
 
@@ -11,12 +43,9 @@ use thag_profiler::{
     enable_profiling, end, /*, file_stem_from_path_str */
     profile,
     profiling::{
-        disable_profiling,
-        is_profiling_enabled,
-        is_profiling_state_enabled,
-        // parse_env_profile_config,
+        disable_profiling, is_profiling_enabled, is_profiling_state_enabled, set_profile_config,
     },
-    ProfileType,
+    ProfileConfiguration, ProfileType,
 };
 
 // ---------------------------------------------------------------------------
@@ -361,7 +390,7 @@ fn test_enable_profiling_full_sequence() {
     // 9. Test runtime with invalid profile
     // -------------------------------------------------------------------
 
-   eprintln!("Testing runtime with invalid profile...");
+    eprintln!("Testing runtime with invalid profile...");
     env::set_var("THAG_PROFILE", "invalid,.,none,false");
     disable_profiling();
     clear_profile_config_cache();
@@ -371,6 +400,9 @@ fn test_enable_profiling_full_sequence() {
         runtime_controlled_function();
     });
     // We don't care if it panicked - just make sure we clean up
+    let _ = set_profile_config(
+        ProfileConfiguration::try_from(vec!["time", "", "announce"].as_slice()).unwrap(),
+    );
     disable_profiling();
     assert!(
         !is_profiling_state_enabled(),

@@ -831,10 +831,10 @@ fn initialize_file(
 pub fn get_global_profile_type() -> ProfileType {
     let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
 
-    eprintln!(
-        "get_global_profile_type: global_value={global_value}",
-        // backtrace::Backtrace::new()
-    );
+    // eprintln!(
+    //     "get_global_profile_type: global_value={global_value}",
+    //     // backtrace::Backtrace::new()
+    // );
 
     // Map the stored value to a ProfileType using the bitflags pattern
     match global_value {

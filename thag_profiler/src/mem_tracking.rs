@@ -635,7 +635,13 @@ fn record_dealloc(address: usize, size: usize) {
                     .clone()
             };
 
-            format!("{} +{size}", reg_path.join(";"))
+            let legend = if reg_path.is_empty() {
+                debug_log!("Empty cleaned_stack and reg_path for backtrace={current_backtrace:#?}");
+                "OUT OF BOUNDS"
+            } else {
+                &reg_path.join(";")
+            };
+            format!("{legend} +{size}")
         } else {
             format!("{} +{size}", detailed_stack.join(";"))
         };

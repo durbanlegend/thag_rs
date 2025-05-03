@@ -1960,10 +1960,10 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
         .fold(vec![], |stack: Vec<String>, fn_name_str| {
             let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
             let stack_str = new_vec.join(";");
-            eprintln!(
-                "stack={stack:#?}; stack_str={stack_str}, is_profiled_function(&stack_str)={}",
-                is_profiled_function(&stack_str)
-            );
+            // eprintln!(
+            //     "stack={stack:#?}; stack_str={stack_str}, is_profiled_function(&stack_str)={}",
+            //     is_profiled_function(&stack_str)
+            // );
             if is_profiled_function(&stack_str) {
                 new_vec
             } else {
@@ -2124,13 +2124,18 @@ pub fn extract_detailed_alloc_callstack(
 
     // Redefine end-point as inclusive
     let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
-
-    callstack
-        .iter()
-        .rev()
-        .skip_while(|frame| !frame.contains(end_point))
-        .cloned()
-        .collect()
+    if already_seen.contains(end_point) {
+        callstack
+            .iter()
+            .rev()
+            // Catch deallocs outside root model.
+            .skip_while(|frame| !frame.contains(end_point))
+            .cloned()
+            .collect()
+    } else {
+        // Catch deallocs outside root model.
+        callstack.iter().rev().cloned().collect()
+    }
 }
 
 // Global thread-safe BTreeSet

@@ -51,16 +51,6 @@ fn setup_test() -> MutexGuard<'static, ()> {
     guard
 }
 
-// #[cfg(not(feature = "time_profiling"))]
-// fn setup_test() -> MutexGuard<'static, ()> {
-//     let guard = PROFILING_MUTEX.lock();
-
-//     // Reset profiling state completely
-//     let _ = enable_profiling(false, Some(ProfileType::Time));
-
-//     guard
-// }
-
 #[cfg(feature = "time_profiling")]
 fn run_test<T>(test: T)
 where
@@ -246,7 +236,7 @@ fn test_profiling_create_section() {
 
     // Create a profile section
     thag_profiler::profile!("enabled_test");
-    assert_eq!(enabled_test.clone().unwrap().file_name(), "profiling");
+    assert_eq!(enabled_test.clone().unwrap().file_name(), "test_original");
     end!("enabled_test");
 }
 
@@ -313,7 +303,7 @@ fn test_profiling_profile_section_thread_safety() {
             // If ProfileSection is not Send, this won't compile
             assert_eq!(
                 thread_test.as_ref().unwrap().fn_name(),
-                "profiling::test_profiling_profile_section_thread_safety"
+                "test_original::test_profiling_profile_section_thread_safety"
             );
             end!("thread_test");
         });

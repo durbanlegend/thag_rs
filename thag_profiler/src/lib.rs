@@ -239,6 +239,110 @@ macro_rules! static_lazy {
     };
 }
 
+/// Macro for executing code only once with an optimized fast path.
+///
+/// This macro creates a static warning flag pattern that:
+/// 1. Uses a non-atomic static for fast path (minimal overhead after first call)
+/// 2. Uses an atomic boolean for thread-safe initialization
+/// 3. Executes the provided code block only on the first call where condition is true
+///
+/// # Example
+/// ```
+/// warn_once!(is_disabled, || {
+///     debug_log!("This feature is disabled");
+/// });
+/// ```
+#[macro_export]
+macro_rules! warn_once {
+    ($condition:expr, $warning_fn:expr) => {{
+        // Fast path using non-atomic bool for zero overhead after first warning
+        static mut WARNED: bool = false;
+        // Thread-safe initialization using atomic
+        static WARNED_ABOUT_SKIPPING: std::sync::atomic::AtomicBool =
+            std::sync::atomic::AtomicBool::new(false);
+
+        if $condition {
+            // Fast path check - no synchronization overhead after first warning
+            if unsafe { WARNED } {
+                // Skip - already warned
+            } else {
+                // Slow path with proper synchronization - only hit once
+                if !WARNED_ABOUT_SKIPPING.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                    // Execute the warning function
+                    $warning_fn();
+                    // Update fast path flag for future calls
+                    unsafe {
+                        WARNED = true;
+                    }
+                }
+            }
+            true // Return true if condition was met
+        } else {
+            false // Return false if condition was not met
+        }
+    }};
+
+    // Variant with condition and return expression
+    ($condition:expr, $warning_fn:expr, $return_expr:expr) => {{
+        if warn_once!($condition, $warning_fn) {
+            $return_expr
+        }
+    }};
+}
+
+/// Helper function for executing code only once per unique ID with an optimized fast path.
+///
+/// This function is useful when you need multiple independent warning suppressions,
+/// as it uses the provided ID to create unique static storage per call site.
+///
+/// # Parameters
+/// * `id` - A unique identifier (ideally compile-time constant) for this warning
+/// * `condition` - Condition that determines if warning logic should execute
+/// * `warning_fn` - Function to call on first occurrence of the condition
+///
+/// # Returns
+/// Returns true if the condition was true (regardless of whether the warning executed)
+///
+/// # Safety
+/// This function uses unsafe code to access static mutable state, but is safe
+/// when used as intended with unique IDs per call site.
+pub unsafe fn warn_once_with_id<F>(id: usize, condition: bool, warning_fn: F) -> bool
+where
+    F: FnOnce(),
+{
+    use std::cell::UnsafeCell;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    // Static storage for up to 128 unique warning flags
+    // This approach avoids needing to create a new static for every call site
+    static mut WARNED_FLAGS: [UnsafeCell<bool>; 128] = [const { UnsafeCell::new(false) }; 128];
+    static ATOMIC_FLAGS: [AtomicBool; 128] = [const { AtomicBool::new(false) }; 128];
+
+    // Safety: Caller must ensure id is unique per call site
+    let idx = id % 128;
+
+    if !condition {
+        return false;
+    }
+
+    // Fast path check - no synchronization overhead after first warning
+    if unsafe { *WARNED_FLAGS[idx].get() } {
+        return true;
+    }
+
+    // Slow path with proper synchronization
+    if !ATOMIC_FLAGS[idx].swap(true, Ordering::Relaxed) {
+        // Execute the warning function
+        warning_fn();
+        // Update fast path flag
+        unsafe {
+            *WARNED_FLAGS[idx].get() = true;
+        }
+    }
+
+    true
+}
+
 /// Formats a given positive integer with thousands separators (commas).
 ///
 /// This function takes any unsigned integer type (`u8`, `u16`, `u32`, `u64`, `u128`, `usize`)

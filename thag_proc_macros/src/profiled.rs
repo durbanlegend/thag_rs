@@ -140,11 +140,12 @@ impl Parse for ProfileArgs {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Print the raw attribute TokenStream to help debug
     // eprintln!("Raw attribute tokens: {attr}");
 
-    let args = match syn::parse::<ProfileArgs>(attr.clone()) {
+    let args = match syn::parse::<ProfileArgs>(attr) {
         Ok(args) => {
             // Print parsed arguments for debugging
             // eprintln!("Parsed attributes - time: {}, mem_summary: {}, mem_detail: {}, both: {}, global: {}, test: {}",

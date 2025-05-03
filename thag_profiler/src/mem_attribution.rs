@@ -42,11 +42,13 @@ pub struct ProfileRef {
 }
 
 impl ProfileRef {
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn detailed_memory(&self) -> bool {
+    #[must_use]
+    pub const fn detailed_memory(&self) -> bool {
         self.detailed_memory
     }
 }
@@ -125,6 +127,7 @@ impl ProfileRegistry {
     ///
     /// Returns the profile reference if found
     #[must_use]
+    #[allow(clippy::missing_panics_doc, reason = "checked start_line.is_some()")]
     pub fn find_profile(&self, file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
         // Check if we have this module
         // if file_name == "test_mem_attribution" && line == 150 {
@@ -182,6 +185,7 @@ impl ProfileRegistry {
         None
     }
 
+    #[must_use]
     pub fn get_file_names(&self) -> Vec<String> {
         self.module_functions.keys().cloned().collect()
     }

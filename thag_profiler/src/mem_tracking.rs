@@ -8,14 +8,14 @@
 
 use crate::{
     debug_log, extract_path, file_stem_from_path, find_profile, flush_debug_log,
-    get_global_profile_type, is_detailed_memory, lazy_static_var,
+    get_global_profile_type, get_root_module, is_detailed_memory, lazy_static_var,
     profiling::{
         build_stack, clean_function_name, extract_alloc_callstack,
         extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
         get_memory_path, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
         MemoryProfileFile, START_TIME,
     },
-    regex, Profile, ProfileRef, ProfileType,
+    regex, warn_once, Profile, ProfileRef, ProfileType,
 };
 use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;
@@ -90,6 +90,7 @@ pub struct TaskAwareAllocator;
 static TASK_AWARE_ALLOCATOR: TaskAwareAllocator = TaskAwareAllocator;
 
 // Helper to get the allocator instance
+#[must_use]
 pub fn get_allocator() -> &'static TaskAwareAllocator {
     &TASK_AWARE_ALLOCATOR
 }
@@ -405,6 +406,7 @@ fn record_alloc(address: usize, size: usize) {
     }
 }
 
+#[allow(clippy::missing_panics_doc, reason = "debug_assertions")]
 pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
     let start_record_alloc = Instant::now();
 
@@ -420,7 +422,7 @@ pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
 
     if cfg!(debug_assertions) {
         let check_map = &registry.task_allocations;
-        let reg_task_id = *registry.address_to_task.get(&address).unwrap();
+        let reg_task_id = *registry.address_to_task.get(&address).unwrap_or(&0);
         let maybe_vec = check_map.get(&task_id);
         let (addr, sz) = *maybe_vec
             .and_then(|v: &Vec<(usize, usize)>| {
@@ -502,15 +504,28 @@ pub fn write_detailed_alloc(
     write_detailed_stack_alloc(size, write_to_detail_file, &detailed_stack);
 }
 
-#[allow(clippy::ptr_arg)]
+#[allow(
+    clippy::ptr_arg,
+    clippy::missing_panics_doc,
+    reason = "debug_assertions"
+)]
 pub fn write_detailed_stack_alloc(
     size: usize,
     write_to_detail_file: bool,
     detailed_stack: &Vec<String>,
 ) {
+    #[cfg(debug_assertions)]
+    assert!(!detailed_stack.is_empty());
+    let root_module = lazy_static_var!(
+        String,
+        get_root_module()
+            .as_ref()
+            .map_or("root module", |v| v)
+            .to_string()
+    );
+
     let entry = if detailed_stack.is_empty() {
-        // format!("[out_of_bounds] +{}", size)
-        format!("[out_of_bounds] +{size}")
+        format!("[Out of `{root_module}` scope] +{size}")
     } else {
         let descr_stack = build_stack(detailed_stack, None, ";");
 
@@ -526,7 +541,12 @@ pub fn write_detailed_stack_alloc(
     let _ = Profile::write_profile_event(memory_path, file, &entry);
 }
 
-fn record_dealloc(address: usize, size: usize) {
+#[allow(
+    clippy::too_many_lines,
+    clippy::missing_panics_doc,
+    reason = "debug_assertions"
+)]
+pub fn record_dealloc(address: usize, size: usize) {
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -538,14 +558,30 @@ fn record_dealloc(address: usize, size: usize) {
         }
     }
 
-    let profile_type = get_global_profile_type();
-    if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
-        debug_log!(
-            "Skipping deallocation recording because profile_type={:?}",
-            profile_type
-        );
-        return;
-    }
+    let root_module = lazy_static_var!(
+        String,
+        get_root_module()
+            .as_ref()
+            .map_or("root module", |v| v)
+            .to_string()
+    );
+
+    let profile_type = lazy_static_var!(ProfileType, deref, get_global_profile_type());
+    let is_mem_prof = lazy_static_var!(bool, {
+        let is_mem_prof = profile_type == ProfileType::Memory || profile_type == ProfileType::Both;
+        #[cfg(debug_assertions)]
+        assert!(is_mem_prof);
+        is_mem_prof
+    });
+
+    // Use the warn_once! macro for clean, optimized warning suppression
+    warn_once!(
+        !is_mem_prof,
+        || {
+            debug_log!("Skipping deallocation recording because profile_type={profile_type:?}");
+        },
+        return
+    );
 
     // Flag if we're already tracking in case it causes an infinite recursion
     let in_tracking = unsafe { IN_TRACKING };
@@ -637,9 +673,9 @@ fn record_dealloc(address: usize, size: usize) {
 
             let legend = if reg_path.is_empty() {
                 debug_log!("Empty cleaned_stack and reg_path for backtrace={current_backtrace:#?}");
-                "out_of_bounds"
+                format!("[Dealloc out of `{root_module}` scope] +{size}")
             } else {
-                &reg_path.join(";")
+                reg_path.join(";")
             };
             format!("{legend} +{size}")
         } else {
@@ -767,7 +803,7 @@ struct ProfileRegistry {
 }
 
 impl ProfileRegistry {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             active_profiles: BTreeSet::new(),
             // thread_task_stacks: HashMap::new(),
@@ -861,6 +897,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 // }
 
 /// Get active tasks
+#[must_use]
 pub fn get_active_tasks() -> Vec<usize> {
     with_allocator(Allocator::System, || {
         PROFILE_REGISTRY.lock().get_active_tasks()

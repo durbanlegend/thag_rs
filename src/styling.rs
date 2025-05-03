@@ -266,7 +266,7 @@ impl Style {
         self.underline = false;
     }
 
-    #[profiled(imp = "Style")]
+    #[profiled]
     pub fn paint<D>(&self, val: D) -> String
     where
         D: std::fmt::Display,
@@ -778,7 +778,7 @@ impl TermAttributes {
     /// * Built-in theme loading fails (which should never happen with correct installation)
     /// * Theme conversion fails during initialization
     #[allow(clippy::too_many_lines)]
-    #[profiled(imp = "TermAttributes")]
+    #[profiled]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
             profile!("instance_get_or_init", time);

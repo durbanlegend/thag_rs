@@ -174,7 +174,7 @@ impl Config {
         }
     }
 
-    #[profiled(imp = "Config")]
+    #[profiled]
     fn validate(&self) -> Result<(), ThagError> {
         // Validate Dependencies section
         self.dependencies
@@ -422,7 +422,7 @@ impl Dependencies {
         }
     }
 
-    #[profiled(imp = "Dependencies")]
+    #[profiled]
     fn validate(&self) -> Result<(), String> {
         // Validate feature overrides
         for (crate_name, override_config) in &self.feature_overrides {

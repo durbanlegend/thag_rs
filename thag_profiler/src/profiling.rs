@@ -91,6 +91,7 @@ impl ProfileCapability {
     }
 
     /// Checks if the given profile type is supported by the available capabilities
+    #[must_use]
     pub const fn supports(&self, profile_type: ProfileType) -> bool {
         match profile_type {
             ProfileType::Time => (self.0 & Self::TIME.0) == Self::TIME.0,
@@ -112,6 +113,7 @@ impl ProfileCapability {
     }
 
     /// Returns the intersection of the requested profile type and available capabilities
+    #[must_use]
     pub const fn intersection(self, profile_type: ProfileType) -> Self {
         Self(self.0 & Self::from_profile_type(profile_type).0)
     }
@@ -143,6 +145,10 @@ static PROFILE_CONFIG_CACHE: Mutex<Option<ProfileConfiguration>> = Mutex::new(No
 /// This function returns the current profile configuration, reading from
 /// the environment if necessary. This ensures that any changes to the
 /// environment variables are picked up immediately.
+///
+/// # Panics
+///
+/// Panics if it encounters an invalid `THAG_PROFILE` environment variable.
 #[must_use]
 pub fn get_profile_config() -> ProfileConfiguration {
     // First check if we have a cached configuration
@@ -175,7 +181,6 @@ pub fn clear_profile_config_cache() {
 /// Sets the profile configuration
 ///
 /// This function updates the profile configuration with a new value.
-#[must_use]
 pub fn set_profile_config(config: ProfileConfiguration) {
     let mut cache = PROFILE_CONFIG_CACHE.lock();
     *cache = Some(config);
@@ -320,11 +325,13 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
 }
 
 impl ProfileConfiguration {
-    pub fn is_enabled(&self) -> bool {
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn profile_type(&self) -> Option<ProfileType> {
+    #[must_use]
+    pub const fn profile_type(&self) -> Option<ProfileType> {
         self.profile_type
     }
 
@@ -332,11 +339,13 @@ impl ProfileConfiguration {
         self.profile_type = profile_type;
     }
 
-    pub fn debug_level(&self) -> Option<DebugLevel> {
+    #[must_use]
+    pub const fn debug_level(&self) -> Option<DebugLevel> {
         self.debug_level
     }
 
-    pub fn is_detailed_memory(&self) -> bool {
+    #[must_use]
+    pub const fn is_detailed_memory(&self) -> bool {
         self.detailed_memory
     }
 }
@@ -374,7 +383,11 @@ impl Default for ProfileConfiguration {
 }
 
 /// Internal helper function to parse `THAG_PROFILE` environment variable
-/// into a ProfileConfiguration
+/// into a `ProfileConfiguration`
+///
+/// # Errors
+///
+/// This function will return an error if it encounters an invalid `THAG_PROFILE` environment variable.
 pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
     let Ok(env_var) = env::var("THAG_PROFILE") else {
         eprintln!("THAG_PROFILE environment variable not found, returning disabled config");
@@ -512,6 +525,11 @@ pub struct ProfileFilePaths {
     pub timestamp: String,       // Store the timestamp for reuse
 }
 
+/// Get the path to the plain `.folded` output file.
+///
+/// # Errors
+///
+/// This function will bubble up any file system errors that occur trying to create the directory.
 #[cfg(feature = "time_profiling")]
 pub fn get_time_path() -> ProfileResult<&'static str> {
     struct TimePathHolder;
@@ -557,7 +575,7 @@ pub fn get_time_path() -> ProfileResult<&'static str> {
 ///
 /// # Errors
 ///
-/// This function will bubble up any filesystem errors that occur trying to create the directory.
+/// This function will bubble up any file system errors that occur trying to create the directory.
 #[cfg(feature = "full_profiling")]
 pub fn get_memory_detail_path() -> ProfileResult<&'static str> {
     struct MemoryDetailPathHolder;
@@ -868,9 +886,10 @@ fn set_global_profile_type(profile_type: ProfileType) {
 
 #[cfg(feature = "full_profiling")]
 fn set_global_profile_type(profile_type: ProfileType) {
-    if !is_valid_profile_type(profile_type) {
-        panic!("Invalid profile type {profile_type:?} for feature set");
-    }
+    assert!(
+        is_valid_profile_type(profile_type),
+        "Invalid profile type {profile_type:?} for feature set"
+    );
 
     // Map profile type directly to storage value using the bitflags pattern
     let value = ProfileCapability::from_profile_type(profile_type).0;
@@ -1903,11 +1922,13 @@ impl Profile {
     }
 
     // Public methods for testing
-    pub fn get_profile_type(&self) -> ProfileType {
+    #[must_use]
+    pub const fn get_profile_type(&self) -> ProfileType {
         self.profile_type
     }
 
-    pub fn is_detailed_memory(&self) -> bool {
+    #[must_use]
+    pub const fn is_detailed_memory(&self) -> bool {
         self.detailed_memory
     }
 }

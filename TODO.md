@@ -36,7 +36,8 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Debug thag repl: "b" == "b" || "b" == "b" not evaluated but "a" == "a" || "a" == "b" is.
 - [ ]  Debug second_batch detailed memory with line numbers and alloc sizes for attributions and drops.
 - [ ]  Readme: Add possible profiled args.
-- [ ] Move new test test_reset_profile_config_picks_up_env_changes in profiling:2589 so it's not concurrent.
+- [ ]  Move new test test_reset_profile_config_picks_up_env_changes in profiling:2589 so it's not concurrent.
+- [ ]  Copy warn_once! macro to main thag_rs and replace bank/suppress_repeat_log.rs by a demo of the warn_once! macro.
 
 I'm trying to figure out further unit testing of thag_profiler, including thag_proc_macros modules enable_profiling, profile and profiled. thag_proc_macros::lib has a fn maybe_expand_proc_macro<F> that
 

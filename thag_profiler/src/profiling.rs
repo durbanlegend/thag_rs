@@ -2124,18 +2124,13 @@ pub fn extract_detailed_alloc_callstack(
 
     // Redefine end-point as inclusive
     let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
-    if already_seen.contains(end_point) {
-        callstack
-            .iter()
-            .rev()
-            // Catch deallocs outside root model.
-            .skip_while(|frame| !frame.contains(end_point))
-            .cloned()
-            .collect()
-    } else {
-        // Catch deallocs outside root model.
-        callstack.iter().rev().cloned().collect()
-    }
+
+    callstack
+        .iter()
+        .rev()
+        .skip_while(|frame| !frame.contains(end_point))
+        .cloned()
+        .collect()
 }
 
 // Global thread-safe BTreeSet

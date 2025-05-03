@@ -637,7 +637,7 @@ fn record_dealloc(address: usize, size: usize) {
 
             let legend = if reg_path.is_empty() {
                 debug_log!("Empty cleaned_stack and reg_path for backtrace={current_backtrace:#?}");
-                "OUT OF BOUNDS"
+                "out_of_bounds"
             } else {
                 &reg_path.join(";")
             };

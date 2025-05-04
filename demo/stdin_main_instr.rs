@@ -30,7 +30,7 @@ since GUI layout is fiendishly difficult - but it is something out of our contro
 - which wouldn't be justified because the normal response is still sub-second. But it does illustrate how
 and why memory profiling can be slow in some cases.
 
-E.g. `THAG_PROFILE=both,,announce,true thag demo/stdin_main_instr.rs`
+E.g. `THAG_PROFILER=both,,announce,true thag demo/stdin_main_instr.rs`
 */
 //# Purpose: Debugging.
 //# Categories: testing

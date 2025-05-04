@@ -194,7 +194,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             quote! {
                 use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, PROFILING_MUTEX};
 
-                let should_profile = std::env::var("THAG_PROFILE").ok().is_some();
+                let should_profile = std::env::var("THAG_PROFILER").ok().is_some();
                 eprintln!("should_profile={should_profile}");
             }
         }
@@ -217,7 +217,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, with_allocator, Allocator, PROFILING_MUTEX};
 
                 let should_profile = with_allocator(Allocator::System, || {
-                    std::env::var("THAG_PROFILE").ok().is_some()
+                    std::env::var("THAG_PROFILER").ok().is_some()
                 });
 
                 with_allocator(Allocator::System, || {
@@ -311,8 +311,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             } else {None};
 
             if should_profile {
-                // eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILE"));
-                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILE"));
+                // eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));
+                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));
             }
 
             let maybe_profile = if should_profile {
@@ -355,9 +355,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             if should_profile {
                 // with_allocator(Allocator::System, || {
-                //     eprintln!("Calling init_profiling({}, {:?})", module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILE"));
+                //     eprintln!("Calling init_profiling({}, {:?})", module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));
                 // });
-                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILE"));   // Already uses with_allocator(Allocator::System... internally
+                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));   // Already uses with_allocator(Allocator::System... internally
             }
 
             let maybe_profile = with_allocator(Allocator::System, || {

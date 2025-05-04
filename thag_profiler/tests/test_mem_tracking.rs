@@ -2,7 +2,7 @@
 /// This approach ensures that tests run reliably and without interference.
 ///
 /// ```bash
-/// THAG_PROFILE=both,,announce cargo test --features=full_profiling --test test_mem_tracking -- --nocapture
+/// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_mem_tracking -- --nocapture
 /// ```
 ///
 /// 1. Individual test functions for each aspect of the memory tracking system

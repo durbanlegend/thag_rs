@@ -2726,7 +2726,7 @@ pub fn is_profiling_enabled() -> bool {
 
         if !CHECKED.load(Ordering::Relaxed) {
             // First time check - look for PROFILING_ENABLED
-            if let Ok(val) = std::env::var("THAG_PROFILE") {
+            if let Ok(val) = std::env::var("THAG_PROFILER") {
                 let enabled = val.to_lowercase() != "false" && val != "0";
                 unsafe { ENABLED = enabled; }
             } else {
@@ -2750,7 +2750,7 @@ This approach gives you:
 1. Clean compile-time control via features
 2. Runtime control via `#[profile]` on main
 3. The ability to profile specific functions
-4. Environmental overrides via `THAG_PROFILE` environment variable
+4. Environmental overrides via `THAG_PROFILER` environment variable
 
 Does this approach align with what you're looking for? I can modify it if you have specific requirements I've missed.
 

@@ -109,7 +109,7 @@ impl Display for ProfileConfig {
 
 fn parse_profile_config() -> Result<ProfileConfig, Vec<String>> {
     // If the env var is not present, return a default config with enabled=false
-    let env_var = match env::var("THAG_PROFILE") {
+    let env_var = match env::var("THAG_PROFILER") {
         Ok(val) => val,
         Err(_) => {
             return Ok(ProfileConfig {
@@ -218,8 +218,8 @@ fn parse_profile_config() -> Result<ProfileConfig, Vec<String>> {
 
 fn format_usage_instructions() -> String {
     "
-THAG_PROFILE environment variable format:
-    THAG_PROFILE=<profile_type>,<output_dir>,<debug_log>,<detailed_memory>
+THAG_PROFILER environment variable format:
+    THAG_PROFILER=<profile_type>,<output_dir>,<debug_log>,<detailed_memory>
 
 Where:
     <profile_type>: time, memory, or both
@@ -228,7 +228,7 @@ Where:
     <detailed_memory>: true or false (only valid with memory or both profile types)
 
 Example:
-    THAG_PROFILE=both,./profiles,quiet,true
+    THAG_PROFILER=both,./profiles,quiet,true
 "
     .to_string()
 }
@@ -240,13 +240,13 @@ fn main() {
             println!("{}", config);
 
             if !config.enabled {
-                println!("\nProfiling is not enabled. Set the THAG_PROFILE environment variable to enable it.");
+                println!("\nProfiling is not enabled. Set the THAG_PROFILER environment variable to enable it.");
                 println!("{}", format_usage_instructions());
             }
             // Use config in your application...
         }
         Err(errors) => {
-            println!("Error parsing THAG_PROFILE environment variable:");
+            println!("Error parsing THAG_PROFILER environment variable:");
             for error in &errors {
                 println!("  - {}", error);
             }

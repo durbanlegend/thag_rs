@@ -5275,7 +5275,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_synta
  E.g.:
 
  ```
- THAG_PROFILE=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=. cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
+ THAG_PROFILER=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=. cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
  ```
 
  You can also prefix this with `THAG_PROFILER_DEBUG=1` to enable profiler logging to `std::env::temp_dir()` or `THAG_PROFILER_DEBUG=2`
@@ -6246,4 +6246,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
 ```
 
 ---
-

@@ -3,10 +3,10 @@
 ///
 /// ```bash
 /// # Run with time profiling only
-/// THAG_PROFILE=time,,announce cargo test --features=time_profiling --test test_profiling -- --nocapture
+/// THAG_PROFILER=time,,announce cargo test --features=time_profiling --test test_profiling -- --nocapture
 ///
 /// # Run with full profiling
-/// THAG_PROFILE=both,,announce cargo test --features=full_profiling --test test_profiling -- --nocapture
+/// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_profiling -- --nocapture
 /// ```
 ///
 /// 1. **ProfileCapability** - Tests the capability flags and feature detection
@@ -217,16 +217,16 @@ fn test_profile_configuration() {
 #[cfg(feature = "time_profiling")]
 fn test_env_config_parsing() {
     // Save current env var (if any)
-    let original_var = env::var("THAG_PROFILE").ok();
+    let original_var = env::var("THAG_PROFILER").ok();
 
     // Test with no env var set
-    env::remove_var("THAG_PROFILE");
+    env::remove_var("THAG_PROFILER");
     clear_profile_config_cache();
     let config1 = get_profile_config();
     assert!(!config1.is_enabled());
 
     // Test with time profiling
-    env::set_var("THAG_PROFILE", "time,,quiet");
+    env::set_var("THAG_PROFILER", "time,,quiet");
     clear_profile_config_cache();
     let config2 = get_profile_config();
     assert!(config2.is_enabled());
@@ -234,7 +234,7 @@ fn test_env_config_parsing() {
     assert_eq!(config2.debug_level(), Some(DebugLevel::Quiet));
 
     // Test with full config
-    env::set_var("THAG_PROFILE", "both,./output,announce,true");
+    env::set_var("THAG_PROFILER", "both,./output,announce,true");
     clear_profile_config_cache();
     let config3 = get_profile_config();
     assert!(config3.is_enabled());
@@ -243,7 +243,7 @@ fn test_env_config_parsing() {
     assert!(config3.is_detailed_memory());
 
     // Test caching behavior
-    env::set_var("THAG_PROFILE", "time,,none");
+    env::set_var("THAG_PROFILER", "time,,none");
     // Without clearing cache, should get previous config
     let config4 = get_profile_config();
     assert_eq!(config4.profile_type(), Some(ProfileType::Both)); // Still using cached value
@@ -262,9 +262,9 @@ fn test_env_config_parsing() {
 
     // Restore original env var
     if let Some(value) = original_var {
-        env::set_var("THAG_PROFILE", value);
+        env::set_var("THAG_PROFILER", value);
     } else {
-        env::remove_var("THAG_PROFILE");
+        env::remove_var("THAG_PROFILER");
     }
     clear_profile_config_cache();
 }
@@ -636,10 +636,10 @@ fn test_profiled_function() {
 #[cfg(feature = "time_profiling")]
 fn test_profiling_full_sequence() {
     // Save original env var if any
-    let original_var = env::var("THAG_PROFILE").ok();
+    let original_var = env::var("THAG_PROFILER").ok();
 
     // Set a known environment for testing
-    env::set_var("THAG_PROFILE", "time,,announce");
+    env::set_var("THAG_PROFILER", "time,,announce");
     clear_profile_config_cache();
 
     // Run all test functions in sequence
@@ -692,9 +692,9 @@ fn test_profiling_full_sequence() {
 
     // Restore original env var
     if let Some(value) = original_var {
-        env::set_var("THAG_PROFILE", value);
+        env::set_var("THAG_PROFILER", value);
     } else {
-        env::remove_var("THAG_PROFILE");
+        env::remove_var("THAG_PROFILER");
     }
     clear_profile_config_cache();
 

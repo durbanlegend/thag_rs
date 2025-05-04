@@ -2,7 +2,7 @@
 /// The tests cover various aspects of the `mem_attribution` module:
 ///
 /// ```bash
-/// THAG_PROFILE=both,,announce cargo test --features=full_profiling --test test_mem_attribution -- --nocapture
+/// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_mem_attribution -- --nocapture
 /// ```
 ///
 /// 1. **Whole function profiling** - Tests profile registration for entire functions

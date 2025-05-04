@@ -148,7 +148,7 @@ static PROFILE_CONFIG_CACHE: Mutex<Option<ProfileConfiguration>> = Mutex::new(No
 ///
 /// # Panics
 ///
-/// Panics if it encounters an invalid `THAG_PROFILE` environment variable.
+/// Panics if it encounters an invalid `THAG_PROFILER` environment variable.
 #[must_use]
 pub fn get_profile_config() -> ProfileConfiguration {
     // First check if we have a cached configuration
@@ -160,7 +160,7 @@ pub fn get_profile_config() -> ProfileConfiguration {
     }
 
     // No cached config, create one
-    let config = parse_env_profile_config().expect("Expected environment variable `THAG_PROFILE={time|memory|both},[dir],{none}quiet|announce}[,true|false]`");
+    let config = parse_env_profile_config().expect("Expected environment variable `THAG_PROFILER={time|memory|both},[dir],{none}quiet|announce}[,true|false]`");
     // eprintln!("No cached config - setting config to {:#?}", config);
     // eprintln!("{:?}", backtrace::Backtrace::new());
 
@@ -242,18 +242,18 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
                 "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
                     .to_string(),
             );
-            eprintln!("THAG_PROFILE: First element is empty");
+            eprintln!("THAG_PROFILER: First element is empty");
             None
         } else {
             let profile_type_str = value.first().unwrap().trim();
-            eprintln!("THAG_PROFILE: Parsing profile type '{profile_type_str}'");
+            eprintln!("THAG_PROFILER: Parsing profile type '{profile_type_str}'");
             match profile_type_str.parse::<ProfileType>() {
                 Ok(val) => {
-                    eprintln!("THAG_PROFILE: Successfully parsed profile type: {val:?}");
+                    eprintln!("THAG_PROFILER: Successfully parsed profile type: {val:?}");
                     Some(val)
                 }
                 Err(e) => {
-                    eprintln!("THAG_PROFILE: Failed to parse profile type: {e}");
+                    eprintln!("THAG_PROFILER: Failed to parse profile type: {e}");
                     errors.push(e);
                     None
                 }
@@ -268,14 +268,18 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
         };
 
         // Parse debug log (third element)
-        let debug_level = if value.get(2).map_or("", |s| *s).trim().is_empty() {
+        let debug_level = if value.get(2).map_or("none", |s| *s).trim().is_empty() {
             errors.push(
                 "Third element (debug log) is empty. Expected 'none', 'quiet', or 'announce'"
                     .to_string(),
             );
             None
         } else {
-            match value.get(2).unwrap().parse::<DebugLevel>() {
+            match value
+                .get(2)
+                .unwrap_or_else(|| &&"none")
+                .parse::<DebugLevel>()
+            {
                 Ok(val) => Some(val),
                 Err(e) => {
                     errors.push(e);
@@ -310,7 +314,7 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
 
         // If there are errors, return them
         if !errors.is_empty() {
-            eprintln!("THAG_PROFILE errors:{errors:#?}");
+            eprintln!("THAG_PROFILER errors:{errors:#?}");
             return Err(ProfileError::General(errors.join("\n")));
         }
 
@@ -382,15 +386,15 @@ impl Default for ProfileConfiguration {
     }
 }
 
-/// Internal helper function to parse `THAG_PROFILE` environment variable
+/// Internal helper function to parse `THAG_PROFILER` environment variable
 /// into a `ProfileConfiguration`
 ///
 /// # Errors
 ///
-/// This function will return an error if it encounters an invalid `THAG_PROFILE` environment variable.
+/// This function will return an error if it encounters an invalid `THAG_PROFILER` environment variable.
 pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
-    let Ok(env_var) = env::var("THAG_PROFILE") else {
-        eprintln!("THAG_PROFILE environment variable not found, returning disabled config");
+    let Ok(env_var) = env::var("THAG_PROFILER") else {
+        eprintln!("THAG_PROFILER environment variable not found, returning disabled config");
         let profile_type = if cfg!(feature = "full_profiling") {
             Some(ProfileType::Both)
         } else if cfg!(feature = "time_profiling") {
@@ -407,9 +411,9 @@ pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
         });
     };
 
-    eprintln!("THAG_PROFILE environment variable found: {env_var}");
+    eprintln!("THAG_PROFILER environment variable found: {env_var}");
     let parts: Vec<&str> = env_var.split(',').collect();
-    eprintln!("THAG_PROFILE parts: {parts:?}");
+    eprintln!("THAG_PROFILER parts: {parts:?}");
     ProfileConfiguration::try_from(parts.as_slice())
 }
 

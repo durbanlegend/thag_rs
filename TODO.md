@@ -33,11 +33,9 @@ look for an alternative or cater for and put up with the overhead of not having 
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Unbounded profiles must only go out of scope at the end of the _function_.
-- [ ]  Debug thag repl: "b" == "b" || "b" == "b" not evaluated but "a" == "a" || "a" == "b" is.
 - [ ]  Debug second_batch detailed memory with line numbers and alloc sizes for attributions and drops.
 - [ ]  Readme: Add possible profiled args.
 - [ ]  Move new test test_reset_profile_config_picks_up_env_changes in profiling:2589 so it's not concurrent.
-- [ ]  Consider renaming env var THAG_PROFILE to THAG_PROFILER for consistency and to reinforce the crate name.
 I'm trying to figure out further unit testing of thag_profiler, including thag_proc_macros modules enable_profiling, profile and profiled. thag_proc_macros::lib has a fn maybe_expand_proc_macro<F> that
 
 Not sure about this...
@@ -57,7 +55,7 @@ cargo test --test profiling --features full_profiling
 cargo test --lib
 cargo test --package thag_profiler --test test_profiled_behavior
 
-THAG_PROFILE=both,,announce cargo test --package thag_profiler --test test_profiled_behavior --features=full_profiling -- --nocapture
+THAG_PROFILER=both,,announce cargo test --package thag_profiler --test test_profiled_behavior --features=full_profiling -- --nocapture
 
   cargo test --features=full_profiling logging::tests::test_logging_functionality -- --nocapture
 
@@ -93,7 +91,7 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
   This approach works for simple use cases but might need atomic operations or a mutex for complete thread safety in a high-concurrency environment. For your specific use case, it's likely
   sufficient since allocator code runs with minimal thread contention, and recursion detection is primarily about preventing infinite recursion within the same thread.
 
-At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag-profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILE=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag-analyze .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
+At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag-profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILER=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag-analyze .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
 
 
 Tools classification suggestions from Claude

@@ -100,10 +100,10 @@ fn expensive_calculation() -> u64 {
 fn complex_operation() {
     // Some code...
 
-    profile!("expensive_part");
+    profile!(expensive_part);
     // Code to profile
     expensive_operation();
-    end!("expensive_part");
+    end!(expensive_part);
 
     // More code...
 }
@@ -112,10 +112,10 @@ fn complex_operation() {
 async fn complex_async_operation() {
     // Some code...
 
-    profile!("expensive_part", async_fn);
+    profile!(expensive_part, async_fn);
     // Code to profile
     expensive_operation();
-    end!("expensive_part");
+    end!(expensive_part);
 
     // More code...
 }
@@ -125,8 +125,20 @@ fn complex_operation() {
     // Some code...
 
     // Must be scoped to end of function
-    profile!("rest_of_function", unbounded);
+    profile!(rest_of_function, unbounded);
     // All code to end of function will be profiled
+}
+
+// A valid identifier may optionally be specified as a string literal:
+fn complex_operation() {
+    // Some code...
+
+    profile!(expensive_part);
+    // Code to profile
+    expensive_operation();
+    end!(expensive_part);
+
+    // More code...
 }
 
 // INCORRECT:
@@ -135,13 +147,13 @@ fn complex_operation() {
 
     {
         // Unbounded keyword misused here
-        profile!("rest_of_block", unbounded);
+        profile!(rest_of_block, unbounded);
     }  // Profile will be dropped here unknown to allocation tracker
 
     // The following section profiling may not work correctly due to the above
-    profile!("another_section");
+    profile!(another_section);
     expensive_operation();
-    end!("another_section");
+    end!(another_section);
 }
 ```
 
@@ -242,7 +254,7 @@ The following optional arguments are available:
 
 - `yes`: (Default) Enables profiling according to the feature specified in the `thag_profiler` dependency, which must be either `full_profiling` or `time_profiling`.
 
-- `runtime`: Specifies that a detailed specification will be provided via the `THAG_PROFILE` environment variable.
+- `runtime`: Specifies that a detailed specification will be provided via the `THAG_PROFILER` environment variable.
 
 E.g.:
 
@@ -253,11 +265,14 @@ fn main() {
 }
 ```
 
-**Format of the `THAG_PROFILE` environment variable to be used with `#[enable_profiling(runtime)]`**
+**Format of the `THAG_PROFILER` environment variable to be used with `#[enable_profiling(runtime)]`**
 
-    THAG_PROFILE=<profile_type>,[<output_dir>],{<debug_level>],[<detail>]
+The `THAG_PROFILER` environment variable has 4 optional positional comma-separated arguments. If `#[enable_profiling(runtime)]` is
+specified but either the environment variable or its first argument is missing, no profiling will be done.
 
-    where `<profile_type>`           = `both`, `memory` or `time`
+    THAG_PROFILER=[<profile_type>],[<output_dir>],[<debug_level>],[<detail>]
+
+    where `<profile_type>`           = `both`, `memory` or `time` (default: none)
           `<output_dir>` (optional)  = output directory for `.folded` files.
           `<debug_level>` (optional) = `none` (default) - no debug log
                                        `announce` - display debug log path in user output
@@ -270,17 +285,17 @@ fn main() {
 E.g.:
 
 ```bash
-THAG_PROFILE=both,$TMPDIR,announce,true cargo run
+THAG_PROFILER=both,$TMPDIR,announce,true cargo run
 
     Specifies both memory and time profiling, `.folded` files to $TMPDIR, debug log path to be written to user program output, extra `.folded` files for detailed memory allocations and deallocations required.
 
 
-THAG_PROFILE=time cargo run
+THAG_PROFILER=time cargo run
 
     Specifies time profiling only, `.folded` files to current directory, no debug log, no detailed memory files as not applicable to time profiling.
 
 
-THAG_PROFILE=memory,,quiet thag demo/document_pipeline_profile_minimal.rs  -ft
+THAG_PROFILER=memory,,quiet thag demo/document_pipeline_profile_minimal.rs  -ft
 
     Runs `thag` demo script document_pipeline_profile_minimal.rs with forced rebuild (-f) and timings (-t),
     memory profiling only, debug logging without announcing the log file path, and no detailed output `.folded` files.
@@ -319,7 +334,7 @@ fn main() {
 
 ### 5. Analyze Results
 
-After running your application with profiling enabled, folded stack files will be generated in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILE` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
+After running your application with profiling enabled, folded stack files will be generated in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILER` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
 
 Use the included analysis tool to visualize the results:
 
@@ -499,6 +514,10 @@ NB: Section profiling modes will be overridden by the program defaults set by `#
 #### Format
 
 ```Rust
+profile!(name [, flag1, flag2, ...]);
+
+Or as a string literal:
+
 profile!("name" [, flag1, flag2, ...]);
 ```
 
@@ -529,22 +548,22 @@ The macro automatically determines the type of profiling based on the flags prov
 
 ```rust
 // Basic time profiling
-profile!("calculate_result", time);
+profile!(calculate_result, time);
 
 // Memory usage summary
-profile!("load_data", mem_summary);
+profile!(load_data, mem_summary);
 
 // Detailed memory tracking
-profile!("process_image", mem_detail);
+profile!(process_image, mem_detail);
 
 // Both time and memory profiling
-profile!("generate_report", time, mem_detail);
+profile!(generate_report, time, mem_detail);
 
 // Async function profiling
-profile!("fetch_data", time, async_fn);
+profile!(fetch_data, time, async_fn);
 
 // Unbounded memory profile (must be manually ended)
-profile!("long_running_task", mem_summary, unbounded);
+profile!(long_running_task, mem_summary, unbounded);
 ```
 
 #### Notes
@@ -591,12 +610,12 @@ fn complex_operation() { /* ... */ }
 fn process_data(data: &[u8]) {
     // Only include profiling in debug builds
     #[cfg(debug_assertions)]
-    profile!("process_data");
+    profile!(process_data);
 
     // Your code here...
 
     #[cfg(debug_assertions)]
-    end!("process_data");
+    end!(process_data);
 
     ...
 }
@@ -630,7 +649,7 @@ Memory profiling (the optional `full_profiling` feature) requires `thag_profiler
 
 ### Detailed memory profiling with a single attribute
 
-The combination of `#[enable_profiling(runtime)]` on `fn main` and the runtime environment `THAG_PROFILE=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation and de-allocation in separate flamegraph (`.folded`) format files.
+The combination of `#[enable_profiling(runtime)]` on `fn main` and the runtime environment `THAG_PROFILER=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation and de-allocation in separate flamegraph (`.folded`) format files.
 
 Obviously this is the slowest profiling option and may be prohibitively slow for some applications.
 
@@ -679,7 +698,7 @@ For memory profiling on Windows, your application requires:
   - Works with tokio and smol for most common patterns
   - Not compatible with async_std due to TLS limitations
   - Task attribution may be less precise in highly concurrent async code
-  - For best results in async code, use explicit section profiling with `profile!("section_name", async)`
+  - For best results in async code, use explicit section profiling with `profile!(<section_name>, async)`
 
 - **Runtime Control**: Enabling/disabling profiling at runtime in async code affects all instrumented code across all threads, which may not align with the logical structure of async tasks. Plan
 your profiling strategy accordingly.
@@ -861,12 +880,12 @@ Choose flamegraphs for a high-level view of resource usage and flamecharts for d
 ```rust
 async fn fetch_data() {
     // Tell the profiler this section is within an async function
-    profile!("database_query", async_fn);
+    profile!(database_query, async_fn);
 
     // Async operations...
     let result = query_database().await;
 
-    end!("database_query");
+    end!(database_query);
 }
 ```
 

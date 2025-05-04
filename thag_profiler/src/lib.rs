@@ -560,7 +560,7 @@ pub const fn finalize_profiling() {}
 //         eprintln!("Integration test: Resetting profile configuration from environment variables");
 
 //         // First, parse the environment configuration
-//         let env_var = env::var("THAG_PROFILE").ok();
+//         let env_var = env::var("THAG_PROFILER").ok();
 //         let profile_type = if let Some(env_var) = env_var {
 //             let parts: Vec<&str> = env_var.split(',').collect();
 //             if !parts.is_empty() && !parts[0].trim().is_empty() {
@@ -634,12 +634,12 @@ mod config_tests {
     #[test]
     fn test_profile_config_picks_up_env_changes() {
         // Save original env var if it exists
-        let original = env::var("THAG_PROFILE").ok();
+        let original = env::var("THAG_PROFILER").ok();
 
         let orig_global_profile_type = profiling::get_global_profile_type();
 
         // First set to "time"
-        env::set_var("THAG_PROFILE", "time,.,none,false");
+        env::set_var("THAG_PROFILER", "time,.,none,false");
 
         // Clear the cache to force reloading from environment
         profiling::clear_profile_config_cache();
@@ -660,7 +660,7 @@ mod config_tests {
         }
 
         // Now change to "both"
-        env::set_var("THAG_PROFILE", "both,.,none,false");
+        env::set_var("THAG_PROFILER", "both,.,none,false");
 
         // Clear the cache again to force reloading
         profiling::clear_profile_config_cache();
@@ -676,9 +676,9 @@ mod config_tests {
 
         // Restore original env var or remove it
         if let Some(val) = original {
-            env::set_var("THAG_PROFILE", val);
+            env::set_var("THAG_PROFILER", val);
         } else {
-            env::remove_var("THAG_PROFILE");
+            env::remove_var("THAG_PROFILER");
         }
 
         // Clear the cache once more to restore state

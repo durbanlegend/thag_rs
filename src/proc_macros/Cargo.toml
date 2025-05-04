@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-crossterm = "0.28"
+crossterm = "0.29"
 inline_colorization = "0.1.6"
 prettyplease = "0.2.32"
 proc-macro2 = "1.0"

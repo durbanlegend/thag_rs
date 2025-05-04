@@ -1,9 +1,9 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 derivative = "2.2"
 log = "0.4.22"
-ratatui = { version = "0.28.1", features = ["unstable-widget-ref"] }
+ratatui = { version = "0.29", features = ["unstable-widget-ref"] }
 ratatui-explorer = "0.1.2"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 tui-textarea = "0.6.0"

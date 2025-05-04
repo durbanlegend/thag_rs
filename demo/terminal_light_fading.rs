@@ -2,7 +2,7 @@
 [dependencies]
 coolor = "1.0.0"
 terminal-light = "1.5.0"
-crossterm = "0.28.1"
+crossterm = "0.29"
 */
 
 /// A fun published example from the `terminal-light` crate. "Demonstrate mixing

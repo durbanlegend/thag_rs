@@ -11,7 +11,7 @@ expander = { git = "https://github.com/durbanlegend/expander", branch = "revised
 darling = "0.20.10"
 deluxe = "0.5.0"
 inline_colorization = "0.1.6"
-prettyplease = "0.2.31"
+prettyplease = "0.2.32"
 proc-macro2 = "1.0"
 quote = "1.0"
 serde = { version = "1.0", features = ["derive"] }

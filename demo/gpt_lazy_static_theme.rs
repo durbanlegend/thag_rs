@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 lazy_static = "1.4.0"
 termbg = "0.5.2"
 */

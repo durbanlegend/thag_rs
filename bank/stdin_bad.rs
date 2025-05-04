@@ -2,11 +2,11 @@
 [dependencies]
 clap = "4.5.18"
 crokey = "1.1.0"
-crossterm = "0.28.1"
+crossterm = "0.29"
 edit = "0.1.5"
 lazy_static = "1.4.0"
 mockall = "0.13.0"
-ratatui = "0.28.1"
+ratatui = "0.29"
 reedline = "0.36.0"
 regex = "1.10.4"
 scopeguard = "1.2.0"

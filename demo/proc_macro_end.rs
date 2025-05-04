@@ -9,6 +9,10 @@
 /// doing a backtrace and matching up the module, function and line number from
 /// the backtrace with the registered profiles.
 ///
+/// For the final implementation of section profiling, which accepts either a string literal
+/// as in this example or an unquoted identifier, see `lib.rs`, `end.rs` and `profile.rs` in
+/// the `thag_proc_macros` crate.
+///
 //# Purpose: Prototype a technique to facilitate section profiling.
 //# Categories: proc_macros, profiling, prototype, technique
 // "use thag_demo_proc_macros..." is a magic import that will be substituted by proc_macros.proc_macro_crate_path

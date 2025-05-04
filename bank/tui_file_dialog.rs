@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
-ratatui = "0.28.1"
+crossterm = "0.29"
+ratatui = "0.29"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs" }
 */
 use crossterm::{

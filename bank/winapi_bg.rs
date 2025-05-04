@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 log = "0.4.22"
 winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }
 */

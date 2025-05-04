@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crokey = "1.1.0"
-crossterm = "0.28.1"
+crossterm = "0.29"
 */
 
 /// Published example of combiner from `crokey` crate.

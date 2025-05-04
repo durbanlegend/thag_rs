@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-#crossterm = "0.28.1"
+#crossterm = "0.29"
 nu-ansi-term = "0.50.0"
 reedline = "0.36.0"
 */

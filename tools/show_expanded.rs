@@ -2,7 +2,7 @@
 [dependencies]
 anyhow = "1.0.96"
 atty = "0.2.14"
-crossterm = "0.28.1"
+crossterm = "0.29"
 inquire = "0.7.5"
 # quote = "1.0.38"
 side-by-side-diff = "0.1.2"

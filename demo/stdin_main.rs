@@ -1,27 +1,29 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 lazy_static = "1.4.0"
 mockall = "0.13.0"
-ratatui = "0.28.1"
+ratatui = "0.29"
 regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.219"
 serde_json = "1.0.132"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
-tui-textarea = { version = "0.6", features = ["search"] }
+tui-textarea = { version = "0.7", features = ["search"] }
 */
 
 #![allow(clippy::uninlined_format_args)]
 
+use lazy_static::lazy_static;
+use mockall::{automock, predicate::str};
 /// A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
 /// with the `develop` branch version being debugged.
 ///
 /// E.g. `thag demo/stdin_main.rs`
 //# Purpose: Debugging.
 //# Categories: testing
-use crossterm::{
+use ratatui::crossterm::{
     event::{
         DisableMouseCapture,
         EnableBracketedPaste,
@@ -31,8 +33,6 @@ use crossterm::{
     },
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lazy_static::lazy_static;
-use mockall::{automock, predicate::str};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Margin},
@@ -130,7 +130,7 @@ pub struct CrosstermEventReader;
 
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> Result<Event, std::io::Error> {
-        crossterm::event::read()
+        ratatui::crossterm::event::read()
     }
 }
 
@@ -150,7 +150,7 @@ fn main() -> Result<(), ThagError> {
 //
 // ```no_run
 // use thag_rs::stdin::{edit, CrosstermEventReader};
-// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+// use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 // # use thag_rs::stdin::MockEventReader;
 //
 // # let mut event_reader = MockEventReader::new();
@@ -193,7 +193,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
     let mut stdout = stdout.lock();
     enable_raw_mode()?;
 
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -395,7 +395,7 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
 
 fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Result<(), ThagError> {
     disable_raw_mode()?;
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
@@ -413,11 +413,9 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
     });
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from("Platform-dependent key mappings (YMMV)")
-                .alignment(ratatui::layout::Alignment::Center),
-        )
-        .title(Title::from("(Ctrl+L to toggle)").alignment(Alignment::Center))
+        .title(Title::from("Platform-dependent key mappings (YMMV)"))
+        .title(Title::from("(Ctrl+L to toggle)"))
+        .title_alignment(Alignment::Center)
         .add_modifier(Modifier::BOLD);
     f.render_widget(Clear, area);
     //this clears out the background

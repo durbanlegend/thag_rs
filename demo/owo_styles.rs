@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-# crossterm = "0.28.1"
+# crossterm = "0.29"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.3", features = ["derive"] }
 termbg = "0.6.2"

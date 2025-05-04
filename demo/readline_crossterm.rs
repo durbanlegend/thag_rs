@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 */
 /// Published crossterm example.
 /// Demonstrates how to block read characters or a full line.

@@ -374,7 +374,7 @@ at the start of the script, as you will see done in most of the demos. To help w
 
     /*[toml]
     [dependencies]
-    prettyplease = "0.2.31"
+    prettyplease = "0.2.32"
     syn = { version = "2", default-features = false, features = ["full", "parsing"] }
     */
 

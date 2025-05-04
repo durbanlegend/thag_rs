@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 enum-assoc = "1.1.0"
 log = "0.4.22"
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }

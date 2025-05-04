@@ -3572,7 +3572,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Purpose:** Demo a simple example of adaptive message colouring, and the featured crates.
 
-**Crates:** `crossterm`, `owo_colors`, `strum`, `termbg`
+**Crates:** `owo_colors`, `strum`, `termbg`
 
 **Type:** Program
 
@@ -3873,6 +3873,42 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
+```
+
+---
+
+### Script: proc_macro_end.rs
+
+**Description:**  Proof of concept of a function-like proc macro to provide its line number to
+ a caller higher up in the same function. The `end!("x")` proc macro replaces itself
+ in the calling source code by a tiny function `end_x() -> u32` that evaluates the
+ Rust standard `line!()` macro to determine its line number and returns this value
+ to callers. This is to allow the `thag_profiler` `profile!` declarative macro, which
+ profiles a section, to determine the end line number of the section in addition to
+ the starting line which it determines itself, so that memory allocations made within
+ the section can be correctly attributed to the section by the tracking allocator
+ doing a backtrace and matching up the module, function and line number from
+ the backtrace with the registered profiles.
+
+ For the final implementation of section profiling, which accepts either a string literal
+ as in this example or an unquoted identifier, see `lib.rs`, `end.rs` and `profile.rs` in
+ the `thag_proc_macros` crate.
+
+
+**Purpose:** Prototype a technique to facilitate section profiling.
+
+**Crates:** `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** proc_macros, profiling, prototype, technique
+
+**Link:** [proc_macro_end.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_end.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_end.rs
 ```
 
 ---
@@ -5039,7 +5075,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
 
 **Purpose:** Debugging.
 
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+**Crates:** `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -5057,16 +5093,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
 
 ### Script: stdin_main_instr.rs
 
-**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
- with the `develop` branch version being debugged.
-
- E.g. `thag demo/stdin_main.rs`
- Apply highlights to the text depending on the light or dark theme as detected, configured
+**Description:**  Apply highlights to the text depending on the light or dark theme as detected, configured
  or defaulted, or as toggled by the user with Ctrl-t.
 
 **Purpose:** Debugging.
 
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_profiler`, `thag_rs`, `tui_textarea`
+**Crates:** `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_profiler`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 

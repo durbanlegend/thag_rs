@@ -1,30 +1,40 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 lazy_static = "1.4.0"
 mockall = "0.13.0"
-ratatui = "0.28.1"
+ratatui = "0.29"
 regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.219"
 serde_json = "1.0.132"
-thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }
-# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core" ,"tui", "simplelog"] }
-tui-textarea = { version = "0.6", features = ["search"] }
+# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
+tui-textarea = { version = "0.7", features = ["search"] }
 */
 
 #![allow(clippy::uninlined_format_args)]
 
-/// A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
-/// with the `develop` branch version being debugged.
-///
-/// E.g. `thag demo/stdin_main.rs`
+use lazy_static::lazy_static;
+use mockall::{automock, predicate::str};
+/**
+A version of `demo/stdin_main.rs` instrumented for profiling with `thag_profiler`.
+**Caution**: For memory profiling of the `Ctrl+L: keys` action, this particular example is painfully slow,
+even though the original is not. As detailed memory profiling shows, this is because a great deal of memory
+allocation is taking place in the `cassowary` solver algorithm that calculates the layout. All allocations
+are less than 4KB and almost half the profiled allocations are under 64B. No fingers are being pointed here
+since GUI layout is fiendishly difficult - but it is something out of our control without a radical redesign
+- which wouldn't be justified because the normal response is still sub-second. But it does illustrate how
+and why memory profiling can be slow in some cases.
+
+E.g. `THAG_PROFILE=both,,announce,true thag demo/stdin_main_instr.rs`
+*/
 //# Purpose: Debugging.
 //# Categories: testing
-use crossterm::{
+use ratatui::crossterm::{
     event::{
         DisableMouseCapture,
         EnableBracketedPaste,
@@ -34,8 +44,6 @@ use crossterm::{
     },
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use lazy_static::lazy_static;
-use mockall::{automock, predicate::str};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Margin},
@@ -143,12 +151,12 @@ pub struct CrosstermEventReader;
 impl EventReader for CrosstermEventReader {
     #[profiled]
     fn read_event(&self) -> Result<Event, std::io::Error> {
-        crossterm::event::read()
+        ratatui::crossterm::event::read()
     }
 }
 
 #[allow(dead_code)]
-#[enable_profiling]
+#[enable_profiling(runtime)]
 fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
@@ -164,7 +172,7 @@ fn main() -> Result<(), ThagError> {
 //
 // ```no_run
 // use thag_rs::stdin::{edit, CrosstermEventReader};
-// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+// use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 // # use thag_rs::stdin::MockEventReader;
 //
 // # let mut event_reader = MockEventReader::new();
@@ -208,7 +216,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
     let mut stdout = stdout.lock();
     enable_raw_mode()?;
 
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -415,7 +423,7 @@ pub fn apply_highlights(alt_highlights: bool, textarea: &mut TextArea) {
 #[profiled]
 fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Result<(), ThagError> {
     disable_raw_mode()?;
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
@@ -427,27 +435,38 @@ fn reset_term(mut term: Terminal<CrosstermBackend<io::StdoutLock<'_>>>) -> Resul
 #[allow(clippy::cast_possible_truncation)]
 #[profiled]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
+    profile!(s1_area);
     let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
+    end!(s1_area);
+    profile!(s2_block);
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from("Platform-dependent key mappings (YMMV)")
-                .alignment(ratatui::layout::Alignment::Center),
-        )
-        .title(Title::from("(Ctrl+L to toggle)").alignment(Alignment::Center))
+        .title(Title::from("Platform-dependent key mappings (YMMV)"))
+        .title(Title::from("(Ctrl+L to toggle)"))
+        .title_alignment(Alignment::Center)
         .add_modifier(Modifier::BOLD);
+    end!(s2_block);
+    profile!(s3a_clear);
     f.render_widget(Clear, area);
     //this clears out the background
+    end!(s3a_clear);
+    profile!(s3b_clear);
     f.render_widget(block, area);
+    end!(s3b_clear);
+    profile!(s4_row_layout);
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(std::iter::repeat(Constraint::Ratio(1, NUM_ROWS as u32)).take(NUM_ROWS));
+    end!(s4_row_layout);
+    profile!(s5_row_layout_split, time, mem_summary, mem_detail);
     let rows = row_layout.split(inner);
+    end!(s5_row_layout_split);
 
+    profile!(s6_render, time, mem_summary, mem_detail);
     for (i, row) in rows.iter().enumerate() {
         let col_layout = Layout::default()
             .direction(Direction::Horizontal)
@@ -463,6 +482,7 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
             f.render_widget(widget, cells[n]);
         }
     }
+    end!(s6_render);
 }
 
 #[profiled]

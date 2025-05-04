@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 #termbg = "0.5.2"
 termbg = { path = "/Users/donf/projects/termbg/" }
 */

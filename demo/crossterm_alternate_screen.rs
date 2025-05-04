@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-ratatui = "0.28.1"
+ratatui = "0.29"
 */
 
 /// Published example from crossterm crate. Macro version of the example:

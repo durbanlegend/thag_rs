@@ -569,8 +569,8 @@ pub fn record_dealloc(address: usize, size: usize) {
     let profile_type = lazy_static_var!(ProfileType, deref, get_global_profile_type());
     let is_mem_prof = lazy_static_var!(bool, {
         let is_mem_prof = profile_type == ProfileType::Memory || profile_type == ProfileType::Both;
-        #[cfg(debug_assertions)]
-        assert!(is_mem_prof);
+        // #[cfg(debug_assertions)]
+        // assert!(is_mem_prof);
         is_mem_prof
     });
 

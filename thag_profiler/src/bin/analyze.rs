@@ -229,7 +229,7 @@ fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
 
-            eprintln!("processed.memory_data={:#?}", processed.memory_data);
+            // eprintln!("processed.memory_data={:#?}", processed.memory_data);
             let alloc_type = if processed.memory_data.as_ref().unwrap().dealloc {
                 "Deallocation"
             } else {
@@ -1298,7 +1298,7 @@ fn analyze_allocation_sites(profile: &ProcessedProfile) -> Vec<(String, usize)> 
             let delta = size.unsigned_abs() as usize;
 
             if operation == '+' {
-                *total_allocs.entry(event.stack.join(";")).or_default() += delta;
+                *total_allocs.entry(event.stack.join("\n\t-> ")).or_default() += delta;
             }
         }
     }

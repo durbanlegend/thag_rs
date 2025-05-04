@@ -295,7 +295,6 @@ impl Prompt for ReplPrompt {
     #[profiled]
     fn get_prompt_color(&self) -> reedline::Color {
         if let Some(color_info) = Style::for_role(Success).foreground {
-            vlog!(V::VV, "color_info for Success={color_info:?}");
             Color::Indexed(color_info.index).into()
         } else {
             vlog!(V::VV, "defaulting to Green");
@@ -485,8 +484,9 @@ pub fn run_repl(
             continue;
         }
 
-        let (first_word, _rest) = parse_line(rs_source);
-        let maybe_cmd = {
+        let (first_word, rest) = parse_line(rs_source);
+        vlog!(V::VV, "first_word={first_word}, rest={rest:#?}");
+        let maybe_cmd = if rest.is_empty() {
             let mut matches = 0;
             let mut cmd = String::new();
             for key in &cmd_vec {
@@ -505,6 +505,8 @@ pub fn run_repl(
                 // println!("No single matching key found");
                 None
             }
+        } else {
+            None
         };
 
         if let Some(cmd) = maybe_cmd {

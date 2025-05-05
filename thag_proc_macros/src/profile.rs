@@ -49,6 +49,8 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
         quote! { ::thag_profiler::ProfileType::Both }
     } else if has_time {
         quote! { ::thag_profiler::ProfileType::Time }
+    } else if has_mem_summary || has_mem_detail {
+        quote! { ::thag_profiler::ProfileType::Memory }
     } else {
         quote! { ::thag_profiler::get_global_profile_type() }
     };

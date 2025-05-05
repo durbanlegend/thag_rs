@@ -38,7 +38,7 @@
 /// - Uses async-std for testing async functions
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    enable_profiling, file_stem_from_path_str, profiled,
+    file_stem_from_path_str, profiled,
     profiling::{get_reg_desc_name, is_profiled_function},
     ProfileType,
 };
@@ -266,10 +266,18 @@ fn profiled_function_both_legacy_params_test() {
 #[cfg(feature = "time_profiling")]
 fn test_profiled_behavior() {
     #[cfg(feature = "full_profiling")]
-    let _ = enable_profiling(true, Some(ProfileType::Memory));
+    enable_memory_profiling_for_test();
 
     #[cfg(not(feature = "full_profiling"))]
-    let _ = enable_profiling(true, Some(ProfileType::Time));
+    enable_time_profiling_for_test();
+
+    // Helper functions to enable profiling using the attribute macro
+    #[cfg(feature = "full_profiling")]
+    #[thag_profiler::enable_profiling(memory)]
+    fn enable_memory_profiling_for_test() {}
+
+    #[thag_profiler::enable_profiling(time)]
+    fn enable_time_profiling_for_test() {}
 
     // Test the synchronous profiled functions
     #[cfg(feature = "full_profiling")]

@@ -337,11 +337,11 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
 /// ```
 /// use thag_profiler::end;
 ///
-/// // Intended for use with `profile!("my_section", detailed_memory)`,
+/// // Intended for use with `profile!(my_section, detailed_memory)`,
 /// // so `profile!` can get section end line number
 /// println!("Current line: {}", end_my_section()); // prints the `end!` line number
 ///
-/// end!("get_line");
+/// end!(my_section);
 ///
 /// ```
 #[cfg(feature = "time_profiling")]

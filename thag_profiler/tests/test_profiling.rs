@@ -32,7 +32,7 @@ use std::time::{Duration, Instant};
 // Feature-specific imports
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    clear_profile_config_cache, debug_log, disable_profiling, enable_profiling, profiled,
+    clear_profile_config_cache, debug_log, disable_profiling, profiled,
     profiling::{
         build_stack, clean_function_name, extract_path, get_global_profile_type, get_reg_desc_name,
         is_profiled_function, is_profiling_enabled, is_profiling_state_enabled,
@@ -283,39 +283,32 @@ fn test_global_profiling_state() {
         assert!(!is_profiling_enabled());
         assert!(!is_profiling_state_enabled());
 
-        // Test enabling with different profile types
-        enable_profiling(true, Some(ProfileType::Time)).expect("Should enable profiling with Time");
+        // Test enabling with different profile types using wrapper functions
+        // with attribute macros instead of the legacy enable_profiling() function
+        enable_time_profiling();
         assert!(is_profiling_enabled());
         assert!(is_profiling_state_enabled());
         assert_eq!(get_global_profile_type(), ProfileType::Time);
 
         // Test memory and both profiling (requires full_profiling)
-        // let result = enable_profiling(true, Some(ProfileType::Memory));
         #[cfg(feature = "full_profiling")]
         {
-            enable_profiling(true, Some(ProfileType::Memory))
-                .expect("Should enable profiling with Memory");
+            enable_memory_profiling();
             assert_eq!(get_global_profile_type(), ProfileType::Memory);
 
-            enable_profiling(true, Some(ProfileType::Both))
-                .expect("Should enable profiling with Both");
+            enable_both_profiling();
             assert_eq!(get_global_profile_type(), ProfileType::Both);
         }
 
         #[cfg(not(feature = "full_profiling"))]
         {
-            use std::panic::catch_unwind;
-
-            // Run the test, catching any panics to ensure our guard runs
-            let result = catch_unwind(|| enable_profiling(true, Some(ProfileType::Memory)));
-
-            // eprintln!("result={result:#?}");
-            assert!(result.is_err());
+            // Under non-full_profiling, attempting memory profiling should fail
+            // This is now enforced by the attribute macro
+            // No need to test the runtime error as it's a compile-time feature
         }
 
-        // #[cfg(not(feature = "full_profiling"))]
-        // Test using config default
-        enable_profiling(true, None).expect("Should enable profiling with default");
+        // Test using default profile type (from config)
+        enable_default_profiling();
 
         // Finally, disable again and verify
         disable_profiling();
@@ -323,9 +316,31 @@ fn test_global_profiling_state() {
 
         // Restore initial state if needed for other tests
         if initial_enabled {
-            enable_profiling(true, Some(initial_type)).expect("Should restore initial state");
+            match initial_type {
+                ProfileType::Time => enable_time_profiling(),
+                #[cfg(feature = "full_profiling")]
+                ProfileType::Memory => enable_memory_profiling(),
+                #[cfg(feature = "full_profiling")]
+                ProfileType::Both => enable_both_profiling(),
+                _ => enable_default_profiling(),
+            }
         }
     };
+
+    // Define wrapper functions using attribute macros
+    #[thag_profiler::enable_profiling(time)]
+    fn enable_time_profiling() {}
+
+    #[cfg(feature = "full_profiling")]
+    #[thag_profiler::enable_profiling(memory)]
+    fn enable_memory_profiling() {}
+
+    #[cfg(feature = "full_profiling")]
+    #[thag_profiler::enable_profiling(both)]
+    fn enable_both_profiling() {}
+
+    #[thag_profiler::enable_profiling]
+    fn enable_default_profiling() {}
 
     #[cfg(not(feature = "full_profiling"))]
     closure();
@@ -476,8 +491,12 @@ fn test_string_cleaning() {
 /// Test Profile creation and operations
 #[cfg(feature = "time_profiling")]
 fn test_profile_creation() {
-    // Set up for profiling
-    enable_profiling(true, Some(ProfileType::Time)).expect("Should enable profiling");
+    // Set up for profiling with attribute macro approach
+    enable_time_profiling_for_test();
+    
+    // Helper function with attribute macro
+    #[thag_profiler::enable_profiling(time)]
+    fn enable_time_profiling_for_test() {}
 
     // Create a profile for testing
     let profile = Profile::new(

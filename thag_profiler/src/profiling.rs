@@ -854,6 +854,15 @@ pub fn get_global_profile_type() -> ProfileType {
     //     // backtrace::Backtrace::new()
     // );
 
+    // if global_value == 0 {
+    //     eprintln!(
+    //         "...setting to {:?}",
+    //         get_profile_config()
+    //             .profile_type
+    //             .unwrap_or(ProfileType::None)
+    //     );
+    // }
+
     // Map the stored value to a ProfileType using the bitflags pattern
     match global_value {
         0 => get_profile_config()
@@ -873,7 +882,7 @@ pub fn get_global_profile_type() -> ProfileType {
 }
 
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
-fn set_global_profile_type(profile_type: ProfileType) {
+pub fn set_global_profile_type(profile_type: ProfileType) {
     assert!(
         is_valid_profile_type(profile_type),
         r#"Memory profiling may not be set for feature "time_profiling" "#
@@ -886,7 +895,7 @@ fn set_global_profile_type(profile_type: ProfileType) {
 }
 
 #[cfg(feature = "full_profiling")]
-fn set_global_profile_type(profile_type: ProfileType) {
+pub fn set_global_profile_type(profile_type: ProfileType) {
     assert!(
         is_valid_profile_type(profile_type),
         "Invalid profile type {profile_type:?} for feature set"
@@ -917,6 +926,10 @@ fn set_global_profile_type(profile_type: ProfileType) {
 /// - File operations fail
 /// - Mutex operations fail
 #[cfg(feature = "time_profiling")]
+// #[deprecated(
+//     since = "0.1.0",
+//     note = "Use the #[enable_profiling] attribute macro instead"
+// )]
 pub(crate) fn enable_profiling(
     enabled: bool,
     maybe_profile_type: Option<ProfileType>,
@@ -1005,14 +1018,14 @@ pub(crate) fn enable_profiling(
 // }
 
 /// Disable profiling.
-/// 
+///
 /// This function disables profiling and resets the profiling state.
 /// Use this to explicitly stop profiling that was enabled via the
 /// `#[enable_profiling]` attribute macro.
 #[cfg(feature = "time_profiling")]
 pub fn disable_profiling() {
     // Call the internal enable_profiling function with false
-    let _ = enable_profiling(false, None);
+    let _ = crate::profiling::enable_profiling(false, None);
 }
 
 #[cfg(not(feature = "time_profiling"))]
@@ -1361,6 +1374,7 @@ impl Profile {
         end_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
+            eprintln!("Profiling is not enabled , returning None");
             return None;
         }
 
@@ -1495,6 +1509,7 @@ impl Profile {
         end_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
+            eprintln!("Profiling is not enabled , returning None");
             return None;
         }
 
@@ -2559,29 +2574,11 @@ pub fn dump_profiled_functions() -> Vec<(String, String)> {
 static TEST_MODE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Test utilities module
-/// 
+///
 /// This provides internal functions for testing only.
-#[cfg(test)]
-pub mod tests {
-    use super::*;
-    
-    /// Initializes profiling for tests
-    /// 
-    /// # Arguments
-    /// * `profile_type` - The type of profiling to enable
-    pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
-        // Set test mode active to prevent #[profiled] from creating duplicate entries
-        TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
-        
-        // Then enable profiling
-        enable_profiling(true, Some(profile_type))
-    }
-    
-    /// Force sets the profiling state for testing purposes
-    pub fn force_set_profiling_state(enabled: bool) {
-        PROFILING_STATE.store(enabled, Ordering::SeqCst);
-    }
-}
+///
+/// Note: All test initialization code should now use the #[enable_profiling] attribute
+/// instead of programmatic enable_profiling function calls
 
 #[cfg(test)]
 /// Checks if we're in test mode to avoid duplicate profiling
@@ -2599,26 +2596,81 @@ pub fn force_set_profiling_state(enabled: bool) {
     PROFILING_STATE.store(enabled, Ordering::SeqCst);
 }
 
+// Test state manipulation utilities removed.
+// All testing code should now use the #[enable_profiling] attribute or disable_profiling()
+
+// Helper functions for tests that can't use attribute macros
+
+/// Force enables time profiling for tests without using attribute macros
+///
+/// This is a simplified helper for test code that can't easily use attribute macros
 #[cfg(test)]
-/// Sets up profiling for a test in a safe manner by first clearing the stack
-pub fn safely_setup_profiling_for_test() -> crate::ProfileResult<()> {
+#[cfg(feature = "time_profiling")]
+pub fn force_enable_profiling_time_for_tests() {
+    use std::sync::atomic::Ordering;
+
     // Set test mode active to prevent #[profiled] from creating duplicate entries
     TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
 
-    // Then enable profiling
-    enable_profiling(true, Some(ProfileType::Time))
+    // Enable profiling by directly setting state variables
+    PROFILING_STATE.store(true, Ordering::SeqCst);
+
+    // Set the profile type
+    set_global_profile_type(ProfileType::Time);
+
+    // Initialize files if needed
+    let _ = initialize_profile_files(ProfileType::Time);
+}
+
+/// Force enables memory profiling for tests without using attribute macros
+///
+/// This is a simplified helper for test code that can't easily use attribute macros
+#[cfg(all(test, feature = "full_profiling"))]
+pub fn force_enable_profiling_memory_for_tests() {
+    use std::sync::atomic::Ordering;
+
+    // Set test mode active to prevent #[profiled] from creating duplicate entries
+    TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
+
+    // Enable profiling by directly setting state variables
+    PROFILING_STATE.store(true, Ordering::SeqCst);
+
+    // Set the profile type
+    set_global_profile_type(ProfileType::Memory);
+
+    // Initialize files if needed
+    let _ = initialize_profile_files(ProfileType::Memory);
+}
+
+/// Force enables both time and memory profiling for tests without using attribute macros
+///
+/// This is a simplified helper for test code that can't easily use attribute macros
+#[cfg(all(test, feature = "full_profiling"))]
+pub fn force_enable_profiling_both_for_tests() {
+    use std::sync::atomic::Ordering;
+
+    // Set test mode active to prevent #[profiled] from creating duplicate entries
+    TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
+
+    // Enable profiling by directly setting state variables
+    PROFILING_STATE.store(true, Ordering::SeqCst);
+
+    // Set the profile type
+    set_global_profile_type(ProfileType::Both);
+
+    // Initialize files if needed
+    let _ = initialize_profile_files(ProfileType::Both);
 }
 
 #[cfg(test)]
 /// Safely cleans up profiling after a test
-pub fn safely_cleanup_profiling_after_test() -> crate::ProfileResult<()> {
-    // First disable profiling
-    let result = enable_profiling(false, Some(ProfileType::Time));
+pub fn safely_cleanup_profiling_after_test() {
+    // First disable profiling (use the public API here)
+    disable_profiling();
 
     // Finally reset test mode flag
+    use std::sync::atomic::Ordering;
     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
-
-    result
 }
 
 #[must_use]
@@ -2635,7 +2687,53 @@ pub fn strip_hex_suffix(name: String) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+#[cfg(feature = "time_profiling")]
+pub(crate) mod test_utils {
+    //! This module contains utilities for testing profiling functionality.
+    //! These are not part of the public API and are only used for internal tests.
+
+    use crate::profiling::{ProfileType, TEST_MODE_ACTIVE};
+    use std::sync::atomic::Ordering;
+
+    #[cfg(feature = "time_profiling")]
+    use crate::profiling::enable_profiling;
+
+    /// Initializes profiling for tests
+    ///
+    /// This is an internal function provided for tests to initialize profiling
+    /// without exposing the implementation details of how profiling is enabled.
+    ///
+    /// # Arguments
+    /// * `profile_type` - The type of profiling to enable
+    pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
+        // Set test mode active to prevent #[profiled] from creating duplicate entries
+        TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
+
+        // Then enable profiling using the internal function
+        enable_profiling(true, Some(profile_type))
+    }
+
+    // /// Safely cleans up profiling after a test
+    // pub fn cleanup_profiling_after_test() -> crate::ProfileResult<()> {
+    //     // First disable profiling
+    //     let result = enable_profiling(false, None);
+
+    //     // Reset test mode flag
+    //     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
+
+    //     result
+    // }
+
+    // /// Force sets the profiling state for testing purposes
+    // /// This is only used in tests to directly manipulate the profiling state
+    // pub fn force_set_profiling_state(enabled: bool) {
+    //     // This function is only used in tests to directly manipulate the profiling state
+    //     PROFILING_STATE.store(enabled, Ordering::SeqCst);
+    // }
+}
+
+#[cfg(test)]
+mod tests_internal {
     use super::*;
     use regex::Regex;
     use serial_test::serial;

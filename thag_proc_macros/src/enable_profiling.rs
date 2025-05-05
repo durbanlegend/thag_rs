@@ -205,7 +205,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Disabled => {
             quote! {
-                thag_profiler::enable_profiling(false, None).expect("Failed to disable profiling");
+                thag_profiler::disable_profiling();
             }
         }
     };
@@ -227,12 +227,12 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Enabled => {
             quote! {
-                use ::thag_profiler::{disable_profiling, enable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
+                use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
         ProfilingMode::Disabled => {
             quote! {
-                thag_profiler::enable_profiling(false, None).expect("Failed to disable profiling");
+                thag_profiler::disable_profiling();
             }
         }
     };
@@ -392,7 +392,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             #wrapped_block
         },
         ProfilingMode::Disabled => quote! {
-            enable_profiling(false, None).expect("Failed to disable profiling");
+            disable_profiling();
 
             #wrapped_block
         },

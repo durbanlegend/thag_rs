@@ -40,8 +40,7 @@ use std::env;
 
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    enable_profiling, end, /*, file_stem_from_path_str */
-    profile,
+    end, profile,
     profiling::{
         disable_profiling, is_profiling_enabled, is_profiling_state_enabled, set_profile_config,
     },
@@ -309,8 +308,13 @@ fn test_enable_profiling_full_sequence() {
     // -------------------------------------------------------------------
 
     eprintln!("Testing no disabled function...");
-    let _ = enable_profiling(true, Some(ProfileType::Time)); // First enable it
+    // Use an attribute-based macro approach to enable profiling first
+    enable_time_profiling_for_test();
     no_disabled_function();
+
+    // Helper function with attribute macro
+    #[thag_profiler::enable_profiling(time)]
+    fn enable_time_profiling_for_test() {}
     assert!(
         !is_profiling_state_enabled(),
         "Profiling should be disabled after function"

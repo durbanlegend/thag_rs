@@ -24,7 +24,6 @@
 ///
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
-    enable_profiling,
     mem_tracking::{
         activate_task, create_memory_task, get_active_tasks, get_last_active_task,
         get_task_memory_usage, /*, pop_task_from_stack, push_task_to_stack */
@@ -32,7 +31,6 @@ use thag_profiler::{
         TASK_PATH_REGISTRY,
     },
     profiled,
-    profiling::ProfileType,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -557,7 +555,11 @@ fn test_memory_profiling_lifecycle() {
 fn test_mem_tracking_full_sequence() {
     // Ensure we start with a clean profiling state
     thag_profiler::profiling::disable_profiling();
-    enable_profiling(true, Some(ProfileType::Memory)).expect("Failed to enable profiling");
+    enable_memory_profiling_for_test();
+
+    // Helper function to enable memory profiling using the attribute macro
+    #[thag_profiler::enable_profiling(memory)]
+    fn enable_memory_profiling_for_test() {}
 
     eprintln!("Starting memory tracking tests");
 

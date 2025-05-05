@@ -36,16 +36,14 @@
 /// - Feature-specific tests for full_profiling capability
 /// - Explicit assertions on profile properties
 #[cfg(feature = "time_profiling")]
-use thag_profiler::{
-    enable_profiling, end, file_stem_from_path_str, profile, /*, Profile */
-    ProfileType,
-};
+use thag_profiler::{end, file_stem_from_path_str, profile /*, Profile, ProfileType */};
 
 // #[cfg(feature = "time_profiling")]
 // use thag_profiler::profiling::{get_reg_desc_name, is_profiled_function};
 
 /// Test time profiling in a section
 #[cfg(feature = "time_profiling")]
+#[thag_profiler::enable_profiling]
 fn test_time_section() {
     profile!(test_time_section, time);
 
@@ -82,6 +80,7 @@ fn test_time_section() {
 
 /// Test memory profiling in a section (summary only)
 #[cfg(feature = "full_profiling")]
+#[thag_profiler::enable_profiling(memory)]
 fn test_memory_summary_section() {
     profile!(test_memory_summary, mem_summary);
 
@@ -109,6 +108,7 @@ fn test_memory_summary_section() {
 
 /// Test memory profiling in a section (detailed)
 #[cfg(feature = "full_profiling")]
+#[thag_profiler::enable_profiling(memory)]
 fn test_memory_detail_section() {
     profile!(test_memory_detail, mem_detail);
 
@@ -138,6 +138,7 @@ fn test_memory_detail_section() {
 
 /// Test combined time and memory profiling
 #[cfg(feature = "full_profiling")]
+#[thag_profiler::enable_profiling]
 fn test_both_profiling_section() {
     profile!(test_both, time, mem_summary);
 
@@ -158,6 +159,7 @@ fn test_both_profiling_section() {
 
 /// Test combined time and detailed memory profiling
 #[cfg(feature = "full_profiling")]
+#[thag_profiler::enable_profiling]
 fn test_both_detailed_section() {
     profile!(test_both_detailed, time, mem_detail);
 
@@ -177,6 +179,7 @@ fn test_both_detailed_section() {
 
 /// Test global profile type setting
 #[cfg(feature = "time_profiling")]
+#[thag_profiler::enable_profiling(memory)]
 fn test_global_profile_section() {
     profile!(test_global, global);
 
@@ -195,6 +198,7 @@ fn test_global_profile_section() {
 
 /// Test nested sections with different profile types
 #[cfg(feature = "full_profiling")]
+#[thag_profiler::enable_profiling]
 fn test_nested_sections() {
     profile!(outer_section, time);
 
@@ -227,6 +231,7 @@ fn test_nested_sections() {
 
 /// Test unbounded section (without explicit end)
 #[cfg(feature = "full_profiling")]
+#[thag_profiler::enable_profiling]
 fn test_unbounded_section() {
     {
         profile!(unbounded_section, mem_detail, unbounded);
@@ -269,10 +274,18 @@ fn get_section_profile_name(section_name: &str) -> String {
 fn test_profile_section_behavior() {
     // Enable profiling with appropriate type based on feature flags
     #[cfg(feature = "full_profiling")]
-    let _ = enable_profiling(true, Some(ProfileType::Memory));
+    enable_memory_profiling_for_test();
 
     #[cfg(not(feature = "full_profiling"))]
-    let _ = enable_profiling(true, Some(ProfileType::Time));
+    enable_time_profiling_for_test();
+
+    // Helper functions to enable profiling using the attribute macro
+    #[cfg(feature = "full_profiling")]
+    #[thag_profiler::enable_profiling(memory)]
+    fn enable_memory_profiling_for_test() {}
+
+    #[thag_profiler::enable_profiling(time)]
+    fn enable_time_profiling_for_test() {}
 
     // Run all the test functions
     test_time_section();

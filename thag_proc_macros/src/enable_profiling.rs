@@ -195,7 +195,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, PROFILING_MUTEX};
 
                 let should_profile = std::env::var("THAG_PROFILER").ok().is_some();
-                eprintln!("should_profile={should_profile}");
+                // eprintln!("should_profile={should_profile}");
             }
         }
         ProfilingMode::Enabled => {
@@ -221,7 +221,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 });
 
                 with_allocator(Allocator::System, || {
-                    eprintln!("should_profile={should_profile}");
+                    // eprintln!("should_profile={should_profile}");
                 });
             }
         }

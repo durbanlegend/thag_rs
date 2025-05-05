@@ -2,6 +2,10 @@
 ///
 /// This test suite verifies that the `#[enable_profiling]` attribute macro correctly enables and disables profiling with different options:
 ///
+/// ```bash
+/// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_enable_profiling -- --nocapture
+/// ```
+///
 /// ## Key Areas Tested
 ///
 /// 1. **Default Behavior**: Verifies that with no options, profiling is enabled using appropriate defaults based on feature flags.

@@ -2,6 +2,10 @@
 ///
 /// This test suite verifies the behavior of the `profile!` and `end!` macros for creating profiled sections:
 ///
+/// ```bash
+/// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_profile_section -- --nocapture
+/// ```
+///
 /// ## Key Areas Tested
 ///
 /// 1. **Section Types**:

@@ -31,7 +31,9 @@
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Unbounded profiles must only go out of scope at the end of the _function_.
 - [ ]  Debug second_batch detailed memory with line numbers and alloc sizes for attributions and drops.
-- [ ]  Readme: Add possible profiled args.
+- [ ]  Readme: Add possible profiled args, add possibility of profiling a single function with #[enable_profiling], danger of overlapping more than one such.
+Modify #[enable_profiling] to accept mem_detail at fn level as per profile, somehow
+- [ ]  Fix test_profiled_behavior.rs: Use with_allocator for memory tests.
 
 Not sure about this...
 Currently the Profile registry uses the call stack from a backtrace as the key to identify and store a function Profile. This makes for a long key but is appropriate because a Profile represents one execution of a function (or section), which was called from a particular callstack (think in terms of a  backtrace) in which each entry represents a location within the span of some function that may or may not be profiled. But I would also really like a way to store the static attributes of the function, such as name, async, generics and end line, according to its span in the source file, so that when a Profile is dropped and writes out its call stack it can look up each element in its stack by file and start & end line numbers and write out the async:: prefix (or in future generics) to the .folded file. (This would also mean having to store file names and line numbers from the callstack in the Profile's path). I think file! or module_path! and start & end line numbers would be ideal. Would it be possible for an attribute macro such as #[profiled] (source attached) be able to get the line span of the function for which it constructs a profile? I'm seeing that `syn` has proc_macro2::Span, and proc_macro2 has LineColumn.line applicable to a Span.

@@ -120,7 +120,7 @@ impl ProfileCapability {
 }
 
 /// Checks if a profile type is valid for the current feature set
-#[cfg(any(feature = "time_profiling", feature = "full_profiling"))]
+// #[cfg(feature = "time_profiling")]
 const fn is_valid_profile_type(profile_type: ProfileType) -> bool {
     ProfileCapability::available().supports(profile_type)
 }
@@ -242,18 +242,18 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
                 "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
                     .to_string(),
             );
-            eprintln!("THAG_PROFILER: First element is empty");
+            // eprintln!("THAG_PROFILER: First element is empty");
             None
         } else {
             let profile_type_str = value.first().unwrap().trim();
-            eprintln!("THAG_PROFILER: Parsing profile type '{profile_type_str}'");
+            // eprintln!("THAG_PROFILER: Parsing profile type '{profile_type_str}'");
             match profile_type_str.parse::<ProfileType>() {
                 Ok(val) => {
-                    eprintln!("THAG_PROFILER: Successfully parsed profile type: {val:?}");
+                    // eprintln!("THAG_PROFILER: Successfully parsed profile type: {val:?}");
                     Some(val)
                 }
                 Err(e) => {
-                    eprintln!("THAG_PROFILER: Failed to parse profile type: {e}");
+                    // eprintln!("THAG_PROFILER: Failed to parse profile type: {e}");
                     errors.push(e);
                     None
                 }
@@ -310,7 +310,7 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
 
         // If there are errors, return them
         if !errors.is_empty() {
-            eprintln!("THAG_PROFILER errors:{errors:#?}");
+            // eprintln!("THAG_PROFILER errors:{errors:#?}");
             return Err(ProfileError::General(errors.join("\n")));
         }
 
@@ -390,7 +390,7 @@ impl Default for ProfileConfiguration {
 /// This function will return an error if it encounters an invalid `THAG_PROFILER` environment variable.
 pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
     let Ok(env_var) = env::var("THAG_PROFILER") else {
-        eprintln!("THAG_PROFILER environment variable not found, returning disabled config");
+        // eprintln!("THAG_PROFILER environment variable not found, returning disabled config");
         let profile_type = if cfg!(feature = "full_profiling") {
             Some(ProfileType::Both)
         } else if cfg!(feature = "time_profiling") {
@@ -407,9 +407,9 @@ pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
         });
     };
 
-    eprintln!("THAG_PROFILER environment variable found: {env_var}");
+    // eprintln!("THAG_PROFILER environment variable found: {env_var}");
     let parts: Vec<&str> = env_var.split(',').collect();
-    eprintln!("THAG_PROFILER parts: {parts:?}");
+    // eprintln!("THAG_PROFILER parts: {parts:?}");
     ProfileConfiguration::try_from(parts.as_slice())
 }
 
@@ -844,7 +844,7 @@ fn initialize_file(
 /// Returns the global profile type.
 ///
 /// This function maps between the stored value in the atomic and the corresponding
-/// `ProfileType`. If no global type is set, it returns the value from the profile
+/// `ProfileType`. If no global type is set, it **sets and** returns the value from the profile
 /// configuration.
 pub fn get_global_profile_type() -> ProfileType {
     let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
@@ -864,7 +864,7 @@ pub fn get_global_profile_type() -> ProfileType {
     // }
 
     // Map the stored value to a ProfileType using the bitflags pattern
-    match global_value {
+    let profile_type = match global_value {
         0 => get_profile_config()
             .profile_type
             .unwrap_or(ProfileType::None),
@@ -878,23 +878,11 @@ pub fn get_global_profile_type() -> ProfileType {
                 .profile_type
                 .unwrap_or(ProfileType::None)
         }
-    }
+    };
+    set_global_profile_type(profile_type);
+    profile_type
 }
 
-#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
-pub fn set_global_profile_type(profile_type: ProfileType) {
-    assert!(
-        is_valid_profile_type(profile_type),
-        r#"Memory profiling may not be set for feature "time_profiling" "#
-    );
-
-    // For time_profiling only, we can only set TIME
-    let value = ProfileCapability::from_profile_type(profile_type).0;
-    GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-    debug_log!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
-}
-
-#[cfg(feature = "full_profiling")]
 pub fn set_global_profile_type(profile_type: ProfileType) {
     assert!(
         is_valid_profile_type(profile_type),
@@ -904,7 +892,9 @@ pub fn set_global_profile_type(profile_type: ProfileType) {
     // Map profile type directly to storage value using the bitflags pattern
     let value = ProfileCapability::from_profile_type(profile_type).0;
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-    debug_log!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
+
+    // debug_log causes this to hang if called from get_global_profile_type during initialisation.
+    // eprintln!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -1170,29 +1160,29 @@ impl FromStr for ProfileType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim().to_lowercase();
-        eprintln!("ProfileType::from_str: parsing '{trimmed}'");
+        // eprintln!("ProfileType::from_str: parsing '{trimmed}'");
 
         match trimmed.as_str() {
             "time" => {
-                eprintln!("ProfileType::from_str: matched 'time'");
+                // eprintln!("ProfileType::from_str: matched 'time'");
                 Ok(Self::Time)
             }
             "memory" => {
-                eprintln!("ProfileType::from_str: matched 'memory'");
+                // eprintln!("ProfileType::from_str: matched 'memory'");
                 Ok(Self::Memory)
             }
             "both" => {
-                eprintln!("ProfileType::from_str: matched 'both'");
+                // eprintln!("ProfileType::from_str: matched 'both'");
                 Ok(Self::Both)
             }
             "none" => {
-                eprintln!("ProfileType::from_str: matched 'none'");
+                // eprintln!("ProfileType::from_str: matched 'none'");
                 Ok(Self::None)
             }
             _ => {
                 let err =
                     format!("Invalid profile type '{s}'. Expected 'time', 'memory', or 'both'");
-                eprintln!("ProfileType::from_str: error: {err}");
+                // eprintln!("ProfileType::from_str: error: {err}");
                 Err(err)
             }
         }
@@ -1258,7 +1248,7 @@ impl Profile {
         &self.file_name
     }
 
-    /// Get the start line of this profile
+    /// Get the fn_name of this profile
     #[must_use]
     pub fn fn_name(&self) -> &str {
         self.fn_name.as_str()

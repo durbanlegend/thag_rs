@@ -2,6 +2,10 @@
 ///
 /// This test suite verifies the behavior of the `#[profiled]` attribute macro across different configurations and use cases:
 ///
+/// ```bash
+/// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_profiled_behavior -- --nocapture
+/// ```
+///
 /// ## Key Areas Tested
 ///
 /// 1. **Profile Types**:
@@ -38,7 +42,7 @@
 /// - Uses async-std for testing async functions
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    file_stem_from_path_str, profiled,
+    enable_profiling, file_stem_from_path_str, profiled,
     profiling::{get_reg_desc_name, is_profiled_function},
     ProfileType,
 };
@@ -58,13 +62,15 @@ async fn profiled_function_time_test() {
         fn_name,
         "test_profiled_behavior::profiled_function_time_test"
     );
-    assert_eq!(profile.registered_name(), fn_name);
+
+    let stack_str = format!("test_profiled_behavior::test_profiled_behavior;{fn_name}");
+    assert_eq!(profile.registered_name(), stack_str);
     assert_eq!(profile.start_line(), None);
     assert_eq!(file_name, "test_profiled_behavior");
     assert_eq!(file_name, file_stem_from_path_str(file!()));
-    assert!(is_profiled_function(fn_name));
+    assert!(is_profiled_function(&stack_str));
     assert_eq!(
-        get_reg_desc_name(fn_name),
+        get_reg_desc_name(&stack_str),
         Some(format!("async::{fn_name}"))
     );
 }
@@ -97,12 +103,13 @@ fn profiled_function_memory() {
     assert!(profile.is_detailed_memory());
 
     assert_eq!(fn_name, "test_profiled_behavior::profiled_function_memory");
-    assert_eq!(profile.registered_name(), fn_name);
+    let stack_str = format!("test_profiled_behavior::test_profiled_behavior;{fn_name}");
+    assert_eq!(profile.registered_name(), stack_str);
     assert_eq!(profile.start_line(), None);
     assert_eq!(file_name, "test_profiled_behavior");
     assert_eq!(file_name, file_stem_from_path_str(file!()));
-    assert!(is_profiled_function(fn_name));
-    assert_eq!(get_reg_desc_name(fn_name), Some(fn_name.to_string()));
+    assert!(is_profiled_function(&stack_str));
+    assert_eq!(get_reg_desc_name(&stack_str), Some(fn_name.to_string()));
 }
 
 // Test memory summary without detailed memory
@@ -164,7 +171,7 @@ fn profiled_function_global_test() {
     let profile = profile.as_ref().unwrap();
     // The profile type should match what was set with enable_profiling
     #[cfg(feature = "full_profiling")]
-    assert_eq!(profile.get_profile_type(), ProfileType::Memory);
+    assert_eq!(profile.get_profile_type(), ProfileType::Both);
 
     #[cfg(not(feature = "full_profiling"))]
     assert_eq!(profile.get_profile_type(), ProfileType::Time);
@@ -182,7 +189,7 @@ fn profiled_function_default_test() {
     let profile = profile.as_ref().unwrap();
     // Should use the global profile type
     #[cfg(feature = "full_profiling")]
-    assert_eq!(profile.get_profile_type(), ProfileType::Memory);
+    assert_eq!(profile.get_profile_type(), ProfileType::Both);
 
     #[cfg(not(feature = "full_profiling"))]
     assert_eq!(profile.get_profile_type(), ProfileType::Time);
@@ -264,20 +271,21 @@ fn profiled_function_both_legacy_params_test() {
 
 #[test]
 #[cfg(feature = "time_profiling")]
+#[enable_profiling]
 fn test_profiled_behavior() {
-    #[cfg(feature = "full_profiling")]
-    enable_memory_profiling_for_test();
+    // #[cfg(feature = "full_profiling")]
+    // enable_memory_profiling_for_test();
 
-    #[cfg(not(feature = "full_profiling"))]
-    enable_time_profiling_for_test();
+    // #[cfg(not(feature = "full_profiling"))]
+    // enable_time_profiling_for_test();
 
-    // Helper functions to enable profiling using the attribute macro
-    #[cfg(feature = "full_profiling")]
-    #[thag_profiler::enable_profiling(memory)]
-    fn enable_memory_profiling_for_test() {}
+    // // Helper functions to enable profiling using the attribute macro
+    // #[cfg(feature = "full_profiling")]
+    // #[thag_profiler::enable_profiling(memory)]
+    // fn enable_memory_profiling_for_test() {}
 
-    #[thag_profiler::enable_profiling(time)]
-    fn enable_time_profiling_for_test() {}
+    // #[thag_profiler::enable_profiling(time)]
+    // fn enable_time_profiling_for_test() {}
 
     // Test the synchronous profiled functions
     #[cfg(feature = "full_profiling")]

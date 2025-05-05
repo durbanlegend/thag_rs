@@ -11,11 +11,11 @@ use thag_profiler::*;
 
 #[enable_profiling]
 fn main() {
-    // let _profile = profile!("print_lines", time, mem_detail, unbounded);
+    // let _profile = profile!(print_lines, time, mem_detail, unbounded);
     // .expect("Failed to initialize section profile `print_lines`");
-    let _profile_section = profile!("transform_snippet", time);
+    let _profile_section = profile!(transform_snippet, time);
     println!("Section ends on line {}", end_transform_snippet());
     // Some filler lines here
     // Some filler lines here
-    end!("transform_snippet");
+    end!(transform_snippet);
 }

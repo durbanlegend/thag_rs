@@ -231,15 +231,9 @@ When using `thag_profiler` in `thag` scripts, you have to same two options, only
 
 ### 3. Enable Profiling at Runtime
 
-**EITHER**
+You must enable profiling by adding the `#[enable_profiling]` attribute to your `main` function.
 
-**1. Enable profiling with an attribute (recommended)**
-
-Enable profiling by adding the `#[enable_profiling]` attribute to your `main` function.
-
-The attribute is recommended because it is the only way to obtain the zero-cost abstraction of unused profiling code, and because it ensures the clean compile-time ring-fencing of memory profiler code from profiled code.
-
-NB: the `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute need not and should not be specified on the same function.
+The `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute need not and should not be specified on the same function.
 
 **#[enable_profiling] arguments**
 The following optional arguments are available:
@@ -306,26 +300,6 @@ The `main` function will be taken to be the root of the profiling callstack.
 ```rust
 #[thag_profiler::enable_profiling]
 fn main() {
-    // Your program...
-}
-```
-
-**OR**
-
-
-**2. Enable profiling programmatically**
-
-This is not recommended as it cannot be as clean and efficient as an attribute macro
-and lacks the same rich set of options.
-Currently it is kept around as an adjunct to the attribute macro to allow turning profiling on and off on the fly - which itself is problematic with async code. Thag may yet decide to give it the boot, so please don't build your hopes and dreams on it.
-
-```rust
-use thag_profiler::{profiling::enable_profiling, ProfileType};
-
-fn main() {
-    // Enable both time and memory profiling
-    enable_profiling(true, ProfileType::Both).expect("Failed to enable profiling");
-
     // Your program...
 }
 ```
@@ -515,15 +489,11 @@ NB: Section profiling modes will be overridden by the program defaults set by `#
 
 ```Rust
 profile!(name [, flag1, flag2, ...]);
-
-Or as a string literal:
-
-profile!("name" [, flag1, flag2, ...]);
 ```
 
 Parameters
 
-- **name**: A string literal or a `&str` variable that identifies the profiling section
+- **name**: An identifier that will be expanded to the variable name of the `Profile`  for the section
 - **flags**: Optional comma-separated identifiers that control profiling behavior
 
 #### Available Flags

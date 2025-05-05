@@ -5,7 +5,7 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    Ident, LitStr, Result, Token,
+    Ident, Result, Token,
 };
 
 /// Arguments for the `profile` macro
@@ -16,14 +16,8 @@ struct ProfileArgs {
 
 impl Parse for ProfileArgs {
     fn parse(input: ParseStream) -> Result<Self> {
-        // Try parsing as a string literal first
-        let name = {
-            if input.peek(LitStr) {
-                input.parse::<LitStr>()?.value()
-            } else {
-                input.parse::<Ident>()?.to_string()
-            }
-        };
+        // Parse the profile name as an identifier
+        let name = input.parse::<Ident>()?.to_string();
 
         // Parse remaining arguments as identifiers separated by commas
         let args = if input.is_empty() {

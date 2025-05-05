@@ -21,7 +21,7 @@ use syn::{
     visit_mut::{self, VisitMut},
     AttrStyle, Expr, ExprBlock,
 };
-use thag_profiler::{profile, profiled};
+use thag_profiler::profiled;
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -205,20 +205,14 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     #[cfg(debug_assertions)]
     let start_ast = Instant::now();
     #[allow(clippy::option_if_let_else)]
-    if let Ok(tree) = {
-        profile!("to_ast_syn_parse_file", time);
-        syn::parse_file(source_code)
-    } {
+    if let Ok(tree) = { syn::parse_file(source_code) } {
         #[cfg(debug_assertions)]
         {
             cvlog_emphasis!(V::V, "Parsed to syn::File");
             debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         }
         Some(Ast::File(tree))
-    } else if let Ok(tree) = {
-        profile!("to_ast_syn_parse_expr", time);
-        extract_ast_expr(source_code)
-    } {
+    } else if let Ok(tree) = { extract_ast_expr(source_code) } {
         #[cfg(debug_assertions)]
         {
             cvlog_emphasis!(V::V, "Parsed to syn::Expr");

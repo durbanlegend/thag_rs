@@ -3,7 +3,8 @@
 backtrace = "0.3"
 # thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling"] }
+# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=[] }
 tokio = { version = "1", features = ["full"] }
 
 [profile.dev]
@@ -131,10 +132,10 @@ async fn process_document(mut doc: Document) -> Document {
     doc.calculate_sentiment();
 
     // Small async delay
-    profile!("delay", both, async_fn);
+    profile!(delay, both, async_fn);
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
-    end!("delay");
+    end!(delay);
 
     doc.is_processed = true;
     doc
@@ -173,11 +174,11 @@ async fn run_batch(count: usize) {
     );
 
     // Print results for verification
-    profile!("print_docs", time, mem_summary, async_fn, unbounded);
+    profile!(print_docs, time, mem_summary, async_fn, unbounded);
     for doc in &docs {
         let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         // Small async delay
-        // profile!("print_docs", time, mem_detail, async_fn);
+        // profile!(print_docs, time, mem_detail, async_fn);
         sleep(Duration::from_millis(150)).await;
 
         println!(
@@ -187,16 +188,16 @@ async fn run_batch(count: usize) {
             doc.sentiment_score
         );
     }
-    // end!("print_docs");
+    // end!(print_docs);
 }
 
 #[tokio::main]
 #[cfg_attr(debug_assertions, enable_profiling(runtime))]
 async fn main() {
-    println!(
-        "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
-        thag_profiler::PROFILING_MUTEX.is_locked()
-    );
+    // println!(
+    //     "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
+    //     thag_profiler::PROFILING_MUTEX.is_locked()
+    // );
 
     println!("Starting simplified document processing example");
 
@@ -206,24 +207,24 @@ async fn main() {
     // println!("Switching profiling off");
     // disable_profiling();
 
-    // profile!("second_batch", global, async_fn);
-    profile!("second_batch", time, mem_summary, async_fn);
+    // profile!(second_batch, global, async_fn);
+    profile!(second_batch, time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
     // println!("Switching only time profiling back on");
     // enable_profiling(true, Some(ProfileType::Time)).unwrap();
-    end!("second_batch");
+    end!(second_batch);
 
-    profile!("last_batch", time, mem_summary, async_fn);
+    profile!(last_batch, time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
-    end!("last_batch");
+    end!(last_batch);
 
     println!("Profiling data written to folded files in current directory");
 
-    println!(
-        "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
-        thag_profiler::PROFILING_MUTEX.is_locked()
-    );
+    // println!(
+    //     "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
+    //     thag_profiler::PROFILING_MUTEX.is_locked()
+    // );
 }

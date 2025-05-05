@@ -215,7 +215,7 @@ macro_rules! debug_log {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{debug_log, enable_profiling, ProfileType};
+    use crate::{debug_log, ProfileType};
 
     #[cfg(feature = "full_profiling")]
     use crate::mem_tracking::{with_allocator, Allocator};
@@ -230,11 +230,11 @@ mod tests {
         // Initialize profiling to set up logging
         #[cfg(feature = "full_profiling")]
         with_allocator(Allocator::System, || {
-            let _ = enable_profiling(true, Some(ProfileType::Memory));
+            let _ = crate::profiling::tests::initialize_profiling_for_test(ProfileType::Memory);
         });
 
         #[cfg(not(feature = "full_profiling"))]
-        let _ = enable_profiling(true, Some(ProfileType::Time));
+        let _ = crate::profiling::tests::initialize_profiling_for_test(ProfileType::Time);
 
         // ----- Test 1: Debug Level Detection -----
         let debug_level = get_debug_level();

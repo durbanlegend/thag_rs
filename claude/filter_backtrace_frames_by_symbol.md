@@ -5942,7 +5942,7 @@ After considering these principles, I recommend this approach:
 ///
 /// ```
 /// // Basic usage (profiles time, sync function)
-/// let section = profile!("expensive_operation");
+/// let section = profile!(expensive_operation);
 /// // ... code to profile
 /// section.end();
 ///

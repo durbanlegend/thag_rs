@@ -47,7 +47,7 @@ use thag_profiler::{
 /// Test time profiling in a section
 #[cfg(feature = "time_profiling")]
 fn test_time_section() {
-    profile!("test_time_section", time);
+    profile!(test_time_section, time);
 
     // Verify profile properties
     // let section_name = get_section_profile_name("test_time_section");
@@ -83,7 +83,7 @@ fn test_time_section() {
 /// Test memory profiling in a section (summary only)
 #[cfg(feature = "full_profiling")]
 fn test_memory_summary_section() {
-    profile!("test_memory_summary", mem_summary);
+    profile!(test_memory_summary, mem_summary);
 
     let profile = test_memory_summary.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Memory);
@@ -110,7 +110,7 @@ fn test_memory_summary_section() {
 /// Test memory profiling in a section (detailed)
 #[cfg(feature = "full_profiling")]
 fn test_memory_detail_section() {
-    profile!("test_memory_detail", mem_detail);
+    profile!(test_memory_detail, mem_detail);
 
     let profile = test_memory_detail.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Memory);
@@ -139,7 +139,7 @@ fn test_memory_detail_section() {
 /// Test combined time and memory profiling
 #[cfg(feature = "full_profiling")]
 fn test_both_profiling_section() {
-    profile!("test_both", time, mem_summary);
+    profile!(test_both, time, mem_summary);
 
     let profile = test_both.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Both);
@@ -159,7 +159,7 @@ fn test_both_profiling_section() {
 /// Test combined time and detailed memory profiling
 #[cfg(feature = "full_profiling")]
 fn test_both_detailed_section() {
-    profile!("test_both_detailed", time, mem_detail);
+    profile!(test_both_detailed, time, mem_detail);
 
     let profile = test_both_detailed.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Both);
@@ -178,7 +178,7 @@ fn test_both_detailed_section() {
 /// Test global profile type setting
 #[cfg(feature = "time_profiling")]
 fn test_global_profile_section() {
-    profile!("test_global", global);
+    profile!(test_global, global);
 
     let profile = test_global.as_ref().unwrap();
 
@@ -196,7 +196,7 @@ fn test_global_profile_section() {
 /// Test nested sections with different profile types
 #[cfg(feature = "full_profiling")]
 fn test_nested_sections() {
-    profile!("outer_section", time);
+    profile!(outer_section, time);
 
     let outer_profile = outer_section.as_ref().unwrap();
     assert_eq!(outer_profile.get_profile_type(), ProfileType::Time);
@@ -205,7 +205,7 @@ fn test_nested_sections() {
     let _ = (0..500).fold(0, |acc, x| acc + x);
 
     // Create a nested section with different profile type
-    profile!("inner_section", mem_detail);
+    profile!(inner_section, mem_detail);
 
     let inner_profile = inner_section.as_ref().unwrap();
     assert_eq!(inner_profile.get_profile_type(), ProfileType::Memory);
@@ -229,7 +229,7 @@ fn test_nested_sections() {
 #[cfg(feature = "full_profiling")]
 fn test_unbounded_section() {
     {
-        profile!("unbounded_section", mem_detail, unbounded);
+        profile!(unbounded_section, mem_detail, unbounded);
 
         let profile = unbounded_section.as_ref().unwrap();
         assert_eq!(profile.get_profile_type(), ProfileType::Memory);

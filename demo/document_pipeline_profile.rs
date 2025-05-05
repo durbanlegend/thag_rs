@@ -29,7 +29,6 @@ struct Document {
 }
 
 impl Document {
-    // #[profiled(imp = "Document")]
     #[profiled]
     fn new(id: usize, content: String) -> Self {
         // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));

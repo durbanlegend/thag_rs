@@ -28,16 +28,18 @@ impl Foo {
 }
 
 fn regular_function(foo: &Foo) {
-    profile!("regular_function");
+    profile!(regular_function);
     println!("hello");
     foo.bar();
+    end!(regular_function);
 }
 
 // Already has profiling
 fn profiled_function(foo: &Foo) {
-    profile!("profiled_function");
+    profile!(profiled_function);
     println!("already profiled");
     foo.baz();
+    end!(profiled_function);
 }
 
 fn main() {

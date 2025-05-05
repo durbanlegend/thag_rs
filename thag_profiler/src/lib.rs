@@ -57,7 +57,7 @@ pub use {
     errors::{ProfileError, ProfileResult},
     logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        clear_profile_config_cache, disable_profiling, enable_profiling, get_config_profile_type,
+        clear_profile_config_cache, disable_profiling, get_config_profile_type,
         get_global_profile_type, is_detailed_memory, is_profiling_enabled,
         parse_env_profile_config, strip_hex_suffix, Profile, /* ProfileSection,*/
         ProfileConfiguration, ProfileType,
@@ -84,6 +84,9 @@ pub use thag_proc_macros::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "time_profiling")]
 pub use profiling::PROFILING_MUTEX;
+
+#[cfg(feature = "time_profiling")]
+use crate::profiling::enable_profiling;
 
 #[cfg(feature = "time_profiling")]
 pub static PROFILER: OnceLock<Profiler> = OnceLock::new();
@@ -436,7 +439,8 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 
         set_base_location(file!(), fn_name, line!());
 
-        enable_profiling(true, profile_config.profile_type()).expect("Failed to enable profiling");
+        profiling::enable_profiling(true, profile_config.profile_type())
+            .expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
 

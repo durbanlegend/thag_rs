@@ -275,11 +275,7 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
             );
             None
         } else {
-            match value
-                .get(2)
-                .unwrap_or_else(|| &&"none")
-                .parse::<DebugLevel>()
-            {
+            match value.get(2).unwrap_or(&"none").parse::<DebugLevel>() {
                 Ok(val) => Some(val),
                 Err(e) => {
                     errors.push(e);
@@ -878,9 +874,10 @@ pub fn get_global_profile_type() -> ProfileType {
 
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 fn set_global_profile_type(profile_type: ProfileType) {
-    if !is_valid_profile_type(profile_type) {
-        panic!(r#"Memory profiling may not be set for feature "time_profiling" "#);
-    }
+    assert!(
+        is_valid_profile_type(profile_type),
+        r#"Memory profiling may not be set for feature "time_profiling" "#
+    );
 
     // For time_profiling only, we can only set TIME
     let value = ProfileCapability::from_profile_type(profile_type).0;
@@ -920,7 +917,7 @@ fn set_global_profile_type(profile_type: ProfileType) {
 /// - File operations fail
 /// - Mutex operations fail
 #[cfg(feature = "time_profiling")]
-pub fn enable_profiling(
+pub(crate) fn enable_profiling(
     enabled: bool,
     maybe_profile_type: Option<ProfileType>,
 ) -> ProfileResult<()> {
@@ -994,22 +991,27 @@ pub fn enable_profiling(
     Ok(())
 }
 
-/// No-op version when profiling feature is disabled.
-///
-/// # Errors
-/// None
-#[cfg(not(feature = "time_profiling"))]
-pub const fn enable_profiling(
-    _enabled: bool,
-    _maybe_profile_type: Option<ProfileType>,
-) -> Result<(), ProfileError> {
-    // No-op implementation
-    Ok(())
-}
+// /// No-op version when profiling feature is disabled.
+// ///
+// /// # Errors
+// /// None
+// #[cfg(not(feature = "time_profiling"))]
+// pub(crate) const fn enable_profiling(
+//     _enabled: bool,
+//     _maybe_profile_type: Option<ProfileType>,
+// ) -> Result<(), ProfileError> {
+//     // No-op implementation
+//     Ok(())
+// }
 
-/// Disable profiling and reset the profiling stack.
+/// Disable profiling.
+/// 
+/// This function disables profiling and resets the profiling state.
+/// Use this to explicitly stop profiling that was enabled via the
+/// `#[enable_profiling]` attribute macro.
 #[cfg(feature = "time_profiling")]
 pub fn disable_profiling() {
+    // Call the internal enable_profiling function with false
     let _ = enable_profiling(false, None);
 }
 
@@ -1195,7 +1197,7 @@ pub struct Profile {
     start: Option<Instant>,
     profile_type: ProfileType,
     path: Vec<String>,
-    section_name: Option<String>, // Custom section name when provided via profile!("name") macro
+    section_name: Option<String>, // Custom section name when provided via profile!(name) macro
     registered_name: String,
     fn_name: String,
     start_line: Option<u32>, // Source line where profile was created (for sections)
@@ -2555,6 +2557,31 @@ pub fn dump_profiled_functions() -> Vec<(String, String)> {
 
 #[cfg(test)]
 static TEST_MODE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Test utilities module
+/// 
+/// This provides internal functions for testing only.
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    
+    /// Initializes profiling for tests
+    /// 
+    /// # Arguments
+    /// * `profile_type` - The type of profiling to enable
+    pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
+        // Set test mode active to prevent #[profiled] from creating duplicate entries
+        TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
+        
+        // Then enable profiling
+        enable_profiling(true, Some(profile_type))
+    }
+    
+    /// Force sets the profiling state for testing purposes
+    pub fn force_set_profiling_state(enabled: bool) {
+        PROFILING_STATE.store(enabled, Ordering::SeqCst);
+    }
+}
 
 #[cfg(test)]
 /// Checks if we're in test mode to avoid duplicate profiling

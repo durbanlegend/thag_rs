@@ -305,19 +305,16 @@ impl Prompt for ReplPrompt {
 
 #[profiled]
 fn get_heading_style() -> &'static Style {
-    // profile!("get_heading_style");
     lazy_static_var!(Style, Style::for_role(Role::HD1))
 }
 
 #[profiled]
 fn get_subhead_style() -> &'static Style {
-    // profile!("get_subhead_style");
     lazy_static_var!(Style, Style::for_role(Role::HD2))
 }
 
 #[profiled]
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
-    // profile!("add_menu_keybindings");
     keybindings.add_binding(
         KeyModifiers::NONE,
         KeyCode::Tab,
@@ -356,7 +353,6 @@ pub fn run_repl(
     build_state: &mut BuildState,
     start: Instant,
 ) -> ThagResult<()> {
-    // profile!("run_repl");
     #[allow(unused_variables)]
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");

@@ -74,9 +74,9 @@ fn default_enabled_function() {
     );
 
     // Test section profiling works when enabled
-    profile!("default_section", time);
+    profile!(default_section, time);
     let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
-    end!("default_section");
+    end!(default_section);
 }
 
 /// Test with explicit "yes" option
@@ -89,9 +89,9 @@ fn yes_enabled_function() {
     );
 
     // Test section profiling works when enabled
-    profile!("yes_section", time);
+    profile!(yes_section, time);
     let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
-    end!("yes_section");
+    end!(yes_section);
 }
 
 /// Test with "no" option (disabled)
@@ -105,9 +105,9 @@ fn no_disabled_function() {
     );
 
     // Section profiling shouldn't create active profiles when disabled
-    profile!("no_section", time);
+    profile!(no_section, time);
     let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
-    end!("no_section");
+    end!(no_section);
     // No assertions needed - if profiling is incorrectly enabled, this would still work but not fail the test
 }
 
@@ -126,9 +126,9 @@ fn time_enabled_function() {
     );
 
     // Test section profiling works when enabled for time
-    profile!("time_section", time);
+    profile!(time_section, time);
     let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
-    end!("time_section");
+    end!(time_section);
 }
 
 /// Test with "memory" option
@@ -146,10 +146,10 @@ fn memory_enabled_function() {
     );
 
     // Test section profiling works when enabled for memory
-    profile!("memory_section", mem_summary);
+    profile!(memory_section, mem_summary);
     let data = vec![0u8; 1024]; // Allocate some memory
     let _ = data.len(); // Use data to avoid compiler optimizations
-    end!("memory_section");
+    end!(memory_section);
 }
 
 /// Test with "both" option (time and memory)
@@ -167,11 +167,11 @@ fn both_enabled_function() {
     );
 
     // Test section profiling works for both time and memory
-    profile!("both_section", both);
+    profile!(both_section, both);
     let data = vec![0u8; 1024]; // Allocate some memory
     let result = (0..100).fold(0, |acc, x| acc + x); // Do some work
     let _ = data.len() + result; // Use values to avoid compiler optimizations
-    end!("both_section");
+    end!(both_section);
 }
 
 /// Test with "runtime" option (environment variable controlled)
@@ -251,9 +251,9 @@ fn runtime_controlled_function() {
 
     // Test section profiling if profiling is enabled
     if is_profiling_enabled() {
-        profile!("runtime_section", time);
+        profile!(runtime_section, time);
         let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
-        end!("runtime_section");
+        end!(runtime_section);
     }
 }
 

@@ -24,13 +24,13 @@ fn example_using_region() {
     let reg = Region::new(GLOBAL);
 
     println!("Creating profile section with custom name 'vec_1024'");
-    let section = profile!("vec_1024", both);
+    let section = profile!(vec_1024, both);
 
     println!("Allocating vector with capacity 1024");
     let x: Vec<u8> = Vec::with_capacity(1_024);
 
     println!("Ending profiled section");
-    section.end();
+    end(vec_1024);
 
     println!("Stats at 1: {:#?}", reg.change());
     // Used here to ensure that the value is not

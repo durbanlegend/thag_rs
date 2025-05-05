@@ -3,23 +3,17 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Ident, LitStr, Result,
+    parse_macro_input, Ident, Result,
 };
 
-// Define a custom parser that accepts either a string literal or an identifier
+// Define a parser that accepts an identifier
 struct ProfileIdentifier {
     value: String,
 }
 
 impl Parse for ProfileIdentifier {
     fn parse(input: ParseStream) -> Result<Self> {
-        // Try parsing as a string literal first
-        if input.peek(LitStr) {
-            let lit: LitStr = input.parse()?;
-            return Ok(Self { value: lit.value() });
-        }
-
-        // If not a string, try parsing as an identifier
+        // Parse as an identifier
         let ident: Ident = input.parse()?;
         Ok(Self {
             value: ident.to_string(),
@@ -28,7 +22,7 @@ impl Parse for ProfileIdentifier {
 }
 
 pub fn end_impl(input: TokenStream) -> TokenStream {
-    // Parse the input using our custom parser
+    // Parse the input using our parser
     let profile_identifier = parse_macro_input!(input as ProfileIdentifier);
     let profile_id_str = profile_identifier.value;
     let profile_id = format_ident!("{profile_id_str}");

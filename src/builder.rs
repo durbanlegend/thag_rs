@@ -67,7 +67,7 @@ use std::{
     string::ToString,
     time::Instant,
 };
-use thag_profiler::{profile, profiled};
+use thag_profiler::profiled;
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -503,9 +503,6 @@ impl ScriptState {
 /// Will panic if it fails to strip a .rs extension off the script name,
 // #[profiled]
 pub fn execute(args: &mut Cli) -> ThagResult<()> {
-    // Instrument the entire function
-    // profile!("execute", time);
-
     let start = Instant::now();
 
     // Initialize TermAttributes for message styling
@@ -641,7 +638,6 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> ThagResult<()> {
-    // profile!("process", time);
     let is_repl = args.repl;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
@@ -1003,7 +999,6 @@ pub fn generate(
     vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
-        profile!("transform_snippet", time);
         // TODO make this configurable
         let rs_source: &str = {
             #[cfg(feature = "format_snippet")]
@@ -1346,8 +1341,6 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
 /// that runs the user script.
 #[profiled]
 pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) -> ThagResult<()> {
-    // profile!("run", time);
-
     let start_run = Instant::now();
     #[cfg(debug_assertions)]
     debug_log!("RRRRRRRR In run");

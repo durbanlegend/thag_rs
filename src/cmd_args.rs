@@ -271,7 +271,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     let is_loop = args.filter.is_some();
     let is_infer = args.infer.is_some();
     let is_features = args.features.is_some();
-    profile!("init_config_loop_assert", time);
+    profile!(init_config_loop_assert, time);
     let proc_flags = {
         let mut proc_flags = ProcFlags::empty();
         // eprintln!("args={args:#?}");
@@ -312,9 +312,9 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             ProcFlags::TOOLS,
             args.script.as_ref().is_some_and(|script| script == "tools"),
         );
-        end!("init_config_loop_assert");
+        end!(init_config_loop_assert);
 
-        profile!("config_loop_assert", time);
+        profile!(config_loop_assert, time);
         let unquote = args.unquote.map_or_else(
             || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
             |unquote| {
@@ -324,9 +324,9 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         );
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
         proc_flags.set(ProcFlags::CONFIG, args.config);
-        end!("config_loop_assert");
+        end!(config_loop_assert);
 
-        profile!("loop_assert", time);
+        profile!(loop_assert, time);
         if !is_loop && (args.toml.is_some() || args.begin.is_some() || args.end.is_some()) {
             if args.toml.is_some() {
                 eprintln!("Option --toml (-M) requires --loop (-l)");
@@ -339,16 +339,16 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             }
             return Err("Missing --loop option".into());
         }
-        end!("loop_assert");
+        end!(loop_assert);
 
         #[cfg(debug_assertions)]
         {
-            profile!("assert_section", time);
+            profile!(assert_section, time);
             // Check all good
             let formatted = proc_flags.to_string();
             let parsed = formatted.parse::<ProcFlags>()?;
             assert_eq!(proc_flags, parsed);
-            end!("assert_section");
+            end!(assert_section);
         }
 
         Ok::<ProcFlags, ThagError>(proc_flags)

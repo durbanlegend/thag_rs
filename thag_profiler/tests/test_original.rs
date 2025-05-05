@@ -110,7 +110,7 @@ fn test_profiling_profile_creation() {
         );
 
         // Create a profile section using the macro
-        profile!("test_profile");
+        profile!(test_profile);
         eprintln!("test_profile={test_profile:#?}");
         eprintln!(
             "After creating section: is_profiling_enabled = {}",
@@ -118,7 +118,7 @@ fn test_profiling_profile_creation() {
         );
 
         assert!(!test_profile.as_ref().unwrap().detailed_memory());
-        end!("test_profile");
+        end!(test_profile);
     });
 }
 
@@ -137,7 +137,7 @@ fn simple_profiled_function() -> u32 {
         "Profiling should be disabled at start"
     );
 
-    thag_profiler::profile!("simple_profiled_function", unbounded, time);
+    thag_profiler::profile!(simple_profiled_function, unbounded, time);
     // Simulate some work
     thread::sleep(Duration::from_millis(10));
     42
@@ -202,12 +202,12 @@ fn test_profiling_profile_macro() {
 
     run_test(|| {
         // Basic usage
-        thag_profiler::profile!("basic_test");
+        thag_profiler::profile!(basic_test);
         thread::sleep(Duration::from_millis(5));
-        end!("basic_test");
+        end!(basic_test);
 
         // Method style - Pass a string since we can't use the method keyword in tests
-        thag_profiler::profile!("repeat");
+        thag_profiler::profile!(repeat);
         thread::sleep(Duration::from_millis(5));
         end!(repeat);
     });
@@ -235,9 +235,9 @@ fn test_profiling_create_section() {
     );
 
     // Create a profile section
-    thag_profiler::profile!("enabled_test");
+    thag_profiler::profile!(enabled_test);
     assert_eq!(enabled_test.clone().unwrap().file_name(), "test_original");
-    end!("enabled_test");
+    end!(enabled_test);
 }
 
 // Memory profiling test
@@ -296,7 +296,7 @@ fn test_profiling_profile_section_thread_safety() {
 
     run_test(|| {
         // Create a profile section that we'll send to another thread
-        thag_profiler::profile!("thread_test", unbounded);
+        thag_profiler::profile!(thread_test, unbounded);
 
         // Spawn a thread and move the section to it
         let handle = thread::spawn(move || {
@@ -305,12 +305,12 @@ fn test_profiling_profile_section_thread_safety() {
                 thread_test.as_ref().unwrap().fn_name(),
                 "test_original::test_profiling_profile_section_thread_safety"
             );
-            end!("thread_test");
+            end!(thread_test);
         });
 
         // Wait for the thread to finish
         handle.join().unwrap();
-        // end!("thread_test");
+        // end!(thread_test);
     });
 }
 

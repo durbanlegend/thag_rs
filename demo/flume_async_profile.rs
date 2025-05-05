@@ -57,7 +57,7 @@ async fn perform() {
     let (tx, rx) = flume::bounded(1);
 
     // #[cfg(feature = "profiling")]
-    profile!("outer_async_operation", time, mem_summary, async_fn);
+    profile!(async_operation, time, mem_summary, async_fn);
 
     let t = async_std::task::spawn(async move {
         while let Ok(msg) = rx.recv_async().await {
@@ -66,16 +66,16 @@ async fn perform() {
     });
 
     // #[cfg(feature = "profiling")]
-    end!("outer_async_operation");
+    end!(async_operation);
 
     // #[cfg(feature = "profiling")]
-    profile!("send_async", time, mem_detail, async_fn);
+    profile!(send_async, time, mem_detail, async_fn);
 
     tx.send_async("Hello, world!").await.unwrap();
     tx.send_async("How are you today?").await.unwrap();
 
     // #[cfg(feature = "profiling")]
-    end!("send_async");
+    end!(send_async);
 
     drop(tx);
 

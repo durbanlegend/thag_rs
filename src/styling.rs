@@ -781,7 +781,6 @@ impl TermAttributes {
     #[profiled]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
-            profile!("instance_get_or_init", time);
             #[cfg(feature = "config")]
             let Some(_config) = maybe_config() else {
                 panic!("Error initializing configuration")
@@ -2107,7 +2106,6 @@ fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Ve
 //     eligible_themes: &Vec<(&str, &ThemeIndex)>,
 //     term_bg_rgb: (u8, u8, u8),
 // ) -> Vec<String> {
-//     profile!("get_reduced_palette_matches", time);
 //     eligible_themes
 //         .iter()
 //         .filter(|(_, idx)| idx.matches_background(term_bg_rgb))
@@ -2271,7 +2269,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     }
 
     // Find closest color in the 6x6x6 color cube (16-231)
-    profile!("find_closest_section", time);
+    profile!(find_closest_section, time);
     let find_closest = |v: u8| {
         u8::try_from(
             STEPS
@@ -2282,7 +2280,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
         )
         .map_or(0, |v| v)
     };
-    end!("find_closest_section");
+    end!(find_closest_section);
 
     let r_idx = find_closest(r);
     let g_idx = find_closest(g);

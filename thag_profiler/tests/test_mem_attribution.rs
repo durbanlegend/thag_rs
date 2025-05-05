@@ -76,7 +76,7 @@ fn mem_attribution_whole_function() {
 #[cfg(feature = "full_profiling")]
 fn mem_attribution_with_sections() {
     // Create a section with line numbers
-    profile!("test_section_1", mem_detail);
+    profile!(test_section_1, mem_detail);
 
     // The profile should have a start line number
     let section_profile = test_section_1.as_ref().unwrap();
@@ -92,7 +92,7 @@ fn mem_attribution_with_sections() {
     end!(test_section_1);
 
     // Create another section
-    profile!("test_section_2", mem_summary);
+    profile!(test_section_2, mem_summary);
 
     // This section shouldn't use detailed memory
     let section_profile = test_section_2.as_ref().unwrap();
@@ -109,7 +109,7 @@ fn mem_attribution_with_sections() {
 #[cfg(feature = "full_profiling")]
 fn mem_attribution_nested_sections() {
     // Outer section
-    profile!("outer_section", mem_detail);
+    profile!(outer_section, mem_detail);
 
     let outer_profile = outer_section.as_ref().unwrap();
     let outer_start = outer_profile.start_line().unwrap();
@@ -119,7 +119,7 @@ fn mem_attribution_nested_sections() {
     assert_eq!(outer_data.len(), 1024);
 
     // Inner section
-    profile!("inner_section", mem_detail);
+    profile!(inner_section, mem_detail);
 
     let inner_profile = inner_section.as_ref().unwrap();
     let inner_start = inner_profile.start_line().unwrap();
@@ -143,7 +143,7 @@ fn mem_attribution_nested_sections() {
 /// Test long-lived allocations that persist across tests
 #[cfg(feature = "full_profiling")]
 fn mem_attribution_persistent_allocations() {
-    profile!("persistent_allocs", mem_detail);
+    profile!(persistent_allocs, mem_detail);
 
     // Create some persistent allocations
     let mut allocations = Vec::new();
@@ -324,7 +324,7 @@ fn mem_attribution_record_allocation() {
     let file_name = file_stem_from_path_str(file!());
     let fn_name = format!("{file_name}::mem_attribution_record_allocation");
 
-    profile!("record_alloc_section", mem_detail);
+    profile!(record_alloc_section, mem_detail);
 
     // Get the profile
     let profile = record_alloc_section.as_ref().unwrap();

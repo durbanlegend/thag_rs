@@ -1,5 +1,5 @@
 use ra_ap_syntax::{
-    ast::{self, HasName, HasVisibility},
+    ast::{self, HasModuleItem, HasName, HasVisibility, Item},
     ted::{self, Position},
     AstNode, Edition, Parse, SourceFile, SyntaxKind, SyntaxNode,
 };
@@ -67,51 +67,51 @@ fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
         .map(|node| node.clone_for_update())
 }
 
-// fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
-//     // Look for the first non-USE node
-//     let item = tree
-//         .items()
-//         .filter(|item| !matches!(item, Item::Use(_)))
-//         .filter(|item| {
-//             !item.syntax().children_with_tokens().any(|token| {
-//                 token.kind() == SyntaxKind::COMMENT && token.to_string().starts_with("/*[toml]")
-//             })
-//         })
-//         .take(1)
-//         .next();
-//     // eprintln!("item={item:#?}");
-//     (
-//         Position::before(item.expect("Could not unwrap item").syntax()),
-//         true,
-//     )
-// }
+fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
+    // Look for the first non-USE node
+    let item = tree
+        .items()
+        .filter(|item| !matches!(item, Item::Use(_)))
+        .filter(|item| {
+            !item.syntax().children_with_tokens().any(|token| {
+                token.kind() == SyntaxKind::COMMENT && token.to_string().starts_with("/*[toml]")
+            })
+        })
+        .take(1)
+        .next();
+    // eprintln!("item={item:#?}");
+    (
+        Position::before(item.expect("Could not unwrap item").syntax()),
+        true,
+    )
+}
 
 fn instrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
 
-    // let imports = ["use thag_profiler::*;"];
+    let imports = ["use thag_profiler::{enable_profiling, end, profile, profiled};"];
 
-    // for import_text in imports.iter() {
-    //     if !source.contains(import_text) {
-    //         if let Some(import_node) = parse_attr(import_text) {
-    //             let (pos, insert_nl) = find_best_import_position(&tree);
-    //             // eprintln!(
-    //             //     "insert_nl={}, pos={pos:?}, import_text={import_text}",
-    //             //     insert_nl
-    //             // );
-    //             ted::insert(pos, &import_node);
-    //             if insert_nl {
-    //                 let newline = ast::make::tokens::single_newline();
-    //                 let (pos, _) = find_best_import_position(&tree);
-    //                 ted::insert(pos, newline);
-    //             }
-    //         }
-    //     }
-    // }
-    // let newline = ast::make::tokens::single_newline();
-    // let (pos, _) = find_best_import_position(&tree);
-    // ted::insert(pos, newline);
+    for import_text in imports.iter() {
+        if !source.contains(import_text) {
+            if let Some(import_node) = parse_attr(import_text) {
+                let (pos, insert_nl) = find_best_import_position(&tree);
+                // eprintln!(
+                //     "insert_nl={}, pos={pos:?}, import_text={import_text}",
+                //     insert_nl
+                // );
+                ted::insert(pos, &import_node);
+                if insert_nl {
+                    let newline = ast::make::tokens::single_newline();
+                    let (pos, _) = find_best_import_position(&tree);
+                    ted::insert(pos, newline);
+                }
+            }
+        }
+    }
+    let newline = ast::make::tokens::single_newline();
+    let (pos, _) = find_best_import_position(&tree);
+    ted::insert(pos, newline);
 
     for node in tree.syntax().descendants() {
         if let Some(function) = ast::Fn::cast(node.clone()) {

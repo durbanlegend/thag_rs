@@ -1,10 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse::{Parse, ParseStream},
-    LitStr,
-};
+use syn::parse::{Parse, ParseStream};
 
 use syn::{parse_macro_input, ItemFn};
 
@@ -39,94 +36,29 @@ impl Parse for ProfileArgs {
             return Ok(args);
         }
 
-        // First attempt to parse as named parameters
-        if input.peek(syn::Ident) && input.peek2(syn::Token![=]) {
-            while !input.is_empty() {
-                let ident: syn::Ident = input.parse()?;
-                let _: syn::Token![=] = input.parse()?;
+        // Parse as a list of flags
+        let mut first = true;
 
-                let ident_str = ident.to_string();
-                match ident_str.as_str() {
-                    // For backward compatibility
-                    "detailed_memory" => {
-                        let lit: syn::LitBool = input.parse()?;
-                        args.mem_detail = lit.value;
-                    }
-                    // For backward compatibility
-                    "profile_type" => {
-                        let lit: LitStr = input.parse()?;
-                        match lit.value().as_str() {
-                            "time" => args.time = true,
-                            "memory" => args.mem_summary = true,
-                            "both" => args.both = true,
-                            "global" => args.global = true,
-                            _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
-                        }
-                    }
-                    _ => {
-                        return Err(syn::Error::new(
-                            ident.span(),
-                            format!("unknown parameter: {ident_str}"),
-                        ));
-                    }
-                }
-
-                if !input.is_empty() {
-                    let _: syn::Token![,] = input.parse()?;
-                }
+        while !input.is_empty() {
+            if !first {
+                let _: syn::Token![,] = input.parse()?;
             }
-        } else {
-            // Parse as a list of flags
-            let mut first = true;
+            first = false;
 
-            while !input.is_empty() {
-                if !first {
-                    let _: syn::Token![,] = input.parse()?;
-                }
-                first = false;
-
-                if input.peek(syn::Ident) && input.peek2(syn::Token![=]) {
-                    let ident: syn::Ident = input.parse()?;
-                    if ident == "detailed_memory" {
-                        // For backward compatibility
-                        let _: syn::Token![=] = input.parse()?;
-                        let lit: syn::LitBool = input.parse()?;
-                        args.mem_detail = lit.value;
-                        continue; // Continue to next parameter
-                    } else if ident == "profile_type" {
-                        // For backward compatibility
-                        let _: syn::Token![=] = input.parse()?;
-                        let lit: LitStr = input.parse()?;
-                        match lit.value().as_str() {
-                            "time" => args.time = true,
-                            "memory" => args.mem_summary = true,
-                            "both" => args.both = true,
-                            "global" => args.global = true,
-                            _ => return Err(syn::Error::new(lit.span(), "invalid profile type")),
-                        }
-                        continue; // Continue to next parameter
-                    }
+            // Parse as flag
+            let flag: syn::Ident = input.parse()?;
+            match flag.to_string().as_str() {
+                "time" => args.time = true,
+                "mem_summary" => args.mem_summary = true,
+                "mem_detail" => args.mem_detail = true,
+                "both" => args.both = true,
+                "global" => args.global = true,
+                "test" => args.test = true,
+                _ => {
                     return Err(syn::Error::new(
-                        ident.span(),
-                        format!("unexpected parameter: {ident}"),
+                        flag.span(),
+                        format!("unknown flag: {flag}"),
                     ));
-                }
-
-                // Parse as flag
-                let flag: syn::Ident = input.parse()?;
-                match flag.to_string().as_str() {
-                    "time" => args.time = true,
-                    "mem_summary" => args.mem_summary = true,
-                    "mem_detail" => args.mem_detail = true,
-                    "both" => args.both = true,
-                    "global" => args.global = true,
-                    "test" => args.test = true,
-                    _ => {
-                        return Err(syn::Error::new(
-                            flag.span(),
-                            format!("unknown flag: {flag}"),
-                        ));
-                    }
                 }
             }
         }

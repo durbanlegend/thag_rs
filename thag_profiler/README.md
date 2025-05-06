@@ -4,11 +4,12 @@ A straightforward, accurate lightweight cross-platform profiling library for Rus
 
 `thag_profiler` aims to lower the barriers to profiling by offering a quick and easy tool that produces clear and accurate flamegraphs for both synchronous and asynchronous code.
 
-`thag_profiler` provides an `#[enable_profiling]` attribute for your main method, a #`[profiled]` attribute for every function to be profiled, a combinination of `profile!`and optional `end!` macros for code sections, and a choice of detailed or summary memory profiling, allowing you to detect memory hotspots and break them out in detail.
+`thag_profiler` provides a `#[enable_profiling]` attribute for your main or other top-level function to be profiled, a #`[profiled]` attribute to profile any function below it, and a combinination of `profile!`and `end!` macros for to profile any desired code sections.
+
+Each of these macros offers a range of options for any combination of time, memory summary and memory detail profiling.
+For instance you can start with default memory summary profiling to detect functions that are memory hotspots, and then use memory detail profiling on those functions or code sections within them get to the root cause.
 
 `thag_profiler` provides an automated instrumentation tool `thag-instrument` to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
-
-Profiling options are highly configurable, with global runtime options as well as lower-level profile type overrides.
 
 `thag_profiler`'s easy-to-use prompted analysis tool, `thag-analyze`, uses the `inquire` crate to help you select output for analysis and optionally filter out any unwanted functions, and the `inferno` crate to display the results in your browser as interactive flamegraphs and flamecharts. For memory profiles you can also choose to display memory statistics and an allocation size analysis.
 
@@ -25,7 +26,7 @@ Profiling options are highly configurable, with global runtime options as well a
 
 - **Async support**: Seamlessly works with `tokio` or other async code.
 
-- **Automatic instrumentation**: Tools to quickly bulk add and remove profiling annotations to/from a source without losing comments or formatting.
+- **Automatic instrumentation**: Tools to quickly bulk add and remove profiling annotations to/from source code without losing comments or formatting.
 
 - **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks and easily do before-and-after comparisons using `inferno` differential analysis.
 
@@ -71,7 +72,7 @@ Replace `2021` below with your project's Rust edition:
 thag-instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
 ```
 
-* Ensure your original source is backed up before instrumenting.
+* Ensure your original source is backed up or committed before instrumenting.
 
 * Replace `2021` with your project's Rust edition.
 
@@ -87,7 +88,17 @@ Repeat for all modules you want to profile.
 #### b. Manually add profiling annotations:
 
 ```rust
-use thag_profiler::{profiled, profile};
+use thag_profiler::{enable_profiling, profile, profiled};
+
+// Enable profiling for the program.
+// To disable it while keeping the instrumentation, you can either
+// disable the profiling features in the `thag_profiler` dependency
+// or simply specify `#[enable_profiling(no)]`.
+#[enable_profiling]
+fn main() -> u64 {
+    // Function code...
+    42
+}
 
 // Instrument a function
 #[profiled]
@@ -97,6 +108,8 @@ fn expensive_calculation() -> u64 {
 }
 
 // Profile a specific section with `profile!` and matching `end!`
+// #[profiled] function attribute is optional here.
+#[profiled]
 fn complex_operation() {
     // Some code...
 
@@ -231,7 +244,9 @@ When using `thag_profiler` in `thag` scripts, you have to same two options, only
 
 ### 3. Enable Profiling at Runtime
 
-You must enable profiling by adding the `#[enable_profiling]` attribute to your `main` function.
+You must enable profiling by adding the `#[enable_profiling]` attribute to the top-level function to be profiled, which is normally but not necessarily the `main` function.
+
+Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case.
 
 The `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute need not and should not be specified on the same function.
 
@@ -250,10 +265,27 @@ The following optional arguments are available:
 
 - `runtime`: Specifies that a detailed specification will be provided via the `THAG_PROFILER` environment variable.
 
-E.g.:
+- `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, `test`
+
+Examples:
 
 ```rust
+// Basic memory profiling
 #[enable_profiling(memory)]
+fn main() {
+...
+}
+
+// Enable memory profiling for the program, together with detailed memory profiling for the function itself.
+// Detailed memory profiling will pick up all descendant functions as a matter of course, but you may
+// still choose to annotate any of them with #[profiled] for time or memory summary profiling.
+#[enable_profiling(memory, function(mem_detail))]
+fn process_data() {
+...
+}
+
+// Runtime global profiling with function-specific time and memory profiling
+#[enable_profiling(runtime, function(time, mem_detail))]
 fn main() {
 ...
 }
@@ -423,10 +455,10 @@ For testing async functions with the `#[profiled]` attribute, use one of these a
 
 Both methods allow accessing the profile variable inside async function bodies during tests.
 
-The `#[profiled]` attribute supports a profile_type option:
+The `#[profiled]` attribute accepts various flags to control profiling behavior:
 
 ```rust
-// Override the profile type for a specific function (time, memory, or both)
+// Override the profile type for a specific function
 #[profiled(both)]
 fn allocating_function() { /* ... */ }
 ```
@@ -443,35 +475,8 @@ E.g.:
 
 ```Rust
 #[cfg(feature = "time_profiling")]
-#[profiled(detailed_memory=true)]
+#[profiled(mem_detail)]
 ```
-
-### Controlling Profiling at Runtime
-
-At least for the time being, you can programmatically control profiling with the `thag_profile::enable_profiling` and `disable_profiling` functions.
-
-```rust
-use thag_profiler::{disable_profiling, enable_profiling, ProfileType};
-
-fn main() {
-    // Enable profiling programmatically
-    enable_profiling(true, Some(ProfileType::Time));
-
-    // Run code with profiling...
-
-    // Disable profiling for a section
-    disable_profiling();
-    run_unprofiled_section();
-
-    // Re-enable for another section (profile type according to feature "full_profiling" or "time_profiling"))
-    enable_profiling(true, None);
-    run_profiled_section();
-}
-```
-This should be straightforward for synchronous code, but be careful if doing this for async code, because the
-`enable_profiling` and `disable_profiling` functions will respectively switch profiling on and off in real time for all
-instrumented functions and sections in all threads, instead of only for child nodes in the abstract syntax tree of the
-code, which is likely not what you want.
 
 ### Code Section Profiling with `profile!`
 
@@ -617,13 +622,15 @@ Memory profiling (the optional `full_profiling` feature) requires `thag_profiler
 
     This is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
 
-### Detailed memory profiling with a single attribute
-
-The combination of `#[enable_profiling(runtime)]` on `fn main` and the runtime environment `THAG_PROFILER=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation and de-allocation in separate flamegraph (`.folded`) format files.
-
-Obviously this is the slowest profiling option and may be prohibitively slow for some applications.
+Obviously detailed memory profiling is the slowest profiling option and may be prohibitively slow for some applications.
 
 To mitigate this, `thag_profiler` provides a `SIZE_TRACKING_THRESHOLD=<bytes>` environment variable allowing you to track only individual allocations that exceed the specified threshold size (default value 0). This is obviously at the cost of accuracy, particularly if your app mainly does allocations below the threshold. To get a good idea of s suitable threshold, you can first do _detailed_ memory profiling (cancel if you need to once you see significant detailed output being generated) and select `Show Allocation Size Distribution` from the `thag-analyze` tool for the profile. This needs to be the detailed allocations `.folded` file because the normal memory profiling shows aggregated values per function rather than the detailed values being tracked.
+
+### Trick: detailed memory profiling with a single attribute macro
+
+If you just want to analyse a single function in detail without profiling your app as a whole, you can annotate just that function with an annotation that ensures global memory profiling and detailed function profiling, such as `#[enable_profiling(memory, function(mem_detail))]`. This will accurately expose every run-time memory allocation in the flamegraph-formatted (`memory.folded`) file.
+
+To see detailed deallocations as well, instead specify `#[enable_profiling(runtime)]` on the function and use the runtime environment `THAG_PROFILER=memory,<dir>,<log_level>,true` will accurately expose every run-time memory allocation and de-allocation for the function and its descendants in separate detailed flamegraph-formatted (`memory_detail.folded` and `memory_detail_dealloc.folded`) files. To see them for the whole app, you will need to do this on `fn main`.
 
 ### Memory Profiling Limitations and Considerations
 

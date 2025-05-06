@@ -1,9 +1,10 @@
 use ra_ap_syntax::{
-    ast::{self, edit_in_place::Removable, HasName, Use},
+    ast::{self, edit_in_place::Removable, Use},
     ted::{self, Element},
     AstNode, Edition, SourceFile, SyntaxKind, SyntaxNode,
 };
 use std::io::Read;
+use thag_profiler::regex;
 
 /// A stand-alone convenience tool to remove `thag_profiler` profiling instrumentation from a Rust source
 /// program.
@@ -104,39 +105,42 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
         .filter_map(|node| ast::Fn::cast(node))
         .collect();
 
+    let re = regex!(r"#\[.*(profiled|enable_profiling)");
     for function in functions {
         // Do your modifications here
-        let fn_name = function.name().map(|n| n.text().to_string());
+        // let fn_name = function.name().map(|n| n.text().to_string());
         // eprintln!("Function name: {:?}", fn_name.as_deref());
-        let attr_texts = if fn_name.as_deref() == Some("main") {
-            &["#[enable_profiling", "#[thag_profiler::enable_profiling"]
-        } else {
-            &["#[profiled", "#[thag_profiler::profiled"]
-        };
+        // let attr_texts = if fn_name.as_deref() == Some("main") {
+        //     &[
+        //         "#[enable_profiling",
+        //         "#[thag_profiler::enable_profiling",
+        //         "#[cfg_attr(debug_assertions, enable_profiling(runtime))]",
+        //     ]
+        // } else {
+        //     &["#[profiled", "#[thag_profiler::profiled"]
+        // };
         let function_syntax: &SyntaxNode = function.syntax();
         for child in function_syntax.descendants_with_tokens() {
             if let Some(child_node) = child.as_node() {
                 if let Some(attr) = ast::Attr::cast(child_node.clone()) {
                     let text = attr.to_string();
-                    for attr_text in attr_texts {
-                        if text.starts_with(attr_text) {
-                            if let Some(next_sibling_or_token) =
-                                attr.syntax().next_sibling_or_token()
-                            {
-                                if next_sibling_or_token.kind() == SyntaxKind::WHITESPACE {
-                                    // eprintln!(
-                                    //     "Removing whitespace token with text range {:?}",
-                                    //     next_sibling_or_token.text_range()
-                                    // );
-                                    ted::remove(next_sibling_or_token);
-                                }
+                    if re.is_match(&text) {
+                        // for attr_text in attr_texts {
+                        //     if text.starts_with(attr_text) {
+                        if let Some(next_sibling_or_token) = attr.syntax().next_sibling_or_token() {
+                            if next_sibling_or_token.kind() == SyntaxKind::WHITESPACE {
+                                // eprintln!(
+                                //     "Removing whitespace token with text range {:?}",
+                                //     next_sibling_or_token.text_range()
+                                // );
+                                ted::remove(next_sibling_or_token);
                             }
-                            // eprintln!(
-                            //     "Removing attribute with text range {:?}",
-                            //     attr.syntax().text_range()
-                            // );
-                            ted::remove(child_node);
                         }
+                        // eprintln!(
+                        //     "Removing attribute with text range {:?}",
+                        //     attr.syntax().text_range()
+                        // );
+                        ted::remove(child_node);
                     }
                 }
             }
@@ -152,12 +156,13 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
                     stmt.syntax()
                         .descendants()
                         .find(|descendant| {
-                            descendant.kind() == SyntaxKind::MACRO_CALL
-                                && (descendant.text().to_string().starts_with("profile!")
-                                    || descendant
-                                        .text()
-                                        .to_string()
-                                        .starts_with("thag_profile::profile"))
+                            descendant.kind() == SyntaxKind::MACRO_CALL && {
+                                let text = descendant.text().to_string();
+                                text.starts_with("profile!")
+                                    || text.starts_with("thag_profile::profile")
+                                    || text.starts_with("end")
+                                    || text.starts_with("thag_profile::end")
+                            }
                         })
                         .is_some()
                 })

@@ -34,7 +34,6 @@ struct Document {
 }
 
 impl Document {
-    #[profiled]
     fn new(id: usize, content: String) -> Self {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(10));
@@ -55,8 +54,7 @@ impl Document {
         }
     }
 
-    // #[profiled]
-    #[profiled(both, mem_detail)]
+    #[enable_profiling(runtime)]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation with fixed duration
         std::thread::sleep(Duration::from_millis(20));
@@ -75,7 +73,7 @@ impl Document {
         }
     }
 
-    #[profiled]
+    #[enable_profiling(runtime)]
     fn calculate_sentiment(&mut self) -> f64 {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(30));
@@ -111,7 +109,6 @@ impl Document {
     }
 }
 
-#[profiled]
 async fn fetch_document(id: usize) -> Document {
     // Fixed async delay
     sleep(Duration::from_millis(40)).await;
@@ -125,23 +122,19 @@ async fn fetch_document(id: usize) -> Document {
     Document::new(id, content)
 }
 
-#[profiled]
 async fn process_document(mut doc: Document) -> Document {
     // Process document with fixed timing
     doc.count_words();
     doc.calculate_sentiment();
 
     // Small async delay
-    profile!(delay, both, async_fn);
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     sleep(Duration::from_millis(15)).await;
-    end!(delay);
 
     doc.is_processed = true;
     doc
 }
 
-#[profiled]
 async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     // Process documents one by one to make tracing easier
     let mut documents = Vec::with_capacity(count);
@@ -155,7 +148,6 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     documents
 }
 
-#[profiled]
 async fn run_batch(count: usize) {
     // Fixed duration for predictability
     println!(
@@ -174,7 +166,6 @@ async fn run_batch(count: usize) {
     );
 
     // Print results for verification
-    profile!(print_docs, time, mem_summary, async_fn, unbounded);
     for doc in &docs {
         let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         // Small async delay
@@ -192,7 +183,6 @@ async fn run_batch(count: usize) {
 }
 
 #[tokio::main]
-#[cfg_attr(debug_assertions, enable_profiling(runtime))]
 async fn main() {
     // println!(
     //     "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
@@ -208,18 +198,13 @@ async fn main() {
     // disable_profiling();
 
     // profile!(second_batch, global, async_fn);
-    profile!(second_batch, time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
     // println!("Switching only time profiling back on");
     // enable_profiling(true, Some(ProfileType::Time)).unwrap();
-    end!(second_batch);
-
-    profile!(last_batch, time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
-    end!(last_batch);
 
     println!("Profiling data written to folded files in current directory");
 

@@ -24,7 +24,7 @@ use crate::{
         activate_task, create_memory_task, get_task_memory_usage, /* push_task_to_stack, */
         record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    with_allocator, Allocator,
+    warn_once, with_allocator, Allocator,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -947,6 +947,12 @@ pub(crate) fn enable_profiling(
             get_config_profile_type()
         );
 
+        if PROFILING_STATE.load(Ordering::SeqCst) {
+            return Err(ProfileError::General(
+                "Can't enable profiling: already enabled".to_string(),
+            ));
+        }
+
         let final_profile_type = if let Some(profile_type) = maybe_profile_type {
             debug_log!(
                 "enable_profiling: Using provided profile_type={:?}",
@@ -1498,10 +1504,13 @@ impl Profile {
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
-        if !is_profiling_enabled() {
-            eprintln!("Profiling is not enabled , returning None");
-            return None;
-        }
+        warn_once!(
+            !is_profiling_enabled(),
+            || {
+                eprintln!("Profiling is not enabled , returning None");
+            },
+            return None
+        );
 
         // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
         #[cfg(test)]

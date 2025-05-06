@@ -423,7 +423,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
     with_allocator(Allocator::System, || {
-        eprintln!("root_module={root_module}, profile_config={profile_config:#?}");
+        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}");
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling
@@ -445,18 +445,18 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 
         let global_profile_type = get_global_profile_type();
 
-        eprintln!("In init_profiling with global_profile_type={global_profile_type:?}");
+        // eprintln!("In init_profiling with global_profile_type={global_profile_type:?}");
 
         if global_profile_type == ProfileType::Time {
-            eprintln!(
-                "Skipping memory profiling initialization because global_profile_type={global_profile_type:?}"
-            );
+            // eprintln!(
+            //     "Skipping memory profiling initialization because global_profile_type={global_profile_type:?}"
+            // );
         } else {
-            eprintln!("Initializing memory profiling");
+            // eprintln!("Initializing memory profiling");
             mem_tracking::initialize_memory_profiling();
         }
     });
-    eprintln!("Exiting init_profiling");
+    // eprintln!("Exiting init_profiling");
 }
 
 // Provide no-op versions when profiling is disabled

@@ -88,6 +88,51 @@ pub struct CratesFinder {
 
 impl<'a> Visit<'a> for CratesFinder {
     #[profiled]
+    fn visit_attribute(&mut self, attr: &'a syn::Attribute) {
+        // Extract first segment of attribute path for crate identification
+        match &attr.meta {
+            syn::Meta::Path(path) => {
+                if path.segments.len() > 1 {
+                    if let Some(first_seg) = path.segments.first() {
+                        let name = first_seg.ident.to_string();
+                        if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                            debug_log!("visit_attribute (path) pushing {name} to crates");
+                            self.crates.push(name);
+                        }
+                    }
+                }
+            },
+            syn::Meta::List(meta_list) => {
+                // Handle paths in list-style attributes like #[crate::attr(args)]
+                if meta_list.path.segments.len() > 1 {
+                    if let Some(first_seg) = meta_list.path.segments.first() {
+                        let name = first_seg.ident.to_string();
+                        if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                            debug_log!("visit_attribute (list) pushing {name} to crates");
+                            self.crates.push(name);
+                        }
+                    }
+                }
+            },
+            syn::Meta::NameValue(meta_name_value) => {
+                // Handle paths in name-value attributes like #[crate::attr = value]
+                if meta_name_value.path.segments.len() > 1 {
+                    if let Some(first_seg) = meta_name_value.path.segments.first() {
+                        let name = first_seg.ident.to_string();
+                        if !should_filter_dependency(&name) && !self.crates.contains(&name) {
+                            debug_log!("visit_attribute (name-value) pushing {name} to crates");
+                            self.crates.push(name);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Continue normal traversal to catch any paths in the attribute's content
+        syn::visit::visit_attribute(self, attr);
+    }
+    
+    #[profiled]
     fn visit_item_use(&mut self, node: &'a ItemUse) {
         // Handle simple case `use a as b;`
         if let UseTree::Rename(use_rename) = &node.tree {

@@ -21,8 +21,8 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use thag_profiler::{
-    self, /*, disable_profiling*/
-    enable_profiling, end, profile, profiled, /*, ProfileType */
+    self,             /*, disable_profiling*/
+    enable_profiling, /*, end, profile, profiled, ProfileType */
 };
 
 struct Document {
@@ -54,7 +54,6 @@ impl Document {
         }
     }
 
-    #[enable_profiling(runtime)]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation with fixed duration
         std::thread::sleep(Duration::from_millis(20));
@@ -73,7 +72,6 @@ impl Document {
         }
     }
 
-    #[enable_profiling(runtime)]
     fn calculate_sentiment(&mut self) -> f64 {
         // Fixed duration for predictability
         std::thread::sleep(Duration::from_millis(30));
@@ -122,6 +120,7 @@ async fn fetch_document(id: usize) -> Document {
     Document::new(id, content)
 }
 
+#[enable_profiling(runtime, function(mem_detail))]
 async fn process_document(mut doc: Document) -> Document {
     // Process document with fixed timing
     doc.count_words();

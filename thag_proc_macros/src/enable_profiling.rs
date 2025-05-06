@@ -5,7 +5,9 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Ident, ItemFn,
+    parse_macro_input,
+    punctuated::Punctuated,
+    Ident, ItemFn, Token,
 };
 
 #[derive(Default)]
@@ -27,11 +29,68 @@ pub enum ProfileType {
     None, // This variant is used in the codebase even though the diagnostic says otherwise
 }
 
+// Function-level profiling arguments, similar to #[profiled] macro
+#[derive(Default)]
+struct FunctionProfileArgs {
+    /// Flag for time profiling
+    time: bool,
+    /// Flag for memory summary profiling
+    mem_summary: bool,
+    /// Flag for detailed memory profiling
+    mem_detail: bool,
+    /// Flag for both time and memory profiling
+    both: bool,
+    /// Flag for using global profiling settings
+    global: bool,
+    /// Flag for creating profile clone for testing
+    test: bool,
+}
+
+impl Parse for FunctionProfileArgs {
+    fn parse(input: ParseStream) -> Result<Self, syn::Error> {
+        let mut args = Self::default();
+
+        // Handle empty case
+        if input.is_empty() {
+            args.global = true; // Default to global if no args specified
+            return Ok(args);
+        }
+
+        // Parse as a list of flags
+        let flags = Punctuated::<Ident, Token![,]>::parse_terminated(input)?;
+
+        for flag in flags {
+            match flag.to_string().as_str() {
+                "time" => args.time = true,
+                "mem_summary" => args.mem_summary = true,
+                "mem_detail" => args.mem_detail = true,
+                "both" => args.both = true,
+                "global" => args.global = true,
+                "test" => args.test = true,
+                _ => {
+                    return Err(syn::Error::new(
+                        flag.span(),
+                        format!("unknown function profiling flag: {flag}"),
+                    ));
+                }
+            }
+        }
+
+        // If no profiling type was specified, default to global
+        if !args.time && !args.mem_summary && !args.mem_detail && !args.both && !args.global {
+            args.global = true;
+        }
+
+        Ok(args)
+    }
+}
+
 /// Configuration for `enable_profiling` attribute macro
 #[derive(Default)]
 struct ProfilingArgs {
     mode: ProfilingMode,
     profile_type: Option<ProfileType>,
+    function_args: Option<FunctionProfileArgs>,
 }
 
 impl Parse for ProfilingArgs {
@@ -42,6 +101,7 @@ impl Parse for ProfilingArgs {
             return Ok(Self {
                 mode: ProfilingMode::Enabled,
                 profile_type: Some(ProfileType::Time),
+                function_args: None,
             });
         }
 
@@ -50,50 +110,87 @@ impl Parse for ProfilingArgs {
             return Ok(Self {
                 mode: ProfilingMode::Enabled,
                 profile_type: Some(ProfileType::Both),
+                function_args: None,
             });
         }
 
-        // Parse the mode identifier
-        let mode_ident: Ident = input.parse()?;
-        let mode_str = mode_ident.to_string();
+        let mut result = Self::default();
+        let mut mode_set = false;
 
-        Ok(match mode_str.as_str() {
-            "no" => Self {
-                mode: ProfilingMode::Disabled,
-                profile_type: None,
-            },
-            "runtime" => Self {
-                mode: ProfilingMode::Runtime,
-                profile_type: None,
-            },
-            #[allow(clippy::match_same_arms)]
-            "both" => Self {
-                mode: ProfilingMode::Enabled,
-                profile_type: Some(ProfileType::Both),
-            },
-            #[allow(clippy::match_same_arms)]
-            "yes" => Self {
-                mode: ProfilingMode::Enabled,
-                #[cfg(feature = "full_profiling")]
-                profile_type: Some(ProfileType::Both),
-                #[cfg(not(feature = "full_profiling"))]
-                profile_type: Some(ProfileType::Time),
-            },
-            "memory" => Self {
-                mode: ProfilingMode::Enabled,
-                profile_type: Some(ProfileType::Memory),
-            },
-            "time" => Self {
-                mode: ProfilingMode::Enabled,
-                profile_type: Some(ProfileType::Time),
-            },
-            _ => {
-                return Err(syn::Error::new(
-                    mode_ident.span(),
-                    "Expected 'memory', 'time', 'both', 'runtime', 'yes', or 'no'",
-                ));
+        // Parse as a comma-separated list of parameters
+        while !input.is_empty() {
+            if !input.peek(Ident) {
+                return Err(syn::Error::new(input.span(), "Expected identifier"));
             }
-        })
+
+            let ident: Ident = input.parse()?;
+            let param_name = ident.to_string();
+
+            if param_name == "function" {
+                // Parse function-level parameters in parentheses
+                let content;
+                syn::parenthesized!(content in input);
+                result.function_args = Some(content.parse()?);
+            } else {
+                // Handle global parameters
+                match param_name.as_str() {
+                    "no" => {
+                        result.mode = ProfilingMode::Disabled;
+                        mode_set = true;
+                    }
+                    "runtime" => {
+                        result.mode = ProfilingMode::Runtime;
+                        mode_set = true;
+                    }
+                    "both" => {
+                        result.profile_type = Some(ProfileType::Both);
+                        if !mode_set {
+                            result.mode = ProfilingMode::Enabled;
+                            mode_set = true;
+                        }
+                    }
+                    "yes" => {
+                        result.mode = ProfilingMode::Enabled;
+                        #[cfg(feature = "full_profiling")]
+                        {
+                            result.profile_type = Some(ProfileType::Both);
+                        }
+                        #[cfg(not(feature = "full_profiling"))]
+                        {
+                            result.profile_type = Some(ProfileType::Time);
+                        }
+                        mode_set = true;
+                    }
+                    "memory" => {
+                        result.profile_type = Some(ProfileType::Memory);
+                        if !mode_set {
+                            result.mode = ProfilingMode::Enabled;
+                            mode_set = true;
+                        }
+                    }
+                    "time" => {
+                        result.profile_type = Some(ProfileType::Time);
+                        if !mode_set {
+                            result.mode = ProfilingMode::Enabled;
+                            mode_set = true;
+                        }
+                    }
+                    _ => {
+                        return Err(syn::Error::new(
+                            ident.span(),
+                            format!("Unknown parameter: {param_name}. Expected 'memory', 'time', 'both', 'runtime', 'yes', 'no' or 'function(...)'")
+                        ));
+                    }
+                }
+            }
+
+            // Check for comma separator unless we're at the end
+            if !input.is_empty() {
+                input.parse::<Token![,]>()?;
+            }
+        }
+
+        Ok(result)
     }
 }
 
@@ -149,19 +246,12 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let block = &input.block;
     let attrs = &input.attrs;
 
-    // let body = quote!(#block);
-    // eprintln!("body={body:#?}");
-    // let is_async = if is_async { true } else {
-    //     let
-    // };
-
     for attr in attrs {
         assert_ne!(
             quote!(#attr).to_string().as_str(),
             "#[async_std :: main]",
             "#[async_std::main] if present must appear before #[enable_profiling] for correct expansion."
         );
-        // eprintln!("attr={}", quote!(#attr));
         assert_ne!(
             quote!(#attr).to_string().as_str(),
             "#[tokio :: main]",
@@ -169,11 +259,42 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         );
     }
 
-    // let module_path = module_path!();
-    let fn_name_str = fn_name.to_string(); // format!("{fn_name}");
+    let fn_name_str = fn_name.to_string();
+
+    // Determine if detailed memory profiling is enabled from function args
+    let is_detailed_memory = if let Some(fn_args) = &args.function_args {
+        fn_args.mem_detail
+    } else {
+        false
+    };
+
+    // Function profiling type
+    let function_profile_type = if let Some(fn_args) = &args.function_args {
+        #[cfg(feature = "full_profiling")]
+        let profile_type =
+            if fn_args.both || (fn_args.time && (fn_args.mem_summary || fn_args.mem_detail)) {
+                quote! { ::thag_profiler::ProfileType::Both }
+            } else if fn_args.time {
+                quote! { ::thag_profiler::ProfileType::Time }
+            } else if fn_args.mem_summary || fn_args.mem_detail {
+                quote! { ::thag_profiler::ProfileType::Memory }
+            } else {
+                // Default to global
+                quote! { ::thag_profiler::get_global_profile_type() }
+            };
+
+        // When not using full_profiling, always use Time regardless of memory settings
+        #[cfg(not(feature = "full_profiling"))]
+        let profile_type = quote! { ::thag_profiler::ProfileType::Time };
+
+        profile_type
+    } else {
+        // Default to global profile type
+        quote! { ::thag_profiler::get_global_profile_type() }
+    };
 
     let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), ::thag_profiler::get_global_profile_type(), #is_async, ::thag_profiler::is_detailed_memory(), file!(), None, None)
+        ::thag_profiler::Profile::new(None, Some(#fn_name_str), #function_profile_type, #is_async, #is_detailed_memory, file!(), None, None)
     };
 
     #[cfg(not(feature = "full_profiling"))]

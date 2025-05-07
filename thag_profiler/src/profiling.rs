@@ -160,7 +160,7 @@ pub fn get_profile_config() -> ProfileConfiguration {
     }
 
     // No cached config, create one
-    let config = parse_env_profile_config().expect("Expected environment variable `THAG_PROFILER={time|memory|both},[dir],{none}quiet|announce}[,true|false]`");
+    let config = parse_env_profile_config().expect("Expected environment variable `THAG_PROFILER={time|memory|both|none},[dir],{none}quiet|announce}[,true|false]`");
     // eprintln!("No cached config - setting config to {:#?}", config);
     // eprintln!("{:?}", backtrace::Backtrace::new());
 
@@ -237,15 +237,8 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
         let mut errors = Vec::new();
 
         // Parse profile type (first element)
-        let profile_type = if value.first().map_or("", |s| *s).trim().is_empty() {
-            errors.push(
-                "First element (profile type) is empty. Expected 'time', 'memory', or 'both'"
-                    .to_string(),
-            );
-            // eprintln!("THAG_PROFILER: First element is empty");
-            None
-        } else {
-            let profile_type_str = value.first().unwrap().trim();
+        let profile_type = {
+            let profile_type_str = value.first().map_or("", |s| *s).trim();
             // eprintln!("THAG_PROFILER: Parsing profile type '{profile_type_str}'");
             match profile_type_str.parse::<ProfileType>() {
                 Ok(val) => {
@@ -1137,18 +1130,19 @@ pub enum ProfileType {
     None,
 }
 
-impl ProfileType {
-    #[must_use]
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "time" => Some(Self::Time),
-            "memory" => Some(Self::Memory),
-            "both" => Some(Self::Both),
-            _ => None,
-        }
-    }
-}
+// impl ProfileType {
+//     #[must_use]
+//     #[allow(clippy::should_implement_trait)]
+//     pub fn from_str(s: &str) -> Option<Self> {
+//         match s {
+//             "time" => Some(Self::Time),
+//             "memory" => Some(Self::Memory),
+//             "both" => Some(Self::Both),
+//             "none" => Some(Self::None),
+//             _ => None,
+//         }
+//     }
+// }
 
 impl Display for ProfileType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -1183,11 +1177,14 @@ impl FromStr for ProfileType {
             }
             "none" => {
                 // eprintln!("ProfileType::from_str: matched 'none'");
+            "none" | "" => {
+                // eprintln!("ProfileType::from_str: matched 'none' or ''");
                 Ok(Self::None)
             }
             _ => {
-                let err =
-                    format!("Invalid profile type '{s}'. Expected 'time', 'memory', or 'both'");
+                let err = format!(
+                    "Invalid profile type '{s}'. Expected 'time', 'memory', 'both', or 'none'"
+                );
                 // eprintln!("ProfileType::from_str: error: {err}");
                 Err(err)
             }
@@ -2744,10 +2741,15 @@ mod tests_internal {
     #[test]
     #[serial]
     fn test_profiling_profile_type_from_str() {
-        assert_eq!(ProfileType::from_str("time"), Some(ProfileType::Time));
-        assert_eq!(ProfileType::from_str("memory"), Some(ProfileType::Memory));
-        assert_eq!(ProfileType::from_str("both"), Some(ProfileType::Both));
-        assert_eq!(ProfileType::from_str("invalid"), None);
+        assert_eq!(ProfileType::from_str("time"), Ok(ProfileType::Time));
+        assert_eq!(ProfileType::from_str("memory"), Ok(ProfileType::Memory));
+        assert_eq!(ProfileType::from_str("both"), Ok(ProfileType::Both));
+        assert_eq!(ProfileType::from_str("none"), Ok(ProfileType::None));
+        assert_eq!(ProfileType::from_str(""), Ok(ProfileType::None));
+        assert_eq!(
+            ProfileType::from_str("invalid"),
+            Err("Invalid profile type 'invalid'. Expected 'time', 'memory', 'both', or 'none'")
+        );
     }
 
     // Function registry tests

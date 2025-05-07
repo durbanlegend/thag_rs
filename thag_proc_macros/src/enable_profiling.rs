@@ -10,7 +10,7 @@ use syn::{
     Ident, ItemFn, Token,
 };
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq)]
 pub enum ProfilingMode {
     Runtime, // Check environment variable at runtime
     #[default]
@@ -225,6 +225,12 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     assert!(cfg!(feature = "time_profiling"));
 
     let args = parse_macro_input!(attr as ProfilingArgs);
+
+    // #[enabled(no)] specified
+    if args.mode == ProfilingMode::Disabled {
+        return item.into();
+    }
+
     let input = parse_macro_input!(item as ItemFn);
 
     // Check if the function is explicitly async
@@ -324,10 +330,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 use thag_profiler::{disable_profiling, finalize_profiling, init_profiling, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
-        ProfilingMode::Disabled => {
-            quote! {
-                thag_profiler::disable_profiling();
-            }
+        _ => {
+            quote! {}
         }
     };
 
@@ -351,10 +355,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
-        ProfilingMode::Disabled => {
-            quote! {
-                thag_profiler::disable_profiling();
-            }
+        _ => {
+            quote! {}
         }
     };
 
@@ -381,7 +383,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 finalize_profiling();  // Already uses with_allocator(Allocator::System... internally
             }
         }
-        ProfilingMode::Disabled => {
+        _ => {
             quote! {}
         }
     };
@@ -459,9 +461,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 #wrapped_block
             }
         }
-        ProfilingMode::Disabled => quote! {
-            #wrapped_block
-        },
+        _ => unreachable!(),
     };
 
     #[cfg(feature = "full_profiling")]
@@ -512,11 +512,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             #wrapped_block
         },
-        ProfilingMode::Disabled => quote! {
-            disable_profiling();
-
-            #wrapped_block
-        },
+        _ => unreachable!(),
     };
 
     let result = quote! {

@@ -242,13 +242,13 @@ When using `thag_profiler` in `thag` scripts, you have to same two options, only
   */
   ```
 
-### 3. Enable Profiling at Runtime
+### 3. Enable Profiling in Code
 
 You must enable profiling by adding the `#[enable_profiling]` attribute to the top-level function to be profiled, which is normally but not necessarily the `main` function.
 
-Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case.
+If using this attribute to annotate any function other than `main`, you need to take extra care. Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case. The same applies to annotating an async function or a descendant of an async function with `#[enable_profiling]` if this could cause overlap in their execution. It is safer to annotate the function in question with `#[profiled` and the `main` function with `#[enable_profiling]`.
 
-The `#[enable_profiling]` attribute also profiles the annotated function, so the `#[profiled]` attribute need not and should not be specified on the same function.
+The `#[enable_profiling]` attribute also profiles the function it annotates, so the `#[profiled]` attribute need not and should not be specified on the same function.
 
 **#[enable_profiling] arguments**
 The following optional arguments are available:
@@ -259,11 +259,11 @@ The following optional arguments are available:
 
 - `time`: Specifies time profiling only.
 
-- `no`: Disables profiling.
+- `no`: Disables profiling, with zero-cost abstraction.
 
 - `yes`: (Default) Enables profiling according to the feature specified in the `thag_profiler` dependency, which must be either `full_profiling` or `time_profiling`.
 
-- `runtime`: Specifies that a detailed specification will be provided via the `THAG_PROFILER` environment variable.
+- `runtime`: Specifies that a detailed specification will be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration.
 
 - `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, `test`
 
@@ -298,7 +298,7 @@ specified but either the environment variable or its first argument is missing, 
 
     THAG_PROFILER=[<profile_type>],[<output_dir>],[<debug_level>],[<detail>]
 
-    where `<profile_type>`           = `both`, `memory` or `time` (default: none)
+    where `<profile_type>`           = `both`, `memory`, `time` or `none` (default: none)
           `<output_dir>` (optional)  = output directory for `.folded` files.
           `<debug_level>` (optional) = `none` (default) - no debug log
                                        `announce` - display debug log path in user output

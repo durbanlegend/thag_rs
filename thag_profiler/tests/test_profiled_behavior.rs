@@ -89,7 +89,8 @@ async fn profiled_function_with_test_flag() {
         fn_name,
         "test_profiled_behavior::profiled_function_with_test_flag"
     );
-    assert_eq!(profile.registered_name(), fn_name);
+    let stack_str = format!("test_profiled_behavior::test_profiled_behavior;{fn_name}");
+    assert_eq!(profile.registered_name(), stack_str);
 }
 
 // Test memory profiling with detailed memory flag
@@ -207,19 +208,22 @@ async fn profiled_function_both_async_test() {
     let profile = profile.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Both);
     assert!(!profile.is_detailed_memory());
+    let fn_name = profile.fn_name();
     assert_eq!(
-        profile.fn_name(),
+        fn_name,
         "test_profiled_behavior::profiled_function_both_async_test"
     );
+    let stack_str = format!("test_profiled_behavior::test_profiled_behavior;{fn_name}");
+    assert_eq!(profile.registered_name(), stack_str);
     assert_eq!(
-        get_reg_desc_name(profile.fn_name()),
-        Some(format!("async::{}", profile.fn_name()))
+        get_reg_desc_name(&stack_str),
+        Some(format!("async::{fn_name}"))
     );
 }
 
 // Test with legacy param syntax - profile_type
 #[cfg(feature = "time_profiling")]
-#[profiled(profile_type = "time")]
+#[profiled(time)]
 fn profiled_function_legacy_params_test() {
     let profile = profile.as_ref().unwrap();
     assert_eq!(profile.get_profile_type(), ProfileType::Time);
@@ -232,7 +236,7 @@ fn profiled_function_legacy_params_test() {
 
 // Test with legacy detailed_memory param
 #[cfg(feature = "time_profiling")]
-#[profiled(detailed_memory = true)]
+#[profiled(mem_detail)]
 fn profiled_function_detailed_memory_test() {
     let profile = profile.as_ref().unwrap();
 
@@ -252,7 +256,7 @@ fn profiled_function_detailed_memory_test() {
 
 // Test with both legacy params
 #[cfg(feature = "time_profiling")]
-#[profiled(profile_type = "time", detailed_memory = true)]
+#[profiled(time, mem_detail)]
 fn profiled_function_both_legacy_params_test() {
     let profile = profile.as_ref().unwrap();
 
@@ -273,45 +277,37 @@ fn profiled_function_both_legacy_params_test() {
 #[cfg(feature = "time_profiling")]
 #[enable_profiling]
 fn test_profiled_behavior() {
-    // #[cfg(feature = "full_profiling")]
-    // enable_memory_profiling_for_test();
+    let closure = || {
+        #[cfg(feature = "full_profiling")]
+        {
+            profiled_function_memory();
+            profiled_function_memory_summary_test();
+            profiled_function_both_test();
+            profiled_function_time_mem_detail_test();
+            profiled_function_time_mem_summary_test();
+        }
 
-    // #[cfg(not(feature = "full_profiling"))]
-    // enable_time_profiling_for_test();
+        profiled_function_global_test();
+        profiled_function_default_test();
+        profiled_function_legacy_params_test();
+        profiled_function_detailed_memory_test();
+        profiled_function_both_legacy_params_test();
 
-    // // Helper functions to enable profiling using the attribute macro
-    // #[cfg(feature = "full_profiling")]
-    // #[thag_profiler::enable_profiling(memory)]
-    // fn enable_memory_profiling_for_test() {}
+        // Use async-std to create a runtime for async functions
+        use async_std::task::block_on;
 
-    // #[thag_profiler::enable_profiling(time)]
-    // fn enable_time_profiling_for_test() {}
+        // Run the async test functions
+        block_on(profiled_function_time_test());
+        block_on(profiled_function_with_test_flag());
 
-    // Test the synchronous profiled functions
-    #[cfg(feature = "full_profiling")]
-    {
-        profiled_function_memory();
-        profiled_function_memory_summary_test();
-        profiled_function_both_test();
-        profiled_function_time_mem_detail_test();
-        profiled_function_time_mem_summary_test();
-    }
+        #[cfg(feature = "full_profiling")]
+        block_on(profiled_function_both_async_test());
 
-    profiled_function_global_test();
-    profiled_function_default_test();
-    profiled_function_legacy_params_test();
-    profiled_function_detailed_memory_test();
-    profiled_function_both_legacy_params_test();
+        println!("All tests passed!");
+    };
 
-    // Use async-std to create a runtime for async functions
-    use async_std::task::block_on;
+    #[cfg(not(feature = "full_profiling"))]
+    closure();
 
-    // Run the async test functions
-    block_on(profiled_function_time_test());
-    block_on(profiled_function_with_test_flag());
-
-    #[cfg(feature = "full_profiling")]
-    block_on(profiled_function_both_async_test());
-
-    println!("All tests passed!");
+    with_allocator(Allocator::System, closure);
 }

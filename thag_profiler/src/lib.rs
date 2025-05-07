@@ -525,7 +525,7 @@ pub fn finalize_profiling() {
         // Disable profiling
         disable_profiling();
 
-        if global_profile_type != ProfileType::Time {
+        if matches!(global_profile_type, ProfileType::Memory | ProfileType::Both) {
             mem_tracking::finalize_memory_profiling();
         }
 

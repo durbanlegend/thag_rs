@@ -93,6 +93,16 @@ impl ChartType {
     }
 }
 
+// Define analysis types for menu hierarchy
+#[derive(Debug, Clone, Copy)]
+enum AnalysisType {
+    TimeSingle,
+    TimeDifferential,
+    MemorySingle,
+    MemoryDifferential,
+    Exit,
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
@@ -102,10 +112,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Directory for .folded files
     let dir_path = PathBuf::from(args[1].clone());
 
-    // Ensure profiling is disabled for the analyzer
-    // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
-    // profiling::disable_profiling();
     loop {
+        // Main menu - first level
         let analysis_types = vec![
             "Time Profile - Single",
             "Time Profile - Differential",
@@ -117,93 +125,196 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let analysis_type =
             Select::new("Select analysis type:", analysis_types).prompt_skippable()?;
 
-        match analysis_type {
-            Some("Exit") => break,
-            Some("Time Profile - Single") => analyze_single_time_profile(&dir_path)?,
-            Some("Time Profile - Differential") => {
-                analyze_differential_profiles(&dir_path, &ProfileType::Time)?;
-            }
-            Some("Memory Profile - Single") => analyze_memory_profiles(&dir_path)?,
-            Some("Memory Profile - Differential") => {
-                analyze_differential_profiles(&dir_path, &ProfileType::Memory)?;
-            }
+        // Convert string selection to enum
+        let selected_analysis = match analysis_type {
+            Some("Exit") => AnalysisType::Exit,
+            Some("Time Profile - Single") => AnalysisType::TimeSingle,
+            Some("Time Profile - Differential") => AnalysisType::TimeDifferential,
+            Some("Memory Profile - Single") => AnalysisType::MemorySingle,
+            Some("Memory Profile - Differential") => AnalysisType::MemoryDifferential,
             Some(_) => unreachable!(),
             None => {
                 println!("Exiting");
                 return Ok(());
             }
+        };
+
+        // Exit condition
+        if matches!(selected_analysis, AnalysisType::Exit) {
+            break;
+        }
+
+        // Call middle tier - this is what group_profile_files will become
+        if let Err(e) = select_profile_and_analyze(&dir_path, selected_analysis) {
+            eprintln!("Error: {}", e);
         }
     }
 
     Ok(())
 }
 
-fn analyze_single_time_profile(dir_path: &Path) -> ProfileResult<()> {
-    // Get time profile files (exclude memory profiles)
-    let maybe_profile_groups = group_profile_files(dir_path, |f| !f.contains("-memory"))?;
+// Removed unused enum
 
-    let Some(profile_groups) = maybe_profile_groups else {
-        return Ok(());
-    };
+/// Function to analyze a time profile file
+fn analyze_time_profile(file_path: &PathBuf) -> ProfileResult<()> {
+    println!("DEBUG: Starting analyze_time_profile");
 
-    if profile_groups.is_empty() {
-        println!("No time profile files found.");
-        return Ok(());
-    }
+    // Process the selected profile
+    let processed = read_and_process_profile(file_path)?;
+    let stats = build_time_stats(&processed)?;
 
-    match select_profile_file(&profile_groups)? {
-        None => Ok(()), // User selected "Back"
-        Some(file_path) => {
-            let processed = read_and_process_profile(&file_path)?;
-            let stats = build_time_stats(&processed)?;
+    // Action menu loop
+    loop {
+        let options = vec![
+            "Show Aggregated Execution Timeline (Flamegraph)",
+            "...Filter Aggregated Functions (Recursive or Exact Match)",
+            "Show Individual Sequential Execution Timeline (Flamechart)",
+            "...Filter Individual Sequential Functions (Recursive or Exact Match)",
+            "Show Statistics",
+            "Back to Profile Selection",
+        ];
 
-            loop {
-                let options = vec![
-                    "Show Aggregated Execution Timeline (Flamegraph)",
-                    "...Filter Aggregated Functions (Recursive or Exact Match)",
-                    "Show Individual Sequential Execution Timeline (Flamechart)",
-                    "...Filter Individual Sequential Functions (Recursive or Exact Match)",
-                    "Show Statistics",
-                    "Back to Profile Selection",
-                ];
+        let maybe_action = Select::new("Select action:", options).prompt_skippable();
+        println!("DEBUG: Action selection result: {:?}", maybe_action.is_ok());
 
-                let maybe_action = Select::new("Select action:", options).prompt_skippable();
+        let action = match maybe_action {
+            Ok(Some(action)) => action,
+            Ok(None) | Err(_) => {
+                println!("DEBUG: User pressed Esc, going back to profile selection");
+                return Ok(()); // Return to profile selection
+            }
+        };
 
-                let action = if matches!(maybe_action, Err(InquireError::OperationCanceled)) {
-                    return Ok(());
-                } else {
-                    maybe_action?
-                };
+        if action == "Back to Profile Selection" {
+            println!("DEBUG: User selected Back to Profile Selection");
+            return Ok(());
+        }
 
-                match action {
-                    Some("Back to Profile Selection") => break,
-                    Some("Show Aggregated Execution Timeline (Flamegraph)") => {
-                        generate_time_flamegraph(&processed, false)?;
-                    }
-                    Some("...Filter Aggregated Functions (Recursive or Exact Match)") => {
-                        filter_functions(&processed)?.map_or_else(
-                            || Ok(()),
-                            |filtered| generate_time_flamegraph(&filtered, false),
-                        )?;
-                    }
-                    Some("Show Individual Sequential Execution Timeline (Flamechart)") => {
-                        generate_time_flamegraph(&processed, true)?;
-                    }
-                    Some(
-                        "...Filter Individual Sequential Functions (Recursive or Exact Match)",
-                    ) => {
-                        filter_functions(&processed)?.map_or_else(
-                            || Ok(()),
-                            |filtered| generate_time_flamegraph(&filtered, true),
-                        )?;
-                    }
-                    Some("Show Statistics") => {
-                        show_statistics(&stats, &processed);
-                    }
-                    _ => println!("Unknown option"),
+        // Handle the selected action
+        match action {
+            "Show Aggregated Execution Timeline (Flamegraph)" => {
+                if let Err(e) = generate_time_flamegraph(&processed, false) {
+                    println!("Error generating flamegraph: {}", e);
                 }
             }
-            Ok(())
+            "...Filter Aggregated Functions (Recursive or Exact Match)" => {
+                match filter_functions(&processed) {
+                    Ok(Some(filtered)) => {
+                        if let Err(e) = generate_time_flamegraph(&filtered, false) {
+                            println!("Error generating filtered flamegraph: {}", e);
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(e) => println!("Error filtering functions: {}", e),
+                };
+            }
+            "Show Individual Sequential Execution Timeline (Flamechart)" => {
+                if let Err(e) = generate_time_flamegraph(&processed, true) {
+                    println!("Error generating flamechart: {}", e);
+                }
+            }
+            "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
+                match filter_functions(&processed) {
+                    Ok(Some(filtered)) => {
+                        if let Err(e) = generate_time_flamegraph(&filtered, true) {
+                            println!("Error generating filtered flamechart: {}", e);
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(e) => println!("Error filtering functions: {}", e),
+                };
+            }
+            "Show Statistics" => {
+                show_statistics(&stats, &processed);
+            }
+            _ => println!("Unknown option"),
+        }
+    }
+}
+
+/// Function to analyze a memory profile file
+fn analyze_memory_profile(file_path: &PathBuf) -> ProfileResult<()> {
+    println!("DEBUG: Starting analyze_memory_profile");
+
+    let processed = read_and_process_profile(file_path)?;
+
+    // Check if this is an allocation or deallocation file
+    let alloc_type = if processed.memory_data.as_ref().unwrap().dealloc {
+        "Deallocation"
+    } else {
+        "Allocation"
+    };
+
+    let size_distribution_option = format!("Show {alloc_type} Size Distribution");
+
+    // Action menu loop
+    loop {
+        let options = vec![
+            "Show Aggregated Memory Profile (Flamegraph)",
+            "...Filter Aggregated Functions (Recursive or Exact Match)",
+            "Show Individual Sequential Memory Profile (Flamechart)",
+            "...Filter Individual Sequential Functions (Recursive or Exact Match)",
+            "Show Memory Statistics",
+            &size_distribution_option,
+            "Back to Profile Selection",
+        ];
+
+        let maybe_selection = Select::new("Select action:", options).prompt_skippable();
+        println!(
+            "DEBUG: Memory action selection result: {:?}",
+            maybe_selection.is_ok()
+        );
+
+        let selection = match maybe_selection {
+            Ok(Some(selection)) => selection,
+            Ok(None) | Err(_) => {
+                println!("DEBUG: User pressed Esc, going back to profile selection");
+                return Ok(());
+            }
+        };
+
+        if selection == "Back to Profile Selection" {
+            println!("DEBUG: User selected Back to Profile Selection");
+            return Ok(());
+        }
+
+        // Handle the selected action
+        match selection {
+            "Show Aggregated Memory Profile (Flamegraph)" => {
+                if let Err(e) = generate_memory_flamegraph(&processed, false) {
+                    println!("Error: {}", e);
+                }
+            }
+            "...Filter Aggregated Functions (Recursive or Exact Match)" => {
+                if let Err(e) = filter_memory_patterns(&processed) {
+                    println!("Error: {}", e);
+                } else if let Ok(Some(filtered)) = filter_memory_patterns(&processed) {
+                    if let Err(e) = generate_memory_flamegraph(&filtered, false) {
+                        println!("Error: {}", e);
+                    }
+                }
+            }
+            "Show Individual Sequential Memory Profile (Flamechart)" => {
+                if let Err(e) = generate_memory_flamegraph(&processed, true) {
+                    println!("Error: {}", e);
+                }
+            }
+            "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
+                if let Err(e) = filter_memory_patterns(&processed) {
+                    println!("Error: {}", e);
+                } else if let Ok(Some(filtered)) = filter_memory_patterns(&processed) {
+                    if let Err(e) = generate_memory_flamegraph(&filtered, true) {
+                        println!("Error: {}", e);
+                    }
+                }
+            }
+            "Show Memory Statistics" => show_memory_statistics(&processed),
+            s if s == size_distribution_option => {
+                if let Err(e) = show_allocation_distribution(&processed) {
+                    println!("Error: {}", e);
+                }
+            }
+            _ => println!("Unknown option"),
         }
     }
 }
@@ -798,6 +909,96 @@ fn select_time_color_scheme() -> ProfileResult<Option<Palette>> {
 
 type FileGroup = Vec<(String, Vec<PathBuf>)>;
 
+/// Middle-tier function that handles profile selection and then calls appropriate analysis
+fn select_profile_and_analyze(dir_path: &Path, analysis_type: AnalysisType) -> ProfileResult<()> {
+    println!(
+        "DEBUG: Entering select_profile_and_analyze for {:?}",
+        analysis_type
+    );
+
+    // Choose the appropriate filter based on analysis type
+    let profile_filter: Box<dyn Fn(&str) -> bool> = match analysis_type {
+        AnalysisType::TimeSingle | AnalysisType::TimeDifferential => {
+            Box::new(|f| !f.contains("-memory"))
+        }
+        AnalysisType::MemorySingle | AnalysisType::MemoryDifferential => {
+            Box::new(|f| f.contains("-memory"))
+        }
+        AnalysisType::Exit => return Ok(()), // Should never happen
+    };
+
+    // Get profile groups using the filter - this becomes our middle tier menu
+    let maybe_profile_groups = match group_profile_files(dir_path, &profile_filter) {
+        Ok(groups) => groups,
+        Err(e) => {
+            println!("DEBUG: Error in group_profile_files: {}", e);
+            return Ok(()); // Go back to main menu
+        }
+    };
+
+    let Some(profile_groups) = maybe_profile_groups else {
+        println!("DEBUG: No profile groups returned");
+        return Ok(());
+    };
+
+    if profile_groups.is_empty() {
+        match analysis_type {
+            AnalysisType::TimeSingle | AnalysisType::TimeDifferential => {
+                println!("No time profile files found.");
+            }
+            AnalysisType::MemorySingle | AnalysisType::MemoryDifferential => {
+                println!("No memory profile files found.");
+            }
+            AnalysisType::Exit => unreachable!(),
+        }
+        return Ok(());
+    }
+
+    // For differential analysis, we need two profiles
+    if matches!(
+        analysis_type,
+        AnalysisType::TimeDifferential | AnalysisType::MemoryDifferential
+    ) {
+        match select_profile_files(dir_path, profile_filter) {
+            Ok(Some((before, after))) => match analysis_type {
+                AnalysisType::TimeDifferential => {
+                    generate_differential_flamegraph(&ProfileType::Time, &before, &after)?;
+                }
+                AnalysisType::MemoryDifferential => {
+                    generate_differential_flamegraph(&ProfileType::Memory, &before, &after)?;
+                }
+                _ => unreachable!(),
+            },
+            Ok(None) => {
+                println!("DEBUG: User canceled differential profile selection");
+                // Just return to main menu
+            }
+            Err(e) => return Err(e),
+        }
+        return Ok(());
+    }
+
+    // For single profile analysis, we need one profile
+    let selected_profile = match select_profile_file(&profile_groups) {
+        Ok(Some(path)) => path,
+        Ok(None) => {
+            println!("DEBUG: User canceled profile selection, going back to main menu");
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    };
+
+    // Call the appropriate analysis function based on selected analysis type
+    match analysis_type {
+        AnalysisType::TimeSingle => analyze_time_profile(&selected_profile)?,
+        AnalysisType::MemorySingle => analyze_memory_profile(&selected_profile)?,
+        _ => unreachable!(),
+    }
+
+    println!("DEBUG: Exiting select_profile_and_analyze");
+    Ok(())
+}
+
 fn group_profile_files<T: Fn(&str) -> bool>(
     dir_path: &Path,
     filter: T,
@@ -866,17 +1067,33 @@ fn group_profile_files<T: Fn(&str) -> bool>(
             options.push(format!("{}. {} ({} files)", i + 1, group_name, paths.len()));
         }
 
-        let maybe_selection = inquire::Select::new("Select an option:", options).prompt_skippable();
+        // Add additional menu option for going back
+        options.push("Back to Analysis Selection".to_string());
 
-        let selection = if matches!(maybe_selection, Err(InquireError::OperationCanceled)) {
-            dbg!();
-            return Ok(None);
-        } else if let Some(selection) = maybe_selection? {
-            dbg!(&selection);
-            selection
-        } else {
-            dbg!();
-            return Ok(None);
+        let maybe_selection = inquire::Select::new("Select an option:", options).prompt_skippable();
+        println!(
+            "DEBUG: Group selection result: {:?}",
+            maybe_selection.is_ok()
+        );
+
+        let selection = match maybe_selection {
+            Ok(Some(selection)) => {
+                // Check if user selected the Back option
+                if selection == "Back to Analysis Selection" {
+                    println!("DEBUG: User selected Back to Analysis Selection");
+                    return Ok(None); // Return to main menu
+                }
+                selection
+            }
+            Ok(None) | Err(InquireError::OperationCanceled) => {
+                // User pressed Esc or didn't make a selection
+                println!("DEBUG: User pressed Esc in group_profile_files, returning to analysis selection");
+                return Ok(None); // Return None but don't propagate errors
+            }
+            Err(e) => {
+                // For other errors, convert to a ProfileError
+                return Err(ProfileError::General(format!("Input error: {}", e)));
+            }
         };
 
         if selection == "Filter/modify selection" {
@@ -1079,14 +1296,13 @@ fn select_profile_file(
 
     let maybe_selected = Select::new("Select profile to analyze:", file_options).prompt_skippable();
 
-    dbg!(&maybe_selected);
-
-    let selected = if matches!(maybe_selected, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(selected) = maybe_selected? {
-        selected
-    } else {
-        return Ok(None);
+    let selected = match maybe_selected {
+        Ok(Some(selected)) => selected,
+        Ok(None) | Err(InquireError::OperationCanceled) => {
+            // User pressed Esc or didn't make a selection - either way just go back one level
+            return Ok(None);
+        }
+        Err(e) => return Err(ProfileError::General(e.to_string())),
     };
 
     if selected == "Back" {

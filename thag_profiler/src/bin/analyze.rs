@@ -119,14 +119,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match analysis_type {
             Some("Exit") => break,
-            Some("Time Profile - Single") => analyze_single_time_profile(&dir_path)?,
+            Some("Time Profile - Single") => analyze_type(AnalysisType::TimeSingle, &dir_path)?,
             Some("Time Profile - Differential") => {
-                analyze_differential_profiles(&dir_path, &ProfileType::Time)?;
+                analyze_type(AnalysisType::TimeDifferential, &dir_path)?;
             }
-            Some("Memory Profile - Single") => analyze_memory_profiles(&dir_path)?,
+            Some("Memory Profile - Single") => analyze_type(AnalysisType::MemorySingle, &dir_path)?,
             Some("Memory Profile - Differential") => {
-                analyze_differential_profiles(&dir_path, &ProfileType::Memory)?;
+                analyze_type(AnalysisType::MemoryDifferential, &dir_path)?;
             }
+            // Some("Time Profile - Single") => analyze_single_time_profile(&dir_path)?,
+            // Some("Time Profile - Differential") => {
+            //     analyze_differential_profiles(&dir_path, &ProfileType::Time)?;
+            // }
+            // Some("Memory Profile - Single") => analyze_memory_profiles(&dir_path)?,
+            // Some("Memory Profile - Differential") => {
+            //     analyze_differential_profiles(&dir_path, &ProfileType::Memory)?;
+            // }
             Some(_) => unreachable!(),
             None => {
                 println!("Exiting");
@@ -138,20 +146,58 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn analyze_single_time_profile(dir_path: &Path) -> ProfileResult<()> {
-    // Get time profile files (exclude memory profiles)
-    let maybe_profile_groups = group_profile_files(dir_path, |f| !f.contains("-memory"))?;
+// Define analysis types for menu hierarchy
+#[derive(Debug, Clone, Copy)]
+enum AnalysisType {
+    TimeSingle,
+    TimeDifferential,
+    MemorySingle,
+    MemoryDifferential,
+    #[allow(dead_code)]
+    Exit,
+}
 
-    let Some(profile_groups) = maybe_profile_groups else {
-        return Ok(());
+fn analyze_type(analysis_type: AnalysisType, dir_path: &PathBuf) -> ProfileResult<()> {
+    let filter = match analysis_type {
+        AnalysisType::TimeSingle | AnalysisType::TimeDifferential => {
+            |f: &str| -> bool { !f.contains("-memory") }
+        }
+        AnalysisType::MemorySingle | AnalysisType::MemoryDifferential => {
+            |f: &str| -> bool { f.contains("-memory") }
+        }
+        AnalysisType::Exit => return Ok(()),
     };
 
-    if profile_groups.is_empty() {
-        println!("No time profile files found.");
-        return Ok(());
-    }
+    loop {
+        let maybe_profile_group = group_profile_files(dir_path, filter)?;
 
-    match select_profile_file(&profile_groups)? {
+        dbg!(&maybe_profile_group);
+
+        let Some(profile_group) = maybe_profile_group else {
+            return Ok(());
+        };
+
+        if profile_group.is_empty() {
+            println!("No {analysis_type:?} profile files found.");
+            return Ok(());
+        }
+
+        match analysis_type {
+            AnalysisType::TimeSingle => analyze_single_time_profile(&profile_group)?,
+            AnalysisType::TimeDifferential => {
+                analyze_differential_profiles(&profile_group, &ProfileType::Time)?
+            }
+            AnalysisType::MemorySingle => analyze_single_memory_profile(&profile_group)?,
+            AnalysisType::MemoryDifferential => {
+                analyze_differential_profiles(&profile_group, &ProfileType::Memory)?
+            }
+            AnalysisType::Exit => return Ok(()),
+        }
+    }
+}
+
+fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
+    match select_profile_file(&profile_group)? {
         None => Ok(()), // User selected "Back"
         Some(file_path) => {
             let processed = read_and_process_profile(&file_path)?;
@@ -167,39 +213,42 @@ fn analyze_single_time_profile(dir_path: &Path) -> ProfileResult<()> {
                     "Back to Profile Selection",
                 ];
 
-                let maybe_action = Select::new("Select action:", options).prompt_skippable();
+                let maybe_action = Select::new("Select action:", options).prompt_skippable()?;
 
-                let action = if matches!(maybe_action, Err(InquireError::OperationCanceled)) {
-                    return Ok(());
-                } else {
-                    maybe_action?
+                let action = match maybe_action {
+                    Some(action) => action,
+                    None => {
+                        dbg!();
+                        return Ok(());
+                    }
                 };
 
+                dbg!(&action);
+
                 match action {
-                    Some("Back to Profile Selection") => break,
-                    Some("Show Aggregated Execution Timeline (Flamegraph)") => {
+                    "Back to Profile Selection" => break,
+                    "Show Aggregated Execution Timeline (Flamegraph)" => {
                         generate_time_flamegraph(&processed, false)?;
                     }
-                    Some("...Filter Aggregated Functions (Recursive or Exact Match)") => {
+                    "...Filter Aggregated Functions (Recursive or Exact Match)" => {
                         filter_functions(&processed)?.map_or_else(
                             || Ok(()),
                             |filtered| generate_time_flamegraph(&filtered, false),
                         )?;
                     }
-                    Some("Show Individual Sequential Execution Timeline (Flamechart)") => {
+                    "Show Individual Sequential Execution Timeline (Flamechart)" => {
                         generate_time_flamegraph(&processed, true)?;
                     }
-                    Some(
-                        "...Filter Individual Sequential Functions (Recursive or Exact Match)",
-                    ) => {
+                    "...Filter Individual Sequential Functions (Recursive or Exact Match)" => {
                         filter_functions(&processed)?.map_or_else(
                             || Ok(()),
                             |filtered| generate_time_flamegraph(&filtered, true),
                         )?;
                     }
-                    Some("Show Statistics") => {
+                    "Show Statistics" => {
                         show_statistics(&stats, &processed);
                     }
+                    // _ => return Ok(()),
                     _ => println!("Unknown option"),
                 }
             }
@@ -208,37 +257,25 @@ fn analyze_single_time_profile(dir_path: &Path) -> ProfileResult<()> {
     }
 }
 
-fn analyze_differential_profiles(dir_path: &Path, profile_type: &ProfileType) -> ProfileResult<()> {
-    let filter = |filename: &str| match profile_type {
-        ProfileType::Time => !filename.contains("-memory"),
-        ProfileType::Memory => filename.contains("-memory"),
-    };
-    let Some((before, after)) = select_profile_files(dir_path, filter)? else {
-        return Ok(());
-    };
-    generate_differential_flamegraph(profile_type, &before, &after)
+fn analyze_differential_profiles(
+    profile_group: &FileGroup,
+    profile_type: &ProfileType,
+) -> ProfileResult<()> {
+    match select_profile_files(profile_group) {
+        Ok(Some((before, after))) => {
+            generate_differential_flamegraph(profile_type, &before, &after)?
+        }
+        Ok(None) => {
+            eprintln!("No selection made");
+            return Ok(());
+        }
+        Err(e) => eprintln!("{e}"),
+    }
+    Ok(())
 }
 
-fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
-    let maybe_profile_group = group_profile_files(dir_path, |f| f.contains("-memory"))?;
-
-    dbg!(&maybe_profile_group);
-
-    let Some(profile_group) = maybe_profile_group else {
-        return Ok(());
-    };
-
-    if profile_group.is_empty() {
-        println!("No memory profile files found.");
-        return Ok(());
-    }
-
-    let maybe_path_buf = select_profile_file(&profile_group);
-    dbg!(&maybe_path_buf);
-    let path_buf = maybe_path_buf?;
-    dbg!(&path_buf);
-
-    match path_buf {
+fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()> {
+    match select_profile_file(&profile_group)? {
         None => Ok(()), // User selected "Back"
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
@@ -268,12 +305,16 @@ fn analyze_memory_profiles(dir_path: &Path) -> ProfileResult<()> {
                     Select::new("Select action:", options).prompt_skippable();
 
                 let selection = if matches!(maybe_selection, Err(InquireError::OperationCanceled)) {
+                    dbg!();
                     return Ok(());
                 } else if let Some(selection) = maybe_selection? {
                     selection
                 } else {
+                    dbg!();
                     return Ok(());
                 };
+
+                dbg!(&selection);
 
                 match selection {
                     "Back to Profile Selection" => break,
@@ -842,6 +883,7 @@ fn group_profile_files<T: Fn(&str) -> bool>(
             );
         }
 
+        // eprintln!("{:#?}", backtrace::Backtrace::new());
         // Display the current list of files
         println!("\nAvailable profile files:");
         for (i, (group_name, paths)) in filtered_groups.iter().enumerate() {
@@ -868,7 +910,10 @@ fn group_profile_files<T: Fn(&str) -> bool>(
 
         let maybe_selection = inquire::Select::new("Select an option:", options).prompt_skippable();
 
-        let selection = if matches!(maybe_selection, Err(InquireError::OperationCanceled)) {
+        let selection = if matches!(
+            maybe_selection,
+            Err(InquireError::OperationCanceled) | Ok(None)
+        ) {
             dbg!();
             return Ok(None);
         } else if let Some(selection) = maybe_selection? {
@@ -920,6 +965,10 @@ fn group_profile_files<T: Fn(&str) -> bool>(
                         Ok(index) => {
                             if index > 0 && index <= filtered_groups.len() {
                                 // Return the selected group
+                                eprintln!(
+                                    "Returning group {:#?}",
+                                    vec![filtered_groups[index - 1].clone()]
+                                );
                                 return Ok(Some(vec![filtered_groups[index - 1].clone()]));
                             }
                         }
@@ -967,22 +1016,9 @@ fn collect_profile_files<T: Fn(&str) -> bool>(
     Ok(result)
 }
 
-fn select_profile_files<T: Fn(&str) -> bool>(
-    dir_path: &Path,
-    filter: T,
-) -> ProfileResult<Option<(PathBuf, PathBuf)>> {
-    let maybe_profile_groups = group_profile_files(dir_path, filter)?;
-
-    let Some(profile_groups) = maybe_profile_groups else {
-        return Ok(None);
-    };
-
-    if profile_groups.is_empty() {
-        return Err(ProfileError::General("No profile files found".to_string()));
-    }
-
+fn select_profile_files(profile_group: &FileGroup) -> ProfileResult<Option<(PathBuf, PathBuf)>> {
     // First select the script group
-    let script_options: Vec<_> = profile_groups
+    let script_options: Vec<_> = profile_group
         .iter()
         .map(|(name, files)| format!("{} ({} profiles)", name, files.len()))
         .collect();
@@ -990,8 +1026,10 @@ fn select_profile_files<T: Fn(&str) -> bool>(
     let maybe_script_selection =
         Select::new("Select script to compare:", script_options.clone()).prompt_skippable();
 
-    let script_selection = if matches!(maybe_script_selection, Err(InquireError::OperationCanceled))
-    {
+    let script_selection = if matches!(
+        maybe_script_selection,
+        Err(InquireError::OperationCanceled) | Ok(None)
+    ) {
         return Ok(None);
     } else if let Some(script_selection) = maybe_script_selection? {
         script_selection
@@ -999,12 +1037,14 @@ fn select_profile_files<T: Fn(&str) -> bool>(
         return Ok(None);
     };
 
+    dbg!(&script_selection);
+
     let script_idx = script_options
         .iter()
         .position(|s| s == &script_selection)
         .ok_or_else(|| ProfileError::General("Invalid selection".to_string()))?;
 
-    let files = &profile_groups[script_idx].1;
+    let files = &profile_group[script_idx].1;
     if files.len() < 2 {
         return Err(ProfileError::General(
             "Need at least 2 profiles to compare".to_string(),
@@ -1063,30 +1103,27 @@ fn select_profile_files<T: Fn(&str) -> bool>(
     )))
 }
 
-fn select_profile_file(
-    profile_groups: &[(String, Vec<PathBuf>)],
-) -> ProfileResult<Option<PathBuf>> {
-    if profile_groups.is_empty() {
+fn select_profile_file(profile_group: &[(String, Vec<PathBuf>)]) -> ProfileResult<Option<PathBuf>> {
+    if profile_group.is_empty() {
         return Ok(None);
     }
 
-    let mut file_options: Vec<_> = profile_groups
+    let mut file_options: Vec<_> = profile_group
         .iter()
         .flat_map(|(_, files)| files)
         .map(|p| p.to_string_lossy().to_string())
         .collect();
     file_options.push("Back".to_string());
 
-    let maybe_selected = Select::new("Select profile to analyze:", file_options).prompt_skippable();
+    let maybe_selected =
+        Select::new("Select profile to analyze:", file_options).prompt_skippable()?;
 
     dbg!(&maybe_selected);
+    // eprintln!("{:#?}", backtrace::Backtrace::new());
 
-    let selected = if matches!(maybe_selected, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(selected) = maybe_selected? {
-        selected
-    } else {
-        return Ok(None);
+    let selected = match maybe_selected {
+        Some(selected) => selected,
+        None => return Ok(None),
     };
 
     if selected == "Back" {
@@ -1094,7 +1131,7 @@ fn select_profile_file(
     }
 
     // Find the actual PathBuf for the selected file
-    for (_, files) in profile_groups {
+    for (_, files) in profile_group {
         if let Some(file) = files.iter().find(|f| f.to_string_lossy() == selected) {
             return Ok(Some(file.clone()));
         }

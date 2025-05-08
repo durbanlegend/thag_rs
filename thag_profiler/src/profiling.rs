@@ -1175,8 +1175,6 @@ impl FromStr for ProfileType {
                 // eprintln!("ProfileType::from_str: matched 'both'");
                 Ok(Self::Both)
             }
-            "none" => {
-                // eprintln!("ProfileType::from_str: matched 'none'");
             "none" | "" => {
                 // eprintln!("ProfileType::from_str: matched 'none' or ''");
                 Ok(Self::None)

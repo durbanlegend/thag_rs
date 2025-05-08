@@ -1,15 +1,15 @@
 # thag_profiler
 
-A straightforward, accurate lightweight cross-platform profiling library for Rust applications that provides time and/or memory profiling.
+An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling.
 
 `thag_profiler` aims to lower the barriers to profiling by offering a quick and easy tool that produces clear and accurate flamegraphs for both synchronous and asynchronous code.
 
-`thag_profiler` provides a `#[enable_profiling]` attribute for your main or other top-level function to be profiled, a #`[profiled]` attribute to profile any function below it, and a combinination of `profile!`and `end!` macros for to profile any desired code sections.
+`thag_profiler` provides a `#[enable_profiling]` attribute for your main or other top-level function to be profiled, a #`[profiled]` attribute to profile any function that may be called directly or indirectly from this function, and a combinination of `profile!`and `end!` macros for to profile any desired code sections within this scope.
 
-Each of these macros offers a range of options for any combination of time, memory summary and memory detail profiling.
-For instance you can start with default memory summary profiling to detect functions that are memory hotspots, and then use memory detail profiling on those functions or code sections within them get to the root cause.
+Each of these items offers a range of options for any combination of time, memory summary and memory detail profiling.
+For instance you can start out with default memory summary profiling to detect functions that are memory hotspots, and then use memory detail profiling on those functions or code sections within them get to the root cause.
 
-`thag_profiler` provides an automated instrumentation tool `thag-instrument` to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
+`thag_profiler` provides an automated instrumentation tool `thag-instrument` that can be used to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
 
 `thag_profiler`'s easy-to-use prompted analysis tool, `thag-analyze`, uses the `inquire` crate to help you select output for analysis and optionally filter out any unwanted functions, and the `inferno` crate to display the results in your browser as interactive flamegraphs and flamecharts. For memory profiles you can also choose to display memory statistics and an allocation size analysis.
 
@@ -20,7 +20,7 @@ For instance you can start with default memory summary profiling to detect funct
 
 - **Execution time profiling**: Low-overhead profiling to highlight hotspots.
 
-- **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code to avoid interference. They may be summarized by function or section, or broken out in detail where desired.
+- **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code so that the latter can't distort the measurements. Allocations may be summarized by function or section, or broken out in detail where desired. Deallocations may also be tracked, but only at a global detail level.
 
 - **Function and section profiling**: Profiling can be applied to any number of specific code sections, down to single instructions.
 
@@ -28,7 +28,7 @@ For instance you can start with default memory summary profiling to detect funct
 
 - **Automatic instrumentation**: Tools to quickly bulk add and remove profiling annotations to/from source code without losing comments or formatting.
 
-- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks and easily do before-and-after comparisons using `inferno` differential analysis.
+- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks with `inferno` flamegraphs and flamecharts, and easily do before-and-after comparisons using `inferno` differential analysis.
 
 - **Cross-platform**: Works on macOs, Linux and Windows.
 
@@ -202,17 +202,27 @@ You have two options:
     ```toml
     [dependencies]
     thag_profiler = { version = "0.1", features = ["full_profiling"] }
+
+    OR:
+
+    ```toml
+    [dependencies]
+    thag_profiler = { version = "0.1" }
+
+    [features]
+    my_profiling = ["thag_profiler/time_profiling"]
+    default = [my_profiling]
     ```
 
 #### In scripts run with the `thag` script runner
 
-When using `thag_profiler` in `thag` scripts, you have to same two options, only using a `toml` block in place of a `Cargo.toml`:
+When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above, except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only dependency inference and configuration:
 
 **1. Manifest and command line**:
 
   Sample script configuration:
 
-  ```toml
+  ```rust
   /*[toml]
   [dependencies]
   thag_profiler = { version = "0.1" }
@@ -223,6 +233,7 @@ When using `thag_profiler` in `thag` scripts, you have to same two options, only
 
   # OR for comprehensive profiling (time + memory)
   my_profiling = ["thag_profiler/full_profiling"]
+  */
   ```
 
   Then run with:
@@ -240,17 +251,55 @@ When using `thag_profiler` in `thag` scripts, you have to same two options, only
   [dependencies]
   thag_profiler = { version = "0.1", features = ["time_profiling"] }
   */
+
+  OR:
+
+  ```rust
+  /*[toml]
+  [dependencies]
+  thag_profiler = { version = "0.1" }
+
+  [features]
+  my_profiling = ["thag_profiler/full_profiling"]
+  default = [my_profiling]
+  */
+```
+
+**OR**
+
+**3. Dependency inference and/or default feature configuration**:
+
+  The dependency itself may be omitted and will be inferred from imports or if you use the qualified forms of the macros, e.g. #`[thag_profiler::enable_profiling]`.
+
+  The feature may be configured as as a default in `~/.config/thag_rs/config.toml`, which you can conveniently do via `thag -C`.
+
+  ```toml
+  [dependencies.feature_overrides.thag_profiler]
+  required_features = ["full_profiling"]
   ```
+
+  Alternatively you can specify it in a toml block in your script, even in combination with dependency inference`:
+
+  ```rust
+  /*[toml]
+  [features]
+  default = ["thag_profiler/full_profiling"]
+  */
+  ```
+
+As the examples show, you may hybridise these options as long as `thag` is able to pick up the dependencies and the features.
+
 
 ### 3. Enable Profiling in Code
 
 You must enable profiling by adding the `#[enable_profiling]` attribute to the top-level function to be profiled, which is normally but not necessarily the `main` function.
 
-If using this attribute to annotate any function other than `main`, you need to take extra care. Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case. The same applies to annotating an async function or a descendant of an async function with `#[enable_profiling]` if this could cause overlap in their execution. It is safer to annotate the function in question with `#[profiled` and the `main` function with `#[enable_profiling]`.
+If using this attribute to annotate any function other than `main`, you need to take extra care. Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case. The same applies to annotating an async function or a descendant of an async function with `#[enable_profiling]`, if this could cause overlap in their execution. It is safer to do the conventional thing and annotate the function in question with `#[profiled` and the `main` function with `#[enable_profiling]`.
 
 The `#[enable_profiling]` attribute also profiles the function it annotates, so the `#[profiled]` attribute need not and should not be specified on the same function.
 
 **#[enable_profiling] arguments**
+
 The following optional arguments are available:
 
 - `both`: Specifies both time and memory profiling.
@@ -259,11 +308,11 @@ The following optional arguments are available:
 
 - `time`: Specifies time profiling only.
 
-- `no`: Disables profiling, with zero-cost abstraction.
+- `no`: Disables profiling as a convenient alternative to disabling the profiling features of the `thag_profiling` dependency. Unlike disabling the features, this only provides zero-cost abstraction for the current function. However, at runtime the profile instantiation code generated by the other macros will immediately return `None` instead of `Some(Profile)` when profiling is disabled, so the overhead will still be very slight.
 
 - `yes`: (Default) Enables profiling according to the feature specified in the `thag_profiler` dependency, which must be either `full_profiling` or `time_profiling`.
 
-- `runtime`: Specifies that a detailed specification will be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration.
+- `runtime`: Specifies that a detailed specification will be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration. That being said, the overhead will still be very small, for the reasons stated under the `no` option above.
 
 - `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, `test`
 
@@ -299,7 +348,7 @@ specified but either the environment variable or its first argument is missing, 
     THAG_PROFILER=[<profile_type>],[<output_dir>],[<debug_level>],[<detail>]
 
     where `<profile_type>`           = `both`, `memory`, `time` or `none` (default: none)
-          `<output_dir>` (optional)  = output directory for `.folded` files.
+          `<output_dir>` (optional)  = output directory for `.folded` files. The default is the current working directory.
           `<debug_level>` (optional) = `none` (default) - no debug log
                                        `announce` - display debug log path in user output
                                        `quiet` - log without displaying location.
@@ -327,7 +376,7 @@ THAG_PROFILER=memory,,quiet thag demo/document_pipeline_profile_minimal.rs  -ft
     memory profiling only, debug logging without announcing the log file path, and no detailed output `.folded` files.
 ```
 
-The `main` function will be taken to be the root of the profiling callstack.
+The function annotated with `#[enable_profiling]` will be taken to be the root of the profiling callstack.
 
 ```rust
 #[thag_profiler::enable_profiling]
@@ -954,6 +1003,13 @@ The folded stack files are human-readable:
 ```bash
 head your_executable-<yyyymmdd>-<hhmmss>.folded
 ```
+
+### Terminology
+
+#### Ancestor and descendant functions
+An **ancestor function** of a function `f` means any function that may directly or indirectly call function `f` during execution.
+
+A **descendant function** of a function `f` means any function that may be called directly or indirectly by function `f` during execution.
 
 ## License
 

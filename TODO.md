@@ -21,16 +21,12 @@
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event. Not necessary.
 - [ ]  Worked example - e.g. syn as dependency - no need to do this with dependencies now that we have detailed profiling.
-- [ ]  profile_type arg on enable_profiling now redundant
-- [ ]  Docs: should be able to #[enable_profiling] on any 1 function, and all profiled functions should be included.
-       If the decorated function is not the root of all the profiled functions, then the root will be the standard "all".
 - [ ]  Perhaps store async and ?method rather than desc_fn_name.
 - [ ]  Debug Esc at all places in thag-analyze.
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator. Then get rid of demo/profile_file.rs as redundant.
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Unbounded profiles must only go out of scope at the end of the _function_.
-- [ ]  Debug second_batch detailed memory with line numbers and alloc sizes for attributions and drops.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

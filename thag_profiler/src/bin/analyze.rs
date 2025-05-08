@@ -171,8 +171,6 @@ fn analyze_type(analysis_type: AnalysisType, dir_path: &PathBuf) -> ProfileResul
     loop {
         let maybe_profile_group = group_profile_files(dir_path, filter)?;
 
-        dbg!(&maybe_profile_group);
-
         let Some(profile_group) = maybe_profile_group else {
             return Ok(());
         };
@@ -218,12 +216,9 @@ fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
                 let action = match maybe_action {
                     Some(action) => action,
                     None => {
-                        dbg!();
                         return Ok(());
                     }
                 };
-
-                dbg!(&action);
 
                 match action {
                     "Back to Profile Selection" => break,
@@ -301,20 +296,12 @@ fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()>
                 ];
 
                 // Show memory-specific menu and handle selection...
-                let maybe_selection: Result<Option<&str>, InquireError> =
-                    Select::new("Select action:", options).prompt_skippable();
+                let maybe_selection = Select::new("Select action:", options).prompt_skippable()?;
 
-                let selection = if matches!(maybe_selection, Err(InquireError::OperationCanceled)) {
-                    dbg!();
-                    return Ok(());
-                } else if let Some(selection) = maybe_selection? {
-                    selection
-                } else {
-                    dbg!();
-                    return Ok(());
+                let selection = match maybe_selection {
+                    Some(selection) => selection,
+                    None => return Ok(()),
                 };
-
-                dbg!(&selection);
 
                 match selection {
                     "Back to Profile Selection" => break,
@@ -559,14 +546,11 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
             "Exact Match (filter out function only when it has NO children)",
         ],
     )
-    .prompt_skippable();
+    .prompt_skippable()?;
 
-    let filter_mode = if matches!(maybe_filter_mode, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(filter_mode) = maybe_filter_mode? {
-        filter_mode
-    } else {
-        return Ok(None);
+    let filter_mode = match maybe_filter_mode {
+        Some(filter_mode) => filter_mode,
+        None => return Ok(None),
     };
 
     let exact_match = filter_mode.starts_with("Exact Match");
@@ -583,14 +567,11 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
     );
 
     let maybe_to_filter =
-        MultiSelect::new("Select functions to filter out:", function_list).prompt_skippable();
+        MultiSelect::new("Select functions to filter out:", function_list).prompt_skippable()?;
 
-    let to_filter = if matches!(maybe_to_filter, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(to_filter) = maybe_to_filter? {
-        to_filter
-    } else {
-        return Ok(None);
+    let to_filter = match maybe_to_filter {
+        Some(to_filter) => to_filter,
+        None => return Ok(None),
     };
 
     // Apply appropriate filtering based on the chosen mode
@@ -776,14 +757,11 @@ fn select_time_color_scheme() -> ProfileResult<Option<Palette>> {
         "Use last color scheme ({last_used})? (Press 'n' to select a different scheme)"
     ))
     .with_default(true)
-    .prompt_skippable();
+    .prompt_skippable()?;
 
-    let use_last = if matches!(maybe_use_last, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(use_last) = maybe_use_last? {
-        use_last
-    } else {
-        return Ok(None);
+    let use_last = match maybe_use_last {
+        Some(use_last) => use_last,
+        None => return Ok(None),
     };
 
     if use_last {
@@ -815,14 +793,11 @@ fn select_time_color_scheme() -> ProfileResult<Option<Palette>> {
         "Select color scheme:",
         schemes.iter().map(|s| s.name).collect::<Vec<_>>(),
     )
-    .prompt_skippable();
+    .prompt_skippable()?;
 
-    let selection = if matches!(maybe_selection, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(selection) = maybe_selection? {
-        selection
-    } else {
-        return Ok(None);
+    let selection = match maybe_selection {
+        Some(selection) => selection,
+        None => return Ok(None),
     };
 
     // Save the selection
@@ -908,20 +883,12 @@ fn group_profile_files<T: Fn(&str) -> bool>(
             options.push(format!("{}. {} ({} files)", i + 1, group_name, paths.len()));
         }
 
-        let maybe_selection = inquire::Select::new("Select an option:", options).prompt_skippable();
+        let maybe_selection =
+            inquire::Select::new("Select an option:", options).prompt_skippable()?;
 
-        let selection = if matches!(
-            maybe_selection,
-            Err(InquireError::OperationCanceled) | Ok(None)
-        ) {
-            dbg!();
-            return Ok(None);
-        } else if let Some(selection) = maybe_selection? {
-            dbg!(&selection);
-            selection
-        } else {
-            dbg!();
-            return Ok(None);
+        let selection = match maybe_selection {
+            Some(selection) => selection,
+            None => return Ok(None),
         };
 
         if selection == "Filter/modify selection" {
@@ -930,31 +897,25 @@ fn group_profile_files<T: Fn(&str) -> bool>(
                 "Filter options:",
                 vec!["Apply/modify filter", "Clear filter", "Back to selection"],
             )
-            .prompt_skippable();
+            .prompt_skippable()?;
 
-            let filter_action =
-                if matches!(maybe_filter_action, Err(InquireError::OperationCanceled)) {
-                    return Ok(None);
-                } else {
-                    maybe_filter_action?
-                };
+            let filter_action = match maybe_filter_action {
+                Some(filter_action) => filter_action,
+                None => return Ok(None),
+            };
 
             match filter_action {
-                Some("Apply/modify filter") => {
+                "Apply/modify filter" => {
                     let maybe_current_filter = inquire::Text::new("Enter filter string:")
                         .with_initial_value(&current_filter)
-                        .prompt_skippable();
+                        .prompt_skippable()?;
 
-                    current_filter =
-                        if matches!(maybe_current_filter, Err(InquireError::OperationCanceled)) {
-                            return Ok(None);
-                        } else if let Some(current_filter) = maybe_current_filter? {
-                            current_filter
-                        } else {
-                            return Ok(None);
-                        };
+                    current_filter = match maybe_current_filter {
+                        Some(current_filter) => current_filter,
+                        None => return Ok(None),
+                    };
                 }
-                Some("Clear filter") => current_filter.clear(),
+                "Clear filter" => current_filter.clear(),
                 _ => return Ok(None), // Back to selection
             }
         } else {
@@ -965,10 +926,6 @@ fn group_profile_files<T: Fn(&str) -> bool>(
                         Ok(index) => {
                             if index > 0 && index <= filtered_groups.len() {
                                 // Return the selected group
-                                eprintln!(
-                                    "Returning group {:#?}",
-                                    vec![filtered_groups[index - 1].clone()]
-                                );
                                 return Ok(Some(vec![filtered_groups[index - 1].clone()]));
                             }
                         }
@@ -1017,34 +974,8 @@ fn collect_profile_files<T: Fn(&str) -> bool>(
 }
 
 fn select_profile_files(profile_group: &FileGroup) -> ProfileResult<Option<(PathBuf, PathBuf)>> {
-    // First select the script group
-    let script_options: Vec<_> = profile_group
-        .iter()
-        .map(|(name, files)| format!("{} ({} profiles)", name, files.len()))
-        .collect();
+    let files = &profile_group[0].1;
 
-    let maybe_script_selection =
-        Select::new("Select script to compare:", script_options.clone()).prompt_skippable();
-
-    let script_selection = if matches!(
-        maybe_script_selection,
-        Err(InquireError::OperationCanceled) | Ok(None)
-    ) {
-        return Ok(None);
-    } else if let Some(script_selection) = maybe_script_selection? {
-        script_selection
-    } else {
-        return Ok(None);
-    };
-
-    dbg!(&script_selection);
-
-    let script_idx = script_options
-        .iter()
-        .position(|s| s == &script_selection)
-        .ok_or_else(|| ProfileError::General("Invalid selection".to_string()))?;
-
-    let files = &profile_group[script_idx].1;
     if files.len() < 2 {
         return Err(ProfileError::General(
             "Need at least 2 profiles to compare".to_string(),
@@ -1063,14 +994,11 @@ fn select_profile_files(profile_group: &FileGroup) -> ProfileResult<Option<(Path
         .collect();
 
     let maybe_before =
-        Select::new("Select 'before' profile:", file_options.clone()).prompt_skippable();
+        Select::new("Select 'before' profile:", file_options.clone()).prompt_skippable()?;
 
-    let before = if matches!(maybe_before, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(before) = maybe_before? {
-        before
-    } else {
-        return Ok(None);
+    let before = match maybe_before {
+        Some(before) => before,
+        None => return Ok(None),
     };
 
     // Create new options list excluding the 'before' selection
@@ -1079,14 +1007,11 @@ fn select_profile_files(profile_group: &FileGroup) -> ProfileResult<Option<(Path
         .filter(|name| name != &before)
         .collect();
 
-    let maybe_after = Select::new("Select 'after' profile:", after_options).prompt_skippable();
+    let maybe_after = Select::new("Select 'after' profile:", after_options).prompt_skippable()?;
 
-    let after = if matches!(maybe_after, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(after) = maybe_after? {
-        after
-    } else {
-        return Ok(None);
+    let after = match maybe_after {
+        Some(after) => after,
+        None => return Ok(None),
     };
 
     Ok(Some((
@@ -1117,9 +1042,6 @@ fn select_profile_file(profile_group: &[(String, Vec<PathBuf>)]) -> ProfileResul
 
     let maybe_selected =
         Select::new("Select profile to analyze:", file_options).prompt_skippable()?;
-
-    dbg!(&maybe_selected);
-    // eprintln!("{:#?}", backtrace::Backtrace::new());
 
     let selected = match maybe_selected {
         Some(selected) => selected,
@@ -1544,17 +1466,11 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     ];
 
     let maybe_selected_patterns =
-        MultiSelect::new("Select memory patterns to filter out:", patterns).prompt_skippable();
+        MultiSelect::new("Select memory patterns to filter out:", patterns).prompt_skippable()?;
 
-    let selected_patterns = if matches!(
-        maybe_selected_patterns,
-        Err(InquireError::OperationCanceled)
-    ) {
-        return Ok(None);
-    } else if let Some(selected_patterns) = maybe_selected_patterns? {
-        selected_patterns
-    } else {
-        return Ok(None);
+    let selected_patterns = match maybe_selected_patterns {
+        Some(selected_patterns) => selected_patterns,
+        None => return Ok(None),
     };
 
     // Handle custom pattern if selected
@@ -1704,14 +1620,11 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
             "Exact Match (filter out function only when it has NO children)",
         ],
     )
-    .prompt_skippable();
+    .prompt_skippable()?;
 
-    let filter_mode = if matches!(maybe_filter_mode, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(filter_mode) = maybe_filter_mode? {
-        filter_mode
-    } else {
-        return Ok(None);
+    let filter_mode = match maybe_filter_mode {
+        Some(filter_mode) => filter_mode,
+        None => return Ok(None),
     };
 
     let exact_match = filter_mode.starts_with("Exact Match");
@@ -1727,14 +1640,11 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     );
 
     let maybe_to_filter =
-        MultiSelect::new("Select functions to filter out:", function_list).prompt_skippable();
+        MultiSelect::new("Select functions to filter out:", function_list).prompt_skippable()?;
 
-    let to_filter = if matches!(maybe_to_filter, Err(InquireError::OperationCanceled)) {
-        return Ok(None);
-    } else if let Some(to_filter) = maybe_to_filter? {
-        to_filter
-    } else {
-        return Ok(None);
+    let to_filter = match maybe_to_filter {
+        Some(to_filter) => to_filter,
+        None => return Ok(None),
     };
 
     if to_filter.is_empty() {

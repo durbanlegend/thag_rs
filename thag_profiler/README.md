@@ -240,7 +240,7 @@ The desired `thag_profiler` feature - `time_profiling` or `full_profiling` - mus
 
 #### In scripts run with the `thag` script runner
 
-  When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above,   except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only   dependency inference and configuration:
+  When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above, except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only dependency inference and configuration:
 
   **1. Manifest (toml block) only**:
 
@@ -330,7 +330,7 @@ The desired `thag_profiler` feature - `time_profiling` or `full_profiling` - mus
     */
     ```
 
-  As the examples show, you may pair any dependency option with any feature option, as long as `thag` is able to pick up both   the `thag_profiler` dependency itself and the desired `thag_profiler` feature.
+  As the examples show, you may pair any dependency option with any feature option, as long as `thag` is able to pick up both the `thag_profiler` dependency itself and the desired `thag_profiler` feature.
 
 
 ### 3. Run Your Application
@@ -862,7 +862,7 @@ they rely on `rust-analyzer`'s `ra_ap_syntax` and `ra-ap-rustc_lexer` crates rat
 
 Input is from `stdin` and output is to `stdout`.
 
-***NB*** always direct output to a different file.
+***NB:*** always direct output to a different file.
 
 Replace `2021` with your project's Rust edition (2015, 2018, 2021, 2024) as required by the `rust_analyzer` crates:
 
@@ -940,7 +940,7 @@ Flamegraphs and flamecharts are interactive SVGs that allow you to:
 
 You can interact with the above example [here](../assets/flamechart_time_20250312-081119.svg).
 
-`thag` uses the `inferno` crate to generate flamegraphs and flamecharts.
+`thag_profiler` uses the `inferno` crate to generate flamegraphs and flamecharts.
 For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use.
 For memory flamegraphs and flamecharts, it adheres to `inferno`'s memory-optimized color scheme.
 

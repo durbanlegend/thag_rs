@@ -1605,9 +1605,9 @@ impl Profile {
                 // let file_name = std::file!().to_string();
                 // let start_line = line!();
 
-                let profile = Self {
+                let mut profile = Self {
                     profile_type,
-                    start: Some(Instant::now()),
+                    start: None,
                     path,
                     section_name,
                     registered_name: stack,
@@ -1641,6 +1641,8 @@ impl Profile {
                 );
                 // }
 
+                profile.start = Some(Instant::now());
+
                 return Some(profile);
             }
 
@@ -1671,7 +1673,7 @@ impl Profile {
             // Create memory guard
             let memory_guard = TaskGuard::new(task_id);
 
-            let profile = {
+            let mut profile = {
                 // Create the profile with necessary components
                 // Get current module path and line number
                 // let file_name = file!().to_string();
@@ -1679,7 +1681,7 @@ impl Profile {
 
                 Self {
                     profile_type,
-                    start: Some(Instant::now()),
+                    start: None,
                     path,
                     section_name,
                     registered_name: stack,
@@ -1711,6 +1713,8 @@ impl Profile {
                 &profile.file_name
             );
             // }
+
+            profile.start = Some(Instant::now());
 
             Some(profile)
         })
@@ -2198,7 +2202,7 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 impl Drop for Profile {
     fn drop(&mut self) {
         // debug_log!("In drop for Profile {:?}", self);
-        let start = Instant::now();
+        let drop_start = Instant::now();
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
             match self.profile_type {
@@ -2209,7 +2213,10 @@ impl Drop for Profile {
                 ProfileType::Memory | ProfileType::None => todo!(),
             }
         }
-        debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
+        debug_log!(
+            "Time to drop profile: {}ms",
+            drop_start.elapsed().as_millis()
+        );
         flush_debug_log();
     }
 }
@@ -2219,7 +2226,7 @@ impl Drop for Profile {
     fn drop(&mut self) {
         with_allocator(Allocator::System, || {
             // debug_log!("In drop for Profile {:?}", self);
-            let start = Instant::now();
+            let drop_start = Instant::now();
             if let Some(start) = self.start.take() {
                 // Handle time profiling as before
                 match self.profile_type {
@@ -2282,7 +2289,10 @@ impl Drop for Profile {
                 }
             }
 
-            debug_log!("Time to drop profile: {}ms", start.elapsed().as_millis());
+            debug_log!(
+                "Time to drop profile: {}ms",
+                drop_start.elapsed().as_millis()
+            );
             flush_debug_log();
         });
     }

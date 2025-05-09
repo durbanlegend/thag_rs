@@ -9,6 +9,11 @@ tokio = { version = "1", features = ["full"] }
 
 [profile.dev]
 debug-assertions = true
+
+[profile.release]
+debug-assertions = true
+debug = true
+strip = false
 */
 
 /// Test async program (minimalist instrumented version) for `thag_profiler` debugging.

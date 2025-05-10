@@ -16,10 +16,15 @@ use std::{
 
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 
+#[cfg(feature = "time_profiling")]
+use crate::get_root_module;
+
+// Import mem_attribution module functions when full_profiling is enabled
+#[cfg(feature = "full_profiling")]
+use crate::mem_attribution::{deregister_profile, get_next_profile_id, register_profile};
+
 #[cfg(feature = "full_profiling")]
 use crate::{
-    get_root_module,
-    mem_attribution::register_profile,
     mem_tracking::{
         activate_task, create_memory_task, get_task_memory_usage, /* push_task_to_stack, */
         record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
@@ -1208,6 +1213,7 @@ pub struct Profile {
     end_line: Option<u32>,   // Source line where profile was ended (if section explicitly ended)
     detailed_memory: bool,   // Whether to do detailed memory profiling for this profile
     file_name: String,       // Filename where this profile was created
+    instance_id: u64,        // Unique identifier for this Profile instance
     #[cfg(feature = "full_profiling")]
     memory_task: Option<TaskMemoryContext>,
     #[cfg(feature = "full_profiling")]
@@ -1283,6 +1289,11 @@ impl Profile {
     #[must_use]
     pub fn section_name(&self) -> Option<String> {
         self.section_name.clone()
+    }
+
+    #[must_use]
+    pub const fn instance_id(&self) -> u64 {
+        self.instance_id
     }
 
     /// Records a memory allocation in this profile
@@ -1436,6 +1447,11 @@ impl Profile {
         );
 
         let file_name = file_stem_from_path_str(file_name);
+        // Get a unique ID for this profile instance
+        #[cfg(feature = "full_profiling")]
+        let instance_id = get_next_profile_id();
+        #[cfg(not(feature = "full_profiling"))]
+        let instance_id = 0; // Dummy value when full_profiling is disabled
 
         Some(Self {
             profile_type,
@@ -1448,6 +1464,7 @@ impl Profile {
             end_line,
             detailed_memory,
             file_name,
+            instance_id,
             #[cfg(feature = "full_profiling")]
             memory_task: None,
             #[cfg(feature = "full_profiling")]
@@ -1588,6 +1605,11 @@ impl Profile {
             //     "DEBUG: Profile::new with , fn_name='{fn_name}', section_name={section_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
             // );
 
+            #[cfg(feature = "full_profiling")]
+            let instance_id = get_next_profile_id();
+            #[cfg(not(feature = "full_profiling"))]
+            let instance_id = 0; // Dummy value when full_profiling is disabled
+
             // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
             // memory allocations in the profile setup itself in this method.
             if profile_type == ProfileType::Time {
@@ -1616,6 +1638,7 @@ impl Profile {
                     end_line,
                     detailed_memory,
                     file_name,
+                    instance_id,
                     memory_task: None,
                     memory_guard: None,
                 };
@@ -1691,6 +1714,7 @@ impl Profile {
                     end_line,
                     detailed_memory,
                     file_name,
+                    instance_id,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
                 }
@@ -1704,7 +1728,8 @@ impl Profile {
             // Flush logs before calling register_profile
             flush_debug_log();
 
-            // Now register the profile
+            // Now register the profile if full_profiling is enabled
+            #[cfg(feature = "full_profiling")]
             register_profile(&profile);
 
             // Log again after registration completes
@@ -2203,6 +2228,10 @@ impl Drop for Profile {
     fn drop(&mut self) {
         // debug_log!("In drop for Profile {:?}", self);
         let drop_start = Instant::now();
+
+        // First, deregister this profile from the registry
+        deregister_profile(self);
+
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
             match self.profile_type {
@@ -2225,6 +2254,10 @@ impl Drop for Profile {
 impl Drop for Profile {
     fn drop(&mut self) {
         with_allocator(Allocator::System, || {
+            // Capture the information needed for deregistration but use it only at the end
+            #[cfg(feature = "full_profiling")]
+            let instance_id = self.instance_id();
+
             // debug_log!("In drop for Profile {:?}", self);
             let drop_start = Instant::now();
             if let Some(start) = self.start.take() {
@@ -2297,6 +2330,17 @@ impl Drop for Profile {
                 drop_start.elapsed().as_millis()
             );
             flush_debug_log();
+
+            // After all processing is done, signal that the profile should be deregistered
+            // instead of trying to do it ourselves
+            #[cfg(feature = "full_profiling")]
+            {
+                debug_log!("Requesting deregistration of profile instance {instance_id}");
+                flush_debug_log();
+
+                // Use deregister_profile which is now safe due to our changes
+                deregister_profile(self);
+            }
         });
     }
 }

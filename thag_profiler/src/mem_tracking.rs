@@ -344,6 +344,9 @@ fn record_alloc(address: usize, size: usize) {
         return;
     }
 
+    // TODO Call unreachable!() to see if we still need the traditional method below.
+    unreachable!();
+
     // Fall back to traditional method
     current_backtrace.resolve();
 

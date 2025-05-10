@@ -89,7 +89,7 @@ impl ProfileRegistry {
         // Get or create the range sections map for this function
         let range_sections = function_ranges.entry(fn_name.clone()).or_default();
 
-        // Insert the profile reference at this line range
+        // Insert the profile reference at this line range. This will replace ay previous value
         range_sections.insert((start_line, end_line), profile_ref);
 
         debug_log!("Successfully registered profile in module {file_name}, function {fn_name}, lines {start_line:?}..{end_line:?}");

@@ -793,7 +793,6 @@ For memory profiling on Windows, your application requires:
 - **Memory Profiling with Async**: Memory profiling in async contexts is more complex:
   - Works with tokio and smol for most common patterns
   - Not compatible with async_std due to TLS limitations
-  - Task attribution (individual flamechart) may be less precise in highly concurrent async code, since there may be multiple profiles active for different instances of the same function. In such a case, `thag_profiler`'s rule is to attribute the allocation to the most recently instantiated instance. This should not affect the aggregate view.
   - For best results in async code, use explicit section profiling with `profile!(<section_name>, async)`
 
 - **Runtime Control**: Enabling/disabling profiling at runtime in async code affects all instrumented code across all threads, which may not align with the logical structure of async tasks. Plan
@@ -955,6 +954,10 @@ For memory flamegraphs and flamecharts, it adheres to `inferno`'s memory-optimiz
   - Understanding the progression of your application's execution
   - Identifying patterns in memory allocation/deallocation
   - Seeing how different phases of your application behave
+
+Note that `inferno` will still aggregate consecutive entries with the same key into one. So if a profiled function or section `f` is called repeatedly in a loop in a synchronous program, these executions will be shown as one. In an async environment, the consecutive entries for `f` may be arbitrarily interleaved with entries written by unrelated asynchronous profiles being dropped, e.g. `f,f,f,a,f,f,b,c,f`. This will cause `inferno` to group the consecutive entries for `f` in the arbitrary consecutive groups thus created. This does not affect the correctness of the attributions to `f`, but be aware that the distribution may well be arbitrarily misrepresented. We could consider working around this, e.g. with a naming trick, but in the async scenario when multiple instances of `f` are running concurrently, `thag_profiler` can't tell them apart and resorts to arbitrarily attributing the allocation to the most recently instantiated of them, or the closest ancestor if that has been dropped.
+TODO: save duplicate profiles; iterate through them to deregister on drop.
+
 
 For time profiling, flamecharts show when each function executed relative to others. For regular memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that `thag_profiler` `Profile` object generated for that execution of the function is dropped and its `drop` method writes the function's accumulated allocations to the `-memory.folded` file.
 For detailed memory profiling, they are again more significant as they show when the allocations (for `-memory_detail.folded` and deallocations (for `-memory_detail_dealloc.folded`) actually occurred, as they are recorded immediately the allocation or deallocation requests are received and identified by the global allocator.

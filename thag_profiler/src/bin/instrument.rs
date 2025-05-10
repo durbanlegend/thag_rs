@@ -123,9 +123,9 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             let fn_name = function.name().map(|n| n.text().to_string());
             // eprintln!("fn_name={fn_name:?}");
             let attr_texts = if fn_name.as_deref() == Some("main") {
-                vec!["#[thag_profiler::enable_profiling]"]
+                vec!["#[enable_profiling]"]
             } else {
-                vec!["#[thag_profiler::profiled]"]
+                vec!["#[profiled]"]
             };
 
             let fn_token = function.fn_token().expect("Function token is None");

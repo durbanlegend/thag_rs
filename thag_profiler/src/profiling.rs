@@ -2243,7 +2243,10 @@ impl Drop for Profile {
                     ProfileType::Memory | ProfileType::None => (),
                 }
             }
-            debug_log!("Time to write event: {}ms", start.elapsed().as_millis());
+            debug_log!(
+                "Time to write event: {}ms",
+                drop_start.elapsed().as_millis()
+            );
 
             // Handle memory profiling
             if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {

@@ -28,6 +28,9 @@
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Unbounded profiles must only go out of scope at the end of the _function_.
 
+        eprintln!("processed.stacks={:#?}", processed.stacks);
+
+
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs
 cargo run --features=instrument-tool --bin thag-instrument --manifest-path thag_profiler/Cargo.toml -- 2021 < bank/main_with_attrs.rs

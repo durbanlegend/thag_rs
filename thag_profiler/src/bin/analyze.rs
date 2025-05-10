@@ -574,6 +574,7 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
         None => return Ok(None),
     };
 
+    eprintln!("to_filter={to_filter:#?}");
     // Apply appropriate filtering based on the chosen mode
     let filtered_stacks: Vec<String> = if exact_match {
         // In exact match mode, we need to keep any stack where the filtered function
@@ -582,21 +583,17 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
             .stacks
             .iter()
             .filter(|line| {
-                // First, extract the root function name
-                let root_func = line
+                let count = line
+                    .split_once(" ")
+                    .unwrap_or(("", ""))
+                    .0
                     .split(';')
-                    .next()
-                    .and_then(|s| s.split_whitespace().next())
-                    .unwrap_or("");
+                    .skip_while(|s| !to_filter.contains(s))
+                    .filter(|s| !to_filter.contains(s))
+                    // .inspect(|s| println!("s={s}"))
+                    .count();
 
-                // If the root function is in our filter list
-                if to_filter.contains(&root_func) {
-                    // Check if this is a multi-function stack (has children)
-                    return line.split(';').count() > 1;
-                }
-
-                // If the function is not in our filter list, keep it
-                true
+                count > 0
             })
             .cloned()
             .collect()
@@ -606,14 +603,14 @@ fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<Proces
             .stacks
             .iter()
             .filter(|line| {
-                // Get the root function name
-                let func = line
+                let found = line
+                    .split_once(" ")
+                    .unwrap_or(("", ""))
+                    .0
                     .split(';')
-                    .next()
-                    .and_then(|s| s.split_whitespace().next())
-                    .unwrap_or("");
-                // If it's in the filter list, filter it out
-                !to_filter.contains(&func)
+                    .any(|s| !to_filter.contains(&s));
+
+                !found
             })
             .cloned()
             .collect()
@@ -1660,25 +1657,17 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
             .stacks
             .iter()
             .filter(|line| {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() < 2 {
-                    return true; // Keep lines that don't match our expected format
-                }
+                let count = line
+                    .split_once(" ")
+                    .unwrap_or(("", ""))
+                    .0
+                    .split(';')
+                    .skip_while(|s| !to_filter.contains(&s.to_string()))
+                    .filter(|s| !to_filter.contains(&s.to_string()))
+                    // .inspect(|s| println!("s={s}"))
+                    .count();
 
-                // Extract stack trace part (without the size at the end)
-                let stack_str = parts[..parts.len() - 1].join(" ");
-
-                // First, extract the root function name
-                let root_func = stack_str.split(';').next().unwrap_or("").to_string();
-
-                // If the root function is in our filter list
-                if to_filter.contains(&root_func) {
-                    // Check if this is a multi-function stack (has children)
-                    return stack_str.split(';').count() > 1;
-                }
-
-                // If the function is not in our filter list, keep it
-                true
+                count > 0
             })
             .cloned()
             .collect()
@@ -1689,23 +1678,14 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
             .iter()
             .inspect(|stack| eprintln!("Recursive stack: {stack}"))
             .filter(|line| {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() < 2 {
-                    return true; // Keep lines that don't match our expected format
-                }
+                let found = line
+                    .split_once(" ")
+                    .unwrap_or(("", ""))
+                    .0
+                    .split(';')
+                    .any(|s| !to_filter.contains(&s.to_string()));
 
-                // Extract stack trace part (without the size at the end)
-                let stack_str = parts[..parts.len() - 1].join(" ");
-
-                // Get the root function name
-                // let func = stack_str.split(';').next().unwrap_or("").to_string();
-                for func in stack_str.split(';') {
-                    // If it's in the filter list, filter it out
-                    if to_filter.contains(&func.to_string()) {
-                        return false;
-                    }
-                }
-                true
+                !found
             })
             .cloned()
             .collect()

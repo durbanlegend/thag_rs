@@ -745,13 +745,13 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
   The catch-22 with overriding the default zero threshold is that if there are enough small allocations below the threshold to make a significant difference in profiling speed, those small allocations may themselves be worth investigating. So rather than screen them out, you may well get a better outcome by first identifying hotspots using summary profiling, and then doing very focused detailed profiling only on these, avoiding setting a threshold if at all possible.
 
-- **Custom Global Allocator Limitations**: Memory profiling (the optional `full_profiling` feature) requires `thag_profiler` to use a custom global allocator for user code.
+- **Custom Global Allocator**: Memory profiling (the optional `full_profiling` feature) uses a custom global allocator to track memory allocations.
 
-  1. This is incompatible with specifying your own global allocator.
+  1. This is incompatible with specifying your own global allocator in your application (`#[global_allocator]`), as Rust only allows one global allocator.
 
-  2. It is also incompatible with std::thread_local storage (TLS) in your code or its dependencies. You will know if you see an error: "fatal runtime error: the global allocator may not use TLS with destructors".
+  2. **Note about thread-local storage (TLS)**: The profiler is designed to be compatible with code that uses thread-local storage. If you encounter the error "fatal runtime error: the global allocator may not use TLS with destructors", please report it as a bug.
 
-      This is a known issue with `async_std`, but not with its official replacement `smol`, nor with `tokio`.
+     In older versions of `async_std` (pre-1.10), there were known interactions that could cause this error in certain usage patterns. If you experience issues with a particular async runtime, consider trying alternatives like `smol` or `tokio`.
 
 - **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
 
@@ -797,11 +797,12 @@ For memory profiling on Windows, your application requires:
 
 - **Memory Profiling with Async**: Memory profiling in async contexts is more complex:
   - Works with tokio and smol for most common patterns
-  - Not compatible with async_std due to TLS limitations
-  - For best results in async code, use explicit section profiling with `profile!(<section_name>, async)`
+  - Examples of using `thag_profiler` in async contexts may be found at:
 
-- **Runtime Control**: Enabling/disabling profiling at runtime in async code affects all instrumented code across all threads, which may not align with the logical structure of async tasks. Plan
-your profiling strategy accordingly.
+    - `https://github.com/durbanlegend/thag_rs/demo/document_pipeline_profile.rs` (tokio)
+    - `https://github.com/durbanlegend/thag_rs/demo/smol_chat_server_profile.rs` (smol)
+    - `https://github.com/durbanlegend/thag_rs/demo/flume_async_profile.rs` (async-std)
+  - For best results in async code, use explicit section profiling with `profile!(<section_name>, async)`
 
 ### Implementation Details
 

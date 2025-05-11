@@ -753,9 +753,11 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
      In older versions of `async_std` (pre-1.10), there were known interactions that could cause this error in certain usage patterns. If you experience issues with a particular async runtime, consider trying alternatives like `smol` or `tokio`.
 
+ 3. **Long-Running Applications**: For long-running applications like servers, consider using `start_periodic_profiling(interval)` to periodically write profiling data rather than relying solely on cleanup at application exit, especially if planning to terminate the app by cancelling it via Ctrl-C.
+
 - **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
 
- - **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
+- **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
    across your entire application stack, revealing hidden costs from dependencies like async runtimes.
 
 Detailed memory profiling will allow you to drill down into these allocations as well as the resulting deallocations.

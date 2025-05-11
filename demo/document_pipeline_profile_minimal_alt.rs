@@ -9,6 +9,12 @@ tokio = { version = "1", features = ["full"] }
 
 [profile.dev]
 debug-assertions = true
+
+[profile.release]
+debug-assertions = true
+
+[build.rustflags]
+#["force-unwind-tables"]
 */
 
 /// Test async program (minimalist instrumented version) for `thag_profiler` debugging.
@@ -21,8 +27,8 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use thag_profiler::{
-    self,             /*, disable_profiling*/
-    enable_profiling, /*, end, profile, profiled, ProfileType */
+    self, /*, disable_profiling*/
+    enable_profiling, profiled, /*, end, profile, ProfileType */
 };
 
 struct Document {
@@ -120,7 +126,6 @@ async fn fetch_document(id: usize) -> Document {
     Document::new(id, content)
 }
 
-#[enable_profiling(runtime, function(mem_detail))]
 async fn process_document(mut doc: Document) -> Document {
     // Process document with fixed timing
     doc.count_words();
@@ -147,6 +152,7 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     documents
 }
 
+#[profiled]
 async fn run_batch(count: usize) {
     // Fixed duration for predictability
     println!(
@@ -182,6 +188,7 @@ async fn run_batch(count: usize) {
 }
 
 #[tokio::main]
+#[enable_profiling(runtime, function(time, mem_summary))]
 async fn main() {
     // println!(
     //     "thag_profiler::PROFILING_MUTEX.is_locked()? {}",

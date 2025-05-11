@@ -19,8 +19,6 @@ use async_channel::{bounded, Receiver, Sender};
 use async_dup::Arc;
 use smol::{io, prelude::*, Async};
 
-use thag_profiler::{enable_profiling, end, profile, profiled}; 
-
 /// An event on the chat server.
 enum Event {
     /// A client has joined.
@@ -34,7 +32,6 @@ enum Event {
 }
 
 /// Dispatches events to clients.
-#[profiled] 
 async fn dispatch(receiver: Receiver<Event>) -> io::Result<()> {
     // Currently active clients.
     let mut map = HashMap::<SocketAddr, Arc<Async<TcpStream>>>::new();
@@ -67,7 +64,6 @@ async fn dispatch(receiver: Receiver<Event>) -> io::Result<()> {
 }
 
 /// Reads messages from the client and forwards them to the dispatcher task.
-#[profiled] 
 async fn read_messages(sender: Sender<Event>, client: Arc<Async<TcpStream>>) -> io::Result<()> {
     let addr = client.get_ref().peer_addr()?;
     let mut lines = io::BufReader::new(client).lines();
@@ -79,7 +75,6 @@ async fn read_messages(sender: Sender<Event>, client: Arc<Async<TcpStream>>) -> 
     Ok(())
 }
 
-#[enable_profiling] 
 fn main() -> io::Result<()> {
     smol::block_on(async {
         // Create a listener for incoming client connections.

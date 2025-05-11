@@ -49,55 +49,172 @@ pub enum Allocator {
 
 // Thread-local allocator state with a recursion counter
 thread_local! {
-    static ALLOCATOR_STATE: std::cell::RefCell<(Allocator, u32)> = 
+    static ALLOCATOR_STATE: std::cell::RefCell<(Allocator, u32)> =
         std::cell::RefCell::new((Allocator::TaskAware, 0));
+}
+
+// Inheritable thread-local context that can be propagated across thread boundaries
+std::thread_local! {
+    // This needs to be accessible through std::thread_local! for async tasks to inherit it
+    pub static CURRENT_ALLOCATOR_CONTEXT: std::cell::Cell<Allocator> = std::cell::Cell::new(Allocator::TaskAware);
+}
+
+// Function to initialize thread's allocator state for cross-thread contexts (like async tasks)
+pub fn initialize_thread_allocator_context() {
+    let inherited = CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get());
+    pub fn initialize_thread_allocator_context() {
+        // Safely get inherited context - catch panics during thread termination
+        let inherited =
+            match std::panic::catch_unwind(|| CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get())) {
+                Ok(allocator) => allocator,
+                Err(_) => Allocator::System, // Default to system allocator if TLS access fails
+            };
+
+        // Access thread-local state with panic protection
+        let _ = std::panic::catch_unwind(|| {
+            ALLOCATOR_STATE.with(|state| {
+                if let Ok(mut state) = state.try_borrow_mut() {
+                    if state.1 == 0 {
+                        state.0 = inherited;
+
+                        // Get thread ID safely without keeping thread handle
+                        if let Ok(thread_id) = std::panic::catch_unwind(|| std::thread::current().id()) {
+                            let current = std::thread::current();
+                            let thread_name = current.name().unwrap_or("unnamed");
+
+                            debug_log!(
+                                "Initializing thread ({:?}/{}) allocator context to {:?} from parent thread",
+                                thread_id,
+                                thread_name,
+                                inherited
+                            );
+                        }
+                    }
+                }
+            });
+        });
+    }
 }
 
 // Function to get current allocator type
 pub fn current_allocator() -> Allocator {
-    ALLOCATOR_STATE.with(|state| state.borrow().0)
+    // Try to initialize the allocator context if this is a new thread
+    initialize_thread_allocator_context();
+
+    ALLOCATOR_STATE.with(|state| {
+        let current = state.borrow().0;
+
+        // Get thread info without holding a thread reference
+        let thread_id = std::thread::current().id();
+        let is_main_thread = std::thread::current()
+            .name()
+            .map_or(false, |name| name.contains("main"));
+
+        if is_main_thread {
+            debug_log!(
+                "current_allocator returning {:?} on thread {:?}",
+                current,
+                thread_id
+            );
+        }
+
+        // Update the thread-local context for potential child threads
+        CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(current));
+
+        current
+    })
 }
 
 // Function to run code with a specific allocator
 pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T {
+    // Initialize thread allocator context if needed (but avoid too much debug output)
+    // initialize_thread_allocator_context();
+
     // Update the allocator state with recursion tracking
-    ALLOCATOR_STATE.with(|state| {
+    let (prev_allocator, _prev_counter) = ALLOCATOR_STATE.with(|state| {
         let mut state_mut = state.borrow_mut();
+        let prev = (state_mut.0, state_mut.1);
+
         if state_mut.0 == req_alloc {
             // Already using this allocator, just increment counter
             state_mut.1 += 1;
+            // debug_log!("with_allocator: already using {:?}, incremented counter to {}",
+            //          req_alloc, state_mut.1);
         } else if state_mut.1 == 0 {
             // Not recursive, change the allocator
+            // debug_log!("with_allocator: changing allocator from {:?} to {:?}",
+            //          state_mut.0, req_alloc);
             state_mut.0 = req_alloc;
+
+            // Update the thread context for inheritance by child threads
+            CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(req_alloc));
+        } else {
+            // debug_log!("with_allocator: in recursive call (depth={}), keeping allocator {:?} instead of requested {:?}",
+            //          state_mut.1, state_mut.0, req_alloc);
         }
-        // Otherwise, we're in a recursive call with a different allocator,
-        // so we keep the current one and don't change the counter
+        prev
     });
-    
+
     // Run the function
     let result = f();
-    
+
     // Reset the state
     ALLOCATOR_STATE.with(|state| {
         let mut state_mut = state.borrow_mut();
         if state_mut.1 > 0 {
             // Decrement recursion counter
             state_mut.1 -= 1;
+            // debug_log!("with_allocator: decremented counter to {}, allocator is {:?}",
+            //         state_mut.1, state_mut.0);
+        }
+
+        // If we've unwound all recursive calls and the allocator changed, log it
+        if state_mut.1 == 0 && state_mut.0 != prev_allocator {
+            // debug_log!("with_allocator: function completed, allocator is now {:?}", state_mut.0);
+
+            // Update the thread context for inheritance
+            CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(state_mut.0));
         }
     });
-    
+
     // Return the result
     result
 }
 
-// A simplified version that doesn't rely on thread-local storage, used only 
+// A simplified version that doesn't rely on thread-local storage, used only
 // for the final operations in special contexts to avoid recursion issues
 #[inline(always)]
 pub fn with_system_allocator<T, F: FnOnce() -> T>(f: F) -> T {
-    // We directly use the System allocator without any thread-local tracking
-    // This is used only in specific contexts where we know we need to avoid
-    // any recursive calls to with_allocator
+    // Temporarily force the allocator to System without using thread-locals
+    // This provides a guaranteed escape from recursion
+    // debug_log!("with_system_allocator: forcing System allocator for critical operation");
+
+    // Save the current state
+    let saved_state = ALLOCATOR_STATE.with(|state| {
+        let state_ref = state.borrow();
+        (state_ref.0, state_ref.1)
+    });
+
+    // Force System allocator
+    ALLOCATOR_STATE.with(|state| {
+        let mut state_mut = state.borrow_mut();
+        state_mut.0 = Allocator::System;
+    });
+
+    // Execute the function with System allocator
     let result = f();
+
+    // Restore previous state
+    ALLOCATOR_STATE.with(|state| {
+        let mut state_mut = state.borrow_mut();
+        state_mut.0 = saved_state.0;
+        state_mut.1 = saved_state.1;
+
+        // Also update the thread-local for inheritance
+        CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(state_mut.0));
+    });
+
+    // debug_log!("with_system_allocator: restored previous allocator state");
     result
 }
 
@@ -133,10 +250,21 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
             if !ptr.is_null() && is_profiling_state_enabled() {
                 let size = layout.size();
-                // Potentially skip small allocations
+                // Always log allocations to debug
+                debug_log!(
+                    "TaskAwareAllocator::alloc - allocated {} bytes at {:p}",
+                    size,
+                    ptr
+                );
+
+                // Potentially skip small allocations for tracking
                 if size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
-
+                    debug_log!(
+                        "TaskAwareAllocator::alloc - RECORDING allocation of size={} at {:p}",
+                        size,
+                        ptr
+                    );
                     record_alloc(address, size);
                 }
             }
@@ -195,7 +323,7 @@ fn record_alloc(address: usize, size: usize) {
     thread_local! {
         static TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
     }
-    
+
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
@@ -210,20 +338,27 @@ fn record_alloc(address: usize, size: usize) {
 
     let profile_type = get_global_profile_type();
     if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
-        // debug_log!(
-        //     "Skipping allocation recording because profile_type={:?}",
-        //     profile_type
-        // );
+        debug_log!(
+            "Skipping allocation recording because profile_type={:?}",
+            profile_type
+        );
         return;
     }
 
     // Check if we're already tracking to prevent recursion
     let already_tracking = TRACKING.with(|flag| flag.get());
-    
+
     // Just return if we're already tracking, no need to assert or panic
     if already_tracking {
+        debug_log!("record_alloc: already tracking allocation, skipping to avoid recursion");
         return;
     }
+
+    debug_log!(
+        "record_alloc: processing allocation at address={:p}, size={}",
+        address as *const u8,
+        size
+    );
 
     // Set tracking flag and create guard for cleanup
     TRACKING.with(|flag| flag.set(true));
@@ -235,6 +370,7 @@ fn record_alloc(address: usize, size: usize) {
     let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
     // debug_log!("Calling extract_callstack");
+    debug_log!("Beginning backtrace capture for allocation of size={size}");
     let mut current_backtrace = Backtrace::new();
 
     // TODO phase out - useful for debugging though
@@ -433,10 +569,26 @@ fn record_alloc(address: usize, size: usize) {
 
 #[allow(clippy::missing_panics_doc, reason = "debug_assertions")]
 pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
+    // Get thread info without holding a thread reference
+    let thread_id = std::thread::current().id();
+    let thread_name = std::thread::current()
+        .name()
+        .unwrap_or("unnamed")
+        .to_string();
+
+    debug_log!(
+        "RECORDING ALLOCATION: thread={:?}/{}, address={:p}, size={}, task_id={}",
+        thread_id,
+        thread_name,
+        address as *const u8,
+        size,
+        task_id
+    );
     let start_record_alloc = Instant::now();
 
     debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
     let mut registry = ALLOC_REGISTRY.lock();
+
     registry
         .task_allocations
         .entry(task_id)
@@ -459,6 +611,8 @@ pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
         assert_eq!(sz, size);
         assert_eq!(addr, address);
         assert_eq!(reg_task_id, task_id);
+    } else {
+        drop(registry);
     }
 
     debug_log!(
@@ -576,7 +730,7 @@ pub fn record_dealloc(address: usize, size: usize) {
     thread_local! {
         static TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
     }
-    
+
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
@@ -608,7 +762,7 @@ pub fn record_dealloc(address: usize, size: usize) {
 
     // Check if we're already tracking to prevent recursion
     let already_tracking = TRACKING.with(|flag| flag.get());
-    
+
     // Just return if we're already tracking, no need to assert or panic
     if already_tracking {
         return;
@@ -735,14 +889,58 @@ unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         // Get current allocator type from thread-local storage
         let current = current_allocator();
-        match current {
+
+        // Log larger allocations to help debug which allocator is being used
+        if layout.size() > 1024 {
+            // Get thread info without holding a thread reference
+            let thread_id = std::thread::current().id();
+            let thread_name = std::thread::current()
+                .name()
+                .unwrap_or("unnamed")
+                .to_string();
+
+            debug_log!(
+                "Dispatcher::alloc - thread={:?}/{}, size={}, using {:?}",
+                thread_id,
+                thread_name,
+                layout.size(),
+                current
+            );
+        }
+
+        let ptr = match current {
             Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
             Allocator::System => unsafe { self.system.alloc(layout) },
+        };
+
+        // For very large allocations, also log the pointer
+        if layout.size() > 10240 {
+            let backtrace = backtrace::Backtrace::new_unresolved();
+            debug_log!(
+                "Allocated ptr={:p} of size={} with allocator={:?}\nBacktrace: {:?}",
+                ptr,
+                layout.size(),
+                current,
+                backtrace
+            );
         }
+
+        ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         let current = current_allocator();
+
+        // Log larger deallocations
+        if layout.size() > 10240 {
+            debug_log!(
+                "Dispatcher::dealloc - ptr={:p}, size={}, using {:?}",
+                ptr,
+                layout.size(),
+                current
+            );
+        }
+
         match current {
             Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },

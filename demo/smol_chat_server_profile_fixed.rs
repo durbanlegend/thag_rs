@@ -1,39 +1,33 @@
 /*[toml]
 [dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling"] }
 thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
+smol = "1.3.0"
+async-channel = "1.9.0"
+async-dup = "1.2.2"
 */
 
-//! A TCP chat server.
+//! A TCP chat server with profiling instrumentation.
 //!
-//! First start a server:
-//!
-//! ```
-//! cargo run --example chat-server
-//! ```
-//!
-//! Then start clients:
+//! First start the server, then connect with:
 //!
 //! ```
-//! cargo run --example chat-client
+//! nc localhost 6000
 //! ```
 
 use async_channel::{bounded, Receiver, Sender};
-use std::sync::Arc;
-use smol::{future::Future, io, prelude::*, Async, Timer};
+use async_dup::Arc as AsyncArc;
+use smol::{io, prelude::*, Async, Timer};
 use std::collections::HashMap;
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
-use thag_profiler::{
-    enable_profiling, profiled, ProfileConfiguration, ProfileType,
-};
+use thag_profiler::{enable_profiling, profiled, ProfileConfiguration, ProfileType};
 
 /// An event on the chat server.
 enum Event {
     /// A client has joined.
-    Join(SocketAddr, Arc<Async<TcpStream>>),
+    Join(SocketAddr, AsyncArc<Async<TcpStream>>),
 
     /// A client has left.
     Leave(SocketAddr),
@@ -47,7 +41,7 @@ enum Event {
 async fn dispatch(receiver: Receiver<Event>) -> io::Result<()> {
     println!("Dispatch task started");
     // Currently active clients.
-    let mut map = HashMap::<SocketAddr, Arc<Async<TcpStream>>>::new();
+    let mut map = HashMap::<SocketAddr, AsyncArc<Async<TcpStream>>>::new();
 
     // Receive incoming events.
     while let Ok(event) = receiver.recv().await {
@@ -73,6 +67,7 @@ async fn dispatch(receiver: Receiver<Event>) -> io::Result<()> {
             stream.write_all(output.as_bytes()).await.ok();
         }
     }
+    println!("Dispatch task ended");
     Ok(())
 }
 
@@ -80,7 +75,7 @@ async fn dispatch(receiver: Receiver<Event>) -> io::Result<()> {
 #[profiled]
 async fn read_messages(
     sender: Sender<Event>,
-    client: Arc<Async<TcpStream>>,
+    client: AsyncArc<Async<TcpStream>>,
 ) -> io::Result<()> {
     let addr = client.get_ref().peer_addr()?;
     let mut lines = io::BufReader::new(client).lines();
@@ -97,16 +92,19 @@ fn main() -> io::Result<()> {
     // Initialize profiling manually to ensure we capture everything
     let mut config = ProfileConfiguration::default();
     config.set_profile_type(ProfileType::Both);
+    
+    // Pre-initialize TLS for all threads
+    println!("Initializing profiling...");
     thag_profiler::init_profiling("chat_server", config);
-    
-    println!("Chat server starting with profiling enabled...");
-    
-    // Set a timer for auto-shutdown instead of relying on signals
-    let shutdown_time = Duration::from_secs(60);
-    println!("Server will automatically stop after {} seconds", shutdown_time.as_secs());
+    println!("Profiling initialized.");
     
     // Create a simple atomic flag for shutdown coordination
     let term = Arc::new(AtomicBool::new(false));
+    
+    // Set a timer for auto-shutdown instead of relying on signals
+    let shutdown_time = Duration::from_secs(30);
+    println!("Chat server starting with profiling enabled...");
+    println!("Server will automatically stop after {} seconds", shutdown_time.as_secs());
 
     smol::block_on(async {
         // Create a listener for incoming client connections.
@@ -114,62 +112,49 @@ fn main() -> io::Result<()> {
 
         // Intro messages.
         println!("Listening on {}", listener.get_ref().local_addr()?);
-        println!("Start a chat client now!\n");
-        println!("Server will automatically stop after {} seconds", shutdown_time.as_secs());
+        println!("Start a chat client with: nc localhost 6000\n");
 
         // Spawn a background task that dispatches events to clients.
         let (sender, receiver) = bounded(100);
         let dispatch_task = smol::spawn(dispatch(receiver));
 
-        // Clone term for each task that needs it
-        let term_for_termination = Arc::clone(&term);
-        let term_for_accept = Arc::clone(&term);
+        // Clone term for termination task
+        let term_clone = Arc::clone(&term);
 
         // Create a task that sets the termination flag after a timeout
         let termination_task = smol::spawn(async move {
             // Wait for the shutdown time
             Timer::after(shutdown_time).await;
             // Set the termination flag
-            term_for_termination.store(true, Ordering::Relaxed);
+            term_clone.store(true, Ordering::SeqCst);
             println!("\nShutdown timer reached, server stopping...");
         });
 
         // Create a clone of the sender for the main thread
         let sender_for_main = sender.clone();
 
+        // Accept incoming connections
         let accept_task = smol::spawn(async move {
             let mut client_tasks = Vec::new();
 
-            loop {
-                if term_for_accept.load(Ordering::Relaxed) {
-                    break;
-                }
-
-                // Accept the next connection, but don't block for more than 100ms
-                // Use a select mechanism that's more compatible with smol
+            while !term.load(Ordering::SeqCst) {
+                // Accept the next connection with a timeout
                 let timeout = Timer::after(Duration::from_millis(100));
-                let mut listener_accept = Box::pin(listener.accept());
-                let mut timeout_future = Box::pin(timeout);
-
-                // Simplified polling that's less likely to cause issues with profiling
-                let accept_result = if term_for_accept.load(Ordering::Relaxed) {
-                    None
-                } else {
-                    match smol::future::or(listener_accept, timeout_future).await {
-                        smol::future::Either::Left((result, _)) => Some(result),
-                        smol::future::Either::Right(_) => None,
-                    }
+                
+                let accept_result = match smol::future::race(listener.accept(), timeout).await {
+                    smol::future::Either::Left(result) => Some(result),
+                    smol::future::Either::Right(_) => None,
                 };
 
                 if let Some(Ok((stream, addr))) = accept_result {
-                    // Got a connection
+                    println!("New client connected: {}", addr);
+                    
+                    // Create a shareable client
                     let client = AsyncArc::new(stream);
                     let sender = sender.clone();
 
                     // Spawn a background task reading messages from the client.
                     let client_task = smol::spawn(async move {
-                        println!("New client connected: {}", addr);
-                        
                         // Client starts with a `Join` event.
                         sender.send(Event::Join(addr, client.clone())).await.ok();
 
@@ -184,20 +169,27 @@ fn main() -> io::Result<()> {
 
                     client_tasks.push(client_task);
                 } else if let Some(Err(e)) = accept_result {
-                    // Error accepting connection
                     eprintln!("Error accepting connection: {}", e);
-                } else {
-                    // Timeout occurred, just continue the loop
                 }
             }
 
-            // Wait for client tasks to complete
-            for task in client_tasks {
-                task.await;
+            println!("Accept loop terminated, waiting for client tasks...");
+            
+            // Wait for client tasks to complete with a timeout
+            for (i, task) in client_tasks.iter().enumerate() {
+                match smol::future::race(
+                    task, 
+                    Timer::after(Duration::from_secs(1))
+                ).await {
+                    smol::future::Either::Left(_) => println!("Client task {i} completed"),
+                    smol::future::Either::Right(_) => println!("Client task {i} timed out"),
+                }
             }
+            
+            println!("All client tasks processed");
         });
 
-        // Make sure we don't drop termination_task before it completes
+        // Wait for the termination timer
         termination_task.await;
         println!("Termination task completed");
 
@@ -207,10 +199,19 @@ fn main() -> io::Result<()> {
 
         // Close the sender to terminate the dispatch task
         drop(sender_for_main);
-
-        // Wait for dispatch to complete
-        let dispatch_result = dispatch_task.await;
-        println!("Dispatch task completed with result: {:?}", dispatch_result.is_ok());
+        
+        // Wait for dispatch with timeout
+        match smol::future::race(
+            dispatch_task,
+            Timer::after(Duration::from_secs(2))
+        ).await {
+            smol::future::Either::Left(result) => {
+                println!("Dispatch task completed successfully: {:?}", result.is_ok());
+            },
+            smol::future::Either::Right(_) => {
+                println!("Dispatch task timed out after 2 seconds");
+            }
+        }
 
         // Explicitly finalize profiling data to ensure it's written
         println!("Finalizing profiling data...");

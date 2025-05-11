@@ -1,0 +1,59 @@
+The issue in mem_tracking.rs is likely related to thread-local storage access in the initialize_thread_allocator_context function around line 66, where it's trying to access ALLOCATOR_STATE.
+
+Here's a minimal fix to apply to the function:
+
+1. Edit thag_rs/thag_profiler/src/mem_tracking.rs and find this function:
+
+```rust
+pub fn initialize_thread_allocator_context() {
+    let inherited = CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get());
+    ALLOCATOR_STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        // Only initialize if not already set
+        if state.1 == 0 {
+            state.0 = inherited;
+            
+            // Thread info gathering code...
+        }
+    });
+}
+```
+
+2. Replace it with this safer version:
+
+```rust
+pub fn initialize_thread_allocator_context() {
+    // Safely get inherited context - catch panics during thread termination
+    let inherited = match std::panic::catch_unwind(|| {
+        CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get())
+    }) {
+        Ok(allocator) => allocator,
+        Err(_) => Allocator::System, // Default to system allocator if TLS access fails
+    };
+    
+    // Access thread-local state with panic protection
+    let _ = std::panic::catch_unwind(|| {
+        ALLOCATOR_STATE.with(|state| {
+            if let Ok(mut state) = state.try_borrow_mut() {
+                if state.1 == 0 {
+                    state.0 = inherited;
+                    
+                    // Get thread ID safely without keeping thread handle
+                    if let Ok(thread_id) = std::panic::catch_unwind(|| std::thread::current().id()) {
+                        let thread_name = std::thread::current().name().unwrap_or("unnamed");
+                        
+                        debug_log!(
+                            "Initializing thread ({:?}/{}) allocator context to {:?} from parent thread",
+                            thread_id,
+                            thread_name,
+                            inherited
+                        );
+                    }
+                }
+            }
+        });
+    });
+}
+```
+
+This fix makes the function more resilient against thread-local access failures.

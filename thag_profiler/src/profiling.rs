@@ -476,7 +476,8 @@ static_lazy! {
             time: format!("{base}.folded"),
             memory: format!("{base}-memory.folded"),
             debug_log: debug_log_path.to_string_lossy().to_string(),
-            executable_stem: script_stem.to_string(),timestamp,
+            executable_stem: script_stem.to_string(),
+            timestamp,
             memory_detail: format!("{base}-memory_detail.folded"),
             memory_detail_dealloc: format!("{base}-memory_detail_dealloc.folded")
         }
@@ -1534,15 +1535,20 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod mem_tracking.
+        debug_log!(
+            "Profile::new starting with requested_type={:?}, detailed_memory={}",
+            requested_type,
+            detailed_memory
+        );
         crate::mem_tracking::with_system_allocator(|| -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
-            let file_name = file_stem_from_path_str(file_name);
+            let file_name_stem = file_stem_from_path_str(file_name);
 
-            debug_log!("file_name={file_name}");
+            debug_log!("file_name={file_name_stem}");
 
             // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
@@ -1634,7 +1640,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name: file_name.clone(),
+                    file_name: file_name_stem.clone(),
                     instance_id,
                     memory_task: None,
                     memory_guard: None,
@@ -1697,18 +1703,25 @@ impl Profile {
                 // let file_name = file!().to_string();
                 // let start_line = line!();
 
-                Self {
-                    profile_type,
-                    start: None,
-                    path,
-                    section_name,
-                    registered_name: stack,
-                    fn_name: fn_name.to_string(),
-                    // start_line: Some(start_line),
-                    start_line,
-                    end_line,
-                    detailed_memory,
-                    file_name: file_name.clone(),
+                debug_log!(
+                    "Creating profile for {} in file {} with memory profiling enabled={}",
+                    fn_name,
+                    file_name_stem,
+                    matches!(profile_type, ProfileType::Memory | ProfileType::Both)
+                );
+
+Self {
+    profile_type,
+    start: None,
+    path,
+    section_name,
+    registered_name: stack,
+    fn_name: fn_name.to_string(),
+    // start_line: Some(start_line),
+    start_line,
+    end_line,
+    detailed_memory,
+    file_name: file_name_stem.clone(),
                     instance_id,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
@@ -1718,9 +1731,10 @@ impl Profile {
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            // debug_log!("About to register profile in module {}", profile.file_name,);
+            debug_log!("About to register profile in module {}", file_name_stem.clone());
             debug_log!(
-                    "About to register profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
+                    "About to register profile in module {} for fn {} with line range {:?}..None",
+                    file_name_stem.clone(), fn_name, start_line
                 );
 
             // Flush logs before calling register_profile
@@ -2231,7 +2245,7 @@ impl Drop for Profile {
 
             // First, deregister this profile from the registry
             deregister_profile(self);
-            
+
             if let Some(start) = self.start.take() {
                 // Handle time profiling as before
                 match self.profile_type {
@@ -2254,6 +2268,12 @@ impl Drop for Profile {
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
+        debug_log!(
+            "Drop for Profile starting: profile_type={:?}, fn_name={}, memory_task={}",
+            self.profile_type,
+            self.fn_name,
+            self.memory_task.is_some()
+        );
         crate::mem_tracking::with_system_allocator(|| {
             // Capture the information needed for deregistration but use it only at the end
             #[cfg(feature = "full_profiling")]

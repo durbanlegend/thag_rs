@@ -1,0 +1,55 @@
+diff --git a/thag_rs/thag_profiler/src/mem_tracking.rs b/thag_rs/thag_profiler/src/mem_tracking.rs
+index 1234567..abcdef0 100644
+--- a/thag_rs/thag_profiler/src/mem_tracking.rs
++++ b/thag_rs/thag_profiler/src/mem_tracking.rs
+@@ -61,10 +61,21 @@ std::thread_local! {
+ 
+ // Function to initialize thread's allocator state for cross-thread contexts (like async tasks)
+ pub fn initialize_thread_allocator_context() {
+-    let inherited = CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get());
++    // Safely get the inherited context, defaulting to System allocator if unavailable
++    let inherited = match std::panic::catch_unwind(|| {
++        CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get())
++    }) {
++        Ok(alloc) => alloc,
++        Err(_) => {
++            // If we can't access the thread-local storage, default to System allocator
++            // This can happen in some thread contexts or during panic unwinding
++            eprintln!("Warning: Failed to access thread-local storage, defaulting to System allocator");
++            Allocator::System
++        }
++    };
++    
+     ALLOCATOR_STATE.with(|state| {
+-        let mut state = state.borrow_mut();
+-        // Only initialize if not already set
++        let mut state = match state.try_borrow_mut() {
++            Ok(state) => state,
++            Err(_) => {
++                // Can't borrow state mutably, it's probably borrowed already
++                // This can happen during recursive calls or panic unwinding
++                eprintln!("Warning: Cannot borrow allocator state mutably, skipping initialization");
++                return;
++            }
++        };
+         if state.1 == 0 {
+             state.0 = inherited;
+@@ -88,7 +99,16 @@ pub fn initialize_thread_allocator_context() {
+ 
+ // Function to get current allocator type
+ pub fn current_allocator() -> Allocator {
+-    // Try to initialize the allocator context if this is a new thread
+-    initialize_thread_allocator_context();
++    // Try to initialize the allocator context if this is a new thread, but don't panic if it fails
++    let _ = std::panic::catch_unwind(|| {
++        initialize_thread_allocator_context();
++    });
++    
++    // Safely get the current allocator, defaulting to System if anything fails
++    match std::panic::catch_unwind(|| {
++        ALLOCATOR_STATE.with(|state| state.borrow().0)
++    }) {
++        Ok(alloc) => alloc,
++        Err(_) => Allocator::System,
++    }
++}

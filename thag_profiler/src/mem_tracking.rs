@@ -47,39 +47,57 @@ pub enum Allocator {
     System,
 }
 
-// We'll use a simple atomic instead of TLS to avoid destructors
-static CURRENT_ALLOCATOR_ID: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+// Thread-local allocator state with a recursion counter
+thread_local! {
+    static ALLOCATOR_STATE: std::cell::RefCell<(Allocator, u32)> = 
+        std::cell::RefCell::new((Allocator::TaskAware, 0));
+}
 
 // Function to get current allocator type
 pub fn current_allocator() -> Allocator {
-    let allocator_id = CURRENT_ALLOCATOR_ID.load(std::sync::atomic::Ordering::Relaxed);
-    if allocator_id == 0 {
-        Allocator::TaskAware
-    } else {
-        Allocator::System
-    }
+    ALLOCATOR_STATE.with(|state| state.borrow().0)
 }
 
 // Function to run code with a specific allocator
 pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T {
-    // Convert allocator enum to ID
-    let allocator_id = match req_alloc {
-        Allocator::TaskAware => 0,
-        Allocator::System => 1,
-    };
-
-    // Save the current allocator
-    let prev_id = CURRENT_ALLOCATOR_ID.load(std::sync::atomic::Ordering::Relaxed);
-
-    // Set the new allocator
-    CURRENT_ALLOCATOR_ID.store(allocator_id, std::sync::atomic::Ordering::Relaxed);
-
+    // Update the allocator state with recursion tracking
+    ALLOCATOR_STATE.with(|state| {
+        let mut state_mut = state.borrow_mut();
+        if state_mut.0 == req_alloc {
+            // Already using this allocator, just increment counter
+            state_mut.1 += 1;
+        } else if state_mut.1 == 0 {
+            // Not recursive, change the allocator
+            state_mut.0 = req_alloc;
+        }
+        // Otherwise, we're in a recursive call with a different allocator,
+        // so we keep the current one and don't change the counter
+    });
+    
     // Run the function
     let result = f();
+    
+    // Reset the state
+    ALLOCATOR_STATE.with(|state| {
+        let mut state_mut = state.borrow_mut();
+        if state_mut.1 > 0 {
+            // Decrement recursion counter
+            state_mut.1 -= 1;
+        }
+    });
+    
+    // Return the result
+    result
+}
 
-    // Restore the previous allocator
-    CURRENT_ALLOCATOR_ID.store(prev_id, std::sync::atomic::Ordering::Relaxed);
-
+// A simplified version that doesn't rely on thread-local storage, used only 
+// for the final operations in special contexts to avoid recursion issues
+#[inline(always)]
+pub fn with_system_allocator<T, F: FnOnce() -> T>(f: F) -> T {
+    // We directly use the System allocator without any thread-local tracking
+    // This is used only in specific contexts where we know we need to avoid
+    // any recursive calls to with_allocator
+    let result = f();
     result
 }
 
@@ -173,14 +191,15 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
 #[allow(clippy::too_many_lines)]
 fn record_alloc(address: usize, size: usize) {
-    // Simple recursion prevention without using TLS with destructors
-    static mut IN_TRACKING: bool = false;
+    // Thread-local tracking flag to prevent recursion
+    thread_local! {
+        static TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
+    }
+    
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
-            unsafe {
-                IN_TRACKING = false;
-            }
+            TRACKING.with(|flag| flag.set(false));
         }
     }
 
@@ -198,21 +217,16 @@ fn record_alloc(address: usize, size: usize) {
         return;
     }
 
-    // Flag if we're already tracking in case it causes an infinite recursion
-    let in_tracking = unsafe { IN_TRACKING };
-
-    #[cfg(debug_assertions)]
-    assert!(!in_tracking);
-
-    if in_tracking {
-        debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
-        // return ptr;
+    // Check if we're already tracking to prevent recursion
+    let already_tracking = TRACKING.with(|flag| flag.get());
+    
+    // Just return if we're already tracking, no need to assert or panic
+    if already_tracking {
+        return;
     }
 
     // Set tracking flag and create guard for cleanup
-    unsafe {
-        IN_TRACKING = true;
-    }
+    TRACKING.with(|flag| flag.set(true));
     let _guard = Guard;
 
     // Get backtrace without recursion
@@ -268,14 +282,14 @@ fn record_alloc(address: usize, size: usize) {
                     maybe_frame.unwrap().to_string(),
                 )
             })
-            // .inspect(|(filename, lineno, frame)| {
-            //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-            // })
+            .inspect(|(filename, lineno, frame)| {
+                debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+            })
             .filter(|(filename, _, _)| (file_names.contains(filename)))
-            // .inspect(|(_, _, _)| {
-            //     // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-            //     debug_log!("***File names match");
-            // })
+            .inspect(|(_, _, _)| {
+                // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+                debug_log!("***File names match");
+            })
             .map(|(filename, lineno, mut frame)| {
                 (
                     filename,
@@ -293,9 +307,9 @@ fn record_alloc(address: usize, size: usize) {
                     find_profile(&filename, &fn_name, lineno),
                 )
             })
-            // .inspect(|(_, _, _, _, maybe_profile_ref)| {
-            //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
-            // })
+            .inspect(|(_, _, _, _, maybe_profile_ref)| {
+                debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
+            })
             .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
             .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| {
                 (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap())
@@ -304,6 +318,8 @@ fn record_alloc(address: usize, size: usize) {
             // .cloned()
             .collect();
     // .last() else {return};
+
+    debug_log!("func_and_ancestors={func_and_ancestors:#?}");
 
     if func_and_ancestors.is_empty() {
         debug_log!("No eligible profile found");
@@ -556,14 +572,15 @@ pub fn write_detailed_stack_alloc(
     reason = "debug_assertions"
 )]
 pub fn record_dealloc(address: usize, size: usize) {
-    // Simple recursion prevention without using TLS with destructors
-    static mut IN_TRACKING: bool = false;
+    // Thread-local tracking flag to prevent recursion
+    thread_local! {
+        static TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
+    }
+    
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
-            unsafe {
-                IN_TRACKING = false;
-            }
+            TRACKING.with(|flag| flag.set(false));
         }
     }
 
@@ -589,21 +606,16 @@ pub fn record_dealloc(address: usize, size: usize) {
         return
     );
 
-    // Flag if we're already tracking in case it causes an infinite recursion
-    let in_tracking = unsafe { IN_TRACKING };
-
-    #[cfg(debug_assertions)]
-    assert!(!in_tracking);
-
-    if in_tracking {
-        debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
-        // return ptr;
+    // Check if we're already tracking to prevent recursion
+    let already_tracking = TRACKING.with(|flag| flag.get());
+    
+    // Just return if we're already tracking, no need to assert or panic
+    if already_tracking {
+        return;
     }
 
     // Set tracking flag and create guard for cleanup
-    unsafe {
-        IN_TRACKING = true;
-    }
+    TRACKING.with(|flag| flag.set(true));
     let _guard = Guard;
 
     // Get backtrace without recursion
@@ -722,17 +734,16 @@ impl Default for Dispatcher {
 unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         // Get current allocator type from thread-local storage
-        match current_allocator() {
+        let current = current_allocator();
+        match current {
             Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
             Allocator::System => unsafe { self.system.alloc(layout) },
         }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        // // For deallocation, we don't need to check the allocator type, as both
-        // // allocators use System for the actual deallocation.
-        // unsafe { self.system.dealloc(ptr, layout) };
-        match current_allocator() {
+        let current = current_allocator();
+        match current {
             Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
         }

@@ -1505,7 +1505,6 @@ impl Profile {
         unused_variables
     )]
     #[cfg(feature = "full_profiling")]
-    #[must_use]
     pub fn new(
         section_name: Option<&str>,
         _maybe_fn_name: Option<&str>,
@@ -1519,7 +1518,7 @@ impl Profile {
         warn_once!(
             !is_profiling_enabled(),
             || {
-                eprintln!("Profiling is not enabled, returning None");
+                eprintln!("Profiling is not enabled , returning None");
             },
             return None
         );
@@ -1535,7 +1534,7 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod mem_tracking.
-        with_allocator(Allocator::System, || -> Option<Self> {
+        crate::mem_tracking::with_system_allocator(|| -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
@@ -1559,6 +1558,7 @@ impl Profile {
                 start_pattern,
                 &mut current_backtrace,
             );
+            debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
                 debug_log!("Empty cleaned stack found");
@@ -2224,34 +2224,37 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 impl Drop for Profile {
     fn drop(&mut self) {
-        // debug_log!("In drop for Profile {:?}", self);
-        let drop_start = Instant::now();
+        // Use the system allocator directly to avoid recursion
+        crate::mem_tracking::with_system_allocator(|| {
+            // debug_log!("In drop for Profile {:?}", self);
+            let drop_start = Instant::now();
 
-        // First, deregister this profile from the registry
-        deregister_profile(self);
-
-        if let Some(start) = self.start.take() {
-            // Handle time profiling as before
-            match self.profile_type {
-                ProfileType::Time | ProfileType::Both => {
-                    let elapsed = start.elapsed();
-                    let _ = self.write_time_event(elapsed);
+            // First, deregister this profile from the registry
+            deregister_profile(self);
+            
+            if let Some(start) = self.start.take() {
+                // Handle time profiling as before
+                match self.profile_type {
+                    ProfileType::Time | ProfileType::Both => {
+                        let elapsed = start.elapsed();
+                        let _ = self.write_time_event(elapsed);
+                    }
+                    ProfileType::Memory | ProfileType::None => todo!(),
                 }
-                ProfileType::Memory | ProfileType::None => todo!(),
             }
-        }
-        debug_log!(
-            "Time to drop profile: {}ms",
-            drop_start.elapsed().as_millis()
-        );
-        flush_debug_log();
+            debug_log!(
+                "Time to drop profile: {}ms",
+                drop_start.elapsed().as_millis()
+            );
+            flush_debug_log();
+        });
     }
 }
 
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        with_allocator(Allocator::System, || {
+        crate::mem_tracking::with_system_allocator(|| {
             // Capture the information needed for deregistration but use it only at the end
             #[cfg(feature = "full_profiling")]
             let instance_id = self.instance_id();

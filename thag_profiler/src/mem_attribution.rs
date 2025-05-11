@@ -238,7 +238,7 @@ impl ProfileRegistry {
         // Check if we have this function
         let Some(range_sections) = function_ranges.get(fn_name) else {
             debug_log!("Function {fn_name} not found in module {file_name}");
-            debug_log!("self.module_functions={:#?}", self.module_functions);
+            // debug_log!("self.module_functions={:#?}", self.module_functions);
 
             return None;
         };

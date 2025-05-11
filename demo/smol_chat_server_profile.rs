@@ -22,7 +22,7 @@ thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features 
 use async_channel::{bounded, Receiver, Sender};
 use async_dup::Arc as AsyncArc;
 use signal_hook::{consts::SIGINT, flag};
-use smol::{io, prelude::*, Async, Timer, future::Future};
+use smol::{future::Future, io, prelude::*, Async, Timer};
 use std::collections::HashMap;
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::sync::{
@@ -30,7 +30,10 @@ use std::sync::{
     Arc as StdArc,
 };
 use std::time::Duration;
-use thag_profiler::{enable_profiling /*, end, profile */, profiled, start_periodic_profiling};
+use thag_profiler::{
+    enable_profiling, /*, end, profile */
+    profiled, start_periodic_profiling,
+};
 
 /// An event on the chat server.
 enum Event {
@@ -79,7 +82,10 @@ async fn dispatch(receiver: Receiver<Event>) -> io::Result<()> {
 
 /// Reads messages from the client and forwards them to the dispatcher task.
 #[profiled]
-async fn read_messages(sender: Sender<Event>, client: AsyncArc<Async<TcpStream>>) -> io::Result<()> {
+async fn read_messages(
+    sender: Sender<Event>,
+    client: AsyncArc<Async<TcpStream>>,
+) -> io::Result<()> {
     let addr = client.get_ref().peer_addr()?;
     let mut lines = io::BufReader::new(client).lines();
 
@@ -96,7 +102,7 @@ fn main() -> io::Result<()> {
     let term = StdArc::new(AtomicBool::new(false));
     // Register a handler for SIGINT
     flag::register(SIGINT, StdArc::clone(&term))?;
-    
+
     // Set up periodic profiling to write data every 10 seconds
     let _profile_writer = start_periodic_profiling(Duration::from_secs(10));
 
@@ -116,7 +122,7 @@ fn main() -> io::Result<()> {
         // Clone term for each task that needs it
         let term_for_termination = StdArc::clone(&term);
         let term_for_accept = StdArc::clone(&term);
-        
+
         // Create a task that checks the termination flag
         let termination_task = smol::spawn(async move {
             while !term_for_termination.load(Ordering::Relaxed) {
@@ -127,7 +133,7 @@ fn main() -> io::Result<()> {
 
         // Create a clone of the sender for the main thread
         let sender_for_main = sender.clone();
-        
+
         let accept_task = smol::spawn(async move {
             let mut client_tasks = Vec::new();
 
@@ -141,7 +147,7 @@ fn main() -> io::Result<()> {
                 let timeout = Timer::after(Duration::from_millis(100));
                 let mut listener_accept = Box::pin(listener.accept());
                 let mut timeout_future = Box::pin(timeout);
-                
+
                 let accept_result = smol::future::poll_fn(|cx| {
                     if let std::task::Poll::Ready(result) = listener_accept.as_mut().poll(cx) {
                         return std::task::Poll::Ready(Some(result));
@@ -150,8 +156,9 @@ fn main() -> io::Result<()> {
                         return std::task::Poll::Ready(None);
                     }
                     std::task::Poll::Pending
-                }).await;
-                
+                })
+                .await;
+
                 if let Some(Ok((stream, addr))) = accept_result {
                     // Got a connection
                     let client = AsyncArc::new(stream);
@@ -194,7 +201,7 @@ fn main() -> io::Result<()> {
         drop(sender_for_main);
 
         // Wait for dispatch to complete
-        dispatch_task.await;
+        let _ = dispatch_task.await;
 
         // Explicitly finalize profiling data to ensure it's written
         thag_profiler::finalize_profiling();

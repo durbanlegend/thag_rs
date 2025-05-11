@@ -645,14 +645,15 @@ impl PeriodicProfileWriter {
         self.active = false;
 
         // Signal the thread to stop
-        self.stop_flag.store(true, std::sync::atomic::Ordering::Relaxed);
-        
+        self.stop_flag
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+
         // Take the thread handle
         if let Some(thread) = self.thread.take() {
             // Wait for the thread to finish
             let _ = thread.join();
         }
-        
+
         // Write one final data point when stopping
         write_current_profiling_data();
     }
@@ -677,9 +678,11 @@ impl Drop for PeriodicProfileWriter {
 #[cfg(feature = "full_profiling")]
 #[must_use]
 pub fn start_periodic_profiling(interval: Duration) -> PeriodicProfileWriter {
-    let mut writer = PeriodicProfileWriter::new(interval);
-    writer.start();
-    writer
+    with_allocator(Allocator::System, || {
+        let mut writer = PeriodicProfileWriter::new(interval);
+        writer.start();
+        writer
+    })
 }
 
 /// Provides empty implementations for non-full_profiling builds

@@ -130,7 +130,10 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
     #[allow(clippy::too_many_lines)]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         with_allocator(Allocator::System, || {
-            if !ptr.is_null() && is_profiling_state_enabled() {
+            let profiling_state_enabled =
+                lazy_static_var!(bool, deref, is_profiling_state_enabled());
+            let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
+            if profiling_state_enabled && detailed_memory && !ptr.is_null() {
                 // Potentially skip small allocations
                 let size = layout.size();
                 if size > *SIZE_TRACKING_THRESHOLD {
@@ -147,11 +150,14 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         if !ptr.is_null() && is_profiling_state_enabled() {
             with_allocator(Allocator::System, || {
-                // Potentially skip small allocations
-                let dealloc_size = layout.size();
-                if dealloc_size > *SIZE_TRACKING_THRESHOLD {
-                    let address = ptr as usize;
-                    record_dealloc(address, dealloc_size);
+                let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
+                if detailed_memory {
+                    // Potentially skip small allocations
+                    let dealloc_size = layout.size();
+                    if dealloc_size > *SIZE_TRACKING_THRESHOLD {
+                        let address = ptr as usize;
+                        record_dealloc(address, dealloc_size);
+                    }
                 }
 
                 // Potentially skip small allocations
@@ -1151,7 +1157,7 @@ pub fn finalize_memory_profiling() {
 
 /// Write memory profile data to a file
 #[allow(clippy::too_many_lines)]
-fn write_memory_profile_data() {
+pub fn write_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
     with_allocator(Allocator::System, || {

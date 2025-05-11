@@ -47,7 +47,7 @@ pub mod mem_tracking;
 #[cfg(feature = "full_profiling")]
 pub mod mem_attribution;
 
-use std::{fmt::Display, path::Path};
+use std::{fmt::Display, path::Path, time::Duration};
 
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
@@ -539,6 +539,173 @@ pub fn finalize_profiling() {
 
 #[cfg(not(feature = "time_profiling"))]
 pub const fn finalize_profiling() {}
+
+/// Write current profiling data without finalizing the profiling session.
+///
+/// This is useful for long-running applications like servers that need to
+/// periodically write out profiling data without stopping profiling.
+///
+/// # Panics
+///
+/// This function panics if there's an error writing the profiling data.
+#[cfg(feature = "full_profiling")]
+pub fn write_current_profiling_data() {
+    with_allocator(Allocator::System, || {
+        // Get the current profile type
+        let global_profile_type = get_global_profile_type();
+
+        // Only write memory data if memory profiling is active
+        if matches!(global_profile_type, ProfileType::Memory | ProfileType::Both) {
+            // Call the internal function to write memory data
+            mem_tracking::write_memory_profile_data();
+        }
+
+        // Ensure the debug log is flushed
+        flush_debug_log();
+    });
+}
+
+/// A struct that periodically writes profiling data at specified intervals.
+///
+/// This is useful for long-running applications where you want to capture
+/// profiling data at regular intervals without waiting for the program to end.
+#[cfg(feature = "full_profiling")]
+pub struct PeriodicProfileWriter {
+    /// The interval at which to write profiling data
+    interval: Duration,
+    /// Whether the writer is active
+    active: bool,
+    /// The thread handle for the periodic writer
+    thread: Option<std::thread::JoinHandle<()>>,
+    /// Flag to signal the thread to stop
+    stop_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+#[cfg(feature = "full_profiling")]
+impl PeriodicProfileWriter {
+    /// Create a new PeriodicProfileWriter with the specified interval.
+    ///
+    /// # Arguments
+    ///
+    /// * `interval` - The time between writes of profiling data
+    ///
+    /// # Returns
+    ///
+    /// A new PeriodicProfileWriter instance
+    #[must_use]
+    pub fn new(interval: Duration) -> Self {
+        Self {
+            interval,
+            active: false,
+            thread: None,
+            stop_flag: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        }
+    }
+
+    /// Start the periodic writer.
+    ///
+    /// This spawns a thread that will write profiling data at the specified interval.
+    pub fn start(&mut self) {
+        if self.active {
+            return; // Already running
+        }
+
+        // Set as active
+        self.active = true;
+
+        // Get a clone of the stop flag for the thread
+        let thread_flag = self.stop_flag.clone();
+        let interval = self.interval;
+
+        // Spawn the thread that will periodically write profiling data
+        let thread = std::thread::spawn(move || {
+            while !thread_flag.load(std::sync::atomic::Ordering::Relaxed) {
+                // Sleep for the specified interval
+                std::thread::sleep(interval);
+
+                // Write the profiling data if we're still active
+                if !thread_flag.load(std::sync::atomic::Ordering::Relaxed) {
+                    write_current_profiling_data();
+                }
+            }
+        });
+
+        self.thread = Some(thread);
+    }
+
+    /// Stop the periodic writer.
+    ///
+    /// This stops the thread that writes profiling data.
+    pub fn stop(&mut self) {
+        if !self.active {
+            return; // Not running
+        }
+
+        // Mark as inactive
+        self.active = false;
+
+        // Signal the thread to stop
+        self.stop_flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        
+        // Take the thread handle
+        if let Some(thread) = self.thread.take() {
+            // Wait for the thread to finish
+            let _ = thread.join();
+        }
+        
+        // Write one final data point when stopping
+        write_current_profiling_data();
+    }
+}
+
+#[cfg(feature = "full_profiling")]
+impl Drop for PeriodicProfileWriter {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+/// Convenience function to create and start a PeriodicProfileWriter.
+///
+/// # Arguments
+///
+/// * `interval` - The time between writes of profiling data
+///
+/// # Returns
+///
+/// A started PeriodicProfileWriter
+#[cfg(feature = "full_profiling")]
+#[must_use]
+pub fn start_periodic_profiling(interval: Duration) -> PeriodicProfileWriter {
+    let mut writer = PeriodicProfileWriter::new(interval);
+    writer.start();
+    writer
+}
+
+/// Provides empty implementations for non-full_profiling builds
+#[cfg(not(feature = "full_profiling"))]
+pub fn write_current_profiling_data() {}
+
+#[cfg(not(feature = "full_profiling"))]
+pub struct PeriodicProfileWriter;
+
+#[cfg(not(feature = "full_profiling"))]
+impl PeriodicProfileWriter {
+    #[must_use]
+    pub const fn new(_interval: Duration) -> Self {
+        Self
+    }
+
+    pub fn start(&mut self) {}
+
+    pub fn stop(&mut self) {}
+}
+
+#[cfg(not(feature = "full_profiling"))]
+#[must_use]
+pub fn start_periodic_profiling(_interval: Duration) -> PeriodicProfileWriter {
+    PeriodicProfileWriter
+}
 
 // /// Resets profiling configuration state for tests.
 // ///

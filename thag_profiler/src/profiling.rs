@@ -1376,7 +1376,7 @@ impl Profile {
         end_line: Option<u32>,
     ) -> Option<Self> {
         if !is_profiling_enabled() {
-            eprintln!("Profiling is not enabled , returning None");
+            eprintln!("Profiling is not enabled, returning None");
             return None;
         }
 
@@ -1519,7 +1519,7 @@ impl Profile {
         warn_once!(
             !is_profiling_enabled(),
             || {
-                eprintln!("Profiling is not enabled , returning None");
+                eprintln!("Profiling is not enabled, returning None");
             },
             return None
         );
@@ -1605,10 +1605,7 @@ impl Profile {
             //     "DEBUG: Profile::new with , fn_name='{fn_name}', section_name={section_name:?}, requested_type={requested_type:?}, profile_type={profile_type:?}, initial_memory={initial_memory:?}"
             // );
 
-            #[cfg(feature = "full_profiling")]
             let instance_id = get_next_profile_id();
-            #[cfg(not(feature = "full_profiling"))]
-            let instance_id = 0; // Dummy value when full_profiling is disabled
 
             // For full profiling, we need to handle memory task and guard creation ASAP and try to let the allocator track the
             // memory allocations in the profile setup itself in this method.
@@ -1637,7 +1634,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name,
+                    file_name: file_name.clone(),
                     instance_id,
                     memory_task: None,
                     memory_guard: None,
@@ -1646,9 +1643,7 @@ impl Profile {
                 // Register this profile with the new ProfileRegistry
                 // First log the details to avoid potential deadlock
                 debug_log!(
-                        "About to register profile in module {} with line range {:?}..None for detailed memory tracking",
-                        profile.file_name,
-                        start_line,
+                        "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
                     );
 
                 // Flush logs before calling register_profile
@@ -1657,11 +1652,11 @@ impl Profile {
                 // Now register the profile
                 register_profile(&profile);
 
-                // Log again after registration completes
-                debug_log!(
-                    "Successfully registered profile in module {} for detailed memory tracking",
-                    &profile.file_name
-                );
+                // // Log again after registration completes
+                // debug_log!(
+                //     "Successfully registered profile in module {}",
+                //     &profile.file_name
+                // );
                 // }
 
                 profile.start = Some(Instant::now());
@@ -1713,7 +1708,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name,
+                    file_name: file_name.clone(),
                     instance_id,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
@@ -1723,7 +1718,10 @@ impl Profile {
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            debug_log!("About to register profile in module {}", profile.file_name,);
+            // debug_log!("About to register profile in module {}", profile.file_name,);
+            debug_log!(
+                    "About to register profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
+                );
 
             // Flush logs before calling register_profile
             flush_debug_log();
@@ -1732,11 +1730,11 @@ impl Profile {
             #[cfg(feature = "full_profiling")]
             register_profile(&profile);
 
-            // Log again after registration completes
-            debug_log!(
-                "Successfully registered profile in module {} for detailed memory tracking",
-                &profile.file_name
-            );
+            // // Log again after registration completes
+            // debug_log!(
+            //     "Successfully registered profile in module {}",
+            //     &profile.file_name
+            // );
             // }
 
             profile.start = Some(Instant::now());

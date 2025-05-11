@@ -276,10 +276,17 @@ fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()>
             let processed = read_and_process_profile(&selected_file)?;
 
             // eprintln!("processed.memory_data={:#?}", processed.memory_data);
-            let alloc_type = if processed.memory_data.as_ref().unwrap().dealloc {
-                "Deallocation"
+            let alloc_type = if let Some(memory_data) = processed.memory_data.as_ref() {
+                if memory_data.dealloc {
+                    "Deallocation"
+                } else {
+                    "Allocation"
+                }
             } else {
-                "Allocation"
+                eprintln!("\nNo memory data found in file.\nPlease make another selection");
+                println!("\nPress Enter to continue...");
+                let _ = std::io::stdin().read_line(&mut String::new());
+                return Ok(());
             };
 
             let size_distribution_option = format!("Show {alloc_type} Size Distribution");

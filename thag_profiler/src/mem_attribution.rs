@@ -136,7 +136,7 @@ impl ProfileRegistry {
 
         debug_log!("Checking if instance {instance_id} exists in active_instances...");
         flush_debug_log();
-        
+
         // First check if this instance is in our active instances set
         if !self.active_instances.contains(&instance_id) {
             debug_log!("Instance {instance_id} is not in active_instances, skipping deregistration to avoid recursion.");
@@ -148,35 +148,35 @@ impl ProfileRegistry {
         self.active_instances.remove(&instance_id);
         debug_log!("Removed {instance_id} from active_instances, now checking maps...");
         flush_debug_log();
-        
+
         // Remove from the nested maps, with careful debug logging at each step
         if let Some(function_ranges) = self.module_functions.get_mut(file_name) {
             debug_log!("Found function_ranges for {file_name}");
             flush_debug_log();
-            
+
             if let Some(range_sections) = function_ranges.get_mut(fn_name) {
                 debug_log!("Found range_sections for {fn_name}");
                 flush_debug_log();
-                
+
                 if let Some(instance_map) = range_sections.get_mut(&(start_line, end_line)) {
                     debug_log!("Found instance_map for lines {start_line:?}..{end_line:?}");
                     flush_debug_log();
-                    
+
                     // Check if the instance exists before removing it
                     if instance_map.contains_key(&instance_id) {
                         debug_log!("Found instance {instance_id} in map, removing...");
                         flush_debug_log();
-                        
+
                         // Mark the ProfileRef as dropping before we remove it
                         if let Some(profile_ref) = instance_map.get_mut(&instance_id) {
                             profile_ref.dropping = true;
                         }
-                        
+
                         // Take the ProfileRef out of the map before dropping it
                         let _removed = instance_map.remove(&instance_id);
                         debug_log!("Successfully removed instance {instance_id} from map.");
                         flush_debug_log();
-                        
+
                         // Clean up empty maps
                         if instance_map.is_empty() {
                             debug_log!("Instance map is now empty, removing range {start_line:?}..{end_line:?}");
@@ -191,7 +191,7 @@ impl ProfileRegistry {
                     debug_log!("No instance_map found for lines {start_line:?}..{end_line:?}");
                     flush_debug_log();
                 }
-                
+
                 // Clean up empty range sections
                 if range_sections.is_empty() {
                     debug_log!("Range sections is now empty, removing function {fn_name}");
@@ -202,7 +202,7 @@ impl ProfileRegistry {
                 debug_log!("No range_sections found for {fn_name}");
                 flush_debug_log();
             }
-            
+
             // Clean up empty function ranges
             if function_ranges.is_empty() {
                 debug_log!("Function ranges is now empty, removing module {file_name}");
@@ -213,7 +213,7 @@ impl ProfileRegistry {
             debug_log!("No function_ranges found for {file_name}");
             flush_debug_log();
         }
-        
+
         debug_log!("Successfully deregistered profile instance {instance_id}");
         flush_debug_log();
     }
@@ -238,6 +238,8 @@ impl ProfileRegistry {
         // Check if we have this function
         let Some(range_sections) = function_ranges.get(fn_name) else {
             debug_log!("Function {fn_name} not found in module {file_name}");
+            debug_log!("self.module_functions={:#?}", self.module_functions);
+
             return None;
         };
 
@@ -419,38 +421,50 @@ pub fn register_profile(profile: &Profile) {
 }
 
 /// Safely deregister a profile from the ProfileRegistry
-/// 
+///
 /// This is a safer wrapper that captures all needed information before calling
 /// the registry's deregister_profile method, to avoid any recursive drop issues.
 pub fn deregister_profile(profile: &Profile) {
     // Only deregister if the profile wasn't already deregistered
     static DEREGISTERING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-    
+
     // Attempt to set the deregistering flag - only proceed if we weren't already deregistering
-    if DEREGISTERING.compare_exchange(false, true, std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst).is_ok() {
+    if DEREGISTERING
+        .compare_exchange(
+            false,
+            true,
+            std::sync::atomic::Ordering::SeqCst,
+            std::sync::atomic::Ordering::SeqCst,
+        )
+        .is_ok()
+    {
         // First, capture all the information we need before interacting with the registry
         let instance_id = profile.instance_id();
         let file_name = profile.file_name().to_string();
         let fn_name = profile.fn_name().to_string();
         let start_line = profile.start_line();
         let end_line = profile.end_line();
-        
+
         // Log the deregistration
-        debug_log!(
-            "Calling deregister_profile for instance={instance_id}, module={file_name}"
-        );
+        debug_log!("Calling deregister_profile for instance={instance_id}, module={file_name}");
         flush_debug_log();
-        
+
         // Now deregister with the captured information
         with_allocator(Allocator::System, || {
             // Use a scope to ensure the registry lock is released promptly
             {
                 let mut registry = PROFILE_REGISTRY.lock();
-                registry.deregister_profile(instance_id, &file_name, &fn_name, start_line, end_line);
+                registry.deregister_profile(
+                    instance_id,
+                    &file_name,
+                    &fn_name,
+                    start_line,
+                    end_line,
+                );
             }
             flush_debug_log();
         });
-        
+
         // Reset the flag when done
         DEREGISTERING.store(false, std::sync::atomic::Ordering::SeqCst);
     } else {

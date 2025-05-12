@@ -7,14 +7,14 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 #[cfg(feature = "full_profiling")]
-use crate::with_allocator;
+use crate::with_sys_alloc;
 
 static_lazy! {
     DebugLogger: Option<Mutex<BufWriter<File>>> = {
         #[cfg(feature = "full_profiling")]
         {
             // For memory profiling, we must use the system allocator
-            crate::with_allocator(crate::Allocator::System, || {
+            crate::with_sys_alloc(|| {
                 create_debug_logger()
             })
         }
@@ -82,7 +82,7 @@ pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for getting log path
-        with_allocator(crate::Allocator::System, || {
+        with_sys_alloc(|| {
             if get_debug_level() == DebugLevel::None {
                 None
             } else {
@@ -106,7 +106,7 @@ pub fn flush_debug_log() {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for logging operations to prevent circular dependencies
-        with_allocator(crate::Allocator::System, || {
+        with_sys_alloc(|| {
             if let Some(logger) = DebugLogger::get() {
                 let flush_result = {
                     let mut locked_writer = logger.lock();
@@ -143,7 +143,7 @@ pub fn flush_debug_log() {
 macro_rules! debug_log {
     ($($arg:tt)*) => {
         // Always use system allocator for logging to prevent circular dependencies
-        $crate::with_allocator($crate::Allocator::System, || {
+        $crate::with_sys_alloc(|| {
             static mut LOG_COUNT: usize = 0;
             if let Some(logger) = $crate::DebugLogger::get() {
                 use std::io::Write;
@@ -208,7 +208,7 @@ macro_rules! debug_log {
 ///
 /// Key features of this test design:
 ///
-/// 1. **Safe allocator usage**: When `full_profiling` is enabled, operations use `with_allocator(Allocator::System, ...)` to prevent recursive tracking
+/// 1. **Safe allocator usage**: When `full_profiling` is enabled, operations use `with_sys_alloc(...)` to prevent recursive tracking
 /// 2. **Conditional testing**: Tests skip or modify behavior based on the active debug level
 /// 3. **Minimal side effects**: Tests avoid disrupting the global state in ways that could affect other tests
 /// 4. **Feature compatibility**: Tests work with both `time_profiling` and `full_profiling` feature flags
@@ -219,7 +219,7 @@ mod tests {
 
     #[cfg(feature = "full_profiling")]
     use crate::{
-        mem_tracking::{with_allocator, Allocator},
+        mem_tracking::{with_sys_alloc, Allocator},
         ProfileType,
     };
 
@@ -232,7 +232,7 @@ mod tests {
     fn test_logging_functionality() {
         // Initialize profiling to set up logging
         #[cfg(feature = "full_profiling")]
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             let _ =
                 crate::profiling::test_utils::initialize_profiling_for_test(ProfileType::Memory);
         });
@@ -273,7 +273,7 @@ mod tests {
         let reader = BufReader::new(file);
 
         #[cfg(feature = "full_profiling")]
-        let found_message = with_allocator(Allocator::System, || {
+        let found_message = with_sys_alloc(|| {
             reader
                 .lines()
                 .filter_map(Result::ok)
@@ -314,17 +314,13 @@ mod tests {
         // ----- Test 6: System Allocator Usage (full_profiling only) -----
         #[cfg(feature = "full_profiling")]
         {
-            let current_allocator = with_allocator(Allocator::System, || {
-                crate::mem_tracking::current_allocator()
-            });
+            let current_allocator = with_sys_alloc(|| crate::mem_tracking::current_allocator());
 
             // Log a message (which should use system allocator)
             debug_log!("Testing system allocator usage");
 
             // Verify allocator wasn't changed
-            let after_allocator = with_allocator(Allocator::System, || {
-                crate::mem_tracking::current_allocator()
-            });
+            let after_allocator = with_sys_alloc(|| crate::mem_tracking::current_allocator());
 
             assert_eq!(
                 current_allocator, after_allocator,

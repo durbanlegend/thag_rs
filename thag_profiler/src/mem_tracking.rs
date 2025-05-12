@@ -26,12 +26,18 @@ use std::{
     env,
     io::{self, Write},
     sync::{
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         LazyLock,
     },
     thread,
     time::Instant,
 };
+
+// Global flag indicating if system allocator is currently active
+static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
+
+// Counter to track nested with_sys_alloc calls
+static SYS_ALLOC_DEPTH: AtomicUsize = AtomicUsize::new(0);
 
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
@@ -47,126 +53,38 @@ pub enum Allocator {
     System,
 }
 
-// Thread-local allocator state with a recursion counter
-thread_local! {
-    static ALLOCATOR_STATE: std::cell::RefCell<(Allocator, u32)> =
-        std::cell::RefCell::new((Allocator::TaskAware, 0));
-}
-
-// Inheritable thread-local context that can be propagated across thread boundaries
-std::thread_local! {
-    // This needs to be accessible through std::thread_local! for async tasks to inherit it
-    pub static CURRENT_ALLOCATOR_CONTEXT: std::cell::Cell<Allocator> = std::cell::Cell::new(Allocator::TaskAware);
-}
-
-// Function to initialize thread's allocator state for cross-thread contexts (like async tasks)
-pub fn initialize_thread_allocator_context() {
-    let inherited = CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get());
-    pub fn initialize_thread_allocator_context() {
-        // Safely get inherited context - catch panics during thread termination
-        let inherited =
-            match std::panic::catch_unwind(|| CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.get())) {
-                Ok(allocator) => allocator,
-                Err(_) => Allocator::System, // Default to system allocator if TLS access fails
-            };
-
-        // Access thread-local state with panic protection
-        let _ = std::panic::catch_unwind(|| {
-            ALLOCATOR_STATE.with(|state| {
-                if let Ok(mut state) = state.try_borrow_mut() {
-                    if state.1 == 0 {
-                        state.0 = inherited;
-
-                        // Get thread ID safely without keeping thread handle
-                        if let Ok(thread_id) = std::panic::catch_unwind(|| std::thread::current().id()) {
-                            let current = std::thread::current();
-                            let thread_name = current.name().unwrap_or("unnamed");
-
-                            debug_log!(
-                                "Initializing thread ({:?}/{}) allocator context to {:?} from parent thread",
-                                thread_id,
-                                thread_name,
-                                inherited
-                            );
-                        }
-                    }
-                }
-            });
-        });
+// Function to get current allocator type
+pub fn current_allocator() -> Allocator {
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
+        Allocator::System
+    } else {
+        Allocator::TaskAware
     }
 }
 
-// Function to get current allocator type
-pub fn current_allocator() -> Allocator {
-    // Try to initialize the allocator context if this is a new thread
-    initialize_thread_allocator_context();
+// Add this new function
+pub fn with_sys_alloc<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    // Increment the depth counter
+    let prev_depth = SYS_ALLOC_DEPTH.fetch_add(1, Ordering::SeqCst);
 
-    ALLOCATOR_STATE.with(|state| {
-        let current = state.borrow().0;
-
-        // Get thread info without holding a thread reference
-        let thread_id = std::thread::current().id();
-        let is_main_thread = std::thread::current()
-            .name()
-            .map_or(false, |name| name.contains("main"));
-
-        if is_main_thread {
-            debug_log!(
-                "current_allocator returning {:?} on thread {:?}",
-                current,
-                thread_id
-            );
-        }
-
-        // Update the thread-local context for potential child threads
-        CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(current));
-
-        current
-    })
-}
-
-// Function to run code with a specific allocator
-pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T {
-    // Initialize thread allocator context if needed (but avoid too much debug output)
-    // initialize_thread_allocator_context();
-
-    // Update the allocator state with recursion tracking
-    let (prev_allocator, _prev_counter) = ALLOCATOR_STATE.with(|state| {
-        let mut state_mut = state.borrow_mut();
-        let prev = (state_mut.0, state_mut.1);
-
-        if state_mut.0 == req_alloc {
-            // Already using this allocator, just increment counter
-            state_mut.1 += 1;
-            // debug_log!("with_allocator: already using {:?}, incremented counter to {}",
-            //          req_alloc, state_mut.1);
-        } else if state_mut.1 == 0 {
-            // Not recursive, change the allocator
-            // debug_log!("with_allocator: changing allocator from {:?} to {:?}",
-            //          state_mut.0, req_alloc);
-            state_mut.0 = req_alloc;
-
-            // Update the thread context for inheritance by child threads
-            CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(req_alloc));
-        } else {
-            // debug_log!("with_allocator: in recursive call (depth={}), keeping allocator {:?} instead of requested {:?}",
-            //          state_mut.1, state_mut.0, req_alloc);
-        }
-        prev
-    });
+    // Only change the allocator if this is the outermost call
+    if prev_depth == 0 {
+        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
+    }
 
     // Run the function
     let result = f();
 
-    // Reset the state
-    ALLOCATOR_STATE.with(|state| {
-        let mut state_mut = state.borrow_mut();
-        if state_mut.1 > 0 {
-            // Decrement recursion counter
-            state_mut.1 -= 1;
-            // debug_log!("with_allocator: decremented counter to {}, allocator is {:?}",
-            //         state_mut.1, state_mut.0);
-        }
+    // Decrement the depth counter
+    let new_depth = SYS_ALLOC_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
+
+    // Reset the allocator if this was the outermost call
+    if new_depth == 0 {
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+    }
 
         // If we've unwound all recursive calls and the allocator changed, log it
         if state_mut.1 == 0 && state_mut.0 != prev_allocator {
@@ -218,6 +136,17 @@ pub fn with_system_allocator<T, F: FnOnce() -> T>(f: F) -> T {
     result
 }
 
+// Replace the with_allocator function with this simplified version
+pub fn with_allocator<F, R>(allocator: Allocator, f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    match allocator {
+        Allocator::System => with_sys_alloc(f),
+        Allocator::TaskAware => f(), // TaskAware is the default
+    }
+}
+
 /// Task-aware allocator that tracks memory allocations
 pub struct TaskAwareAllocator;
 
@@ -245,7 +174,7 @@ impl TaskAwareAllocator {
 
 unsafe impl GlobalAlloc for TaskAwareAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             let ptr = unsafe { System.alloc(layout) };
 
             if !ptr.is_null() && is_profiling_state_enabled() {
@@ -275,11 +204,8 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
     #[allow(clippy::too_many_lines)]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        with_allocator(Allocator::System, || {
-            let profiling_state_enabled =
-                lazy_static_var!(bool, deref, is_profiling_state_enabled());
-            let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-            if profiling_state_enabled && detailed_memory && !ptr.is_null() {
+        with_sys_alloc(|| {
+            if !ptr.is_null() && is_profiling_state_enabled() {
                 // Potentially skip small allocations
                 let size = layout.size();
                 if size > *SIZE_TRACKING_THRESHOLD {
@@ -295,15 +221,12 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         if !ptr.is_null() && is_profiling_state_enabled() {
-            with_allocator(Allocator::System, || {
-                let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-                if detailed_memory {
-                    // Potentially skip small allocations
-                    let dealloc_size = layout.size();
-                    if dealloc_size > *SIZE_TRACKING_THRESHOLD {
-                        let address = ptr as usize;
-                        record_dealloc(address, dealloc_size);
-                    }
+            with_sys_alloc(|| {
+                // Potentially skip small allocations
+                let dealloc_size = layout.size();
+                if dealloc_size > *SIZE_TRACKING_THRESHOLD {
+                    let address = ptr as usize;
+                    record_dealloc(address, dealloc_size);
                 }
 
                 // Potentially skip small allocations
@@ -630,7 +553,7 @@ pub fn record_allocation(
     address: usize,
     current_backtrace: &mut Backtrace,
 ) -> bool {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // First log (acquires debug log mutex)
         debug_log!(
             "Looking for profile to record allocation: module={file_name}, fn={fn_name}, line={line}, size={size}"
@@ -887,67 +810,21 @@ impl Default for Dispatcher {
 
 unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // Get current allocator type from thread-local storage
-        let current = current_allocator();
-
-        // Log larger allocations to help debug which allocator is being used
-        if layout.size() > 1024 {
-            // Get thread info without holding a thread reference
-            let thread_id = std::thread::current().id();
-            let thread_name = std::thread::current()
-                .name()
-                .unwrap_or("unnamed")
-                .to_string();
-
-            debug_log!(
-                "Dispatcher::alloc - thread={:?}/{}, size={}, using {:?}",
-                thread_id,
-                thread_name,
-                layout.size(),
-                current
-            );
-        }
-
-        let ptr = match current {
-            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
+        match current_allocator() {
             Allocator::System => unsafe { self.system.alloc(layout) },
-        };
-
-        // For very large allocations, also log the pointer
-        if layout.size() > 10240 {
-            let backtrace = backtrace::Backtrace::new_unresolved();
-            debug_log!(
-                "Allocated ptr={:p} of size={} with allocator={:?}\nBacktrace: {:?}",
-                ptr,
-                layout.size(),
-                current,
-                backtrace
-            );
+            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
         }
 
         ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        let current = current_allocator();
-
-        // Log larger deallocations
-        if layout.size() > 10240 {
-            debug_log!(
-                "Dispatcher::dealloc - ptr={:p}, size={}, using {:?}",
-                ptr,
-                layout.size(),
-                current
-            );
-        }
-
-        match current {
-            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
+        match current_allocator() {
             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
+            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
         }
     }
 }
-
 // Create a direct static instance
 #[global_allocator]
 static ALLOCATOR: Dispatcher = Dispatcher::new();
@@ -1074,7 +951,7 @@ static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
 
 /// Add a task to active profiles
 pub fn activate_task(task_id: usize) {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         PROFILE_REGISTRY.lock().activate_task(task_id);
     });
 }
@@ -1082,7 +959,7 @@ pub fn activate_task(task_id: usize) {
 /// Remove a task from active profiles
 #[allow(dead_code)]
 pub fn deactivate_task(task_id: usize) {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         PROFILE_REGISTRY.lock().deactivate_task(task_id);
     });
 }
@@ -1094,7 +971,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 
 // /// Add a task to a thread's stack
 // pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-//     with_allocator(Allocator::System, || {
+//     with_sys_alloc(|| {
 //         PROFILE_REGISTRY
 //             .lock()
 //             .push_task_to_stack(thread_id, task_id);
@@ -1104,7 +981,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 // /// Remove a task from a thread's stack
 // #[allow(dead_code)]
 // pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-//     with_allocator(Allocator::System, || {
+//     with_sys_alloc(|| {
 //         PROFILE_REGISTRY
 //             .lock()
 //             .pop_task_from_stack(thread_id, task_id);
@@ -1114,17 +991,13 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 /// Get active tasks
 #[must_use]
 pub fn get_active_tasks() -> Vec<usize> {
-    with_allocator(Allocator::System, || {
-        PROFILE_REGISTRY.lock().get_active_tasks()
-    })
+    with_sys_alloc(|| PROFILE_REGISTRY.lock().get_active_tasks())
 }
 
 /// Get the last active task
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
-    with_allocator(Allocator::System, || {
-        PROFILE_REGISTRY.lock().get_last_active_task()
-    })
+    with_sys_alloc(|| PROFILE_REGISTRY.lock().get_last_active_task())
 }
 
 // ========== TASK CONTEXT DEFINITIONS ==========
@@ -1219,7 +1092,7 @@ impl Drop for TaskGuard {
         // This avoids complex TLS interactions during thread shutdown
 
         // Run these operations with System allocator
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             // Remove from active profiles
             debug_log!("Deactivating task {}", self.task_id);
             PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
@@ -1350,7 +1223,7 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 /// This is called by the main `init_profiling` function.
 pub fn initialize_memory_profiling() {
     // This is called at application startup to set up memory profiling
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
     });
@@ -1369,7 +1242,7 @@ pub fn finalize_memory_profiling() {
 pub fn write_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
 

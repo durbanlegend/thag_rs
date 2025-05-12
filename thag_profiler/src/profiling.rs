@@ -29,7 +29,7 @@ use crate::{
         activate_task, create_memory_task, get_task_memory_usage, /* push_task_to_stack, */
         record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    warn_once, with_allocator, Allocator,
+    warn_once, with_sys_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -1535,12 +1535,7 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod mem_tracking.
-        debug_log!(
-            "Profile::new starting with requested_type={:?}, detailed_memory={}",
-            requested_type,
-            detailed_memory
-        );
-        crate::mem_tracking::with_system_allocator(|| -> Option<Self> {
+        with_sys_alloc(|| -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
@@ -1710,18 +1705,18 @@ impl Profile {
                     matches!(profile_type, ProfileType::Memory | ProfileType::Both)
                 );
 
-Self {
-    profile_type,
-    start: None,
-    path,
-    section_name,
-    registered_name: stack,
-    fn_name: fn_name.to_string(),
-    // start_line: Some(start_line),
-    start_line,
-    end_line,
-    detailed_memory,
-    file_name: file_name_stem.clone(),
+                Self {
+                    profile_type,
+                    start: None,
+                    path,
+                    section_name,
+                    registered_name: stack,
+                    fn_name: fn_name.to_string(),
+                    // start_line: Some(start_line),
+                    start_line,
+                    end_line,
+                    detailed_memory,
+                    file_name: file_name_stem.clone(),
                     instance_id,
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
@@ -1731,11 +1726,16 @@ Self {
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            debug_log!("About to register profile in module {}", file_name_stem.clone());
             debug_log!(
-                    "About to register profile in module {} for fn {} with line range {:?}..None",
-                    file_name_stem.clone(), fn_name, start_line
-                );
+                "About to register profile in module {}",
+                file_name_stem.clone()
+            );
+            debug_log!(
+                "About to register profile in module {} for fn {} with line range {:?}..None",
+                file_name_stem.clone(),
+                fn_name,
+                start_line
+            );
 
             // Flush logs before calling register_profile
             flush_debug_log();
@@ -2268,13 +2268,7 @@ impl Drop for Profile {
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        debug_log!(
-            "Drop for Profile starting: profile_type={:?}, fn_name={}, memory_task={}",
-            self.profile_type,
-            self.fn_name,
-            self.memory_task.is_some()
-        );
-        crate::mem_tracking::with_system_allocator(|| {
+        with_sys_alloc(|| {
             // Capture the information needed for deregistration but use it only at the end
             #[cfg(feature = "full_profiling")]
             let instance_id = self.instance_id();
@@ -2478,7 +2472,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "core::",
     "core::ops::function::FnOnce::call_once",
     "hashbrown",
-    "mem_tracking::with_allocator",
+    "mem_tracking::with_sys_alloc",
     "mio::",
     "std::panic::catch_unwind",
     "std::panicking",
@@ -2543,7 +2537,7 @@ pub enum MemoryError {
 //         $crate::paste::paste! {
 //             fn [<end_ $name>]() -> u32 { line!() }
 
-//             ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+//             ::thag_profiler::with_sys_alloc(|| {
 //                 drop(section_profile);
 //             });
 //         };

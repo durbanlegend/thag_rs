@@ -835,7 +835,7 @@ b. For detailed memory profiling, allocations and deallocations alike are not ac
 
 Being the default, the task-aware allocator is automatically used for user code and must not be used for profiler code.
 
-To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_allocator()` function (`pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T`).
+To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_sys_alloc()` function (`pub fn with_allocator<T, F: FnOnce() -> T>(f: F) -> T`).
 
 ### Profile Output
 

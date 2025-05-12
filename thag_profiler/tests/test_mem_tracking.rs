@@ -7,7 +7,7 @@
 ///
 /// 1. Individual test functions for each aspect of the memory tracking system
 /// 2. A single main `#[test]` function that runs all the tests sequentially
-/// 3. Use of `with_allocator(Allocator::System, || { ... })` to prevent infinite recursion
+/// 3. Use of `with_sys_alloc(|| { ... })` to prevent infinite recursion
 /// 4. A safe approach to testing persistent allocations using a `Mutex`
 /// 5. Proper state initialization and cleanup
 ///
@@ -18,7 +18,7 @@
 /// - Thread task stacks and tracking
 /// - Task path registry and matching
 /// - Allocation registry functionality
-/// - `with_allocator` behavior
+/// - `with_sys_alloc(` behavior
 /// - Task state and ID generation
 /// - Memory profiling lifecycle
 ///
@@ -27,7 +27,7 @@ use thag_profiler::{
     mem_tracking::{
         activate_task, create_memory_task, get_active_tasks, get_last_active_task,
         get_task_memory_usage, /*, pop_task_from_stack, push_task_to_stack */
-        record_alloc_for_task_id, with_allocator, Allocator, TaskGuard, ALLOC_REGISTRY,
+        record_alloc_for_task_id, with_sys_alloc, Allocator, TaskGuard, ALLOC_REGISTRY,
         TASK_PATH_REGISTRY,
     },
     profiled,
@@ -51,7 +51,7 @@ static TEST_MEMORY: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(
 #[cfg(feature = "full_profiling")]
 fn test_memory_task_allocation() {
     // Use the system allocator to avoid recursive tracking
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Create a memory task
         let memory_task = create_memory_task();
         let task_id = memory_task.id();
@@ -116,7 +116,7 @@ fn test_memory_task_allocation() {
 #[cfg(feature = "full_profiling")]
 fn test_memory_task_context() {
     // Use the system allocator
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Create a memory task
         let memory_task = create_memory_task();
         let task_id = memory_task.id();
@@ -155,7 +155,7 @@ fn test_memory_task_context() {
 // #[cfg(feature = "full_profiling")]
 // fn test_thread_task_stacks() {
 //     // Use the system allocator
-//     with_allocator(Allocator::System, || {
+//     with_sys_alloc(|| {
 //         // Create multiple tasks
 //         let task1 = create_memory_task();
 //         let task2 = create_memory_task();
@@ -214,7 +214,7 @@ fn test_memory_task_context() {
 #[cfg(feature = "full_profiling")]
 fn test_task_path_registry() {
     // Use the system allocator
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Create a task
         let task = create_memory_task();
         let task_id = task.id();
@@ -271,7 +271,7 @@ fn test_task_path_registry() {
 #[cfg(feature = "full_profiling")]
 fn test_allocation_registry() {
     // Use the system allocator
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Record some allocations for a task
         let task_id = 1000; // Use arbitrary task ID for testing
 
@@ -344,9 +344,9 @@ fn test_allocation_registry() {
     });
 }
 
-/// Test with_allocator function
+/// Test with_sys_alloc function
 #[cfg(feature = "full_profiling")]
-fn test_with_allocator() {
+fn test_with_sys_alloc() {
     // Start with the default TaskAware allocator
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
@@ -355,13 +355,13 @@ fn test_with_allocator() {
     );
 
     // Run code with System allocator
-    let result = with_allocator(Allocator::System, || {
+    let result = with_sys_alloc(|| {
         // Inside this closure, allocator should be System
         let current = thag_profiler::mem_tracking::current_allocator();
         assert_eq!(
             current,
             Allocator::System,
-            "Allocator should be System inside with_allocator"
+            "Allocator should be System inside with_sys_alloc"
         );
 
         // Return the current allocator for verification
@@ -372,25 +372,25 @@ fn test_with_allocator() {
     assert_eq!(
         result,
         Allocator::System,
-        "with_allocator should return closure result"
+        "with_sys_alloc should return closure result"
     );
 
-    // After with_allocator, allocator should be back to TaskAware
+    // After with_sys_alloc, allocator should be back to TaskAware
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
         Allocator::TaskAware,
-        "Allocator should be restored to TaskAware after with_allocator"
+        "Allocator should be restored to TaskAware after with_sys_alloc"
     );
 
-    // Nested with_allocator calls
-    let nested_result = with_allocator(Allocator::System, || {
+    // Nested with_sys_alloc calls
+    let nested_result = with_sys_alloc(|| {
         assert_eq!(
             thag_profiler::mem_tracking::current_allocator(),
             Allocator::System,
             "First level: Allocator should be System"
         );
 
-        with_allocator(Allocator::TaskAware, || {
+        thag_profiler::mem_tracking::with_allocator(Allocator::TaskAware, || {
             assert_eq!(
                 thag_profiler::mem_tracking::current_allocator(),
                 Allocator::TaskAware,
@@ -410,14 +410,14 @@ fn test_with_allocator() {
 
     assert_eq!(
         nested_result, "success",
-        "Nested with_allocator should work"
+        "Nested with_sys_alloc should work"
     );
 
-    // After both with_allocator calls, allocator should be back to TaskAware
+    // After both with_sys_alloc calls, allocator should be back to TaskAware
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
         Allocator::TaskAware,
-        "Allocator should be restored to TaskAware after nested with_allocator"
+        "Allocator should be restored to TaskAware after nested with_sys_alloc"
     );
 }
 
@@ -425,7 +425,7 @@ fn test_with_allocator() {
 #[cfg(feature = "full_profiling")]
 fn test_task_state() {
     // Use the system allocator
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Get the current next_task_id value
         let current_id = thag_profiler::mem_tracking::TASK_STATE
             .next_task_id
@@ -493,7 +493,7 @@ fn test_persistent_allocations() {
 #[cfg(feature = "full_profiling")]
 fn test_trim_backtrace() {
     // Use the system allocator
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Create a backtrace
         let backtrace = backtrace::Backtrace::new();
 
@@ -518,7 +518,7 @@ fn test_trim_backtrace() {
 #[cfg(feature = "full_profiling")]
 fn test_memory_profiling_lifecycle() {
     // Use the system allocator
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Initialize memory profiling
         thag_profiler::mem_tracking::initialize_memory_profiling();
 
@@ -579,9 +579,9 @@ fn test_mem_tracking_full_sequence() {
     eprintln!("Testing allocation registry...");
     test_allocation_registry();
 
-    // with_allocator tests
-    eprintln!("Testing with_allocator function...");
-    test_with_allocator();
+    // with_sys_alloc tests
+    eprintln!("Testing with_sys_alloc function...");
+    test_with_sys_alloc();
 
     // Task state tests
     eprintln!("Testing task state...");

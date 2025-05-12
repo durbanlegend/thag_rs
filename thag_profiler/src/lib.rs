@@ -73,7 +73,7 @@ pub use {
     mem_attribution::{find_profile, register_profile, ProfileRef, PROFILE_REGISTRY},
     mem_tracking::{
         create_memory_task, find_matching_task_id, get_last_active_task, get_task_memory_usage,
-        record_allocation, trim_backtrace, with_allocator, Allocator, Dispatcher,
+        record_allocation, trim_backtrace, with_sys_alloc, Allocator, Dispatcher,
         TaskAwareAllocator, TaskGuard, TaskMemoryContext, ALLOC_REGISTRY,
     },
     profiling::extract_path,
@@ -422,7 +422,9 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 #[cfg(feature = "full_profiling")]
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
+        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}");
+
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling
         if PROFILEE.get().is_none() {
@@ -506,7 +508,7 @@ pub fn finalize_profiling() {
 /// This function panics if profiling cannot be disabled.
 #[cfg(feature = "full_profiling")]
 pub fn finalize_profiling() {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Ensure debug log is flushed before we disable profiling
         flush_debug_log();
 
@@ -1132,8 +1134,8 @@ mod lib_tests {
         let current = mem_tracking::current_allocator();
         assert!(matches!(current, Allocator::TaskAware) || matches!(current, Allocator::System));
 
-        // Test with_allocator function
-        let result = with_allocator(Allocator::System, || 42);
+        // Test with_sys_alloc function
+        let result = with_sys_alloc(|| 42);
         assert_eq!(result, 42);
 
         // Test creating a memory task

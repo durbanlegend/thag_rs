@@ -141,7 +141,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     #[cfg(feature = "full_profiling")]
     let profile_new = quote! {
-        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+        ::thag_profiler::with_sys_alloc(|| {
             ::thag_profiler::Profile::new(None, Some(#fn_name_str), #profile_type, #is_async, #detailed_memory, file!(), None, None)
         })
     };
@@ -153,7 +153,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     #[cfg(feature = "full_profiling")]
     let profile_drop = quote! {
-        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+        ::thag_profiler::with_sys_alloc(|| {
             drop(profile);
         });
     };

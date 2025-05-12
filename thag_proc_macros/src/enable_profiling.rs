@@ -310,7 +310,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
     #[cfg(feature = "full_profiling")]
     let profile_drop = quote! {
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             drop(profile);
         });
     };
@@ -339,20 +339,20 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, with_allocator, Allocator, PROFILING_MUTEX};
+                use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config, with_sys_alloc, Allocator, PROFILING_MUTEX};
 
-                let should_profile = with_allocator(Allocator::System, || {
+                let should_profile = with_sys_alloc(|| {
                     std::env::var("THAG_PROFILER").ok().is_some()
                 });
 
-                with_allocator(Allocator::System, || {
+                with_sys_alloc(|| {
                     // eprintln!("should_profile={should_profile}");
                 });
             }
         }
         ProfilingMode::Enabled => {
             quote! {
-                use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, profiled, with_allocator, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
+                use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, profiled, with_sys_alloc, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
         _ => {
@@ -370,7 +370,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                     }
 
                     // Finalize profiling
-                    finalize_profiling();  // Already uses with_allocator(Allocator::System... internally
+                    finalize_profiling();  // Already uses with_sys_alloc(... internally
                 }
             }
         }
@@ -380,7 +380,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 #profile_drop
 
                 // Finalize profiling
-                finalize_profiling();  // Already uses with_allocator(Allocator::System... internally
+                finalize_profiling();  // Already uses with_sys_alloc(... internally
             }
         }
         _ => {
@@ -467,7 +467,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     #[cfg(feature = "full_profiling")]
     let wrapped_block = match args.mode {
         ProfilingMode::Runtime => quote! {
-            let _guard = with_allocator(Allocator::System, || {
+            let _guard = with_sys_alloc(|| {
                 if should_profile {
                     // Acquire the mutex to ensure only one instance can be profiling at a time
                     Some(PROFILING_MUTEX.lock())
@@ -475,13 +475,13 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             });
 
             if should_profile {
-                // with_allocator(Allocator::System, || {
+                // with_sys_alloc(|| {
                 //     eprintln!("Calling init_profiling({}, {:?})", module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));
                 // });
-                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));   // Already uses with_allocator(Allocator::System... internally
+                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));   // Already uses with_sys_alloc(... internally
             }
 
-            let maybe_profile = with_allocator(Allocator::System, || {
+            let maybe_profile = with_sys_alloc(|| {
                 if should_profile {
                     #profile_new
                 } else {
@@ -493,20 +493,20 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         },
         ProfilingMode::Enabled => quote! {
             // Acquire the mutex to ensure only one instance can be profiling at a time
-            let _guard = with_allocator(Allocator::System, || {
+            let _guard = with_sys_alloc(|| {
                 PROFILING_MUTEX.lock()
             });
 
             // Initialize profiling
-            let profile_config = with_allocator(Allocator::System, || {
+            let profile_config = with_sys_alloc(|| {
                 // ProfileConfiguration { profile_type: #profile_type, ..Default::default() };
                 let mut profile_config = ProfileConfiguration::default();
                 profile_config.set_profile_type(#profile_type);
                 profile_config
             });
-            init_profiling(module_path!(), profile_config);  // Already uses with_allocator(Allocator::System... internally
+            init_profiling(module_path!(), profile_config);  // Already uses with_sys_alloc(... internally
 
-            let profile = with_allocator(Allocator::System, || {
+            let profile = with_sys_alloc(|| {
                 #profile_new
             });
 

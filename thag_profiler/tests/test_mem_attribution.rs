@@ -26,10 +26,10 @@
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str,
-    mem_attribution::{find_profile, register_profile, PROFILE_REGISTRY},
+    mem_attribution::{find_profile, PROFILE_REGISTRY},
     profile, profiled,
     profiling::{Profile, ProfileType},
-    with_allocator, Allocator,
+    with_sys_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -167,99 +167,108 @@ fn mem_attribution_persistent_allocations() {
 
     end!(persistent_allocs);
 }
+
 /// Test manual profile creation and registration
 #[cfg(feature = "full_profiling")]
+// #[enable_profiling]
 fn mem_attribution_manual_profile() {
-    // Create a profile manually
-    let file_name = file_stem_from_path_str(file!());
-    let fn_name = "manual_profile_test";
+    with_sys_alloc(|| {
+        // Create a profile manually
+        let file_name = file_stem_from_path_str(file!());
+        let fn_name = "manual_profile_test";
 
-    // Manual profile with line numbers
-    let profile = Profile::new(
-        Some("manual_section"),
-        Some(fn_name),
-        ProfileType::Memory,
-        false,
-        true, // detailed memory
-        file!(),
-        Some(100), // fake start line
-        Some(200), // fake end line
-    )
-    .unwrap();
+        // Manual profile with line numbers
+        let profile = Profile::new(
+            Some("manual_section"),
+            Some(fn_name),
+            ProfileType::Memory,
+            false,
+            true, // detailed memory
+            file!(),
+            Some(100), // fake start line
+            Some(200), // fake end line
+        )
+        .unwrap();
 
-    // Register the profile
-    register_profile(&profile);
+        // Verify we can find the profile
+        let found = find_profile(&file_name, profile.fn_name(), 150);
+        assert!(found.is_some(), "Manual profile should be findable");
+        if let Some(profile_ref) = found {
+            assert!(
+                profile_ref.detailed_memory(),
+                "Profile should have detailed memory enabled"
+            );
+            assert_eq!(profile_ref.name(), "manual_section");
+        }
 
-    // Verify we can find the profile
-    let found = find_profile(&file_name, profile.fn_name(), 150);
-    assert!(found.is_some(), "Manual profile should be findable");
-    if let Some(profile_ref) = found {
-        assert!(
-            profile_ref.detailed_memory(),
-            "Profile should have detailed memory enabled"
-        );
-        assert_eq!(profile_ref.name(), "manual_section");
-    }
-
-    // Allocate memory
-    let data = vec![0u8; 16384];
-    assert_eq!(data.len(), 16384);
+        // Allocate memory
+        let data = vec![0u8; 16384];
+        assert_eq!(data.len(), 16384);
+    });
 }
 
 /// Test registry functionality directly
 #[cfg(feature = "full_profiling")]
 fn mem_attribution_registry_functions() {
-    // Clear the registry for this test
-    {
-        let mut registry = PROFILE_REGISTRY.lock();
-        *registry = Default::default();
-    }
-
-    // Create a profile manually
-    let file_name = file_stem_from_path_str(file!());
-    let fn_name = "registry_test";
-
-    let profile = Profile::new(
-        Some("registry_section"),
-        Some(fn_name),
-        ProfileType::Memory,
-        false,
-        true,
-        file!(),
-        Some(300),
-        Some(400),
-    )
-    .unwrap();
-
-    // Register the profile
-    register_profile(&profile);
-
     // Verify file names in registry
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
+        // Can't clear the registry for this test
+        // {
+        //     eprintln!(
+        //         "PROFILE_REGISTRY.is_locked()?: {}",
+        //         PROFILE_REGISTRY.is_locked()
+        //     );
+        //     let mut registry = PROFILE_REGISTRY.lock();
+        //     dbg!();
+        //     // *registry = Default::default();
+        //     // *registry = ProfileRegistry::default();
+        //     // assert!(registry.get_file_names().is_empty());
+        //     // assert!(registry.active_instances.is_empty());
+        // }
+
+        // Create a profile manually
+        let file_name = file_stem_from_path_str(file!());
+        let fn_name = "registry_test";
+
+        let profile = Profile::new(
+            Some("registry_section"),
+            Some(fn_name),
+            ProfileType::Memory,
+            false,
+            true,
+            file!(),
+            Some(300),
+            Some(400),
+        )
+        .unwrap();
+
+        // // Register the profile
+        // register_profile(&profile);
+
         let file_names = PROFILE_REGISTRY.lock().get_file_names();
         assert!(
             file_names.contains(&file_name.to_string()),
             "Registry should contain our file name"
         );
+
+        let fn_name = profile.fn_name();
+
+        // Try to find profiles at different line numbers
+        let in_range = find_profile(&file_name, fn_name, 350);
+        assert!(in_range.is_some(), "Should find profile for line in range");
+
+        let before_range = find_profile(&file_name, fn_name, 250);
+        assert!(
+            before_range.is_none(),
+            "Should not find profile for line before range"
+        );
+
+        let after_range = find_profile(&file_name, fn_name, 450);
+        assert!(
+            after_range.is_none(),
+            "Should not find profile for line after range"
+        );
     });
-
-    let fn_name = profile.fn_name();
-
-    // Try to find profiles at different line numbers
-    let in_range = find_profile(&file_name, fn_name, 350);
-    assert!(in_range.is_some(), "Should find profile for line in range");
-
-    let before_range = find_profile(&file_name, fn_name, 250);
-    assert!(
-        before_range.is_none(),
-        "Should not find profile for line before range"
-    );
-
-    let after_range = find_profile(&file_name, fn_name, 450);
-    assert!(
-        after_range.is_none(),
-        "Should not find profile for line after range"
-    );
 }
 
 /// Test overlapping profiles
@@ -283,7 +292,7 @@ fn mem_attribution_overlapping_profiles() {
     .unwrap();
 
     // Second profile: lines 550-650 (overlaps with first)
-    let profile2 = Profile::new(
+    let _profile2 = Profile::new(
         Some("overlap_second"),
         Some(fn_name),
         ProfileType::Memory,
@@ -295,9 +304,9 @@ fn mem_attribution_overlapping_profiles() {
     )
     .unwrap();
 
-    // Register the profiles
-    register_profile(&profile1);
-    register_profile(&profile2);
+    // // Register the profiles
+    // register_profile(&profile1);
+    // register_profile(&profile2);
 
     // Check which profile is found for a line in the overlap region
     let overlap = find_profile(&file_name, profile1.fn_name(), 575);
@@ -335,7 +344,7 @@ fn mem_attribution_record_allocation() {
     backtrace.resolve();
 
     // Access registry directly to test record_allocation
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Test valid allocation
         // assert!(!PROFILE_REGISTRY.is_locked());
         let valid = PROFILE_REGISTRY.lock().record_allocation(

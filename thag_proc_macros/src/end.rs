@@ -34,7 +34,7 @@ pub fn end_impl(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         fn #func_name() -> u32 { line!() }
 
-        ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+        ::thag_profiler::with_sys_alloc(    || {
             if let Some(profile) = #profile_id {
                 drop(profile);
             }

@@ -34,8 +34,7 @@ use std::time::{Duration, Instant};
 use thag_profiler::{
     clear_profile_config_cache, debug_log, disable_profiling, profiled,
     profiling::{
-        build_stack, clean_function_name, extract_path, get_global_profile_type, get_reg_desc_name,
-        is_profiled_function, is_profiling_enabled, is_profiling_state_enabled,
+        build_stack, clean_function_name, extract_path, get_reg_desc_name, is_profiled_function,
         register_profiled_function, DebugLevel, Profile, ProfileCapability, ProfileConfiguration,
         ProfilePaths, ProfileStats, ProfileType,
     },
@@ -47,7 +46,7 @@ use thag_profiler::profiling::{get_profile_config, get_time_path, set_profile_co
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     profiling::{get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path},
-    with_allocator, Allocator,
+    with_sys_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -127,11 +126,11 @@ fn test_profile_capability() {
 #[cfg(feature = "time_profiling")]
 fn test_profile_type() {
     // Test FromStr implementation
-    assert_eq!(ProfileType::from_str("time"), Some(ProfileType::Time));
-    assert_eq!(ProfileType::from_str("memory"), Some(ProfileType::Memory));
-    assert_eq!(ProfileType::from_str("both"), Some(ProfileType::Both));
-    assert_eq!(ProfileType::from_str("none"), None);
-    assert!(ProfileType::from_str("invalid").is_none());
+    assert_eq!(ProfileType::from_str("time"), Ok(ProfileType::Time));
+    assert_eq!(ProfileType::from_str("memory"), Ok(ProfileType::Memory));
+    assert_eq!(ProfileType::from_str("both"), Ok(ProfileType::Both));
+    assert_eq!(ProfileType::from_str("none"), Ok(ProfileType::None));
+    assert!(ProfileType::from_str("invalid").is_err());
 
     // Test Display implementation
     assert_eq!(ProfileType::Time.to_string(), "time");
@@ -267,86 +266,6 @@ fn test_env_config_parsing() {
         env::remove_var("THAG_PROFILER");
     }
     clear_profile_config_cache();
-}
-
-/// Test global profiling state management
-#[cfg(feature = "time_profiling")]
-fn test_global_profiling_state() {
-    let closure = || {
-        // Save initial state
-        let initial_enabled = is_profiling_enabled();
-        let _initial_state = is_profiling_state_enabled();
-        let initial_type = get_global_profile_type();
-
-        // First disable profiling
-        disable_profiling();
-        assert!(!is_profiling_enabled());
-        assert!(!is_profiling_state_enabled());
-
-        // Test enabling with different profile types using wrapper functions
-        // with attribute macros instead of the legacy enable_profiling() function
-        enable_time_profiling();
-        assert!(is_profiling_enabled());
-        assert!(is_profiling_state_enabled());
-        assert_eq!(get_global_profile_type(), ProfileType::Time);
-
-        // Test memory and both profiling (requires full_profiling)
-        #[cfg(feature = "full_profiling")]
-        {
-            enable_memory_profiling();
-            assert_eq!(get_global_profile_type(), ProfileType::Memory);
-
-            enable_both_profiling();
-            assert_eq!(get_global_profile_type(), ProfileType::Both);
-        }
-
-        #[cfg(not(feature = "full_profiling"))]
-        {
-            // Under non-full_profiling, attempting memory profiling should fail
-            // This is now enforced by the attribute macro
-            // No need to test the runtime error as it's a compile-time feature
-        }
-
-        // Test using default profile type (from config)
-        enable_default_profiling();
-
-        // Finally, disable again and verify
-        disable_profiling();
-        assert!(!is_profiling_enabled());
-
-        // Restore initial state if needed for other tests
-        if initial_enabled {
-            match initial_type {
-                ProfileType::Time => enable_time_profiling(),
-                #[cfg(feature = "full_profiling")]
-                ProfileType::Memory => enable_memory_profiling(),
-                #[cfg(feature = "full_profiling")]
-                ProfileType::Both => enable_both_profiling(),
-                _ => enable_default_profiling(),
-            }
-        }
-    };
-
-    // Define wrapper functions using attribute macros
-    #[thag_profiler::enable_profiling(time)]
-    fn enable_time_profiling() {}
-
-    #[cfg(feature = "full_profiling")]
-    #[thag_profiler::enable_profiling(memory)]
-    fn enable_memory_profiling() {}
-
-    #[cfg(feature = "full_profiling")]
-    #[thag_profiler::enable_profiling(both)]
-    fn enable_both_profiling() {}
-
-    #[thag_profiler::enable_profiling]
-    fn enable_default_profiling() {}
-
-    #[cfg(not(feature = "full_profiling"))]
-    closure();
-
-    #[cfg(feature = "full_profiling")]
-    with_allocator(Allocator::System, closure);
 }
 
 /// Test ProfileFilePaths and file path generation
@@ -490,14 +409,8 @@ fn test_string_cleaning() {
 
 /// Test Profile creation and operations
 #[cfg(feature = "time_profiling")]
+#[thag_profiler::enable_profiling(time)]
 fn test_profile_creation() {
-    // Set up for profiling with attribute macro approach
-    enable_time_profiling_for_test();
-    
-    // Helper function with attribute macro
-    #[thag_profiler::enable_profiling(time)]
-    fn enable_time_profiling_for_test() {}
-
     // Create a profile for testing
     let profile = Profile::new(
         Some("test_section"),
@@ -592,7 +505,7 @@ fn test_profile_stats() {
 fn test_stack_extraction() {
     use thag_profiler::profiling::extract_profile_callstack;
 
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Create a backtrace
         let mut backtrace = Backtrace::new();
 
@@ -600,7 +513,7 @@ fn test_stack_extraction() {
 
         // Extract the call stack
         let callstack = extract_profile_callstack(
-            "thag_profiler::mem_tracking::with_allocator", // Our parent function
+            "thag_profiler::mem_tracking::with_sys_alloc", // Our parent function
             &mut backtrace,
         );
 
@@ -641,7 +554,7 @@ fn test_profiled_function() {
     };
 
     #[cfg(feature = "full_profiling")]
-    with_allocator(Allocator::System, closure);
+    with_sys_alloc(closure);
 
     #[cfg(not(feature = "full_profiling"))]
     closure();
@@ -678,9 +591,6 @@ fn test_profiling_full_sequence() {
 
     println!("Testing environment config parsing...");
     test_env_config_parsing();
-
-    println!("Testing global profiling state...");
-    test_global_profiling_state();
 
     println!("Testing profile file paths...");
     test_profile_file_paths();

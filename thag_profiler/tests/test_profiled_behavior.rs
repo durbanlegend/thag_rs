@@ -309,5 +309,5 @@ fn test_profiled_behavior() {
     #[cfg(not(feature = "full_profiling"))]
     closure();
 
-    with_allocator(Allocator::System, closure);
+    with_sys_alloc(closure);
 }

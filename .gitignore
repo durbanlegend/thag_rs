@@ -79,3 +79,4 @@ thag_profiler/src/profiling_uninstr.rs
 demo/string_to_static_str1.rs
 bank/excess_alloc_dealloc.rs
 thag_profiler/src/lib.rs.new
+thag_profiler/src/mem_tracking copy.rs

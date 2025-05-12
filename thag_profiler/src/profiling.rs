@@ -29,7 +29,7 @@ use crate::{
         activate_task, create_memory_task, get_task_memory_usage, /* push_task_to_stack, */
         record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    warn_once, with_allocator, Allocator,
+    warn_once, with_sys_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -1535,7 +1535,7 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod mem_tracking.
-        with_allocator(Allocator::System, || -> Option<Self> {
+        with_sys_alloc(|| -> Option<Self> {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
@@ -2253,7 +2253,7 @@ impl Drop for Profile {
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             // Capture the information needed for deregistration but use it only at the end
             #[cfg(feature = "full_profiling")]
             let instance_id = self.instance_id();
@@ -2457,7 +2457,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     "core::",
     "core::ops::function::FnOnce::call_once",
     "hashbrown",
-    "mem_tracking::with_allocator",
+    "mem_tracking::with_sys_alloc",
     "mio::",
     "std::panic::catch_unwind",
     "std::panicking",
@@ -2522,7 +2522,7 @@ pub enum MemoryError {
 //         $crate::paste::paste! {
 //             fn [<end_ $name>]() -> u32 { line!() }
 
-//             ::thag_profiler::with_allocator(::thag_profiler::Allocator::System, || {
+//             ::thag_profiler::with_sys_alloc(|| {
 //                 drop(section_profile);
 //             });
 //         };

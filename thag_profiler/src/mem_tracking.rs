@@ -26,12 +26,18 @@ use std::{
     env,
     io::{self, Write},
     sync::{
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         LazyLock,
     },
     thread,
     time::Instant,
 };
+
+// Global flag indicating if system allocator is currently active
+static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
+
+// Counter to track nested with_sys_alloc calls
+static SYS_ALLOC_DEPTH: AtomicUsize = AtomicUsize::new(0);
 
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
@@ -47,40 +53,51 @@ pub enum Allocator {
     System,
 }
 
-// We'll use a simple atomic instead of TLS to avoid destructors
-static CURRENT_ALLOCATOR_ID: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
-
 // Function to get current allocator type
 pub fn current_allocator() -> Allocator {
-    let allocator_id = CURRENT_ALLOCATOR_ID.load(std::sync::atomic::Ordering::Relaxed);
-    if allocator_id == 0 {
-        Allocator::TaskAware
-    } else {
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
         Allocator::System
+    } else {
+        Allocator::TaskAware
     }
 }
 
-// Function to run code with a specific allocator
-pub fn with_allocator<T, F: FnOnce() -> T>(req_alloc: Allocator, f: F) -> T {
-    // Convert allocator enum to ID
-    let allocator_id = match req_alloc {
-        Allocator::TaskAware => 0,
-        Allocator::System => 1,
-    };
+// Add this new function
+pub fn with_sys_alloc<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    // Increment the depth counter
+    let prev_depth = SYS_ALLOC_DEPTH.fetch_add(1, Ordering::SeqCst);
 
-    // Save the current allocator
-    let prev_id = CURRENT_ALLOCATOR_ID.load(std::sync::atomic::Ordering::Relaxed);
-
-    // Set the new allocator
-    CURRENT_ALLOCATOR_ID.store(allocator_id, std::sync::atomic::Ordering::Relaxed);
+    // Only change the allocator if this is the outermost call
+    if prev_depth == 0 {
+        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
+    }
 
     // Run the function
     let result = f();
 
-    // Restore the previous allocator
-    CURRENT_ALLOCATOR_ID.store(prev_id, std::sync::atomic::Ordering::Relaxed);
+    // Decrement the depth counter
+    let new_depth = SYS_ALLOC_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
+
+    // Reset the allocator if this was the outermost call
+    if new_depth == 0 {
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+    }
 
     result
+}
+
+// Replace the with_allocator function with this simplified version
+pub fn with_allocator<F, R>(allocator: Allocator, f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    match allocator {
+        Allocator::System => with_sys_alloc(f),
+        Allocator::TaskAware => f(), // TaskAware is the default
+    }
 }
 
 /// Task-aware allocator that tracks memory allocations
@@ -110,7 +127,7 @@ impl TaskAwareAllocator {
 
 unsafe impl GlobalAlloc for TaskAwareAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             let ptr = unsafe { System.alloc(layout) };
 
             if !ptr.is_null() && is_profiling_state_enabled() {
@@ -129,7 +146,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
     #[allow(clippy::too_many_lines)]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             if !ptr.is_null() && is_profiling_state_enabled() {
                 // Potentially skip small allocations
                 let size = layout.size();
@@ -146,7 +163,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
         if !ptr.is_null() && is_profiling_state_enabled() {
-            with_allocator(Allocator::System, || {
+            with_sys_alloc(|| {
                 // Potentially skip small allocations
                 let dealloc_size = layout.size();
                 if dealloc_size > *SIZE_TRACKING_THRESHOLD {
@@ -454,7 +471,7 @@ pub fn record_allocation(
     address: usize,
     current_backtrace: &mut Backtrace,
 ) -> bool {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // First log (acquires debug log mutex)
         debug_log!(
             "Looking for profile to record allocation: module={file_name}, fn={fn_name}, line={line}, size={size}"
@@ -715,24 +732,19 @@ impl Default for Dispatcher {
 
 unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // Get current allocator type from thread-local storage
         match current_allocator() {
-            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
             Allocator::System => unsafe { self.system.alloc(layout) },
+            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
         }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        // // For deallocation, we don't need to check the allocator type, as both
-        // // allocators use System for the actual deallocation.
-        // unsafe { self.system.dealloc(ptr, layout) };
         match current_allocator() {
-            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
+            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
         }
     }
 }
-
 // Create a direct static instance
 #[global_allocator]
 static ALLOCATOR: Dispatcher = Dispatcher::new();
@@ -859,7 +871,7 @@ static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
 
 /// Add a task to active profiles
 pub fn activate_task(task_id: usize) {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         PROFILE_REGISTRY.lock().activate_task(task_id);
     });
 }
@@ -867,7 +879,7 @@ pub fn activate_task(task_id: usize) {
 /// Remove a task from active profiles
 #[allow(dead_code)]
 pub fn deactivate_task(task_id: usize) {
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         PROFILE_REGISTRY.lock().deactivate_task(task_id);
     });
 }
@@ -879,7 +891,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 
 // /// Add a task to a thread's stack
 // pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-//     with_allocator(Allocator::System, || {
+//     with_sys_alloc(|| {
 //         PROFILE_REGISTRY
 //             .lock()
 //             .push_task_to_stack(thread_id, task_id);
@@ -889,7 +901,7 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 // /// Remove a task from a thread's stack
 // #[allow(dead_code)]
 // pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-//     with_allocator(Allocator::System, || {
+//     with_sys_alloc(|| {
 //         PROFILE_REGISTRY
 //             .lock()
 //             .pop_task_from_stack(thread_id, task_id);
@@ -899,17 +911,13 @@ pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
 /// Get active tasks
 #[must_use]
 pub fn get_active_tasks() -> Vec<usize> {
-    with_allocator(Allocator::System, || {
-        PROFILE_REGISTRY.lock().get_active_tasks()
-    })
+    with_sys_alloc(|| PROFILE_REGISTRY.lock().get_active_tasks())
 }
 
 /// Get the last active task
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
-    with_allocator(Allocator::System, || {
-        PROFILE_REGISTRY.lock().get_last_active_task()
-    })
+    with_sys_alloc(|| PROFILE_REGISTRY.lock().get_last_active_task())
 }
 
 // ========== TASK CONTEXT DEFINITIONS ==========
@@ -1004,7 +1012,7 @@ impl Drop for TaskGuard {
         // This avoids complex TLS interactions during thread shutdown
 
         // Run these operations with System allocator
-        with_allocator(Allocator::System, || {
+        with_sys_alloc(|| {
             // Remove from active profiles
             debug_log!("Deactivating task {}", self.task_id);
             PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
@@ -1135,7 +1143,7 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 /// This is called by the main `init_profiling` function.
 pub fn initialize_memory_profiling() {
     // This is called at application startup to set up memory profiling
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
     });
@@ -1154,7 +1162,7 @@ pub fn finalize_memory_profiling() {
 fn write_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
-    with_allocator(Allocator::System, || {
+    with_sys_alloc(|| {
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
 

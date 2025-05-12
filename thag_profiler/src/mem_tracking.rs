@@ -86,44 +86,6 @@ where
         USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 
-    // Return the result
-    result
-}
-
-// A simplified version that doesn't rely on thread-local storage, used only
-// for the final operations in special contexts to avoid recursion issues
-#[inline(always)]
-pub fn with_system_allocator<T, F: FnOnce() -> T>(f: F) -> T {
-    // Temporarily force the allocator to System without using thread-locals
-    // This provides a guaranteed escape from recursion
-    // debug_log!("with_system_allocator: forcing System allocator for critical operation");
-
-    // Save the current state
-    let saved_state = ALLOCATOR_STATE.with(|state| {
-        let state_ref = state.borrow();
-        (state_ref.0, state_ref.1)
-    });
-
-    // Force System allocator
-    ALLOCATOR_STATE.with(|state| {
-        let mut state_mut = state.borrow_mut();
-        state_mut.0 = Allocator::System;
-    });
-
-    // Execute the function with System allocator
-    let result = f();
-
-    // Restore previous state
-    ALLOCATOR_STATE.with(|state| {
-        let mut state_mut = state.borrow_mut();
-        state_mut.0 = saved_state.0;
-        state_mut.1 = saved_state.1;
-
-        // Also update the thread-local for inheritance
-        CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(state_mut.0));
-    });
-
-    // debug_log!("with_system_allocator: restored previous allocator state");
     result
 }
 
@@ -170,21 +132,10 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
             if !ptr.is_null() && is_profiling_state_enabled() {
                 let size = layout.size();
-                // Always log allocations to debug
-                debug_log!(
-                    "TaskAwareAllocator::alloc - allocated {} bytes at {:p}",
-                    size,
-                    ptr
-                );
-
-                // Potentially skip small allocations for tracking
+                // Potentially skip small allocations
                 if size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
-                    debug_log!(
-                        "TaskAwareAllocator::alloc - RECORDING allocation of size={} at {:p}",
-                        size,
-                        ptr
-                    );
+
                     record_alloc(address, size);
                 }
             }
@@ -233,15 +184,14 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 
 #[allow(clippy::too_many_lines)]
 fn record_alloc(address: usize, size: usize) {
-    // Thread-local tracking flag to prevent recursion
-    thread_local! {
-        static TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
-    }
-
+    // Simple recursion prevention without using TLS with destructors
+    static mut IN_TRACKING: bool = false;
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
-            TRACKING.with(|flag| flag.set(false));
+            unsafe {
+                IN_TRACKING = false;
+            }
         }
     }
 
@@ -252,30 +202,28 @@ fn record_alloc(address: usize, size: usize) {
 
     let profile_type = get_global_profile_type();
     if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
-        debug_log!(
-            "Skipping allocation recording because profile_type={:?}",
-            profile_type
-        );
+        // debug_log!(
+        //     "Skipping allocation recording because profile_type={:?}",
+        //     profile_type
+        // );
         return;
     }
 
-    // Check if we're already tracking to prevent recursion
-    let already_tracking = TRACKING.with(|flag| flag.get());
+    // Flag if we're already tracking in case it causes an infinite recursion
+    let in_tracking = unsafe { IN_TRACKING };
 
-    // Just return if we're already tracking, no need to assert or panic
-    if already_tracking {
-        debug_log!("record_alloc: already tracking allocation, skipping to avoid recursion");
-        return;
+    #[cfg(debug_assertions)]
+    assert!(!in_tracking);
+
+    if in_tracking {
+        debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
+        // return ptr;
     }
-
-    debug_log!(
-        "record_alloc: processing allocation at address={:p}, size={}",
-        address as *const u8,
-        size
-    );
 
     // Set tracking flag and create guard for cleanup
-    TRACKING.with(|flag| flag.set(true));
+    unsafe {
+        IN_TRACKING = true;
+    }
     let _guard = Guard;
 
     // Get backtrace without recursion
@@ -284,7 +232,6 @@ fn record_alloc(address: usize, size: usize) {
     let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
     // debug_log!("Calling extract_callstack");
-    debug_log!("Beginning backtrace capture for allocation of size={size}");
     let mut current_backtrace = Backtrace::new();
 
     // TODO phase out - useful for debugging though
@@ -332,14 +279,14 @@ fn record_alloc(address: usize, size: usize) {
                     maybe_frame.unwrap().to_string(),
                 )
             })
-            .inspect(|(filename, lineno, frame)| {
-                debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-            })
+            // .inspect(|(filename, lineno, frame)| {
+            //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+            // })
             .filter(|(filename, _, _)| (file_names.contains(filename)))
-            .inspect(|(_, _, _)| {
-                // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-                debug_log!("***File names match");
-            })
+            // .inspect(|(_, _, _)| {
+            //     // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+            //     debug_log!("***File names match");
+            // })
             .map(|(filename, lineno, mut frame)| {
                 (
                     filename,
@@ -357,9 +304,9 @@ fn record_alloc(address: usize, size: usize) {
                     find_profile(&filename, &fn_name, lineno),
                 )
             })
-            .inspect(|(_, _, _, _, maybe_profile_ref)| {
-                debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
-            })
+            // .inspect(|(_, _, _, _, maybe_profile_ref)| {
+            //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
+            // })
             .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
             .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| {
                 (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap())
@@ -368,8 +315,6 @@ fn record_alloc(address: usize, size: usize) {
             // .cloned()
             .collect();
     // .last() else {return};
-
-    debug_log!("func_and_ancestors={func_and_ancestors:#?}");
 
     if func_and_ancestors.is_empty() {
         debug_log!("No eligible profile found");
@@ -483,26 +428,10 @@ fn record_alloc(address: usize, size: usize) {
 
 #[allow(clippy::missing_panics_doc, reason = "debug_assertions")]
 pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
-    // Get thread info without holding a thread reference
-    let thread_id = std::thread::current().id();
-    let thread_name = std::thread::current()
-        .name()
-        .unwrap_or("unnamed")
-        .to_string();
-
-    debug_log!(
-        "RECORDING ALLOCATION: thread={:?}/{}, address={:p}, size={}, task_id={}",
-        thread_id,
-        thread_name,
-        address as *const u8,
-        size,
-        task_id
-    );
     let start_record_alloc = Instant::now();
 
     debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
     let mut registry = ALLOC_REGISTRY.lock();
-
     registry
         .task_allocations
         .entry(task_id)
@@ -525,8 +454,6 @@ pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
         assert_eq!(sz, size);
         assert_eq!(addr, address);
         assert_eq!(reg_task_id, task_id);
-    } else {
-        drop(registry);
     }
 
     debug_log!(
@@ -640,15 +567,14 @@ pub fn write_detailed_stack_alloc(
     reason = "debug_assertions"
 )]
 pub fn record_dealloc(address: usize, size: usize) {
-    // Thread-local tracking flag to prevent recursion
-    thread_local! {
-        static TRACKING: std::cell::Cell<bool> = std::cell::Cell::new(false);
-    }
-
+    // Simple recursion prevention without using TLS with destructors
+    static mut IN_TRACKING: bool = false;
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
-            TRACKING.with(|flag| flag.set(false));
+            unsafe {
+                IN_TRACKING = false;
+            }
         }
     }
 
@@ -674,16 +600,21 @@ pub fn record_dealloc(address: usize, size: usize) {
         return
     );
 
-    // Check if we're already tracking to prevent recursion
-    let already_tracking = TRACKING.with(|flag| flag.get());
+    // Flag if we're already tracking in case it causes an infinite recursion
+    let in_tracking = unsafe { IN_TRACKING };
 
-    // Just return if we're already tracking, no need to assert or panic
-    if already_tracking {
-        return;
+    #[cfg(debug_assertions)]
+    assert!(!in_tracking);
+
+    if in_tracking {
+        debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
+        // return ptr;
     }
 
     // Set tracking flag and create guard for cleanup
-    TRACKING.with(|flag| flag.set(true));
+    unsafe {
+        IN_TRACKING = true;
+    }
     let _guard = Guard;
 
     // Get backtrace without recursion
@@ -805,8 +736,6 @@ unsafe impl GlobalAlloc for Dispatcher {
             Allocator::System => unsafe { self.system.alloc(layout) },
             Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
         }
-
-        ptr
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
@@ -1230,7 +1159,7 @@ pub fn finalize_memory_profiling() {
 
 /// Write memory profile data to a file
 #[allow(clippy::too_many_lines)]
-pub fn write_memory_profile_data() {
+fn write_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
     with_sys_alloc(|| {

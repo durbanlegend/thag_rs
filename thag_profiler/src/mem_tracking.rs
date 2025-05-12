@@ -86,15 +86,6 @@ where
         USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 
-        // If we've unwound all recursive calls and the allocator changed, log it
-        if state_mut.1 == 0 && state_mut.0 != prev_allocator {
-            // debug_log!("with_allocator: function completed, allocator is now {:?}", state_mut.0);
-
-            // Update the thread context for inheritance
-            CURRENT_ALLOCATOR_CONTEXT.with(|cell| cell.set(state_mut.0));
-        }
-    });
-
     // Return the result
     result
 }

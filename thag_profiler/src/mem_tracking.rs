@@ -19,7 +19,9 @@ use crate::{
 };
 use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;
+use parking_lot::ReentrantMutex;
 use regex::Regex;
+use std::cell::RefCell;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     collections::{BTreeSet, HashMap, HashSet},
@@ -32,6 +34,24 @@ use std::{
     thread,
     time::Instant,
 };
+
+// State structure for tracking allocator stack
+struct AllocatorState {
+    // Stack of allocators, with the current one at the top
+    stack: Vec<Allocator>,
+}
+
+impl AllocatorState {
+    const fn new() -> Self {
+        Self {
+            // Initialize with an empty stack
+            stack: Vec::new(),
+        }
+    }
+}
+
+static ALLOCATOR_STATE: ReentrantMutex<RefCell<AllocatorState>> =
+    ReentrantMutex::new(RefCell::new(AllocatorState::new()));
 
 // Fast path atomic for checking current allocator without locking
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
@@ -62,10 +82,18 @@ impl fmt::Display for Allocator {
 }
 
 /// Get the current allocator based on the atomic state
+/// Get the current allocator based on the atomic state
 #[inline]
 pub fn current_allocator() -> Allocator {
+    // Fast path using atomic
     if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
         Allocator::System
+    } else if let Some(guard) = ALLOCATOR_STATE.try_lock() {
+        let state = guard.borrow();
+        if !state.stack.is_empty() {
+            return *state.stack.last().unwrap();
+        }
+        Allocator::TaskAware
     } else {
         Allocator::TaskAware
     }
@@ -81,29 +109,64 @@ pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // Increment recursion depth
-    let prev_depth = RECURSION_DEPTH.fetch_add(1, Ordering::SeqCst);
+    // Acquire lock
+    let guard = ALLOCATOR_STATE.lock();
 
-    // Only toggle allocator on outermost call
-    let need_toggle = prev_depth == 0;
+    // Track whether we need to restore
+    let prev_allocator = current_allocator();
+    let need_restore = prev_allocator != Allocator::System;
 
-    // Set system allocator if this is the outermost call
-    if need_toggle {
-        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
+    // Push System allocator to stack
+    {
+        let mut state = guard.borrow_mut();
+        state.stack.push(Allocator::System);
     }
 
-    // Run the function and capture result
-    let result = f();
+    // Set fast path atomic
+    USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
 
-    // Decrement recursion depth
-    let new_depth = RECURSION_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
-
-    // Reset allocator if this was the outermost call
-    if need_toggle && new_depth == 0 {
-        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+    // Create struct to handle cleanup on drop
+    struct Cleanup<'a> {
+        guard: &'a parking_lot::lock_api::ReentrantMutexGuard<
+            'a,
+            parking_lot::RawMutex,
+            parking_lot::RawThreadId,
+            RefCell<AllocatorState>,
+        >,
+        need_restore: bool,
+        prev_allocator: Allocator,
     }
 
-    result
+    impl<'a> Drop for Cleanup<'a> {
+        fn drop(&mut self) {
+            // Pop the allocator from the stack
+            {
+                let mut state = self.guard.borrow_mut();
+                if !state.stack.is_empty() {
+                    state.stack.pop();
+                }
+
+                // Update fast path atomic based on new stack top
+                if self.need_restore {
+                    if state.stack.is_empty()
+                        || *state.stack.last().unwrap_or(&Allocator::TaskAware) != Allocator::System
+                    {
+                        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+                    }
+                }
+            }
+        }
+    }
+
+    // Create guard to restore on scope exit
+    let cleanup = Cleanup {
+        guard: &guard,
+        need_restore,
+        prev_allocator,
+    };
+
+    // Run the function
+    f()
 }
 
 /// Run a function with the specified allocator
@@ -118,38 +181,65 @@ where
 {
     match allocator {
         Allocator::System => with_sys_alloc(f),
-        Allocator::TaskAware => {
-            // If we're using System, temporarily switch to TaskAware
-            if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
-                // Increment recursion depth
-                let prev_depth = RECURSION_DEPTH.fetch_add(1, Ordering::SeqCst);
+        _ => with_task_allocator(allocator, f),
+    }
+}
 
-                // Only toggle if outermost
-                let need_toggle = prev_depth == 0;
+/// Helper function to handle non-System allocators
+fn with_task_allocator<F, R>(allocator: Allocator, f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    // Acquire lock
+    let guard = ALLOCATOR_STATE.lock();
 
-                // Set to TaskAware
-                if need_toggle {
-                    USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-                }
+    // Track whether to restore System allocator
+    let was_using_system = USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed);
 
-                // Run the function
-                let result = f();
+    // Push the requested allocator
+    {
+        let mut state = guard.borrow_mut();
+        state.stack.push(allocator);
+    }
 
-                // Decrement recursion depth
-                let new_depth = RECURSION_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
+    // Update the atomic flag if we're switching from System
+    if was_using_system {
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+    }
 
-                // Restore to System
-                if need_toggle && new_depth == 0 {
-                    USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
-                }
+    // Create cleanup handler
+    struct Cleanup<'a> {
+        guard: &'a parking_lot::lock_api::ReentrantMutexGuard<
+            'a,
+            parking_lot::RawMutex,
+            parking_lot::RawThreadId,
+            RefCell<AllocatorState>,
+        >,
+        was_using_system: bool,
+    }
 
-                result
-            } else {
-                // Already using TaskAware, just run the function
-                f()
+    impl<'a> Drop for Cleanup<'a> {
+        fn drop(&mut self) {
+            let mut state = self.guard.borrow_mut();
+            if !state.stack.is_empty() {
+                state.stack.pop();
+            }
+
+            // Restore System allocator if needed
+            if self.was_using_system {
+                USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
             }
         }
     }
+
+    // Create guard
+    let cleanup = Cleanup {
+        guard: &guard,
+        was_using_system,
+    };
+
+    // Run function
+    f()
 }
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator

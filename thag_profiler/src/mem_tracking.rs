@@ -18,7 +18,7 @@ use crate::{
     regex, warn_once, Profile, ProfileRef, ProfileType,
 };
 use backtrace::{Backtrace, BacktraceFrame};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, ReentrantMutex};
 use regex::Regex;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
@@ -42,61 +42,151 @@ static SYS_ALLOC_DEPTH: AtomicUsize = AtomicUsize::new(0);
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
-// ========== MEMORY ALLOCATOR DEFINITION ==========
-
-/// Enum defining all available allocators used by the profiler
+// Define allocator types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Allocator {
-    /// Default allocator that performs memory tracking
+    /// Task-aware allocator that tracks which task allocated memory
     TaskAware,
-    /// System allocator used internally to prevent recursion
+    /// System allocator for profiling operations
     System,
 }
 
-// Function to get current allocator type
-pub fn current_allocator() -> Allocator {
-    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
-        Allocator::System
-    } else {
-        Allocator::TaskAware
+// State for allocator switching with a stack-based approach
+struct AllocatorState {
+    // Stack of allocators, with the current one at the top
+    stack: Vec<Allocator>,
+}
+
+impl AllocatorState {
+    fn new() -> Self {
+        // Initialize with TaskAware as default
+        let mut stack = Vec::with_capacity(8);
+        stack.push(Allocator::TaskAware);
+        Self { stack }
+    }
+
+    // Get current allocator (top of stack)
+    fn current(&self) -> Allocator {
+        *self.stack.last().unwrap_or(&Allocator::TaskAware)
+    }
+
+    // Push allocator to stack
+    fn push(&mut self, allocator: Allocator) {
+        self.stack.push(allocator);
+    }
+
+    // Pop allocator from stack, never removing the default
+    fn pop(&mut self) {
+        if self.stack.len() > 1 {
+            self.stack.pop();
+        }
     }
 }
 
-// Add this new function
+// Global state protected by ReentrantMutex
+static ALLOCATOR_STATE: ReentrantMutex<AllocatorState> = ReentrantMutex::new(AllocatorState::new());
+
+/// Get the current allocator
+pub fn current_allocator() -> Allocator {
+    // Lock and read current allocator
+    let state = ALLOCATOR_STATE.lock();
+    state.current()
+}
+
+/// Run a function with the system allocator
+///
+/// This function temporarily switches to the system allocator while executing the provided
+/// closure, then switches back to the previous allocator afterward.
+///
+/// Properly handles nested calls and threading via a ReentrantMutex.
 pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // Increment the depth counter
-    let prev_depth = SYS_ALLOC_DEPTH.fetch_add(1, Ordering::SeqCst);
+    // RAII guard to restore state on function exit
+    struct AllocatorGuard;
 
-    // Only change the allocator if this is the outermost call
-    if prev_depth == 0 {
-        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
+    impl Drop for AllocatorGuard {
+        fn drop(&mut self) {
+            // Pop the allocator on scope exit
+            let mut state = ALLOCATOR_STATE.lock();
+            state.pop();
+        }
     }
+
+    // Push System allocator onto the stack
+    {
+        let mut state = ALLOCATOR_STATE.lock();
+        state.push(Allocator::System);
+    }
+
+    // Create guard to restore state on return/panic
+    let _guard = AllocatorGuard;
 
     // Run the function
-    let result = f();
-
-    // Decrement the depth counter
-    let new_depth = SYS_ALLOC_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
-
-    // Reset the allocator if this was the outermost call
-    if new_depth == 0 {
-        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-    }
-
-    result
+    f()
 }
 
-// Replace the with_allocator function with this simplified version
+/// Run a function with the specified allocator
+///
+/// This function temporarily switches to the provided allocator while executing the
+/// closure, then switches back to the previous allocator afterward.
+///
+/// Works correctly with nesting and threading via a ReentrantMutex.
 pub fn with_allocator<F, R>(allocator: Allocator, f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    match allocator {
-        Allocator::System => with_sys_alloc(f),
-        Allocator::TaskAware => f(), // TaskAware is the default
+    // RAII guard to restore state on function exit
+    struct AllocatorGuard;
+
+    impl Drop for AllocatorGuard {
+        fn drop(&mut self) {
+            // Pop the allocator on scope exit
+            let mut state = ALLOCATOR_STATE.lock();
+            state.pop();
+        }
+    }
+
+    // Push the requested allocator onto the stack
+    {
+        let mut state = ALLOCATOR_STATE.lock();
+        state.push(allocator);
+    }
+
+    // Create guard to restore state on return/panic
+    let _guard = AllocatorGuard;
+
+    // Run the function
+    f()
+}
+
+/// Dispatcher allocator that routes allocation requests to the appropriate allocator
+pub struct Dispatcher {
+    pub task_aware: TaskAwareAllocator,
+    pub system: std::alloc::System,
+}
+
+unsafe impl GlobalAlloc for Dispatcher {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        match current_allocator() {
+            Allocator::System => unsafe { self.system.alloc(layout) },
+            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
+        }
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        match current_allocator() {
+            Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
+            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
+        }
+    }
+
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        match current_allocator() {
+            Allocator::System => unsafe { self.system.realloc(ptr, layout, new_size) },
+            Allocator::TaskAware => unsafe { self.task_aware.realloc(ptr, layout, new_size) },
+        }
     }
 }
 
@@ -708,11 +798,11 @@ pub fn record_dealloc(address: usize, size: usize) {
     }
 }
 
-/// Dispatcher allocator that routes allocation requests to the appropriate allocator
-pub struct Dispatcher {
-    task_aware: TaskAwareAllocator,
-    system: System,
-}
+// /// Dispatcher allocator that routes allocation requests to the appropriate allocator
+// pub struct Dispatcher {
+//     task_aware: TaskAwareAllocator,
+//     system: System,
+// }
 
 impl Dispatcher {
     #[must_use]
@@ -730,21 +820,22 @@ impl Default for Dispatcher {
     }
 }
 
-unsafe impl GlobalAlloc for Dispatcher {
-    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        match current_allocator() {
-            Allocator::System => unsafe { self.system.alloc(layout) },
-            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
-        }
-    }
+// unsafe impl GlobalAlloc for Dispatcher {
+//     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+//         match current_allocator() {
+//             Allocator::System => unsafe { self.system.alloc(layout) },
+//             Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
+//         }
+//     }
 
-    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        match current_allocator() {
-            Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
-            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
-        }
-    }
-}
+//     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+//         match current_allocator() {
+//             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
+//             Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
+//         }
+//     }
+// }
+
 // Create a direct static instance
 #[global_allocator]
 static ALLOCATOR: Dispatcher = Dispatcher::new();

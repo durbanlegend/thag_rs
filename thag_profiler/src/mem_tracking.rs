@@ -44,7 +44,8 @@ struct AllocatorState {
 impl AllocatorState {
     const fn new() -> Self {
         Self {
-            // Initialize with an empty stack
+            // Can't initialize with a non-empty Vec in a const fn,
+            // so we'll initialize the stack in current_allocator
             stack: Vec::new(),
         }
     }
@@ -82,7 +83,6 @@ impl fmt::Display for Allocator {
 }
 
 /// Get the current allocator based on the atomic state
-/// Get the current allocator based on the atomic state
 #[inline]
 pub fn current_allocator() -> Allocator {
     // Fast path using atomic
@@ -92,6 +92,15 @@ pub fn current_allocator() -> Allocator {
         let state = guard.borrow();
         if !state.stack.is_empty() {
             return *state.stack.last().unwrap();
+        }
+
+        // If the stack is empty, initialize it with TaskAware
+        drop(state); // Need to drop the immutable borrow before getting a mutable one
+        let mut state = guard.borrow_mut();
+        if state.stack.is_empty() {
+            state.stack.push(Allocator::TaskAware);
+            // Make sure the atomic flag matches the stack
+            USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
         }
         Allocator::TaskAware
     } else {
@@ -134,7 +143,7 @@ where
             RefCell<AllocatorState>,
         >,
         need_restore: bool,
-        prev_allocator: Allocator,
+        // prev_allocator: Allocator,
     }
 
     impl<'a> Drop for Cleanup<'a> {
@@ -159,10 +168,10 @@ where
     }
 
     // Create guard to restore on scope exit
-    let cleanup = Cleanup {
+    let _cleanup = Cleanup {
         guard: &guard,
         need_restore,
-        prev_allocator,
+        // prev_allocator,
     };
 
     // Run the function
@@ -233,7 +242,7 @@ where
     }
 
     // Create guard
-    let cleanup = Cleanup {
+    let _cleanup = Cleanup {
         guard: &guard,
         was_using_system,
     };
@@ -265,26 +274,21 @@ impl Default for Dispatcher {
 
 unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        // Safety check for unreasonably large allocations
-        if layout.size() > MAX_SAFE_ALLOCATION {
-            eprintln!(
-                "WARNING: Extremely large allocation request of {} bytes rejected",
-                layout.size()
+        let current = current_allocator();
+
+        // For debugging, log larger allocations
+        if layout.size() > 1024 * 1024 {
+            // 1MB
+            debug_log!(
+                "Large allocation of {} bytes using allocator: {:?}",
+                layout.size(),
+                current
             );
-            return std::ptr::null_mut();
         }
 
-        match current_allocator() {
+        match current {
             Allocator::System => unsafe { self.system.alloc(layout) },
-            Allocator::TaskAware => {
-                // Use a recursive guard here to prevent infinite loops
-                if RECURSION_DEPTH.load(Ordering::Relaxed) > 10 {
-                    // Emergency fallback to system allocator
-                    unsafe { self.system.alloc(layout) }
-                } else {
-                    unsafe { self.task_aware.alloc(layout) }
-                }
-            }
+            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
         }
     }
 
@@ -1390,7 +1394,21 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 /// Initialize memory profiling.
 /// This is called by the main `init_profiling` function.
 pub fn initialize_memory_profiling() {
-    // This is called at application startup to set up memory profiling
+    // Set up allocator state with TaskAware as the default
+    {
+        // Initialize allocator state with TaskAware
+        let guard = ALLOCATOR_STATE.lock();
+        let mut state = guard.borrow_mut();
+
+        // Clear the stack and push TaskAware as the default
+        state.stack.clear();
+        state.stack.push(Allocator::TaskAware);
+
+        // Make sure system allocator flag is off
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+    }
+
+    // Use system allocator just for logging
     with_sys_alloc(|| {
         debug_log!("Memory profiling initialized");
         flush_debug_log();

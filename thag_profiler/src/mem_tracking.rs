@@ -58,11 +58,9 @@ struct AllocatorState {
 }
 
 impl AllocatorState {
-    fn new() -> Self {
-        // Initialize with TaskAware as default
-        let mut stack = Vec::with_capacity(8);
-        stack.push(Allocator::TaskAware);
-        Self { stack }
+    const fn new() -> Self {
+        // Empty stack to start
+        Self { stack: Vec::new() }
     }
 
     // Get current allocator (top of stack)
@@ -88,9 +86,15 @@ static ALLOCATOR_STATE: ReentrantMutex<AllocatorState> = ReentrantMutex::new(All
 
 /// Get the current allocator
 pub fn current_allocator() -> Allocator {
-    // Lock and read current allocator
-    let state = ALLOCATOR_STATE.lock();
-    state.current()
+    let mut guard = ALLOCATOR_STATE.lock();
+
+    // Initialize with TaskAware if empty
+    if guard.stack.is_empty() {
+        guard.stack.push(Allocator::TaskAware);
+    }
+
+    // Return the current allocator
+    *guard.stack.last().unwrap()
 }
 
 /// Run a function with the system allocator
@@ -103,27 +107,25 @@ pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // RAII guard to restore state on function exit
-    struct AllocatorGuard;
+    // Push System allocator to the stack
+    {
+        let mut guard = ALLOCATOR_STATE.lock();
+        guard.stack.push(Allocator::System);
+    }
 
+    // Create a guard to restore state on scope exit
+    struct AllocatorGuard;
     impl Drop for AllocatorGuard {
         fn drop(&mut self) {
-            // Pop the allocator on scope exit
-            let mut state = ALLOCATOR_STATE.lock();
-            state.pop();
+            let mut guard = ALLOCATOR_STATE.lock();
+            if guard.stack.len() > 1 {
+                guard.stack.pop();
+            }
         }
     }
 
-    // Push System allocator onto the stack
-    {
-        let mut state = ALLOCATOR_STATE.lock();
-        state.push(Allocator::System);
-    }
-
-    // Create guard to restore state on return/panic
+    // Create guard and execute function
     let _guard = AllocatorGuard;
-
-    // Run the function
     f()
 }
 
@@ -137,27 +139,25 @@ pub fn with_allocator<F, R>(allocator: Allocator, f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // RAII guard to restore state on function exit
-    struct AllocatorGuard;
+    // Push the requested allocator to the stack
+    {
+        let mut guard = ALLOCATOR_STATE.lock();
+        guard.stack.push(allocator);
+    }
 
+    // Create a guard to restore state on scope exit
+    struct AllocatorGuard;
     impl Drop for AllocatorGuard {
         fn drop(&mut self) {
-            // Pop the allocator on scope exit
-            let mut state = ALLOCATOR_STATE.lock();
-            state.pop();
+            let mut guard = ALLOCATOR_STATE.lock();
+            if guard.stack.len() > 1 {
+                guard.stack.pop();
+            }
         }
     }
 
-    // Push the requested allocator onto the stack
-    {
-        let mut state = ALLOCATOR_STATE.lock();
-        state.push(allocator);
-    }
-
-    // Create guard to restore state on return/panic
+    // Create guard and execute function
     let _guard = AllocatorGuard;
-
-    // Run the function
     f()
 }
 

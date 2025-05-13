@@ -18,12 +18,12 @@ use crate::{
     regex, warn_once, Profile, ProfileRef, ProfileType,
 };
 use backtrace::{Backtrace, BacktraceFrame};
-use parking_lot::{Mutex, ReentrantMutex};
+use parking_lot::Mutex;
 use regex::Regex;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     collections::{BTreeSet, HashMap, HashSet},
-    env,
+    env, fmt,
     io::{self, Write},
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -33,14 +33,15 @@ use std::{
     time::Instant,
 };
 
-// Global flag indicating if system allocator is currently active
-static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
-
-// Counter to track nested with_sys_alloc calls
-static SYS_ALLOC_DEPTH: AtomicUsize = AtomicUsize::new(0);
-
+// Fast path atomic for checking current allocator without locking
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
+
+// Static atomics for minimal state tracking without allocations
+static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
+static RECURSION_DEPTH: AtomicUsize = AtomicUsize::new(0);
+// Maximum safe allocation size - 1 GB, anything larger is suspicious
+const MAX_SAFE_ALLOCATION: usize = 1024 * 1024 * 1024;
 
 // Define allocator types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -51,50 +52,23 @@ pub enum Allocator {
     System,
 }
 
-// State for allocator switching with a stack-based approach
-struct AllocatorState {
-    // Stack of allocators, with the current one at the top
-    stack: Vec<Allocator>,
-}
-
-impl AllocatorState {
-    const fn new() -> Self {
-        // Empty stack to start
-        Self { stack: Vec::new() }
-    }
-
-    // Get current allocator (top of stack)
-    fn current(&self) -> Allocator {
-        *self.stack.last().unwrap_or(&Allocator::TaskAware)
-    }
-
-    // Push allocator to stack
-    fn push(&mut self, allocator: Allocator) {
-        self.stack.push(allocator);
-    }
-
-    // Pop allocator from stack, never removing the default
-    fn pop(&mut self) {
-        if self.stack.len() > 1 {
-            self.stack.pop();
+impl fmt::Display for Allocator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Allocator::TaskAware => write!(f, "TaskAware"),
+            Allocator::System => write!(f, "System"),
         }
     }
 }
 
-// Global state protected by ReentrantMutex
-static ALLOCATOR_STATE: ReentrantMutex<AllocatorState> = ReentrantMutex::new(AllocatorState::new());
-
-/// Get the current allocator
+/// Get the current allocator based on the atomic state
+#[inline]
 pub fn current_allocator() -> Allocator {
-    let mut guard = ALLOCATOR_STATE.lock();
-
-    // Initialize with TaskAware if empty
-    if guard.stack.is_empty() {
-        guard.stack.push(Allocator::TaskAware);
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
+        Allocator::System
+    } else {
+        Allocator::TaskAware
     }
-
-    // Return the current allocator
-    *guard.stack.last().unwrap()
 }
 
 /// Run a function with the system allocator
@@ -107,26 +81,29 @@ pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // Push System allocator to the stack
-    {
-        let mut guard = ALLOCATOR_STATE.lock();
-        guard.stack.push(Allocator::System);
+    // Increment recursion depth
+    let prev_depth = RECURSION_DEPTH.fetch_add(1, Ordering::SeqCst);
+
+    // Only toggle allocator on outermost call
+    let need_toggle = prev_depth == 0;
+
+    // Set system allocator if this is the outermost call
+    if need_toggle {
+        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
     }
 
-    // Create a guard to restore state on scope exit
-    struct AllocatorGuard;
-    impl Drop for AllocatorGuard {
-        fn drop(&mut self) {
-            let mut guard = ALLOCATOR_STATE.lock();
-            if guard.stack.len() > 1 {
-                guard.stack.pop();
-            }
-        }
+    // Run the function and capture result
+    let result = f();
+
+    // Decrement recursion depth
+    let new_depth = RECURSION_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
+
+    // Reset allocator if this was the outermost call
+    if need_toggle && new_depth == 0 {
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 
-    // Create guard and execute function
-    let _guard = AllocatorGuard;
-    f()
+    result
 }
 
 /// Run a function with the specified allocator
@@ -139,26 +116,40 @@ pub fn with_allocator<F, R>(allocator: Allocator, f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // Push the requested allocator to the stack
-    {
-        let mut guard = ALLOCATOR_STATE.lock();
-        guard.stack.push(allocator);
-    }
+    match allocator {
+        Allocator::System => with_sys_alloc(f),
+        Allocator::TaskAware => {
+            // If we're using System, temporarily switch to TaskAware
+            if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
+                // Increment recursion depth
+                let prev_depth = RECURSION_DEPTH.fetch_add(1, Ordering::SeqCst);
 
-    // Create a guard to restore state on scope exit
-    struct AllocatorGuard;
-    impl Drop for AllocatorGuard {
-        fn drop(&mut self) {
-            let mut guard = ALLOCATOR_STATE.lock();
-            if guard.stack.len() > 1 {
-                guard.stack.pop();
+                // Only toggle if outermost
+                let need_toggle = prev_depth == 0;
+
+                // Set to TaskAware
+                if need_toggle {
+                    USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+                }
+
+                // Run the function
+                let result = f();
+
+                // Decrement recursion depth
+                let new_depth = RECURSION_DEPTH.fetch_sub(1, Ordering::SeqCst) - 1;
+
+                // Restore to System
+                if need_toggle && new_depth == 0 {
+                    USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
+                }
+
+                result
+            } else {
+                // Already using TaskAware, just run the function
+                f()
             }
         }
     }
-
-    // Create guard and execute function
-    let _guard = AllocatorGuard;
-    f()
 }
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator
@@ -167,25 +158,101 @@ pub struct Dispatcher {
     pub system: std::alloc::System,
 }
 
+impl Dispatcher {
+    pub const fn new() -> Self {
+        Self {
+            task_aware: TaskAwareAllocator,
+            system: std::alloc::System,
+        }
+    }
+}
+
+impl Default for Dispatcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // Safety check for unreasonably large allocations
+        if layout.size() > MAX_SAFE_ALLOCATION {
+            eprintln!(
+                "WARNING: Extremely large allocation request of {} bytes rejected",
+                layout.size()
+            );
+            return std::ptr::null_mut();
+        }
+
         match current_allocator() {
             Allocator::System => unsafe { self.system.alloc(layout) },
-            Allocator::TaskAware => unsafe { self.task_aware.alloc(layout) },
+            Allocator::TaskAware => {
+                // Use a recursive guard here to prevent infinite loops
+                if RECURSION_DEPTH.load(Ordering::Relaxed) > 10 {
+                    // Emergency fallback to system allocator
+                    unsafe { self.system.alloc(layout) }
+                } else {
+                    unsafe { self.task_aware.alloc(layout) }
+                }
+            }
         }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        if ptr.is_null() {
+            return;
+        }
+
+        // Safety check for unreasonably large deallocations
+        if layout.size() > MAX_SAFE_ALLOCATION {
+            eprintln!(
+                "WARNING: Extremely large deallocation request of {} bytes",
+                layout.size()
+            );
+            // Still need to deallocate it to avoid memory leaks
+        }
+
         match current_allocator() {
             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
-            Allocator::TaskAware => unsafe { self.task_aware.dealloc(ptr, layout) },
+            Allocator::TaskAware => {
+                // Use a recursive guard here to prevent infinite loops
+                if RECURSION_DEPTH.load(Ordering::Relaxed) > 10 {
+                    // Emergency fallback to system allocator
+                    unsafe { self.system.dealloc(ptr, layout) }
+                } else {
+                    unsafe { self.task_aware.dealloc(ptr, layout) }
+                }
+            }
         }
     }
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        if ptr.is_null() {
+            return unsafe {
+                self.alloc(Layout::from_size_align_unchecked(new_size, layout.align()))
+            };
+        }
+
+        // Safety check for unreasonably large reallocations
+        if new_size > MAX_SAFE_ALLOCATION {
+            eprintln!(
+                "WARNING: Extremely large reallocation request of {} bytes rejected",
+                new_size
+            );
+            return std::ptr::null_mut();
+        }
+
         match current_allocator() {
             Allocator::System => unsafe { self.system.realloc(ptr, layout, new_size) },
-            Allocator::TaskAware => unsafe { self.task_aware.realloc(ptr, layout, new_size) },
+            Allocator::TaskAware => {
+                // Use a recursive guard here to prevent infinite loops
+                if RECURSION_DEPTH.load(Ordering::Relaxed) > 10 {
+                    // Emergency fallback to system allocator
+                    unsafe { self.system.realloc(ptr, layout, new_size) }
+                } else {
+                    unsafe { self.task_aware.realloc(ptr, layout, new_size) }
+                }
+            }
         }
     }
 }
@@ -804,21 +871,21 @@ pub fn record_dealloc(address: usize, size: usize) {
 //     system: System,
 // }
 
-impl Dispatcher {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            task_aware: TaskAwareAllocator,
-            system: System,
-        }
-    }
-}
+// impl Dispatcher {
+//     #[must_use]
+//     pub const fn new() -> Self {
+//         Self {
+//             task_aware: TaskAwareAllocator,
+//             system: System,
+//         }
+//     }
+// }
 
-impl Default for Dispatcher {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl Default for Dispatcher {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
 
 // unsafe impl GlobalAlloc for Dispatcher {
 //     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
@@ -836,9 +903,9 @@ impl Default for Dispatcher {
 //     }
 // }
 
-// Create a direct static instance
-#[global_allocator]
-static ALLOCATOR: Dispatcher = Dispatcher::new();
+// // Create a direct static instance
+// #[global_allocator]
+// static ALLOCATOR: Dispatcher = Dispatcher::new();
 
 // ========== ALLOCATION TRACKING DEFINITIONS ==========
 

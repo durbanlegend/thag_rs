@@ -6,7 +6,7 @@ mod tests {
     use thag_profiler::{debug_log, profiling::ProfileType, warn_once, warn_once_with_id};
 
     #[cfg(feature = "full_profiling")]
-    use thag_profiler::mem_tracking::{with_sys_alloc, Allocator};
+    use thag_profiler::mem_tracking::with_sys_alloc;
 
     /// Example of using the warn_once! macro in a function similar to record_dealloc
     #[test]

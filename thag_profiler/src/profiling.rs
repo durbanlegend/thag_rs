@@ -2818,7 +2818,10 @@ mod tests_internal {
         assert_eq!(ProfileType::from_str(""), Ok(ProfileType::None));
         assert_eq!(
             ProfileType::from_str("invalid"),
-            Err("Invalid profile type 'invalid'. Expected 'time', 'memory', 'both', or 'none'")
+            Err(
+                "Invalid profile type 'invalid'. Expected 'time', 'memory', 'both', or 'none'"
+                    .to_string()
+            )
         );
     }
 

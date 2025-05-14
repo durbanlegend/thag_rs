@@ -29,7 +29,7 @@ async-std = { version = "1.12.0", features = ["attributes"] }
 
 [features]
 analyze-tool = ["dirs", "inferno", "inquire", "ra_ap_syntax", "serde_json"]
-default = ["full_profiling"]
+default = []
 time_profiling = ["thag_proc_macros/time_profiling"]
 full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
 tools = ["analyze-tool", "instrument-tool"]                                 # Enable all tools

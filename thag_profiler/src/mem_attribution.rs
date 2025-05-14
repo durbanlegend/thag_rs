@@ -422,7 +422,7 @@ pub fn register_profile(profile: &Profile) {
 /// Safely deregister a profile from the ProfileRegistry
 ///
 /// This is a safer wrapper that captures all needed information before calling
-/// the registry's deregister_profile method, to avoid any recursive drop issues.
+/// the registry's `deregister_profile method`, to avoid any recursive drop issues.
 pub fn deregister_profile(profile: &Profile) {
     // Only deregister if the profile wasn't already deregistered
     static DEREGISTERING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

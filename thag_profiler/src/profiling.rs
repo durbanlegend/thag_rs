@@ -16,7 +16,7 @@ use std::{
 
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 
-#[cfg(feature = "time_profiling")]
+#[cfg(feature = "full_profiling")]
 use crate::get_root_module;
 
 // Import mem_attribution module functions when full_profiling is enabled
@@ -1650,6 +1650,8 @@ impl Profile {
                 // Flush logs before calling register_profile
                 flush_debug_log();
 
+                dbg!();
+
                 // Now register the profile
                 register_profile(&profile);
 
@@ -1661,6 +1663,8 @@ impl Profile {
                 // }
 
                 profile.start = Some(Instant::now());
+
+                dbg!();
 
                 return Some(profile);
             }
@@ -1740,9 +1744,13 @@ impl Profile {
             // Flush logs before calling register_profile
             flush_debug_log();
 
+            dbg!();
+
             // Now register the profile if full_profiling is enabled
             #[cfg(feature = "full_profiling")]
             register_profile(&profile);
+
+            dbg!();
 
             // // Log again after registration completes
             // debug_log!(
@@ -2238,30 +2246,24 @@ fn get_fn_desc_name(fn_name_str: &String) -> String {
 #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 impl Drop for Profile {
     fn drop(&mut self) {
-        // Use the system allocator directly to avoid recursion
-        crate::mem_tracking::with_system_allocator(|| {
-            // debug_log!("In drop for Profile {:?}", self);
-            let drop_start = Instant::now();
+        // debug_log!("In drop for Profile {:?}", self);
+        let drop_start = Instant::now();
 
-            // First, deregister this profile from the registry
-            deregister_profile(self);
-
-            if let Some(start) = self.start.take() {
-                // Handle time profiling as before
-                match self.profile_type {
-                    ProfileType::Time | ProfileType::Both => {
-                        let elapsed = start.elapsed();
-                        let _ = self.write_time_event(elapsed);
-                    }
-                    ProfileType::Memory | ProfileType::None => todo!(),
+        if let Some(start) = self.start.take() {
+            // Handle time profiling as before
+            match self.profile_type {
+                ProfileType::Time | ProfileType::Both => {
+                    let elapsed = start.elapsed();
+                    let _ = self.write_time_event(elapsed);
                 }
+                ProfileType::Memory | ProfileType::None => todo!(),
             }
-            debug_log!(
-                "Time to drop profile: {}ms",
-                drop_start.elapsed().as_millis()
-            );
-            flush_debug_log();
-        });
+        }
+        debug_log!(
+            "Time to drop profile: {}ms",
+            drop_start.elapsed().as_millis()
+        );
+        flush_debug_log();
     }
 }
 

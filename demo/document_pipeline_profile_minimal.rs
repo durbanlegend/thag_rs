@@ -209,16 +209,10 @@ async fn main() {
     // Only process small batches of different sizes for easy tracing
     run_batch(3).await;
 
-    // println!("Switching profiling off");
-    // disable_profiling();
-
-    // profile!(second_batch, global, async_fn);
     profile!(second_batch, time, mem_summary, async_fn);
     // Only process small batches of documents for easy tracing
     run_batch(2).await;
 
-    // println!("Switching only time profiling back on");
-    // enable_profiling(true, Some(ProfileType::Time)).unwrap();
     end!(second_batch);
 
     profile!(last_batch, time, mem_summary, async_fn);
@@ -227,9 +221,4 @@ async fn main() {
     end!(last_batch);
 
     println!("Profiling data written to folded files in current directory");
-
-    // println!(
-    //     "thag_profiler::PROFILING_MUTEX.is_locked()? {}",
-    //     thag_profiler::PROFILING_MUTEX.is_locked()
-    // );
 }

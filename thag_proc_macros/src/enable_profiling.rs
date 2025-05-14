@@ -275,6 +275,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     };
 
     // Function profiling type
+    #[allow(unused_variables)]
     let function_profile_type = if let Some(fn_args) = &args.function_args {
         #[cfg(feature = "full_profiling")]
         let profile_type =
@@ -345,9 +346,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                     std::env::var("THAG_PROFILER").ok().is_some()
                 });
 
-                with_sys_alloc(|| {
-                    // eprintln!("should_profile={should_profile}");
-                });
+                // with_sys_alloc(|| {
+                //     eprintln!("should_profile={should_profile}");
+                // });
             }
         }
         ProfilingMode::Enabled => {

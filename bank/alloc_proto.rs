@@ -28,6 +28,7 @@ where
     F: FnOnce() -> R,
 {
     if current_allocator() == Allocator::System {
+        eprintln!("Already in SystemAllocator");
         return f();
     }
 
@@ -45,6 +46,7 @@ where
     // Create guard to restore on scope exit
     let _cleanup = Cleanup {};
     // Run the function
+    eprintln!("Switched to SystemAllocator");
     f()
 }
 
@@ -160,9 +162,16 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 fn main() {
     let data1: Vec<u8> = vec![0; 1024];
 
-    let data2: Vec<u8> = with_sys_alloc(|| vec![0; 2048]);
+    println!("1. current_allocator()={}", current_allocator());
+
+    let data2: Vec<u8> = with_sys_alloc(|| {
+        with_sys_alloc(|| println!("Nested sys alloc"));
+        vec![0; 2048]
+    });
+
+    println!("2. current_allocator()={}", current_allocator());
 
     with_sys_alloc(|| println!("data1.len()={}, data2.len()={}", data1.len(), data2.len()));
-    println!("Hello world!");
-    // with_sys_alloc(|| println!("Hello world!"));
+
+    println!("3. current_allocator()={}", current_allocator());
 }

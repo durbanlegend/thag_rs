@@ -1,31 +1,10 @@
-/*[toml]
-[dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling"] }
-#thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
-*/
-
-use parking_lot::RwLock;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     fmt,
-    sync::{Arc, LazyLock},
+    sync::atomic::{AtomicBool, Ordering},
 };
 
-struct AllocatorState {
-    curr_alloc: Allocator,
-}
-
-impl AllocatorState {
-    const fn new() -> Self {
-        Self {
-            curr_alloc: Allocator::TaskAware,
-        }
-    }
-}
-
-static ALLOCATOR_STATE: LazyLock<Arc<RwLock<AllocatorState>>> =
-    LazyLock::new(|| Arc::new(RwLock::new(AllocatorState::new())));
+static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Allocator {
@@ -48,33 +27,34 @@ pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    let current;
-    {
-        let state = ALLOCATOR_STATE.read();
-        current = state.curr_alloc;
-        // println!("Before upgrading, current allocator: {:?}", current);
-    } // drop the read lock
-    if current == Allocator::System {
-        f()
-    } else {
-        // Now get a write lock
-        {
-            let mut state = ALLOCATOR_STATE.write();
-            state.curr_alloc = Allocator::System;
-        } // drop the write lock
-        let result = f();
-        // Now get a write lock
-        {
-            let mut state = ALLOCATOR_STATE.write();
-            state.curr_alloc = Allocator::TaskAware;
-        } // drop the write lock
-        result
+    if current_allocator() == Allocator::System {
+        return f();
     }
+
+    USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
+
+    // Create struct to handle cleanup on drop
+    struct Cleanup;
+
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+        }
+    }
+
+    // Create guard to restore on scope exit
+    let _cleanup = Cleanup {};
+    // Run the function
+    f()
 }
 
 pub fn current_allocator() -> Allocator {
-    let state = ALLOCATOR_STATE.read();
-    state.curr_alloc
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
+        // eprintln!("Using system allocator");
+        Allocator::System
+    } else {
+        Allocator::TaskAware
+    }
 }
 
 // Create a direct static instance
@@ -149,7 +129,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
         with_sys_alloc(|| {
             let ptr = unsafe { System.alloc(layout) };
 
-            // println!("In system allocator for size {}", layout.size());
+            println!("In TaskAwareAllocator for size {}", layout.size());
 
             ptr
         })
@@ -178,11 +158,11 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
 }
 
 fn main() {
-    // let data1: Vec<u8> = vec![0; 1024];
+    let data1: Vec<u8> = vec![0; 1024];
 
-    // let data2: Vec<u8> = with_sys_alloc(|| vec![0; 2048]);
+    let data2: Vec<u8> = with_sys_alloc(|| vec![0; 2048]);
 
-    // println!("data1={data1:#?}, data2={data2:#?}");
-    // with_sys_alloc(|| println!("data2={data2:#?}"));
-    with_sys_alloc(|| println!("Hello world!"));
+    with_sys_alloc(|| println!("data1.len()={}, data2.len()={}", data1.len(), data2.len()));
+    println!("Hello world!");
+    // with_sys_alloc(|| println!("Hello world!"));
 }

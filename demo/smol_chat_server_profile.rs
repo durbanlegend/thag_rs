@@ -7,16 +7,34 @@ async-dup = "1.2.2"
 futures-lite = "1.13.0"
 */
 
-//! A TCP chat server with profiling instrumentation and clean shutdown.
-//!
-//! First start the server, then connect with:
-//!
-//! ```
-//! nc localhost 6000
-//! ```
-//!
-//! The server will automatically shut down after 30 seconds.
-
+/// Published example from `smol crate`, instrumented for testing of `thag_profiler`, with clean shutdown
+/// added.
+///
+/// Instrumented with that sub-crate's `thag-instrument` command, and shutdown logic added by Claude Sonnet 3.7.
+///
+/// See also `demo/smol_chat_server.rs` and
+/// `demo/smol_chat_client.rs`.
+///
+/// E.g. `thag demo/smol_chat_server_profile.rs`
+///
+/// Features added by Claude for clean shutdown to preserve profiling data:
+///
+/// 1. **Guaranteed Shutdown**: The server now automatically shuts down after 30 seconds, ensuring that profiling data can be properly finalized.
+///
+/// 2. **Graceful Task Handling**: Tasks are allowed to complete with timeouts, preventing hanging processes.
+///
+/// 3. **Non-Blocking Accept Logic**: The server can check for termination signals while accepting connections without blocking.
+//# Purpose: Test `thag_profiler` with `smol` async crate.
+//# Categories: profiling, testing
+// A TCP chat server with profiling instrumentation and clean shutdown.
+//
+// First start the server, then connect with:
+//
+// ```
+// nc localhost 6000
+// ```
+//
+// The server will automatically shut down after 30 seconds.
 use async_channel::{bounded, Receiver, Sender};
 use async_dup::Arc as AsyncArc;
 use smol::{io, prelude::*, Async, Timer};

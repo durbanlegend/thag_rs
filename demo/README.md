@@ -73,6 +73,110 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 ***
 ## Detailed script listing
 
+### Script: alloc_proto_atomic.rs
+
+**Description:**  Prototype of ring-fenced memory allocators for `thag_profiler`.
+
+ The `global_allocator` attribute flags a `Dispatcher` which dispatches each
+ memory allocation, deallocation and reallocation requests to one of two allocators
+ according to the designated current allocator (held in an atomic boolean) at the
+ moment that it receives the request. The default allocator is `TaskAware` and is
+ used for user code, while the regular system allocator `System` handles requests
+ from profiler code. The role of the `TaskAware` allocator is to record the details
+ of the user code allocation events before passing them to the system allocator.
+
+ To invoke the system allocator directly, profiler code must call a function or
+ closure with fn `with_sys_alloc`, which checks the current allocator, and if it
+ finds it to be `TaskAware`, changes it to `System` and runs the function or closure,
+ with a guard to restore the default to `TaskAware`. If the current allocator is
+ already `System`, `with_sys_alloc` concludes that it must be running nested under
+ another `with_sys_alloc` call, so does nothing except run the function or closure.
+
+ The flaw in this design is its vulnerability to race conditions, e.g. user code
+ in another thread could fail to go through `TaskAware` if `with_sys_alloc` is
+ running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
+ could prematurely reset the current allocator to  `TaskAware` while another
+ instance is still running in another thread. We can and do build in a check in
+ the TaskAware branch to detect and ignore profiler code, but in practice there is
+ little sign of such races being a problem.
+
+ Attempts to resolve this issue with thread-local storage have not borne fruit.
+ For instance async tasks are by no means guaranteed to resume in the same thread
+ after suspension.
+ The ideal would seem to be a reentrant Mutex or RwLock with mutability - so far tried
+ without success, but a subject for another prototype.
+ Dispatcher allocator that routes allocation requests to the appropriate allocator
+ Task-aware allocator that tracks memory allocations
+
+**Purpose:** Prototype of a ring-fenced allocator for memory profiling.
+
+**Type:** Program
+
+**Categories:** profiling, prototype
+
+**Link:** [alloc_proto_atomic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_atomic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_atomic.rs
+```
+
+---
+
+### Script: alloc_proto_rwlock.rs
+
+**Description:**  Prototype of ring-fenced memory allocators for `thag_profiler`.
+
+ The `global_allocator` attribute flags a `Dispatcher` which dispatches each
+ memory allocation, deallocation and reallocation requests to one of two allocators
+ according to the designated current allocator at the moment that it receives
+ the request. The default allocator is `TaskAware` and is used for user code,
+ while the regular system allocator `System` handles requests from profiler code.
+ The role of the `TaskAware` allocator is to record the details of the user code
+ allocation events before passing them to the system allocator.
+
+ To invoke the system allocator directly, profiler code must call a function or
+ closure with fn `with_sys_alloc`, which checks the current allocator, and if it
+ finds it to be `TaskAware`, changes it to `System` and runs the function or closure,
+ with a guard to restore the default to `TaskAware`. If the current allocator is
+ already `System`, `with_sys_alloc` concludes that it must be running nested under
+ another `with_sys_alloc` call, so does nothing except run the function or closure.
+
+ The flaw in this design is its vulnerability to race conditions, e.g. user code
+ in another thread could fail to go through `TaskAware` if `with_sys_alloc` is
+ running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
+ could prematurely reset the current allocator to  `TaskAware` while another
+ instance is still running in another thread. We can and do build in a check in
+ the TaskAware branch to detect and ignore profiler code, but in practice there is
+ little sign of such races being a problem.
+
+ Attempts to resolve this issue with thread-local storage have not borne fruit.
+ For instance async tasks are by no means guaranteed to resume in the same thread
+ after suspension.
+ The ideal would seem to be a reentrant Mutext with mutability - so far tried
+ without success, but a subject for another prototype.
+ Dispatcher allocator that routes allocation requests to the appropriate allocator
+ Task-aware allocator that tracks memory allocations
+
+**Purpose:** Prototype of a ring-fenced allocator for memory profiling.
+
+**Crates:** `parking_lot`
+
+**Type:** Program
+
+**Categories:** profiling, prototype
+
+**Link:** [alloc_proto_rwlock.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_rwlock.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_rwlock.rs
+```
+
+---
+
 ### Script: analyze_snippet_1.rs
 
 **Description:**  Guided ChatGPT-generated prototype of using a `syn` abstract syntax tree (AST)
@@ -1422,6 +1526,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal.rs
+```
+
+---
+
+### Script: document_pipeline_profile_minimal_alt.rs
+
+**Description:**  Test async program (minimalist instrumented version) for `thag_profiler` debugging.
+ See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile.rs`.
+
+
+**Purpose:** Test and debug profiling using `thag_profiler`.
+
+**Crates:** `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_minimal_alt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal_alt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal_alt.rs
 ```
 
 ---
@@ -4953,6 +5081,96 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressio
 
 ---
 
+### Script: smol_chat_client.rs
+
+**Description:**  Published example from `smol crate`. See also `demo/smol_chat_server.rs` and
+ `demo/smol_chat_server_profile.rs`.
+
+**Purpose:** Demo, and participant in `thag_profiler` test.
+
+**Crates:** `smol`
+
+**Type:** Program
+
+**Categories:** demo
+
+**Link:** [smol_chat_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_client.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_client.rs
+```
+
+---
+
+### Script: smol_chat_server.rs
+
+**Description:**  Published example from `smol crate`. See also `demo/smol_chat_client.rs` and
+ `demo/smol_chat_server_profile.rs`.
+ An event on the chat server.
+ Dispatches events to clients.
+ Reads messages from the client and forwards them to the dispatcher task.
+
+**Purpose:** Demo, and basis for `thag_profiler` test.
+
+**Crates:** `async_channel`, `async_dup`, `smol`
+
+**Type:** Program
+
+**Categories:** demo
+
+**Link:** [smol_chat_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server.rs
+```
+
+---
+
+### Script: smol_chat_server_profile.rs
+
+**Description:**  Published example from `smol crate`, instrumented for testing of `thag_profiler`, with clean shutdown
+ added.
+
+ Instrumented with that sub-crate's `thag-instrument` command, and shutdown logic added by Claude Sonnet 3.7.
+
+ See also `demo/smol_chat_server.rs` and
+ `demo/smol_chat_client.rs`.
+
+ E.g. `thag demo/smol_chat_server_profile.rs`
+
+ Features added by Claude for clean shutdown to preserve profiling data:
+
+ 1. **Guaranteed Shutdown**: The server now automatically shuts down after 30 seconds, ensuring that profiling data can be properly finalized.
+
+ 2. **Graceful Task Handling**: Tasks are allowed to complete with timeouts, preventing hanging processes.
+
+ 3. **Non-Blocking Accept Logic**: The server can check for termination signals while accepting connections without blocking.
+ An event on the chat server.
+ Dispatches events to clients.
+ Reads messages from the client and forwards them to the dispatcher task.
+
+**Purpose:** Test `thag_profiler` with `smol` async crate.
+
+**Crates:** `async_channel`, `async_dup`, `futures_lite`, `smol`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** profiling, testing
+
+**Link:** [smol_chat_server_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server_profile.rs
+```
+
+---
+
 ### Script: snippet_import_scope.rs
 
 **Description:**  Demo scope of import statements.
@@ -5275,11 +5493,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_synta
  E.g.:
 
  ```
- THAG_PROFILER=1 THAG_PROFILE_TYPE=both THAG_PROFILE_DIR=. cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
+ THAG_PROFILER=both,,announce,true cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
  ```
 
- You can also prefix this with `THAG_PROFILER_DEBUG=1` to enable profiler logging to `std::env::temp_dir()` or `THAG_PROFILER_DEBUG=2`
- to do likewise but additionally display the path to the log file location via `eprintln!`.
+ See the `README.md` for the explanation of the `THAG_PROFILER` arguments
 
 **Purpose:** demonstrate profiling a dependency with `thag_profiler`.
 
@@ -6103,6 +6320,42 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
 
 ---
 
+### Script: warn_once.rs
+
+**Description:**  This script demonstrates the usage of the `warn_once` pattern for suppressing repeated
+ log messages with minimal runtime overhead.
+
+ The dependency is `thag_profiler` because that's the only place it's used at time of writing, even though this is
+ not in any way a profiling-specific function.
+
+ Disclosure: the `thag_profiler` `warn_once` macro and `warn_once_with_id` function use unsafe code.
+
+ Credit to `Claude 3.7 Sonnet`.
+ Simple example that shows a warning only once despite multiple calls
+ Example with early return pattern
+ Example using the ID-based version for multiple independent warnings
+ Performance comparison between naive approach and warn_once
+ Real-world example based on the record_dealloc function
+ Main entry point
+
+**Purpose:** Demo a macro I found useful, explained and benchmarked here in great detail thanks to Claude.
+
+**Crates:** `thag_profiler`
+
+**Type:** Program
+
+**Categories:** demo, macros, technique
+
+**Link:** [warn_once.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/warn_once.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/warn_once.rs
+```
+
+---
+
 ### Script: web_safe_colors_to_256.rs
 
 **Description:**  Map and visually test conversion of web safe colours to 256 colours, //: using the `owo-colors` crate colour names and mappings.
@@ -6246,3 +6499,4 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
 ```
 
 ---
+

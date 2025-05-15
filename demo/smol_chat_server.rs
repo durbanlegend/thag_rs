@@ -1,17 +1,21 @@
-//! A TCP chat server.
-//!
-//! First start a server:
-//!
-//! ```
-//! cargo run --example chat-server
-//! ```
-//!
-//! Then start clients:
-//!
-//! ```
-//! cargo run --example chat-client
-//! ```
+/// Published example from `smol crate`. See also `demo/smol_chat_client.rs` and
+/// `demo/smol_chat_server_profile.rs`.
+//# Purpose: Demo, and basis for `thag_profiler` test.
+//# Categories: demo
 
+// A TCP chat server.
+//
+// First start a server:
+//
+// ```
+// cargo run --example chat-server
+// ```
+//
+// Then start clients:
+//
+// ```
+// cargo run --example chat-client
+// ```
 use std::collections::HashMap;
 use std::net::{SocketAddr, TcpListener, TcpStream};
 

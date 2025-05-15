@@ -370,7 +370,7 @@ at the start of the script, as you will see done in most of the demos. To help w
 
 `thag_rs` aims to be as comprehensive as possible without sacrificing speed and transparency. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 
-### Example of using a toml block (`demo/prettyplease.rs`)
+### Example of using a toml block (demo/prettyplease.rs)
 
     /*[toml]
     [dependencies]

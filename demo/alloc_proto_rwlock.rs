@@ -30,13 +30,94 @@
 /// without success, but a subject for another prototype.
 //# Purpose: Prototype of a ring-fenced allocator for memory profiling.
 //# Categories: profiling, prototype
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     fmt,
 };
+
+pub struct ReentrantLock {
+    lock: Mutex<(bool, usize)>, // (is_system_allocator, count)
+}
+
+impl ReentrantLock {
+    pub fn new() -> Self {
+        Self {
+            lock: Mutex::new((false, 0)),
+        }
+    }
+
+    pub fn with_sys_alloc<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        let thread_id = std::thread::current().id();
+        let mut guard = self.lock.lock();
+
+        // Check if we already have the lock
+        if guard.0 {
+            // Already using system allocator, just increment the counter
+            guard.1 += 1;
+            let result = f();
+            // Decrement the counter before return
+            let mut guard = self.lock.lock();
+            guard.1 -= 1;
+            return result;
+        }
+
+        // Set the flag and counter
+        guard.0 = true;
+        guard.1 = 1;
+
+        // Release the lock before calling f
+        drop(guard);
+
+        // Create struct to handle cleanup on drop
+        struct Cleanup<'a> {
+            lock: &'a Mutex<(bool, usize)>,
+        }
+
+        impl<'a> Drop for Cleanup<'a> {
+            fn drop(&mut self) {
+                let mut guard = self.lock.lock();
+                guard.1 -= 1;
+                if guard.1 == 0 {
+                    guard.0 = false;
+                }
+            }
+        }
+
+        // Create guard to restore on scope exit
+        let cleanup = Cleanup { lock: &self.lock };
+
+        // Run the function
+        f()
+    }
+
+    pub fn is_using_system_allocator(&self) -> bool {
+        self.lock.lock().0
+    }
+}
+
+// Initialize the global state
+static ALLOCATOR_STATE: LazyLock<ReentrantLock> = LazyLock::new(|| ReentrantLock::new());
+
+pub fn with_sys_alloc<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    ALLOCATOR_STATE.with_sys_alloc(f)
+}
+
+pub fn current_allocator() -> Allocator {
+    if ALLOCATOR_STATE.is_using_system_allocator() {
+        Allocator::System
+    } else {
+        Allocator::TaskAware
+    }
+}
 
 static USING_SYSTEM_ALLOCATOR: LazyLock<Arc<RwLock<bool>>> =
     LazyLock::new(|| Arc::new(RwLock::new(false)));
@@ -55,45 +136,6 @@ impl fmt::Display for Allocator {
             Allocator::TaskAware => write!(f, "TaskAware"),
             Allocator::System => write!(f, "System"),
         }
-    }
-}
-
-pub fn with_sys_alloc<F, R>(f: F) -> R
-where
-    F: FnOnce() -> R,
-{
-    if *USING_SYSTEM_ALLOCATOR.read() {
-        eprintln!("Already in SystemAllocator");
-        return f();
-    }
-
-    // Create struct to handle cleanup on drop
-    struct CleanupGuard<'a>(&'a RwLock<bool>);
-
-    impl<'a> Drop for CleanupGuard<'a> {
-        fn drop(&mut self) {
-            *self.0.write() = false;
-        }
-    }
-
-    // Set the flag and create a guard
-    *USING_SYSTEM_ALLOCATOR.write() = true;
-    let guard = CleanupGuard(&USING_SYSTEM_ALLOCATOR);
-
-    // Assert that we've successfully set the flag
-    let using_sys_alloc = *USING_SYSTEM_ALLOCATOR.read();
-    assert!(using_sys_alloc);
-
-    // Run the function (guard will reset flag on function exit or panic)
-    f()
-}
-
-pub fn current_allocator() -> Allocator {
-    if *USING_SYSTEM_ALLOCATOR.read() {
-        // eprintln!("Using system allocator");
-        Allocator::System
-    } else {
-        Allocator::TaskAware
     }
 }
 

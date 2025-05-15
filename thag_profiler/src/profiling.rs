@@ -1744,13 +1744,9 @@ impl Profile {
             // Flush logs before calling register_profile
             flush_debug_log();
 
-            dbg!();
-
             // Now register the profile if full_profiling is enabled
             #[cfg(feature = "full_profiling")]
             register_profile(&profile);
-
-            dbg!();
 
             // // Log again after registration completes
             // debug_log!(

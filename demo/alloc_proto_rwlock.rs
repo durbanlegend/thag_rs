@@ -30,7 +30,7 @@
 /// without success, but a subject for another prototype.
 //# Purpose: Prototype of a ring-fenced allocator for memory profiling.
 //# Categories: profiling, prototype
-use parking_lot::{Mutex, RwLock};
+use parking_lot::Mutex;
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::{
@@ -38,49 +38,60 @@ use std::{
     fmt,
 };
 
-// Track system allocator state with a mutex-protected flag
-static USING_SYSTEM_ALLOCATOR: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
+struct AllocatorState {
+    is_system: bool,
+    // Track active sys_alloc calls to prevent race conditions
+    active_calls: usize,
+}
+
+static ALLOCATOR_STATE: LazyLock<Mutex<AllocatorState>> = LazyLock::new(|| {
+    Mutex::new(AllocatorState {
+        is_system: false,
+        active_calls: 0,
+    })
+});
 
 pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    // Acquire lock to check state
-    let already_using_system = {
-        let guard = USING_SYSTEM_ALLOCATOR.lock();
-        *guard
+    // Acquire lock to check and update state
+    let need_cleanup = {
+        let mut state = ALLOCATOR_STATE.lock();
+        if state.is_system {
+            // Already using system allocator, just increment counter
+            state.active_calls += 1;
+            false // No need for this call to do cleanup
+        } else {
+            // Switching to system allocator
+            state.is_system = true;
+            state.active_calls = 1;
+            true // This call should do cleanup
+        }
     };
 
-    if already_using_system {
-        // Already using system allocator, just run the function
-        return f();
-    }
+    // Run the function
+    let result = f();
 
-    // Set flag and release lock before running function
-    {
-        let mut guard = USING_SYSTEM_ALLOCATOR.lock();
-        *guard = true;
-    }
-
-    // Use RAII for cleanup
-    struct CleanupGuard;
-
-    impl Drop for CleanupGuard {
-        fn drop(&mut self) {
-            let mut guard = USING_SYSTEM_ALLOCATOR.lock();
-            *guard = false;
+    // Cleanup if needed
+    if need_cleanup {
+        let mut state = ALLOCATOR_STATE.lock();
+        state.active_calls -= 1;
+        if state.active_calls == 0 {
+            state.is_system = false;
         }
+    } else {
+        // Just decrement counter
+        let mut state = ALLOCATOR_STATE.lock();
+        state.active_calls -= 1;
     }
 
-    let _guard = CleanupGuard;
-
-    // Run function with cleanup guard in place
-    f()
+    result
 }
 
 pub fn current_allocator() -> Allocator {
-    let guard = USING_SYSTEM_ALLOCATOR.lock();
-    if *guard {
+    let state = ALLOCATOR_STATE.lock();
+    if state.is_system {
         Allocator::System
     } else {
         Allocator::TaskAware

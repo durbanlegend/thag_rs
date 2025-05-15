@@ -38,89 +38,54 @@ use std::{
     fmt,
 };
 
-pub struct ReentrantLock {
-    lock: Mutex<(bool, usize)>, // (is_system_allocator, count)
-}
-
-impl ReentrantLock {
-    pub fn new() -> Self {
-        Self {
-            lock: Mutex::new((false, 0)),
-        }
-    }
-
-    pub fn with_sys_alloc<F, R>(&self, f: F) -> R
-    where
-        F: FnOnce() -> R,
-    {
-        let thread_id = std::thread::current().id();
-        let mut guard = self.lock.lock();
-
-        // Check if we already have the lock
-        if guard.0 {
-            // Already using system allocator, just increment the counter
-            guard.1 += 1;
-            let result = f();
-            // Decrement the counter before return
-            let mut guard = self.lock.lock();
-            guard.1 -= 1;
-            return result;
-        }
-
-        // Set the flag and counter
-        guard.0 = true;
-        guard.1 = 1;
-
-        // Release the lock before calling f
-        drop(guard);
-
-        // Create struct to handle cleanup on drop
-        struct Cleanup<'a> {
-            lock: &'a Mutex<(bool, usize)>,
-        }
-
-        impl<'a> Drop for Cleanup<'a> {
-            fn drop(&mut self) {
-                let mut guard = self.lock.lock();
-                guard.1 -= 1;
-                if guard.1 == 0 {
-                    guard.0 = false;
-                }
-            }
-        }
-
-        // Create guard to restore on scope exit
-        let cleanup = Cleanup { lock: &self.lock };
-
-        // Run the function
-        f()
-    }
-
-    pub fn is_using_system_allocator(&self) -> bool {
-        self.lock.lock().0
-    }
-}
-
-// Initialize the global state
-static ALLOCATOR_STATE: LazyLock<ReentrantLock> = LazyLock::new(|| ReentrantLock::new());
+// Track system allocator state with a mutex-protected flag
+static USING_SYSTEM_ALLOCATOR: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
 
 pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    ALLOCATOR_STATE.with_sys_alloc(f)
+    // Acquire lock to check state
+    let already_using_system = {
+        let guard = USING_SYSTEM_ALLOCATOR.lock();
+        *guard
+    };
+
+    if already_using_system {
+        // Already using system allocator, just run the function
+        return f();
+    }
+
+    // Set flag and release lock before running function
+    {
+        let mut guard = USING_SYSTEM_ALLOCATOR.lock();
+        *guard = true;
+    }
+
+    // Use RAII for cleanup
+    struct CleanupGuard;
+
+    impl Drop for CleanupGuard {
+        fn drop(&mut self) {
+            let mut guard = USING_SYSTEM_ALLOCATOR.lock();
+            *guard = false;
+        }
+    }
+
+    let _guard = CleanupGuard;
+
+    // Run function with cleanup guard in place
+    f()
 }
 
 pub fn current_allocator() -> Allocator {
-    if ALLOCATOR_STATE.is_using_system_allocator() {
+    let guard = USING_SYSTEM_ALLOCATOR.lock();
+    if *guard {
         Allocator::System
     } else {
         Allocator::TaskAware
     }
 }
-
-static USING_SYSTEM_ALLOCATOR: LazyLock<Arc<RwLock<bool>>> =
-    LazyLock::new(|| Arc::new(RwLock::new(false)));
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Allocator {

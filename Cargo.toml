@@ -27,7 +27,7 @@ license = false
 eula = false
 
 [dependencies]
-bitflags = "2.9.0"
+bitflags = "2.9.1"
 cargo-lookup = "0.1.0"
 cargo_toml = "0.22.1"
 clap = { version = "4.5.38", features = ["cargo", "derive"] }

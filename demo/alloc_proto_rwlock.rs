@@ -1,10 +1,45 @@
+/// Prototype of ring-fenced memory allocators for `thag_profiler`.
+///
+/// The `global_allocator` attribute flags a `Dispatcher` which dispatches each
+/// memory allocation, deallocation and reallocation requests to one of two allocators
+/// according to the designated current allocator at the moment that it receives
+/// the request. The default allocator is `TaskAware` and is used for user code,
+/// while the regular system allocator `System` handles requests from profiler code.
+/// The role of the `TaskAware` allocator is to record the details of the user code
+/// allocation events before passing them to the system allocator.
+///
+/// To invoke the system allocator directly, profiler code must call a function or
+/// closure with fn `with_sys_alloc`, which checks the current allocator, and if it
+/// finds it to be `TaskAware`, changes it to `System` and runs the function or closure,
+/// with a guard to restore the default to `TaskAware`. If the current allocator is
+/// already `System`, `with_sys_alloc` concludes that it must be running nested under
+/// another `with_sys_alloc` call, so does nothing except run the function or closure.
+///
+/// The flaw in this design is its vulnerability to race conditions, e.g. user code
+/// in another thread could fail to go through `TaskAware` if `with_sys_alloc` is
+/// running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
+/// could prematurely reset the current allocator to  `TaskAware` while another
+/// instance is still running in another thread. We can and do build in a check in
+/// the TaskAware branch to detect and ignore profiler code, but in practice there is
+/// little sign of such races being a problem.
+///
+/// Attempts to resolve this issue with thread-local storage have not borne fruit.
+/// For instance async tasks are by no means guaranteed to resume in the same thread
+/// after suspension.
+/// The ideal would seem to be a reentrant Mutext with mutability - so far tried
+/// without success, but a subject for another prototype.
+//# Purpose: Prototype of a ring-fenced allocator for memory profiling.
+//# Categories: profiling, prototype
+use parking_lot::RwLock;
+use std::sync::Arc;
+use std::sync::LazyLock;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
     fmt,
-    sync::atomic::{AtomicBool, Ordering},
 };
 
-static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
+static USING_SYSTEM_ALLOCATOR: LazyLock<Arc<RwLock<bool>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(false)));
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Allocator {
@@ -27,31 +62,34 @@ pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    if current_allocator() == Allocator::System {
+    if *USING_SYSTEM_ALLOCATOR.read() {
         eprintln!("Already in SystemAllocator");
         return f();
     }
 
-    USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
-
     // Create struct to handle cleanup on drop
-    struct Cleanup;
+    struct CleanupGuard<'a>(&'a RwLock<bool>);
 
-    impl Drop for Cleanup {
+    impl<'a> Drop for CleanupGuard<'a> {
         fn drop(&mut self) {
-            USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+            *self.0.write() = false;
         }
     }
 
-    // Create guard to restore on scope exit
-    let _cleanup = Cleanup {};
-    // Run the function
-    eprintln!("Switched to SystemAllocator");
+    // Set the flag and create a guard
+    *USING_SYSTEM_ALLOCATOR.write() = true;
+    let guard = CleanupGuard(&USING_SYSTEM_ALLOCATOR);
+
+    // Assert that we've successfully set the flag
+    let using_sys_alloc = *USING_SYSTEM_ALLOCATOR.read();
+    assert!(using_sys_alloc);
+
+    // Run the function (guard will reset flag on function exit or panic)
     f()
 }
 
 pub fn current_allocator() -> Allocator {
-    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
+    if *USING_SYSTEM_ALLOCATOR.read() {
         // eprintln!("Using system allocator");
         Allocator::System
     } else {

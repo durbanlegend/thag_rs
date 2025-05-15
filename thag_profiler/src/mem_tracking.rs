@@ -78,8 +78,6 @@ pub fn current_allocator() -> Allocator {
 ///
 /// This function temporarily switches to the system allocator while executing the provided
 /// closure, then switches back to the previous allocator afterward.
-///
-/// Properly handles nested calls and threading via a ReentrantMutex.
 pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,

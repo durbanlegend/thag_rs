@@ -26,7 +26,7 @@
 - [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator. Then get rid of demo/profile_file.rs as redundant.
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
-- [ ]  Unbounded profiles must only go out of scope at the end of the _function_.
+- [ ]  Rename task-aware allocator to tracking allocator.
 
         eprintln!("processed.stacks={:#?}", processed.stacks);
 
@@ -48,6 +48,48 @@ THAG_PROFILER=both,,announce cargo test --package thag_profiler --test test_prof
   cargo test --features=full_profiling logging::tests::test_logging_functionality -- --nocapture
 
 cargo test --features=analyze-tool,time_profiling errors::tests  -- --nocapture
+
+# thag_profiler
+
+A lightweight, cross-platform Rust code profiling toolkit with zero overhead when disabled.
+
+## Overview
+
+`thag_profiler` provides a simple way to instrument Rust code for performance profiling with minimal boilerplate. While originally developed as part of the `thag_rs` project, it functions as a completely independent utility with no dependencies on `thag_rs`.
+
+## Key Features
+
+- Cross-platform profiling that works consistently across operating systems
+- Simple `#[profiled]` function attribute for instrumenting code
+- Command-line tools for automatic instrumentation and analysis
+- Zero-cost abstraction when profiling is disabled
+- Flexible output formats including flamegraphs
+
+
+- Profile async code
+
+- Target specific sections of code
+
+- Control profiling at runtime
+
+- Incorporate `thag_profiler` instrumentation into your code with no overhead until activated, thanks to zero-cost abstractions
+
+- Automatically prepare a Rust source file for profiling with a single `thag-instrument` command, which adds the necessary imports and annotates every function with an attribute macro. This may be all you need to get a good insight into your code, or you can further refine or extend it with profile type arguments and/or `profile!` - `end!` pairings for section profiling. The `thag-remove` command removes the instrumentation when done.
+
+- Selectively profile memory allocation in full detail for specific functions or code sections, or profile allocation and deallocation in full detail at program level.
+
+`thag_profiler` includes a comprehensive analysis tool based on `inquire` and `inferno` that allows you to easily:
+
+- Select profiling output for analysis
+
+- Create and display interactive flamegraphs and flamecharts of all profiling output
+
+- Use `inferno`'s differential flamegraphs for before-and-after comparisons
+
+- Display simple execution time and memory usage reports.
+
+- Filter profiling output to customise flamegraphs so as to focus on relevant functions or code sections
+
 
 Worked example: TODO replace: serde
 Don't use a crate that is called by other dependencies, otherwise there may be conflicts.

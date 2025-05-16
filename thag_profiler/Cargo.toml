@@ -2,6 +2,23 @@
 name = "thag_profiler"
 version = "0.1.0"
 edition = "2021"
+description = "A lightweight, cross-platform Rust code profiling toolkit with zero overhead when disabled"
+authors = ["thag_rs developer"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/durbanlegend/thag_rs"
+keywords = [
+    "profiling",
+    "performance",
+    "flamegraph",
+    "instrumentation",
+    "tracing",
+]
+categories = [
+    "development-tools::profiling",
+    "development-tools",
+    "command-line-utilities",
+]
 
 [dependencies]
 backtrace = "0.3"

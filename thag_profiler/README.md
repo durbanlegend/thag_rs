@@ -1,6 +1,8 @@
 # thag_profiler
 
-An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling.
+An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate.
+
+While originally developed as part of the `thag_rs` project, `thag_profiler` functions as a completely independent utility with no dependencies on `thag_rs`.
 
 `thag_profiler` aims to lower the barriers to profiling by offering a quick and easy tool that produces clear and accurate flamegraphs for both synchronous and asynchronous code.
 
@@ -85,7 +87,7 @@ thag-instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
 
 * Replace `2021` with your project's Rust edition.
 
-* Do not redirect the output to your source file.
+* Do NOT redirect the output to your source file.
 
 * Compare generated code with the original to ensure correctness before overwriting any original code with instrumented code.
 
@@ -245,6 +247,7 @@ The desired `thag_profiler` feature - `time_profiling` or `full_profiling` - mus
 
 #### In scripts run with the `thag` script runner
 
+  This section refers to the `thag_rs` script runner and REPL, aka `thag`, of which `thag_profiler` is
   When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above, except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only dependency inference and configuration:
 
   **1. Manifest (toml block) only**:
@@ -753,9 +756,19 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
      In older versions of `async_std` (pre-1.10), there were known interactions that could cause this error in certain usage patterns. If you experience issues with a particular async runtime, consider trying alternatives like `smol` or `tokio`.
 
- 3. **Long-Running Applications**: For long-running applications like servers, consider using `start_periodic_profiling(interval)` to periodically write profiling data rather than relying solely on cleanup at application exit, especially if planning to terminate the app by cancelling it via Ctrl-C.
-
 - **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
+
+- **Potential Race Conditions in Async Environments**: Unfortunately, profiling code must share a global allocator (the dispatcher) with user code, and use a global variable to indicate to the dispatcher to use the system allocator in place of the default tracking allocator. To avoid a race condition on the global variable in an async environment would require sophisticated locking, complicated by the need to cater for nested profiling code calls. Thread-local storage doesn't work in the presence of thread stealing.
+
+ At the time of writing, the most practical solution found after  extensive experimentation has been to use a simple atomic variable  to manage the current allocator status and to live with the  exposure to the risk of mis-allocation, much as that goes against  Thag's personal style. The mechanism chosen to cater for nested  calls is as simple and hopefully as elegant as possible: if  profiler code finds the current allocator in user mode, it assumes  it's not nested, overrides the setting for the duration and uses a  guard to set it back, otherwise it assumes it's running nested and  does not touch the setting.
+
+ To mitigate against profile code allocations being processed  through the user code allocator, we identify them from their  backtrace and treat them appropriately. The only mitigations  against user allocations being processed through the system  allocator - and thus not recorded - are:
+
+ 1. To reduce the number of profiled functions and sections, and if  possible the number of threads, to the practical minimum in the  final stages of profiling, in order to minimise contention.
+
+ 2. To check for consistency in the processing of the same  functions and sections over time under different load conditions  and with different amounts of profiled code competing for the  dispatcher.
+
+ Fortunately, results so far have been very consistent, so  contention does not seem to be a significant issue in practice.  However the potential for race conditions is a caveat when memory  profiling in async environments.
 
 - **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
    across your entire application stack, revealing hidden costs from dependencies like async runtimes.
@@ -835,7 +848,7 @@ b. For detailed memory profiling, allocations and deallocations alike are not ac
 
 Being the default, the task-aware allocator is automatically used for user code and must not be used for profiler code.
 
-To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_sys_alloc()` function (`pub fn with_allocator<T, F: FnOnce() -> T>(f: F) -> T`).
+To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_sys_alloc()` function (`pub fn with_sys_alloc<T, F: FnOnce() -> T>(f: F) -> T`).
 
 ### Profile Output
 
@@ -887,7 +900,7 @@ thag-remove 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumen
 
 * Replace `2021` with your project's Rust edition.
 
-* Do not redirect the output back to your source file in the same command.
+* Do NOT redirect the output back to your source file in the same command.
 
 * In the case of `thag-remove`, you may need to remove the relevant imports manually.
 `thag-remove` may leave the occasional trailing space and one or two blank lines at the very top of the file.

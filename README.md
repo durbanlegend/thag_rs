@@ -12,19 +12,30 @@
 
 The core purpose of `thag` is straightforward: eliminate the setup barriers that slow you down when you're trying to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
-One standout feature is dependency inference, which automatically detects and configures the crates your code needs. This means you can often start writing actual code immediately, without manually specifying dependencies. When needed, verbose mode shows you exactly which dependencies were inferred, ready to copy into your scripts for future use.
+One standout feature is dependency inference, which automatically detects and configures the crates your code needs. This means you can often start writing actual code immediately, without manually specifying dependencies. When needed, verbose mode shows you the `toml` generated for the inferred dependencies, ready to copy into your scripts for future use if you so choose.
 
-Since version 0.2, `thag` offers cross-platform profiling capabilities that work consistently across different operating systems—no more platform-specific setup headaches. You can easily:
+As of version 0.2, `thag` offers an easy-to use profiler that works consistently across different operating systems to avoid platform-specific setup headaches. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
 
-- Instrument and de-instrument Rust source files automatically with simple #[profiled] function attributes
+- Async code compatibility
 
-- Generate execution time and memory usage reports
+- Section or single-statement profiling
 
-- Create plain or comparative interactive flamecharts with `inferno`
+- Runtime control
 
-- Filter profiling output to focus on relevant functions
+- Zero-cost abstraction
 
-- Target specific sections of code
+- Automatic instrumentation and de-instrumentation.
+
+- Execution time and summary or detailed memory profiling.
+
+- `inferno` interactive flamegraphs and flamecharts including differential flamegraphs for before-and-after comparisons
+
+- Simple execution time and memory usage reports.
+
+- Filtering of unwanted output from flamegraphs.
+
+Read about it here: [thag_profiling](thag_profiler/README.md)
+
 
 Whether you're:
 
@@ -36,7 +47,7 @@ Whether you're:
 
 - Running quick calculations
 
-- Profiling code performance
+- Profiling performance of your project
 
 - Converting your scripts into lightning-fast commands
 
@@ -70,7 +81,7 @@ ___
 
 - Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground)
 
-- Paste-and-run with built-in TUI editor
+- Paste-and-run with built-in TUI editor or your preferred editor.
 
 - An evolution path for your code from REPL to edit-submit loop to saved scripts
 
@@ -87,15 +98,7 @@ ___
 
 - Automated inclusion of `derive` or other dependency features
 
-- **New in 0.2.0:** `thag` cross-platform profiling library for execution timeline and/or memory usage.
-Enable profiling either via `features=profiling` or the `enable_profiling` attribute.
-Profiling produces named and timestamped output files.
-
-    There's a tool to instrument functions and methods in a source file with `thag` profiling attributes (`#[profiled]` or (for `fn main`: `#[enable_profiling]`)).
-
-    There's another to select and analyse the desired profiling output and display statistics and regular or differential before/after flamecharts for chosen profiling output files.
-
-    Yet another removes the instrumentation from a source file.
+- **New in 0.2.0:** The `thag_profiler` sub-crate is cross-platform profiling library for execution timeline and/or memory usage, as described above.
 
 - **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
 
@@ -108,7 +111,7 @@ Profiling produces named and timestamped output files.
 
 💡 **Getting Started:**
 
-Jump into `thag`'s collection of 230+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
+Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
 ## Quick start: ways to run the `thag` command
 

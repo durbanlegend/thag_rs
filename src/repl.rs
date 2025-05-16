@@ -481,7 +481,7 @@ pub fn run_repl(
         }
 
         let (first_word, rest) = parse_line(rs_source);
-        vlog!(V::VV, "first_word={first_word}, rest={rest:#?}");
+        // vlog!(V::VV, "first_word={first_word}, rest={rest:#?}");
         let maybe_cmd = if rest.is_empty() {
             let mut matches = 0;
             let mut cmd = String::new();

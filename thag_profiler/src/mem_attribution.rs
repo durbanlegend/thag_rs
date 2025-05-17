@@ -305,7 +305,6 @@ impl ProfileRegistry {
         fn_name: &str,
         line: u32,
         size: usize,
-        address: usize,
         current_backtrace: &mut Backtrace,
     ) -> bool {
         // Check first if we even have this module and function
@@ -372,7 +371,7 @@ impl ProfileRegistry {
                 } else {
                     // Not detailed memory - regular allocation tracking
                     debug_log!("Calling record_allocation on Profile for {size} bytes in {file_name}::{fn_name} at line {line}");
-                    let _ = profile.record_allocation(size, address);
+                    let _ = profile.record_allocation(size);
                 }
                 return true;
             }

@@ -10,7 +10,10 @@ use std::{
     io::BufWriter,
     path::PathBuf,
     str::FromStr,
-    sync::atomic::{AtomicU8, Ordering},
+    sync::{
+        atomic::{AtomicU8, AtomicUsize, Ordering},
+        Arc,
+    },
     time::Instant,
 };
 
@@ -26,8 +29,8 @@ use crate::mem_attribution::{deregister_profile, get_next_profile_id, register_p
 #[cfg(feature = "full_profiling")]
 use crate::{
     mem_tracking::{
-        activate_task, create_memory_task, get_task_memory_usage, /* push_task_to_stack, */
-        record_alloc_for_task_id, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+        activate_task, create_memory_task, get_task_memory_usage, TaskGuard, TaskMemoryContext,
+        TASK_PATH_REGISTRY,
     },
     warn_once, with_sys_alloc,
 };
@@ -1216,6 +1219,10 @@ pub struct Profile {
     file_name: String,       // Filename where this profile was created
     instance_id: u64,        // Unique identifier for this Profile instance
     #[cfg(feature = "full_profiling")]
+    allocation_total: Arc<AtomicUsize>, // Using AtomicUsize for thread safety
+    #[cfg(feature = "full_profiling")]
+    memory_reported: Arc<AtomicBool>, // Default to false
+    #[cfg(feature = "full_profiling")]
     memory_task: Option<TaskMemoryContext>,
     #[cfg(feature = "full_profiling")]
     memory_guard: Option<TaskGuard>,
@@ -1308,7 +1315,7 @@ impl Profile {
     /// `true` if the allocation was recorded, `false` otherwise
     #[cfg(feature = "full_profiling")]
     #[must_use]
-    pub fn record_allocation(&self, size: usize, address: usize) -> bool {
+    pub fn record_allocation(&self, size: usize) -> bool {
         debug_log!(
             "In Profile::record_allocation for size={size} for profile {} of type {:?}, detailed_memory={}, task_id={}",
             self.registered_name,
@@ -1316,19 +1323,19 @@ impl Profile {
             self.detailed_memory,
             self.memory_task.as_ref().map_or("N/A".to_string(), |context| format!("{}", context.task_id))
         );
-        // if !self.detailed_memory {
-        //     return false;
-        // }
 
         if size == 0 {
             return false;
         }
 
-        // Record the allocation
-        if let Err(e) = self.handle_allocation(size, address) {
-            debug_log!("Failed to record allocation: {e:?}");
-            return false;
-        }
+        // Just add to our local counter
+        self.allocation_total.fetch_add(size, Ordering::Relaxed);
+
+        debug_log!(
+            "Profile {} recorded allocation of {size} bytes, total now: {}",
+            self.registered_name,
+            self.allocation_total.load(Ordering::Relaxed)
+        );
 
         true
     }
@@ -1637,6 +1644,8 @@ impl Profile {
                     detailed_memory,
                     file_name: file_name_stem.clone(),
                     instance_id,
+                    allocation_total: Arc::new(AtomicUsize::new(0)),
+                    memory_reported: Arc::new(AtomicBool::new(false)),
                     memory_task: None,
                     memory_guard: None,
                 };
@@ -1722,6 +1731,8 @@ impl Profile {
                     detailed_memory,
                     file_name: file_name_stem.clone(),
                     instance_id,
+                    allocation_total: Arc::new(AtomicUsize::new(0)),
+                    memory_reported: Arc::new(AtomicBool::new(false)),
                     memory_task: Some(memory_task),
                     memory_guard: Some(memory_guard),
                 }
@@ -1931,38 +1942,6 @@ impl Profile {
         } else {
             debug_log!("Successfully wrote memory event for delta={}", delta);
         }
-    }
-
-    #[cfg(feature = "full_profiling")]
-    fn handle_allocation(&self, size: usize, address: usize) -> ProfileResult<()> {
-        if size == 0 {
-            return Ok(());
-        }
-
-        debug_log!(
-            "Handling allocation change: size={}, profile={}, detailed_memory={}",
-            size,
-            self.registered_name(),
-            self.detailed_memory()
-        );
-
-        // Record allocation
-        // let result = self.write_memory_event_with_op(delta, '+');
-        let identifier = self.section_name().map_or_else(
-            || self.fn_name.clone(),
-            |cust_name| format!("{}::{cust_name}", self.fn_name),
-        );
-        if let Some(memory_task) = &self.memory_task {
-            record_alloc_for_task_id(address, size, memory_task.task_id);
-            debug_log!("Profile {identifier}: task_id: {} successfully wrote memory event for delta={size}", memory_task.task_id);
-        } else {
-            debug_log!("Profile {identifier} could not retrieve &self.memory_task");
-            return Err(ProfileError::General(format!(
-                "Profile {identifier} could not retrieve &self.memory_task"
-            )));
-        }
-
-        Ok(())
     }
 
     /// Get the memory usage for this profile's task
@@ -2294,50 +2273,28 @@ impl Drop for Profile {
                 drop_start.elapsed().as_millis()
             );
 
-            // Handle memory profiling
+            // For memory profiling, use our direct counter
             if matches!(self.profile_type, ProfileType::Memory | ProfileType::Both) {
-                // let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
-                // let mut already_seen = HashSet::new();
-
-                let start_line = self.start_line();
-                let end_line = self.end_line();
-                let type_desc = match (start_line, end_line) {
-                    (None, None) => "function",
-                    (None, Some(_)) => "unexpected",
-                    (Some(_), None) => "unbounded section, so dropped by user code, but allocation tracker should filter deallocations",
-                    (Some(_), Some(_)) => "bounded section",
-                };
-                debug_log!(
-                    "In drop for Profile with memory profiling: {}. Type is {type_desc}",
-                    build_stack(&self.path, self.section_name.as_ref(), " -> ")
-                );
-
-                // First drop the guard to exit the task context
-                self.memory_guard = None;
-                // Now get memory usage from our task
-                if let Some(ref task) = self.memory_task {
-                    if let Some(memory_usage) = task.memory_usage() {
-                        debug_log!("Task {} final memory_usage={memory_usage}", task.task_id);
-                        if memory_usage > 0 {
-                            let () = self.record_memory_change(memory_usage);
-                        }
-                    }
-                }
-                if let Some(memory_usage) = self
-                    .memory_task
-                    .as_ref()
-                    .and_then(TaskMemoryContext::memory_usage)
+                if self
+                    .memory_reported
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
                 {
+                    let total_allocated = self.allocation_total.load(Ordering::Relaxed);
+                    if total_allocated > 0 {
+                        debug_log!(
+                            "Writing memory allocation of {total_allocated} bytes for profile {}",
+                            self.registered_name
+                        );
+                        self.record_memory_change(total_allocated);
+                    }
+                } else {
                     debug_log!(
-                        "DROP PROFILE: Task {} for {:?} used {} bytes",
-                        self.memory_task.as_ref().unwrap().id(),
-                        // self.path.join("::"),
-                        self.path.last().map_or("", |v| v),
-                        memory_usage
+                        "Skipping memory write for profile {} - already reported",
+                        self.registered_name
                     );
                 }
             }
-
             debug_log!(
                 "Time to drop profile: {}ms",
                 drop_start.elapsed().as_millis()

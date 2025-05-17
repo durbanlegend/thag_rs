@@ -352,7 +352,6 @@ fn mem_attribution_record_allocation() {
             &fn_name,
             start_line + 1, // Line within range
             1024,           // Size
-            0xDEADBEEF,     // Fake address
             &mut backtrace,
         );
 
@@ -367,7 +366,6 @@ fn mem_attribution_record_allocation() {
             &fn_name,
             start_line,
             1024,
-            0xDEADBEEF,
             &mut backtrace,
         );
         assert!(
@@ -381,7 +379,6 @@ fn mem_attribution_record_allocation() {
             "nonexistent_function",
             start_line,
             1024,
-            0xDEADBEEF,
             &mut backtrace,
         );
         assert!(
@@ -395,7 +392,6 @@ fn mem_attribution_record_allocation() {
             &fn_name,
             start_line - 10, // Before range
             1024,
-            0xDEADBEEF,
             &mut backtrace,
         );
         assert!(

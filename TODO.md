@@ -27,7 +27,8 @@
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Rename task-aware allocator to tracking allocator.
-- [ ]  Look at simplifying Profile::record_allocation to just accumulate without task registry, once we've established it's redundant (see unreachable!() statement in mem_tracking.rs).
+- [ ]  See what we can make redundant now that Profile summary memory allocation is simplified.
+- [ ]  Consider suspending Peak from summary flamegraphs and flamecharts due to inaccuracy?
 
         eprintln!("processed.stacks={:#?}", processed.stacks);
 

@@ -277,9 +277,7 @@ unsafe impl GlobalAlloc for TrackingAllocator {
                 let size = layout.size();
                 // Potentially skip small allocations
                 if size > *SIZE_TRACKING_THRESHOLD {
-                    let address = ptr as usize;
-
-                    record_alloc(address, size);
+                    record_alloc(size);
                 }
             }
             // See ya later allocator
@@ -317,7 +315,7 @@ unsafe impl GlobalAlloc for TrackingAllocator {
                 // Potentially skip small allocations
                 if new_size > *SIZE_TRACKING_THRESHOLD {
                     let address = ptr as usize;
-                    record_alloc(address, new_size);
+                    record_alloc(new_size);
                 }
             });
         }
@@ -326,7 +324,7 @@ unsafe impl GlobalAlloc for TrackingAllocator {
 }
 
 #[allow(clippy::too_many_lines, unreachable_code)]
-fn record_alloc(address: usize, size: usize) {
+fn record_alloc(size: usize) {
     // with_sys_alloc(|| {
     assert_eq!(current_allocator(), Allocator::System);
     // Simple recursion prevention without using TLS with destructors
@@ -490,14 +488,7 @@ fn record_alloc(address: usize, size: usize) {
     // Try to record the allocation in the new profile registry
     if !filename.is_empty()
         && *lineno > 0
-        && record_allocation(
-            filename,
-            fn_name,
-            *lineno,
-            size,
-            address,
-            &mut current_backtrace,
-        )
+        && record_allocation(filename, fn_name, *lineno, size, &mut current_backtrace)
     {
         debug_log!(
             "Recorded allocation of {size} bytes in {filename}::{fn_name}:{lineno} to a profile"
@@ -621,7 +612,6 @@ pub fn record_allocation(
     fn_name: &str,
     line: u32,
     size: usize,
-    address: usize,
     current_backtrace: &mut Backtrace,
 ) -> bool {
     with_sys_alloc(|| {
@@ -648,7 +638,7 @@ pub fn record_allocation(
             debug_log!("About to call record_allocation on registry");
             result = crate::mem_attribution::PROFILE_REGISTRY
                 .lock()
-                .record_allocation(file_name, fn_name, line, size, address, current_backtrace);
+                .record_allocation(file_name, fn_name, line, size, current_backtrace);
             debug_log!("record_allocation on registry returned {result}");
         }
 

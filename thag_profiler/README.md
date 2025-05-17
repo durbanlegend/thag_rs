@@ -853,7 +853,9 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 - **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
    across your entire application stack, revealing hidden costs from dependencies like async runtimes.
 
-Detailed memory profiling will allow you to drill down into these allocations as well as the resulting deallocations.
+ Detailed memory profiling will allow you to drill down into these allocations as well as the resulting deallocations.
+
+- **Peak memory allocation on flamegraphs and flamecharts**: The peak bytes allocated total shown in the graph headers is simply calculated at the available granularity and may therefore be a gross over-estimate. For a normal summary memory graph this is not very accurate as in the absence of profiled child functions it assumes that memory allocated over the life of a profiled function is only deallocated at the end of the function. The global detailed flamegraph, which shows the relative lifespan of each allocation in the call stack, should give an accurate figure which may be much lower.
 
 ### Profiling release builds
 

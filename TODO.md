@@ -27,6 +27,7 @@
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Rename task-aware allocator to tracking allocator.
+- [ ]  Look at simplifying Profile::record_allocation to just accumulate without task registry, once we've established it's redundant (see unreachable!() statement in mem_tracking.rs).
 
         eprintln!("processed.stacks={:#?}", processed.stacks);
 

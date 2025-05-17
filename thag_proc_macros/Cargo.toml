@@ -3,6 +3,7 @@ name = "thag_proc_macros"
 version = "0.1.2"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "Procedural macros for the thag_rs and thag_profiler crates"
+repository = "https://github.com/durbanlegend/thag_rs"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 

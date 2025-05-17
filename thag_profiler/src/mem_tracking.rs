@@ -325,7 +325,7 @@ unsafe impl GlobalAlloc for TaskAwareAllocator {
     }
 }
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, unreachable_code)]
 fn record_alloc(address: usize, size: usize) {
     // with_sys_alloc(|| {
     assert_eq!(current_allocator(), Allocator::System);
@@ -374,7 +374,6 @@ fn record_alloc(address: usize, size: usize) {
     // Get backtrace without recursion
     // debug_log!("Attempting backtrace");
     let start_ident = Instant::now();
-    let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
     // debug_log!("Calling extract_callstack");
     let mut current_backtrace = Backtrace::new();
@@ -504,18 +503,25 @@ fn record_alloc(address: usize, size: usize) {
             write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
         }
 
+        debug_log!(
+            "size={size}, time to assign = {}ms",
+            start_ident.elapsed().as_millis()
+        );
+
         // Allocation was recorded in a profile, no need to continue with global tracking
         return;
     }
 
     // TODO See if we still need the traditional method below.
-    // unreachable!();
+    unreachable!();
 
     // Fall back to traditional method
     current_backtrace.resolve();
 
     let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
     debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
+
+    let mut task_id = 0;
 
     if cleaned_stack.is_empty() {
         debug_log!(

@@ -638,7 +638,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_build
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+ E.g. thag demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
 
@@ -1649,7 +1649,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snipp
 
  Will use the editor specified in VISUAL or EDITOR environment variable.
 
- E.g. `EDITOR=vim thag_rs demo/edit.rs`
+ E.g. `VISUAL="zed --wait" thag demo/edit.rs`
 
 **Purpose:** Demo of edit crate to invoke preferred editor.
 
@@ -1665,6 +1665,32 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snipp
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
+```
+
+---
+
+### Script: edit_profile.rs
+
+**Description:**  Profiled version of published example from edit crate readme.
+
+ Will use the editor specified in VISUAL or EDITOR environment variable.
+
+ E.g. `EDITOR="zed --wait" thag demo/edit_profile.rs`
+
+**Purpose:** Demo of edit crate to invoke preferred editor.
+
+**Crates:** `edit`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** crates, profiling, technique
+
+**Link:** [edit_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit_profile.rs
 ```
 
 ---
@@ -3628,7 +3654,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+ E.g. thag demo/owo_cli_color_support.rs -- add spongebob
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
 

@@ -2,38 +2,38 @@
 [dependencies]
 #edit = { version = "0.1.5", features = ["better-path"] }
 edit = "0.1.5"
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
+# thag_profiler = { version = "0.1", features = ["full_profiling"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
 */
 
 #[allow(unused_doc_comments)]
-/// Published example from edit crate readme.
+/// Profiled version of published example from edit crate readme.
 ///
 /// Will use the editor specified in VISUAL or EDITOR environment variable.
 ///
-/// E.g. `VISUAL="zed --wait" thag demo/edit.rs`
+/// E.g. `EDITOR="zed --wait" thag demo/edit_profile.rs`
 //# Purpose: Demo of edit crate to invoke preferred editor.
-//# Categories: crates, technique
+//# Categories: crates, profiling, technique
 use std::env;
-use std::error::Error;
-use std::io::Result;
-use std::io::ErrorKind;
-use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
+use std::io::ErrorKind;
+use std::io::Result;
+use std::path::{Path, PathBuf};
 
+use thag_profiler::{enable_profiling, profiled};
 
-#[cfg(target_os = "windows")]
-env::set_var("VISUAL", "cmd.exe /C type");
-#[cfg(target_os = "windows")]
-env::set_var("EDITOR", "cmd.exe /C type");
-
+#[profiled]
 fn get_full_editor_cmd(s: String) -> Result<(PathBuf, Vec<String>)> {
     let (path, args) = string_to_cmd(s);
     match get_full_editor_path(&path) {
         Ok(result) => Ok((result, args)),
         Err(_) if path.exists() => Ok((path, args)),
-        Err(_) => Err(std::io::Error::from(ErrorKind::NotFound))
+        Err(_) => Err(std::io::Error::from(ErrorKind::NotFound)),
     }
 }
 
+#[profiled]
 fn get_full_editor_path<T: AsRef<OsStr> + AsRef<Path>>(binary_name: T) -> Result<PathBuf> {
     if let Some(paths) = env::var_os("PATH") {
         for dir in env::split_paths(&paths) {
@@ -46,6 +46,7 @@ fn get_full_editor_path<T: AsRef<OsStr> + AsRef<Path>>(binary_name: T) -> Result
     Err(std::io::Error::from(ErrorKind::NotFound))
 }
 
+#[profiled]
 fn string_to_cmd(s: String) -> (PathBuf, Vec<String>) {
     let mut args = s.split_ascii_whitespace();
     (
@@ -57,7 +58,9 @@ fn string_to_cmd(s: String) -> (PathBuf, Vec<String>) {
 // #[rustfmt::skip]
 static HARDCODED_NAMES: &[&str] = &[
     // GUI editors
-    "code.cmd -n -w", "atom.exe -w", "subl.exe -w",
+    "code.cmd -n -w",
+    "atom.exe -w",
+    "subl.exe -w",
     // notepad++ does not block for input
     // Installed by default
     "notepad.exe",
@@ -66,13 +69,17 @@ static HARDCODED_NAMES: &[&str] = &[
 ];
 
 static ENV_VARS: &[&str] = &["VISUAL", "EDITOR"];
-let editor = ENV_VARS
+
+#[enable_profiling]
+fn main() -> Result<()> {
+    let editor = ENV_VARS
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
-        .filter_map(|v| v.into_string().ok()).next();
-println!("editor={editor:?}");
-let editor_cmd = ENV_VARS
+        .filter_map(|v| v.into_string().ok())
+        .next();
+    println!("editor={editor:?}");
+    let editor_cmd = ENV_VARS
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
@@ -86,10 +93,12 @@ let editor_cmd = ENV_VARS
                 .filter_map(|s| get_full_editor_cmd(s).ok())
                 .next()
         });
-        // .ok_or_else(|| Error::from(ErrorKind::NotFound));
-println!("editor_cmd={editor_cmd:?}");
+    // .ok_or_else(|| Error::from(ErrorKind::NotFound));
+    println!("editor_cmd={editor_cmd:?}");
 
-let template = "Fill in the blank: Hello, _____!";
-let edited = edit::edit(template)?;
-println!("after editing: '{}'", edited);
-// after editing: 'Fill in the blank: Hello, world!'
+    let template = "Fill in the blank: Hello, _____!";
+    let edited = edit::edit(template)?;
+    println!("after editing: '{}'", edited);
+    // after editing: 'Fill in the blank: Hello, world!'
+    Ok(())
+}

@@ -482,6 +482,11 @@ fn record_alloc(address: usize, size: usize) {
         "Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}"
     );
 
+    // Still record detailed allocations to -memory_detail.folded if requested
+    if detailed_memory {
+        write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
+    }
+
     // Try to record the allocation in the new profile registry
     if !filename.is_empty()
         && *lineno > 0
@@ -498,17 +503,11 @@ fn record_alloc(address: usize, size: usize) {
             "Recorded allocation of {size} bytes in {filename}::{fn_name}:{lineno} to a profile"
         );
 
-        // Still record detailed allocations to -memory_detail.folded if requested
-        if detailed_memory {
-            write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
-        }
-
         debug_log!(
             "size={size}, time to assign = {}ms",
             start_ident.elapsed().as_millis()
         );
 
-        // Allocation was recorded in a profile, no need to continue with global tracking
         return;
     }
 

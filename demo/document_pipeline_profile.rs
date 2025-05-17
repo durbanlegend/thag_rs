@@ -42,7 +42,7 @@ impl Document {
     }
 
     // #[profiled]
-    #[profiled(detailed_memory = true)]
+    #[profiled(mem_detail)]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation
         let start = Instant::now();

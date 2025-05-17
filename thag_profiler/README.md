@@ -836,7 +836,7 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
 - **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
 
-- **Potential Race Conditions in Async Environments**: Unfortunately, profiling code must share a global allocator (our dispatcher) with user code, and use a global variable to indicate to the dispatcher to use the system allocator in place of the default tracking allocator. To avoid a race condition on the global variable in an async environment would require sophisticated locking, complicated by the need to cater for nested profiling code calls. Thread-local storage doesn't work in the presence of thread stealing as practised by `tokio` for one.
+- **Potential Race Conditions in Async Environments**: Unfortunately, profiling code must share a global allocator (our dispatcher) with user code, and use a global variable to indicate to the dispatcher to use the system allocator in place of the default "tracking" allocator. To avoid a race condition on the global variable in an async environment would require sophisticated locking, complicated by the need to cater for nested profiling code calls. Thread-local storage doesn't work in the presence of thread stealing as practised by `tokio` for one.
 
  At the time of writing, the most practical solution found after  extensive experimentation has been to use a simple atomic variable  to manage the current allocator status and to live with the  exposure to the risk of mis-allocation, much as that goes against  Thag's personal style. The mechanism chosen to cater for nested  calls is as simple and hopefully as elegant as possible: if  profiler code finds the current allocator in user mode, it assumes it's not nested, so it overrides the setting and runs the function with a guard to undo the override, otherwise it assumes it's running nested and does not touch the setting.
 
@@ -931,7 +931,7 @@ In both cases, since the metrics for the function are measured over the lifetime
 
 b. For detailed memory profiling, allocations and deallocations alike are not accumulated or even tracked back to a `Profile`, but immediately written with a lightly tidied-up stack to the `-memory_detail.folded` and `-memory_detail_dealloc.folded` files respectively.
 
-Being the default, the task-aware allocator is automatically used for user code and must not be used for profiler code.
+Being the default, the tracking allocator is automatically used for user code and must not be used for profiler code.
 
 To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_sys_alloc()` function (`pub fn with_sys_alloc<T, F: FnOnce() -> T>(f: F) -> T`).
 

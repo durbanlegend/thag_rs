@@ -60,7 +60,6 @@ impl Document {
         }
     }
 
-    // #[profiled]
     #[profiled(both, mem_detail)]
     fn count_words(&mut self) {
         // Simulate CPU-intensive operation with fixed duration

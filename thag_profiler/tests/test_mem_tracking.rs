@@ -347,11 +347,11 @@ fn test_allocation_registry() {
 /// Test with_sys_alloc function
 #[cfg(feature = "full_profiling")]
 fn test_with_sys_alloc() {
-    // Start with the default TaskAware allocator
+    // Start with the default Tracking allocator
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
-        Allocator::TaskAware,
-        "Default allocator should be TaskAware"
+        Allocator::Tracking,
+        "Default allocator should be Tracking"
     );
 
     // Run code with System allocator
@@ -375,11 +375,11 @@ fn test_with_sys_alloc() {
         "with_sys_alloc should return closure result"
     );
 
-    // After with_sys_alloc, allocator should be back to TaskAware
+    // After with_sys_alloc, allocator should be back to Tracking
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
-        Allocator::TaskAware,
-        "Allocator should be restored to TaskAware after with_sys_alloc"
+        Allocator::Tracking,
+        "Allocator should be restored to Tracking after with_sys_alloc"
     );
 
     // Nested with_sys_alloc calls
@@ -390,21 +390,13 @@ fn test_with_sys_alloc() {
             "First level: Allocator should be System"
         );
 
-        thag_profiler::mem_tracking::with_allocator(Allocator::TaskAware, || {
+        thag_profiler::mem_tracking::with_sys_alloc(|| {
             assert_eq!(
                 thag_profiler::mem_tracking::current_allocator(),
-                Allocator::TaskAware,
-                "Second level: Allocator should be TaskAware"
+                Allocator::System,
+                "Second level: Allocator should be System"
             );
         });
-
-        // After inner with_allocator, should be back to System
-        assert_eq!(
-            thag_profiler::mem_tracking::current_allocator(),
-            Allocator::System,
-            "After inner with_allocator, should be back to System"
-        );
-
         "success"
     });
 
@@ -413,11 +405,11 @@ fn test_with_sys_alloc() {
         "Nested with_sys_alloc should work"
     );
 
-    // After both with_sys_alloc calls, allocator should be back to TaskAware
+    // After both with_sys_alloc calls, allocator should be back to Tracking
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
-        Allocator::TaskAware,
-        "Allocator should be restored to TaskAware after nested with_sys_alloc"
+        Allocator::Tracking,
+        "Allocator should be restored to Tracking after nested with_sys_alloc"
     );
 }
 

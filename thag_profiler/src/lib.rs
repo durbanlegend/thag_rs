@@ -73,8 +73,8 @@ pub use {
     mem_attribution::{find_profile, register_profile, ProfileRef, PROFILE_REGISTRY},
     mem_tracking::{
         create_memory_task, find_matching_task_id, get_last_active_task, get_task_memory_usage,
-        record_allocation, trim_backtrace, with_sys_alloc, Allocator, Dispatcher,
-        TaskAwareAllocator, TaskGuard, TaskMemoryContext, ALLOC_REGISTRY,
+        record_allocation, trim_backtrace, with_sys_alloc, Allocator, Dispatcher, TaskGuard,
+        TaskMemoryContext, TrackingAllocator, ALLOC_REGISTRY,
     },
     profiling::extract_path,
 };
@@ -973,7 +973,7 @@ mod lib_tests {
     fn test_mem_tracking_integration() {
         // Test basic allocator operations
         let current = mem_tracking::current_allocator();
-        assert!(matches!(current, Allocator::TaskAware) || matches!(current, Allocator::System));
+        assert!(matches!(current, Allocator::Tracking) || matches!(current, Allocator::System));
 
         // Test with_sys_alloc function
         let result = with_sys_alloc(|| 42);

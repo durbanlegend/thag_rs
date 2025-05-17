@@ -49,7 +49,7 @@ const MAX_SAFE_ALLOCATION: usize = 1024 * 1024 * 1024;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Allocator {
     /// Task-aware allocator that tracks which task allocated memory
-    TaskAware,
+    Tracking,
     /// System allocator for profiling operations
     System,
 }
@@ -57,7 +57,7 @@ pub enum Allocator {
 impl fmt::Display for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Allocator::TaskAware => write!(f, "TaskAware"),
+            Allocator::Tracking => write!(f, "Tracking"),
             Allocator::System => write!(f, "System"),
         }
     }
@@ -70,7 +70,7 @@ pub fn current_allocator() -> Allocator {
         // eprintln!("Using system allocator");
         Allocator::System
     } else {
-        Allocator::TaskAware
+        Allocator::Tracking
     }
 }
 
@@ -87,7 +87,7 @@ where
 
     impl Drop for Cleanup {
         fn drop(&mut self) {
-            // eprintln!("Switching to TaskAwareAllocator");
+            // eprintln!("Switching to TrackingAllocator");
             USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
         }
     }
@@ -108,14 +108,14 @@ where
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator
 pub struct Dispatcher {
-    pub task_aware: TaskAwareAllocator,
+    pub tracking: TrackingAllocator,
     pub system: std::alloc::System,
 }
 
 impl Dispatcher {
     pub const fn new() -> Self {
         Self {
-            task_aware: TaskAwareAllocator,
+            tracking: TrackingAllocator,
             system: std::alloc::System,
         }
     }
@@ -145,7 +145,7 @@ unsafe impl GlobalAlloc for Dispatcher {
 
         match current {
             Allocator::System => unsafe { self.system.alloc(layout) },
-            Allocator::TaskAware => {
+            Allocator::Tracking => {
                 // // Use a recursive guard here to prevent infinite loops
                 // let recursion_depth = RECURSION_DEPTH.load(Ordering::Relaxed);
                 // if recursion_depth > 10 {
@@ -153,14 +153,14 @@ unsafe impl GlobalAlloc for Dispatcher {
                 //     unsafe { self.system.alloc(layout) }
                 // } else {
                 //     RECURSION_DEPTH.store(recursion_depth + 1, Ordering::SeqCst);
-                //     let ptr = unsafe { self.task_aware.alloc(layout) };
+                //     let ptr = unsafe { self.tracking.alloc(layout) };
                 //     let recursion_depth = RECURSION_DEPTH.load(Ordering::Relaxed);
                 //     if recursion_depth > 0 {
                 //         RECURSION_DEPTH.store(recursion_depth - 1, Ordering::SeqCst);
                 //     }
                 //     ptr
                 // }
-                unsafe { self.task_aware.alloc(layout) }
+                unsafe { self.tracking.alloc(layout) }
             }
         }
     }
@@ -183,7 +183,7 @@ unsafe impl GlobalAlloc for Dispatcher {
 
         match current_allocator() {
             Allocator::System => unsafe { self.system.dealloc(ptr, layout) },
-            Allocator::TaskAware => {
+            Allocator::Tracking => {
                 // // Use a recursive guard here to prevent infinite loops
                 // let recursion_depth = RECURSION_DEPTH.load(Ordering::Relaxed);
                 // if recursion_depth > 10 {
@@ -191,13 +191,13 @@ unsafe impl GlobalAlloc for Dispatcher {
                 //     unsafe { self.system.dealloc(ptr, layout) }
                 // } else {
                 //     RECURSION_DEPTH.store(recursion_depth + 1, Ordering::SeqCst);
-                //     unsafe { self.task_aware.dealloc(ptr, layout) };
+                //     unsafe { self.tracking.dealloc(ptr, layout) };
                 //     let recursion_depth = RECURSION_DEPTH.load(Ordering::Relaxed);
                 //     if recursion_depth > 0 {
                 //         RECURSION_DEPTH.store(recursion_depth - 1, Ordering::SeqCst);
                 //     }
                 // }
-                unsafe { self.task_aware.dealloc(ptr, layout) }
+                unsafe { self.tracking.dealloc(ptr, layout) }
             }
         }
     }
@@ -222,7 +222,7 @@ unsafe impl GlobalAlloc for Dispatcher {
 
         match current_allocator() {
             Allocator::System => unsafe { self.system.realloc(ptr, layout, new_size) },
-            Allocator::TaskAware => {
+            Allocator::Tracking => {
                 // // Use a recursive guard here to prevent infinite loops
                 // let recursion_depth = RECURSION_DEPTH.load(Ordering::Relaxed);
                 // if recursion_depth > 10 {
@@ -230,33 +230,33 @@ unsafe impl GlobalAlloc for Dispatcher {
                 //     unsafe { self.system.realloc(ptr, layout, new_size) }
                 // } else {
                 //     RECURSION_DEPTH.store(recursion_depth + 1, Ordering::SeqCst);
-                //     let ptr = unsafe { self.task_aware.realloc(ptr, layout, new_size) };
+                //     let ptr = unsafe { self.tracking.realloc(ptr, layout, new_size) };
                 //     let recursion_depth = RECURSION_DEPTH.load(Ordering::Relaxed);
                 //     if recursion_depth > 0 {
                 //         RECURSION_DEPTH.store(recursion_depth - 1, Ordering::SeqCst);
                 //     }
                 //     ptr
                 // }
-                unsafe { self.task_aware.realloc(ptr, layout, new_size) }
+                unsafe { self.tracking.realloc(ptr, layout, new_size) }
             }
         }
     }
 }
 
 /// Task-aware allocator that tracks memory allocations
-pub struct TaskAwareAllocator;
+pub struct TrackingAllocator;
 
 // Static instance for global access
-static TASK_AWARE_ALLOCATOR: TaskAwareAllocator = TaskAwareAllocator;
+static TRACKING_ALLOCATOR: TrackingAllocator = TrackingAllocator;
 
 // Helper to get the allocator instance
 #[must_use]
-pub fn get_allocator() -> &'static TaskAwareAllocator {
-    &TASK_AWARE_ALLOCATOR
+pub fn get_allocator() -> &'static TrackingAllocator {
+    &TRACKING_ALLOCATOR
 }
 
 #[allow(clippy::unused_self)]
-impl TaskAwareAllocator {
+impl TrackingAllocator {
     /// Creates a new task context for tracking memory
     pub fn create_task_context(&'static self) -> TaskMemoryContext {
         let task_id = TASK_STATE.next_task_id.fetch_add(1, Ordering::SeqCst);
@@ -268,7 +268,7 @@ impl TaskAwareAllocator {
     }
 }
 
-unsafe impl GlobalAlloc for TaskAwareAllocator {
+unsafe impl GlobalAlloc for TrackingAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = unsafe { System.alloc(layout) };
 
@@ -1260,7 +1260,7 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 /// Initialize memory profiling.
 /// This is called by the main `init_profiling` function.
 pub fn initialize_memory_profiling() {
-    // Set up allocator state with TaskAware as the default
+    // Set up allocator state with Tracking as the default
     USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
 
     // Use system allocator just for logging
@@ -1268,7 +1268,7 @@ pub fn initialize_memory_profiling() {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
     });
-    assert_eq!(current_allocator(), Allocator::TaskAware);
+    assert_eq!(current_allocator(), Allocator::Tracking);
 }
 
 /// Finalize memory profiling and write out data.

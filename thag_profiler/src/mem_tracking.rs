@@ -917,15 +917,12 @@ pub static ALLOC_REGISTRY: LazyLock<Mutex<AllocationRegistry>> =
 struct ProfileRegistry {
     /// Set of active task IDs
     active_profiles: BTreeSet<usize>,
-    // /// Thread ID -> Stack of active task IDs (most recent on top)
-    // thread_task_stacks: HashMap<ThreadId, Vec<usize>>,
 }
 
 impl ProfileRegistry {
     const fn new() -> Self {
         Self {
             active_profiles: BTreeSet::new(),
-            // thread_task_stacks: HashMap::new(),
         }
     }
 
@@ -948,26 +945,6 @@ impl ProfileRegistry {
     fn get_last_active_task(&self) -> Option<usize> {
         self.active_profiles.iter().next_back().copied()
     }
-
-    // /// Add a task to a thread's stack
-    // fn push_task_to_stack(&mut self, thread_id: ThreadId, task_id: usize) {
-    //     let stack = self.thread_task_stacks.entry(thread_id).or_default();
-    //     stack.push(task_id);
-    // }
-
-    // /// Remove a task from a thread's stack
-    // fn pop_task_from_stack(&mut self, thread_id: ThreadId, task_id: usize) {
-    //     if let Some(stack) = self.thread_task_stacks.get_mut(&thread_id) {
-    //         if let Some(pos) = stack.iter().position(|id| *id == task_id) {
-    //             stack.remove(pos);
-
-    //             // Remove empty stack
-    //             if stack.is_empty() {
-    //                 self.thread_task_stacks.remove(&thread_id);
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 // Global profile registry
@@ -1115,19 +1092,11 @@ pub struct TaskGuard;
 
 impl Drop for TaskGuard {
     fn drop(&mut self) {
-        // Use simpler approach with direct method calls
-        // This avoids complex TLS interactions during thread shutdown
-
         // Run these operations with System allocator
         with_sys_alloc(|| {
             // Remove from active profiles
             debug_log!("Deactivating task {}", self.task_id);
             PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
-
-            // // Remove from thread stack
-            // PROFILE_REGISTRY
-            //     .lock()
-            //     .pop_task_from_stack(thread::current().id(), self.task_id);
 
             // Flush logs directly
             if let Some(logger) = crate::DebugLogger::get() {

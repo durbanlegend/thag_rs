@@ -1707,10 +1707,6 @@ impl Profile {
 
             let mut profile = {
                 // Create the profile with necessary components
-                // Get current module path and line number
-                // let file_name = file!().to_string();
-                // let start_line = line!();
-
                 debug_log!(
                     "Creating profile for {} in file {} with memory profiling enabled={}",
                     fn_name,
@@ -1725,7 +1721,6 @@ impl Profile {
                     section_name,
                     registered_name: stack,
                     fn_name: fn_name.to_string(),
-                    // start_line: Some(start_line),
                     start_line,
                     end_line,
                     detailed_memory,

@@ -57,8 +57,8 @@ pub enum Allocator {
 impl fmt::Display for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Allocator::Tracking => write!(f, "Tracking"),
-            Allocator::System => write!(f, "System"),
+            Self::Tracking => write!(f, "Tracking"),
+            Self::System => write!(f, "System"),
         }
     }
 }
@@ -113,6 +113,7 @@ pub struct Dispatcher {
 }
 
 impl Dispatcher {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             tracking: TrackingAllocator,
@@ -176,7 +177,7 @@ unsafe impl GlobalAlloc for Dispatcher {
                 eprintln!(
                     "WARNING: Extremely large deallocation request of {} bytes",
                     layout.size()
-                )
+                );
             });
             // Still need to deallocate it to avoid memory leaks
         }
@@ -326,8 +327,6 @@ unsafe impl GlobalAlloc for TrackingAllocator {
 
 #[allow(clippy::too_many_lines, unreachable_code)]
 fn record_alloc(address: usize, size: usize) {
-    // with_sys_alloc(|| {
-    assert_eq!(current_allocator(), Allocator::System);
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -338,6 +337,9 @@ fn record_alloc(address: usize, size: usize) {
             }
         }
     }
+
+    // with_sys_alloc(|| {
+    assert_eq!(current_allocator(), Allocator::System);
 
     if size == 0 {
         debug_log!("Zero-sized allocation found");
@@ -505,8 +507,6 @@ fn record_alloc(address: usize, size: usize) {
             "size={size}, time to assign = {}ms",
             start_ident.elapsed().as_millis()
         );
-
-        return;
     }
 }
 
@@ -623,7 +623,6 @@ pub fn write_detailed_stack_alloc(
 )]
 pub fn record_dealloc(address: usize, size: usize) {
     // Simple recursion prevention without using TLS with destructors
-    assert_eq!(current_allocator(), Allocator::System);
     static mut IN_TRACKING: bool = false;
     struct Guard;
     impl Drop for Guard {
@@ -633,6 +632,9 @@ pub fn record_dealloc(address: usize, size: usize) {
             }
         }
     }
+
+    #[cfg(debug_assertions)]
+    assert_eq!(current_allocator(), Allocator::System);
 
     let root_module = lazy_static_var!(
         String,
@@ -1052,6 +1054,7 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 
 /// Initialize memory profiling.
 /// This is called by the main `init_profiling` function.
+#[allow(clippy::missing_panics_doc)]
 pub fn initialize_memory_profiling() {
     // Set up allocator state with Tracking as the default
     USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
@@ -1061,6 +1064,7 @@ pub fn initialize_memory_profiling() {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
     });
+    #[cfg(debug_assertions)]
     assert_eq!(current_allocator(), Allocator::Tracking);
 }
 

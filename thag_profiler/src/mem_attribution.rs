@@ -7,7 +7,7 @@ use crate::{
 use backtrace::{Backtrace, BacktraceFrame};
 use parking_lot::Mutex;
 use regex::Regex;
-use std::clone::Clone;
+use std::{clone::Clone, convert::AsRef};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     string::ToString,
@@ -46,7 +46,7 @@ pub struct ProfileRef {
     instance_id: u64,
     /// Reference to the Profile using Arc for thread safety
     profile: Option<Arc<Profile>>,
-    /// Flag to track if this ProfileRef is being dropped
+    /// Flag to track if this `ProfileRef` is being dropped
     /// This helps prevent recursive drops
     dropping: bool,
 }
@@ -69,13 +69,13 @@ impl ProfileRef {
 
     #[must_use]
     pub fn profile(&self) -> Option<&Profile> {
-        self.profile.as_ref().map(|arc| arc.as_ref())
+        self.profile.as_ref().map(AsRef::as_ref)
     }
 }
 
 impl ProfileRegistry {
     /// Register a profile with the registry
-    pub fn register_profile(&mut self, profile: Arc<Profile>) {
+    pub fn register_profile(&mut self, profile: &Arc<Profile>) {
         debug_log!("In register_profile for {profile:?}");
 
         // Get the profile's instance ID
@@ -89,7 +89,7 @@ impl ProfileRegistry {
             detailed_memory: profile.detailed_memory(),
             instance_id,
             // Store an Arc to the Profile
-            profile: Some(Arc::clone(&profile)),
+            profile: Some(Arc::clone(profile)),
             dropping: false,
         };
 
@@ -390,8 +390,10 @@ impl ProfileRegistry {
 pub static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
     LazyLock::new(|| Mutex::new(ProfileRegistry::default()));
 
+type AddressAllocMap = Mutex<HashMap<usize, (Vec<String>, usize)>>;
+
 // New registry just for detailed memory tracking address-to-profile mapping
-pub static DETAILED_ADDRESS_REGISTRY: LazyLock<Mutex<HashMap<usize, (Vec<String>, usize)>>> =
+pub static DETAILED_ADDRESS_REGISTRY: LazyLock<AddressAllocMap> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Thread-safe counter for generating unique profile IDs
@@ -418,7 +420,7 @@ pub fn register_profile(profile: &Profile) {
 
         // Now acquire the PROFILE_REGISTRY mutex
         let mut registry = PROFILE_REGISTRY.lock();
-        registry.register_profile(profile_arc);
+        registry.register_profile(&profile_arc);
     });
 }
 

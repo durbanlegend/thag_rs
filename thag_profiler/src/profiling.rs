@@ -10,10 +10,7 @@ use std::{
     io::BufWriter,
     path::PathBuf,
     str::FromStr,
-    sync::{
-        atomic::{AtomicU8, AtomicUsize, Ordering},
-        Arc,
-    },
+    sync::atomic::{AtomicU8, Ordering},
     time::Instant,
 };
 
@@ -36,6 +33,9 @@ use crate::{
 
 #[cfg(feature = "full_profiling")]
 use regex::Regex;
+
+#[cfg(feature = "full_profiling")]
+use std::sync::{atomic::AtomicUsize, Arc};
 
 #[cfg(feature = "time_profiling")]
 use backtrace::{Backtrace, BacktraceFrame};
@@ -884,7 +884,9 @@ pub fn get_global_profile_type() -> ProfileType {
     profile_type
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn set_global_profile_type(profile_type: ProfileType) {
+    #[cfg(debug_assertions)]
     assert!(
         is_valid_profile_type(profile_type),
         "Invalid profile type {profile_type:?} for feature set"
@@ -1262,7 +1264,7 @@ impl Profile {
         &self.file_name
     }
 
-    /// Get the fn_name of this profile
+    /// Get the `fn_name`œ of this profile
     #[must_use]
     pub fn fn_name(&self) -> &str {
         self.fn_name.as_str()
@@ -1641,7 +1643,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name: file_name_stem.clone(),
+                    file_name: file_name_stem,
                     instance_id,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
                     memory_reported: Arc::new(AtomicBool::new(false)),

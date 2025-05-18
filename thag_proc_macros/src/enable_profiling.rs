@@ -31,6 +31,7 @@ pub enum ProfileType {
 
 // Function-level profiling arguments, similar to #[profiled] macro
 #[derive(Default)]
+#[allow(clippy::struct_excessive_bools)]
 struct FunctionProfileArgs {
     /// Flag for time profiling
     time: bool,
@@ -228,7 +229,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
     // #[enabled(no)] specified
     if args.mode == ProfilingMode::Disabled {
-        return item.into();
+        return item;
     }
 
     let input = parse_macro_input!(item as ItemFn);
@@ -268,37 +269,39 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let fn_name_str = fn_name.to_string();
 
     // Determine if detailed memory profiling is enabled from function args
-    let is_detailed_memory = if let Some(fn_args) = &args.function_args {
-        fn_args.mem_detail
-    } else {
-        false
-    };
+    let is_detailed_memory = args
+        .function_args
+        .as_ref()
+        .is_some_and(|fn_args| fn_args.mem_detail);
 
     // Function profiling type
     #[allow(unused_variables)]
-    let function_profile_type = if let Some(fn_args) = &args.function_args {
-        #[cfg(feature = "full_profiling")]
-        let profile_type =
-            if fn_args.both || (fn_args.time && (fn_args.mem_summary || fn_args.mem_detail)) {
-                quote! { ::thag_profiler::ProfileType::Both }
-            } else if fn_args.time {
-                quote! { ::thag_profiler::ProfileType::Time }
-            } else if fn_args.mem_summary || fn_args.mem_detail {
-                quote! { ::thag_profiler::ProfileType::Memory }
-            } else {
-                // Default to global
-                quote! { ::thag_profiler::get_global_profile_type() }
-            };
-
-        // When not using full_profiling, always use Time regardless of memory settings
-        #[cfg(not(feature = "full_profiling"))]
-        let profile_type = quote! { ::thag_profiler::ProfileType::Time };
-
-        profile_type
-    } else {
-        // Default to global profile type
-        quote! { ::thag_profiler::get_global_profile_type() }
-    };
+    let function_profile_type = args.function_args.as_ref().map_or_else(
+        || quote! { ::thag_profiler::get_global_profile_type() },
+        |fn_args| {
+            #[cfg(feature = "full_profiling")]
+            let profile_type =
+                if fn_args.both || (fn_args.time && (fn_args.mem_summary || fn_args.mem_detail)) {
+                    quote! { ::thag_profiler::ProfileType::Both }
+                } else if fn_args.time {
+                    quote! { ::thag_profiler::ProfileType::Time }
+                } else if fn_args.mem_summary || fn_args.mem_detail {
+                    quote! { ::thag_profiler::ProfileType::Memory }
+                } else {
+                    // Default to global
+                    quote! { ::thag_profiler::get_global_profile_type() }
+                };
+            //     // When not using full_profiling, always use Time regardless of memory settings
+            //     #[cfg(not(feature = "full_profiling"))]
+            //     let profile_type = quote! { ::thag_profiler::ProfileType::Time };
+            //     profile_type
+            // });
+            // When not using full_profiling, always use Time regardless of memory settings
+            #[cfg(not(feature = "full_profiling"))]
+            let profile_type = quote! { ::thag_profiler::ProfileType::Time };
+            profile_type
+        },
+    );
 
     let profile_new = quote! {
         ::thag_profiler::Profile::new(None, Some(#fn_name_str), #function_profile_type, #is_async, #is_detailed_memory, file!(), None, None)
@@ -356,7 +359,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, profiled, with_sys_alloc, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
-        _ => {
+        ProfilingMode::Disabled => {
             quote! {}
         }
     };
@@ -384,7 +387,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 finalize_profiling();  // Already uses with_sys_alloc(... internally
             }
         }
-        _ => {
+        ProfilingMode::Disabled => {
             quote! {}
         }
     };
@@ -513,7 +516,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             #wrapped_block
         },
-        _ => unreachable!(),
+        ProfilingMode::Disabled => unreachable!(),
     };
 
     let result = quote! {

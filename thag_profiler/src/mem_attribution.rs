@@ -390,6 +390,10 @@ impl ProfileRegistry {
 pub static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
     LazyLock::new(|| Mutex::new(ProfileRegistry::default()));
 
+// New registry just for detailed memory tracking address-to-profile mapping
+pub static DETAILED_ADDRESS_REGISTRY: LazyLock<Mutex<HashMap<usize, (Vec<String>, usize)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
 /// Thread-safe counter for generating unique profile IDs
 static NEXT_PROFILE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 

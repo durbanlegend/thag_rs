@@ -9,6 +9,7 @@
 use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, get_global_profile_type,
     get_root_module, is_detailed_memory, lazy_static_var,
+    mem_attribution::DETAILED_ADDRESS_REGISTRY,
     profiling::{
         build_stack, clean_function_name, extract_alloc_callstack,
         extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
@@ -276,7 +277,8 @@ unsafe impl GlobalAlloc for TrackingAllocator {
                 let size = layout.size();
                 // Potentially skip small allocations
                 if size > *SIZE_TRACKING_THRESHOLD {
-                    record_alloc(size);
+                    let address = ptr as usize;
+                    record_alloc(address, size);
                 }
             }
             // See ya later allocator
@@ -313,7 +315,8 @@ unsafe impl GlobalAlloc for TrackingAllocator {
 
                 // Potentially skip small allocations
                 if new_size > *SIZE_TRACKING_THRESHOLD {
-                    record_alloc(new_size);
+                    let address = ptr as usize;
+                    record_alloc(address, new_size);
                 }
             });
         }
@@ -322,7 +325,7 @@ unsafe impl GlobalAlloc for TrackingAllocator {
 }
 
 #[allow(clippy::too_many_lines, unreachable_code)]
-fn record_alloc(size: usize) {
+fn record_alloc(address: usize, size: usize) {
     // with_sys_alloc(|| {
     assert_eq!(current_allocator(), Allocator::System);
     // Simple recursion prevention without using TLS with destructors
@@ -386,7 +389,6 @@ fn record_alloc(size: usize) {
     //     return;
     // }
 
-    let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     let file_names = {
         crate::mem_attribution::PROFILE_REGISTRY
             .lock()
@@ -479,8 +481,15 @@ fn record_alloc(size: usize) {
     );
 
     // Still record detailed allocations to -memory_detail.folded if requested
+    let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     if detailed_memory {
-        write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
+        record_detailed_alloc(
+            address,
+            size,
+            &ALLOC_START_PATTERN,
+            &mut current_backtrace,
+            true,
+        );
     }
 
     // Try to record the allocation in the new profile registry
@@ -551,15 +560,23 @@ pub fn record_allocation(
     })
 }
 
-pub fn write_detailed_alloc(
+pub fn register_detailed_allocation(address: usize, size: usize, stack: Vec<String>) {
+    if is_detailed_memory() {
+        let mut registry = DETAILED_ADDRESS_REGISTRY.lock();
+        registry.insert(address, (stack, size));
+    }
+}
+
+pub fn record_detailed_alloc(
+    address: usize,
     size: usize,
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
     write_to_detail_file: bool,
 ) {
     let detailed_stack = extract_detailed_alloc_callstack(start_pattern, current_backtrace);
-
     write_detailed_stack_alloc(size, write_to_detail_file, &detailed_stack);
+    register_detailed_allocation(address, size, detailed_stack);
 }
 
 #[allow(
@@ -703,35 +720,20 @@ pub fn record_dealloc(address: usize, size: usize) {
         }
 
         let entry = if detailed_stack.is_empty() {
-            // debug_log!(
-            //     "...empty detailed_stack for backtrace: size={size}:\n{:#?}",
-            //     // trim_backtrace(start_pattern, &current_backtrace)
-            //     current_backtrace
-            // );
-            // Assuming address is not volatile
-            // let address = ptr as usize;
-
-            let reg_task_id = {
-                *ALLOC_REGISTRY
+            let stack_and_size = {
+                DETAILED_ADDRESS_REGISTRY
                     .lock()
-                    .address_to_task
-                    .get(&address)
-                    .unwrap_or(&0)
-            };
-            // Caution: more condensed
-            let reg_path: Vec<String> = {
-                TASK_PATH_REGISTRY
-                    .lock()
-                    .get(&reg_task_id)
-                    .unwrap_or(&Vec::new())
-                    .clone()
+                    .remove(&address)
+                    .unwrap_or((Vec::new(), size))
             };
 
-            let legend = if reg_path.is_empty() {
-                debug_log!("Empty cleaned_stack and reg_path for backtrace={current_backtrace:#?}");
+            let (stack, _) = stack_and_size;
+
+            let legend = if stack.is_empty() {
+                debug_log!("Empty cleaned_stack and stack for backtrace={current_backtrace:#?}");
                 format!("[Dealloc out of `{root_module}` scope] +{size}")
             } else {
-                reg_path.join(";")
+                stack.join(";")
             };
             format!("{legend} +{size}")
         } else {

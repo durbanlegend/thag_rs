@@ -29,8 +29,7 @@ use crate::mem_attribution::{deregister_profile, get_next_profile_id, register_p
 #[cfg(feature = "full_profiling")]
 use crate::{
     mem_tracking::{
-        activate_task, create_memory_task, get_task_memory_usage, TaskGuard, TaskMemoryContext,
-        TASK_PATH_REGISTRY,
+        activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
     warn_once, with_sys_alloc,
 };
@@ -1659,21 +1658,10 @@ impl Profile {
                 // Flush logs before calling register_profile
                 flush_debug_log();
 
-                dbg!();
-
                 // Now register the profile
                 register_profile(&profile);
 
-                // // Log again after registration completes
-                // debug_log!(
-                //     "Successfully registered profile in module {}",
-                //     &profile.file_name
-                // );
-                // }
-
                 profile.start = Some(Instant::now());
-
-                dbg!();
 
                 return Some(profile);
             }
@@ -1937,22 +1925,6 @@ impl Profile {
         } else {
             debug_log!("Successfully wrote memory event for delta={}", delta);
         }
-    }
-
-    /// Get the memory usage for this profile's task
-    #[must_use]
-    #[cfg(not(feature = "full_profiling"))]
-    pub const fn memory_usage(&self) -> Option<usize> {
-        None
-    }
-
-    /// Get the memory usage for this profile's task
-    #[must_use]
-    #[cfg(feature = "full_profiling")]
-    pub fn memory_usage(&self) -> Option<usize> {
-        self.memory_task
-            .as_ref()
-            .and_then(|task| get_task_memory_usage(task.id()))
     }
 
     // Public methods for testing

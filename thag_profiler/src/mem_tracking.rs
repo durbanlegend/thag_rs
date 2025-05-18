@@ -769,46 +769,6 @@ pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
     threshold
 });
 
-/// Registry for tracking memory allocations and deallocations
-#[derive(Debug)]
-pub struct AllocationRegistry {
-    /// Task ID -> Allocations mapping: [(address, size)]
-    pub task_allocations: HashMap<usize, Vec<(usize, usize)>>,
-    /// Task ID -> Deallocations mapping: [(address, size)]
-    pub task_deallocations: HashMap<usize, Vec<(usize, usize)>>,
-
-    /// Address -> Task ID mapping for deallocations
-    pub address_to_task: HashMap<usize, usize>,
-}
-
-impl AllocationRegistry {
-    fn new() -> Self {
-        Self {
-            task_allocations: HashMap::new(),
-            task_deallocations: HashMap::new(),
-            address_to_task: HashMap::new(),
-        }
-    }
-
-    /// Get the memory usage for a specific task
-    fn get_task_memory_usage(&self, task_id: usize) -> Option<usize> {
-        self.task_allocations
-            .get(&task_id)
-            .map(|allocations| allocations.iter().map(|(_, size)| *size).sum())
-    }
-
-    // /// Get the memory deallocations for a specific task
-    // fn get_task_memory_deallocs(&self, task_id: usize) -> Option<usize> {
-    //     self.task_deallocations
-    //         .get(&task_id)
-    //         .map(|deallocs| deallocs.iter().map(|(_, size)| *size).sum())
-    // }
-}
-
-// Global allocation registry
-pub static ALLOC_REGISTRY: LazyLock<Mutex<AllocationRegistry>> =
-    LazyLock::new(|| Mutex::new(AllocationRegistry::new()));
-
 /// Registry for tracking active profiles and task stacks
 #[derive(Debug)]
 struct ProfileRegistry {
@@ -865,11 +825,6 @@ pub fn deactivate_task(task_id: usize) {
     });
 }
 
-/// Get the memory usage for a specific task
-pub fn get_task_memory_usage(task_id: usize) -> Option<usize> {
-    ALLOC_REGISTRY.lock().get_task_memory_usage(task_id)
-}
-
 // /// Add a task to a thread's stack
 // pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
 //     with_sys_alloc(|| {
@@ -915,23 +870,6 @@ impl TaskMemoryContext {
     pub const fn id(&self) -> usize {
         self.task_id
     }
-
-    /// Gets current memory usage for this task
-    #[must_use]
-    pub fn memory_usage(&self) -> Option<usize> {
-        get_task_memory_usage(self.task_id)
-    }
-
-    // /// Enter this task context for memory tracking
-    // ///
-    // /// # Errors
-    // ///
-    // /// This function will bubble up any errors encountered (TODO: do we need a Result wrapper?)
-    // pub fn enter(&self) -> crate::ProfileResult<TaskGuard> {
-    //     // Push to thread stack
-    //     push_task_to_stack(thread::current().id(), self.task_id);
-    //     Ok(TaskGuard::new(self.task_id))
-    // }
 }
 
 // Provide a dummy TaskMemoryContext type for when full_profiling is disabled
@@ -1199,9 +1137,6 @@ fn write_memory_profile_data() {
         if let Ok(file) = file_result {
             let mut writer = io::BufWriter::new(file);
 
-            // Get all task allocations
-            let task_allocs = { ALLOC_REGISTRY.lock().task_allocations.clone() };
-
             // Get the task path registry mapping for easier lookup
             let task_paths_map: HashMap<usize, Vec<String>> = {
                 let binding = TASK_PATH_REGISTRY.lock();
@@ -1220,21 +1155,10 @@ fn write_memory_profile_data() {
 
             let mut already_written = HashSet::new();
 
-            // Write out any allocations for task 0, i.e. unassigned allocations
-            if let Some(allocation) = { ALLOC_REGISTRY.lock().get_task_memory_usage(0) } {
-                debug_log!("Writing for task 0 (unassigned) with {allocation} bytes");
-                write_alloc(0, allocation, &mut writer, &mut already_written, "");
-            }
-
             // Now write all tasks from registry that might not have allocations
             // This helps with keeping the full call hierarchy in the output
             for (task_id, path) in &task_paths_map {
                 let task_id = *task_id;
-
-                // Skip tasks we've already written
-                if task_allocs.contains_key(&task_id) {
-                    continue;
-                }
 
                 // let path_str = path.join(";");
                 let path_str = build_stack(path, None, ";");

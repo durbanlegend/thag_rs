@@ -422,7 +422,7 @@ pub fn register_profile(profile: &Profile) {
     });
 }
 
-/// Safely deregister a profile from the ProfileRegistry
+/// Safely deregister a profile from the `ProfileRegistry`
 ///
 /// This is a safer wrapper that captures all needed information before calling
 /// the registry's `deregister_profile method`, to avoid any recursive drop issues.

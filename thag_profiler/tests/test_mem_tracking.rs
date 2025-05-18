@@ -25,19 +25,13 @@
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     mem_tracking::{
-        activate_task, create_memory_task, get_active_tasks, get_last_active_task,
-        get_task_memory_usage, /*, pop_task_from_stack, push_task_to_stack */
-        record_alloc_for_task_id, with_sys_alloc, Allocator, TaskGuard, ALLOC_REGISTRY,
-        TASK_PATH_REGISTRY,
+        create_memory_task, get_last_active_task, with_sys_alloc, Allocator, TASK_PATH_REGISTRY,
     },
     profiled,
 };
 
 #[cfg(feature = "full_profiling")]
-use std::{
-    collections::HashMap,
-    sync::{LazyLock, Mutex},
-};
+use std::sync::{LazyLock, Mutex};
 
 // Utility for persistent allocations across test boundaries
 #[cfg(feature = "full_profiling")]
@@ -46,169 +40,6 @@ static TEST_MEMORY: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(
 // ---------------------------------------------------------------------------
 // Test functions for memory tracking
 // ---------------------------------------------------------------------------
-
-/// Test basic allocation tracking with task IDs
-#[cfg(feature = "full_profiling")]
-fn test_memory_task_allocation() {
-    // Use the system allocator to avoid recursive tracking
-    with_sys_alloc(|| {
-        // Create a memory task
-        let memory_task = create_memory_task();
-        let task_id = memory_task.id();
-
-        eprintln!("Created memory task with ID: {}", task_id);
-
-        // Check that the task ID is valid
-        assert!(task_id > 0, "Task ID should be greater than zero");
-
-        // Activate the task
-        activate_task(task_id);
-
-        // Verify task activation
-        let active_tasks = get_active_tasks();
-        assert!(
-            active_tasks.contains(&task_id),
-            "Task should be in active tasks list"
-        );
-
-        // Test allocations
-        {
-            // Record some allocations
-            record_alloc_for_task_id(0x1000, 1024, task_id);
-            record_alloc_for_task_id(0x2000, 2048, task_id);
-
-            // Check memory usage
-            let usage = get_task_memory_usage(task_id);
-            assert_eq!(
-                usage,
-                Some(3072),
-                "Memory usage should be sum of allocations"
-            );
-
-            // Check memory usage via context
-            assert_eq!(
-                memory_task.memory_usage(),
-                Some(3072),
-                "Memory context should report correct usage"
-            );
-        }
-
-        // Create a guard and verify it removes the task on drop
-        {
-            let _guard = TaskGuard::new(task_id);
-            assert!(
-                get_active_tasks().contains(&task_id),
-                "Task should be active while guard exists"
-            );
-
-            // Let guard go out of scope
-        }
-
-        // Verify task was deactivated
-        assert!(
-            !get_active_tasks().contains(&task_id),
-            "Task should be deactivated after guard drops"
-        );
-    });
-}
-
-/// Test task context
-#[cfg(feature = "full_profiling")]
-fn test_memory_task_context() {
-    // Use the system allocator
-    with_sys_alloc(|| {
-        // Create a memory task
-        let memory_task = create_memory_task();
-        let task_id = memory_task.id();
-
-        // Task should already be activated
-        assert!(
-            get_active_tasks().contains(&task_id),
-            "Task should be active"
-        );
-
-        // Create a guard for the task_id.
-        let guard = TaskGuard::new(task_id);
-
-        // Record an allocation
-        record_alloc_for_task_id(0x3000, 4096, task_id);
-
-        // Verify memory usage
-        assert_eq!(
-            memory_task.memory_usage(),
-            Some(4096),
-            "Memory context should report allocation"
-        );
-
-        // Exit context by dropping the guard
-        drop(guard);
-
-        // Task should be deactivated
-        assert!(
-            !get_active_tasks().contains(&task_id),
-            "Task should be deactivated after guard drops"
-        );
-    });
-}
-
-// /// Test thread task stacks
-// #[cfg(feature = "full_profiling")]
-// fn test_thread_task_stacks() {
-//     // Use the system allocator
-//     with_sys_alloc(|| {
-//         // Create multiple tasks
-//         let task1 = create_memory_task();
-//         let task2 = create_memory_task();
-//         let task3 = create_memory_task();
-
-//         let task1_id = task1.id();
-//         let task2_id = task2.id();
-//         let task3_id = task3.id();
-
-//         let thread_id = thread::current().id();
-
-//         // Push tasks onto stack in different order
-//         push_task_to_stack(thread_id, task1_id);
-//         push_task_to_stack(thread_id, task2_id);
-//         push_task_to_stack(thread_id, task3_id);
-
-//         // Last active task should be the most recently pushed
-//         assert_eq!(
-//             get_last_active_task(),
-//             Some(task3_id),
-//             "Last active task should be the most recently pushed"
-//         );
-
-//         // Pop middle task
-//         pop_task_from_stack(thread_id, task2_id);
-
-//         // Last active task should still be task3
-//         assert_eq!(
-//             get_last_active_task(),
-//             Some(task3_id),
-//             "Last active task should still be task3 after popping task2"
-//         );
-
-//         // Active tasks should not include task2
-//         let active_tasks = get_active_tasks();
-//         assert!(active_tasks.contains(&task1_id), "Task1 should be active");
-//         assert!(active_tasks.contains(&task3_id), "Task3 should be active");
-//         assert!(
-//             !active_tasks.contains(&task2_id),
-//             "Task2 should not be active"
-//         );
-
-//         // Pop the remaining tasks
-//         pop_task_from_stack(thread_id, task1_id);
-//         pop_task_from_stack(thread_id, task3_id);
-
-//         // No tasks should be active
-//         assert!(
-//             get_active_tasks().is_empty(),
-//             "No tasks should be active after popping all"
-//         );
-//     });
-// }
 
 /// Test task path registry
 #[cfg(feature = "full_profiling")]
@@ -263,83 +94,6 @@ fn test_task_path_registry() {
         {
             let mut registry = TASK_PATH_REGISTRY.lock();
             registry.remove(&task_id);
-        }
-    });
-}
-
-/// Test allocation registry
-#[cfg(feature = "full_profiling")]
-fn test_allocation_registry() {
-    // Use the system allocator
-    with_sys_alloc(|| {
-        // Record some allocations for a task
-        let task_id = 1000; // Use arbitrary task ID for testing
-
-        // Clear existing registry first
-        {
-            let mut registry = ALLOC_REGISTRY.lock();
-            *registry = thag_profiler::mem_tracking::AllocationRegistry {
-                task_allocations: HashMap::new(),
-                task_deallocations: HashMap::new(),
-                address_to_task: HashMap::new(),
-            };
-        }
-
-        // Record allocations
-        record_alloc_for_task_id(0x1000, 1024, task_id);
-        record_alloc_for_task_id(0x2000, 2048, task_id);
-        record_alloc_for_task_id(0x3000, 4096, task_id);
-
-        // Check memory usage
-        let usage = get_task_memory_usage(task_id);
-        assert_eq!(
-            usage,
-            Some(7168),
-            "Memory usage should be sum of allocations"
-        );
-
-        // Check address to task mapping
-        {
-            let registry = ALLOC_REGISTRY.lock();
-
-            // Verify address mappings
-            assert_eq!(
-                *registry.address_to_task.get(&0x1000).unwrap(),
-                task_id,
-                "Address 0x1000 should map to task_id"
-            );
-            assert_eq!(
-                *registry.address_to_task.get(&0x2000).unwrap(),
-                task_id,
-                "Address 0x2000 should map to task_id"
-            );
-            assert_eq!(
-                *registry.address_to_task.get(&0x3000).unwrap(),
-                task_id,
-                "Address 0x3000 should map to task_id"
-            );
-
-            // Verify allocations
-            let allocations = registry.task_allocations.get(&task_id).unwrap();
-            assert_eq!(allocations.len(), 3, "Should have 3 allocations for task");
-
-            // Check each allocation
-            let mut found_1024 = false;
-            let mut found_2048 = false;
-            let mut found_4096 = false;
-
-            for (_, size) in allocations {
-                match size {
-                    1024 => found_1024 = true,
-                    2048 => found_2048 = true,
-                    4096 => found_4096 = true,
-                    _ => {}
-                }
-            }
-
-            assert!(found_1024, "Should have 1024-byte allocation");
-            assert!(found_2048, "Should have 2048-byte allocation");
-            assert!(found_4096, "Should have 4096-byte allocation");
         }
     });
 }
@@ -506,38 +260,6 @@ fn test_trim_backtrace() {
     });
 }
 
-/// Test high-level memory profiling functions
-#[cfg(feature = "full_profiling")]
-fn test_memory_profiling_lifecycle() {
-    // Use the system allocator
-    with_sys_alloc(|| {
-        // Initialize memory profiling
-        thag_profiler::mem_tracking::initialize_memory_profiling();
-
-        // Create a task for tracking
-        let task = create_memory_task();
-        let task_id = task.id();
-
-        // Record some allocations
-        record_alloc_for_task_id(0x4000, 8192, task_id);
-
-        // Create a path for this task
-        let path = vec!["test_module".to_string(), "test_function".to_string()];
-
-        // Register the path
-        {
-            let mut registry = TASK_PATH_REGISTRY.lock();
-            registry.insert(task_id, path);
-        }
-
-        // Finalize memory profiling
-        thag_profiler::mem_tracking::finalize_memory_profiling();
-
-        // No specific assertions here as finalize_memory_profiling writes to disk
-        // and we don't want to make the test dependent on filesystem details
-    });
-}
-
 // ---------------------------------------------------------------------------
 // Main test function that runs all tests sequentially
 // ---------------------------------------------------------------------------
@@ -555,21 +277,9 @@ fn test_mem_tracking_full_sequence() {
 
     eprintln!("Starting memory tracking tests");
 
-    // Basic task allocation tests
-    eprintln!("Testing basic task allocation...");
-    test_memory_task_allocation();
-
-    // Task context tests
-    eprintln!("Testing memory task context...");
-    test_memory_task_context();
-
     // Task path registry tests
     eprintln!("Testing task path registry...");
     test_task_path_registry();
-
-    // Allocation registry tests
-    eprintln!("Testing allocation registry...");
-    test_allocation_registry();
 
     // with_sys_alloc tests
     eprintln!("Testing with_sys_alloc function...");
@@ -590,10 +300,6 @@ fn test_mem_tracking_full_sequence() {
     // Trim backtrace tests
     eprintln!("Testing trim_backtrace...");
     test_trim_backtrace();
-
-    // Memory profiling lifecycle tests
-    eprintln!("Testing memory profiling lifecycle...");
-    test_memory_profiling_lifecycle();
 
     // Clean up
     thag_profiler::profiling::disable_profiling();

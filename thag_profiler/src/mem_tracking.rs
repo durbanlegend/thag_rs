@@ -7,8 +7,8 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, extract_path, file_stem_from_path, find_profile, flush_debug_log,
-    get_global_profile_type, get_root_module, is_detailed_memory, lazy_static_var,
+    debug_log, file_stem_from_path, find_profile, flush_debug_log, get_global_profile_type,
+    get_root_module, is_detailed_memory, lazy_static_var,
     profiling::{
         build_stack, clean_function_name, extract_alloc_callstack,
         extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
@@ -29,7 +29,6 @@ use std::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
         LazyLock,
     },
-    thread,
     time::Instant,
 };
 
@@ -314,7 +313,6 @@ unsafe impl GlobalAlloc for TrackingAllocator {
 
                 // Potentially skip small allocations
                 if new_size > *SIZE_TRACKING_THRESHOLD {
-                    let address = ptr as usize;
                     record_alloc(new_size);
                 }
             });
@@ -501,109 +499,6 @@ fn record_alloc(size: usize) {
 
         return;
     }
-
-    // TODO See if we still need the traditional method below.
-    unreachable!();
-
-    // Fall back to traditional method
-    current_backtrace.resolve();
-
-    let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
-    debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
-
-    let mut task_id = 0;
-
-    if cleaned_stack.is_empty() {
-        debug_log!(
-            "...empty cleaned_stack for backtrace: size={size}:\n{:#?}",
-            trim_backtrace(&ALLOC_START_PATTERN, &current_backtrace)
-        );
-        debug_log!("Getting last active task (hmmm :/)");
-        task_id = get_last_active_task().unwrap_or(0);
-    } else {
-        // Make sure the use of a separate allocator is working.
-        assert!(!cleaned_stack
-            .iter()
-            .any(|frame| frame.contains("find_matching_profile")));
-
-        // debug_log!("Calling extract_path");
-        let path = extract_path(&cleaned_stack, None);
-        // debug_log!("path={path:#?}");
-        if path.is_empty() {
-            let trimmed_backtrace = trim_backtrace(&ALLOC_START_PATTERN, &current_backtrace);
-            if trimmed_backtrace
-                .iter()
-                .any(|frame| frame.contains("Backtrace::new"))
-            {
-                debug_log!("Ignoring setup allocation of size {size} containing Backtrace::new:");
-                return;
-            }
-            debug_log!(
-                "...path is empty for thread {:?}, size: {size:?}",
-                thread::current().id(),
-            );
-        } else {
-            task_id = find_matching_task_id(&path);
-            debug_log!("...find_matching_task_id found task_id={task_id} for size={size}");
-        }
-    }
-    debug_log!(
-        "task_id={task_id}, size={size}, time to assign = {}ms",
-        start_ident.elapsed().as_millis()
-    );
-
-    // // Record allocation if task found
-    // if task_id == 0 {
-    //     // TODO if necessary, record in suspense file and allocate later
-    //     return;
-    // }
-
-    record_alloc_for_task_id(address, size, task_id);
-
-    if file_names.is_empty() {
-        return;
-    }
-
-    if detailed_memory {
-        write_detailed_alloc(size, &ALLOC_START_PATTERN, &mut current_backtrace, true);
-    }
-    // });
-}
-
-#[allow(clippy::missing_panics_doc, reason = "debug_assertions")]
-pub fn record_alloc_for_task_id(address: usize, size: usize, task_id: usize) {
-    let start_record_alloc = Instant::now();
-
-    debug_log!("Recording allocation for task_id={task_id}, address={address:#x}, size={size}");
-    let mut registry = ALLOC_REGISTRY.lock();
-    registry
-        .task_allocations
-        .entry(task_id)
-        .or_default()
-        .push((address, size));
-
-    registry.address_to_task.insert(address, task_id);
-
-    if cfg!(debug_assertions) {
-        let check_map = &registry.task_allocations;
-        let reg_task_id = *registry.address_to_task.get(&address).unwrap_or(&0);
-        let maybe_vec = check_map.get(&task_id);
-        let (addr, sz) = *maybe_vec
-            .and_then(|v: &Vec<(usize, usize)>| {
-                let last = v.iter().filter(|&(addr, _)| *addr == address).last();
-                last
-            })
-            .unwrap();
-        drop(registry);
-        assert_eq!(sz, size);
-        assert_eq!(addr, address);
-        assert_eq!(reg_task_id, task_id);
-    }
-
-    debug_log!(
-        "Time to record allocation: {}ms",
-        start_record_alloc.elapsed().as_millis()
-    );
 }
 
 /// Record an allocation with the profile registry based on module path and line number

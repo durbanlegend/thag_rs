@@ -499,10 +499,20 @@ pub fn finalize_profiling() {
     flush_debug_log();
 
     // Disable profiling
-    profiling::enable_profiling(false, None).expect("Failed to finalize profiling");
+    // profiling::enable_profiling(false, None).expect("Failed to finalize profiling");
+    disable_profiling();
 
-    // Determine profile type based on features
-    // let global_profile_type = get_global_profile_type();
+    let global_profile_type = get_global_profile_type();
+
+    // Process any recorded profiles
+    if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
+        // Convert inclusive time profile to exclusive time if enabled
+        if profiling::is_convert_to_exclusive_time_enabled() {
+            if let Err(e) = profiling::process_time_profile() {
+                debug_log!("Error converting time profile to exclusive time: {e:?}");
+            }
+        }
+    }
 
     // Final flush to ensure all data is written
     flush_debug_log();
@@ -523,10 +533,20 @@ pub fn finalize_profiling() {
         // Ensure debug log is flushed before we disable profiling
         flush_debug_log();
 
-        let global_profile_type = get_global_profile_type();
-
         // Disable profiling
         disable_profiling();
+
+        let global_profile_type = get_global_profile_type();
+
+        // Process any recorded profiles
+        if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
+            // Convert inclusive time profile to exclusive time if enabled
+            if profiling::is_convert_to_exclusive_time_enabled() {
+                if let Err(e) = profiling::process_time_profile() {
+                    debug_log!("Error converting time profile to exclusive time: {e:?}");
+                }
+            }
+        }
 
         if matches!(global_profile_type, ProfileType::Memory | ProfileType::Both) {
             mem_tracking::finalize_memory_profiling();

@@ -1,4 +1,5 @@
 // use backtrace::Backtrace;
+use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -7,14 +8,12 @@ use std::{
     env,
     fmt::{Display, Formatter},
     fs::File,
-    io::BufWriter,
+    io::{BufRead, BufReader, BufWriter},
     path::PathBuf,
     str::FromStr,
     sync::atomic::{AtomicU8, Ordering},
     time::Instant,
 };
-
-use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 
 #[cfg(feature = "full_profiling")]
 use crate::get_root_module;
@@ -476,6 +475,7 @@ static_lazy! {
 
         ProfileFilePaths {
             time: format!("{base}.folded"),
+            inclusive_time: format!("{base}-inclusive.folded"),
             memory: format!("{base}-memory.folded"),
             debug_log: debug_log_path.to_string_lossy().to_string(),
             executable_stem: script_stem.to_string(),
@@ -487,9 +487,12 @@ static_lazy! {
 }
 
 // File handles
-// #[cfg(feature = "time_profiling")]
 static_lazy! {
     TimeProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
+}
+
+static_lazy! {
+    InclusiveTimeProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
 // #[cfg(feature = "full_profiling")]
@@ -518,6 +521,7 @@ pub static START_TIME: AtomicU64 = AtomicU64::new(0);
 #[allow(dead_code)]
 pub struct ProfileFilePaths {
     time: String,
+    inclusive_time: String, // Stores inclusive times before conversion to exclusive
     memory: String,
     memory_detail: String,
     memory_detail_dealloc: String,
@@ -754,7 +758,19 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
     }
 
     // Initialize time profiling
-    if matches!(profile_type, ProfileType::Time) {
+    if matches!(profile_type, ProfileType::Time | ProfileType::Both) {
+        // Initialize the inclusive time file first
+        let paths = ProfilePaths::get();
+        let inclusive_time_path = &paths.inclusive_time;
+        InclusiveTimeProfileFile::init();
+        initialize_file(
+            "Inclusive Time Profile",
+            inclusive_time_path,
+            InclusiveTimeProfileFile::get(),
+        )?;
+        debug_log!("Inclusive time profile will be written to {inclusive_time_path}");
+
+        // Initialize the final time file (will be used for exclusive time)
         let time_path = get_time_path()?;
         TimeProfileFile::init();
         initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
@@ -797,6 +813,17 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
     // Initialize files based on the actual capabilities
     // Initialize time profiling if needed
     if (actual_caps.0 & ProfileCapability::TIME.0) != 0 {
+        // Initialize the inclusive time file first
+        let inclusive_time_path = &paths.inclusive_time;
+        InclusiveTimeProfileFile::init();
+        initialize_file(
+            "Inclusive Time Profile",
+            inclusive_time_path,
+            InclusiveTimeProfileFile::get(),
+        )?;
+        debug_log!("Inclusive time profile will be written to {inclusive_time_path}");
+
+        // Initialize the final time file (will be used for exclusive time)
         let time_path = get_time_path()?;
         TimeProfileFile::init();
         initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
@@ -1844,7 +1871,12 @@ impl Profile {
 
         let entry = format!("{stack} {micros}");
 
-        // let paths = ProfilePaths::get();
+        // First write to the inclusive time file (always)
+        let paths = ProfilePaths::get();
+        let inclusive_time_path = &paths.inclusive_time;
+        Self::write_profile_event(inclusive_time_path, InclusiveTimeProfileFile::get(), &entry)?;
+
+        // Also write to the main time file (will be overwritten if converting to exclusive time)
         let time_path = get_time_path()?;
         Self::write_profile_event(time_path, TimeProfileFile::get(), &entry)
     }
@@ -2284,6 +2316,160 @@ impl Drop for Profile {
     }
 }
 
+/// Convert an inclusive time profile to exclusive time
+///
+/// This function reads a folded file with inclusive times (total time spent in each function)
+/// and converts it to exclusive times (time spent only in the function itself, excluding child calls).
+#[cfg(feature = "time_profiling")]
+pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> ProfileResult<()> {
+    debug_log!("Converting inclusive time profile to exclusive time");
+
+    // Read input file
+    let file = File::open(input_path)
+        .map_err(|e| ProfileError::General(format!("Failed to open input file: {e}")))?;
+    let reader = BufReader::new(file);
+
+    // Store header lines to preserve them
+    let mut header_lines = Vec::new();
+
+    // Store stack lines as (stack_str, time) pairs
+    let mut stack_lines: Vec<(String, u64)> = Vec::new();
+    let mut line_count = 0;
+
+    // First pass: Parse the file and separate headers from stack lines
+    for line in reader.lines() {
+        let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
+        line_count += 1;
+
+        // Preserve comment/header lines
+        if line.starts_with('#') || line.trim().is_empty() {
+            header_lines.push(line);
+            continue;
+        }
+
+        // Parse line: "stack time"
+        let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
+        if parts.len() != 2 {
+            debug_log!("Warning: Invalid line format at line {line_count}: {line}");
+            continue;
+        }
+
+        let stack_str = parts[1].trim();
+        let time = match parts[0].parse::<u64>() {
+            Ok(t) => t,
+            Err(e) => {
+                debug_log!("Warning: Invalid time value at line {line_count}: {e}");
+                continue;
+            }
+        };
+
+        // Store the stack line
+        stack_lines.push((stack_str.to_string(), time));
+    }
+
+    // Process in reverse order
+    let mut stack_lines: Vec<(String, u64)> = stack_lines.into_iter().rev().collect();
+
+    // Calculate exclusive times using a sequential approach
+    let mut exclusive_times: Vec<(String, u64)> = vec![];
+    let len = stack_lines.len();
+
+    for _i in 1..=len {
+        // Process each stack, moving it from the stack_lines to exclusive_times
+        let mut parent = stack_lines.remove(0);
+
+        // For each stack, find its direct descendants and subtract their inclusive time from the parent
+        for (candidate, time_ref) in &mut stack_lines {
+            if !candidate.starts_with(&parent.0) {
+                break;
+            }
+            let parts: Vec<&str> = candidate.split(';').collect();
+            let parent_stack = parts[..parts.len() - 1].join(";");
+            if parent_stack == parent.0 {
+                parent.1 = parent.1.saturating_sub(*time_ref);
+            }
+        }
+        exclusive_times.push(parent);
+    }
+
+    // Restore original order
+    let exclusive_times: Vec<(String, u64)> = exclusive_times.into_iter().rev().collect();
+
+    // Write output file
+    let output_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(output_path)
+        .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
+    let mut writer = BufWriter::new(output_file);
+
+    // Write original headers
+    for header in &header_lines {
+        writeln!(writer, "{header}")
+            .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
+    }
+
+    // Add a note about this being exclusive time
+    writeln!(writer, "# Converted to exclusive time by thag_profiler")
+        .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
+    writeln!(writer).map_err(|e| ProfileError::General(format!("Failed to write newline: {e}")))?;
+
+    for (stack, exclusive) in &exclusive_times {
+        writeln!(writer, "{stack} {exclusive}")
+            .map_err(|e| ProfileError::General(format!("Failed to write stack line: {e}")))?;
+    }
+
+    writer
+        .flush()
+        .map_err(|e| ProfileError::General(format!("Failed to flush writer: {e}")))?;
+
+    debug_log!("Successfully processed {line_count} lines");
+    debug_log!("Found {len} stacks");
+
+    // Sum up exclusive times to validate
+    let total_exclusive: u64 = exclusive_times.iter().map(|(_, time)| *time).sum();
+    debug_log!("Total exclusive time: {total_exclusive} µs");
+    debug_log!("Successfully converted time profile from inclusive to exclusive time");
+
+    Ok(())
+}
+
+/// Enable or disable exclusive time conversion
+#[cfg(feature = "time_profiling")]
+pub fn set_convert_to_exclusive_time(enable: bool) {
+    CONVERT_TO_EXCLUSIVE_TIME.store(enable, Ordering::SeqCst);
+}
+
+/// Check if exclusive time conversion is enabled
+#[cfg(feature = "time_profiling")]
+pub fn is_convert_to_exclusive_time_enabled() -> bool {
+    CONVERT_TO_EXCLUSIVE_TIME.load(Ordering::SeqCst)
+}
+
+/// Perform the conversion from inclusive to exclusive time if enabled
+#[cfg(feature = "time_profiling")]
+pub fn process_time_profile() -> ProfileResult<()> {
+    if is_convert_to_exclusive_time_enabled() {
+        let paths = ProfilePaths::get();
+        let inclusive_path = &paths.inclusive_time;
+        let exclusive_path = &paths.time;
+
+        // Check if the inclusive time file exists and has content
+        if !inclusive_path.is_empty() {
+            let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
+                ProfileError::General(format!("Failed to check inclusive time file: {e}"))
+            })?;
+
+            if metadata.len() > 0 {
+                debug_log!("Converting inclusive time profile to exclusive time");
+                convert_to_exclusive_time(inclusive_path, exclusive_path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 // Helper function to check if a backtrace contains any of the specified patterns
 #[cfg(feature = "full_profiling")]
 #[allow(dead_code)]
@@ -2662,6 +2848,9 @@ pub fn safely_cleanup_profiling_after_test() {
     use std::sync::atomic::Ordering;
     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
 }
+
+// Flag to determine whether to convert inclusive time profiles to exclusive time
+static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
 
 #[must_use]
 pub fn strip_hex_suffix(name: String) -> String {

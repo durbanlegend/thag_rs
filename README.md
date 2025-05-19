@@ -575,22 +575,19 @@ Core Feature Set (★):
 - Basic logging and error handling
 - Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex
 - Styling system and macros: cvprtln, style_for_level
-- Profiling instrumentation macros: profile
 - Fundamental types and traits
 Optional features:
-- profiling     # Enables profiling output (instrumentation always available in core)
+- profiling     # Internal profiling via `thag_profiler` crate. `thag_profiler` can also be used separately to profile your scripts
 - debug-logs
 - nightly
 - format_snippet
 Common Usage Patterns:
 1. Just core functionality:
    features = ["core", "simplelog"]
-2. Core with profiling enabled:
-   features = ["core", "simplelog", "profiling"]
-3. Core with color detection:
+2. Core with color detection:
    features = ["core", "color_detect", "simplelog"]
-4. Full functionality with profiling:
-   features = ["full", "simplelog", "profiling"]
+3. Full functionality:
+   features = ["full", "simplelog"]
 Optional features can be added at any level:
 - debug-logs
 - nightly
@@ -604,7 +601,7 @@ cargo add thag_rs --no-default-features --features="repl,env_logger"
 
 ## Why "thag"?
 
-After the late Thag Simmons. A stone-age power tool for the grug brained developer to beat Rust code into submission. Why type long name when short sharp name do trick?
+After the late Thag Simmons. A stone-age power tool for the [grug brained developer](https://grugbrain.dev/) to beat Rust code into submission. Why type long name when short sharp name do trick?
 
 ## Related projects
 

@@ -9,25 +9,24 @@ use inferno::flamegraph::{
     color::{BasicPalette, MultiPalette},
     Options, Palette,
 };
+use inline_colorization::{color_cyan, color_reset};
 use inquire::{InquireError, MultiSelect, Select};
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
-use std::process::Command;
-use std::time::Duration;
 use std::{
     collections::{HashMap, HashSet},
-    string::ToString,
-};
-use std::{
     fs::{self, File},
-    path::Path,
+    io::{BufRead, BufReader},
+    path::{Path, PathBuf},
+    process::Command,
+    string::ToString,
+    time::Duration,
 };
 use strum::Display;
 use thag_profiler::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
+    pub path: PathBuf,
     pub stacks: Vec<String>,
     pub title: String,
     pub subtitle: String,
@@ -127,14 +126,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some("Memory Profile - Differential") => {
                 analyze_type(AnalysisType::MemoryDifferential, &dir_path)?;
             }
-            // Some("Time Profile - Single") => analyze_single_time_profile(&dir_path)?,
-            // Some("Time Profile - Differential") => {
-            //     analyze_differential_profiles(&dir_path, &ProfileType::Time)?;
-            // }
-            // Some("Memory Profile - Single") => analyze_memory_profiles(&dir_path)?,
-            // Some("Memory Profile - Differential") => {
-            //     analyze_differential_profiles(&dir_path, &ProfileType::Memory)?;
-            // }
             Some(_) => unreachable!(),
             None => {
                 println!("Exiting");
@@ -201,17 +192,22 @@ fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
             let processed = read_and_process_profile(&file_path)?;
             let stats = build_time_stats(&processed)?;
 
-            loop {
-                let options = vec![
+            let inclusive = file_path.display().to_string().contains("inclusive");
+            let options = if inclusive {
+                vec!["Show Statistics", "Back to Profile Selection"]
+            } else {
+                vec![
                     "Show Aggregated Execution Timeline (Flamegraph)",
                     "...Filter Aggregated Functions (Recursive or Exact Match)",
                     "Show Individual Sequential Execution Timeline (Flamechart)",
                     "...Filter Individual Sequential Functions (Recursive or Exact Match)",
                     "Show Statistics",
                     "Back to Profile Selection",
-                ];
-
-                let maybe_action = Select::new("Select action:", options).prompt_skippable()?;
+                ]
+            };
+            loop {
+                let maybe_action =
+                    Select::new("Select action:", options.clone()).prompt_skippable()?;
 
                 let action = match maybe_action {
                     Some(action) => action,
@@ -241,7 +237,8 @@ fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
                         )?;
                     }
                     "Show Statistics" => {
-                        show_statistics(&stats, &processed);
+                        let inclusive = file_path.display().to_string().contains("inclusive");
+                        show_statistics(&stats, &processed, inclusive);
                     }
                     // _ => return Ok(()),
                     _ => println!("Unknown option"),
@@ -490,21 +487,24 @@ fn open_in_browser(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile) {
+fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile, inclusive: bool) {
     println!("\n{}", profile.title);
     println!("{}", profile.subtitle);
     println!(
         "\nStarted: {}",
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
     );
-    println!("\nFunction Statistics Ranked by Calls:");
-    println!("====================================");
+    println!(
+        "\nFunction Statistics ({color_cyan}{}CLUSIVE{color_reset} of Children) Ranked by Total Time:",
+        if inclusive { "IN" } else { "EX" }
+    );
+    println!("{color_cyan}{}{color_reset}", "═".repeat(65));
 
-    let mut entries: Vec<_> = stats.calls.iter().collect();
-    entries.sort_by_key(|(_, &calls)| std::cmp::Reverse(calls));
+    let mut entries: Vec<_> = stats.total_time.iter().collect();
+    entries.sort_by_key(|(_, &total_time)| std::cmp::Reverse(total_time));
 
-    for (func, &calls) in entries {
-        let total_time = stats.total_time.get(func).unwrap_or(&0);
+    for (func, &total_time) in entries {
+        let calls = *stats.calls.get(func).unwrap_or(&0);
         let avg_time = if calls > 0 {
             total_time / u128::from(calls)
         } else {
@@ -1079,6 +1079,7 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
 
     // let start_time: std::option::Option<DateTime<Local>> = None;
     let mut processed = ProcessedProfile {
+        path: path.clone(),
         subtitle: path
             .file_name()
             .ok_or_else(|| ProfileError::General("Failed to get file name".to_string()))?

@@ -8,7 +8,7 @@ use std::{
     env,
     fmt::{Display, Formatter},
     fs::File,
-    io::{BufRead, BufReader, BufWriter},
+    io::BufWriter,
     path::PathBuf,
     str::FromStr,
     sync::atomic::{AtomicU8, Ordering},
@@ -47,8 +47,7 @@ use std::{
     collections::HashSet,
     convert::Into,
     fs::OpenOptions,
-    io::Write,
-    // path::PathBuf,
+    io::{BufRead, BufReader, Write},
     sync::{
         atomic::{AtomicBool, AtomicU64},
         OnceLock,
@@ -814,7 +813,6 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
     // Initialize time profiling if needed
     if (actual_caps.0 & ProfileCapability::TIME.0) != 0 {
         // Initialize the inclusive time file first
-        let paths = ProfilePaths::get();
         let inclusive_time_path = &paths.inclusive_time;
         InclusiveTimeProfileFile::init();
         initialize_file(
@@ -2411,10 +2409,10 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
             .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
     }
 
-    // Add a note about this being exclusive time
-    writeln!(writer, "# Converted to exclusive time by thag_profiler")
-        .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
-    writeln!(writer).map_err(|e| ProfileError::General(format!("Failed to write newline: {e}")))?;
+    // // Add a note about this being exclusive time
+    // writeln!(writer, "# Converted to exclusive time by thag_profiler")
+    //     .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
+    // writeln!(writer).map_err(|e| ProfileError::General(format!("Failed to write newline: {e}")))?;
 
     for (stack, exclusive) in &exclusive_times {
         writeln!(writer, "{stack} {exclusive}")
@@ -2851,6 +2849,7 @@ pub fn safely_cleanup_profiling_after_test() {
 }
 
 // Flag to determine whether to convert inclusive time profiles to exclusive time
+#[cfg(feature = "time_profiling")]
 static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
 
 #[must_use]

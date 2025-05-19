@@ -19,6 +19,8 @@ For instance you can start out with default memory summary profiling to detect f
 
   - `inferno` to display the results in your browser as interactive flamegraphs and flamecharts.
 
+For time profiles you can also choose to display function statistics (inclusive or exclusive of children according to the `.folded` file naming convention). Flamegraphs are not offered for `*-inclusive.folded` files as the bar lengths and displayed values would show multiple counting of descendants (double counting at every level of the stack), so these files are only useful for the statistics report.
+
 For memory profiles you can also choose to display memory statistics and an allocation size analysis.
 
 ## Features
@@ -714,36 +716,54 @@ Basic time profiling:
 
 ```rust
 profile!(calculate_result, time);
+// calculation code here
+...
+end!(calculate_result);
 ```
 
 Memory usage summary:
 
 ```rust
 profile!(load_data, mem_summary);
+// data loading code here
+...
+end!(load_data);
 ```
 
 Detailed memory tracking:
 
 ```rust
 profile!(process_image, mem_detail);
+// image processing code here
+...
+end!(process_image);
 ```
 
 Both time and memory profiling:
 
 ```rust
 profile!(generate_report, time, mem_detail);
+// report generation code here
+...
+end!(generate_report);
 ```
 
 Async function profiling:
 
 ```rust
 profile!(fetch_data, time, async_fn);
+// data fetching code here
+...
+end!(fetch_data);
 ```
 
-Unbounded memory profile (must be manually ended):
+Unbounded memory profile (must NOT be manually ended):
 
 ```rust
-profile!(long_running_task, mem_summary, unbounded);
+    profile!(long_running_task, mem_summary, unbounded);
+    // long running section to end of function
+    ...
+} // end of function
 ```
 
 #### Notes
@@ -811,7 +831,7 @@ fn process_data(data: &[u8]) {
 
 ### Time Profiling
 
-Time profiling measures the wall-clock time between profile creation and destruction, which closely approximates the time spent in the user code. It has minimal overhead and is suitable for most performance investigations.
+Time profiling measures the wall-clock time between profile creation and destruction, which closely approximates the time spent in the user code. It is async-compatible, has minimal overhead and is suitable for most performance investigations. It produces a regular `*.folded` file suitable for flamegraphs, flamecharts and function statistics *exclusive* of time spent in calls to other profiled functions, as well as an `*-inclusive.folded` file suitable only for function statistics *inclusive* of time spent in calls to other profiled functions. The analyzer handles these files accordingly.
 
 ### Memory Profiling
 
@@ -821,13 +841,15 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
 #### Memory Profiling Limitations and Considerations
 
-- **Performance Impact**: `thag_profiler` memory profiling introduces significant overhead compared to time profiling. Expect your application to run significantly more slowly when memory profiling is enabled. It's recommended to use memory profiling selectively for occasional health checks and targeted investigations rather than leave it enabled indefinitely.
+- **Performance Impact**: `thag_profiler` memory profiling introduces significant overhead compared to time profiling. Expect your application to run appreciably more slowly when memory profiling is enabled. It's strongly recommended to use memory profiling selectively for occasional health checks and targeted investigations rather than leave it enabled indefinitely.
 
 - **Mitigating Performance Impact with Optional Tracking Threshold Size**: Detailed memory profiling in particular is obviously the slowest profiling option and may be prohibitively slow for some applications.
 
   To mitigate this, `thag_profiler` provides a `SIZE_TRACKING_THRESHOLD=<bytes>` environment variable allowing you to track only individual allocations that exceed the specified threshold size (default value 0). This is obviously at the cost of accuracy, particularly if your app mainly does allocations below the threshold. To get a good idea of a suitable threshold value, you can first do _detailed_ memory profiling (cancel if you need to once you see significant detailed output being generated in the output directory). Then in the `thag-analyze` tool, select the detailed output, then select `Show Allocation Size Distribution`. This needs to be the detailed allocations `.folded` file, because the normal memory profiling shows aggregated values per function rather than the detailed values being tracked.
 
   The catch-22 with overriding the default zero threshold is that if there are enough small allocations below the threshold to make a significant difference in profiling speed, those small allocations may themselves be worth investigating. So rather than screen them out, you may well get a better outcome by first identifying hotspots using summary profiling, and then doing very focused detailed profiling only on these, avoiding setting a threshold if at all possible.
+
+  For accuracy it's recommended *not* to use the `SIZE_TRACKING_THRESHOLD` override if you don't have to.
 
 - **Custom Global Allocator**: Memory profiling (the optional `full_profiling` feature) uses a custom global allocator to track memory allocations.
 
@@ -839,9 +861,9 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
 - **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
 
-- **Potential Race Conditions in Async Environments**: Unfortunately, profiling code must share a global allocator (our dispatcher) with user code, and use a global variable to indicate to the dispatcher to use the system allocator in place of the default "tracking" allocator. To avoid a race condition on the global variable in an async environment would require sophisticated locking, complicated by the need to cater for nested profiling code calls. Thread-local storage doesn't work in the presence of thread stealing as practised by `tokio` for one.
+- **Potential Allocator Race Conditions in Async Environments**: Unfortunately, profiling code must share a global allocator (our dispatcher) with user code, and use a global variable to indicate to the dispatcher to use the system allocator in place of the default "tracking" allocator. To avoid a race condition on the global variable in an async environment would require sophisticated locking, complicated by the need to cater for nested profiling code calls. Thread-local storage doesn't work in the presence of thread stealing as practised by `tokio` for one.
 
- At the time of writing, the most practical solution found after  extensive experimentation has been to use a simple atomic variable  to manage the current allocator status and to live with the  exposure to the risk of mis-allocation, much as that goes against  Thag's personal style. The mechanism chosen to cater for nested  calls is as simple and hopefully as elegant as possible: if  profiler code finds the current allocator in user mode, it assumes it's not nested, so it overrides the setting and runs the function with a guard to undo the override, otherwise it assumes it's running nested and does not touch the setting.
+ At the time of writing, the most practical solution found after extensive experimentation has been to use a simple atomic variable to manage the current allocator status and to live with the exposure to the risk of mis-allocation, much as that goes against Thag's personal style. The mechanism chosen to cater for nested calls is as simple and hopefully as elegant as possible: if profiler code finds the current allocator in user mode, it assumes it's not nested, so it overrides the setting and runs the function with a guard to undo the override, otherwise it assumes it's running nested and does not touch the setting.
 
  To mitigate against profile code allocations being processed through the user code allocator, we identify any such allocation from its backtrace and bypass recording the allocation.
 
@@ -851,7 +873,7 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
  2. To check for consistency in the processing of the same  functions and sections over time under different load conditions  and with different amounts of profiled code competing for the  dispatcher.
 
- Fortunately, results so far have been very consistent, so  contention does not seem to be a significant issue in practice.  However the potential for race conditions is a caveat when memory  profiling in async environments.
+ Fortunately, results so far have been very consistent, so contention does not seem to be a significant issue in practice.  However the potential for race conditions is a caveat when memory  profiling in async environments.
 
 - **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
    across your entire application stack, revealing hidden costs from dependencies like async runtimes.
@@ -948,7 +970,7 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 - `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Memory profiling data (if enabled)
 
-These files can be visualized with the included analyzer or with tools like [Inferno](https://github.com/jonhoo/inferno).
+These files can be visualized with the included `thag-analyze` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or [speedscope](https://www.speedscope.app/) (trim the headers off first, e.g. `tail +5 myfile.folded | speedscope -`). However these displays will necessarily be somewhat raw. `thag-analyze` is recommended instead because it has a built-in understanding of the data: including the units, the meaning of the file naming and the additional information conveyed by the headers.
 
 
 ### Profiling Tools

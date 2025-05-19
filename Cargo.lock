@@ -3002,6 +3002,7 @@ dependencies = [
  "chrono",
  "dirs",
  "inferno",
+ "inline_colorization",
  "inquire",
  "once_cell",
  "parking_lot",

@@ -1744,6 +1744,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
 
 ---
 
+### Script: exclusify.rs
+
+**Description:**  Process a folded file to calculate exclusive times
+
+ This function converts inclusive time profiling data to exclusive time:
+ - Inclusive time: total time spent in a function including all child calls
+ - Exclusive time: time spent only in the function itself, excluding child calls
+
+**Purpose:** Prototype converting inclusive elapsed times to exclusive for flamegraphs to avoid double counting.
+
+**Type:** Program
+
+**Categories:** profiling, prototype
+
+**Link:** [exclusify.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/exclusify.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/exclusify.rs
+```
+
+---
+
 ### Script: factorial_dashu_product.rs
 
 **Description:**  Fast factorial algorithm with arbitrary precision and avoiding recursion.
@@ -5519,14 +5543,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_synta
  E.g.:
 
  ```
- THAG_PROFILER=both,,announce,true cargo run bank/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
+ THAG_PROFILER=both,,announce,true thag demo/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
  ```
 
  See the `README.md` for the explanation of the `THAG_PROFILER` arguments
 
 **Purpose:** demonstrate profiling a dependency with `thag_profiler`.
 
-**Crates:** `colored`, `syn`
+**Crates:** `colored`, `syn`, `thag_profiler`
 
 **Type:** Program
 

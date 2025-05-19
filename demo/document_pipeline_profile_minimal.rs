@@ -25,10 +25,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::{
-    self, /*, disable_profiling*/
-    enable_profiling, end, profile, profiled, /*, ProfileType */
-};
+use thag_profiler::{self, enable_profiling, end, profile, profiled};
 
 struct Document {
     id: usize,

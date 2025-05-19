@@ -338,176 +338,180 @@ fn record_alloc(address: usize, size: usize) {
         }
     }
 
-    // with_sys_alloc(|| {
-    assert_eq!(current_allocator(), Allocator::System);
+    // assert_eq!(current_allocator(), Allocator::System);
 
-    if size == 0 {
-        debug_log!("Zero-sized allocation found");
-        return;
-    }
+    with_sys_alloc(|| {
+        if size == 0 {
+            debug_log!("Zero-sized allocation found");
+            return;
+        }
 
-    let profile_type = get_global_profile_type();
-    if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
-        // debug_log!(
-        //     "Skipping allocation recording because profile_type={:?}",
-        //     profile_type
-        // );
-        return;
-    }
+        let profile_type = get_global_profile_type();
+        if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
+            // debug_log!(
+            //     "Skipping allocation recording because profile_type={:?}",
+            //     profile_type
+            // );
+            return;
+        }
 
-    // Flag if we're already tracking in case it causes an infinite recursion
-    let in_tracking = unsafe { IN_TRACKING };
+        // Flag if we're already tracking in case it causes an infinite recursion
+        let in_tracking = unsafe { IN_TRACKING };
 
-    #[cfg(debug_assertions)]
-    assert!(!in_tracking);
+        #[cfg(debug_assertions)]
+        assert!(!in_tracking);
 
-    if in_tracking {
-        debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
-        // return ptr;
-    }
+        if in_tracking {
+            debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
+            // return ptr;
+        }
 
-    // Set tracking flag and create guard for cleanup
-    unsafe {
-        IN_TRACKING = true;
-    }
-    let _guard = Guard;
+        // Set tracking flag and create guard for cleanup
+        unsafe {
+            IN_TRACKING = true;
+        }
+        let _guard = Guard;
 
-    // Get backtrace without recursion
-    // debug_log!("Attempting backtrace");
-    let start_ident = Instant::now();
-    // Now we can safely use backtrace without recursion!
-    // debug_log!("Calling extract_callstack");
-    let mut current_backtrace = Backtrace::new();
+        // Get backtrace without recursion
+        // debug_log!("Attempting backtrace");
+        let start_ident = Instant::now();
+        // Now we can safely use backtrace without recursion!
+        // debug_log!("Calling extract_callstack");
+        let mut current_backtrace = Backtrace::new();
 
-    // TODO phase out - useful for debugging though
-    // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
-    // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
-    // let in_profile_code = cleaned_stack
-    //     .iter()
-    //     .any(|frame| frame.contains("Backtrace::new") || frame.contains("Profile::new"));
+        // TODO phase out - useful for debugging though
+        // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
+        // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
+        // let in_profile_code = cleaned_stack
+        //     .iter()
+        //     .any(|frame| frame.contains("Backtrace::new") || frame.contains("Profile::new"));
 
-    // if in_profile_code {
-    //     debug_log!("Ignoring allocation request of size {size} for profiler code");
-    //     return;
-    // }
+        // if in_profile_code {
+        //     debug_log!("Ignoring allocation request of size {size} for profiler code");
+        //     return;
+        // }
 
-    let file_names = {
-        crate::mem_attribution::PROFILE_REGISTRY
-            .lock()
-            .get_file_names()
-    };
-    debug_log!("file_names={file_names:#?}");
+        let file_names = {
+            crate::mem_attribution::PROFILE_REGISTRY
+                .lock()
+                .get_file_names()
+        };
+        debug_log!("file_names={file_names:#?}");
 
-    // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
-    let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> =
-        Backtrace::frames(&current_backtrace)
-            .iter()
-            .flat_map(BacktraceFrame::symbols)
-            .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
-            // .inspect(|(maybe_filename, maybe_lineno, frame)| {
-            //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
-            // })
-            .filter(|(maybe_filename, maybe_lineno, frame)| {
-                maybe_filename.is_some()
-                    && maybe_lineno.is_some()
-                    && frame.is_some()
-                    && !frame.as_ref().unwrap().to_string().starts_with('<')
-            })
-            // .inspect(|(maybe_filename, _, maybe_frame)| {
-            //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_frame: {maybe_frame:?}, maybe_frame: {maybe_frame:?}, file_names={file_names:?}");
-            // })
-            .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
-                (
-                    file_stem_from_path(maybe_filename.unwrap()),
-                    maybe_lineno.unwrap(),
-                    maybe_frame.unwrap().to_string(),
-                )
-            })
-            // .inspect(|(filename, lineno, frame)| {
-            //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-            // })
-            .filter(|(filename, _, _)| (file_names.contains(filename)))
-            // .inspect(|(_, _, _)| {
-            //     // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
-            //     debug_log!("***File names match");
-            // })
-            .map(|(filename, lineno, mut frame)| {
-                (
-                    filename,
-                    lineno,
-                    frame.clone(),
-                    clean_function_name(frame.as_mut_str()),
-                )
-            })
-            .map(|(filename, lineno, frame, fn_name)| {
-                (
-                    filename.clone(),
-                    lineno,
-                    frame,
-                    fn_name.clone(),
-                    find_profile(&filename, &fn_name, lineno),
-                )
-            })
-            // .inspect(|(_, _, _, _, maybe_profile_ref)| {
-            //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
-            // })
-            .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
-            .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| {
-                (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap())
-            })
-            // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
-            // .cloned()
-            .collect();
-    // .last() else {return};
+        // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
+        let func_and_ancestors: Vec<(String, u32, String, String, ProfileRef)> =
+            with_sys_alloc(|| {
+                Backtrace::frames(&current_backtrace)
+                    .iter()
+                    .flat_map(BacktraceFrame::symbols)
+                    .map(|symbol| (symbol.filename(), symbol.lineno(), symbol.name()))
+                    // .inspect(|(maybe_filename, maybe_lineno, frame)| {
+                    //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_lineno: {maybe_lineno:?}, frame: {frame:?}");
+                    // })
+                    .filter(|(maybe_filename, maybe_lineno, frame)| {
+                        maybe_filename.is_some()
+                            && maybe_lineno.is_some()
+                            && frame.is_some()
+                            && !frame.as_ref().unwrap().to_string().starts_with('<')
+                    })
+                    // .inspect(|(maybe_filename, _, maybe_frame)| {
+                    //     debug_log!("maybe_filename: {maybe_filename:?}, maybe_frame: {maybe_frame:?}, maybe_frame: {maybe_frame:?}, file_names={file_names:?}");
+                    // })
+                    .map(|(maybe_filename, maybe_lineno, maybe_frame)| {
+                        (
+                            file_stem_from_path(maybe_filename.unwrap()),
+                            maybe_lineno.unwrap(),
+                            maybe_frame.unwrap().to_string(),
+                        )
+                    })
+                    // .inspect(|(filename, lineno, frame)| {
+                    //     debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+                    // })
+                    .filter(|(filename, _, _)| (file_names.contains(filename)))
+                    // .inspect(|(_, _, _)| {
+                    //     // debug_log!("filename: {filename:?}, lineno: {lineno:?}, frame: {frame:?}, file_names={file_names:?}");
+                    //     debug_log!("***File names match");
+                    // })
+                    .map(|(filename, lineno, mut frame)| {
+                        (
+                            filename,
+                            lineno,
+                            frame.clone(),
+                            clean_function_name(frame.as_mut_str()),
+                        )
+                    })
+                    .map(|(filename, lineno, frame, fn_name)| {
+                        (
+                            filename.clone(),
+                            lineno,
+                            frame,
+                            fn_name.clone(),
+                            find_profile(&filename, &fn_name, lineno),
+                        )
+                    })
+                    // .inspect(|(_, _, _, _, maybe_profile_ref)| {
+                    //     debug_log!("maybe_profile_ref={maybe_profile_ref:?}");
+                    // })
+                    .filter(|(_, _, _, _, maybe_profile_ref)| maybe_profile_ref.is_some())
+                    .map(|(filename, lineno, frame, fn_name, maybe_profile_ref)| {
+                        (filename, lineno, frame, fn_name, maybe_profile_ref.unwrap())
+                    })
+                    // .map(|(filename, lineno, frame| (filename, lineno, frame.to_string()))
+                    // .cloned()
+                    .collect()
+                // .last() else {return};
+            });
 
-    if func_and_ancestors.is_empty() {
-        debug_log!("No eligible profile found");
-        return;
-    }
+        with_sys_alloc(|| {
+            if func_and_ancestors.is_empty() {
+                debug_log!("No eligible profile found");
+                return;
+            }
+            // debug_log!("func_and_ancestors={func_and_ancestors:#?}");
 
-    // debug_log!("func_and_ancestors={func_and_ancestors:#?}");
+            let in_profile_code = func_and_ancestors.iter().any(|(_, _, frame, _, _)| {
+                frame.contains("Backtrace::new") || frame.contains("Profile::new")
+            });
 
-    let in_profile_code = func_and_ancestors.iter().any(|(_, _, frame, _, _)| {
-        frame.contains("Backtrace::new") || frame.contains("Profile::new")
-    });
+            if in_profile_code {
+                debug_log!("Ignoring allocation request of size {size} for profiler code");
+                return;
+            }
 
-    if in_profile_code {
-        debug_log!("Ignoring allocation request of size {size} for profiler code");
-        return;
-    }
+            let (filename, lineno, frame, fn_name, _profile_ref) = &func_and_ancestors[0];
 
-    let (filename, lineno, frame, fn_name, _profile_ref) = &func_and_ancestors[0];
-
-    debug_log!(
+            debug_log!(
         "Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}"
     );
 
-    // Still record detailed allocations to -memory_detail.folded if requested
-    let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
-    if detailed_memory {
-        record_detailed_alloc(
-            address,
-            size,
-            &ALLOC_START_PATTERN,
-            &mut current_backtrace,
-            true,
-        );
-    }
+            // Still record detailed allocations to -memory_detail.folded if requested
+            let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
+            if detailed_memory {
+                record_detailed_alloc(
+                    address,
+                    size,
+                    &ALLOC_START_PATTERN,
+                    &mut current_backtrace,
+                    true,
+                );
+            }
 
-    // Try to record the allocation in the new profile registry
-    if !filename.is_empty()
-        && *lineno > 0
-        && record_allocation(filename, fn_name, *lineno, size, &mut current_backtrace)
-    {
-        debug_log!(
+            // Try to record the allocation in the new profile registry
+            if !filename.is_empty()
+                && *lineno > 0
+                && record_allocation(filename, fn_name, *lineno, size, &mut current_backtrace)
+            {
+                debug_log!(
             "Recorded allocation of {size} bytes in {filename}::{fn_name}:{lineno} to a profile"
         );
 
-        debug_log!(
-            "size={size}, time to assign = {}ms",
-            start_ident.elapsed().as_millis()
-        );
-    }
+                debug_log!(
+                    "size={size}, time to assign = {}ms",
+                    start_ident.elapsed().as_millis()
+                );
+            }
+        });
+    });
 }
 
 /// Record an allocation with the profile registry based on module path and line number

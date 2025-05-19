@@ -137,8 +137,8 @@ fn complex_operation() {
     // Some code...
 
     profile!(expensive_part);
-    // Code to profile
-    expensive_operation();
+    // Expensive operation
+    ...
     end!(expensive_part);
 
     // More code...
@@ -156,8 +156,8 @@ async fn complex_async_operation() {
     // Some code...
 
     profile!(expensive_part, async_fn);
-    // Code to profile
-    expensive_operation();
+    // Expensive operation
+    ...
     end!(expensive_part);
 
     // More code...
@@ -189,7 +189,8 @@ fn complex_operation() {
 
     // ⚠️ The following section profiling may not work correctly due to the above
     profile!(another_section);
-    expensive_operation();
+    // Expensive operation
+    ...
     end!(another_section);
 }
 ```
@@ -674,6 +675,8 @@ Section profiling with the `profile!` and `end!` macros allows you to profile ho
 
 2. **Limited integration with functions**: Profiled sections will have ancestors in the callstack, but no children. A function called from within a profiled section will appear in flamegraphs, not as a child of the section but as a child of the parent function and a sibling of the section. This is because profiling hierarchies depend on built-in Rust backtraces, and sections are not a Rust feature but a `thag_profiler` artifact grafted on top of their parent function, and the complexity and overhead of transforming each backtrace to accommodate any sections is not considered worthwhile.
 
+ By the same token, there is no point in using `profile!..end!` purely to wrap a function for memory profiling, as memory allocations are only attributed once and as narrowly as possible, so they will show up in the function and not in the section.
+
 3. **No section nesting or overlaps**: Section profiles should not overlap or be nested in code. This will not be checked, but memory allocations that fall within the scope of more than one section will be attributed to only one of those sections rather than being double-counted.
 
 #### Format
@@ -1008,7 +1011,7 @@ you're using a custom edition.
 
 Repeat for all modules you want to profile.
 
-#### 3. Analysis: thag-analyze
+#### Analysis: thag-analyze
 
 Interactive analysis of profiling results:
 

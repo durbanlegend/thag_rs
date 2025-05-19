@@ -814,6 +814,7 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
     // Initialize time profiling if needed
     if (actual_caps.0 & ProfileCapability::TIME.0) != 0 {
         // Initialize the inclusive time file first
+        let paths = ProfilePaths::get();
         let inclusive_time_path = &paths.inclusive_time;
         InclusiveTimeProfileFile::init();
         initialize_file(

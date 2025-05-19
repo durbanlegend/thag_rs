@@ -7,7 +7,7 @@ use std::path::Path;
 /// This function converts inclusive time profiling data to exclusive time:
 /// - Inclusive time: total time spent in a function including all child calls
 /// - Exclusive time: time spent only in the function itself, excluding child calls
-//# Purpose: Prototype converting inclusive elapsed times to exclusive for flamegraphs to avoid double counting.
+//# Purpose: Prototype converting inclusive elapsed times to exclusive for flamegraphs in order to avoid double counting.
 //# Categories: profiling, prototype
 fn process_folded_file(input_path: &Path, output_path: &Path) -> std::io::Result<()> {
     println!("Processing: {}", input_path.display());
@@ -55,6 +55,8 @@ fn process_folded_file(input_path: &Path, output_path: &Path) -> std::io::Result
         stack_lines.push((stack_str.to_string(), time));
     }
 
+    let mut stack_lines: Vec<(String, u64)> = stack_lines.into_iter().rev().collect();
+
     // Calculate exclusive times using a sequential approach
     let mut exclusive_times: Vec<(String, u64)> = vec![];
     // let mut inclusive_times: Vec<(String, u64)> = stack_lines.clone();
@@ -62,36 +64,27 @@ fn process_folded_file(input_path: &Path, output_path: &Path) -> std::io::Result
     let len = stack_lines.len();
 
     for _i in 1..=len {
-        let child = stack_lines.remove(0);
-        let parts: Vec<&str> = child.0.split(';').collect();
+        let mut parent = stack_lines.remove(0);
 
-        // Skip stacks with only one function (they have no parent in the current file)
-        if parts.len() <= 1 {
-            eprintln!("child=({}, {})", child.0, child.1);
-            exclusive_times.push(child);
-            continue;
-        }
+        eprintln!("parent=({}, {})", parent.0, parent.1);
 
-        let parent_stack = parts[..parts.len() - 1].join(";");
-        eprintln!(
-            "child=({}, {}), parent_stack={parent_stack}",
-            child.0, child.1
-        );
-
-        // For each stack, find its direct parent and subtract this stack's inclusive time from the parent
+        // For each stack, find its direct descendants and subtract their inclusive time from the parent
         for (candidate, time_ref) in &mut stack_lines {
-            if !candidate.starts_with(&parent_stack) {
+            if !candidate.starts_with(&parent.0) {
                 break;
             }
-            if candidate == &parent_stack {
-                let before = *time_ref;
-                *time_ref = time_ref.saturating_sub(child.1);
-                eprintln!("candidate=({candidate}, {before}->{time_ref})");
-                break;
+            let parts: Vec<&str> = candidate.split(';').collect();
+            let parent_stack = parts[..parts.len() - 1].join(";");
+            if parent_stack == parent.0 {
+                let before = parent.1;
+                parent.1 = parent.1.saturating_sub(*time_ref);
+                eprintln!("candidate=({candidate}, {before}->{})", parent.1);
             }
         }
-        exclusive_times.push(child);
+        exclusive_times.push(parent);
     }
+
+    let exclusive_times: Vec<(String, u64)> = exclusive_times.into_iter().rev().collect();
 
     // Write output file
     let output_file = OpenOptions::new()

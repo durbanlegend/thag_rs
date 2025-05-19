@@ -259,7 +259,7 @@ fn expand_output(name: &str, output: &TokenStream) {
 #[cfg(feature = "time_profiling")]
 pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
     maybe_expand_attr_macro(
-        false,
+        true,
         "enable_profiling",
         &attr,
         &item,

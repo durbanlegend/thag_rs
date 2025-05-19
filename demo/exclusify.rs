@@ -110,17 +110,6 @@ fn process_folded_file(input_path: &Path, output_path: &Path) -> std::io::Result
     writeln!(writer, "# Converted to exclusive time by thag-exclusify")?;
     writeln!(writer)?;
 
-    // // Write stacks with exclusive times
-    // // Sort by stack name for consistent output
-    // let mut sorted_stacks: Vec<String> = stack_lines.iter()
-    //     .map(|(stack, _)| stack.clone())
-    //     .collect();
-    // sorted_stacks.sort();
-    // sorted_stacks.dedup();
-
-    // Count non-zero exclusive times
-    // let mut non_zero_count = 0;
-
     for (stack, exclusive) in &exclusive_times {
         writeln!(writer, "{stack} {exclusive}")?;
     }

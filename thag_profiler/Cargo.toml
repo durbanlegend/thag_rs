@@ -46,12 +46,19 @@ tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
 async-std = { version = "1.12.0", features = ["attributes"] }
 
 [features]
-analyze-tool = ["dirs", "inferno", "inquire", "ra_ap_syntax", "serde_json"]
+analyze-tool = [
+    "dirs",
+    "inferno",
+    "inquire",
+    "ra_ap_syntax",
+    "serde_json",
+    "regex/unicode-perl",
+]
 default = []
 time_profiling = ["thag_proc_macros/time_profiling"]
 full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
-tools = ["analyze-tool", "instrument-tool"]                                 # Enable all tools
-instrument-tool = ["ra_ap_syntax"]                                          # Dependencies for instrument
+tools = ["analyze-tool", "instrument-tool"] # Enable all tools
+instrument-tool = ["ra_ap_syntax"] # Dependencies for instrument
 
 [[bin]]
 name = "thag-analyze"

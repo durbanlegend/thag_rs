@@ -762,17 +762,13 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
         let paths = ProfilePaths::get();
         let inclusive_time_path = &paths.inclusive_time;
         InclusiveTimeProfileFile::init();
-        initialize_file(
-            "Inclusive Time Profile",
-            inclusive_time_path,
-            InclusiveTimeProfileFile::get(),
-        )?;
+        initialize_file(inclusive_time_path, InclusiveTimeProfileFile::get())?;
         debug_log!("Inclusive time profile will be written to {inclusive_time_path}");
 
         // Initialize the final time file (will be used for exclusive time)
         let time_path = get_time_path()?;
         TimeProfileFile::init();
-        initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+        initialize_file(time_path, TimeProfileFile::get())?;
         debug_log!("Time profile will be written to {time_path}");
     }
 
@@ -815,17 +811,13 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
         // Initialize the inclusive time file first
         let inclusive_time_path = &paths.inclusive_time;
         InclusiveTimeProfileFile::init();
-        initialize_file(
-            "Inclusive Time Profile",
-            inclusive_time_path,
-            InclusiveTimeProfileFile::get(),
-        )?;
+        initialize_file(inclusive_time_path, InclusiveTimeProfileFile::get())?;
         debug_log!("Inclusive time profile will be written to {inclusive_time_path}");
 
         // Initialize the final time file (will be used for exclusive time)
         let time_path = get_time_path()?;
         TimeProfileFile::init();
-        initialize_file("Time Profile", time_path, TimeProfileFile::get())?;
+        initialize_file(time_path, TimeProfileFile::get())?;
         debug_log!("Time profile will be written to {time_path}");
     }
 
@@ -836,19 +828,15 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
         let memory_detail_dealloc_path = get_memory_detail_dealloc_path()?;
 
         MemoryProfileFile::init();
-        initialize_file("Memory Profile", memory_path, MemoryProfileFile::get())?;
+        initialize_file(memory_path, MemoryProfileFile::get())?;
         debug_log!("Memory profile will be written to {memory_path}");
 
         if is_detailed_memory() {
             MemoryDetailFile::init();
-            initialize_file("Memory Detail", memory_detail_path, MemoryDetailFile::get())?;
+            initialize_file(memory_detail_path, MemoryDetailFile::get())?;
             debug_log!("Memory detail will be written to {memory_detail_path}");
             MemoryDetailDeallocFile::init();
-            initialize_file(
-                "Memory Detail Dealloc",
-                memory_detail_dealloc_path,
-                MemoryDetailDeallocFile::get(),
-            )?;
+            initialize_file(memory_detail_dealloc_path, MemoryDetailDeallocFile::get())?;
             debug_log!("Memory detail dealloc will be written to {memory_detail_dealloc_path}");
         }
     }
@@ -859,12 +847,11 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
 
 #[cfg(feature = "time_profiling")]
 fn initialize_file(
-    profile_type: &str,
     file_path: &str,
     file: &parking_lot::lock_api::Mutex<parking_lot::RawMutex, Option<BufWriter<File>>>,
 ) -> Result<(), ProfileError> {
     *file.lock() = None;
-    initialize_profile_file(file_path, profile_type)?;
+    initialize_profile_file(file_path)?;
     Ok(())
 }
 
@@ -1074,22 +1061,22 @@ pub const fn disable_profiling() {
 /// # Errors
 /// Returns a `ProfileError` if file creation or writing fails
 #[cfg(feature = "time_profiling")]
-fn initialize_profile_file(path: &str, profile_type: &str) -> ProfileResult<()> {
-    let mut file = OpenOptions::new()
+fn initialize_profile_file(path: &str) -> ProfileResult<()> {
+    OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
         .open(path)?;
 
-    writeln!(file, "# {profile_type}")?;
-    writeln!(
-        file,
-        "# Script: {}",
-        std::env::current_exe().unwrap_or_default().display()
-    )?;
-    writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
-    writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
-    writeln!(file)?;
+    // writeln!(file, "# {profile_type}")?;
+    // writeln!(
+    //     file,
+    //     "# Script: {}",
+    //     std::env::current_exe().unwrap_or_default().display()
+    // )?;
+    // writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))?;
+    // writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION"))?;
+    // writeln!(file)?;
 
     Ok(())
 }
@@ -2331,8 +2318,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to open input file: {e}")))?;
     let reader = BufReader::new(file);
 
-    // Store header lines to preserve them
-    let mut header_lines = Vec::new();
+    // // Store header lines to preserve them
+    // let mut header_lines = Vec::new();
 
     // Store stack lines as (stack_str, time) pairs
     let mut stack_lines: Vec<(String, u64)> = Vec::new();
@@ -2343,11 +2330,11 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
         line_count += 1;
 
-        // Preserve comment/header lines
-        if line.starts_with('#') || line.trim().is_empty() {
-            header_lines.push(line);
-            continue;
-        }
+        // // Preserve comment/header lines
+        // if line.starts_with('#') || line.trim().is_empty() {
+        //     header_lines.push(line);
+        //     continue;
+        // }
 
         // Parse line: "stack time"
         let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
@@ -2406,11 +2393,11 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
     let mut writer = BufWriter::new(output_file);
 
-    // Write original headers
-    for header in &header_lines {
-        writeln!(writer, "{header}")
-            .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
-    }
+    // // Write original headers
+    // for header in &header_lines {
+    //     writeln!(writer, "{header}")
+    //         .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
+    // }
 
     // // Add a note about this being exclusive time
     // writeln!(writer, "# Converted to exclusive time by thag_profiler")

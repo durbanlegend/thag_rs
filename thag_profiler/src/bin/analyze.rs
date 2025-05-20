@@ -1,9 +1,5 @@
 // use crate::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
-use chrono::{
-    DateTime, Local,
-    LocalResult::{Ambiguous, None as Nada, Single},
-    TimeZone,
-};
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use inferno::flamegraph::{
     self,
     color::{BasicPalette, MultiPalette},
@@ -22,7 +18,7 @@ use std::{
     time::Duration,
 };
 use strum::Display;
-use thag_profiler::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
+use thag_profiler::{profiling::ProfileStats, regex, thousands, ProfileError, ProfileResult};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -372,7 +368,7 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
         ));
     }
 
-    let Some(color_scheme) = select_time_color_scheme()? else {
+    let Some(color_scheme) = select_color_scheme(&ProfileType::Time)? else {
         return Ok(());
     };
 
@@ -393,7 +389,7 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
     opts.subtitle = Some(format!(
         "{}  Started:  {}  Total sec: {:.3}",
         profile.subtitle,
-        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S"),
         f64::from(profile.duration) / 1_000_000_f64
     ));
     // opts.notes = profile.subtitle.clone();
@@ -452,8 +448,8 @@ fn generate_differential_flamegraph(
     opts.title = format!("Differential {profile_type} Profile: {script_name}");
     opts.subtitle = format!("Comparing {before_name} → {after_name}").into();
     opts.colors = match profile_type {
-        ProfileType::Time => select_time_color_scheme()?.unwrap_or_default(),
-        ProfileType::Memory => Palette::Basic(BasicPalette::Mem),
+        ProfileType::Time => select_color_scheme(&ProfileType::Time)?.unwrap_or_default(),
+        ProfileType::Memory => select_color_scheme(&ProfileType::Memory)?.unwrap_or_default(),
     };
     match profile_type {
         ProfileType::Time => "μs",
@@ -506,7 +502,7 @@ fn show_statistics(
     println!("{}", profile.subtitle);
     println!(
         "\nStarted: {}",
-        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S")
     );
     println!(
         "\nFunction Statistics ({color_cyan}{}CLUSIVE{color_reset} of Children) Ranked by {}:",
@@ -752,7 +748,23 @@ fn load_last_used_time_scheme() -> ProfileResult<String> {
     let config_path = dirs::config_dir()
         .ok_or_else(|| ProfileError::General("Could not find config directory".to_string()))?
         .join("thag")
-        .join("flamechart_colors.json");
+        .join("time_flamegraph_colors.json");
+
+    if config_path.exists() {
+        let content = fs::read_to_string(config_path)?;
+        let config: ColorSchemeConfig =
+            serde_json::from_str(&content).map_err(|e| ProfileError::General(e.to_string()))?;
+        Ok(config.last_used)
+    } else {
+        Ok(ColorSchemeConfig::default().last_used)
+    }
+}
+
+fn load_last_used_memory_scheme() -> ProfileResult<String> {
+    let config_path = dirs::config_dir()
+        .ok_or_else(|| ProfileError::General("Could not find config directory".to_string()))?
+        .join("thag")
+        .join("memory_flamegraph_colors.json");
 
     if config_path.exists() {
         let content = fs::read_to_string(config_path)?;
@@ -775,7 +787,7 @@ fn save_time_color_scheme(name: &str) -> ProfileResult<()> {
         last_used: name.to_string(),
     };
 
-    let config_path = config_dir.join("flamechart_colors.json");
+    let config_path = config_dir.join("time_flamegraph_colors.json");
     fs::write(
         config_path,
         serde_json::to_string_pretty(&config).map_err(|e| ProfileError::General(e.to_string()))?,
@@ -784,9 +796,32 @@ fn save_time_color_scheme(name: &str) -> ProfileResult<()> {
     Ok(())
 }
 
-fn select_time_color_scheme() -> ProfileResult<Option<Palette>> {
+fn save_memory_color_scheme(name: &str) -> ProfileResult<()> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| ProfileError::General("Could not find config directory".to_string()))?
+        .join("thag");
+
+    fs::create_dir_all(&config_dir)?;
+
+    let config = ColorSchemeConfig {
+        last_used: name.to_string(),
+    };
+
+    let config_path = config_dir.join("memory_flamegraph_colors.json");
+    fs::write(
+        config_path,
+        serde_json::to_string_pretty(&config).map_err(|e| ProfileError::General(e.to_string()))?,
+    )?;
+
+    Ok(())
+}
+
+fn select_color_scheme(profile_type: &ProfileType) -> ProfileResult<Option<Palette>> {
     let schemes = get_color_schemes();
-    let last_used = load_last_used_time_scheme()?;
+    let last_used = match profile_type {
+        ProfileType::Time => load_last_used_time_scheme()?,
+        ProfileType::Memory => load_last_used_memory_scheme()?,
+    };
 
     // First ask if user wants to use the last scheme or select a new one
     let maybe_use_last = inquire::Confirm::new(&format!(
@@ -837,7 +872,10 @@ fn select_time_color_scheme() -> ProfileResult<Option<Palette>> {
     };
 
     // Save the selection
-    save_time_color_scheme(selection)?;
+    match profile_type {
+        ProfileType::Time => save_time_color_scheme(selection)?,
+        ProfileType::Memory => save_memory_color_scheme(selection)?,
+    };
 
     Ok(Some(
         schemes
@@ -1109,42 +1147,42 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
     let reader = BufReader::new(input);
     let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
 
-    // let start_time: std::option::Option<DateTime<Local>> = None;
-    let mut processed = ProcessedProfile {
-        path: path.clone(),
-        subtitle: path
-            .file_name()
-            .ok_or_else(|| ProfileError::General("Failed to get file name".to_string()))?
-            .to_string_lossy()
-            .to_string(),
-        ..Default::default()
+    let filename = path
+        .file_name()
+        .ok_or_else(|| ProfileError::General("Failed to get file name".to_string()))?
+        .to_string_lossy()
+        .to_string();
+
+    let re = regex!(r#"^(\w+)\-(\d{8}\-\d{6})"#);
+    let timestamp = if let Some(captures) = re.captures(&filename) {
+        let _script_stem = captures.get(1).unwrap().as_str();
+        let datetime_str = captures.get(2).unwrap().as_str();
+        if let Ok(naive_dt) = NaiveDateTime::parse_from_str(datetime_str, "%Y%m%d-%H%M%S") {
+            let local_dt = Local.from_local_datetime(&naive_dt).single().unwrap();
+            // println!("Parsed datetime: {local_dt}");
+            // println!("ISO format: {}", local_dt.to_rfc3339());
+            // processed.timestamp = local_dt;
+            local_dt
+        } else {
+            println!("Failed to parse datetime");
+            DateTime::default()
+        }
+    } else {
+        DateTime::default()
     };
 
-    // Determine profile type from first non-empty line
-    for line in &lines {
-        if line.starts_with("# Time Profile") {
-            processed.profile_type = ProfileType::Time;
-            break;
-        } else if line.starts_with("# Memory") {
-            processed.profile_type = ProfileType::Memory;
-            break;
-        }
-    }
-
-    // Process headers first
-    for line in &lines {
-        if line.starts_with("# Started: ") {
-            if let Ok(ts) = line[10..].trim().parse::<i64>() {
-                match Local.timestamp_micros(ts) {
-                    Single(dt) | Ambiguous(dt, _) => {
-                        processed.timestamp = dt;
-                    }
-                    Nada => (),
-                }
-                break;
-            }
-        }
-    }
+    let subtitle = filename.clone();
+    let mut processed = ProcessedProfile {
+        path: path.clone(),
+        profile_type: if filename.contains("memory.folded") {
+            ProfileType::Memory
+        } else {
+            ProfileType::Time
+        },
+        subtitle,
+        timestamp,
+        ..Default::default()
+    };
 
     if matches!(processed.profile_type, ProfileType::Time) {
         processed.stacks = lines
@@ -1265,6 +1303,10 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         ));
     }
 
+    let Some(color_scheme) = select_color_scheme(&ProfileType::Memory)? else {
+        return Ok(());
+    };
+
     let memory_data = profile
         .memory_data
         .as_ref()
@@ -1294,11 +1336,11 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
     opts.subtitle = Some(format!(
         "{}  Started: {}  Total Bytes {alloc_type}: {} Peak: {}",
         profile.subtitle,
-        profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f"),
+        profile.timestamp.format("%Y-%m-%d %H:%M:%S"),
         thousands(memory_data.bytes_allocated),
         thousands(memory_data.peak_memory),
     ));
-    opts.colors = Palette::Basic(BasicPalette::Mem);
+    opts.colors = color_scheme;
     "bytes".clone_into(&mut opts.count_name);
     opts.min_width = 0.001;
     opts.flame_chart = as_chart;

@@ -1,27 +1,60 @@
 # thag_profiler
 
-An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate.
+An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-While originally developed as part of the `thag_rs` project, `thag_profiler` functions as a completely independent utility with no dependencies on `thag_rs`.
+<figure>
+  <img src="../assets/flamegraph_hot.png" alt="flamegraph_hot.png"/>
+  <figcaption>Time profile in your preferred color scheme</figcaption>
+</figure>
 
-`thag_profiler` aims to lower the barriers to profiling by offering a quick and easy tool that produces clear and accurate flamegraphs for both synchronous and asynchronous code.
+<figure>
+  <img src="../assets/flamegraph_mem.png" alt="flamegraph_mem.png"/>
+  <figcaption>Filtered memory profile in <code>inferno</code> memory color scheme with two selected functions broken out in detail.</figcaption>
+</figure>
 
-`thag_profiler` provides an `#[enable_profiling]` attribute for your main or other top-level function to be profiled, a `#[profiled]` attribute to profile any function that may be called directly or indirectly from this function, and a combinination of `profile!`and `end!` macros for to profile any desired code sections within this scope.
+An independent offshoot of the `thag(_rs)` script runner and REPL.
 
-Each of these items offers a range of options for any combination of time, memory summary and memory detail profiling.
-For instance you can start out with default memory summary profiling to detect functions that are memory hotspots, and then use memory detail profiling on those functions or code sections within them get to the root cause.
+Lowers the barriers to profiling.
 
-`thag_profiler` provides an automated instrumentation tool `thag-instrument` that can be used to add the profiling attribute macros to all functions of a module, and a corresponding tool `thag-remove` to remove them after profiling.
+ - quick and easy to set up and run
 
-`thag_profiler`'s easy-to-use prompted analysis tool, `thag-analyze`, uses two extremely helpful crates:
+ - clear and accurate flamegraphs
 
-  - `inquire` to help you select output for analysis and optionally filter out any unwanted functions.
+ - handles time and memory
 
-  - `inferno` to display the results in your browser as interactive flamegraphs and flamecharts.
+ - handles synchronous and asynchronous code.
 
-For time profiles you can also choose to display function statistics (inclusive or exclusive of children according to the `.folded` file naming convention). Flamegraphs are not offered for `*-inclusive.folded` files as the bar lengths and displayed values would show multiple counting of descendants (double counting at every level of the stack), so these files are only useful for the statistics report.
+Basic profiling in a nutshell:
 
-For memory profiles you can also choose to display memory statistics and an allocation size analysis.
+- `#[enable_profiling]` attribute for your main function
+
+- `#[profiled]` attribute for other functions
+
+- `profile!` ... `end!` macro pairs for code sections.
+
+  Each of these items offers a range of options for any combination of time, memory summary and memory detail profiling.
+
+Two-stage memory size troubleshooting
+
+ - Detect memory hotspots with summary profiling
+
+ - Break out hotspots in detail
+
+Instant instrumentation:
+
+- `thag-instrument` to add the attributes to every function and method
+
+- `thag-remove` to remove them.
+
+Output analysis:
+
+- `thag-analyze` to select, filter and display:
+
+  - flamegraphs, flamecharts, comparisons
+
+  - function statistics for time profiles
+
+  - allocation statistics and size distribution for memory profiles
 
 ## Features
 
@@ -42,6 +75,8 @@ For memory profiles you can also choose to display memory statistics and an allo
 - **Proc macro based**: All instrumentation is provided via proc macros that provide a simple flexible interface, precise control, ring-fencing of profiler code from user code and zero-cost abstractions when profiling features are disabled.
 
 - **Development or release build profiling**: Although `thag_profiler` is focused on the development cycle, it supports profiling release builds, subject to enabling debug information and to any limitations imposed by the `backtrace` crate.
+
+- **Intelligent output naming**: Output files are named with the source program, timestamp and profile tyoe for quick and easy selection.
 
 - **Cross-platform**: Works on macOs, Linux and Windows.
 
@@ -394,6 +429,20 @@ thag-analyze .
 ```
 
 This will open an interactive menu to explore your profiling data and display various flamegraphs, flamecharts or simple statistics.
+
+`thag-analyze` uses two extremely helpful crates:
+
+  - `inquire` to help you select output for analysis and optionally filter out any unwanted functions.
+
+  - `inferno` to display the results in your browser as interactive flamegraphs and flamecharts.
+
+
+For time profiles you can also choose to display function statistics (inclusive or exclusive of children according to the `.folded` file naming convention), and ranked by total duration or call frequency.
+
+Flamegraphs are not offered for `*-inclusive.folded` files, since the bar lengths and displayed values would show multiple counting of descendants (double counting at every level of the stack), so these files are only useful for the statistics report.
+
+For memory profiles you can also choose to display memory statistics and an allocation size analysis.
+
 
 ## Detailed Usage
 
@@ -970,8 +1019,9 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 - `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Memory profiling data (if enabled)
 
-These files can be visualized with the included `thag-analyze` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or [speedscope](https://www.speedscope.app/) (trim the headers off first, e.g. `tail +5 myfile.folded | speedscope -`). However these displays will necessarily be somewhat raw. `thag-analyze` is recommended instead because it has a built-in understanding of the data: including the units, the meaning of the file naming and the additional information conveyed by the headers.
+These files can be visualized with the included `thag-analyze` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
 
+`thag-analyze` is recommended because it has a built-in understanding of the units and the information encoded in the file naming.
 
 ### Profiling Tools
 
@@ -1073,8 +1123,7 @@ Flamegraphs and flamecharts are interactive SVGs that allow you to:
 You can interact with the above example [here](../assets/flamechart_time_20250312-081119.svg).
 
 `thag_profiler` uses the `inferno` crate to generate flamegraphs and flamecharts.
-For the execution timeline, the analysis tool allows you to choose the `inferno` color scheme to use.
-For memory flamegraphs and flamecharts, it adheres to `inferno`'s memory-optimized color scheme.
+The analysis tool allows you to choose the `inferno` color scheme to use and remembers your last choice for each type (time and memory).
 
 
  ### Flamegraphs vs. Flamecharts

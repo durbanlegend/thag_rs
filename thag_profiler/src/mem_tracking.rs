@@ -1101,37 +1101,37 @@ fn write_memory_profile_data() {
             debug_log!("Creating new file");
             match File::create(memory_path) {
                 Ok(mut file) => {
-                    // Write headers similar to time profile file
-                    if let Err(e) = writeln!(file, "# Memory Profile") {
-                        debug_log!("Error writing header: {e}");
-                        return;
-                    }
+                    // // Write headers similar to time profile file
+                    // if let Err(e) = writeln!(file, "# Memory Profile") {
+                    //     debug_log!("Error writing header: {e}");
+                    //     return;
+                    // }
 
-                    if let Err(e) = writeln!(
-                        file,
-                        "# Script: {}",
-                        std::env::current_exe().unwrap_or_default().display()
-                    ) {
-                        debug_log!("Error writing script path: {e}");
-                        return;
-                    }
+                    // if let Err(e) = writeln!(
+                    //     file,
+                    //     "# Script: {}",
+                    //     std::env::current_exe().unwrap_or_default().display()
+                    // ) {
+                    //     debug_log!("Error writing script path: {e}");
+                    //     return;
+                    // }
 
-                    if let Err(e) =
-                        writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))
-                    {
-                        debug_log!("Error writing date: {e}");
-                        return;
-                    }
+                    // if let Err(e) =
+                    //     writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))
+                    // {
+                    //     debug_log!("Error writing date: {e}");
+                    //     return;
+                    // }
 
-                    if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
-                        debug_log!("Error writing version: {e}");
-                        return;
-                    }
+                    // if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
+                    //     debug_log!("Error writing version: {e}");
+                    //     return;
+                    // }
 
-                    if let Err(e) = writeln!(file) {
-                        debug_log!("Error writing newline: {e}");
-                        return;
-                    }
+                    // if let Err(e) = writeln!(file) {
+                    //     debug_log!("Error writing newline: {e}");
+                    //     return;
+                    // }
 
                     Ok(file)
                 }

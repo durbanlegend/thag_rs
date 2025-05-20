@@ -27,7 +27,7 @@ use crate::{
     mem_tracking::{
         activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    warn_once, with_sys_alloc,
+    with_sys_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -40,7 +40,7 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use backtrace::{Backtrace, BacktraceFrame};
 
 #[cfg(feature = "time_profiling")]
-use crate::{file_stem_from_path_str, flush_debug_log, get_base_location};
+use crate::{file_stem_from_path_str, flush_debug_log, get_base_location, warn_once};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -125,7 +125,7 @@ impl ProfileCapability {
 }
 
 /// Checks if a profile type is valid for the current feature set
-// #[cfg(feature = "time_profiling")]
+#[cfg(debug_assertions)]
 const fn is_valid_profile_type(profile_type: ProfileType) -> bool {
     ProfileCapability::available().supports(profile_type)
 }
@@ -1410,10 +1410,13 @@ impl Profile {
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
-        if !is_profiling_enabled() {
-            eprintln!("Profiling is not enabled, returning None");
-            return None;
-        }
+        warn_once!(
+            !is_profiling_enabled(),
+            || {
+                eprintln!("Profiling is not enabled, returning None");
+            },
+            return None
+        );
 
         // In test mode with our test wrapper active, skip creating profile for #[profiled] attribute
         #[cfg(test)]

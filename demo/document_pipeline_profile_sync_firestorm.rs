@@ -3,10 +3,25 @@
 firestorm = { version="0.5", features=["enable_system_time"] }
 */
 
-/// Test sync program (instrumented version) for `thag_profiler` testing.
-/// See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
+// Test sync program instrumented version for `firestorm` profiling. You can use this script and
+/// `demo/document_pipeline_profile_sync.rs` to compare `firestorm` with `thag_profiler`.
+/// Use the `-t` flag to get timings.
 ///
-//# Purpose: Test profiling using `thag_profiler`.
+/// Note that `thag_profiler`'s `Individual Sequential Execution Timeline` option is equivalent to `firestorm`'s `Timeline`
+/// option, while `thag_profiler`'s `Aggregated Execution Timeline` option is equivalent to `firestorm`'s `Merged` option.
+/// `thag_profiler`'s `Show Statistics By Total Time` report is equivalent to  `firestorm`'s `Own Time` option.
+///
+/// Firestorm does an internal warm-up AFAICS, so runs twice, and therefore almost twice as long. So is it apples with apples?
+/// Discuss.
+///
+/// E.g.:
+///
+/// `thag demo/document_pipeline_profile_sync_firestorm.rs -t`
+///
+///
+/// See all `demo/document_pipeline*.rs` and in particular `demo/document_pipeline_profile_sync.rs`.
+///
+//# Purpose: Test profiling using `firestorm`.
 //# Categories: prototype, testing
 use firestorm::{profile_fn, profile_method};
 use std::collections::HashMap;
@@ -241,7 +256,7 @@ fn main() {
     let closure = || {
         profile_fn!(main);
 
-        // Process a batch of documents asynchronously
+        // Process a batch of documents, originally asynchronously
         let docs = generate_and_process_documents(50);
 
         // Analyze the results

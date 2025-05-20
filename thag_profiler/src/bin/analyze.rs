@@ -194,14 +194,19 @@ fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
 
             let inclusive = file_path.display().to_string().contains("inclusive");
             let options = if inclusive {
-                vec!["Show Statistics", "Back to Profile Selection"]
+                vec![
+                    "Show Statistics By Total Time",
+                    "Show Statistics By Calls",
+                    "Back to Profile Selection",
+                ]
             } else {
                 vec![
                     "Show Aggregated Execution Timeline (Flamegraph)",
                     "...Filter Aggregated Functions (Recursive or Exact Match)",
                     "Show Individual Sequential Execution Timeline (Flamechart)",
                     "...Filter Individual Sequential Functions (Recursive or Exact Match)",
-                    "Show Statistics",
+                    "Show Statistics By Total Time",
+                    "Show Statistics By Calls",
                     "Back to Profile Selection",
                 ]
             };
@@ -236,9 +241,13 @@ fn analyze_single_time_profile(profile_group: &FileGroup) -> ProfileResult<()> {
                             |filtered| generate_time_flamegraph(&filtered, true),
                         )?;
                     }
-                    "Show Statistics" => {
+                    "Show Statistics By Total Time" => {
                         let inclusive = file_path.display().to_string().contains("inclusive");
-                        show_statistics(&stats, &processed, inclusive);
+                        show_statistics(&stats, &processed, inclusive, true);
+                    }
+                    "Show Statistics By Calls" => {
+                        let inclusive = file_path.display().to_string().contains("inclusive");
+                        show_statistics(&stats, &processed, inclusive, false);
                     }
                     // _ => return Ok(()),
                     _ => println!("Unknown option"),
@@ -487,7 +496,12 @@ fn open_in_browser(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile, inclusive: bool) {
+fn show_statistics(
+    stats: &ProfileStats,
+    profile: &ProcessedProfile,
+    inclusive: bool,
+    by_total_time: bool,
+) {
     println!("\n{}", profile.title);
     println!("{}", profile.subtitle);
     println!(
@@ -495,28 +509,46 @@ fn show_statistics(stats: &ProfileStats, profile: &ProcessedProfile, inclusive: 
         profile.timestamp.format("%Y-%m-%d %H:%M:%S%.3f")
     );
     println!(
-        "\nFunction Statistics ({color_cyan}{}CLUSIVE{color_reset} of Children) Ranked by Total Time:",
-        if inclusive { "IN" } else { "EX" }
+        "\nFunction Statistics ({color_cyan}{}CLUSIVE{color_reset} of Children) Ranked by {}:",
+        if inclusive { "IN" } else { "EX" },
+        if by_total_time { "Total Time" } else { "Calls" },
     );
-    println!("{color_cyan}{}{color_reset}", "═".repeat(65));
+    println!(
+        "{color_cyan}{}{color_reset}",
+        "═".repeat(if by_total_time { 65 } else { 60 })
+    );
 
-    let mut entries: Vec<_> = stats.total_time.iter().collect();
-    entries.sort_by_key(|(_, &total_time)| std::cmp::Reverse(total_time));
+    if by_total_time {
+        let mut entries: Vec<_> = stats.total_time.iter().collect();
+        entries.sort_by_key(|(_, &total_time)| std::cmp::Reverse(total_time));
 
-    for (func, &total_time) in entries {
-        let calls = *stats.calls.get(func).unwrap_or(&0);
-        let avg_time = if calls > 0 {
-            total_time / u128::from(calls)
-        } else {
-            0
-        };
-        println!(
-            "{:>10} calls {:>14} μs total {:>14} μs avg     {func}",
-            thousands(calls),
-            thousands(total_time),
-            thousands(avg_time)
-        );
+        for (func, &total_time) in entries {
+            let calls = *stats.calls.get(func).unwrap_or(&0);
+            show_stats(func, total_time, calls);
+        }
+    } else {
+        let mut entries: Vec<_> = stats.calls.iter().collect();
+        entries.sort_by_key(|(_, &calls)| std::cmp::Reverse(calls));
+
+        for (func, &calls) in entries {
+            let total_time = *stats.total_time.get(func).unwrap_or(&0);
+            show_stats(func, total_time, calls);
+        }
     }
+}
+
+fn show_stats(func: &str, total_time: u128, calls: u64) {
+    let avg_time = if calls > 0 {
+        total_time / u128::from(calls)
+    } else {
+        0
+    };
+    println!(
+        "{:>10} calls {:>14} μs total {:>14} μs avg     {func}",
+        thousands(calls),
+        thousands(total_time),
+        thousands(avg_time)
+    );
 }
 
 fn filter_functions(processed: &ProcessedProfile) -> ProfileResult<Option<ProcessedProfile>> {

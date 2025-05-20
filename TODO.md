@@ -29,6 +29,8 @@
 - [ ]  Rename task-aware allocator to tracking allocator.
 - [ ]  See what we can make redundant now that Profile summary memory allocation is simplified.
 - [ ]  Consider suspending Peak from summary flamegraphs and flamecharts due to inaccuracy?
+- [ ]  Remove headers from .folded files
+- [ ]  Rename thag_profiler binaries to use underscore?
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

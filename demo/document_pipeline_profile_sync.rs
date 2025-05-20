@@ -1,12 +1,24 @@
 /*[toml]
 [dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling"] }
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["time_profiling"] }
+# thag_profiler = { version = "0.1", features = ["time_profiling"] }
 thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["time_profiling"] }
 */
 
-/// Test sync program (instrumented version) for `thag_profiler` testing.
-/// See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
+/// Test sync program instrumented version for `thag_profiler` testing. You can use this script and
+/// `demo/document_pipeline_profile_sync_firestorm.rs` to compare `thag_profiler` with `firestorm`.
+/// Use the `-t` flag to get timings.
+///
+/// Note that `thag_profiler`'s `Individual Sequential Execution Timeline` option is equivalent to `firestorm`'s `Time Axis`
+/// option, while `thag_profiler`'s `Aggregated Execution Timeline` option is equivalent to `firestorm`'s `Merged` option.
+/// `thag_profiler`'s `Show Statistics By Total Time` report is equivalent to  `firestorm`'s `Own Time` option.
+///
+/// E.g.:
+///
+/// `thag demo/document_pipeline_profile_sync.rs -t`
+///
+///
+/// See all `demo/document_pipeline*.rs` and in particular `demo/document_pipeline_profile_sync_firestorm.rs`.
 ///
 //# Purpose: Test profiling using `thag_profiler`.
 //# Categories: prototype, testing
@@ -241,7 +253,7 @@ fn generate_and_process_documents(count: usize) -> Vec<Document> {
     tasks
 }
 
-#[enable_profiling(runtime)]
+#[enable_profiling(time)]
 fn main() -> io::Result<()> {
     // Check if profiling is enabled
     println!(
@@ -251,7 +263,7 @@ fn main() -> io::Result<()> {
 
     // unsafe { backtrace_on_stack_overflow::enable() };
 
-    // Process a batch of documents asynchronously
+    // Process a batch of documents, originally asynchronously
     let docs = generate_and_process_documents(50);
 
     // Analyze the results

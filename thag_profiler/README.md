@@ -18,6 +18,7 @@ An accurate lightweight cross-platform profiling library for Rust applications, 
   <figcaption>Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail (interactive). Click on any bar to drill down. <a href="../assets/flamegraph_mem_20250518-220050.svg">Open in browser</a></figcaption>
 </figure>
 
+
 An independent offshoot of the `thag(_rs)` script runner and REPL.
 
 Lowers the barriers to profiling.
@@ -1047,7 +1048,7 @@ donf@MacBook-Air thag_rs %
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
   <object type="image/svg+xml" data="../assets/memory_flamechart_20250521-100000.svg" style="width: 100%; max-height: 1000px; display: block;">
     <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../assets/memory_flamechart_20250521-100000.pdf" alt="memory_flamechart_20250521-100000.pdf"/>
+    <img src="../assets/memory_flamechart_20250521-100000.png" alt="memory_flamechart_20250521-100000.png"/>
   </object>
   <figcaption>Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions (interactive). Click on any bar to drill down. <a href="../assets/memory_flamechart_20250521-100000.svg">Open in browser</a></figcaption>
 </figure>
@@ -1059,7 +1060,7 @@ Here is `thag` itself in REPL mode, profiled in the same way:
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
   <object type="image/svg+xml" data="../assets/memory-flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
     <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../assets/memory-flamegraph_detail_thag.pdf" alt="memory-flamegraph_detail_thag.pdf"/>
+    <img src="../assets/memory-flamegraph_detail_thag.png" alt="memory-flamegraph_detail_thag.png"/>
   </object>
   <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../assets/memory-flamegraph_detail_thag.svg">Open in browser</a></figcaption>
 </figure>

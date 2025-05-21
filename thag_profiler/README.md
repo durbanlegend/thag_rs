@@ -2,15 +2,9 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <!-- Using an image that links to the SVG for GitHub compatibility -->
-  <a href="../assets/flamechart_hot_20250519-155436.svg" target="_blank">
-    <img src="../assets/flamechart_hot_20250519-155436.png" alt="flamechart_hot_20250519-155436.png" style="width: 100%;"/>
-  </a>
-  <figcaption>Flamegraph (Click image for interactive version)</figcaption>
-</figure>
-
----
+<div align="center">
+  ![TODO](../assets/flamechart_hot_20250519-155436.svg)
+</div>
 
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
   <object type="image/svg+xml" data="../assets/flamechart_hot_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
@@ -20,6 +14,8 @@ An accurate lightweight cross-platform profiling library for Rust applications, 
   <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="../assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
 </figure>
 
+---
+
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
   <object type="image/svg+xml" data="../assets/flamegraph_mem_20250518-220050.svg" style="width: 100%; max-height: 500px; display: block;">
     <!-- Fallback for browsers that don't support SVG in object -->
@@ -28,7 +24,7 @@ An accurate lightweight cross-platform profiling library for Rust applications, 
   <figcaption>Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail (interactive). Click on any bar to drill down. <a href="../assets/flamegraph_mem_20250518-220050.svg">Open in browser</a></figcaption>
 </figure>
 
-
+---
 
 An independent offshoot of the `thag(_rs)` script runner and REPL.
 

@@ -277,7 +277,7 @@ fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()>
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
 
-            eprintln!("processed.memory_data={:#?}", processed.memory_data);
+            // eprintln!("processed.memory_data={:#?}", processed.memory_data);
             let alloc_type = if let Some(memory_data) = processed.memory_data.as_ref() {
                 if memory_data.dealloc {
                     "Deallocation"
@@ -1316,9 +1316,9 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
         .ok_or_else(|| ProfileError::General("No memory statistics available".to_string()))?;
 
     let svg = if as_chart {
-        "memory-flamechart.svg"
+        "memory_flamechart.svg"
     } else {
-        "memory-flamegraph.svg"
+        "memory_flamegraph.svg"
     };
 
     let output = File::create(svg)?;
@@ -1355,7 +1355,7 @@ fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Pro
     )?;
 
     enhance_svg_accessibility(svg)?;
-    println!("Memory flame chart generated: memory-flamechart.svg");
+    println!("Memory flame chart generated: memory_flamechart.svg");
     open_in_browser(svg).map_err(|e| ProfileError::General(e.to_string()))?;
     Ok(())
 }

@@ -68,7 +68,9 @@ Output analysis:
 
 - **Execution time profiling**: Low-overhead profiling to highlight hotspots.
 
-- **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code so that the latter can't distort the measurements. Allocations may be summarized by function or section, or broken out in detail where desired. Deallocations may also be tracked, but only at a global detail level.
+- **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code so that the latter can't distort the measurements. Allocations may be summarized by function or section, or broken out in detail where desired.
+
+- **One-line full detailed transitive memory profiling**: Track all memory allocations and deallocations for your project and dependencies with a single `#[enable_profiling(runtime)` and the `THAG_PROFILER` environment variable.
 
 - **Function and section profiling**: Profiling can be applied to any number of specific non-overlapping code sections, down to single instructions.
 
@@ -1044,6 +1046,30 @@ donf@MacBook-Air thag_rs %
     <img src="../assets/memory_flamechart_20250521-100000.pdf" alt="memory_flamechart_20250521-100000.pdf"/>
   </object>
   <figcaption>Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions (interactive). Click on any bar to drill down. <a href="../assets/memory_flamechart_20250521-100000.svg">Open in browser</a></figcaption>
+</figure>
+
+### Before-and-After (Differential) Profiling
+
+The `thag-analyze` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/flamegraph_mem_diff.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/flamegraph_mem_diff.png" alt="flamegraph_mem_diff.png"/>
+  </object>
+  <figcaption>Differential memory profile showing reduced allocations in blue (interactive). Click on any bar to drill down. <a href="../assets/flamegraph_mem_diff.svg">Open in browser</a></figcaption>
+</figure>
+
+### One-Click Transitive Memory Profiling
+
+Here is `thag` itself in REPL mode, profiled in this way:
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/memory-flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/memory-flamegraph_detail_thag.pdf" alt="memory-flamegraph_detail_thag.pdf"/>
+  </object>
+  <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../assets/memory-flamegraph_detail_thag.svg">Open in browser</a></figcaption>
 </figure>
 
 #### Memory Profiling Limitations and Considerations

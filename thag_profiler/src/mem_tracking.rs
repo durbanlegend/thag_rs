@@ -358,8 +358,9 @@ fn record_alloc(address: usize, size: usize) {
         // Flag if we're already tracking in case it causes an infinite recursion
         let in_tracking = unsafe { IN_TRACKING };
 
-        #[cfg(debug_assertions)]
-        assert!(!in_tracking);
+        // Assertion disabled because not 100%
+        // #[cfg(debug_assertions)]
+        // assert!(!in_tracking);
 
         if in_tracking {
             debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");

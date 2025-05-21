@@ -1205,7 +1205,7 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 These files can be visualized with the included `thag-analyze` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
 
-`thag-analyze` is recommended because it has a built-in understanding of the units and the information encoded in the file naming.
+`thag-analyze` is recommended because it has a built-in understanding of the units and the information encoded in the file naming, and can filter out unwelcome noise.
 
 ### Profiling Tools
 

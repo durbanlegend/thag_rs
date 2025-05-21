@@ -605,12 +605,12 @@ pub fn write_detailed_stack_alloc(
     );
 
     let entry = if detailed_stack.is_empty() {
-        format!("[Out of `{root_module}` scope] +{size}")
+        format!("[Out of `{root_module}` scope] {size}")
     } else {
         let descr_stack = build_stack(detailed_stack, None, ";");
 
         debug_log!("descr_stack={descr_stack}");
-        format!("{descr_stack} +{size}")
+        format!("{descr_stack} {size}")
     };
 
     let (memory_path, file) = if write_to_detail_file {
@@ -738,13 +738,13 @@ pub fn record_dealloc(address: usize, size: usize) {
 
             let legend = if stack.is_empty() {
                 debug_log!("Empty cleaned_stack and stack for backtrace={current_backtrace:#?}");
-                format!("[Dealloc out of `{root_module}` scope] +{size}")
+                format!("[Dealloc out of `{root_module}` scope] {size}")
             } else {
                 stack.join(";")
             };
-            format!("{legend} +{size}")
+            format!("{legend} {size}")
         } else {
-            format!("{} +{size}", detailed_stack.join(";"))
+            format!("{} {size}", detailed_stack.join(";"))
         };
 
         let memory_detail_dealloc_path = get_memory_detail_dealloc_path().unwrap();
@@ -1196,7 +1196,7 @@ fn write_alloc(
     already_written: &mut HashSet<String>,
     path_str: &str,
 ) {
-    match writeln!(writer, "{} +{}", path_str, allocation) {
+    match writeln!(writer, "{} {}", path_str, allocation) {
         Ok(()) => {
             already_written.insert(path_str.to_string());
         }

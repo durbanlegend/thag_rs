@@ -1872,7 +1872,7 @@ impl Profile {
     }
 
     #[cfg(feature = "full_profiling")]
-    fn write_memory_event_with_op(&self, delta: usize, op: char) -> ProfileResult<()> {
+    fn write_memory_event(&self, delta: usize, op: char) -> ProfileResult<()> {
         if delta == 0 {
             // Keep this as it's a business logic check
             debug_log!(
@@ -1890,7 +1890,7 @@ impl Profile {
 
         let stack = self.build_stack(path);
 
-        let entry = format!("{stack} {op}{delta}");
+        let entry = format!("{stack} {}{delta}", if op == '-' { "-" } else { "" });
 
         debug_log!(
             "DEBUG: task_id: {} section_name: {:?} write_memory_event: {entry}",
@@ -1942,7 +1942,7 @@ impl Profile {
         );
 
         // Record allocation
-        let result = self.write_memory_event_with_op(delta, '+');
+        let result = self.write_memory_event(delta, '+');
 
         if let Err(ref e) = result {
             debug_log!("Error writing memory event: {:?}", e);
@@ -2310,6 +2310,9 @@ impl Drop for Profile {
 ///
 /// This function reads a folded file with inclusive times (total time spent in each function)
 /// and converts it to exclusive times (time spent only in the function itself, excluding child calls).
+/// # Errors
+///
+/// This function will bubble up any i/o errors that occur trying to convert the file.
 #[cfg(feature = "time_profiling")]
 pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> ProfileResult<()> {
     debug_log!("Converting inclusive time profile to exclusive time");
@@ -2438,6 +2441,9 @@ pub fn is_convert_to_exclusive_time_enabled() -> bool {
 }
 
 /// Perform the conversion from inclusive to exclusive time if enabled
+/// # Errors
+///
+/// This function will bubble up any i/o errors that occur trying to convert the file.
 #[cfg(feature = "time_profiling")]
 pub fn process_time_profile() -> ProfileResult<()> {
     if is_convert_to_exclusive_time_enabled() {

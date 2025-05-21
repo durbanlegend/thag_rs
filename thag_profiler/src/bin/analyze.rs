@@ -1,4 +1,3 @@
-// use crate::{profiling::ProfileStats, thousands, ProfileError, ProfileResult};
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use inferno::flamegraph::{
     self,
@@ -14,6 +13,7 @@ use std::{
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
     process::Command,
+    str::FromStr,
     string::ToString,
     time::Duration,
 };
@@ -1214,10 +1214,12 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
                     let stack = parts[..parts.len() - 1].join(" ");
                     if let Some(op_size) = parts.last() {
                         // Parse operation and size
-                        let (operation, size) = if let Some(size_str) = op_size.strip_prefix('+') {
-                            ('+', size_str.parse::<i64>().ok()?)
-                        } else if let Some(size_str) = op_size.strip_prefix('-') {
-                            ('-', size_str.parse::<i64>().ok()?)
+                        let (operation, size) = if let Some(size) = op_size.parse::<i64>() {
+                            if size >= 0 {
+                                ('+', size)
+                            } else {
+                                ('-', size)
+                            }
                         } else {
                             return None;
                         };

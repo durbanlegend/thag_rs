@@ -1058,11 +1058,11 @@ donf@MacBook-Air thag_rs %
 Here is `thag` itself in REPL mode, profiled in the same way:
 
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../assets/memory-flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
+  <object type="image/svg+xml" data="../assets/memory_flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
     <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../assets/memory-flamegraph_detail_thag.pdf" alt="memory-flamegraph_detail_thag.pdf"/>
+    <img src="../assets/memory_flamegraph_detail_thag.png" alt="memory_flamegraph_detail_thag.png"/>
   </object>
-  <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../assets/memory-flamegraph_detail_thag.svg">Open in browser</a></figcaption>
+  <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../assets/memory_flamegraph_detail_thag.svg">Open in browser</a></figcaption>
 </figure>
 
 ### Before-and-After (Differential) Profiling

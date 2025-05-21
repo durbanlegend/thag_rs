@@ -277,7 +277,7 @@ fn analyze_single_memory_profile(profile_group: &FileGroup) -> ProfileResult<()>
         Some(selected_file) => {
             let processed = read_and_process_profile(&selected_file)?;
 
-            // eprintln!("processed.memory_data={:#?}", processed.memory_data);
+            eprintln!("processed.memory_data={:#?}", processed.memory_data);
             let alloc_type = if let Some(memory_data) = processed.memory_data.as_ref() {
                 if memory_data.dealloc {
                     "Deallocation"
@@ -1174,7 +1174,10 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
     let subtitle = filename.clone();
     let mut processed = ProcessedProfile {
         path: path.clone(),
-        profile_type: if filename.contains("memory.folded") {
+        profile_type: if filename.contains("memory.folded")
+            || filename.contains("memory_detail.folded")
+            || filename.contains("memory_detail_dealloc.folded")
+        {
             ProfileType::Memory
         } else {
             ProfileType::Time

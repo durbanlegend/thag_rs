@@ -56,7 +56,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process;
-use thag_profiler::{self, enable_profiling, profiled};
+use thag_profiler::{self, enable_profiling};
 
 enum Error {
     IncorrectUsage,
@@ -82,7 +82,7 @@ impl Display for Error {
     }
 }
 
-#[enable_profiling]
+#[enable_profiling(runtime)]
 fn main() {
     eprintln!(
         "is_profiling_enabled()? {}, get_global_profile_type(): {:?}",
@@ -95,7 +95,6 @@ fn main() {
     }
 }
 
-#[profiled]
 fn try_main() -> Result<(), Error> {
     let mut args = env::args_os();
     let _ = args.next(); // executable name
@@ -126,7 +125,6 @@ fn try_main() -> Result<(), Error> {
 //     40 |     fn fmt(&self formatter: &mut fmt::Formatter) -> fmt::Result {
 //        |                  ^^^^^^^^^ expected `,`
 //
-#[profiled]
 fn render_location(
     formatter: &mut fmt::Formatter,
     err: &syn::Error,
@@ -179,7 +177,6 @@ fn render_location(
     )
 }
 
-#[profiled]
 fn render_fallback(formatter: &mut fmt::Formatter, err: &syn::Error) -> fmt::Result {
     write!(formatter, "Unable to parse file: {}", err)
 }

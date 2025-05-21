@@ -14,7 +14,7 @@ use crate::{
         build_stack, clean_function_name, extract_alloc_callstack,
         extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
         get_memory_path, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
-        MemoryProfileFile, START_TIME,
+        MemoryProfileFile,
     },
     regex, warn_once, Profile, ProfileRef, ProfileType,
 };
@@ -1100,7 +1100,7 @@ fn write_memory_profile_data() {
         } else {
             debug_log!("Creating new file");
             match File::create(memory_path) {
-                Ok(mut file) => {
+                Ok(file) => {
                     // // Write headers similar to time profile file
                     // if let Err(e) = writeln!(file, "# Memory Profile") {
                     //     debug_log!("Error writing header: {e}");

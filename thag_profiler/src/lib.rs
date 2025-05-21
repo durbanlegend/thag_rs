@@ -474,7 +474,7 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
     if PROFILER.get().is_none() {
         let base_location = Box::leak(base_loc.into_boxed_str());
         PROFILER.set(Profiler::new(base_location)).unwrap();
-        eprintln!("Base location set to {base_location}");
+        // eprintln!("Base location set to {base_location}");
     } else if PROFILER.get().unwrap().base_location != base_loc {
         // If already set but with a different base_location, just log it and continue
         eprintln!(

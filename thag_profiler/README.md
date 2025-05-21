@@ -2,14 +2,20 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-<figure>
-  <img src="../assets/flamegraph_hot.png" alt="flamegraph_hot.png"/>
-  <figcaption>Time profile in your preferred color scheme</figcaption>
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/flamechart_hot_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/flamechart_hot_20250519-155436.png" alt="flamechart_hot_20250519-155436.png"/>
+  </object>
+  <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="../assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
 </figure>
 
-<figure>
-  <img src="../assets/flamegraph_mem.png" alt="flamegraph_mem.png"/>
-  <figcaption>Filtered memory profile in <code>inferno</code> memory color scheme with two selected functions broken out in detail.</figcaption>
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/flamegraph_mem_20250518-220050.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/flamegraph_mem_20250518-220050.png" alt="flamegraph_mem_20250518-220050.png"/>
+  </object>
+  <figcaption>Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail (interactive). Click on any bar to drill down. <a href="../assets/flamegraph_mem_20250518-220050.svg">Open in browser</a></figcaption>
 </figure>
 
 An independent offshoot of the `thag(_rs)` script runner and REPL.
@@ -42,7 +48,7 @@ Two-stage memory size troubleshooting
 
 Instant instrumentation:
 
-- `thag-instrument` to add the attributes to every function and method
+- `thag-instrument` to add the attributes to every function and method of a .rs file
 
 - `thag-remove` to remove them.
 
@@ -530,7 +536,7 @@ E.g.:
 THAG_PROFILER=both,$TMPDIR,announce,true cargo run
 ```
 
-  ...specifies both memory and time profiling, `.folded` files to $TMPDIR, debug log path to be written to user program output, extra `.folded` files for detailed memory allocations and deallocations required.
+  ...specifies both memory and time profiling, `.folded` files to $TMPDIR, debug log path to be written to user program output, and full memory detail allocation and deallocation tracking (caution: may be slow) into separate `.folded` files.
 
 
 ```bash
@@ -888,6 +894,158 @@ Time profiling measures the wall-clock time between profile creation and destruc
 
 Memory profiling (available via the `full_profiling` feature) accurately tracks every heap allocation (and for global detailed profiling, deallocation) requested by profiled user code, including reallocations, using a global memory allocator in conjunction with attribute macros to exclude `thag_profiler`'s own code from interfering with the analysis. It uses the official Rust `backtrace` crate to identify the source of the allocation or deallocation request.
 
+### Global Detailed Memory Profiling
+
+A handy trick is that simply by annotating the `main` function of your project with `#[enable_profiling(runtime)]` and running it with `THAG_PROFILER=memory,,,true` you can get a fully detailed memory profile showing allocations and one showing deallocations. This also applies transitively to all the dependencies of your project!
+
+Caution: this may be prohibitively slow, depending on your project, although the example below only took a few seconds.
+
+Here we try it on a `thag(_rs)` script that uses `syn` to print out an AST for a Rust source file. The code is available in the `thag_rs` project.
+
+The script is `demo/syn_dump_syntax_profile_syn.rs` and we run it with `thag` to print out the `syn` AST for another, simple script called demo/hello_main.rs. Below is the execution showing the AST printout, followed by the detailed memory allocation profile for the run from thag-analyze:
+
+```zsh
+donf@MacBook-Air thag_rs % THAG_PROFILER=both,,announce,true thag demo/syn_dump_syntax_profile_syn.rs --timings -- demo/hello_main.rs
+
+Skipping unnecessary generation step.  Use --force (-f) to override.
+Skipping unnecessary cargo build step. Use --force (-f) to override.
+──────────────────────────────────────────────────────────────────────
+Thag Profiler debug log: /var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/thag_profiler/syn_dump_syntax_profile_syn-20250521-105801-debug.log
+is_profiling_enabled()? true, get_global_profile_type(): Both
+File {
+    shebang: None,
+    attrs: [],
+    items: [
+        Item::Fn {
+            attrs: [
+                Attribute {
+                    pound_token: Pound,
+                    style: AttrStyle::Outer,
+                    bracket_token: Bracket,
+                    meta: Meta::NameValue {
+                        path: Path {
+                            leading_colon: None,
+                            segments: [
+                                PathSegment {
+                                    ident: Ident {
+                                        sym: doc,
+                                        span: bytes(1..60),
+                                    },
+                                    arguments: PathArguments::None,
+                                },
+                            ],
+                        },
+                        eq_token: Eq,
+                        value: Expr::Lit {
+                            attrs: [],
+                            lit: Lit::Str {
+                                token: " Hello World as a program (posh Winnie-the-Pooh version)",
+                            },
+                        },
+                    },
+                },
+            ],
+            vis: Visibility::Inherited,
+            sig: Signature {
+                constness: None,
+                asyncness: None,
+                unsafety: None,
+                abi: None,
+                fn_token: Fn,
+                ident: Ident {
+                    sym: main,
+                    span: bytes(129..133),
+                },
+                generics: Generics {
+                    lt_token: None,
+                    params: [],
+                    gt_token: None,
+                    where_clause: None,
+                },
+                paren_token: Paren,
+                inputs: [],
+                variadic: None,
+                output: ReturnType::Default,
+            },
+            block: Block {
+                brace_token: Brace,
+                stmts: [
+                    Stmt::Local {
+                        attrs: [],
+                        let_token: Let,
+                        pat: Pat::Ident {
+                            attrs: [],
+                            by_ref: None,
+                            mutability: None,
+                            ident: Ident {
+                                sym: other,
+                                span: bytes(146..151),
+                            },
+                            subpat: None,
+                        },
+                        init: Some(
+                            LocalInit {
+                                eq_token: Eq,
+                                expr: Expr::Lit {
+                                    attrs: [],
+                                    lit: Lit::Str {
+                                        token: "World 🌍",
+                                    },
+                                },
+                                diverge: None,
+                            },
+                        ),
+                        semi_token: Semi,
+                    },
+                    Stmt::Macro {
+                        attrs: [],
+                        mac: Macro {
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident {
+                                            sym: println,
+                                            span: bytes(169..176),
+                                        },
+                                        arguments: PathArguments::None,
+                                    },
+                                ],
+                            },
+                            bang_token: Not,
+                            delimiter: MacroDelimiter::Paren(
+                                Paren,
+                            ),
+                            tokens: TokenStream [
+                                Literal {
+                                    lit: "Hello, {other}!",
+                                    span: bytes(178..195),
+                                },
+                            ],
+                        },
+                        semi_token: Some(
+                            Semi,
+                        ),
+                    },
+                ],
+            },
+        },
+    ],
+}
+──────────────────────────────────────────────────────────────────────
+Completed run in 4.44s
+thag_rs completed processing script syn_dump_syntax_profile_syn.rs in 4.76s
+donf@MacBook-Air thag_rs %
+```
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/memory_flamechart_20250521-100000.svg" style="width: 100%; max-height: 1000px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/memory_flamechart_20250521-100000.pdf" alt="memory_flamechart_20250521-100000.pdf"/>
+  </object>
+  <figcaption>Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions (interactive). Click on any bar to drill down. <a href="../assets/memory_flamechart_20250521-100000.svg">Open in browser</a></figcaption>
+</figure>
+
 #### Memory Profiling Limitations and Considerations
 
 - **Performance Impact**: `thag_profiler` memory profiling introduces significant overhead compared to time profiling. Expect your application to run appreciably more slowly when memory profiling is enabled. It's strongly recommended to use memory profiling selectively for occasional health checks and targeted investigations rather than leave it enabled indefinitely.
@@ -1106,6 +1264,14 @@ The analyzer provides:
 
 ### Flamegraphs and Flamecharts
 
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/flamechart_time_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/flamechart_time_20250519-155436.png" alt="flamechart_time_20250519-155436.png"/>
+  </object>
+  <figcaption>Example profile in <code>inferno</code> "green" color scheme (interactive). Click on any bar to drill down. <a href="../assets/flamechart_time_20250519-155436.svg">Open in browser</a></figcaption>
+</figure>
+
 Cumulative flamegraphs and detailed flamecharts provide an intuitive interactive visualization of your profiling data. The wider a function appears, the more time (or allocated / deallocated memory) it represents relative to the total for the execution.
 
 Flamegraphs and flamecharts are interactive SVGs that allow you to:
@@ -1118,13 +1284,8 @@ Flamegraphs and flamecharts are interactive SVGs that allow you to:
 
 - Compare before/after optimizations
 
-![Example Flamechart](../assets/flamechart_time_20250312-081119.png)
-
-You can interact with the above example [here](../assets/flamechart_time_20250312-081119.svg).
-
 `thag_profiler` uses the `inferno` crate to generate flamegraphs and flamecharts.
 The analysis tool allows you to choose the `inferno` color scheme to use and remembers your last choice for each type (time and memory).
-
 
  ### Flamegraphs vs. Flamecharts
 
@@ -1173,56 +1334,6 @@ async fn fetch_data() {
 ```
 
 This ensures the profile correctly associates the section with its async parent function in the profiling output. Without this parameter, the section will appear a second time in the flamegraph without its async identifier, as we have no way to link the two automatically.
-
- ### Memory Profiling Best Practices
-
-When using memory profiling, follow these guidelines for the most accurate results:
-
-```rust
-// Use attribute macros for consistent memory tracking
-#[enable_profiling]
-#[profiled]
-fn main() {
-    // Run your application...
-    memory_intensive_function();
-}
-
-#[profiled]
-fn memory_intensive_function() {
-    // Memory will be automatically tracked for this function
-    // and attributed to it in the profiling output
-
-    // Create explicit scope for allocations to ensure
-    // they're properly tracked and released
-    {
-        let data = vec![0u8; 1_000_000];
-        process_data(&data);
-    } // Memory is released here and recorded
-}
-
-For the most accurate memory profiling:
-
-1. Use attribute macros consistently across your codebase
-2. Create clear scopes for memory-intensive operations
-3. Use thag-analyze's filtering to focus on relevant parts of your application
-4. Consider enabling detailed memory profiling for full allocation visibility
-
-## Testing with Profiled Code
-
-When writing tests that use profiled functions, it's recommended to use a serialization mechanism. The `#[enable_profiling]` attribute and the current tests use the `thag_profiler::PROFILING_MUTEX` to ensure that only one instance runs at a time for thread safety:
-
-TODO update:
-```rust
-use serial_test::serial;
-
-#[test]
-#[serial]
-fn test_profiled_function() {
-    // Tests using profiled functions
-}
-```
-
-This is important because `thag_profiler` maintains some global state that isn't thread-safe (although this shouldn't affect async profiling per se).
 
 ## Troubleshooting
 

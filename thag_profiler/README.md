@@ -48,9 +48,9 @@ Two-stage memory size troubleshooting
 
 Instant instrumentation:
 
-- `thag-instrument` to add the attributes to every function and method of a .rs file
+- `thag-instrument` command to add the attributes to every function and method of a .rs file
 
-- `thag-remove` to remove them.
+- `thag-remove` command to remove them.
 
 Output analysis:
 
@@ -78,13 +78,15 @@ Output analysis:
 
 - **Automatic instrumentation**: Tools to quickly bulk add and remove profiling annotations to/from source code without losing comments or formatting.
 
-- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks with `inferno` flamegraphs and flamecharts, and easily do before-and-after comparisons using `inferno` differential analysis.
+- **Interactive flamegraphs and flamecharts**: Visualize performance bottlenecks with `inferno` flamegraphs and flamecharts, and easily do before-and-after comparisons using `inferno` differential flamegraphs.
+
+- **Graph filtering**: Filter out dead or unwanted sections of flamegraphs and flamecharts for a better view.
 
 - **Proc macro based**: All instrumentation is provided via proc macros that provide a simple flexible interface, precise control, ring-fencing of profiler code from user code and zero-cost abstractions when profiling features are disabled.
 
 - **Development or release build profiling**: Although `thag_profiler` is focused on the development cycle, it supports profiling release builds, subject to enabling debug information and to any limitations imposed by the `backtrace` crate.
 
-- **Intelligent output naming**: Output files are named with the source program, timestamp and profile tyoe for quick and easy selection.
+- **Intelligent output naming**: Output files are named with the source program, timestamp and profile type for quick and easy selection.
 
 - **Cross-platform**: Works on macOs, Linux and Windows.
 
@@ -896,11 +898,13 @@ Time profiling measures the wall-clock time between profile creation and destruc
 
 Memory profiling (available via the `full_profiling` feature) accurately tracks every heap allocation (and for global detailed profiling, deallocation) requested by profiled user code, including reallocations, using a global memory allocator in conjunction with attribute macros to exclude `thag_profiler`'s own code from interfering with the analysis. It uses the official Rust `backtrace` crate to identify the source of the allocation or deallocation request.
 
-### Global Detailed Memory Profiling
+### One-Line Exhaustive Memory Profiling
 
 A handy trick is that simply by annotating the `main` function of your project with `#[enable_profiling(runtime)]` and running it with `THAG_PROFILER=memory,,,true` you can get a fully detailed memory profile showing allocations and one showing deallocations. This also applies transitively to all the dependencies of your project!
 
 Caution: this may be prohibitively slow, depending on your project, although the example below only took a few seconds.
+
+#### A simple example
 
 Here we try it on a `thag(_rs)` script that uses `syn` to print out an AST for a Rust source file. The code is available in the `thag_rs` project.
 
@@ -1048,6 +1052,18 @@ donf@MacBook-Air thag_rs %
   <figcaption>Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions (interactive). Click on any bar to drill down. <a href="../assets/memory_flamechart_20250521-100000.svg">Open in browser</a></figcaption>
 </figure>
 
+#### A project example
+
+Here is `thag` itself in REPL mode, profiled in the same way:
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/memory-flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/memory-flamegraph_detail_thag.pdf" alt="memory-flamegraph_detail_thag.pdf"/>
+  </object>
+  <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../assets/memory-flamegraph_detail_thag.svg">Open in browser</a></figcaption>
+</figure>
+
 ### Before-and-After (Differential) Profiling
 
 The `thag-analyze` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
@@ -1058,18 +1074,6 @@ The `thag-analyze` tool supports `inferno`'s differential profiling feature for 
     <img src="../assets/flamegraph_mem_diff.png" alt="flamegraph_mem_diff.png"/>
   </object>
   <figcaption>Differential memory profile showing reduced allocations in blue (interactive). Click on any bar to drill down. <a href="../assets/flamegraph_mem_diff.svg">Open in browser</a></figcaption>
-</figure>
-
-### One-Click Transitive Memory Profiling
-
-Here is `thag` itself in REPL mode, profiled in this way:
-
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../assets/memory-flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../assets/memory-flamegraph_detail_thag.pdf" alt="memory-flamegraph_detail_thag.pdf"/>
-  </object>
-  <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../assets/memory-flamegraph_detail_thag.svg">Open in browser</a></figcaption>
 </figure>
 
 #### Memory Profiling Limitations and Considerations
@@ -1152,7 +1156,7 @@ For memory profiling on Windows, your application requires:
 
 - **Memory Profiling with Async**: Memory profiling in async contexts is more complex:
 
-  - Works with tokio and smol for most common patterns.
+  - Works with `tokio` and `smol` for most common patterns.
 
   - Has a (small?) degree of exposure to race conditions, as discussed above.
 
@@ -1183,9 +1187,9 @@ Note that deallocations are not reported for normal memory profiling, as they in
 
 The recording takes two forms:
 
-a. For regular memory profiling, the allocations are attributed to a profile (a `Profile` instance representing an active execution of a function or code section) in a mutex-protected registry, by matching the allocation site against the registered active profiles. The allocation size is passed to the profile, which accumulates it. When the function completes execution the profile goes out of scope and is automatically dropped, and its `drop` trait method writes out the accumulated total to the `-memory.folded` file.
+a. For summary memory profiling, the allocations are attributed to a profile (a `Profile` instance representing an active execution of a function or code section) in a mutex-protected registry, by matching the allocation site against the registered active profiles. The allocation size is passed to the profile, which accumulates it. When the function completes execution the profile goes out of scope and is automatically dropped, and its `drop` trait method writes out the accumulated total to the `-memory.folded` file.
 
-Time profiling is simpler: all that's needed is to record the duration between the activation and dropping of the profile.
+Time profiling also uses these same profiles, but in a simpler way: all that's needed is to record the duration between the activation and dropping of the profile.
 
 In both cases, since the metrics for the function are measured over the lifetime of its profile instance, `thag_profiler` takes care to ensure that the profile lifetime coincides as closely as possible with the lifetime of the function, in order to ensure accurate measurement.
 
@@ -1193,7 +1197,7 @@ b. For detailed memory profiling, allocations and deallocations alike are not ac
 
 Being the default, the tracking allocator is automatically used for user code and must not be used for profiler code.
 
-To avoid getting caught up in the default mechanism and polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_sys_alloc()` function (`pub fn with_sys_alloc<T, F: FnOnce() -> T>(f: F) -> T`).
+To avoid getting caught up in the default allocator and causing recursion or polluting the user allocation data with its own allocations, all of the profiler's own code that runs during memory profiling execution is passed directly to the untracked System allocator in a closure or function via a `with_sys_alloc()` function (`pub fn with_sys_alloc<T, F: FnOnce() -> T>(f: F) -> T`).
 
 ### Profile Output
 
@@ -1201,11 +1205,43 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 - `your_program-<yyyymmdd>-<hhmmss>.folded`: Time profiling data
 
-- `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Memory profiling data (if enabled)
+- `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Summary memory allocation data (if enabled)
+
+- `your_program-<yyyymmdd>-<hhmmss>-memory_detail.folded`: Detailed memory allocation data (if enabled in 4th argument of THAG_PROFILER with #[enable_profiling(runtime)])
+
+- `your_program-<yyyymmdd>-<hhmmss>-memory_detail_dealloc.folded`: Detailed memory deallocation data (if enabled in 4th argument of THAG_PROFILER with #[enable_profiling(runtime)])
 
 These files can be visualized with the included `thag-analyze` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
 
-`thag-analyze` is recommended because it has a built-in understanding of the units and the information encoded in the file naming, and can filter out unwelcome noise.
+`thag-analyze` is recommended because:
+
+ 1. Correct handling of units.
+
+ 2. File grouping and sorting for ease of selection and comparison.
+
+ 3. Built-in file comparisons using `inferno` differential flamegraphs.
+
+ 4. Filtering out of dead space in flamegraphs.
+
+    a. Irrelevant substacks
+
+    b. Dead parts of functions (as illustrated below)
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/memory_flamegraph_unfiltered.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/memory_flamegraph_unfiltered.png" alt="memory_flamegraph_unfiltered.png"/>
+  </object>
+  <figcaption>Unfiltered profile showing wasted space. <code>inferno</code> "yellow" color scheme (interactive). <a href="../assets/memory_flamegraph_unfiltered.svg">Open in browser</a></figcaption>
+</figure>
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/memory_flamegraph_filtered.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/memory_flamegraph_filtered.png" alt="memory_flamegraph_filtered.png"/>
+  </object>
+  <figcaption>The same .folded file, but with the dead section of `main` filtered out for a clearer view. <code>inferno</code> "aqua" color scheme (interactive). <a href="../assets/memory_flamegraph_filtered.svg">Open in browser</a></figcaption>
+</figure>
 
 ### Profiling Tools
 
@@ -1272,7 +1308,7 @@ Repeat for all modules you want to profile.
 Interactive analysis of profiling results:
 
 ```bash
-thag-analyze
+thag-analyze <dirname>
 ```
 ![Main menu](../assets/thag-analyze_main.png)
 
@@ -1284,19 +1320,11 @@ The analyzer provides:
 
 **2. Interactive Flamegraphs and Flamecharts**: Visual representation of performance data, both cumulative and detailed
 
-**3. Differential Analysis**: Compare before/after optimizations (cumulative) using `inferno` differential flamegraphs module.
+**3. Differential Analysis**: Before/after comparisons using `inferno` differential flamegraphs module.
 
 **4. Memory Allocation Tracking**: Identify memory usage patterns. This metric, when observed at the detail level, is useful for deciding on an allocation size threshold if you need to set one for profiling performance.
 
 ### Flamegraphs and Flamecharts
-
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../assets/flamechart_time_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../assets/flamechart_time_20250519-155436.png" alt="flamechart_time_20250519-155436.png"/>
-  </object>
-  <figcaption>Example profile in <code>inferno</code> "green" color scheme (interactive). Click on any bar to drill down. <a href="../assets/flamechart_time_20250519-155436.svg">Open in browser</a></figcaption>
-</figure>
 
 Cumulative flamegraphs and detailed flamecharts provide an intuitive interactive visualization of your profiling data. The wider a function appears, the more time (or allocated / deallocated memory) it represents relative to the total for the execution.
 
@@ -1313,21 +1341,45 @@ Flamegraphs and flamecharts are interactive SVGs that allow you to:
 `thag_profiler` uses the `inferno` crate to generate flamegraphs and flamecharts.
 The analysis tool allows you to choose the `inferno` color scheme to use and remembers your last choice for each type (time and memory).
 
- ### Flamegraphs vs. Flamecharts
+### Flamegraphs vs. Flamecharts
 
 `thag_profiler` can generate both flamegraphs and flamecharts:
 
-- **Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no deep significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
+#### Flamegraphs
 
-- **Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/flamegraph_time_20250302-080709.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/flamegraph_time_20250302-080709.png" alt="flamegraph_time_20250302-080709.png"/>
+  </object>
+  <figcaption>Example flamegraph in <code>inferno</code> "purple" color scheme (interactive). Click on any bar to drill down. <a href="../assets/flamegraph_time_20250302-080709.svg">Open in browser</a></figcaption>
+</figure>
+
+**Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
+
+#### Flamecharts
+
+<figure style="width: 100%; padding: 0; margin: 20px 0;">
+  <object type="image/svg+xml" data="../assets/flamechart_time_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
+    <!-- Fallback for browsers that don't support SVG in object -->
+    <img src="../assets/flamechart_time_20250519-155436.png" alt="flamechart_time_20250519-155436.png"/>
+  </object>
+  <figcaption>Example flamechart of same data in <code>inferno</code> "green" color scheme (interactive). Click on any bar to drill down. <a href="../assets/flamechart_time_20250519-155436.svg">Open in browser</a></figcaption>
+</figure>
+
+**Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:
+
   - Understanding the progression of your application's execution
+
   - Identifying patterns in memory allocation/deallocation
+
   - Seeing how different phases of your application behave
 
 Note that `inferno` will still aggregate consecutive entries with the same key into a single bar. So if a profiled function or section `f` is called repeatedly in a loop in a synchronous program, these executions will be shown as one. In an async environment, the consecutive entries for `f` may be arbitrarily interleaved with entries written by unrelated asynchronous profiles being dropped, e.g. `f,f,f,a,f,f,b,c,f`. This will cause `inferno` to group the consecutive entries for `f` in the arbitrary consecutive groups thus created. This does not affect the correctness of the attributions to `f`, but be aware that the distribution may well be arbitrarily misrepresented. We could consider working around this, e.g. with a naming trick, but in the async scenario when multiple instances of `f` are running concurrently, `thag_profiler` has no way to tell them apart anyway, and resorts to arbitrarily attributing the allocation to the most recently instantiated active one of them, falling back to the closest matching ancestor as a last resort.
 
-For time profiling, flamecharts show when each function executed relative to others. For regular memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that `thag_profiler` `Profile` object generated for that execution of the function is dropped and its `drop` method writes the function's accumulated allocations to the `-memory.folded` file.
-For detailed memory profiling, they are again more significant as they show when the allocations (for `-memory_detail.folded` and deallocations (for `-memory_detail_dealloc.folded`) actually occurred, as they are recorded immediately the allocation or deallocation requests are received and identified by the global allocator.
+For time profiling, flamecharts show when each function executed relative to others. For regular memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that the `Profile` object generated for that execution of the function is dropped, causing its `drop` method to write the function's accumulated allocations to the `-memory.folded` file.
+
+For detailed memory profiling, flamecharts are again more significant. They show when the allocations (for `-memory_detail.folded` and deallocations (for `-memory_detail_dealloc.folded`) actually occurred, as they are recorded immediately the allocation or deallocation requests are received and identified by the global allocator.
 
 Choose flamegraphs for a high-level view of resource usage and flamecharts for detailed analysis of execution flow.
 
@@ -1343,9 +1395,9 @@ Choose flamegraphs for a high-level view of resource usage and flamecharts for d
 
 **5. Verify changes**: Always verify automated changes with a diff tool
 
-**6. Don't run with option `both` for serious time profiling, as the memory profiling overhead will tend to distort the relative execution times of the functions and sections**
+**6. Don't run with option `both` for serious time profiling**: The memory profiling overhead will tend to distort the relative execution times of the functions and sections
 
-**7.Async Function Profiling**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
+**7. Section profiling in async functions**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
 
 ```rust
 async fn fetch_data() {
@@ -1359,7 +1411,7 @@ async fn fetch_data() {
 }
 ```
 
-This ensures the profile correctly associates the section with its async parent function in the profiling output. Without this parameter, the section will appear a second time in the flamegraph without its async identifier, as we have no way to link the two automatically.
+This ensures that the profile correctly associates the section with its async parent function in the profiling output. Without this parameter, the section will appear a second time in the flamegraph without its async identifier, as we have no way to link the two automatically.
 
 ## Troubleshooting
 
@@ -1383,9 +1435,7 @@ Ensure that bounded section profiles do not go out of scope before the `end!` ma
 
 **3. Test failures**: Profiled tests must use serialization
 
-**4. Performance impact**: Memory profiling adds significant overhead.
-
-Consider using SIZE_TRACKING_THRESHOLD=n as discussed above to ignore small allocations of integer `n` bytes or smaller.
+**4. Performance impact**: Memory profiling adds significant overhead. Consider using SIZE_TRACKING_THRESHOLD=n as discussed above to ignore small allocations of integer `n` bytes or smaller.
 
 **5. File redirect issues**: Never redirect output from the instrumentation tools back to the input file
 

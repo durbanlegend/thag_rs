@@ -4,9 +4,9 @@
     <!-- Fallback for browsers that don't support SVG in object -->
     <img src="../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png" alt="flamechart_hot_20250519-155436.png"/>
   </object>
-  <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="https://durbanlegend.github.io/thag_rs/assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
+  <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
 </figure>
 
 ---
 
-[![Preview](../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/assets/flamechart_hot_20250519-155436.svg)
+[![Preview](../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)

@@ -2,23 +2,15 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/flamechart_hot_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png" alt="flamechart_hot_20250519-155436.png"/>
-  </object>
-  <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
-</figure>
+[![Hot flamechart](../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)
+
+*Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.png" alt="flamegraph_mem_20250518-220050.png"/>
-  </object>
-  <figcaption>Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg)
+
+*Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail. Click on image for interactive version with clickable bars and search.*
 
 ---
 
@@ -1048,37 +1040,27 @@ thag_rs completed processing script syn_dump_syntax_profile_syn.rs in 4.76s
 donf@MacBook-Air thag_rs %
 ```
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/memory_flamechart_20250521-100000.svg" style="width: 100%; max-height: 1000px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/memory_flamechart_20250521-100000.png" alt="memory_flamechart_20250521-100000.png"/>
-  </object>
-  <figcaption>Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/memory_flamechart_20250521-100000.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)
+
+*Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions. Click on image for interactive version with clickable bars and search.*
 
 #### A project example
 
 Here is `thag` itself in REPL mode, profiled in the same way:
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/memory_flamegraph_detail_thag.svg" style="width: 100%; max-height: 1500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/memory_flamegraph_detail_thag.png" alt="memory_flamegraph_detail_thag.png"/>
-  </object>
-  <figcaption>Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/memory_flamegraph_detail_thag.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)
+
+*Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*
+
 
 ### Before-and-After (Differential) Profiling
 
 The `thag-analyze` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/flamegraph_mem_diff.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/flamegraph_mem_diff.png" alt="flamegraph_mem_diff.png"/>
-  </object>
-  <figcaption>Differential memory profile showing reduced allocations in blue (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/flamegraph_mem_diff.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/flamegraph_mem_diff.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.svg)
+
+*Differential memory profile showing reduced allocations in blue. Click on image for interactive version with clickable bars and search.*
+
 
 #### Memory Profiling Limitations and Considerations
 
@@ -1231,21 +1213,15 @@ These files can be visualized with the included `thag-analyze` or with tools lik
 
     b. Dead parts of functions (as illustrated below)
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/memory_flamegraph_unfiltered.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/memory_flamegraph_unfiltered.png" alt="memory_flamegraph_unfiltered.png"/>
-  </object>
-  <figcaption>Unfiltered profile showing wasted space. <code>inferno</code> "yellow" color scheme (interactive). <a href="../docs/thag_profiler/assets/memory_flamegraph_unfiltered.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/memory_flamegraph_unfiltered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.svg)
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/memory_flamegraph_filtered.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/memory_flamegraph_filtered.png" alt="memory_flamegraph_filtered.png"/>
-  </object>
-  <figcaption>The same .folded file, but with the dead section of `main` filtered out for a clearer view. <code>inferno</code> "aqua" color scheme (interactive). <a href="../docs/thag_profiler/assets/memory_flamegraph_filtered.svg">Open in browser</a></figcaption>
-</figure>
+*Unfiltered profile showing wasted space.  <code>inferno</code> "yellow" color scheme. Click on image for interactive version with clickable bars and search.*
+
+---
+
+[![Preview](../docs/thag_profiler/assets/memory_flamegraph_filtered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.svg)
+
+*The same .folded file, but with the dead section of `main` filtered out for a clearer view.  <code>inferno</code> "aqua" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ### Profiling Tools
 
@@ -1351,25 +1327,17 @@ The analysis tool allows you to choose the `inferno` color scheme to use and rem
 
 #### Flamegraphs
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/flamegraph_time_20250302-080709.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/flamegraph_time_20250302-080709.png" alt="flamegraph_time_20250302-080709.png"/>
-  </object>
-  <figcaption>Example flamegraph in <code>inferno</code> "purple" color scheme (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/flamegraph_time_20250302-080709.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/flamegraph_time_20250302-080709.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.svg)
+
+*Example flamegraph in <code>inferno</code> "purple" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
 
 #### Flamecharts
 
-<figure style="width: 100%; padding: 0; margin: 20px 0;">
-  <object type="image/svg+xml" data="../docs/thag_profiler/assets/flamechart_time_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
-    <!-- Fallback for browsers that don't support SVG in object -->
-    <img src="../docs/thag_profiler/assets/flamechart_time_20250519-155436.png" alt="flamechart_time_20250519-155436.png"/>
-  </object>
-  <figcaption>Example flamechart of same data in <code>inferno</code> "green" color scheme (interactive). Click on any bar to drill down. <a href="../docs/thag_profiler/assets/flamechart_time_20250519-155436.svg">Open in browser</a></figcaption>
-</figure>
+[![Preview](../docs/thag_profiler/assets/flamechart_time_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.svg)
+
+*Example flamechart of same data in <code>inferno</code> "green" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:
 

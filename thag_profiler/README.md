@@ -2,14 +2,12 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-[![Hot flamechart](../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)
-
+[![Hot flamechart](../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)<br>
 *Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
-[![Preview](../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg)
-
+[![Preview](../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg)<br>
 *Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail. Click on image for interactive version with clickable bars and search.*
 
 ---
@@ -1047,8 +1045,7 @@ donf@MacBook-Air thag_rs %
 
 Here is `thag` itself in REPL mode, profiled in the same way:
 
-[![Preview](../docs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)
-
+[![Preview](../docs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)<br>
 *Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*
 
 
@@ -1056,8 +1053,7 @@ Here is `thag` itself in REPL mode, profiled in the same way:
 
 The `thag-analyze` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
 
-[![Preview](../docs/thag_profiler/assets/flamegraph_mem_diff.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.svg)
-
+[![Preview](../docs/thag_profiler/assets/flamegraph_mem_diff.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.svg)<br>
 *Differential memory profile showing reduced allocations in blue. Click on image for interactive version with clickable bars and search.*
 
 
@@ -1148,7 +1144,9 @@ For memory profiling on Windows, your application requires:
   - Examples of using `thag_profiler` in async contexts may be found at:
 
       - `https://github.com/durbanlegend/thag_rs/demo/document_pipeline_profile.rs` (tokio)
+
       - `https://github.com/durbanlegend/thag_rs/demo/smol_chat_server_profile.rs` (smol)
+
       - `https://github.com/durbanlegend/thag_rs/demo/flume_async_profile.rs` (async-std)
 
   - For best results in async code, use explicit section profiling with `profile!(<section_name>, async)`
@@ -1212,14 +1210,12 @@ These files can be visualized with the included `thag-analyze` or with tools lik
 
     b. Dead parts of functions (as illustrated below)
 
-[![Preview](../docs/thag_profiler/assets/memory_flamegraph_unfiltered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.svg)
-
+[![Preview](../docs/thag_profiler/assets/memory_flamegraph_unfiltered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.svg)<br>
 *Unfiltered profile showing wasted space.  <code>inferno</code> "yellow" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
-[![Preview](../docs/thag_profiler/assets/memory_flamegraph_filtered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.svg)
-
+[![Preview](../docs/thag_profiler/assets/memory_flamegraph_filtered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.svg)<br>
 *The same .folded file, but with the dead section of `main` filtered out for a clearer view.  <code>inferno</code> "aqua" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ### Profiling Tools
@@ -1326,16 +1322,14 @@ The analysis tool allows you to choose the `inferno` color scheme to use and rem
 
 #### Flamegraphs
 
-[![Preview](../docs/thag_profiler/assets/flamegraph_time_20250302-080709.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.svg)
-
+[![Preview](../docs/thag_profiler/assets/flamegraph_time_20250302-080709.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.svg)<br>
 *Example flamegraph in <code>inferno</code> "purple" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
 
 #### Flamecharts
 
-[![Preview](../docs/thag_profiler/assets/flamechart_time_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.svg)
-
+[![Preview](../docs/thag_profiler/assets/flamechart_time_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.svg)<br>
 *Example flamechart of same data in <code>inferno</code> "green" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:

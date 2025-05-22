@@ -1195,9 +1195,11 @@ To avoid getting caught up in the default allocator and causing recursion or pol
 
 Profiles generate "folded" stack traces in the output directory by default:
 
-- `your_program-<yyyymmdd>-<hhmmss>.folded`: Time profiling data
+- `your_program-<yyyymmdd>-<hhmmss>.folded`: Time profiling data for graphs and stats reporting
 
-- `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Summary memory allocation data (if enabled)
+- `your_program-<yyyymmdd>-<hhmmss>-inclusive.folded`: Time profiling data for stats reporting
+
+- `your_program-<yyyymmdd>-<hhmmss>-memory.folded`: Summary memory allocation data
 
 - `your_program-<yyyymmdd>-<hhmmss>-memory_detail.folded`: Detailed memory allocation data (if enabled in 4th argument of THAG_PROFILER with #[enable_profiling(runtime)])
 
@@ -1300,13 +1302,15 @@ thag-analyze <dirname>
 
 The analyzer provides:
 
-**1. Statistical Summary**: Shows function calls, total time, average time
+**1. Statistical Reports**: Shows function calls, total time, average time, memory allocations by function, and memory allocation size analysis.
 
 **2. Interactive Flamegraphs and Flamecharts**: Visual representation of performance data, both cumulative and detailed
 
 **3. Differential Analysis**: Before/after comparisons using `inferno` differential flamegraphs module.
 
-**4. Memory Allocation Tracking**: Identify memory usage patterns. This metric, when observed at the detail level, is useful for deciding on an allocation size threshold if you need to set one for profiling performance.
+**4. Grouping, selection and ordering of output for analysis**: Groups files by program name and displays them with most-recent first.
+
+**5. Graph filtering**: Filter out irrelevant sections of flamegraphs and flamecharts for a better view.
 
 ### Flamegraphs and Flamecharts
 
@@ -1323,7 +1327,7 @@ Flamegraphs and flamecharts are interactive SVGs that allow you to:
 - Compare before/after optimizations
 
 `thag_profiler` uses the `inferno` crate to generate flamegraphs and flamecharts.
-The analysis tool allows you to choose the `inferno` color scheme to use and remembers your last choice for each type (time and memory).
+The analysis tool allows you to choose which `inferno` color scheme to use and remembers your last choice for each type (time and memory).
 
 ### Flamegraphs vs. Flamecharts
 
@@ -1349,13 +1353,15 @@ The analysis tool allows you to choose the `inferno` color scheme to use and rem
 
   - Seeing how different phases of your application behave
 
-Note that `inferno` will still aggregate consecutive entries with the same key into a single bar. So if a profiled function or section `f` is called repeatedly in a loop in a synchronous program, these executions will be shown as one. In an async environment, the consecutive entries for `f` may be arbitrarily interleaved with entries written by unrelated asynchronous profiles being dropped, e.g. `f,f,f,a,f,f,b,c,f`. This will cause `inferno` to group the consecutive entries for `f` in the arbitrary consecutive groups thus created. This does not affect the correctness of the attributions to `f`, but be aware that the distribution may well be arbitrarily misrepresented. We could consider working around this, e.g. with a naming trick, but in the async scenario when multiple instances of `f` are running concurrently, `thag_profiler` has no way to tell them apart anyway, and resorts to arbitrarily attributing the allocation to the most recently instantiated active one of them, falling back to the closest matching ancestor as a last resort.
+Note that `inferno` will still aggregate consecutive entries with the same key into a single bar. So if a profiled function or section `f` is called repeatedly in a loop in a synchronous program, these executions will be shown as one. In an async environment, the consecutive entries for `f` may be arbitrarily interleaved with entries written by unrelated asynchronous profiles being dropped, e.g. `f,f,f,a,f,f,b,c,f`. This will cause `inferno` to group the consecutive entries for `f` in the arbitrary consecutive groups thus created.
 
-For time profiling, flamecharts show when each function executed relative to others. For regular memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that the `Profile` object generated for that execution of the function is dropped, causing its `drop` method to write the function's accumulated allocations to the `-memory.folded` file.
+In other words, while `thag_profiler` should always attribute an allocation event to the right function or section, or in a worst case to an ancestor at least, be aware that in an async environment it may attribute the event to the wrong *execution* of that function. We could consider working around this, e.g. by giving each execution a unique subscript, but in the async scenario when multiple instances of `f` are running concurrently, `thag_profiler`'s memory tracker has no sure way to tell them apart anyway, and must resort to arbitrarily attributing the allocation to the most recently instantiated active one of them, falling back to the closest matching ancestor as a last resort.
+
+For time profiling, flamecharts show when each function executed relative to others. For summary memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that the `Profile` object generated for that execution of the function is dropped, causing its `drop` method to write the function's accumulated allocations to the `-memory.folded` file.
 
 For detailed memory profiling, flamecharts are again more significant. They show when the allocations (for `-memory_detail.folded` and deallocations (for `-memory_detail_dealloc.folded`) actually occurred, as they are recorded immediately the allocation or deallocation requests are received and identified by the global allocator.
 
-Choose flamegraphs for a high-level view of resource usage and flamecharts for detailed analysis of execution flow.
+In general, choose flamegraphs for a high-level view of resource usage and flamecharts for detailed analysis of execution flow.
 
 ## Best Practices
 

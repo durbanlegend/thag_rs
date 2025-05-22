@@ -14,7 +14,7 @@ An accurate lightweight cross-platform profiling library for Rust applications, 
 
 An independent offshoot of the `thag(_rs)` script runner and REPL.
 
-Lowers the barriers to profiling.
+Lowers the barriers to profiling:
 
  - quick and easy to set up and run
 
@@ -34,11 +34,11 @@ Basic profiling in a nutshell:
 
   Each of these items offers a range of options for any combination of time, memory summary and memory detail profiling.
 
-Two-stage memory size troubleshooting
+Practical memory troubleshooting support:
 
  - Detect memory hotspots with summary profiling
 
- - Break out hotspots in detail
+ - Then break out hotspots in detail ("Enhance!")
 
 Instant instrumentation:
 
@@ -88,15 +88,22 @@ Output analysis:
 
 Add `thag_profiler` to your `Cargo.toml`:
 
+For instrumentation only, no features are needed:
+
 ```toml
 [dependencies]
-# For instrumentation only (default)
 thag_profiler = "0.1.0"
+```
 
-# For time profiling only
+To activate time profiling alone, you need the `time_profiling` feature:
+
+```toml
 thag_profiler = { version = "0.1.0", features = ["time_profiling"] }
+```
 
-# OR for comprehensive profiling (memory and optionally time)
+For comprehensive profiling (memory and optionally time), you need the `full_profiling` feature:
+
+```toml
 thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
 ```
 
@@ -114,9 +121,11 @@ cargo install thag_profiler --no-default-features --features=analyze-tool --bin 
 
 ## Quick Start
 
-### 1. Instrument Your Code
+### 1. Instrument Your Code for Profiling
 
-#### a. Automatically instrument your code for profiling:
+You can instrument your code permanently and activate profiling via a feature only as and when needed.
+
+#### a. Automatically instrument your code:
 
 Replace `2021` below with your project's Rust edition:
 
@@ -238,7 +247,7 @@ fn complex_operation() {
 
 ### 2. Enable the Profiling Feature
 
-The desired `thag_profiler` feature - `time_profiling` or `full_profiling` - must be enabled at build time in one of two ways:
+In order to activate profiling, the desired `thag_profiler` feature - `time_profiling` or `full_profiling` - must be enabled at build time in one of two ways:
 
 1. Via a `features` key on the `thag_profiler` dependency in the manifest (Cargo.toml or `thag` toml block).
 
@@ -388,7 +397,7 @@ cargo run bank/mem_prof.rs --features thag_profiler/full_profiling
 required_features = ["full_profiling"]
 ```
 
-  Alternatively you can specify it in a toml block in your script, even in combination with dependency inference`:
+  Alternatively you can specify it in a toml block in your script, even in combination with dependency inference:
 
 ```toml
 /*[toml]
@@ -1415,9 +1424,14 @@ head your_executable-<yyyymmdd>-<hhmmss>.folded
 ### Terminology
 
 #### Ancestor and descendant functions
+
 An **ancestor function** of a function `f` means any function that may directly or indirectly call function `f` during execution.
 
 A **descendant function** of a function `f` means any function that may be called directly or indirectly by function `f` during execution.
+
+#### Manifest
+
+In a normal project, the manifest is the Cargo.toml file. In a Rust script to be run with `thag(_rs)`, the manifest is a "toml block" consisting of a `/**[toml!] ... */` comment embedded at the top of the script and containing entries in Cargo.toml format. `thag` will use the toml block contents in conjunction with any additional dependencies inferred from the Rust code to generate a Cargo.toml for the script.
 
 ## License
 

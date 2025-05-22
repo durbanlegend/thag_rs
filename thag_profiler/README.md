@@ -518,32 +518,11 @@ fn main() {
 }
 ```
 
-## Current
-
 **Format of the `THAG_PROFILER` environment variable to be used with `#[enable_profiling(runtime)]`**
 
-The `THAG_PROFILER` environment variable has 4 optional positional comma-separated arguments. If `#[enable_profiling(runtime)]` is
-specified but either the environment variable or its first argument is missing, no profiling will be done.
+The `THAG_PROFILER` environment variable has 4 optional positional comma-separated arguments.
 
-    THAG_PROFILER=[profile_type][,[output_dir][,[debug_level][,memory_detail]]]*.
-
-  *In other words, there are 4 parameters, all optional. Comma separators are required as placeholders but trailing commas may be dropped.
-
-    where `profile_type`           = `both`, `memory`, `time` or `none` (default: none)
-          `output_dir` (optional)  = output directory for `.folded` files. The default is the current working directory.
-          `debug_level` (optional) = `none` (default) - no debug log
-                                     `announce` - display debug log path in user output (`eprintln!()`)
-                                     `quiet` - log without displaying location.
-                        Debug log output will be written to `std::env::temp_dir()/thag_profiler`
-                        with the log name in the format `program_stem-yyyymmdd-HHmmss-debug.log`.
-          `detail` (optional, for `memory` or `both` only) = `true` for detailed allocation and deallocation `.folded` file generation,
-                                                             otherwise `false` (default).
-
-## ChatGPT option 1
-
-**Format of the `THAG_PROFILER` environment variable to be used with `#[enable_profiling(runtime)]`**
-
-The `THAG_PROFILER` environment variable has 4 optional positional comma-separated arguments. If `#[enable_profiling(runtime)]` is
+If `#[enable_profiling(runtime)]` is
 specified but either the environment variable or its first argument is missing, no profiling will be done.
 
 Format:
@@ -552,59 +531,14 @@ Format:
 
 *All parameters are optional. Commas are required as placeholders, but trailing commas may be dropped.*
 
-Parameters:
-
-- `profile_type` = `both`, `memory`, `time`, or `none` (default: `none`)
-- `output_dir` *(optional)* = Output directory for `.folded` files. Default is the current working directory.
-- `debug_level` *(optional)*:
-  - `none` (default): No debug log
-  - `announce`: Display debug log path in user output (`eprintln!`)
-  - `quiet`: Log silently
-  - Logs go to: `std::env::temp_dir()/thag_profiler/program_stem-yyyymmdd-HHmmss-debug.log`
-- `memory_detail` *(optional; for `memory` or `both` only)*:
-  - `true`: Generate detailed allocation/deallocation `.folded` files
-  - `false` (default): Minimal memory tracing
-
-## ChatGPT option 2
-
-**Format of the `THAG_PROFILER` environment variable to be used with `#[enable_profiling(runtime)]`**
-
-The `THAG_PROFILER` environment variable has 4 optional positional comma-separated arguments. If `#[enable_profiling(runtime)]` is
-specified but either the environment variable or its first argument is missing, no profiling will be done.
-
-THAG_PROFILER=[profile_type][,[output_dir][,[debug_level][,memory_detail]]]
-
-
-*All parameters are optional. Comma separators are required as placeholders but trailing commas may be dropped.*
-
-Where:
-
-- `profile_type`: `both`, `memory`, `time`, or `none` (default: `none`)
-- `output_dir` (optional): Output directory for `.folded` files. Default is current working directory.
-- `debug_level` (optional):
-  - `none` (default): no debug log
-  - `announce`: `eprintln!()` with path
-  - `quiet`: silent log
-  - Log goes to: `std::env::temp_dir()/thag_profiler/...`
-- `memory_detail` (optional): `true` for detail, `false` (default)
-
-## ChatGPT option 3
-
-**THAG_PROFILER Format (`#[enable_profiling(runtime)]`)**
-
-THAG_PROFILER=[profile_type][,[output_dir][,[debug_level][,memory_detail]]]
-
-
-| Parameter       | Description |
+| Parameter      | Description |
 |----------------|-------------|
 | `profile_type` | `both`, `memory`, `time`, `none` (default) |
 | `output_dir` *(optional)* | Output dir for `.folded` files. Default: current directory |
 | `debug_level` *(optional)* | `none` (default), `announce`, or `quiet`. Logs to `temp_dir()/thag_profiler/...` |
 | `memory_detail` *(optional)* | `true` = detailed `.folded`; `false` (default) = minimal |
 
----
-
-E.g.:
+Examples:
 
 ```bash
 THAG_PROFILER=both,$TMPDIR,announce,true cargo run

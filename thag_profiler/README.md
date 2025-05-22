@@ -1040,8 +1040,7 @@ thag_rs completed processing script syn_dump_syntax_profile_syn.rs in 4.76s
 donf@MacBook-Air thag_rs %
 ```
 
-[![Preview](../docs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)
-
+[![Preview](../docs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)<br>
 *Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions. Click on image for interactive version with clickable bars and search.*
 
 #### A project example

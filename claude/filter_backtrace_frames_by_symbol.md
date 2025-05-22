@@ -5435,9 +5435,9 @@ pub use thag_proc_macros::profile;  // This should be a no-op when feature is di
 macro_rules! profile_section {
     ($name:expr) => {{
         struct DummyProfileSection;
-        impl DummyProfileSection {
-            pub fn end(self) {}
-        }
+        impl DummyProfileSection {{
+            pub fn end(self) {{}}
+        }}
         DummyProfileSection
     }};
 }

@@ -4,7 +4,7 @@
     <!-- Fallback for browsers that don't support SVG in object -->
     <img src="../assets/flamechart_hot_20250519-155436.png" alt="flamechart_hot_20250519-155436.png"/>
   </object>
-  <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="https://durbanlegend.github.io/thag_rs>/assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
+  <figcaption>Time profile in <code>inferno</code> "hot" color scheme (interactive). Click on any bar to drill down. <a href="https://durbanlegend.github.io/thag_rs/assets/flamechart_hot_20250519-155436.svg">Open in browser</a></figcaption>
 </figure>
 
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
@@ -15,4 +15,4 @@
   <figcaption>Flamegraph (Click image for interactive version)</figcaption>
 </figure>
 
-[![Preview](../assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs>/assets/flamechart_hot_20250519-155436.svg)
+[![Preview](../assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/assets/flamechart_hot_20250519-155436.svg)

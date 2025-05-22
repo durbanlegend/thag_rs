@@ -2,10 +2,6 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-<div align="center">
-  ![TODO](./assets/flamechart_hot_20250519-155436.svg)
-</div>
-
 <figure style="width: 100%; padding: 0; margin: 20px 0;">
   <object type="image/svg+xml" data="../assets/flamechart_hot_20250519-155436.svg" style="width: 100%; max-height: 500px; display: block;">
     <!-- Fallback for browsers that don't support SVG in object -->

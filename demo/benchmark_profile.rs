@@ -10,6 +10,11 @@ debug = true
 strip = false
 */
 
+/// ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation`.
+/// See `demo/benchmark*.rs` for base code and `firestorm` implementation.
+///
+//# Purpose: For checking and comparison of profiling tools
+//# Categories: benchmark, profiling
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;

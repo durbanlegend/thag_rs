@@ -9,6 +9,11 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::time::Instant;
 
+/// ChagtGPT-generated profiling synchronous time profiling benchmark: base code.
+/// See `demo/benchmark*.rs` for `firestorm` and `thag_profiler` implementations.
+///
+//# Purpose: For checking and comparison of profiling tools
+//# Categories: benchmark, profiling
 const WORK_SIZE: usize = 500_000; // Increase this to scale up
 
 fn generate_logs() -> Vec<String> {

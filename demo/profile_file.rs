@@ -1,13 +1,13 @@
-/*[toml]
-[dependencies]
-prettyplease = "0.2.32"
-quote = "1.0.38"
-syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit-mut"] }
-*/
-
-/// Tries to profile a file via injection into its abstract syntax tree.
+/// An early profiling prototype that tries to profile a file with macros via injection
+/// into its `syn` abstract syntax tree. The drawback is that this technique discards
+/// valuable information like comments and formatting.
+///
+/// Note that the injected profiling code is no longer valid. this is a demonstration ony
+///
+/// E.g.: `thag demo/profile_file.rs < demo/hello_main.rs > $TMPDIR/hello_main_profiled.rs`
+///
 //# Purpose: Debugging
-//# Categories: AST, crates, profiling, technique, tools
+//# Categories: AST, crates, demo, learning, profiling, technique
 use quote::quote;
 use std::io::{self, Read};
 use syn::{self, visit_mut::VisitMut, Block, ImplItemFn, ItemFn, ItemImpl, Stmt, Type};

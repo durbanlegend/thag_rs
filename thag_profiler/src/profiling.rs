@@ -1401,7 +1401,7 @@ impl Profile {
         warn_once!(
             !is_profiling_enabled(),
             || {
-                eprintln!("Profiling is not enabled, returning None");
+                debug_log!("Profiling is not enabled, returning None");
             },
             return None
         );
@@ -1544,7 +1544,7 @@ impl Profile {
         warn_once!(
             !is_profiling_enabled(),
             || {
-                eprintln!("Profiling is not enabled, returning None");
+                debug_log!("Profiling is not enabled, returning None");
             },
             return None
         );

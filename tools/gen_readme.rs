@@ -5,18 +5,18 @@ heck = "0.5.0"
 inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive", "phf"] }
-# thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
+# thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_rs = "0.1.9"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
+# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog", "tui"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog", "tui"] }
 */
 
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
 /// local `README.md` files documenting those directories.
 ///
 /// Strategy and grunt work thanks to `ChatGPT`.
-//# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools scripts.
+//# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools/ scripts.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
 use std::{
@@ -35,6 +35,7 @@ file_navigator! {}
 
 #[derive(Debug)]
 struct ScriptMetadata {
+    relative_dir: PathBuf,
     script: String,
     purpose: Option<String>,
     crates: Vec<String>,
@@ -48,7 +49,7 @@ struct ScriptMetadata {
 category_enum! {}
 
 #[allow(clippy::too_many_lines)]
-fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
+fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadata> {
     // Lazy static variable from the categories defined in macro category_enum!.
     let valid_categories = lazy_static_var!(Vec<String>, { all_categories() });
     let mut content = fs::read_to_string(file_path).ok()?;
@@ -180,6 +181,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let description = metadata.get("description");
 
     Some(ScriptMetadata {
+        relative_dir: PathBuf::from(relative_dir),
         script,
         purpose: purpose.cloned(),
         crates,
@@ -206,7 +208,7 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
         // println!("Parsing {:#?}", path.display());
 
         if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            if let Some(metadata) = parse_metadata(path) {
+            if let Some(metadata) = parse_metadata(scripts_dir, path) {
                 all_metadata.push(metadata);
             }
         }
@@ -259,22 +261,13 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerp
         writeln!(file, "**Categories:** {}\n", metadata.categories.join(", ")).unwrap(); // Include categories
         writeln!(
             file,
-            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})",
-            metadata.script, metadata.script
+            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/{}/{})",
+            metadata.script,
+            metadata.relative_dir.display(),
+            metadata.script
         )
         .unwrap();
 
-        // let example = Example::new(
-        //     "https://github.com/durbanlegend/thag_rs/blob/develop/demo/fib_matrix.rs",
-        //     vec!["10".to_string()],
-        //     Some("Matrix-based Fibonacci calculation example".to_string()),
-        // );
-        // writeln!(
-        //     file,
-        //     "**Run this example:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/demo/{})\n",
-        //     metadata.script, metadata.script
-        // )
-        // .unwrap();
         let run_section = generate_run_section(metadata);
         writeln!(file, "{run_section}").unwrap();
         writeln!(file, "---\n").unwrap();
@@ -297,10 +290,16 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     md.push_str("\n**Run this example:**\n\n");
     md.push_str("```bash\n");
 
-    let base_url = "https://github.com/durbanlegend/thag_rs/blob/master/demo";
+    let base_url = "https://github.com/durbanlegend/thag_rs/blob/master";
+    let relative_dir = metadata.relative_dir.display();
     let command = metadata.sample_args.as_ref().map_or_else(
-        || format!("thag_url {}/{}", base_url, metadata.script),
-        |args| format!("thag_url {}/{} {}", base_url, metadata.script, args),
+        || format!("web_run {}/{}/{}", base_url, relative_dir, metadata.script),
+        |args| {
+            format!(
+                "web_run {}/{}/{} {}",
+                base_url, relative_dir, metadata.script, args
+            )
+        },
     );
 
     md.push_str(&command);
@@ -313,6 +312,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut navigator = FileNavigator::new();
     // ... use the navigator to select a directory
     let scripts_dir = select_directory(&mut navigator, false)?;
+
+    let current_dir = env::current_dir().expect("Failed to get current working directory");
+
+    // Convert to a relative path
+    let scripts_dir = pathdiff::diff_paths(&scripts_dir, &current_dir).unwrap_or_else(|| {
+        eprintln!("Could not compute relative path.");
+        std::process::exit(1);
+    });
 
     let output_path = scripts_dir.join("README.md");
     let boilerplate_path = Path::new("assets/boilerplate.md");

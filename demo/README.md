@@ -5,34 +5,39 @@ you get stuck.
 
 ### In its simplest form:
 
+  ````
+  thag <path to script>`
+  ````
 
-    thag <path to script>
+#### E.g.:
 
-###### E.g.:
-
-    thag demo/hello.rs
+  ````
+  thag demo/hello.rs
+  ````
 
 ### Passing options and arguments to a script:
 
 Use `--` to separate options and arguments meant for the script from those meant for `thag` itself.
 
-###### E.g.:
-
-demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
+E.g.: `demo/fib_dashu_snippet.rs` expects to be passed an integer _n_ and will compute the _nth_ number in the
 Fibonacci sequence.
 
-     thag demo/fib_dashu_snippet.rs -- 100
+  ````
+  thag demo/fib_dashu_snippet.rs -- 100
+  ````
 
 ### Full syntax:
 
+  ````
     thag [THAG OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
+  ````
 
-###### E.g.:
-
-`demo/clap_tut_builder_01.rs` is a published example from the `clap` crate.
+E.g.: `demo/clap_tut_builder_01.rs` is a published example from the `clap` crate.
 Its command-line signature looks like this:
 
+  ````
     clap_tut_builder_01 [OPTIONS] [name] [COMMAND]
+  ````
 
 The arguments in their short form are:
 
@@ -44,7 +49,9 @@ The arguments in their short form are:
 If we were to compile `clap_tut_builder_01` as an executable (`-x` option) and then run it, we might pass
 it some parameters like this:
 
-    clap_tut_builder_01 -dd -c my.cfg my_file test -l
+  ````
+  clap_tut_builder_01 -dd -c my.cfg my_file test -l
+  ````
 
 and get output like this:
 
@@ -55,20 +62,15 @@ and get output like this:
 
 Running the source from `thag` looks similar, we just replace `clap_tut_builder_01` by `thag demo/clap_tut_builder_01.rs --`:
 
-*thag demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
+    *thag demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
 
 Any parameters for `thag` should go before the `--`, e.g. we may choose use -qq to suppress `thag` messages:
 
-    thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
+    `thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l`
 
 which will give identical output to the above.
 
-
-
-##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
-
-### TODO: check:
-For detailed documentation on the `category_enum` procedural macro, see [category_enum](proc_macros/docs/category_enum.md).
+#### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
 
 ***
 ## Detailed script listing
@@ -302,6 +304,78 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/append_option_to_iter.rs
+```
+
+---
+
+### Script: benchmark.rs
+
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: base code.
+ See `demo/benchmark*.rs` for `firestorm` and `thag_profiler` implementations.
+
+
+**Purpose:** For checking and comparison of profiling tools
+
+**Crates:** `rand`, `rayon`, `regex`, `serde_json`, `sha2`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark.rs
+```
+
+---
+
+### Script: benchmark_firestorm.rs
+
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `firestorm` implementation`.
+ See `demo/benchmark*.rs` for base code and `thag_profiler` implementation.
+
+
+**Purpose:** For checking and comparison of profiling tools
+
+**Crates:** `firestorm`, `rand`, `rayon`, `regex`, `serde_json`, `sha2`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [benchmark_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_firestorm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_firestorm.rs
+```
+
+---
+
+### Script: benchmark_profile.rs
+
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation`.
+ See `demo/benchmark*.rs` for base code and `firestorm` implementation.
+
+
+**Purpose:** For checking and comparison of profiling tools
+
+**Crates:** `rand`, `rayon`, `regex`, `serde_json`, `sha2`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [benchmark_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_profile.rs
 ```
 
 ---
@@ -1554,6 +1628,80 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 ---
 
+### Script: document_pipeline_profile_sync.rs
+
+**Description:**  Test sync program instrumented version for `thag_profiler` testing. You can use this script and
+ `demo/document_pipeline_profile_sync_firestorm.rs` to compare `thag_profiler` with `firestorm`.
+ Use the `-t` flag to get timings.
+
+ Note that `thag_profiler`'s `Individual Sequential Execution Timeline` option is equivalent to `firestorm`'s `Time Axis`
+ option, while `thag_profiler`'s `Aggregated Execution Timeline` option is equivalent to `firestorm`'s `Merged` option.
+ `thag_profiler`'s `Show Statistics By Total Time` report is equivalent to  `firestorm`'s `Own Time` option.
+
+ E.g.:
+
+ `thag demo/document_pipeline_profile_sync.rs -t`
+
+
+ See all `demo/document_pipeline*.rs` and in particular `demo/document_pipeline_profile_sync_firestorm.rs`.
+
+
+**Purpose:** Test profiling using `thag_profiler`.
+
+**Crates:** `thag_profiler`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_sync.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync.rs
+```
+
+---
+
+### Script: document_pipeline_profile_sync_firestorm.rs
+
+**Description:**  `demo/document_pipeline_profile_sync.rs` to compare `firestorm` with `thag_profiler`.
+ Use the `-t` flag to get timings.
+
+ Note that `thag_profiler`'s `Individual Sequential Execution Timeline` option is equivalent to `firestorm`'s `Timeline`
+ option, while `thag_profiler`'s `Aggregated Execution Timeline` option is equivalent to `firestorm`'s `Merged` option.
+ `thag_profiler`'s `Show Statistics By Total Time` report is equivalent to  `firestorm`'s `Own Time` option.
+
+ Firestorm does an internal warm-up AFAICS, so runs twice, and therefore almost twice as long. So is it apples with apples?
+ Discuss.
+
+ E.g.:
+
+ `thag demo/document_pipeline_profile_sync_firestorm.rs -t`
+
+
+ See all `demo/document_pipeline*.rs` and in particular `demo/document_pipeline_profile_sync.rs`.
+
+
+**Purpose:** Test profiling using `firestorm`.
+
+**Crates:** `firestorm`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_sync_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync_firestorm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync_firestorm.rs
+```
+
+---
+
 ### Script: documented.rs
 
 **Description:**  Published example from the `documented` crate.
@@ -1701,7 +1849,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit_profile.r
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
 
-**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`
+**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`, `thag_profiler`
 
 **Type:** Program
 
@@ -1752,7 +1900,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
  - Inclusive time: total time spent in a function including all child calls
  - Exclusive time: time spent only in the function itself, excluding child calls
 
-**Purpose:** Prototype converting inclusive elapsed times to exclusive for flamegraphs to avoid double counting.
+**Purpose:** Prototype converting inclusive elapsed times to exclusive for flamegraphs in order to avoid double counting.
 
 **Type:** Program
 
@@ -3750,7 +3898,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Purpose:** Demo a simple example of adaptive message colouring, and the featured crates.
 
-**Crates:** `owo_colors`, `strum`, `termbg`
+**Crates:** `owo_colors`, `strum`, `termbg`, `thag_profiler`
 
 **Type:** Program
 
@@ -4316,7 +4464,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/process_result
 
 ### Script: profile_file.rs
 
-**Description:**  Tries to profile a file via injection into its abstract syntax tree.
+**Description:**  An early profiling prototype that tries to profile a file with macros via injection
+ into its `syn` abstract syntax tree. The drawback is that this technique discards
+ valuable information like comments and formatting.
+
+ Note that the injected profiling code is no longer valid. this is a demonstration ony
+
+ E.g.: `thag demo/profile_file.rs < demo/hello_main.rs > $TMPDIR/hello_main_profiled.rs`
+
 
 **Purpose:** Debugging
 
@@ -4324,7 +4479,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/process_result
 
 **Type:** Program
 
-**Categories:** AST, crates, profiling, technique, tools
+**Categories:** AST, crates, demo, learning, profiling, technique
 
 **Link:** [profile_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.rs)
 
@@ -6065,6 +6220,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs
+```
+
+---
+
+### Script: to_relative_path.rs
+
+**Description:**  ChatGPT 4.1-generated script expresses an absolute path relative to the current working directory.
+
+**Purpose:** Use `pathdiff` crate to compute a relative path releative to the CWD.
+
+**Crates:** `pathdiff`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [to_relative_path.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/to_relative_path.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/to_relative_path.rs
 ```
 
 ---

@@ -2,12 +2,12 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-[![Hot flamechart](../docs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)<br>
+[![Hot flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)<br>
 *Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
-[![Preview](../docs/thag_profiler/assets/flamegraph_mem_20250518-220050.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg)<br>
+[![Memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg)<br>
 *Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail. Click on image for interactive version with clickable bars and search.*
 
 ---
@@ -18,11 +18,11 @@ Lowers the barriers to profiling:
 
  - quick and easy to set up and run
 
- - clear and accurate flamegraphs
+ - clear and accurate interactive   flamegraphs
 
- - handles time and memory
+ - time and memory profiling
 
- - handles synchronous and asynchronous code.
+ - synchronous or asynchronous code.
 
 Basic profiling in a nutshell:
 
@@ -38,7 +38,7 @@ Practical memory troubleshooting support:
 
  - Detect memory hotspots with summary profiling
 
- - Then break out hotspots in detail ("Enhance!")
+ - Then break out hotspots in detail. ("Enhance!")
 
 Instant instrumentation:
 
@@ -823,6 +823,9 @@ end!(fetch_data);
 Unbounded memory profile (must NOT be manually ended):
 
 ```rust
+fn multi_part_function() {
+    // other code here
+    ...
     profile!(long_running_task, mem_summary, unbounded);
     // long running section to end of function
     ...
@@ -1048,14 +1051,14 @@ thag_rs completed processing script syn_dump_syntax_profile_syn.rs in 4.76s
 donf@MacBook-Air thag_rs %
 ```
 
-[![Preview](../docs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)<br>
+[![Global detailed memory flamechart: syn](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)<br>
 *Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions. Click on image for interactive version with clickable bars and search.*
 
 #### A project example
 
 Here is `thag` itself in REPL mode, profiled in the same way:
 
-[![Preview](../docs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)<br>
+[![Global detailed memory flamechart: thag](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)<br>
 *Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*
 
 
@@ -1063,7 +1066,7 @@ Here is `thag` itself in REPL mode, profiled in the same way:
 
 The `thag-analyze` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
 
-[![Preview](../docs/thag_profiler/assets/flamegraph_mem_diff.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.svg)<br>
+[![Differential memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.svg)<br>
 *Differential memory profile showing reduced allocations in blue. Click on image for interactive version with clickable bars and search.*
 
 
@@ -1222,12 +1225,14 @@ These files can be visualized with the included `thag-analyze` or with tools lik
 
     b. Dead parts of functions (as illustrated below)
 
-[![Preview](../docs/thag_profiler/assets/memory_flamegraph_unfiltered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.svg)<br>
+### Filtering Flamegraphs and Flamecharts
+
+[![Unfiltered memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_unfiltered.svg)<br>
 *Unfiltered profile showing wasted space.  <code>inferno</code> "yellow" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
-[![Preview](../docs/thag_profiler/assets/memory_flamegraph_filtered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.svg)<br>
+[![Filtered memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_filtered.svg)<br>
 *The same .folded file, but with the dead section of `main` filtered out for a clearer view.  <code>inferno</code> "aqua" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ### Profiling Tools
@@ -1239,7 +1244,7 @@ These files can be visualized with the included `thag-analyze` or with tools lik
 By using the tools, you agree to the license terms and take full responsibility for any consequences. Please take care to back up and protect your code before instrumenting or removing instrumentation.
 Take care not to overwrite your code when using the instrumenting tools unless you have a backup.
 
-[License reminder](../docs/thag_profiler/assets/dont_make_me_tap_the_sign.jpg)
+[License reminder](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/dont_make_me_tap_the_sign.jpg)
 
 
 #### Instrumentation: thag-instrument and thag-remove
@@ -1283,7 +1288,7 @@ you're using a custom edition.
     vimdiff demo/factorial_ibig_product.rs demo/factorial_ibig_product_profile.rs
     ```
 
-    ![vimdiff](../docs/thag_profiler/assets/vimdiff_profile_instrument.png)
+    ![vimdiff](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/vimdiff_profile_instrument.png)
 
     If you're profiling a project source file, at this point you'd want to replace the uninstrumented code with the instrumented version.
 
@@ -1297,7 +1302,7 @@ Interactive analysis of profiling results:
 ```bash
 thag-analyze <dirname>
 ```
-![Main menu](../docs/thag_profiler/assets/thag-analyze_main.png)
+![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag-analyze_main.png)
 
 ## Profile Analysis Features
 
@@ -1336,14 +1341,14 @@ The analysis tool allows you to choose which `inferno` color scheme to use and r
 
 #### Flamegraphs
 
-[![Preview](../docs/thag_profiler/assets/flamegraph_time_20250302-080709.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.svg)<br>
+[![Example flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_time_20250302-080709.svg)<br>
 *Example flamegraph in <code>inferno</code> "purple" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamegraphs** aggregate all executions of a function into one, making them ideal for identifying which functions consume the most resources overall. Use flamegraphs when you want to identify your application's hottest functions regardless of when they occur. Flamegraphs organize functions alphabetically, so unlike flamecharts there is no significance to the horizontal sequence of items - it is only the width and the parent-child relationships that are important.
 
 #### Flamecharts
 
-[![Preview](../docs/thag_profiler/assets/flamechart_time_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.svg)<br>
+[![Example flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_time_20250519-155436.svg)<br>
 *Example flamechart of same data in <code>inferno</code> "green" color scheme. Click on image for interactive version with clickable bars and search.*
 
 **Flamecharts** organize functions chronologically, showing the sequence of operations over time. They're particularly valuable for:

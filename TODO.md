@@ -19,17 +19,9 @@
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
-- [ ]  Remove writing of op (+/-) in write_memory_event_with_op, i.e. go back to write_memory_event. Not necessary.
-- [ ]  Worked example - e.g. syn as dependency - no need to do this with dependencies now that we have detailed profiling.
-- [ ]  Perhaps store async and ?method rather than desc_fn_name.
-- [ ]  Debug Esc at all places in thag-analyze.
-- [ ]  Consider dropping programmatic enable_profiling since only the attribute macro can run profiling code in the system allocator. Then get rid of demo/profile_file.rs as redundant.
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
-- [ ]  Rename task-aware allocator to tracking allocator.
-- [ ]  See what we can make redundant now that Profile summary memory allocation is simplified.
-- [ ]  Consider suspending Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  Remove headers from .folded files
+- [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
 - [ ]  Rename thag_profiler binaries to use underscore?
 
 # Alternative ways to run thag-instrument without installing:

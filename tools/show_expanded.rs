@@ -15,11 +15,8 @@ thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "
 /// of a user script. This tool provides a user-friendly interface to select the script to analyse and to view the expanded code,
 /// either on its own or side-by-side with the original script using a choice of diff tools.
 ///
-/// # Purpose
-/// Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
-///
-/// # Categories
-/// diagnosis, technique, thag_front_ends, tools
+//# Purpose: Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
+//# Categories: diagnosis, technique, thag_front_ends, tools
 use anyhow::{anyhow, Context, Result};
 use crossterm::terminal;
 use side_by_side_diff::create_side_by_side_diff;

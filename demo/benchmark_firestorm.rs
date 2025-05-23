@@ -3,6 +3,11 @@
 firestorm = { version="0.5", features=["enable_system_time"] }
 */
 
+/// ChagtGPT-generated profiling synchronous time profiling benchmark: `firestorm` implementation`.
+/// See `demo/benchmark*.rs` for base code and `thag_profiler` implementation.
+///
+//# Purpose: For checking and comparison of profiling tools
+//# Categories: benchmark, profiling
 use firestorm::profile_fn;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};

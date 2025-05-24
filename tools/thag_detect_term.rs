@@ -1,6 +1,5 @@
 /*[toml]
 [package]
-name = "term_detection_pack"
 features = ["simplelog"]
 version = "0.0.1"
 
@@ -40,7 +39,7 @@ CombinedLogger::init(vec![
     ),
 ])
 .unwrap();
-info!("term_detection_pack initialized simplelog");
+info!("Initialized simplelog");
 
 let timeout = std::time::Duration::from_millis(500);
 

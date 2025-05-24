@@ -114,6 +114,71 @@ path = "src/lib.rs"
 name = "thag"
 path = "src/bin/thag_rs.rs"
 
+# Add these [[bin]] sections after your existing thag binary
+[[bin]]
+name = "thag_ast"
+path = "tools/thag_ast.rs"
+
+[[bin]]
+name = "thag_cargo"
+path = "tools/thag_cargo.rs"
+
+[[bin]]
+name = "thag_clippy"
+path = "tools/thag_clippy.rs"
+
+[[bin]]
+name = "thag_convert_themes"
+path = "tools/thag_convert_themes.rs"
+
+[[bin]]
+name = "thag_detect_term"
+path = "tools/thag_detect_term.rs"
+
+[[bin]]
+name = "thag_expand"
+path = "tools/thag_expand.rs"
+
+[[bin]]
+name = "thag_find_demos"
+path = "tools/thag_find_demos.rs"
+
+[[bin]]
+name = "thag_gen_config"
+path = "tools/thag_gen_config.rs"
+
+[[bin]]
+name = "thag_gen_errors"
+path = "tools/thag_gen_errors.rs"
+
+[[bin]]
+name = "thag_gen_readme"
+path = "tools/thag_gen_readme.rs"
+
+[[bin]]
+name = "thag_get_demo"
+path = "tools/thag_get_demo.rs"
+
+[[bin]]
+name = "thag_legible"
+path = "tools/thag_legible.rs"
+
+[[bin]]
+name = "thag_markdown"
+path = "tools/thag_markdown.rs"
+
+[[bin]]
+name = "thag_show_themes"
+path = "tools/thag_show_themes.rs"
+
+[[bin]]
+name = "thag_to_rust_script"
+path = "tools/thag_to_rust_script.rs"
+
+[[bin]]
+name = "thag_url"
+path = "tools/thag_url.rs"
+
 [features]
 # Core and Logging Features
 core = ["error_handling", "log_impl"] # Foundation for all features

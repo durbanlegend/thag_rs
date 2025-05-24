@@ -156,9 +156,8 @@ pub fn get_home_dir_string() -> ThagResult<String> {
 /// This function will return an error if it can't resolve the user directories.
 #[profiled]
 pub fn get_home_dir() -> ThagResult<PathBuf> {
-    let user_dirs = directories::UserDirs::new().ok_or("Can't resolve user directories")?;
-    let home_dir = user_dirs.home_dir();
-    Ok(home_dir.to_owned())
+    let home_dir = dirs::home_dir().ok_or("Can't resolve user home directory")?;
+    Ok(home_dir)
 }
 
 /// Formats a given positive integer with thousands separators (commas).

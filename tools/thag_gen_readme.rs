@@ -21,6 +21,7 @@ thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, fea
 use heck::ToSnakeCase;
 use std::{
     collections::HashMap,
+    env,
     fs::{self, read_dir, File},
     io::Write as OtherWrite,
     path::{Path, PathBuf},
@@ -293,10 +294,10 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     let base_url = "https://github.com/durbanlegend/thag_rs/blob/master";
     let relative_dir = metadata.relative_dir.display();
     let command = metadata.sample_args.as_ref().map_or_else(
-        || format!("web_run {}/{}/{}", base_url, relative_dir, metadata.script),
+        || format!("thag_url {}/{}/{}", base_url, relative_dir, metadata.script),
         |args| {
             format!(
-                "web_run {}/{}/{} {}",
+                "thag_url {}/{}/{} {}",
                 base_url, relative_dir, metadata.script, args
             )
         },

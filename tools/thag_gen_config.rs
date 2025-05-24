@@ -15,7 +15,8 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 toml = "0.8"
 */
 
-/// Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
+/// Prompted config file builder for `thag`.
+///
 /// Makes a modified copy of a user-selected `config.toml` file. Some fields such as
 /// RGB values in decimal and hex are not prompted for as they are more easily entered
 /// using a text editor.

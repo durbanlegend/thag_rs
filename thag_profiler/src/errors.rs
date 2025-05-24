@@ -36,7 +36,7 @@ impl From<std::io::Error> for ProfileError {
     }
 }
 
-#[cfg(feature = "analyze-tool")]
+#[cfg(feature = "analyze_tool")]
 impl From<inquire::InquireError> for ProfileError {
     fn from(err: inquire::InquireError) -> Self {
         Self::Inquire(err.to_string())
@@ -49,7 +49,7 @@ pub type ProfileResult<T> = Result<T, ProfileError>;
 /// Test suite for the `errors.rs` module provides more comprehensive coverage:
 ///
 /// ```bash
-/// cargo test --features=analyze-tool,time_profiling errors -- --nocapture
+/// cargo test --features=analyze_tool,time_profiling errors -- --nocapture
 /// ```
 ///
 /// 1. **Display Implementation**: Tests the `Display` implementation for all error variants.
@@ -58,7 +58,7 @@ pub type ProfileResult<T> = Result<T, ProfileError>;
 /// 4. **Result Type**: Tests the `ProfileResult` type alias.
 /// 5. **Clone and Debug**: Tests the `Clone` and `Debug` trait implementations.
 /// 6. **Error Trait**: Tests the implementation of the standard library's `Error` trait.
-/// 7. **Inquire Error Conversion**: Tests the conversion from `inquire::InquireError` when the `analyze-tool` feature is enabled.
+/// 7. **Inquire Error Conversion**: Tests the conversion from `inquire::InquireError` when the `analyze_tool` feature is enabled.
 ///
 /// These tests are designed to be simple, independent units that don't rely on global state, so they can safely run concurrently.
 /// They cover all the key functionality of the `errors.rs` module, including the error variants, conversions, and trait implementations.
@@ -164,10 +164,10 @@ mod tests {
         takes_error(&error);
     }
 
-    #[cfg(feature = "analyze-tool")]
+    #[cfg(feature = "analyze_tool")]
     #[test]
     fn test_from_inquire_error() {
-        // This test depends on the analyze-tool feature being enabled
+        // This test depends on the analyze_tool feature being enabled
         use inquire::InquireError;
 
         let inquire_error = InquireError::NotTTY;

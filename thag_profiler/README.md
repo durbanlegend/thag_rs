@@ -42,13 +42,13 @@ Practical memory troubleshooting support:
 
 Instant instrumentation:
 
-- `thag-instrument` command to add the attributes to every function and method of a .rs file
+- `thag_instrument` command to add the attributes to every function and method of a .rs file
 
-- `thag-remove` command to remove them.
+- `thag_uninstrument` command to remove them.
 
 Output analysis:
 
-- `thag-analyze` to select, filter and display:
+- `thag_profile` to select, filter and display:
 
   - flamegraphs, flamecharts, comparisons
 
@@ -114,9 +114,9 @@ Install the profiling tools:
 cargo install thag_profiler --no-default-features --features=tools
 
 # Or install tools individually
-cargo install thag_profiler --no-default-features --features=instrument-tool --bin thag-instrument
-cargo install thag_profiler --no-default-features --features=instrument-tool --bin thag-remove
-cargo install thag_profiler --no-default-features --features=analyze-tool --bin thag-analyze
+cargo install thag_profiler --no-default-features --features=instrument_tool --bin thag_instrument
+cargo install thag_profiler --no-default-features --features=instrument_tool --bin thag_uninstrument
+cargo install thag_profiler --no-default-features --features=analyze_tool --bin thag_profile
 ```
 
 ## Quick Start
@@ -130,7 +130,7 @@ You can instrument your code permanently and activate profiling via a feature on
 Replace `2021` below with your project's Rust edition:
 
 ```bash
-thag-instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
+thag_instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
 ```
 
 * Ensure your original source is backed up or committed before instrumenting.
@@ -432,18 +432,18 @@ When you run your application with profiling enabled, `thag_profiler` will gener
 Use the included analysis tool to visualize the results:
 
 ```bash
-thag-analyze <output_dir>
+thag_profile <output_dir>
 ```
 
 By default:
 
 ```bash
-thag-analyze .
+thag_profile .
 ```
 
 This will open an interactive menu to explore your profiling data and display various flamegraphs, flamecharts or simple statistics.
 
-`thag-analyze` uses two extremely helpful crates:
+`thag_profile` uses two extremely helpful crates:
 
   - `inquire` to help you select output for analysis and optionally filter out any unwanted functions.
 
@@ -461,7 +461,7 @@ For memory profiles you can also choose to display memory statistics and an allo
 
 ### Manually Instrumenting Code for Profiling
 
-While the `thag-instrument` tool should very quickly provide good default instrumentation, this section describes how to fine-tune the profiling to suit your needs.
+While the `thag_instrument` tool should very quickly provide good default instrumentation, this section describes how to fine-tune the profiling to suit your needs.
 
 In addition to enabling the appropriate `thag_profiler` feature, you must enable profiling in your code by adding the `#[enable_profiling]` attribute to the top-level function to be profiled, which is preferably but not necessarily the `main` function.
 
@@ -915,7 +915,7 @@ Caution: this may be prohibitively slow, depending on your project, although the
 
 Here we try it on a `thag(_rs)` script that uses `syn` to print out an AST for a Rust source file. The code is available in the `thag_rs` project.
 
-The script is `demo/syn_dump_syntax_profile_syn.rs` and we run it with `thag` to print out the `syn` AST for another, simple script called demo/hello_main.rs. Below is the execution showing the AST printout, followed by the detailed memory allocation profile for the run from thag-analyze:
+The script is `demo/syn_dump_syntax_profile_syn.rs` and we run it with `thag` to print out the `syn` AST for another, simple script called demo/hello_main.rs. Below is the execution showing the AST printout, followed by the detailed memory allocation profile for the run from thag_profile:
 
 ```zsh
 donf@MacBook-Air thag_rs % THAG_PROFILER=both,,announce,true thag demo/syn_dump_syntax_profile_syn.rs --timings -- demo/hello_main.rs
@@ -1064,7 +1064,7 @@ Here is `thag` itself in REPL mode, profiled in the same way:
 
 ### Before-and-After (Differential) Profiling
 
-The `thag-analyze` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
+The `thag_profile` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
 
 [![Differential memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_diff.svg)<br>
 *Differential memory profile showing reduced allocations in blue. Click on image for interactive version with clickable bars and search.*
@@ -1076,7 +1076,7 @@ The `thag-analyze` tool supports `inferno`'s differential profiling feature for 
 
 - **Mitigating Performance Impact with Optional Tracking Threshold Size**: Detailed memory profiling in particular is obviously the slowest profiling option and may be prohibitively slow for some applications.
 
-  To mitigate this, `thag_profiler` provides a `SIZE_TRACKING_THRESHOLD=<bytes>` environment variable allowing you to track only individual allocations that exceed the specified threshold size (default value 0). This is obviously at the cost of accuracy, particularly if your app mainly does allocations below the threshold. To get a good idea of a suitable threshold value, you can first do _detailed_ memory profiling (cancel if you need to once you see significant detailed output being generated in the output directory). Then in the `thag-analyze` tool, select the detailed output, then select `Show Allocation Size Distribution`. This needs to be the detailed allocations `.folded` file, because the normal memory profiling shows aggregated values per function rather than the detailed values being tracked.
+  To mitigate this, `thag_profiler` provides a `SIZE_TRACKING_THRESHOLD=<bytes>` environment variable allowing you to track only individual allocations that exceed the specified threshold size (default value 0). This is obviously at the cost of accuracy, particularly if your app mainly does allocations below the threshold. To get a good idea of a suitable threshold value, you can first do _detailed_ memory profiling (cancel if you need to once you see significant detailed output being generated in the output directory). Then in the `thag_profile` tool, select the detailed output, then select `Show Allocation Size Distribution`. This needs to be the detailed allocations `.folded` file, because the normal memory profiling shows aggregated values per function rather than the detailed values being tracked.
 
   The catch-22 with overriding the default zero threshold is that if there are enough small allocations below the threshold to make a significant difference in profiling speed, those small allocations may themselves be worth investigating. So rather than screen them out, you may well get a better outcome by first identifying hotspots using summary profiling, and then doing very focused detailed profiling only on these, avoiding setting a threshold if at all possible.
 
@@ -1209,9 +1209,9 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 - `your_program-<yyyymmdd>-<hhmmss>-memory_detail_dealloc.folded`: Detailed memory deallocation data (if enabled in 4th argument of THAG_PROFILER with #[enable_profiling(runtime)])
 
-These files can be visualized with the included `thag-analyze` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
+These files can be visualized with the included `thag_profile` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
 
-`thag-analyze` is recommended because:
+`thag_profile` is recommended because:
 
  1. Correct handling of units.
 
@@ -1247,7 +1247,7 @@ Take care not to overwrite your code when using the instrumenting tools unless y
 [License reminder](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/dont_make_me_tap_the_sign.jpg)
 
 
-#### Instrumentation: thag-instrument and thag-remove
+#### Instrumentation: thag_instrument and thag_uninstrument
 
 Automatically add or remove profiling attributes to/from code, outputting to a different file.
 
@@ -1260,14 +1260,14 @@ Input is from `stdin` and output is to `stdout`.
 
 Replace `2021` with your project's Rust edition (2015, 2018, 2021, 2024) as required by the `rust_analyzer` crates:
 
-***thag-instrument:*** Add profiling attributes to code
+***thag_instrument:*** Add profiling attributes to code
 ```bash
-thag-instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
+thag_instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
 ```
 
-***thag-remove:*** Remove profiling attributes from code
+***thag_uninstrument:*** Remove profiling attributes from code
 ```bash
-thag-remove 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumented_file.rs
+thag_uninstrument 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumented_file.rs
 ```
 
 * Ensure your original source is safely backed up or committed before instrumenting.
@@ -1276,8 +1276,8 @@ thag-remove 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumen
 
 * Do NOT redirect the output back to your source file in the same command.
 
-* In the case of `thag-remove`, you may need to remove the relevant imports manually.
-`thag-remove` may leave the occasional trailing space and one or two blank lines at the very top of the file.
+* In the case of `thag_uninstrument`, you may need to remove the relevant imports manually.
+`thag_uninstrument` may leave the occasional trailing space and one or two blank lines at the very top of the file.
 
 * Compare the original and instrumented files to ensure correctness, especially if
 you're using a custom edition.
@@ -1295,14 +1295,14 @@ you're using a custom edition.
 
 Repeat for all modules you want to profile.
 
-#### Analysis: thag-analyze
+#### Analysis: thag_profile
 
 Interactive analysis of profiling results:
 
 ```bash
-thag-analyze <dirname>
+thag_profile <dirname>
 ```
-![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag-analyze_main.png)
+![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_main.png)
 
 ## Profile Analysis Features
 

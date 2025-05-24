@@ -19,8 +19,7 @@ you get stuck.
 
 Use `--` to separate options and arguments meant for the script from those meant for `thag` itself.
 
-E.g.: `demo/fib_dashu_snippet.rs` expects to be passed an integer _n_ and will compute the _nth_ number in the
-Fibonacci sequence.
+E.g.: `demo/fib_dashu_snippet.rs` expects to be passed an integer _n_ and will compute the _nth_ number in the Fibonacci sequence.
 
   ````
   thag demo/fib_dashu_snippet.rs -- 100

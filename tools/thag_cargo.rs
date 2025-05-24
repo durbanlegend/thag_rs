@@ -6,9 +6,10 @@ thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "
 # thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 */
 
-/// `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
-/// Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
-/// and invokes `thag` with the --cargo option to run it.
+/// `thag` prompted front-end command to run Cargo commands on scripts.
+///
+/// Prompts the user to select a Rust script and a cargo command to run against the
+/// script's generated project, and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, thag_front_ends, tools
 // use inquire::Confirm;

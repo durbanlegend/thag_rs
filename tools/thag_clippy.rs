@@ -4,9 +4,10 @@ atty = "0.2.14"
 colored = "2.1.0"
 inquire = "0.7.5"
 */
-/// `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
-/// Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
-/// and invokes `thag` with the --cargo option to run it.
+/// `thag` prompted front-end command to run `clippy` on scripts.
+///
+/// Prompts the user to select a Rust script and one or more Clippy lints to run against the
+/// script's generated project, and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 //# Categories: technique, thag_front_ends, tools
 use colored::Colorize;

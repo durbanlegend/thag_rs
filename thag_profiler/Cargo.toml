@@ -46,7 +46,7 @@ tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
 async-std = { version = "1.12.0", features = ["attributes"] }
 
 [features]
-analyze-tool = [
+analyze_tool = [
     "dirs",
     "inferno",
     "inquire",
@@ -57,20 +57,20 @@ analyze-tool = [
 default = []
 time_profiling = ["thag_proc_macros/time_profiling"]
 full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
-tools = ["analyze-tool", "instrument-tool"] # Enable all tools
-instrument-tool = ["ra_ap_syntax"] # Dependencies for instrument
+tools = ["analyze_tool", "instrument_tool"] # Enable all tools
+instrument_tool = ["ra_ap_syntax"] # Dependencies for instrument
 
 [[bin]]
-name = "thag-analyze"
-path = "src/bin/analyze.rs"
-required-features = ["analyze-tool"]
+name = "thag_profile"
+path = "src/bin/thag_profile.rs"
+required-features = ["analyze_tool"]
 
 [[bin]]
-name = "thag-instrument"
-path = "src/bin/instrument.rs"
-required-features = ["instrument-tool"]
+name = "thag_instrument"
+path = "src/bin/thag_instrument.rs"
+required-features = ["instrument_tool"]
 
 [[bin]]
-name = "thag-remove"
-path = "src/bin/remove.rs"
-required-features = ["instrument-tool"]
+name = "thag_uninstrument"
+path = "src/bin/thag_uninstrument.rs"
+required-features = ["instrument_tool"]

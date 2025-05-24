@@ -31,7 +31,7 @@ use std::io::Read;
 /// E.g.
 ///
 /// ```
-/// thag-instrument 2021 < demo/colors.rs > demo/colors_instrumented.rs
+/// thag_instrument 2021 < demo/colors.rs > demo/colors_instrumented.rs
 /// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -215,7 +215,7 @@ fn read_stdin() -> std::io::Result<String> {
     Ok(buffer)
 }
 
-// Run with `cargo test --features="instrument-tool" --bin thag-instrument`
+// Run with `cargo test --features="instrument_tool" --bin thag_instrument`
 #[cfg(test)]
 mod tests {
     use super::*;

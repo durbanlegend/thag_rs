@@ -53,7 +53,7 @@ fn validate_rust_content(content: &str) -> Result<(), UrlError> {
         return Ok(());
     }
 
-    eprintln!("content={content}");
+    // eprintln!("content={content}");
     // If parsing failed, format the content for better error display
     let temp_file = tempfile::NamedTempFile::new()
         .map_err(|e| UrlError::ParseError(format!("Failed to create temp file: {e}")))?;
@@ -210,7 +210,7 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = std::env::args().collect();
 
-    // Need at least URL and optionally -s/-d and additional flags
+    // Need at least URL and optionally additional flags
     if args.len() < 2 {
         print_usage(&args[0]);
         std::process::exit(1);
@@ -220,20 +220,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Parse arguments
     let mut iter = args.iter().skip(1); // skip program name
-    let mut thag_mode = String::from("-s"); // default
     let mut url = String::new();
     let mut additional_args = Vec::new();
     let mut found_separator = false;
 
     for arg in iter.by_ref() {
         match arg.as_str() {
-            "-s" | "-d" => {
-                if url.is_empty() {
-                    thag_mode = arg.to_string();
-                } else {
-                    additional_args.push(arg.to_string());
-                }
-            }
             "--" => {
                 found_separator = true;
                 additional_args.push("--".to_string());
@@ -263,23 +255,29 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match fetch_and_validate(&raw_url) {
         Ok(content) => {
-            // Create the Command with piped stdin
-            let mut child = Command::new("thag")
-                .arg(thag_mode)
-                .args(&additional_args)
-                .stdin(std::process::Stdio::piped())
-                .spawn()?;
+            // Create a temporary file to save the script
+            let temp_dir = std::env::temp_dir();
+            let temp_file_path = temp_dir.join(format!("web_script_{}.rs", std::process::id()));
 
+            // Write content to temporary file
+            std::fs::write(&temp_file_path, &content)?;
+
+            eprintln!("Created temporary script at: {:?}", temp_file_path);
             eprintln!("additional_args={additional_args:#?}");
-            //
-            // Write to stdin
-            if let Some(mut stdin) = child.stdin.take() {
-                stdin.write_all(content.as_bytes())?;
-                // stdin is dropped here, closing the pipe
-            }
+
+            // Run thag with the temporary file instead of using stdin
+            let mut child = Command::new("thag")
+                .args(&additional_args)
+                .arg(&temp_file_path)
+                .spawn()?;
 
             // Wait for thag to complete
             let status = child.wait()?;
+
+            // Clean up the temporary file
+            if let Err(e) = std::fs::remove_file(&temp_file_path) {
+                eprintln!("Warning: Could not remove temporary file: {}", e);
+            }
 
             if !status.success() {
                 std::process::exit(status.code().unwrap_or(1));
@@ -304,7 +302,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn print_usage(program: &str) {
-    eprintln!("Usage: {program} [-s|-d] <url> [-- <additional_thag_args>]");
+    eprintln!("Usage: {program} <url> [additional_thag_args] [-- <script_args>]");
     eprintln!("Supported sources:");
     eprintln!("  - GitHub (github.com)");
     eprintln!("  - GitLab (gitlab.com)");
@@ -312,8 +310,11 @@ fn print_usage(program: &str) {
     eprintln!("  - Rust Playground (play.rust-lang.org)");
     eprintln!("  - Raw URLs (direct links to raw content)");
     eprintln!("\nExamples:");
-    eprintln!("  {program} -d https://github.com/user/repo/blob/master/script.rs -- -m");
+    eprintln!("  {program} https://github.com/user/repo/blob/master/script.rs -- -m");
     eprintln!("  {program} https://github.com/user/repo/blob/master/script.rs -v");
+    eprintln!(
+        "  {program} https://github.com/user/repo/blob/master/script.rs -- script_arg1 script_arg2"
+    );
 }
 
 #[cfg(test)]

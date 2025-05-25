@@ -737,8 +737,8 @@ pub fn record_dealloc(address: usize, size: usize) {
             let (stack, _) = stack_and_size;
 
             let legend = if stack.is_empty() {
-                debug_log!("Empty cleaned_stack and stack for backtrace={current_backtrace:#?}");
-                format!("[Dealloc out of `{root_module}` scope] {size}")
+                // debug_log!("Empty cleaned_stack and stack for backtrace={current_backtrace:#?}");
+                format!("[Dealloc out of `{root_module}` scope]")
             } else {
                 stack.join(";")
             };

@@ -1082,9 +1082,7 @@ The `thag_profile` tool supports `inferno`'s differential profiling feature for 
  - Intermediate allocations during Vec/HashMap growth and  reallocation
  - Function-level aggregation of all allocations within profiled  scopes
 
- This comprehensive approach provides a more accurate picture of  actual memory usage that your program experiences in production,  including overhead that other tools might filter out.
-
- Benchmarking against `dhat` produces allocation totals that exactly match those of `dhat`.
+ This comprehensive approach provides a more accurate picture of actual memory usage that your program experiences in production, including overhead that other tools might filter out.
 
 - **Mitigating Performance Impact with Optional Tracking Threshold Size**: Detailed memory profiling in particular is obviously the slowest profiling option and may be prohibitively slow for some applications.
 

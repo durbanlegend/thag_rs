@@ -64,7 +64,7 @@ Output analysis:
 
 - **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code so that the latter can't distort the measurements. Allocations may be summarized by function or section, or broken out in detail where desired.
 
-- **One-line full detailed transitive memory profiling**: Track all memory allocations and deallocations for your project and dependencies with a single `#[enable_profiling(runtime)` and the `THAG_PROFILER` environment variable.
+- **One-line full detailed transitive memory profiling**: Track all memory allocations and deallocations for your project and dependencies with a single `#[enable_profiling(runtime)]` and the `THAG_PROFILER` environment variable.
 
 - **Function and section profiling**: Profiling can be applied to any number of specific non-overlapping code sections, down to single instructions.
 
@@ -311,9 +311,9 @@ cargo run --features thag_profiler/time_profiling
 
 #### In scripts run with the `thag` script runner
 
-  This section applies only to the `thag_rs` script runner, aka [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not already a `thag` user.
+  This section applies only to the `thag_rs` script runner, aka `thag`(../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not already a `thag` user.
 
-  Profiled scripts must have a `main` function to be annotated with `#[enable_profiling`, in other words snippets are not supported.
+  Profiled scripts must have a `main` function to be annotated with `#[enable_profiling]`, in other words snippets are not supported.
 
   When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above, except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only dependency inference and configuration:
 
@@ -413,7 +413,7 @@ default = ["thag_profiler/full_profiling"]
 
 Ensure that the `thag_profiler` feature you need is enabled by one of the methods discussed above. If using `cargo run` from the command line, and the desired feature is not specified by the manifest, you will need to do so via the `--features` argument of `cargo run`.
 
-If your app is annotated with `#[enable_profiling(runtime)`, specify the environment variable `THAG_PROFILER=[profile_type][,[output_dir][,[debug_level][,memory_detail]]]`*.
+If your app is annotated with `#[enable_profiling(runtime)]`, specify the environment variable `THAG_PROFILER=[profile_type][,[output_dir][,[debug_level][,memory_detail]]]`*.
 
 *In other words, there are 4 parameters, all optional. Comma separators are required as placeholders but trailing commas may be dropped.
 
@@ -465,7 +465,7 @@ While the `thag_instrument` tool should very quickly provide good default instru
 
 In addition to enabling the appropriate `thag_profiler` feature, you must enable profiling in your code by adding the `#[enable_profiling]` attribute to the top-level function to be profiled, which is preferably but not necessarily the `main` function.
 
-If using this attribute to annotate any function other than `main`, you need to take extra care. Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case. The same applies to annotating an async function or a descendant of an async function with `#[enable_profiling]`, if this could cause overlap in their execution. It is safer to do the conventional thing and annotate the function in question with `#[profiled` and the `main` function with `#[enable_profiling]`.
+If using this attribute to annotate any function other than `main`, you need to take extra care. Annotating more than one function with `#[enable_profiling]` is not supported and behavior is undefined in such a case. The same applies to annotating an async function or a descendant of an async function with `#[enable_profiling]`, if this could cause overlap in their execution. It is safer to do the conventional thing and annotate the function in question with `#[profiled]` and the `main` function with `#[enable_profiling]`.
 
 **NB:** The `#[enable_profiling]` attribute also profiles the function it annotates, so the `#[profiled]` attribute need not and should not be specified on the same function.
 

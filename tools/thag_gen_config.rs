@@ -199,7 +199,7 @@ fn select_config_file(
         .prompt()?;
 
         if let NavigationResult::SelectionComplete(path) = navigator.navigate(&selection, true) {
-            if path.extension().map_or(false, |ext| ext == "toml") {
+            if path.extension().is_some_and(|ext| ext == "toml") {
                 return Ok(path);
             }
         }

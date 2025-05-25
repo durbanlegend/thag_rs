@@ -76,13 +76,13 @@ fn detect_environment() -> TerminalEnv {
         TerminalEnv::Wayland
     } else if env::var("DISPLAY").is_ok() {
         TerminalEnv::Xorg
-    } else if env::var("TERM_PROGRAM").map_or(false, |t| t == "Apple_Terminal") {
+    } else if env::var("TERM_PROGRAM").is_ok_and(|t| t == "Apple_Terminal") {
         TerminalEnv::AppleTerminal
-    } else if env::var("TERM_PROGRAM").map_or(false, |t| t == "iTerm.app") {
+    } else if env::var("TERM_PROGRAM").is_ok_and(|t| t == "iTerm.app") {
         TerminalEnv::ITerm
     } else if env::var("TMUX").is_ok() {
         TerminalEnv::Tmux
-    } else if env::var("TERM").map_or(false, |t| t == "linux") {
+    } else if env::var("TERM").is_ok_and(|t| t == "linux") {
         TerminalEnv::Pure
     } else {
         TerminalEnv::Unknown

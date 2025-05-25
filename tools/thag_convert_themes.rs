@@ -89,7 +89,7 @@ struct BasePalette {
 }
 
 impl BaseTheme {
-    fn is_base24(&self) -> bool {
+    const fn is_base24(&self) -> bool {
         self.palette.base10.is_some()
     }
 
@@ -216,7 +216,7 @@ impl ToThemeOutput for Theme {
         let backgrounds = self.backgrounds.clone();
         let bg_rgbs = backgrounds
             .iter()
-            .map(|hex| hex_to_rgb(&hex).unwrap())
+            .map(|hex| hex_to_rgb(hex).unwrap())
             .collect::<Vec<(u8, u8, u8)>>();
         ThemeOutput {
             name: format!(
@@ -265,8 +265,15 @@ fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
         style_attrs.push("underline".to_string());
     }
 
-    let color = if let Some(color_info) = &style.foreground {
-        match &color_info.value {
+    let color = style.foreground.as_ref().map_or(
+        if use_256 {
+            ColorOutput::Color256 { color256: 7 }
+        } else {
+            ColorOutput::TrueColor {
+                rgb: [192, 192, 192],
+            }
+        },
+        |color_info| match &color_info.value {
             ColorValue::TrueColor { rgb } => {
                 if use_256 {
                     ColorOutput::Color256 {
@@ -283,17 +290,8 @@ fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
                 // Shouldn't happen for these themes, but handle gracefully
                 ColorOutput::Color256 { color256: 7 } // Default to light gray
             }
-        }
-    } else {
-        // Shouldn't happen, but handle gracefully
-        if use_256 {
-            ColorOutput::Color256 { color256: 7 }
-        } else {
-            ColorOutput::TrueColor {
-                rgb: [192, 192, 192],
-            }
-        }
-    };
+        },
+    );
 
     StyleOutput {
         color,
@@ -339,7 +337,7 @@ fn hex_to_rgb(hex: &str) -> Result<(u8, u8, u8), Box<dyn std::error::Error>> {
 
 fn detect_background_luma(hex: &str) -> Result<TermBgLuma, Box<dyn std::error::Error>> {
     let (r, g, b) = hex_to_rgb(hex)?;
-    let luma = (r as f32 * 0.299 + g as f32 * 0.587 + b as f32 * 0.114) / 255.0;
+    let luma = (r as f32 * 0.299 + g as f32 * 0.587 + f32::from(b) * 0.114) / 255.0;
     Ok(if luma > 0.5 {
         TermBgLuma::Light
     } else {
@@ -370,7 +368,7 @@ fn convert_directory(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
             if cli.verbose {
-                println!("Converting {:?}", path);
+                println!("Converting {path:?}");
             }
             convert_file(&path, cli)?;
         }
@@ -401,12 +399,12 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
         if is_base24 { "" } else { "_base16" }
     ));
     if !cli.force && true_color_path.exists() {
-        eprintln!("Skipping existing file: {:?}", true_color_path);
+        eprintln!("Skipping existing file: {true_color_path:?}");
     } else {
         let theme_toml = toml::to_string_pretty(&thag_theme.to_output(false, is_base24))?; // Changed from theme to thag_theme
         fs::write(&true_color_path, theme_toml)?;
         if cli.verbose {
-            println!("Created {:?}", true_color_path);
+            println!("Created {true_color_path:?}");
         }
     }
 
@@ -422,12 +420,12 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
             }
         ));
         if !cli.force && color256_path.exists() {
-            eprintln!("Skipping existing file: {:?}", color256_path);
+            eprintln!("Skipping existing file: {color256_path:?}");
         } else {
             let theme_256_toml = toml::to_string_pretty(&thag_theme.to_output(true, is_base24))?; // Changed from theme to thag_theme
             fs::write(&color256_path, theme_256_toml)?;
             if cli.verbose {
-                println!("Created {:?}", color256_path);
+                println!("Created {color256_path:?}");
             }
         }
     }

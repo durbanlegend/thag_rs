@@ -445,8 +445,7 @@ fn generate_html_report(
     combination_op: &str,
     metadata_list: &[ScriptMetadata],
 ) -> String {
-    let mut html = String::from(
-        r#"
+    let mut html = r#"
         <html>
         <head>
             <title>Demo Scripts</title>
@@ -495,8 +494,7 @@ fn generate_html_report(
      </head>
      <body>
  "#
-        .to_string(),
-    );
+    .to_string();
 
     html.push_str("<h1>thag_rs Demo Scripts</h1>");
     html.push_str(&format!(
@@ -571,9 +569,9 @@ fn output_markdown(
         "## Matching categories {} crates:\n\n",
         combination_op
     ));
-    md.push_str(&format!("**categories:** {}\n\n", categories_desc));
-    md.push_str(&format!("{}\n\n", combination_op));
-    md.push_str(&format!("**crates:**     {}\n\n", crates_desc));
+    md.push_str(&format!("**categories:** {categories_desc}\n\n"));
+    md.push_str(&format!("{combination_op}\n\n"));
+    md.push_str(&format!("**crates:**     {crates_desc}\n\n"));
 
     for meta in metadata_list {
         md.push_str(&format!("## {}\n\n", meta.script));
@@ -683,8 +681,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut categories = vec!["missing".to_string()]; // Default to "general"
 
     for line in content.clone().lines() {
-        if line.starts_with("//#") {
-            let parts: Vec<&str> = line[3..].splitn(2, ':').collect();
+        if let Some(stripped) = line.strip_prefix("//#") {
+            let parts: Vec<&str> = stripped.splitn(2, ':').collect();
             if parts.len() == 2 {
                 let keyword = parts[0].trim();
                 let value = parts[1].trim().to_string();
@@ -724,23 +722,23 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 
     let maybe_syntax_tree = to_ast(file_path_str, &content);
 
-    let (crates, _main_methods) = match maybe_syntax_tree {
-        Some(ref ast) => {
+    let (crates, _main_methods) = maybe_syntax_tree.as_ref().map_or_else(
+        || {
+            let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+            (
+                ast::infer_deps_from_source(&content),
+                re.find_iter(&content).count(),
+            )
+        },
+        |ast| {
             let crates_finder = ast::find_crates(&ast);
             let metadata_finder = ast::find_metadata(&ast);
             (
                 ast::infer_deps_from_ast(&crates_finder, &metadata_finder),
                 metadata_finder.main_count,
             )
-        }
-        None => {
-            let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
-            (
-                ast::infer_deps_from_source(&content),
-                re.find_iter(&content).count(),
-            )
-        }
-    };
+        },
+    );
 
     let script = format!(
         "{}",

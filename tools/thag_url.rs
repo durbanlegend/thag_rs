@@ -277,7 +277,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // Clean up the temporary file
             if let Err(e) = std::fs::remove_file(&temp_file_path) {
-                eprintln!("Warning: Could not remove temporary file: {}", e);
+                eprintln!("Warning: Could not remove temporary file: {e}");
             }
 
             if !status.success() {

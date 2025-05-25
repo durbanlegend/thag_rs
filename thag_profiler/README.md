@@ -905,6 +905,8 @@ Time profiling measures the wall-clock time between profile creation and destruc
 
 Memory profiling (available via the `full_profiling` feature) accurately tracks every heap allocation (and for global detailed profiling, deallocation) requested by profiled user code, including reallocations, using a global memory allocator in conjunction with attribute macros to exclude `thag_profiler`'s own code from interfering with the analysis. It uses the official Rust `backtrace` crate to identify the source of the allocation or deallocation request.
 
+**Note**: `thag_profiler` provides comprehensive memory tracking that includes allocator metadata, alignment overhead, and intermediate allocations during container growth. This may result in higher allocation counts compared to tools that only track payload data, but gives you the complete picture of your program's actual memory footprint.
+
 ### One-Line Exhaustive Memory Profiling
 
 A handy trick is that simply by annotating the `main` function of your project with `#[enable_profiling(runtime)]` and running it with `THAG_PROFILER=memory,,,true` you can get a fully detailed memory profile showing allocations and one showing deallocations. This also applies transitively to all the dependencies of your project!
@@ -1073,6 +1075,16 @@ The `thag_profile` tool supports `inferno`'s differential profiling feature for 
 #### Memory Profiling Limitations and Considerations
 
 - **Performance Impact**: `thag_profiler` memory profiling introduces significant overhead compared to time profiling. Expect your application to run appreciably more slowly when memory profiling is enabled. It's strongly recommended to use memory profiling selectively for occasional health checks and targeted investigations rather than leave it enabled indefinitely.
+
+- **Comparison with Other Memory Profilers**: `thag_profiler` aims to provide comprehensive memory tracking and may show higher allocation counts than some other profiling tools because it captures:
+
+ - Allocator metadata and alignment overhead
+ - Intermediate allocations during Vec/HashMap growth and  reallocation
+ - Function-level aggregation of all allocations within profiled  scopes
+
+ This comprehensive approach provides a more accurate picture of  actual memory usage that your program experiences in production,  including overhead that other tools might filter out.
+
+ Benchmarking against `dhat` produces allocation totals that exactly match those of `dhat`.
 
 - **Mitigating Performance Impact with Optional Tracking Threshold Size**: Detailed memory profiling in particular is obviously the slowest profiling option and may be prohibitively slow for some applications.
 
@@ -1384,6 +1396,8 @@ In general, choose flamegraphs for a high-level view of resource usage and flame
 **6. Don't run with option `both` for serious time profiling**: The memory profiling overhead will tend to distort the relative execution times of the functions and sections
 
 **7. Section profiling in async functions**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
+
+**8. Expect comprehensive memory results**: `thag_profiler` includes allocator overhead and intermediate allocations, providing a complete view of memory usage.
 
 ```rust
 async fn fetch_data() {

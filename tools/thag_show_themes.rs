@@ -1,5 +1,4 @@
 use std::env;
-use std::error::Error;
 
 /// AI-generated prototype tool to demonstrate themes and help implement their background
 /// colouring on terminal emulators.
@@ -202,6 +201,7 @@ fn print_styled(theme: &str, style: &str, text: &str) {
     let theme_key = theme.to_lowercase().replace(' ', "-");
     // eprintln!("theme_key={theme_key}, style={style}");
 
+    #[allow(clippy::match_same_arms)]
     let style_code = match (theme_key.as_str(), style) {
         // Dracula theme styles
         ("dracula", "heading1") => "\x1b[1;38;5;212m", // Bold Pink
@@ -251,7 +251,7 @@ fn print_styled(theme: &str, style: &str, text: &str) {
         _ => panic!("Not found"),
     };
     // eprintln!("style_code={style_code}, text={text}");
-    println!("{}{}\x1b[0m", style_code, text);
+    println!("{style_code}{text}\x1b[0m");
 }
 
 fn print_theme_info(theme: &Theme) {
@@ -265,7 +265,7 @@ fn print_theme_info(theme: &Theme) {
     demonstrate_theme_styles(theme);
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     let args: Vec<String> = env::args().collect();
 
     println!("Terminal Theme Helper");
@@ -290,6 +290,4 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("  theme-helper <theme-name>");
         println!("  theme-helper list");
     }
-
-    Ok(())
 }

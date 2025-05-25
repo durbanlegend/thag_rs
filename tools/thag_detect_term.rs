@@ -15,7 +15,6 @@ use simplelog::{
 };
 use std::fs::File;
 use supports_color::Stream;
-use termbg;
 
 fn main() {
     CombinedLogger::init(vec![
@@ -37,7 +36,7 @@ fn main() {
     let timeout = std::time::Duration::from_millis(500);
 
     let term = termbg::terminal();
-    println!("  Term : {:?}", term);
+    println!("  Term : {term:?}");
 
     let rgb = termbg::rgb(timeout);
     let theme = termbg::theme(timeout);
@@ -59,16 +58,16 @@ fn main() {
             println!("  Color={rgb:#?}");
         }
         Err(e) => {
-            println!("  Color: detection failed {:?}", e);
+            println!("  Color: detection failed {e:?}");
         }
     }
 
     match theme {
         Ok(theme) => {
-            println!("  Theme: {:?}", theme);
+            println!("  Theme: {theme:?}");
         }
         Err(e) => {
-            println!("  Theme: detection failed {:?}", e);
+            println!("  Theme: detection failed {e:?}");
         }
     }
 
@@ -92,11 +91,11 @@ fn main() {
         }
     }
 
-    match terminal_light::background_color().map(|c| c.rgb()) {
+    match terminal_light::background_color().map(terminal_light::Color::rgb) {
         Ok(bg_rgb) => {
-            let luma_255 = 0.2126 * (bg_rgb.r as f32)
-                + 0.7152 * (bg_rgb.g as f32)
-                + 0.0722 * (bg_rgb.b as f32);
+            let luma_255 = 0.2126 * f32::from(bg_rgb.r)
+                + 0.7152 * f32::from(bg_rgb.g)
+                + 0.0722 * f32::from(bg_rgb.b);
             let luma_0_to_1 = luma_255 / 255.0;
             println!(
                 "\nBackground color is {bg_rgb:#?}, luma_255={luma_255}, luma_0_to_1={luma_0_to_1}"

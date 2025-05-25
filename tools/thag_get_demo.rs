@@ -26,7 +26,7 @@ struct GitHubFile {
 }
 
 fn get_github_files(repo: &str, path: &str) -> Result<Vec<GitHubFile>, Box<dyn std::error::Error>> {
-    let url = format!("https://api.github.com/repos/{}/contents/{}", repo, path);
+    let url = format!("https://api.github.com/repos/{repo}/contents/{path}");
     let client = reqwest::blocking::Client::new();
     let response = client
         .get(&url)
@@ -93,7 +93,7 @@ fn main() {
     let path = "demo";
 
     match download_demo_files(repo, path) {
-        Ok(_) => println!("Demo files downloaded successfully."),
-        Err(e) => eprintln!("Error downloading demo files: {}", e),
+        Ok(()) => println!("Demo files downloaded successfully."),
+        Err(e) => eprintln!("Error downloading demo files: {e}"),
     }
 }

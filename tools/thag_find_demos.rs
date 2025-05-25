@@ -18,10 +18,9 @@ warp = "0.3.7"
 
 /// Select demo scripts and generate and serve HTML report.
 ///
-/// Strategy and grunt work thanks to ChatGPT.
+/// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Allow user to select scripts by category.
 //# Categories: technique, tools
-use edit;
 use inquire::MultiSelect;
 use std::{
     collections::{BTreeSet, HashMap},
@@ -31,7 +30,6 @@ use std::{
 };
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{ast, code_utils::to_ast, lazy_static_var, regex};
-use tokio;
 use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
@@ -48,28 +46,28 @@ enum FilterLogic {
 
 impl FilterLogic {
     #[allow(dead_code)]
-    fn prompt_text(&self) -> &'static str {
+    const fn prompt_text(&self) -> &'static str {
         match self {
-            FilterLogic::And => "AND (restrictive filtering)",
-            FilterLogic::Or => "OR (inclusive filtering)",
-            FilterLogic::All => "ALL (no filtering)",
+            Self::And => "AND (restrictive filtering)",
+            Self::Or => "OR (inclusive filtering)",
+            Self::All => "ALL (no filtering)",
         }
     }
 
-    fn simple_text(&self) -> &'static str {
+    const fn simple_text(&self) -> &'static str {
         match self {
-            FilterLogic::And => "and",
-            FilterLogic::Or => "or",
-            FilterLogic::All => "all",
+            Self::And => "and",
+            Self::Or => "or",
+            Self::All => "all",
         }
     }
 }
 
 #[derive(Debug)]
 struct FilterPreferences {
-    category_logic: FilterLogic,
+    category: FilterLogic,
     crate_logic: FilterLogic,
-    combination_logic: FilterLogic,
+    combination: FilterLogic,
 }
 
 #[derive(Debug, Clone)]
@@ -85,7 +83,7 @@ impl std::fmt::Display for LogicChoice {
 }
 
 impl LogicChoice {
-    fn new(logic: FilterLogic, description: &'static str) -> Self {
+    const fn new(logic: FilterLogic, description: &'static str) -> Self {
         Self { logic, description }
     }
 }
@@ -95,7 +93,7 @@ struct EscapeState {
 }
 
 impl EscapeState {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self { pressed: false }
     }
 
@@ -114,9 +112,12 @@ impl EscapeState {
     }
 }
 
+type UserPreferences = (FilterPreferences, Vec<Category>, Vec<String>, OutputFormat);
+
+#[allow(clippy::too_many_lines)]
 fn get_user_preferences(
     available_crates: &BTreeSet<String>,
-) -> Result<(FilterPreferences, Vec<Category>, Vec<String>, OutputFormat), &'static str> {
+) -> Result<UserPreferences, &'static str> {
     let mut escape_state = EscapeState::new();
 
     loop {
@@ -146,7 +147,9 @@ fn get_user_preferences(
         escape_state.reset();
 
         // Categories
-        let categories = if !matches!(category_logic, FilterLogic::All) {
+        let categories = if matches!(category_logic, FilterLogic::All) {
+            Vec::new()
+        } else {
             match MultiSelect::new("Select categories:", Category::iter().collect::<Vec<_>>())
                 .prompt()
             {
@@ -160,8 +163,6 @@ fn get_user_preferences(
                 }
                 Err(_) => return Err("Unexpected error"),
             }
-        } else {
-            Vec::new()
         };
 
         escape_state.reset();
@@ -278,9 +279,9 @@ fn get_user_preferences(
         // If we got here, everything succeeded
         return Ok((
             FilterPreferences {
-                category_logic,
+                category: category_logic,
                 crate_logic,
-                combination_logic,
+                combination: combination_logic,
             },
             categories,
             selected_crates,
@@ -302,7 +303,7 @@ fn apply_filters(
     category_strings: &[String],
     selected_crates: &[String],
 ) -> bool {
-    let category_match = match prefs.category_logic {
+    let category_match = match prefs.category {
         FilterLogic::All => true, // No category filtering
         FilterLogic::Or => category_strings.iter().any(|cat| {
             meta.categories
@@ -323,13 +324,11 @@ fn apply_filters(
     };
 
     // If both are ALL, include everything
-    if matches!(prefs.category_logic, FilterLogic::All)
-        && matches!(prefs.crate_logic, FilterLogic::All)
-    {
+    if matches!(prefs.category, FilterLogic::All) && matches!(prefs.crate_logic, FilterLogic::All) {
         true
     } else {
         // Otherwise use the chosen combination logic
-        match prefs.combination_logic {
+        match prefs.combination {
             FilterLogic::Or => category_match || crate_match,
             FilterLogic::And => category_match && crate_match,
             FilterLogic::All => unreachable!(), // ALL isn't an option for combination_logic
@@ -355,7 +354,7 @@ async fn main() {
         match get_user_preferences(&available_crates) {
             Ok(prefs) => prefs,
             Err(e) => {
-                eprintln!("{}", e);
+                eprintln!("{e}");
                 return;
             }
         };
@@ -390,7 +389,7 @@ async fn main() {
                 generate_default_filename(&categories, &selected_crates, &filter_prefs);
             match save_to_file(markdown, &default_name, Some("md"), false) {
                 Ok(path) => println!("Markdown file saved successfully to: {}", path.display()),
-                Err(e) => eprintln!("Error saving file: {}", e),
+                Err(e) => eprintln!("Error saving file: {e}"),
             }
         }
         OutputFormat::Html => {
@@ -400,9 +399,9 @@ async fn main() {
                 move |script_name: String| {
                     let script_path = Path::new(&scripts_dir).join(&script_name);
                     if edit::edit_file(&script_path).is_ok() {
-                        format!("Editing script: {}", script_name)
+                        format!("Editing script: {script_name}")
                     } else {
-                        format!("Failed to edit script: {}", script_name)
+                        format!("Failed to edit script: {script_name}")
                     }
                 },
             );
@@ -422,10 +421,10 @@ fn create_filter_description(
     filter_prefs: &FilterPreferences,
 ) -> (String, String, String) {
     // Added combination operator
-    let categories_desc = match filter_prefs.category_logic {
+    let categories_desc = match filter_prefs.category {
         FilterLogic::All => "all".to_string(),
         _ if category_strings.is_empty() => "none".to_string(),
-        _ => category_strings.join(&format!(" {} ", filter_prefs.category_logic.simple_text())),
+        _ => category_strings.join(&format!(" {} ", filter_prefs.category.simple_text())),
     };
 
     let crates_desc = match filter_prefs.crate_logic {
@@ -434,11 +433,12 @@ fn create_filter_description(
         _ => selected_crates.join(&format!(" {} ", filter_prefs.crate_logic.simple_text())),
     };
 
-    let combination_op = filter_prefs.combination_logic.simple_text().to_uppercase();
+    let combination_op = filter_prefs.combination.simple_text().to_uppercase();
 
     (categories_desc, crates_desc, combination_op)
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_html_report(
     categories_desc: &str,
     crates_desc: &str,
@@ -498,24 +498,22 @@ fn generate_html_report(
 
     html.push_str("<h1>thag_rs Demo Scripts</h1>");
     html.push_str(&format!(
-        "<h2>Matching categories {} crates:</h2>",
-        combination_op
+        "<h2>Matching categories {combination_op} crates:</h2>"
     ));
     html.push_str(&format!(
         r#"
         <div class="filter-description">
             <div class="filter-line">
                 <span><b>categories:</b></span>
-                <span>{}</span>
+                <span>{categories_desc}</span>
             </div>
-            <div class="combination-op">{}</div>
+            <div class="combination-op">{combination_op}</div>
             <div class="filter-line">
                 <span><b>crates:</b></span>
-                <span>{}</span>
+                <span>{crates_desc}</span>
             </div>
         </div>
-    "#,
-        categories_desc, combination_op, crates_desc
+    "#
     ));
 
     // Rest of the HTML generation...
@@ -528,9 +526,11 @@ fn generate_html_report(
                 <p><span class="metadata-label">Purpose:</span> {}</p>
         "#,
             meta.script,
+            #[allow(clippy::or_fun_call)]
             meta.description
                 .as_ref()
                 .unwrap_or(&String::from("No description available")),
+            #[allow(clippy::or_fun_call)]
             meta.purpose
                 .as_ref()
                 .unwrap_or(&String::from("No purpose specified")),
@@ -566,8 +566,7 @@ fn output_markdown(
 ) -> String {
     let mut md = String::from("# thag_rs Demo Scripts\n\n");
     md.push_str(&format!(
-        "## Matching categories {} crates:\n\n",
-        combination_op
+        "## Matching categories {combination_op} crates:\n\n"
     ));
     md.push_str(&format!("**categories:** {categories_desc}\n\n"));
     md.push_str(&format!("{combination_op}\n\n"));
@@ -655,8 +654,8 @@ fn generate_default_filename(
     }
 
     parts.sort();
-    let logic_str = filter_prefs.combination_logic.simple_text();
-    format!("demo_{}.md", parts.join(&format!("_{}_", logic_str)))
+    let logic_str = filter_prefs.combination.simple_text();
+    format!("demo_{}.md", parts.join(&format!("_{logic_str}_")))
 }
 
 fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
@@ -680,7 +679,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
     let mut purpose = false;
     let mut categories = vec!["missing".to_string()]; // Default to "general"
 
-    for line in content.clone().lines() {
+    for line in content.lines() {
         if let Some(stripped) = line.strip_prefix("//#") {
             let parts: Vec<&str> = stripped.splitn(2, ':').collect();
             if parts.len() == 2 {
@@ -731,8 +730,8 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
             )
         },
         |ast| {
-            let crates_finder = ast::find_crates(&ast);
-            let metadata_finder = ast::find_metadata(&ast);
+            let crates_finder = ast::find_crates(ast);
+            let metadata_finder = ast::find_metadata(ast);
             (
                 ast::infer_deps_from_ast(&crates_finder, &metadata_finder),
                 metadata_finder.main_count,
@@ -777,12 +776,12 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 
     scripts.sort();
 
-    for entry in scripts.iter() {
+    for entry in &scripts {
         let path = entry.as_path();
         // println!("Parsing {:#?}", path.display());
 
         if path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            if let Some(metadata) = parse_metadata(&path) {
+            if let Some(metadata) = parse_metadata(path) {
                 all_metadata.push(metadata);
             }
         }

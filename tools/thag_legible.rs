@@ -17,9 +17,7 @@ use std::io::{self, Read};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    handle.read_to_string(&mut buffer)?;
+    io::stdin().lock().read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 

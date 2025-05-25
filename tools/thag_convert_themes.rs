@@ -337,7 +337,8 @@ fn hex_to_rgb(hex: &str) -> Result<(u8, u8, u8), Box<dyn std::error::Error>> {
 
 fn detect_background_luma(hex: &str) -> Result<TermBgLuma, Box<dyn std::error::Error>> {
     let (r, g, b) = hex_to_rgb(hex)?;
-    let luma = (r as f32 * 0.299 + g as f32 * 0.587 + f32::from(b) * 0.114) / 255.0;
+    let luma =
+        f32::from(b).mul_add(0.114, f32::from(r).mul_add(0.299, f32::from(g) * 0.587)) / 255.0;
     Ok(if luma > 0.5 {
         TermBgLuma::Light
     } else {

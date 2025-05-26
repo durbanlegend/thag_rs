@@ -11,7 +11,7 @@ inquire = "0.7.5"
 /// or simply copied and pasted in sections from the output into an existing error module
 /// in the case of an existing custom error type.
 ///
-/// Strategy and grunt work thanks to ChatGPT.
+/// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Facilitate generation and enhancement of custom error modules.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
@@ -54,7 +54,7 @@ impl ErrorVariant {
             })
             .prompt()?;
 
-        Ok(ErrorVariant {
+        Ok(Self {
             name,
             wrapped_type,
             display_message,
@@ -104,13 +104,15 @@ impl ErrorVariant {
     }
 
     fn display_summary(&self) -> String {
-        match &self.wrapped_type {
-            Some(wrapped) => format!(
-                r#"{} ({}) - "{}""#,
-                self.name, wrapped, self.display_message
-            ),
-            None => format!(r#"{} - "{}""#, self.name, self.display_message),
-        }
+        self.wrapped_type.as_ref().map_or_else(
+            || format!(r#"{} - "{}""#, self.name, self.display_message),
+            |wrapped| {
+                format!(
+                    r#"{} ({}) - "{}""#,
+                    self.name, wrapped, self.display_message
+                )
+            },
+        )
     }
 }
 
@@ -132,7 +134,7 @@ fn review_and_edit_variants(variants: &mut Vec<ErrorVariant>) -> Result<(), Box<
     loop {
         let choices = variants
             .iter()
-            .map(|v| v.display_summary())
+            .map(ErrorVariant::display_summary)
             .chain(std::iter::once("Done editing".to_string()))
             .collect::<Vec<_>>();
 
@@ -231,6 +233,7 @@ fn get_save_location(module_name: &str) -> Result<PathBuf, Box<dyn Error>> {
     Ok(full_path)
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_tests(module: &ErrorModule) -> String {
     let mut output = String::new();
 
@@ -271,8 +274,7 @@ fn generate_tests(module: &ErrorModule) -> String {
             } else {
                 // Add comment for custom wrapped types
                 output.push_str(&format!(
-                    "            // TODO: Provide appropriate test value for {}\n",
-                    wrapped
+                    "            // TODO: Provide appropriate test value for {wrapped}\n"
                 ));
                 output.push_str(&format!(
                     "            // {}::{}(your_test_value).to_string(),\n",
@@ -335,12 +337,11 @@ fn generate_tests(module: &ErrorModule) -> String {
                 }
                 _ => {
                     output.push_str(&format!(
-                        "        // TODO: Add test for {} wrapped type\n",
-                        wrapped
+                        "        // TODO: Add test for {wrapped} wrapped type\n"
                     ));
                 }
             }
-            output.push_str("\n");
+            output.push('\n');
         }
     }
     output.push_str("    }\n");
@@ -371,7 +372,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .map(|(_, msg, wrapped)| ErrorVariant {
                         name: name.to_string(),
                         wrapped_type: wrapped.map(String::from),
-                        display_message: msg.to_string(),
+                        display_message: (*msg).to_string(),
                     })
             })
             .collect()
@@ -427,11 +428,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_default(true)
         .prompt()?
     {
-        code.push_str("\n");
+        code.push('\n');
         code.push_str(&generate_tests(&module));
     }
 
-    println!("Generated code:\n{}", code);
+    println!("Generated code:\n{code}");
 
     // Save the file
     if Confirm::new("Would you like to save this code to a file?")
@@ -466,8 +467,8 @@ fn generate_error_module(module: &ErrorModule) -> String {
         if let Some(wrapped) = &variant.wrapped_type {
             if wrapped != "String" {
                 // Skip String as it's handled differently
-                output.push_str(&format!("impl From<{}> for {} {{\n", wrapped, module.name));
-                output.push_str(&format!("    fn from(err: {}) -> Self {{\n", wrapped));
+                output.push_str(&format!("impl From<{wrapped}> for {} {{\n", module.name));
+                output.push_str(&format!("    fn from(err: {wrapped}) -> Self {{\n"));
                 output.push_str(&format!("        Self::{}(err)\n", variant.name));
                 output.push_str("    }\n");
                 output.push_str("}\n\n");

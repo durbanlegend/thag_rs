@@ -517,6 +517,7 @@ fn generate_html_report(
     ));
 
     // Rest of the HTML generation...
+    #[allow(clippy::or_fun_call)]
     for meta in metadata_list {
         html.push_str(&format!(
             r#"
@@ -526,11 +527,9 @@ fn generate_html_report(
                 <p><span class="metadata-label">Purpose:</span> {}</p>
         "#,
             meta.script,
-            #[allow(clippy::or_fun_call)]
             meta.description
                 .as_ref()
                 .unwrap_or(&String::from("No description available")),
-            #[allow(clippy::or_fun_call)]
             meta.purpose
                 .as_ref()
                 .unwrap_or(&String::from("No purpose specified")),
@@ -558,6 +557,7 @@ fn generate_html_report(
     html
 }
 
+#[allow(clippy::or_fun_call)]
 fn output_markdown(
     categories_desc: &str,
     crates_desc: &str,

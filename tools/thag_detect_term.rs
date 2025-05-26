@@ -93,9 +93,10 @@ fn main() {
 
     match terminal_light::background_color().map(terminal_light::Color::rgb) {
         Ok(bg_rgb) => {
-            let luma_255 = 0.2126 * f32::from(bg_rgb.r)
-                + 0.7152 * f32::from(bg_rgb.g)
-                + 0.0722 * f32::from(bg_rgb.b);
+            let luma_255 = 0.2126_f32.mul_add(
+                f32::from(bg_rgb.r),
+                0.7152_f32.mul_add(f32::from(bg_rgb.g), 0.0722_f32 * f32::from(bg_rgb.b)),
+            );
             let luma_0_to_1 = luma_255 / 255.0;
             println!(
                 "\nBackground color is {bg_rgb:#?}, luma_255={luma_255}, luma_0_to_1={luma_0_to_1}"

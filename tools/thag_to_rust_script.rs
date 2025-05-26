@@ -5,9 +5,7 @@ use std::io::{self, Read, Write};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    handle.read_to_string(&mut buffer)?;
+    io::stdin().lock().read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 
@@ -21,9 +19,8 @@ fn safe_println(line: &str) -> Result<(), io::Error> {
         if e.kind() == io::ErrorKind::BrokenPipe {
             // eprintln!("Broken pipe error: {}", e);
             return Ok(());
-        } else {
-            return Err(e);
         }
+        return Err(e);
     }
     Ok(())
 }
@@ -39,7 +36,7 @@ fn main() -> Result<(), io::Error> {
             safe_println("//! ```cargo")?;
             continue;
         }
-        if line.contains(r#"*/"#) {
+        if line.contains(r"*/") {
             // Flag end of cargo section
             is_cargo = false;
             safe_println("//! ```")?;

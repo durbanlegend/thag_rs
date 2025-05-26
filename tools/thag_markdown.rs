@@ -33,7 +33,7 @@ async fn main() {
     let markdown_content = match fs::read_to_string(markdown_file_path) {
         Ok(content) => content,
         Err(err) => {
-            eprintln!("Error reading file {}: {}", markdown_file_path, err);
+            eprintln!("Error reading file {markdown_file_path}: {err}");
             process::exit(1);
         }
     };
@@ -48,7 +48,7 @@ async fn main() {
     let client = Client::new();
     let response = client
         .post("https://api.github.com/markdown")
-        .header("Authorization", format!("Bearer {}", github_token))
+        .header("Authorization", format!("Bearer {github_token}"))
         .header("Accept", "application/vnd.github+json")
         .header("User-Agent", "rust-markdown-to-html")
         .json(&serde_json::json!({
@@ -68,7 +68,7 @@ async fn main() {
             process::exit(1);
         }
         Err(err) => {
-            eprintln!("Error making request to GitHub API: {}", err);
+            eprintln!("Error making request to GitHub API: {err}");
             process::exit(1);
         }
     };
@@ -76,6 +76,6 @@ async fn main() {
     // Serve the HTML content on a local port
     let html_filter = warp::any().map(move || warp::reply::html(html_content.clone()));
     let port = 8080;
-    println!("Serving HTML on http://localhost:{}", port);
+    println!("Serving HTML on http://localhost:{port}");
     warp::serve(html_filter).run(([127, 0, 0, 1], port)).await;
 }

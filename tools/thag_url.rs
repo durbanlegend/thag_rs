@@ -81,6 +81,11 @@ fn validate_rust_content(content: &str) -> Result<(), UrlError> {
     ))
 }
 
+/// Extracts the syn AST expression for a Rust code section.
+///
+/// # Errors
+///
+/// This function will bubble up any `syn` parse errors encountered.
 pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
     let mut expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(rs_source);
     if expr.is_err() && !(rs_source.starts_with('{') && rs_source.ends_with('}')) {
@@ -263,7 +268,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Write content to temporary file
             std::fs::write(&temp_file_path, &content)?;
 
-            eprintln!("Created temporary script at: {:?}", temp_file_path);
+            eprintln!("Created temporary script at: {temp_file_path:?}");
             eprintln!("additional_args={additional_args:#?}");
 
             // Run thag with the temporary file instead of using stdin

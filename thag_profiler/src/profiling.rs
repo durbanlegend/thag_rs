@@ -1675,7 +1675,7 @@ impl Profile {
                     );
 
                 // Flush logs before calling register_profile
-                flush_debug_log();
+                // flush_debug_log();
 
                 // Now register the profile
                 register_profile(&profile);
@@ -1755,7 +1755,7 @@ impl Profile {
             );
 
             // Flush logs before calling register_profile
-            flush_debug_log();
+            // flush_debug_log();
 
             // Now register the profile if full_profiling is enabled
             #[cfg(feature = "full_profiling")]
@@ -2083,6 +2083,7 @@ pub fn extract_profile_callstack(
     callstack
 }
 
+// Don't change name from "extract_callstack_..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
 #[allow(clippy::missing_panics_doc)]
 pub fn extract_alloc_callstack(
@@ -2134,6 +2135,7 @@ pub fn extract_alloc_callstack(
     callstack
 }
 
+// Don't change name from "extract_callstack_..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
 pub fn extract_detailed_alloc_callstack(
     start_pattern: &Regex,
@@ -2290,14 +2292,14 @@ impl Drop for Profile {
                 "Time to drop profile: {}ms",
                 drop_start.elapsed().as_millis()
             );
-            flush_debug_log();
+            // flush_debug_log();
 
             // After all processing is done, signal that the profile should be deregistered
             // instead of trying to do it ourselves
             #[cfg(feature = "full_profiling")]
             {
                 debug_log!("Requesting deregistration of profile instance {instance_id}");
-                flush_debug_log();
+                // flush_debug_log();
 
                 // Use deregister_profile which is now safe due to our changes
                 deregister_profile(self);

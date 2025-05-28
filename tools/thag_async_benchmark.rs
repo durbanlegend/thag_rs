@@ -11,6 +11,11 @@ full_profiling = ["thag_profiler/full_profiling"]
 tokio-runtime = ["dep:tokio"]
 smol-runtime = ["dep:smol"]
 default = []
+
+[profile.release]
+debug-assertions = true
+debug = true
+strip = false
 */
 
 /// Focused async benchmark comparing tokio vs smol memory profiling with thag_profiler vs dhat-rs.
@@ -137,23 +142,6 @@ fn main() {
 }
 
 async fn run_benchmark() {
-    #[cfg(feature = "full_profiling")]
-    {
-        // Add this to your benchmark to see growth
-        println!(
-            "Active instances: {}",
-            thag_profiler::PROFILE_REGISTRY
-                .lock()
-                .active_instance_count()
-        );
-        println!(
-            "Module functions: {}",
-            thag_profiler::PROFILE_REGISTRY
-                .lock()
-                .module_function_count()
-        );
-    }
-
     #[cfg(feature = "dhat-heap")]
     let _dhat = dhat::Profiler::new_heap();
 

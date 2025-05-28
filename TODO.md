@@ -22,7 +22,9 @@
 - [ ]  Re-check for profiler code not ring-fenced
 - [ ]  Consider option for deallocation in detail.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  Rename thag_profiler binaries to use underscore?
+- [ ]  Compiled code gets out of scope detailed memory at global level. Test at detailed level.
+- [ ]  Consider converting thag_profiler debug_log to a proc macro and using a profile_logging feature to control it with zero-cost abstraction.
+- [ ]  Use addresses instead of strings to check for recursion
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

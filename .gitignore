@@ -83,3 +83,4 @@ thag_profiler/src/mem_tracking copy.rs
 thag_profiler/README~.md
 dhat-heap.json
 memory_flamechart.svg
+memory_flamegraph.svg

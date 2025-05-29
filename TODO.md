@@ -25,6 +25,10 @@
 - [ ]  Compiled code gets out of scope detailed memory at global level. Test at detailed level.
 - [ ]  Consider converting thag_profiler debug_log to a proc macro and using a profile_logging feature to control it with zero-cost abstraction.
 - [ ]  Use addresses instead of strings to check for recursion
+- [ ]  Consider using addresses of profiler code to look up whether it's Ok to use system allocator.
+- [ ]  Consider ways to invert the default and use backtrace to record alloc for user code.
+- [ ]  ChatGPT suggestions for enhancing Drop and DashMap
+- [ ]  Replace with_sys_alloc with a proc macro to mark issuing address as safe?
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

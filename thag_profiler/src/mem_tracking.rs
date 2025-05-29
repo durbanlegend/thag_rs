@@ -479,8 +479,9 @@ fn extract_callstack_with_recursion_check(
 ) -> Option<Vec<(String, u32, String, String, ProfileRef)>> {
     with_sys_alloc(|| {
         // Pre-allocate with fixed capacity to avoid reallocations
-        let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(200); // Fixed size, no growing
+        let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(100); // Fixed size, no growing
         let mut found_recursion = false;
+        let mut stack_size: usize = with_sys_alloc(|| 0);
         for (i, frame) in Backtrace::frames(current_backtrace).iter().enumerate() {
             if i >= 200 {
                 with_sys_alloc(|| {
@@ -489,14 +490,14 @@ fn extract_callstack_with_recursion_check(
                 panic!("Max limit of 200 frames exceeded");
             } // Hard limit to prevent overflow
             for symbol in frame.symbols() {
-                let maybe_frame = symbol.name();
+                let maybe_frame = with_sys_alloc(|| symbol.name());
                 if let Some(ref name) = &maybe_frame {
                     let name_str = with_sys_alloc(|| format!("{name}"));
 
                     // Check for our own functions (recursion detection)
-                    if name_str.contains("extract_callstack") {
+                    if name_str.contains("extract_callstack_with_recursion_check") {
                         with_sys_alloc(|| {
-                            println!("current_backtrace={current_backtrace:#?}");
+                            eprintln!("current_backtrace={current_backtrace:#?}");
                         });
                         found_recursion = true;
                         break;
@@ -516,8 +517,8 @@ fn extract_callstack_with_recursion_check(
                 }
 
                 // Safe to unwrap now
-                let filename = file_stem_from_path(maybe_filename.unwrap());
-                let lineno = maybe_lineno.unwrap();
+                let filename = with_sys_alloc(|| file_stem_from_path(maybe_filename.unwrap()));
+                let lineno = with_sys_alloc(|| maybe_lineno.unwrap());
                 let symbol_name = with_sys_alloc(|| maybe_frame.unwrap());
                 let frame_str = with_sys_alloc(|| symbol_name.to_string());
 
@@ -532,6 +533,15 @@ fn extract_callstack_with_recursion_check(
                 let maybe_profile_ref = find_profile(&filename, &fn_name, lineno);
                 if let Some(profile_ref) = maybe_profile_ref {
                     // Safe to add this frame
+                    stack_size += 1;
+                    // Hard limit to prevent overflow
+                    if stack_size > 100 {
+                        with_sys_alloc(|| {
+                            println!("current_backtrace={current_backtrace:#?}");
+                        });
+                        panic!("Max limit of 200 frames exceeded");
+                    }
+                    // stack_size
                     frames.push((filename, lineno, frame_str, fn_name, profile_ref));
                 }
             }

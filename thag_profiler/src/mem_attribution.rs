@@ -452,8 +452,8 @@ pub fn deregister_profile(profile: &Profile) {
     {
         // First, capture all the information we need before interacting with the registry
         let instance_id = profile.instance_id();
-        let file_name = profile.file_name().to_string();
-        let fn_name = profile.fn_name().to_string();
+        let file_name = with_sys_alloc(|| profile.file_name().to_string());
+        let fn_name = with_sys_alloc(|| profile.fn_name().to_string());
         let start_line = profile.start_line();
         let end_line = profile.end_line();
 

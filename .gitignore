@@ -84,3 +84,4 @@ thag_profiler/README~.md
 dhat-heap.json
 memory_flamechart.svg
 memory_flamegraph.svg
+thag_async_benchmark_hanging.txt

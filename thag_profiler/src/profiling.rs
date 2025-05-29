@@ -1576,7 +1576,7 @@ impl Profile {
             // let fn_name = maybe_fn_name.unwrap();
 
             let mut current_backtrace = Backtrace::new_unresolved();
-            current_backtrace.resolve();
+            // current_backtrace.resolve();
             // debug_log!("************\n{current_backtrace:?}\n************");
 
             let cleaned_stack = extract_profile_callstack(
@@ -2044,7 +2044,7 @@ pub fn extract_profile_callstack(
     start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    current_backtrace.resolve();
+    with_sys_alloc(|| current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     // let end_point = "__rust_begin_short_backtrace";
@@ -2090,7 +2090,7 @@ pub fn extract_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    current_backtrace.resolve();
+    with_sys_alloc(|| current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     // let end_point = "__rust_begin_short_backtrace";
@@ -2141,7 +2141,7 @@ pub fn extract_detailed_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    current_backtrace.resolve();
+    with_sys_alloc(|| current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     let end_point = "__rust_begin_short_backtrace";

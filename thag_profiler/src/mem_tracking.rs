@@ -418,7 +418,8 @@ fn record_alloc(address: usize, size: usize) {
         debug_log!("file_names={file_names:#?}");
 
         // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
-        let Some(frames) = extract_callstack_with_recursion_check(&current_backtrace, file_names)
+        let Some(frames) =
+            extract_callstack_with_recursion_check(&mut current_backtrace, file_names)
         else {
             eprintln!("*** Recursion detected ***");
             return;
@@ -474,9 +475,10 @@ fn record_alloc(address: usize, size: usize) {
 
 // Don't change name from "extract_callstack_..." as this is used in regression checking.
 fn extract_callstack_with_recursion_check(
-    current_backtrace: &Backtrace,
+    current_backtrace: &mut Backtrace,
     file_names: Vec<String>,
 ) -> Option<Vec<(String, u32, String, String, ProfileRef)>> {
+    with_sys_alloc(|| current_backtrace.resolve());
     with_sys_alloc(|| {
         // Pre-allocate with fixed capacity to avoid reallocations
         let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(100); // Fixed size, no growing

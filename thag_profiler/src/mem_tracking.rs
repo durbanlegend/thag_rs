@@ -79,32 +79,22 @@ pub fn current_allocator() -> Allocator {
 /// This function temporarily switches to the system allocator while executing the provided
 /// closure, then switches back to the previous allocator afterward.
 #[inline(always)]
-pub fn with_sys_alloc<F, R>(f: F) -> R
-where
-    F: FnOnce() -> R,
-{
-    // Create struct to handle cleanup on drop
-    struct Cleanup;
-
-    impl Drop for Cleanup {
-        fn drop(&mut self) {
-            // eprintln!("Switching to TrackingAllocator");
-            USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-        }
+pub fn with_sys_alloc<T>(f: impl FnOnce() -> T) -> T {
+    // Set the flag directly
+    let using_sys_alloc = USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed);
+    if !using_sys_alloc {
+        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
     }
 
-    if current_allocator() == Allocator::System {
-        // eprintln!("Already in SystemAllocator");
-        return f();
+    // Execute the function
+    let result = f();
+
+    // Restore the flag (no guard needed)
+    if !using_sys_alloc {
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 
-    USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
-
-    // Create guard to restore on scope exit
-    let _cleanup = Cleanup {};
-    // Run the function
-    // eprintln!("Switched to SystemAllocator");
-    f()
+    result
 }
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator

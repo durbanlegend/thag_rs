@@ -59,7 +59,12 @@ async fn simple_async_work(id: usize) -> String {
 async fn spawn_many_tasks(count: usize) -> Vec<String> {
     println!("spawn_many_tasks called with {} tasks", count);
     println!("Each task should allocate ~400-800 bytes for vec![id; 100]");
+
+    #[cfg(feature = "tokio-runtime")]
     println!("Plus tokio overhead per task");
+
+    #[cfg(feature = "smol-runtime")]
+    println!("Plus smol overhead per task");
 
     let mut handles = Vec::new();
 

@@ -80,21 +80,21 @@ pub fn current_allocator() -> Allocator {
 /// closure, then switches back to the previous allocator afterward.
 #[inline(always)]
 pub fn with_sys_alloc<T>(f: impl FnOnce() -> T) -> T {
-    // Set the flag directly
-    let using_sys_alloc = USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst);
-    if !using_sys_alloc {
-        USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
-    }
+    // Only change the flag if it's currently false
+    let was_already_using_sys = USING_SYSTEM_ALLOCATOR.swap(true, Ordering::SeqCst);
 
-    // Execute the function
-    let result = f();
+    // Use panic safety without allocation
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
 
-    // Restore the flag (no guard needed)
-    if !using_sys_alloc {
+    // Only reset to false if WE set it to true (not already true)
+    if !was_already_using_sys {
         USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 
-    result
+    match result {
+        Ok(val) => val,
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
 }
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator

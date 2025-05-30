@@ -37,6 +37,7 @@ thag_proc_macros = { path = "../thag_proc_macros", default-features = false }
 parking_lot = { version = "0.12.3", default-features = false }
 regex = { version = "1.11.1", default-features = false }
 paste = "1.0.15"
+dashmap = "6.1.0"
 
 [dev-dependencies]
 regex = "1.11.1"
@@ -54,7 +55,7 @@ analyze_tool = [
     "serde_json",
     "regex/unicode-perl",
 ]
-default = []
+default = ["full_profiling"]
 time_profiling = ["thag_proc_macros/time_profiling"]
 full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
 tools = ["analyze_tool", "instrument_tool"] # Enable all tools

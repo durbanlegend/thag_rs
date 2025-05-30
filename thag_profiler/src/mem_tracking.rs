@@ -9,7 +9,7 @@
 use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, get_global_profile_type,
     get_root_module, is_detailed_memory, lazy_static_var,
-    mem_attribution::DETAILED_ADDRESS_REGISTRY,
+    mem_attribution::{DetailedAddressRegistry, ProfileReg},
     profiling::{
         build_stack, clean_function_name, extract_alloc_callstack,
         extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
@@ -23,7 +23,7 @@ use parking_lot::Mutex;
 use regex::Regex;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     env, fmt,
     io::{self, Write},
     sync::{
@@ -78,6 +78,7 @@ pub fn current_allocator() -> Allocator {
 ///
 /// This function temporarily switches to the system allocator while executing the provided
 /// closure, then switches back to the previous allocator afterward.
+#[inline(always)]
 pub fn with_sys_alloc<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
@@ -394,7 +395,7 @@ fn record_alloc(address: usize, size: usize) {
         let start_ident = Instant::now();
         // Now we can safely use backtrace without recursion!
         // debug_log!("Calling extract_callstack");
-        let mut current_backtrace = with_sys_alloc(|| Backtrace::new());
+        let mut current_backtrace = with_sys_alloc(|| Backtrace::new_unresolved());
 
         // TODO phase out - useful for debugging though
         // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
@@ -410,8 +411,8 @@ fn record_alloc(address: usize, size: usize) {
 
         let file_names = {
             with_sys_alloc(|| {
-                crate::mem_attribution::PROFILE_REGISTRY
-                    .lock()
+                ProfileReg::get()
+                    // .lock()
                     .get_file_names()
             })
         };
@@ -498,9 +499,9 @@ fn extract_callstack_with_recursion_check(
 
                     // Check for our own functions (recursion detection)
                     if name_str.contains("extract_callstack_with_recursion_check") {
-                        with_sys_alloc(|| {
-                            eprintln!("current_backtrace={current_backtrace:#?}");
-                        });
+                        // with_sys_alloc(|| {
+                        //     eprintln!("current_backtrace={current_backtrace:#?}");
+                        // });
                         found_recursion = true;
                         break;
                     }
@@ -578,8 +579,8 @@ pub fn record_allocation(
 
         // Print list of registered modules to help diagnose issues
         {
-            let modules = crate::mem_attribution::PROFILE_REGISTRY
-                .lock()
+            let modules = ProfileReg::get()
+                // .lock()
                 .get_file_names();
             debug_log!("Available modules in registry: {modules:?}");
             flush_debug_log();
@@ -589,15 +590,15 @@ pub fn record_allocation(
         let result;
         {
             debug_log!("About to call record_allocation on registry");
-            // result = crate::mem_attribution::PROFILE_REGISTRY
-            result = if let Some(registry) = crate::mem_attribution::PROFILE_REGISTRY.try_lock() {
-                let result =
-                    registry.record_allocation(file_name, fn_name, line, size, current_backtrace);
-                debug_log!("record_allocation on registry returned {result}");
-                result
-            } else {
-                false
-            };
+            // result = crate::mem_attribution::ProfileReg::get()
+            result = ProfileReg::get().record_allocation(
+                file_name,
+                fn_name,
+                line,
+                size,
+                current_backtrace,
+            );
+            debug_log!("record_allocation on registry returned {result}");
         }
 
         // Log after releasing the mutex
@@ -616,8 +617,7 @@ pub fn record_allocation(
 
 pub fn register_detailed_allocation(address: usize, size: usize, stack: Vec<String>) {
     if is_detailed_memory() {
-        let mut registry = DETAILED_ADDRESS_REGISTRY.lock();
-        registry.insert(address, (stack, size));
+        DetailedAddressRegistry::get().insert(address, (stack, size));
     }
 }
 
@@ -779,13 +779,12 @@ pub fn record_dealloc(address: usize, size: usize) {
 
         let entry = if detailed_stack.is_empty() {
             let stack_and_size = {
-                DETAILED_ADDRESS_REGISTRY
-                    .lock()
+                DetailedAddressRegistry::get()
                     .remove(&address)
-                    .unwrap_or((Vec::new(), size))
+                    .unwrap_or((0, (Vec::new(), size)))
             };
 
-            let (stack, _) = stack_and_size;
+            let (stack, _) = stack_and_size.1;
 
             let legend = if stack.is_empty() {
                 // debug_log!("Empty cleaned_stack and stack for backtrace={current_backtrace:#?}");
@@ -827,51 +826,51 @@ pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
     threshold
 });
 
-/// Registry for tracking active profiles and task stacks
-#[derive(Debug)]
-struct ProfileRegistry {
-    /// Set of active task IDs
-    active_profiles: BTreeSet<usize>,
-}
+// /// Registry for tracking active profiles and task stacks
+// #[derive(Debug)]
+// struct ProfileRegistry {
+//     /// Set of active task IDs
+//     active_profiles: BTreeSet<usize>,
+// }
 
-impl ProfileRegistry {
-    const fn new() -> Self {
-        Self {
-            active_profiles: BTreeSet::new(),
-        }
-    }
+// impl ProfileRegistry {
+//     const fn new() -> Self {
+//         Self {
+//             active_profiles: BTreeSet::new(),
+//         }
+//     }
 
-    /// Add a task to active profiles
-    fn activate_task(&mut self, task_id: usize) {
-        self.active_profiles.insert(task_id);
-    }
+//     /// Add a task to active profiles
+//     pub fn activate_task(&mut self, task_id: usize) {
+//         self.active_profiles.insert(task_id);
+//     }
 
-    /// Remove a task from active profiles
-    fn deactivate_task(&mut self, task_id: usize) {
-        self.active_profiles.remove(&task_id);
-    }
+//     /// Remove a task from active profiles
+//     pub fn deactivate_task(&mut self, task_id: usize) {
+//         self.active_profiles.remove(&task_id);
+//     }
 
-    /// Get a copy of the active task IDs
-    fn get_active_tasks(&self) -> Vec<usize> {
-        self.active_profiles.iter().copied().collect()
-    }
+//     /// Get a copy of the active task IDs
+//     pub fn get_active_tasks(&self) -> Vec<usize> {
+//         self.active_profiles.iter().copied().collect()
+//     }
 
-    /// Get the last (most recently added) active task
-    fn get_last_active_task(&self) -> Option<usize> {
-        self.active_profiles.iter().next_back().copied()
-    }
-}
+//     /// Get the last (most recently added) active task
+//     pub fn get_last_active_task(&self) -> Option<usize> {
+//         self.active_profiles.iter().next_back().copied()
+//     }
+// }
 
 // Global profile registry
-static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
-    LazyLock::new(|| Mutex::new(ProfileRegistry::new()));
+// static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
+//     LazyLock::new(|| Mutex::new(ProfileRegistry::new()));
 
 // ========== PUBLIC REGISTRY API ==========
 
 /// Add a task to active profiles
 pub fn activate_task(task_id: usize) {
     with_sys_alloc(|| {
-        PROFILE_REGISTRY.lock().activate_task(task_id);
+        ProfileReg::get().activate_task(task_id);
     });
 }
 
@@ -879,7 +878,7 @@ pub fn activate_task(task_id: usize) {
 #[allow(dead_code)]
 pub fn deactivate_task(task_id: usize) {
     with_sys_alloc(|| {
-        PROFILE_REGISTRY.lock().deactivate_task(task_id);
+        ProfileReg::get().deactivate_task(task_id);
     });
 }
 
@@ -905,13 +904,13 @@ pub fn deactivate_task(task_id: usize) {
 /// Get active tasks
 #[must_use]
 pub fn get_active_tasks() -> Vec<usize> {
-    with_sys_alloc(|| PROFILE_REGISTRY.lock().get_active_tasks())
+    with_sys_alloc(|| ProfileReg::get().get_active_tasks())
 }
 
 /// Get the last active task
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
-    with_sys_alloc(|| PROFILE_REGISTRY.lock().get_last_active_task())
+    with_sys_alloc(|| ProfileReg::get().get_last_active_task())
 }
 
 // ========== TASK CONTEXT DEFINITIONS ==========
@@ -989,7 +988,7 @@ impl Drop for TaskGuard {
         with_sys_alloc(|| {
             // Remove from active profiles
             debug_log!("Deactivating task {}", self.task_id);
-            PROFILE_REGISTRY.lock().deactivate_task(self.task_id);
+            ProfileReg::get().deactivate_task(self.task_id);
 
             // Flush logs directly
             if let Some(logger) = crate::DebugLogger::get() {

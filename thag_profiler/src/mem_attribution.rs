@@ -2,35 +2,78 @@ use crate::{
     debug_log, flush_debug_log,
     mem_tracking::{with_sys_alloc, write_detailed_stack_alloc},
     profiling::{clean_function_name, Profile},
-    regex, strip_hex_suffix,
+    regex, static_lazy, strip_hex_suffix, ProfileError, ProfileResult,
 };
 use backtrace::{Backtrace, BacktraceFrame};
-use parking_lot::Mutex;
+use dashmap::{DashMap, DashSet};
 use regex::Regex;
-use std::{clone::Clone, convert::AsRef};
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    string::ToString,
-    sync::{Arc, LazyLock},
+    clone::Clone, collections::HashSet, convert::AsRef, ops::Range, string::ToString, sync::Arc,
 };
 
-// Map of instance IDs to ProfileRefs
-type InstanceMap = HashMap<u64, ProfileRef>;
-// Mapping of line ranges to instance maps
-type RangeSectionMap = BTreeMap<(Option<u32>, Option<u32>), InstanceMap>;
-type FunctionRangeMap = HashMap<String, RangeSectionMap>;
-type ModuleFunctionMap = HashMap<String, FunctionRangeMap>;
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+pub struct ProfileKey {
+    pub module: String,
+    pub function: String,
+    pub line_range: Range<u32>,
+}
 
-/// Enhanced registry for tracking profiles by module path and line number ranges
-/// This allows allocations to be attributed to the correct profile based on where they occur
-#[derive(Debug, Default)]
+impl ProfileKey {
+    pub fn new(module: String, function: String, start_line: u32, end_line: u32) -> Self {
+        Self {
+            module,
+            function,
+            line_range: start_line..end_line,
+        }
+    }
+
+    pub fn contains_line(&self, line: u32) -> bool {
+        self.line_range.contains(&line)
+    }
+}
+
 pub struct ProfileRegistry {
-    /// Module path -> function name -> line ranges -> Profile instances mapping
-    /// For each module path and function, maintains a map of line ranges to active Profile instances
-    module_functions: ModuleFunctionMap,
-    /// Set of instance IDs that are currently active
-    /// This helps with quick validation without accessing the nested maps
-    active_instances: HashSet<u64>,
+    // Main profile storage - single flat map
+    profiles: DashMap<ProfileKey, ProfileRef>,
+
+    // Quick lookup: instance_id -> ProfileKey for cleanup
+    instance_to_key: DashMap<u64, ProfileKey>,
+
+    // Optional: Quick lookup by module for get_file_names
+    modules: DashMap<String, ()>, // Just track module names
+
+    // // Task tracking (restore the original approach)
+    // active_tasks: DashMap<u64, usize>, // task_id -> some identifier
+    // // or
+    active_tasks: DashSet<usize>, // Just track active task IDs
+}
+
+impl ProfileRegistry {
+    pub fn new() -> Self {
+        Self {
+            profiles: DashMap::new(),
+            instance_to_key: DashMap::new(),
+            modules: DashMap::new(),
+            active_tasks: DashSet::new(),
+        }
+    }
+
+    pub fn activate_task(&self, task_id: usize) {
+        self.active_tasks.insert(task_id); // or just insert if using DashSet
+    }
+
+    pub fn deactivate_task(&self, task_id: usize) {
+        self.active_tasks.remove(&task_id);
+    }
+
+    pub fn get_active_tasks(&self) -> Vec<usize> {
+        self.active_tasks.iter().map(|entry| *entry.key()).collect()
+    }
+
+    pub fn get_last_active_task(&self) -> Option<usize> {
+        // This might need more sophisticated logic for "max_by_key" equivalent
+        self.active_tasks.iter().map(|entry| *entry.key()).max()
+    }
 }
 
 /// Reference to a Profile for the registry
@@ -82,147 +125,58 @@ impl ProfileRegistry {
     //     self.active_instances.len()
     // }
 
+    // pub fn new() -> Self {
+    //     Self {
+    //         module_functions: DashMap::new(),
+    //         active_instances: DashSet::new(),
+    //     }
+    // }
+
     /// Register a profile with the registry
-    pub fn register_profile(&mut self, profile: &Arc<Profile>) {
-        debug_log!("In register_profile for {profile:?}");
+    pub fn register_profile(&self, profile_ref: &ProfileRef) -> ProfileResult<()> {
+        // Extract information from the ProfileRef and its contained Profile
+        let instance_id = profile_ref.instance_id;
+        let profile = profile_ref.profile().ok_or(ProfileError::General(
+            "No profile found for ProfileRef".to_string(),
+        ))?;
 
-        // Get the profile's instance ID
-        let instance_id = profile.instance_id();
-
-        // Create a reference to this profile
-        let profile_ref = ProfileRef {
-            name: profile
-                .section_name()
-                .unwrap_or_else(|| profile.registered_name().to_string()),
-            detailed_memory: profile.detailed_memory(),
-            instance_id,
-            // Store an Arc to the Profile
-            profile: Some(Arc::clone(profile)),
-            dropping: false,
-        };
-
-        // Get the line range for this profile
+        // Extract module, function, and line info from the Profile
+        // profile.file_name(), profile.detailed_memory(), profile.start_line(), profile.end_line(), profile.instance_id());
+        let module_name = profile.file_name();
+        // let function_name = profile.fn_name().clone();
         let start_line = profile.start_line();
         let end_line = profile.end_line();
 
-        // First, ensure we have a module entry
-        let file_name = profile.file_name().to_string();
-        let fn_name = profile.fn_name().to_string();
-        debug_log!("About to register file_name={file_name}, fn_name={fn_name}, lines={start_line:?}..{end_line:?}");
+        let key = ProfileKey::new(
+            module_name.to_string(),
+            profile.fn_name().to_string(),
+            start_line.unwrap_or(0),
+            end_line.unwrap_or(u32::MAX),
+        );
 
-        // Get or create the function ranges map for this module
-        let function_ranges = self.module_functions.entry(file_name.clone()).or_default();
+        // Simple insertions - no nested locking
+        self.profiles.insert(key.clone(), profile_ref.clone());
+        self.instance_to_key.insert(instance_id, key);
+        self.modules.insert(module_name.to_string(), ());
 
-        // Get or create the range sections map for this function
-        let range_sections = function_ranges.entry(fn_name.clone()).or_default();
-
-        // Get or create the instance map for this line range
-        let instance_map = range_sections.entry((start_line, end_line)).or_default();
-
-        // Insert the profile reference for this instance
-        instance_map.insert(instance_id, profile_ref);
-
-        // Add to the active instances set
-        self.active_instances.insert(instance_id);
-
-        debug_log!("Successfully registered profile in module {file_name}, function {fn_name}, lines {start_line:?}..{end_line:?}");
+        Ok(())
     }
 
     /// Deregister a profile when it's dropped
     pub fn deregister_profile(
-        &mut self,
+        &self,
         instance_id: u64,
-        file_name: &str,
-        fn_name: &str,
-        start_line: Option<u32>,
-        end_line: Option<u32>,
+        _file_name: &str,         // No longer needed
+        _function_name: &str,     // No longer needed
+        _start_line: Option<u32>, // No longer needed
+        _end_line: Option<u32>,   // No longer needed
     ) {
-        // debug_log!("Deregistering profile instance {instance_id} from module {file_name}, function {fn_name}, lines {start_line:?}..{end_line:?}");
-        // Immediately flush logs to ensure we capture as much as possible
-        // flush_debug_log();
-
-        // debug_log!("Checking if instance {instance_id} exists in active_instances...");
-        // flush_debug_log();
-
-        // First check if this instance is in our active instances set
-        if !self.active_instances.contains(&instance_id) {
-            // debug_log!("Instance {instance_id} is not in active_instances, skipping deregistration to avoid recursion.");
-            // flush_debug_log();
-            return;
+        // Super simple cleanup - just two removals
+        if let Some((_, key)) = self.instance_to_key.remove(&instance_id) {
+            self.profiles.remove(&key);
+            // Note: We keep the module in self.modules for get_file_names
+            // Could add ref counting if needed
         }
-
-        // Remove from active instances set first, before any operations that might cause drops
-        self.active_instances.remove(&instance_id);
-        // debug_log!("Removed {instance_id} from active_instances, now checking maps...");
-        // flush_debug_log();
-
-        // Remove from the nested maps, with careful debug logging at each step
-        if let Some(function_ranges) = self.module_functions.get_mut(file_name) {
-            // debug_log!("Found function_ranges for {file_name}");
-            // flush_debug_log();
-
-            if let Some(range_sections) = function_ranges.get_mut(fn_name) {
-                // debug_log!("Found range_sections for {fn_name}");
-                // flush_debug_log();
-
-                if let Some(instance_map) = range_sections.get_mut(&(start_line, end_line)) {
-                    // debug_log!("Found instance_map for lines {start_line:?}..{end_line:?}");
-                    // flush_debug_log();
-
-                    // Check if the instance exists before removing it
-                    if instance_map.contains_key(&instance_id) {
-                        // debug_log!("Found instance {instance_id} in map, removing...");
-                        // flush_debug_log();
-
-                        // Mark the ProfileRef as dropping before we remove it
-                        if let Some(profile_ref) = instance_map.get_mut(&instance_id) {
-                            profile_ref.dropping = true;
-                        }
-
-                        // Take the ProfileRef out of the map before dropping it
-                        let _removed = instance_map.remove(&instance_id);
-                        // debug_log!("Successfully removed instance {instance_id} from map.");
-                        // flush_debug_log();
-
-                        // Clean up empty maps
-                        if instance_map.is_empty() {
-                            // debug_log!("Instance map is now empty, removing range {start_line:?}..{end_line:?}");
-                            // flush_debug_log();
-                            range_sections.remove(&(start_line, end_line));
-                        }
-                    } else {
-                        // debug_log!("Instance {instance_id} not found in map, skipping remove.");
-                        // flush_debug_log();
-                    }
-                } else {
-                    // debug_log!("No instance_map found for lines {start_line:?}..{end_line:?}");
-                    // flush_debug_log();
-                }
-
-                // Clean up empty range sections
-                if range_sections.is_empty() {
-                    // debug_log!("Range sections is now empty, removing function {fn_name}");
-                    // flush_debug_log();
-                    function_ranges.remove(fn_name);
-                }
-            } else {
-                // debug_log!("No range_sections found for {fn_name}");
-                // flush_debug_log();
-            }
-
-            // Clean up empty function ranges
-            if function_ranges.is_empty() {
-                // debug_log!("Function ranges is now empty, removing module {file_name}");
-                // flush_debug_log();
-                self.module_functions.remove(file_name);
-            }
-        } else {
-            // debug_log!("No function_ranges found for {file_name}");
-            // flush_debug_log();
-        }
-
-        // debug_log!("Successfully deregistered profile instance {instance_id}");
-        // flush_debug_log();
     }
 
     /// Find the most specific legitimate profile for a given module path and line number, given that
@@ -235,70 +189,25 @@ impl ProfileRegistry {
     /// Returns the profile reference if found
     #[must_use]
     #[allow(clippy::missing_panics_doc, reason = "checked start_line.is_some()")]
-    pub fn find_profile(&self, file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
-        // Check if we have this module
-        let Some(function_ranges) = self.module_functions.get(file_name) else {
-            debug_log!("Module not found in registry: {file_name}");
-            return None;
-        };
+    pub fn find_profile(&self, module: &str, function: &str, line: u32) -> Option<ProfileRef> {
+        // Search through profiles for matching module/function/line
+        for entry in self.profiles.iter() {
+            let key = entry.key();
+            let profile_ref = entry.value();
 
-        // Check if we have this function
-        let Some(range_sections) = function_ranges.get(fn_name) else {
-            debug_log!("Function {fn_name} not found in module {file_name}");
-            // debug_log!("self.module_functions={:#?}", self.module_functions);
-
-            return None;
-        };
-
-        debug_log!(
-            "Found range_sections for {file_name}::{fn_name} with {} entries",
-            range_sections.len()
-        );
-
-        // First look for a specific line range match
-        // We want a range where start_line <= line <= end_line (or end_line is None)
-        for (&(start_line, end_line), instance_map) in range_sections.iter().rev() {
-            if start_line.is_some()
-                && start_line.unwrap() <= line
-                && (end_line.is_none() || end_line.unwrap() >= line)
-            {
-                debug_log!(
-                    "Found specific line range match {start_line:?}..{end_line:?} for line {line}"
-                );
-
-                // Find the most recently registered profile that's still active
-                // This is an approximation based on the assumption that instance IDs
-                // are assigned in increasing order, so higher IDs are more recent
-                if let Some((&_latest_id, profile_ref)) = instance_map
-                    .iter()
-                    .filter(|(&id, _)| self.active_instances.contains(&id))
-                    .max_by_key(|(&id, _)| id)
-                {
-                    return Some(profile_ref.clone());
-                }
-            }
-        }
-
-        // If no specific match, try to find a whole-function profile (one with no line numbers)
-        if let Some(instance_map) = range_sections.get(&(None, None)) {
-            // Find the most recently registered profile that's still active
-            if let Some((&_latest_id, profile_ref)) = instance_map
-                .iter()
-                .filter(|(&id, _)| self.active_instances.contains(&id))
-                .max_by_key(|(&id, _)| id)
-            {
-                debug_log!("Found whole-function profile for {file_name}::{fn_name}");
+            if key.module == module && key.function == function && key.contains_line(line) {
                 return Some(profile_ref.clone());
             }
         }
-
-        debug_log!("No profile found for {file_name}::{fn_name} at line {line}");
         None
     }
 
     #[must_use]
     pub fn get_file_names(&self) -> Vec<String> {
-        self.module_functions.keys().cloned().collect()
+        self.modules
+            .iter()
+            .map(|entry| entry.key().clone())
+            .collect()
     }
 
     /// Add an allocation to a profile based on module path and line number
@@ -315,24 +224,6 @@ impl ProfileRegistry {
         size: usize,
         current_backtrace: &mut Backtrace,
     ) -> bool {
-        // Check first if we even have this module and function
-        if !self.module_functions.contains_key(file_name) {
-            debug_log!(
-                "No module found for {file_name}. Available modules: {:?}",
-                self.module_functions.keys().collect::<Vec<_>>()
-            );
-            return false;
-        }
-
-        let function_ranges = self.module_functions.get(file_name).unwrap();
-        if !function_ranges.contains_key(fn_name) {
-            debug_log!(
-                "No function found for {fn_name} in module {file_name}. Available functions: {:?}",
-                function_ranges.keys().collect::<Vec<_>>()
-            );
-            return false;
-        }
-
         // Find the profile for this allocation
         let profile_ref_opt = self.find_profile(file_name, fn_name, line);
 
@@ -394,15 +285,24 @@ impl ProfileRegistry {
     }
 }
 
-/// Global profile registry instance
-pub static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
-    LazyLock::new(|| Mutex::new(ProfileRegistry::default()));
+type AllocationInfo = (Vec<String>, usize);
+type AddressAllocMap = DashMap<usize, AllocationInfo>;
 
-type AddressAllocMap = Mutex<HashMap<usize, (Vec<String>, usize)>>;
+// Global profile registry instance
+// pub static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
+//     LazyLock::new(|| Mutex::new(ProfileRegistry::default()));
+// pub static PROFILE_REGISTRY: Lazy<ProfileRegistry> = Lazy::new(|| ProfileRegistry::new());
+static_lazy! {
+    ProfileReg: ProfileRegistry = ProfileRegistry::new()
+}
+
+static_lazy! {
+    DetailedAddressRegistry: AddressAllocMap = DashMap::new()
+}
 
 // New registry just for detailed memory tracking address-to-profile mapping
-pub static DETAILED_ADDRESS_REGISTRY: LazyLock<AddressAllocMap> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+// pub static DETAILED_ADDRESS_REGISTRY: LazyLock<AddressAllocMap> =
+//     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Thread-safe counter for generating unique profile IDs
 static NEXT_PROFILE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
@@ -426,9 +326,25 @@ pub fn register_profile(profile: &Profile) {
         // Create an Arc to the Profile - we'll clone it instead of trying to construct from scratch
         let profile_arc = Arc::new(profile.clone());
 
-        // Now acquire the PROFILE_REGISTRY mutex
-        let mut registry = PROFILE_REGISTRY.lock();
-        registry.register_profile(&profile_arc);
+        // Get the profile's instance ID
+        let instance_id = profile.instance_id();
+
+        // Create a reference to this profile
+        let profile_ref = ProfileRef {
+            name: profile
+                .section_name()
+                .unwrap_or_else(|| profile.registered_name().to_string()),
+            detailed_memory: profile.detailed_memory(),
+            instance_id,
+            // Store an Arc to the Profile
+            profile: Some(profile_arc),
+            dropping: false,
+        };
+
+        // let mut registry = PROFILE_REGISTRY;
+        ProfileReg::get()
+            .register_profile(&profile_ref)
+            .expect("Error registering profile");
     });
 }
 
@@ -465,15 +381,15 @@ pub fn deregister_profile(profile: &Profile) {
         with_sys_alloc(|| {
             // Use a scope to ensure the registry lock is released promptly
             {
-                if let Some(mut registry) = PROFILE_REGISTRY.try_lock() {
-                    registry.deregister_profile(
-                        instance_id,
-                        &file_name,
-                        &fn_name,
-                        start_line,
-                        end_line,
-                    );
-                }
+                // if let Some(mut registry) = PROFILE_REGISTRY.try_lock() {
+                ProfileReg::get().deregister_profile(
+                    instance_id,
+                    &file_name,
+                    &fn_name,
+                    start_line,
+                    end_line,
+                );
+                // }
             }
             // flush_debug_log();
         });
@@ -491,8 +407,7 @@ pub fn deregister_profile(profile: &Profile) {
 pub fn find_profile(file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
     with_sys_alloc(|| {
         // Acquire the registry lock
-        let registry = PROFILE_REGISTRY.lock();
         // Return the result
-        registry.find_profile(file_name, fn_name, line)
+        ProfileReg::get().find_profile(file_name, fn_name, line)
     })
 }

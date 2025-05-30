@@ -26,7 +26,7 @@
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str,
-    mem_attribution::{find_profile, PROFILE_REGISTRY},
+    mem_attribution::{find_profile /*, PROFILE_REGISTRY */},
     profile, profiled,
     profiling::{Profile, ProfileType},
     with_sys_alloc,
@@ -245,7 +245,7 @@ fn mem_attribution_registry_functions() {
         // // Register the profile
         // register_profile(&profile);
 
-        let file_names = PROFILE_REGISTRY.lock().get_file_names();
+        let file_names = ProfileReg::get().get_file_names();
         assert!(
             file_names.contains(&file_name.to_string()),
             "Registry should contain our file name"
@@ -347,7 +347,7 @@ fn mem_attribution_record_allocation() {
     with_sys_alloc(|| {
         // Test valid allocation
         // assert!(!PROFILE_REGISTRY.is_locked());
-        let valid = PROFILE_REGISTRY.lock().record_allocation(
+        let valid = ProfileReg::get().record_allocation(
             &file_name,
             &fn_name,
             start_line + 1, // Line within range
@@ -361,7 +361,7 @@ fn mem_attribution_record_allocation() {
         );
 
         // Test allocation for non-existent file
-        let invalid_file = PROFILE_REGISTRY.lock().record_allocation(
+        let invalid_file = ProfileReg::get().record_allocation(
             "nonexistent_file",
             &fn_name,
             start_line,
@@ -374,7 +374,7 @@ fn mem_attribution_record_allocation() {
         );
 
         // Test allocation for non-existent function
-        let invalid_fn = PROFILE_REGISTRY.lock().record_allocation(
+        let invalid_fn = ProfileReg::get().record_allocation(
             &file_name,
             "nonexistent_function",
             start_line,
@@ -387,7 +387,7 @@ fn mem_attribution_record_allocation() {
         );
 
         // Test allocation outside line range
-        let out_of_range = PROFILE_REGISTRY.lock().record_allocation(
+        let out_of_range = ProfileReg::get().record_allocation(
             &file_name,
             &fn_name,
             start_line - 10, // Before range

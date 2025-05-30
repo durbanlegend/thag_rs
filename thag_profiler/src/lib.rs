@@ -70,7 +70,7 @@ pub use paste; // Re-export paste crate
 
 #[cfg(feature = "full_profiling")]
 pub use {
-    mem_attribution::{find_profile, register_profile, ProfileRef, PROFILE_REGISTRY},
+    mem_attribution::{find_profile, register_profile, ProfileRef /*, PROFILE_REGISTRY */},
     mem_tracking::{
         create_memory_task, find_matching_task_id, get_last_active_task, record_allocation,
         trim_backtrace, with_sys_alloc, Allocator, Dispatcher, TaskGuard, TaskMemoryContext,
@@ -152,7 +152,7 @@ pub fn file_stem_from_path_str(file_name: &'static str) -> String {
 /// Panics if `Path::file_stem()`    does not return a valid file stem.
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
-    path.file_stem().unwrap().to_string_lossy().to_string()
+    with_sys_alloc(|| path.file_stem().unwrap().to_string_lossy().to_string())
 }
 
 #[cfg(feature = "time_profiling")]
@@ -531,7 +531,7 @@ pub fn finalize_profiling() {
 pub fn finalize_profiling() {
     with_sys_alloc(|| {
         // Ensure debug log is flushed before we disable profiling
-        flush_debug_log();
+        // flush_debug_log();
 
         // Disable profiling
         disable_profiling();
@@ -553,7 +553,7 @@ pub fn finalize_profiling() {
         }
 
         // Final flush to ensure all data is written
-        flush_debug_log();
+        // flush_debug_log();
 
         // Add a delay to ensure flush completes before program exit
         std::thread::sleep(std::time::Duration::from_millis(10));

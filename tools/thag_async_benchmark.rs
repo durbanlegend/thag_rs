@@ -153,12 +153,12 @@ async fn run_benchmark() {
 
     println!();
 
-    println!("Test 1: Spawning 20 simple async tasks");
+    println!("Test 1: Spawning 20 simple async tasks with spawn_many_tasks(20).await");
     let results = spawn_many_tasks(20).await;
     println!("Completed {} tasks", results.len());
     println!();
 
-    println!("Test 2: Async data processing (10 datasets of 1000 bytes each)");
+    println!("Test 2: Async data processing (10 datasets of 1000 bytes each) with async_data_processing().await");
     let data_sets = async_data_processing().await;
     println!(
         "Processed {} datasets, total size: {} bytes",
@@ -167,7 +167,7 @@ async fn run_benchmark() {
     );
     println!();
 
-    println!("Test 3: Sequential async work");
+    println!("Test 3: Sequential async work with simple_async_work(i).await for i in 0..5");
     for i in 0..5 {
         let result = simple_async_work(i).await;
         println!("Sequential task {}: {}", i, result.len());

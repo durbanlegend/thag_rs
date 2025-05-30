@@ -66,7 +66,7 @@ impl fmt::Display for Allocator {
 /// Get the current allocator based on the atomic state
 #[inline]
 pub fn current_allocator() -> Allocator {
-    if USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed) {
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
         // eprintln!("Using system allocator");
         Allocator::System
     } else {
@@ -81,7 +81,7 @@ pub fn current_allocator() -> Allocator {
 #[inline(always)]
 pub fn with_sys_alloc<T>(f: impl FnOnce() -> T) -> T {
     // Set the flag directly
-    let using_sys_alloc = USING_SYSTEM_ALLOCATOR.load(Ordering::Relaxed);
+    let using_sys_alloc = USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst);
     if !using_sys_alloc {
         USING_SYSTEM_ALLOCATOR.store(true, Ordering::SeqCst);
     }

@@ -7,16 +7,16 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 #[cfg(feature = "full_profiling")]
-use crate::with_sys_alloc;
+use crate::safe_alloc;
 
 static_lazy! {
     DebugLogger: Option<Mutex<BufWriter<File>>> = {
         #[cfg(feature = "full_profiling")]
         {
             // For memory profiling, we must use the system allocator
-            crate::with_sys_alloc(|| {
+            safe_alloc! {
                 create_debug_logger()
-            })
+            }
         }
 
         #[cfg(not(feature = "full_profiling"))]
@@ -82,13 +82,13 @@ pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for getting log path
-        with_sys_alloc(|| {
+        safe_alloc! {
             if get_debug_level() == DebugLevel::None {
                 None
             } else {
                 Some(ProfilePaths::get().debug_log.clone())
             }
-        })
+        }
     }
 
     #[cfg(not(feature = "full_profiling"))]
@@ -102,23 +102,26 @@ pub fn get_debug_log_path() -> Option<String> {
 }
 
 // Define a function to flush the log buffer - can be called at strategic points
-pub fn flush_debug_log() {
+pub const fn flush_debug_log() {
     #[cfg(feature = "full_profiling")]
     {
-        // Always use system allocator for logging operations to prevent circular dependencies
-        with_sys_alloc(|| {
-            if let Some(logger) = DebugLogger::get() {
-                let flush_result = {
-                    let mut locked_writer = logger.lock();
-                    locked_writer.flush()
-                };
+        // // Always use system allocator for logging operations to prevent circular dependencies
+        // safe_alloc! {
+        //     if let Some(logger) = DebugLogger::get() {
+        //         let flush_result = {
+        //             let mut locked_writer = logger.lock();
+        //             locked_writer.flush()
+        //         };
 
-                if let Err(e) = flush_result {
-                    // Use eprintln for direct console output without going through our logger
-                    eprintln!("Error flushing debug log: {e}");
-                }
-            }
-        });
+        //         if let Err(e) = flush_result {
+        //             // Use eprintln for direct console output without going through our logger
+        //             eprintln!("Error flushing debug log: {e}");
+        //         }
+        //     }
+        // };
+
+        // No-op for full profiling to prevent deadlocks
+        // The BufWriter will auto-flush on drop anyway
     }
 
     #[cfg(not(feature = "full_profiling"))]
@@ -137,30 +140,21 @@ pub fn flush_debug_log() {
     }
 }
 
-// Improved debug_log macro that uses the lazy static
+// Removed auto-flush for async difficulties
 #[cfg(feature = "full_profiling")]
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        // Always use system allocator for logging to prevent circular dependencies
-        $crate::with_sys_alloc(|| {
-            static mut LOG_COUNT: usize = 0;
+        $crate::safe_alloc! {
             if let Some(logger) = $crate::DebugLogger::get() {
                 use std::io::Write;
                 let _write_result = {
                     let mut locked_writer = logger.lock();
                     writeln!(locked_writer, "{}", format!($($arg)*))
                 };
-
-                // Auto-flush periodically
-                unsafe {
-                    LOG_COUNT += 1;
-                    if LOG_COUNT % 1000 == 0 {
-                        $crate::flush_debug_log();
-                    }
-                }
+                // Remove the auto-flush logic to prevent deadlocks
             }
-        })
+        }
     };
 }
 
@@ -218,7 +212,7 @@ mod tests {
     use crate::debug_log;
 
     #[cfg(feature = "full_profiling")]
-    use crate::{mem_tracking::with_sys_alloc, ProfileType};
+    use crate::{mem_tracking::with_sys_alloc, safe_alloc, ProfileType};
 
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -229,10 +223,10 @@ mod tests {
     fn test_logging_functionality() {
         // Initialize profiling to set up logging
         #[cfg(feature = "full_profiling")]
-        with_sys_alloc(|| {
+        safe_alloc! {
             let _ =
                 crate::profiling::test_utils::initialize_profiling_for_test(ProfileType::Memory);
-        });
+        };
 
         #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
         // Using attribute-based profiling
@@ -270,12 +264,12 @@ mod tests {
         let reader = BufReader::new(file);
 
         #[cfg(feature = "full_profiling")]
-        let found_message = with_sys_alloc(|| {
+        let found_message = safe_alloc! {
             reader
                 .lines()
                 .filter_map(Result::ok)
                 .any(|line| line.contains(&unique_msg))
-        });
+        };
 
         #[cfg(not(feature = "full_profiling"))]
         let found_message = reader
@@ -311,13 +305,13 @@ mod tests {
         // ----- Test 6: System Allocator Usage (full_profiling only) -----
         #[cfg(feature = "full_profiling")]
         {
-            let current_allocator = with_sys_alloc(|| crate::mem_tracking::current_allocator());
+            let current_allocator = safe_alloc!(crate::mem_tracking::current_allocator());
 
             // Log a message (which should use system allocator)
             debug_log!("Testing system allocator usage");
 
             // Verify allocator wasn't changed
-            let after_allocator = with_sys_alloc(|| crate::mem_tracking::current_allocator());
+            let after_allocator = safe_alloc!(crate::mem_tracking::current_allocator());
 
             assert_eq!(
                 current_allocator, after_allocator,

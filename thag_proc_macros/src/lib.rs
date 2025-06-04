@@ -9,6 +9,9 @@ mod preload_themes;
 mod repeat_dash;
 mod tool_errors;
 
+#[cfg(feature = "full_profiling")]
+mod safe_alloc;
+
 #[cfg(feature = "tui")]
 mod tui_keys;
 
@@ -36,6 +39,9 @@ use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_file, parse_str, Expr};
+
+#[cfg(feature = "full_profiling")]
+use crate::safe_alloc::safe_alloc_impl;
 
 #[cfg(feature = "time_profiling")]
 use crate::enable_profiling::enable_profiling_impl;
@@ -255,43 +261,6 @@ fn expand_output(name: &str, output: &TokenStream) {
     }
 }
 
-#[proc_macro_attribute]
-#[cfg(feature = "time_profiling")]
-pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(
-        false,
-        "enable_profiling",
-        &attr,
-        &item,
-        enable_profiling_impl,
-    )
-}
-
-#[cfg(not(feature = "time_profiling"))]
-#[proc_macro_attribute]
-pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
-}
-
-#[proc_macro_attribute]
-pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(false, "fn_name", &attr, &item, fn_name_impl)
-}
-
-#[cfg(feature = "time_profiling")]
-#[proc_macro_attribute]
-pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // eprintln!("DEBUGLIB: profiled attribute macro called");
-    // Set to true to enable macro expansion output
-    maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
-}
-
-#[cfg(not(feature = "time_profiling"))]
-#[proc_macro_attribute]
-pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
-}
-
 /// Generates repetitive methods for all 14 `Style` fields of the `Palette` struct
 /// instead of hand-coding them.
 #[proc_macro_derive(PaletteMethods)]
@@ -327,6 +296,43 @@ pub fn preload_themes(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn tool_errors(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
+}
+
+#[proc_macro_attribute]
+pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(false, "fn_name", &attr, &item, fn_name_impl)
+}
+
+#[proc_macro_attribute]
+#[cfg(feature = "time_profiling")]
+pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(
+        false,
+        "enable_profiling",
+        &attr,
+        &item,
+        enable_profiling_impl,
+    )
+}
+
+#[cfg(not(feature = "time_profiling"))]
+#[proc_macro_attribute]
+pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+#[cfg(feature = "time_profiling")]
+#[proc_macro_attribute]
+pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
+    // eprintln!("DEBUGLIB: profiled attribute macro called");
+    // Set to true to enable macro expansion output
+    maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
+}
+
+#[cfg(not(feature = "time_profiling"))]
+#[proc_macro_attribute]
+pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
 }
 
 /// Creates a function with the name specified in the string literal
@@ -368,4 +374,9 @@ pub fn profile(input: TokenStream) -> TokenStream {
 pub fn profile(_input: TokenStream) -> TokenStream {
     // Return an empty token stream to make this a no-op
     TokenStream::new()
+}
+
+#[proc_macro]
+pub fn safe_alloc(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)
 }

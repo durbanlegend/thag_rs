@@ -35,7 +35,7 @@ strip = false
 //# Purpose: Validate async memory profiling accuracy across different runtimes
 //# Categories: profiling, async, benchmark, validation
 use std::time::Duration;
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, mem_tracking, profiled};
 
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]

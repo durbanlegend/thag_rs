@@ -16,7 +16,7 @@ use crate::{
         get_memory_path, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
         MemoryProfileFile,
     },
-    regex, warn_once, Profile, ProfileRef, ProfileType,
+    regex, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
 };
 use backtrace::Backtrace;
 use parking_lot::Mutex;
@@ -38,7 +38,7 @@ pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
 // Static atomics for minimal state tracking without allocations
-static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
+pub static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
 
 // static RECURSION_DEPTH: AtomicUsize = AtomicUsize::new(0);
 
@@ -78,7 +78,6 @@ pub fn current_allocator() -> Allocator {
 ///
 /// This function temporarily switches to the system allocator while executing the provided
 /// closure, then switches back to the previous allocator afterward.
-#[inline(always)]
 pub fn with_sys_alloc<T>(f: impl FnOnce() -> T) -> T {
     // Only change the flag if it's currently false
     let was_already_using_sys = USING_SYSTEM_ALLOCATOR.swap(true, Ordering::SeqCst);
@@ -126,13 +125,13 @@ unsafe impl GlobalAlloc for Dispatcher {
         // // For debugging, log larger allocations
         // if layout.size() > 1024 * 1024 {
         //     // 1MB
-        //     with_sys_alloc(|| {
+        //     safe_alloc! {
         //         debug_log!(
         //             "Large allocation of {} bytes using allocator: {:?}",
         //             layout.size(),
         //             current
         //         )
-        //     });
+        //     };
         // }
 
         match current {
@@ -164,12 +163,12 @@ unsafe impl GlobalAlloc for Dispatcher {
 
         // Safety check for unreasonably large deallocations
         if layout.size() > MAX_SAFE_ALLOCATION {
-            with_sys_alloc(|| {
+            safe_alloc! {
                 eprintln!(
                     "WARNING: Extremely large deallocation request of {} bytes",
                     layout.size()
-                );
-            });
+                )
+            }
             // Still need to deallocate it to avoid memory leaks
         }
 
@@ -203,12 +202,12 @@ unsafe impl GlobalAlloc for Dispatcher {
 
         // Safety check for unreasonably large reallocations
         // if new_size > MAX_SAFE_ALLOCATION {
-        //     with_sys_alloc(|| {
+        //     safe_alloc! {
         //         eprintln!(
         //             "WARNING: Extremely large reallocation request of {} bytes",
         //             layout.size()
         //         )
-        //     });
+        //     };
         //     return std::ptr::null_mut();
         // }
 
@@ -264,7 +263,7 @@ unsafe impl GlobalAlloc for TrackingAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let ptr = unsafe { System.alloc(layout) };
 
-        with_sys_alloc(|| {
+        safe_alloc! {
             if !ptr.is_null() && is_profiling_state_enabled() {
                 let size = layout.size();
                 // Potentially skip small allocations
@@ -274,13 +273,13 @@ unsafe impl GlobalAlloc for TrackingAllocator {
                 }
             }
             // See ya later allocator
-            ptr
-        })
+        };
+        ptr
     }
 
     #[allow(clippy::too_many_lines)]
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        with_sys_alloc(|| {
+        safe_alloc! {
             if !ptr.is_null()
                 && is_profiling_state_enabled()
                 // Only record detailed deallocations to -memory_detail_dealloc.folded if requested
@@ -293,14 +292,14 @@ unsafe impl GlobalAlloc for TrackingAllocator {
                     record_dealloc(address, size);
                 }
             }
-        });
+        };
 
         // Forward to system allocator for deallocation
         unsafe { System.dealloc(ptr, layout) };
     }
 
     unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
-        with_sys_alloc(|| {
+        safe_alloc! {
             if !ptr.is_null()
                 && is_profiling_state_enabled()
                 // Only record detailed deallocations to -memory_detail_dealloc.folded if requested
@@ -319,7 +318,7 @@ unsafe impl GlobalAlloc for TrackingAllocator {
                 let address = ptr as usize;
                 record_alloc(address, new_size);
             }
-        });
+        };
 
         unsafe { System.realloc(ptr, layout, new_size) }
     }
@@ -347,7 +346,7 @@ fn record_alloc(address: usize, size: usize) {
 
     // assert_eq!(current_allocator(), Allocator::System);
 
-    with_sys_alloc(|| {
+    safe_alloc! {
         if size == 0 {
             debug_log!("Zero-sized allocation found");
             return;
@@ -385,7 +384,7 @@ fn record_alloc(address: usize, size: usize) {
         let start_ident = Instant::now();
         // Now we can safely use backtrace without recursion!
         // debug_log!("Calling extract_callstack");
-        let mut current_backtrace = with_sys_alloc(|| Backtrace::new_unresolved());
+        let mut current_backtrace = safe_alloc! { Backtrace::new_unresolved() };
 
         // TODO phase out - useful for debugging though
         // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
@@ -400,23 +399,23 @@ fn record_alloc(address: usize, size: usize) {
         // }
 
         let file_names = {
-            with_sys_alloc(|| {
+            safe_alloc! {
                 ProfileReg::get()
                     // .lock()
                     .get_file_names()
-            })
+            }
         };
         debug_log!("file_names={file_names:#?}");
 
         // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
         let Some(frames) =
-            extract_callstack_with_recursion_check(&mut current_backtrace, file_names)
+            extract_callstack_with_recursion_check(&mut current_backtrace, &file_names)
         else {
             eprintln!("*** Recursion detected ***");
             return;
         };
 
-        with_sys_alloc(|| {
+        safe_alloc! {
             if frames.is_empty() {
                 debug_log!("No eligible profile found");
                 return;
@@ -460,38 +459,38 @@ fn record_alloc(address: usize, size: usize) {
                     start_ident.elapsed().as_millis()
                 );
             }
-        });
-    });
+        };
+    };
 }
 
 // Don't change name from "extract_callstack_..." as this is used in regression checking.
 fn extract_callstack_with_recursion_check(
     current_backtrace: &mut Backtrace,
-    file_names: Vec<String>,
+    file_names: &[String],
 ) -> Option<Vec<(String, u32, String, String, ProfileRef)>> {
-    with_sys_alloc(|| current_backtrace.resolve());
-    with_sys_alloc(|| {
+    safe_alloc! { current_backtrace.resolve() };
+    safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
         let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(100); // Fixed size, no growing
         let mut found_recursion = false;
-        let mut stack_size: usize = with_sys_alloc(|| 0);
+        let mut stack_size: usize = safe_alloc! { 0 };
         for (i, frame) in Backtrace::frames(current_backtrace).iter().enumerate() {
             if i >= 200 {
-                with_sys_alloc(|| {
+                safe_alloc! {
                     println!("current_backtrace={current_backtrace:#?}");
-                });
+                };
                 panic!("Max limit of 200 frames exceeded");
             } // Hard limit to prevent overflow
             for symbol in frame.symbols() {
-                let maybe_frame = with_sys_alloc(|| symbol.name());
+                let maybe_frame = safe_alloc! { symbol.name() };
                 if let Some(ref name) = &maybe_frame {
-                    let name_str = with_sys_alloc(|| format!("{name}"));
+                    let name_str = safe_alloc! { format!("{name}") };
 
                     // Check for our own functions (recursion detection)
                     if name_str.contains("extract_callstack_with_recursion_check") {
-                        // with_sys_alloc(|| {
+                        // safe_alloc! {
                         //     eprintln!("current_backtrace={current_backtrace:#?}");
-                        // });
+                        // };
                         found_recursion = true;
                         break;
                     }
@@ -504,24 +503,24 @@ fn extract_callstack_with_recursion_check(
                 if maybe_filename.is_none()
                     || maybe_lineno.is_none()
                     || maybe_frame.is_none()
-                    || with_sys_alloc(|| maybe_frame.as_ref().unwrap().to_string()).starts_with('<')
+                    || safe_alloc! { maybe_frame.as_ref().unwrap().to_string() }.starts_with('<')
                 {
                     continue;
                 }
 
                 // Safe to unwrap now
-                let filename = with_sys_alloc(|| file_stem_from_path(maybe_filename.unwrap()));
-                let lineno = with_sys_alloc(|| maybe_lineno.unwrap());
-                let symbol_name = with_sys_alloc(|| maybe_frame.unwrap());
-                let frame_str = with_sys_alloc(|| symbol_name.to_string());
+                let filename = safe_alloc! { file_stem_from_path(maybe_filename.unwrap()) };
+                let lineno = safe_alloc! { maybe_lineno.unwrap() };
+                let symbol_name = safe_alloc! { maybe_frame.unwrap() };
+                let frame_str = safe_alloc! { symbol_name.to_string() };
 
                 // Apply second filter
                 if !file_names.contains(&filename) {
                     continue;
                 }
 
-                let mut frame = with_sys_alloc(|| frame_str.clone());
-                let fn_name = with_sys_alloc(|| clean_function_name(&mut frame));
+                let mut frame = safe_alloc! { frame_str.clone() };
+                let fn_name = safe_alloc! { clean_function_name(&mut frame) };
 
                 let maybe_profile_ref = find_profile(&filename, &fn_name, lineno);
                 if let Some(profile_ref) = maybe_profile_ref {
@@ -529,9 +528,9 @@ fn extract_callstack_with_recursion_check(
                     stack_size += 1;
                     // Hard limit to prevent overflow
                     if stack_size > 100 {
-                        with_sys_alloc(|| {
+                        safe_alloc! {
                             println!("current_backtrace={current_backtrace:#?}");
-                        });
+                        };
                         panic!("Max limit of 200 frames exceeded");
                     }
                     // stack_size
@@ -547,7 +546,7 @@ fn extract_callstack_with_recursion_check(
         } else {
             Some(frames)
         }
-    })
+    }
 }
 
 /// Record an allocation with the profile registry based on module path and line number
@@ -558,7 +557,7 @@ pub fn record_allocation(
     size: usize,
     current_backtrace: &mut Backtrace,
 ) -> bool {
-    with_sys_alloc(|| {
+    safe_alloc! {
         // First log (acquires debug log mutex)
         debug_log!(
             "Looking for profile to record allocation: module={file_name}, fn={fn_name}, line={line}, size={size}"
@@ -602,7 +601,7 @@ pub fn record_allocation(
         // flush_debug_log();
 
         result
-    })
+    }
 }
 
 pub fn register_detailed_allocation(address: usize, size: usize, stack: Vec<String>) {
@@ -859,48 +858,48 @@ pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
 
 /// Add a task to active profiles
 pub fn activate_task(task_id: usize) {
-    with_sys_alloc(|| {
+    safe_alloc! {
         ProfileReg::get().activate_task(task_id);
-    });
+    };
 }
 
 /// Remove a task from active profiles
 #[allow(dead_code)]
 pub fn deactivate_task(task_id: usize) {
-    with_sys_alloc(|| {
+    safe_alloc! {
         ProfileReg::get().deactivate_task(task_id);
-    });
+    };
 }
 
 // /// Add a task to a thread's stack
 // pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-//     with_sys_alloc(|| {
+//     safe_alloc! {
 //         PROFILE_REGISTRY
 //             .lock()
 //             .push_task_to_stack(thread_id, task_id);
-//     });
+//     };
 // }
 
 // /// Remove a task from a thread's stack
 // #[allow(dead_code)]
 // pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-//     with_sys_alloc(|| {
+//     safe_alloc! {
 //         PROFILE_REGISTRY
 //             .lock()
 //             .pop_task_from_stack(thread_id, task_id);
-//     });
+//     };
 // }
 
 /// Get active tasks
 #[must_use]
 pub fn get_active_tasks() -> Vec<usize> {
-    with_sys_alloc(|| ProfileReg::get().get_active_tasks())
+    safe_alloc! { ProfileReg::get().get_active_tasks() }
 }
 
 /// Get the last active task
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
-    with_sys_alloc(|| ProfileReg::get().get_last_active_task())
+    safe_alloc! { ProfileReg::get().get_last_active_task() }
 }
 
 // ========== TASK CONTEXT DEFINITIONS ==========
@@ -975,7 +974,7 @@ pub struct TaskGuard;
 impl Drop for TaskGuard {
     fn drop(&mut self) {
         // Run these operations with System allocator
-        with_sys_alloc(|| {
+        safe_alloc! {
             // Remove from active profiles
             debug_log!("Deactivating task {}", self.task_id);
             ProfileReg::get().deactivate_task(self.task_id);
@@ -984,7 +983,7 @@ impl Drop for TaskGuard {
             if let Some(logger) = crate::DebugLogger::get() {
                 let _ = logger.lock().flush();
             }
-        });
+        };
     }
 }
 
@@ -1026,9 +1025,10 @@ pub fn dump_task_path_registry() {
 // 4. Utility function to look up and print a specific task's path
 #[allow(dead_code)]
 pub fn print_task_path(task_id: usize) {
-    match lookup_task_path(task_id) {
-        Some(path) => debug_log!("Task {} path: {}", task_id, path.join("::")),
-        None => debug_log!("No path registered for task {}", task_id),
+    if let Some(path) = lookup_task_path(task_id) {
+        debug_log!("Task {task_id} path: {}", path.join("::"));
+    } else {
+        debug_log!("No path registered for task {task_id}");
     }
     flush_debug_log();
 }
@@ -1105,10 +1105,10 @@ pub fn initialize_memory_profiling() {
     USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
 
     // Use system allocator just for logging
-    with_sys_alloc(|| {
+    safe_alloc! {
         debug_log!("Memory profiling initialized");
         flush_debug_log();
-    });
+    };
     #[cfg(debug_assertions)]
     assert_eq!(current_allocator(), Allocator::Tracking);
 }
@@ -1126,7 +1126,7 @@ pub fn finalize_memory_profiling() {
 fn write_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Retrieve registries to get task allocations and names
         let memory_path = get_memory_path().unwrap_or("memory.folded");
 
@@ -1226,7 +1226,7 @@ fn write_memory_profile_data() {
                 debug_log!("Error flushing writer: {e}");
             }
         }
-    });
+    };
 }
 
 fn write_alloc(

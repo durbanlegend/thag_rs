@@ -16,18 +16,13 @@ use std::{
 };
 
 #[cfg(feature = "full_profiling")]
-use crate::get_root_module;
-
-// Import mem_attribution module functions when full_profiling is enabled
-#[cfg(feature = "full_profiling")]
-use crate::mem_attribution::{deregister_profile, get_next_profile_id, register_profile};
-
-#[cfg(feature = "full_profiling")]
 use crate::{
+    get_root_module,
+    mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
         activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    with_sys_alloc,
+    safe_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -1560,7 +1555,7 @@ impl Profile {
 
         // For full profiling (specifically memory), run this method using the system allocator
         // so as not to clog the allocation tracking in mod mem_tracking.
-        with_sys_alloc(|| -> Option<Self> {
+        safe_alloc! {
             let start = Instant::now();
             // Try allowing overrides
             let profile_type = requested_type;
@@ -1568,7 +1563,7 @@ impl Profile {
 
             let file_name_stem = file_stem_from_path_str(file_name);
 
-            debug_log!("file_name={file_name_stem}");
+            // debug_log!("file_name={file_name_stem}");
 
             // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
             let start_pattern = "Profile::new";
@@ -1584,10 +1579,10 @@ impl Profile {
                 start_pattern,
                 &mut current_backtrace,
             );
-            debug_log!("cleaned_stack={cleaned_stack:#?}");
+            // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
-                debug_log!("Empty cleaned stack found");
+                safe_alloc!(debug_log!("Empty cleaned stack found"));
                 return None;
             }
 
@@ -1596,11 +1591,11 @@ impl Profile {
 
             #[cfg(not(target_os = "windows"))]
             let desc_fn_name = if section_name.is_some() && is_profiled_function(fn_name) {
-                get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string())
+                safe_alloc!(get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string()))
             } else if is_async {
-                format!("async::{fn_name}")
+                safe_alloc!(format!("async::{fn_name}"))
             } else {
-                fn_name.to_string()
+                safe_alloc!(fn_name.to_string())
             };
 
             #[cfg(target_os = "windows")]
@@ -1617,10 +1612,10 @@ impl Profile {
 
             let path = extract_path(&cleaned_stack, Some(fn_name));
 
-            let stack = path.join(";");
+            let stack = safe_alloc!(path.join(";"));
 
             // debug_log!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
-            debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
+            // debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
             register_profiled_function(&stack, &desc_fn_name);
 
             // Determine if we should keep the section name
@@ -1744,12 +1739,12 @@ impl Profile {
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
             debug_log!(
-                "About to register profile in module {}",
-                file_name_stem.clone()
+                "About to register profile in module {file_name_stem}"
+
             );
             debug_log!(
                 "About to register profile in module {} for fn {} with line range {:?}..None",
-                file_name_stem.clone(),
+                file_name_stem,
                 fn_name,
                 start_line
             );
@@ -1771,7 +1766,7 @@ impl Profile {
             profile.start = Some(Instant::now());
 
             Some(profile)
-        })
+        }
     }
 
     #[must_use]
@@ -1992,14 +1987,8 @@ pub fn build_stack(
 }
 
 #[must_use]
+// #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
-    // Extract profiled functions
-    // if maybe_append.is_some() {
-    //     eprintln!(
-    //         "*** cleaned_stack.first()={:?}, append={maybe_append:?}",
-    //         cleaned_stack.first()
-    //     );
-    // }
     let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
         == Some(true);
     let start = usize::from(dup);
@@ -2011,10 +2000,6 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
         .fold(vec![], |stack: Vec<String>, fn_name_str| {
             let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
             let stack_str = new_vec.join(";");
-            // eprintln!(
-            //     "stack={stack:#?}; stack_str={stack_str}, is_profiled_function(&stack_str)={}",
-            //     is_profiled_function(&stack_str)
-            // );
             if is_profiled_function(&stack_str) {
                 new_vec
             } else {
@@ -2027,10 +2012,39 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
         .collect()
 }
 
-// #[must_use]
-// pub fn extract_callstack(start_pattern: &str) -> (Vec<String>, bool) {
-//     let mut current_backtrace = Backtrace::new_unresolved();
-//     extract_callstack_from_backtrace(start_pattern, &mut current_backtrace)
+// #[cfg(feature = "full_profiling")]
+// pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
+//     safe_alloc! {
+//         let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
+//             == Some(true);
+//         let mut stack = Vec::new();
+//         let mut stack_str = String::new();
+
+//         // Manual loop instead of iterator chain
+//         for frame in cleaned_stack.iter().rev() {
+//             let mut temp_stack_str = stack_str.clone();
+//             if !temp_stack_str.is_empty() {
+//                 temp_stack_str.push(';');
+//             }
+//             temp_stack_str.push_str(frame);
+//             if is_profiled_function(&temp_stack_str) {
+//                 stack.push(frame.to_string());
+//                 if !stack_str.is_empty() {
+//                     stack_str.push(';');
+//                 }
+//                 stack_str.push_str(frame);
+//             }
+//         }
+
+//         // Handle the optional append (replacing maybe_append.into_iter())
+//         if let Some(append_name) = maybe_append {
+//             if !dup {
+//                 stack.push(append_name.to_string());
+//             }
+//         }
+
+//         stack
+//     }
 // }
 
 #[cfg(feature = "time_profiling")]
@@ -2044,7 +2058,7 @@ pub fn extract_profile_callstack(
     start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    with_sys_alloc(|| current_backtrace.resolve());
+    safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     // let end_point = "__rust_begin_short_backtrace";
@@ -2090,7 +2104,7 @@ pub fn extract_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    with_sys_alloc(|| current_backtrace.resolve());
+    safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     // let end_point = "__rust_begin_short_backtrace";
@@ -2141,7 +2155,7 @@ pub fn extract_detailed_alloc_callstack(
     start_pattern: &Regex,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    with_sys_alloc(|| current_backtrace.resolve());
+    safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     let end_point = "__rust_begin_short_backtrace";
@@ -2238,7 +2252,7 @@ impl Drop for Profile {
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
     fn drop(&mut self) {
-        with_sys_alloc(|| {
+        safe_alloc! {
             // Capture the information needed for deregistration but use it only at the end
             #[cfg(feature = "full_profiling")]
             let instance_id = self.instance_id();
@@ -2304,7 +2318,7 @@ impl Drop for Profile {
                 // Use deregister_profile which is now safe due to our changes
                 deregister_profile(self);
             }
-        });
+        };
     }
 }
 
@@ -2495,31 +2509,27 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 /// Panics if it finds the name "new", which shows that the inclusion of the
 /// type in the method name is not working.
 pub fn register_profiled_function(name: &str, desc_name: &str) {
-    let start = Instant::now();
+    // let start = safe_alloc!(Instant::now());
     #[cfg(all(debug_assertions, not(test)))]
     assert!(
         name != "new",
         "Logic error: `new` is not an accepted function name on its own. It must be qualified with the type name: `<Type>::new`. desc_name={desc_name}"
     );
-    let name = name.to_string();
-    let desc_name = desc_name.to_string();
-    // debug_log!(
-    //     "PROFILED_FUNCTIONS.is_locked()? {}",
-    //     PROFILED_FUNCTIONS.is_locked()
-    // );
+    let name = safe_alloc!(name.to_string());
+    let desc_name = safe_alloc!(desc_name.to_string());
     {
         if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
-            lock.insert(name, desc_name);
+            safe_alloc!(lock.insert(name, desc_name));
         } else {
-            debug_log!("register_profiled_function failed to acquire lock on PROFILED_FUNCTIONS");
+            safe_alloc!(debug_log!(
+                "register_profiled_function failed to acquire lock on PROFILED_FUNCTIONS"
+            ));
         }
     }
-    // debug_log!("Profiled functions: {:#?}", dump_profiled_functions());
-    // debug_log!("Exiting register_profiled_function");
-    debug_log!(
-        "register_profiled_function took {}ms",
-        start.elapsed().as_millis()
-    );
+    // debug_log!(
+    //     "register_profiled_function took {}ms",
+    //     start.elapsed().as_millis()
+    // );
 }
 
 // Check if a function is registered for profiling
@@ -2645,9 +2655,9 @@ pub enum MemoryError {
 //         $crate::paste::paste! {
 //             fn [<end_ $name>]() -> u32 { line!() }
 
-//             ::thag_profiler::with_sys_alloc(|| {
+//             ::thag_profiler::safe_alloc! {
 //                 drop(section_profile);
-//             });
+//             };
 //         };
 //     };
 // }

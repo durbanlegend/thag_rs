@@ -1,8 +1,8 @@
 use crate::{
     debug_log, flush_debug_log,
-    mem_tracking::{with_sys_alloc, write_detailed_stack_alloc},
+    mem_tracking::write_detailed_stack_alloc,
     profiling::{clean_function_name, Profile},
-    regex, static_lazy, strip_hex_suffix, ProfileError, ProfileResult,
+    regex, safe_alloc, static_lazy, strip_hex_suffix, ProfileError, ProfileResult,
 };
 use backtrace::{Backtrace, BacktraceFrame};
 use dashmap::{DashMap, DashSet};
@@ -19,7 +19,8 @@ pub struct ProfileKey {
 }
 
 impl ProfileKey {
-    pub fn new(module: String, function: String, start_line: u32, end_line: u32) -> Self {
+    #[must_use]
+    pub const fn new(module: String, function: String, start_line: u32, end_line: u32) -> Self {
         Self {
             module,
             function,
@@ -27,6 +28,7 @@ impl ProfileKey {
         }
     }
 
+    #[must_use]
     pub fn contains_line(&self, line: u32) -> bool {
         self.line_range.contains(&line)
     }
@@ -48,7 +50,14 @@ pub struct ProfileRegistry {
     active_tasks: DashSet<usize>, // Just track active task IDs
 }
 
+impl Default for ProfileRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProfileRegistry {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             profiles: DashMap::new(),
@@ -66,10 +75,12 @@ impl ProfileRegistry {
         self.active_tasks.remove(&task_id);
     }
 
+    #[must_use]
     pub fn get_active_tasks(&self) -> Vec<usize> {
         self.active_tasks.iter().map(|entry| *entry.key()).collect()
     }
 
+    #[must_use]
     pub fn get_last_active_task(&self) -> Option<usize> {
         // This might need more sophisticated logic for "max_by_key" equivalent
         self.active_tasks.iter().map(|entry| *entry.key()).max()
@@ -136,10 +147,9 @@ impl ProfileRegistry {
     pub fn register_profile(&self, profile_ref: &ProfileRef) -> ProfileResult<()> {
         // Extract information from the ProfileRef and its contained Profile
         let instance_id = profile_ref.instance_id;
-        let profile = profile_ref.profile().ok_or(ProfileError::General(
-            "No profile found for ProfileRef".to_string(),
-        ))?;
-
+        let profile = profile_ref
+            .profile()
+            .ok_or_else(|| ProfileError::General("No profile found for ProfileRef".to_string()))?;
         // Extract module, function, and line info from the Profile
         // profile.file_name(), profile.detailed_memory(), profile.start_line(), profile.end_line(), profile.instance_id());
         let module_name = profile.file_name();
@@ -191,7 +201,7 @@ impl ProfileRegistry {
     #[allow(clippy::missing_panics_doc, reason = "checked start_line.is_some()")]
     pub fn find_profile(&self, module: &str, function: &str, line: u32) -> Option<ProfileRef> {
         // Search through profiles for matching module/function/line
-        for entry in self.profiles.iter() {
+        for entry in &self.profiles {
             let key = entry.key();
             let profile_ref = entry.value();
 
@@ -315,7 +325,7 @@ pub fn get_next_profile_id() -> u64 {
 
 /// Register a profile with the global registry
 pub fn register_profile(profile: &Profile) {
-    with_sys_alloc(|| {
+    safe_alloc! {
         // First log the information (acquires debug log mutex)
         debug_log!("Registering profile in registry: module={}, detailed_memory={}, start_line={:?}, end_line={:?}, instance_id={}",
             profile.file_name(), profile.detailed_memory(), profile.start_line(), profile.end_line(), profile.instance_id());
@@ -345,7 +355,7 @@ pub fn register_profile(profile: &Profile) {
         ProfileReg::get()
             .register_profile(&profile_ref)
             .expect("Error registering profile");
-    });
+    };
 }
 
 /// Safely deregister a profile from the `ProfileRegistry`
@@ -368,8 +378,8 @@ pub fn deregister_profile(profile: &Profile) {
     {
         // First, capture all the information we need before interacting with the registry
         let instance_id = profile.instance_id();
-        let file_name = with_sys_alloc(|| profile.file_name().to_string());
-        let fn_name = with_sys_alloc(|| profile.fn_name().to_string());
+        let file_name = safe_alloc!(profile.file_name().to_string());
+        let fn_name = safe_alloc!(profile.fn_name().to_string());
         let start_line = profile.start_line();
         let end_line = profile.end_line();
 
@@ -378,7 +388,7 @@ pub fn deregister_profile(profile: &Profile) {
         // flush_debug_log();
 
         // Now deregister with the captured information
-        with_sys_alloc(|| {
+        safe_alloc! {
             // Use a scope to ensure the registry lock is released promptly
             {
                 // if let Some(mut registry) = PROFILE_REGISTRY.try_lock() {
@@ -392,7 +402,7 @@ pub fn deregister_profile(profile: &Profile) {
                 // }
             }
             // flush_debug_log();
-        });
+        };
 
         // Reset the flag when done
         DEREGISTERING.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -405,9 +415,9 @@ pub fn deregister_profile(profile: &Profile) {
 /// Find a profile for a specific module path and line number
 #[must_use]
 pub fn find_profile(file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Acquire the registry lock
         // Return the result
         ProfileReg::get().find_profile(file_name, fn_name, line)
-    })
+    }
 }

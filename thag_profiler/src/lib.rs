@@ -77,6 +77,7 @@ pub use {
         TrackingAllocator,
     },
     profiling::extract_path,
+    thag_proc_macros::safe_alloc,
 };
 
 // #[cfg(feature = "time_profiling")]
@@ -150,9 +151,21 @@ pub fn file_stem_from_path_str(file_name: &'static str) -> String {
 /// # Panics
 ///
 /// Panics if `Path::file_stem()`    does not return a valid file stem.
+#[cfg(not(feature = "full_profiling"))]
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
-    with_sys_alloc(|| path.file_stem().unwrap().to_string_lossy().to_string())
+    path.file_stem().unwrap().to_string_lossy().to_string()
+}
+
+/// Extract the file stem from a Path.
+///
+/// # Panics
+///
+/// Panics if `Path::file_stem()`    does not return a valid file stem.
+#[cfg(feature = "full_profiling")]
+#[must_use]
+pub fn file_stem_from_path(path: &Path) -> String {
+    safe_alloc!(path.file_stem().unwrap().to_string_lossy().to_string())
 }
 
 #[cfg(feature = "time_profiling")]
@@ -424,7 +437,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 #[cfg(feature = "full_profiling")]
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
-    with_sys_alloc(|| {
+    safe_alloc! {
         // eprintln!("root_module={root_module}, profile_config={profile_config:#?}");
 
         // Only set PROFILEE if it hasn't been set already
@@ -457,7 +470,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
             // eprintln!("Initializing memory profiling");
             mem_tracking::initialize_memory_profiling();
         }
-    });
+    };
     // eprintln!("Exiting init_profiling");
 }
 
@@ -529,7 +542,7 @@ pub fn finalize_profiling() {
 /// This function panics if profiling cannot be disabled.
 #[cfg(feature = "full_profiling")]
 pub fn finalize_profiling() {
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Ensure debug log is flushed before we disable profiling
         // flush_debug_log();
 
@@ -557,7 +570,7 @@ pub fn finalize_profiling() {
 
         // Add a delay to ensure flush completes before program exit
         std::thread::sleep(std::time::Duration::from_millis(10));
-    });
+    };
 }
 
 #[cfg(not(feature = "time_profiling"))]
@@ -992,11 +1005,13 @@ mod lib_tests {
     #[test]
     fn test_mem_tracking_integration() {
         // Test basic allocator operations
+
+        use thag_proc_macros::safe_alloc;
         let current = mem_tracking::current_allocator();
         assert!(matches!(current, Allocator::Tracking) || matches!(current, Allocator::System));
 
         // Test with_sys_alloc function
-        let result = with_sys_alloc(|| 42);
+        let result = safe_alloc!(42);
         assert_eq!(result, 42);
 
         // Test creating a memory task

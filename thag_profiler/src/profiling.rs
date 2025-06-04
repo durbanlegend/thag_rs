@@ -1611,6 +1611,7 @@ impl Profile {
             // }
 
             let path = extract_path(&cleaned_stack, Some(fn_name));
+            debug_log!("cleaned_stack={cleaned_stack:#?}, path={path:#?}");
 
             let stack = safe_alloc!(path.join(";"));
 
@@ -1987,7 +1988,7 @@ pub fn build_stack(
 }
 
 #[must_use]
-// #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
     let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
         == Some(true);
@@ -2012,40 +2013,39 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
         .collect()
 }
 
-// #[cfg(feature = "full_profiling")]
-// pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
-//     safe_alloc! {
-//         let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
-//             == Some(true);
-//         let mut stack = Vec::new();
-//         let mut stack_str = String::new();
+#[cfg(feature = "full_profiling")]
+pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
+    safe_alloc! {
+        let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
+            == Some(true);
+        let start = usize::from(dup);
 
-//         // Manual loop instead of iterator chain
-//         for frame in cleaned_stack.iter().rev() {
-//             let mut temp_stack_str = stack_str.clone();
-//             if !temp_stack_str.is_empty() {
-//                 temp_stack_str.push(';');
-//             }
-//             temp_stack_str.push_str(frame);
-//             if is_profiled_function(&temp_stack_str) {
-//                 stack.push(frame.to_string());
-//                 if !stack_str.is_empty() {
-//                     stack_str.push(';');
-//                 }
-//                 stack_str.push_str(frame);
-//             }
-//         }
-
-//         // Handle the optional append (replacing maybe_append.into_iter())
-//         if let Some(append_name) = maybe_append {
-//             if !dup {
-//                 stack.push(append_name.to_string());
-//             }
-//         }
-
-//         stack
-//     }
-// }
+        let mut stack = Vec::new();
+        let mut stack_str = String::new();
+        // Manual loop instead of iterator chain
+        for frame in cleaned_stack[start..].iter().rev() {
+            let mut temp_stack_str = stack_str.clone();
+            if !temp_stack_str.is_empty() {
+                temp_stack_str.push(';');
+            }
+            temp_stack_str.push_str(frame);
+            if is_profiled_function(&temp_stack_str) {
+                stack.push(frame.to_string());
+                if !stack_str.is_empty() {
+                    stack_str.push(';');
+                }
+                stack_str.push_str(frame);
+                // assert_eq!(stack.join(";"), stack_str);
+                debug_log!("frame={frame}, stack_str={stack_str}");
+            }
+        }
+        // Handle the optional append (replacing maybe_append.into_iter())
+        if let Some(append_name) = maybe_append {
+            stack.push(append_name.to_string());
+        }
+        stack
+    }
+}
 
 #[cfg(feature = "time_profiling")]
 #[must_use]

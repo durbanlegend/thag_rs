@@ -232,7 +232,7 @@ impl ProfileRegistry {
         fn_name: &str,
         line: u32,
         size: usize,
-        current_backtrace: &mut Backtrace,
+        maybe_current_backtrace: Option<&mut Backtrace>,
     ) -> bool {
         // Find the profile for this allocation
         let profile_ref_opt = self.find_profile(file_name, fn_name, line);
@@ -243,6 +243,7 @@ impl ProfileRegistry {
             if let Some(profile) = profile_ref.profile() {
                 // Record the allocation to the profile
                 if profile_ref.detailed_memory() {
+                    let current_backtrace = maybe_current_backtrace.unwrap();
                     // ... [existing detailed memory recording code]
                     let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
                     let end_point = profile.fn_name();

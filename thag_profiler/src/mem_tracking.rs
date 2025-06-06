@@ -18,7 +18,7 @@ use crate::{
     },
     regex, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
 };
-use backtrace::Backtrace;
+use backtrace::{resolve_frame, trace, Backtrace};
 use parking_lot::Mutex;
 use regex::Regex;
 use std::{
@@ -384,7 +384,7 @@ fn record_alloc(address: usize, size: usize) {
         let start_ident = Instant::now();
         // Now we can safely use backtrace without recursion!
         // debug_log!("Calling extract_callstack");
-        let mut current_backtrace = safe_alloc! { Backtrace::new_unresolved() };
+        // let mut current_backtrace = safe_alloc! { Backtrace::new_unresolved() };
 
         // TODO phase out - useful for debugging though
         // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
@@ -409,7 +409,7 @@ fn record_alloc(address: usize, size: usize) {
 
         // let Some((filename, lineno, frame, fn_name, profile_ref)) = Backtrace::frames(&current_backtrace)
         let Some(frames) =
-            extract_callstack_with_recursion_check(&mut current_backtrace, &file_names)
+            extract_callstack_with_recursion_check(&file_names)
         else {
             eprintln!("*** Recursion detected ***");
             return;
@@ -431,18 +431,24 @@ fn record_alloc(address: usize, size: usize) {
                 return;
             }
 
-            let (filename, lineno, frame, fn_name, _profile_ref) = &frames[0];
+            let (filename, lineno, frame, fn_name, profile_ref) = &frames[0];
+            let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
 
+            let mut maybe_current_backtrace: Option<Backtrace> = if detailed_memory || profile_ref.detailed_memory() {
+                let current_backtrace = safe_alloc! { Backtrace::new_unresolved() };
+                Some(current_backtrace)
+            } else {
+                None
+            };
             debug_log!("Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}");
 
             // Still record detailed allocations to -memory_detail.folded if requested
-            let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
             if detailed_memory {
                 record_detailed_alloc(
                     address,
                     size,
                     &ALLOC_START_PATTERN,
-                    &mut current_backtrace,
+                    maybe_current_backtrace.as_mut().unwrap(),
                     true,
                 );
             }
@@ -450,7 +456,7 @@ fn record_alloc(address: usize, size: usize) {
             // Try to record the allocation in the new profile registry
             if !filename.is_empty()
                 && *lineno > 0
-                && record_allocation(filename, fn_name, *lineno, size, &mut current_backtrace)
+                && record_allocation(filename, fn_name, *lineno, size, maybe_current_backtrace.as_mut())
             {
                 debug_log!("Recorded allocation of {size} bytes in {filename}::{fn_name}:{lineno} to a profile");
 
@@ -465,82 +471,79 @@ fn record_alloc(address: usize, size: usize) {
 
 // Don't change name from "extract_callstack_..." as this is used in regression checking.
 fn extract_callstack_with_recursion_check(
-    current_backtrace: &mut Backtrace,
     file_names: &[String],
 ) -> Option<Vec<(String, u32, String, String, ProfileRef)>> {
-    safe_alloc! { current_backtrace.resolve() };
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
-        let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(100); // Fixed size, no growing
+        let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(20); // Fixed size, no growing
         let mut found_recursion = false;
-        let mut stack_size: usize = safe_alloc! { 0 };
-        for (i, frame) in Backtrace::frames(current_backtrace).iter().enumerate() {
-            if i >= 200 {
-                safe_alloc! {
-                    println!("current_backtrace={current_backtrace:#?}");
-                };
-                panic!("Max limit of 200 frames exceeded");
-            } // Hard limit to prevent overflow
-            for symbol in frame.symbols() {
-                let maybe_frame = safe_alloc! { symbol.name() };
-                if let Some(ref name) = &maybe_frame {
-                    let name_str = safe_alloc! { format!("{name}") };
+        let mut fin = false;
+        let mut i = 0;
+
+        trace(|frame| {
+            let mut suppress = false;
+
+            resolve_frame(frame, |symbol| {
+
+                'process_symbol: {
+                    let Some(name) = symbol.name() else {
+                        suppress = true;
+                        break 'process_symbol;
+                    };
+                    let name = name.to_string();
+                    if name.contains("__rust_begin_short_backtrace") {
+                        fin = true;
+                        suppress = true;
+                    }
+                    if name.starts_with("backtrace::backtrace::") || name.starts_with('<') {
+                        suppress = true;
+                    }
+
+                    if suppress { break 'process_symbol; }
 
                     // Check for our own functions (recursion detection)
-                    if name_str.contains("extract_callstack_with_recursion_check") {
-                        // safe_alloc! {
-                        //     eprintln!("current_backtrace={current_backtrace:#?}");
-                        // };
+                    if i > 0 && name.contains("extract_callstack_with_recursion_check") {
                         found_recursion = true;
-                        break;
+                        break 'process_symbol;
+                    }
+
+                    let maybe_filename = symbol.filename();
+                    let maybe_lineno = symbol.lineno();
+
+                    // Apply the first filter
+                    if maybe_filename.is_none()
+                        || maybe_lineno.is_none()
+                    {
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+                    // Safe to unwrap now
+                    let filename = safe_alloc! { file_stem_from_path(maybe_filename.unwrap()) };
+                    let lineno = safe_alloc! { maybe_lineno.unwrap() };
+
+                    if !file_names.contains(&filename) {
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+
+                    // Apply second filter
+                    let fn_name = clean_function_name(&mut name.clone());
+                    let maybe_profile_ref = find_profile(&filename, &fn_name, lineno);
+                    if let Some(profile_ref) = maybe_profile_ref {
+                        // Safe to add this frame
+                        frames.push((filename, lineno, name, fn_name, profile_ref));
+                        i += 1;
+                        if i >= 20 {
+                            safe_alloc! {
+                                 println!("frames={frames:#?}");
+                             };
+                             panic!("Max limit of 20 frames exceeded");
+                        }
                     }
                 }
-
-                let maybe_filename = symbol.filename();
-                let maybe_lineno = symbol.lineno();
-
-                // Apply the first filter
-                if maybe_filename.is_none()
-                    || maybe_lineno.is_none()
-                    || maybe_frame.is_none()
-                    || safe_alloc! { maybe_frame.as_ref().unwrap().to_string() }.starts_with('<')
-                {
-                    continue;
-                }
-
-                // Safe to unwrap now
-                let filename = safe_alloc! { file_stem_from_path(maybe_filename.unwrap()) };
-                let lineno = safe_alloc! { maybe_lineno.unwrap() };
-                let symbol_name = safe_alloc! { maybe_frame.unwrap() };
-                let frame_str = safe_alloc! { symbol_name.to_string() };
-
-                // Apply second filter
-                if !file_names.contains(&filename) {
-                    continue;
-                }
-
-                let mut frame = safe_alloc! { frame_str.clone() };
-                let fn_name = safe_alloc! { clean_function_name(&mut frame) };
-
-                let maybe_profile_ref = find_profile(&filename, &fn_name, lineno);
-                if let Some(profile_ref) = maybe_profile_ref {
-                    // Safe to add this frame
-                    stack_size += 1;
-                    // Hard limit to prevent overflow
-                    if stack_size > 100 {
-                        safe_alloc! {
-                            println!("current_backtrace={current_backtrace:#?}");
-                        };
-                        panic!("Max limit of 200 frames exceeded");
-                    }
-                    // stack_size
-                    frames.push((filename, lineno, frame_str, fn_name, profile_ref));
-                }
-            }
-            if found_recursion {
-                break; // Exit early if recursion detected
-            }
-        }
+            });
+            !found_recursion && !fin
+        });
         if found_recursion {
             None // Signal to skip tracking
         } else {
@@ -555,7 +558,7 @@ pub fn record_allocation(
     fn_name: &str,
     line: u32,
     size: usize,
-    current_backtrace: &mut Backtrace,
+    maybe_current_backtrace: Option<&mut Backtrace>,
 ) -> bool {
     safe_alloc! {
         // First log (acquires debug log mutex)
@@ -585,7 +588,7 @@ pub fn record_allocation(
                 fn_name,
                 line,
                 size,
-                current_backtrace,
+                maybe_current_backtrace,
             );
             debug_log!("record_allocation on registry returned {result}");
         }
@@ -605,8 +608,10 @@ pub fn record_allocation(
 }
 
 pub fn register_detailed_allocation(address: usize, size: usize, stack: Vec<String>) {
-    if is_detailed_memory() {
-        DetailedAddressRegistry::get().insert(address, (stack, size));
+    safe_alloc! {
+        if is_detailed_memory() {
+            DetailedAddressRegistry::get().insert(address, (stack, size));
+        }
     }
 }
 
@@ -632,31 +637,31 @@ pub fn write_detailed_stack_alloc(
     write_to_detail_file: bool,
     detailed_stack: &Vec<String>,
 ) {
-    // #[cfg(debug_assertions)]
-    // assert!(!detailed_stack.is_empty());
-    let root_module = lazy_static_var!(
-        String,
-        get_root_module()
-            .as_ref()
-            .map_or("root module", |v| v)
-            .to_string()
-    );
+    safe_alloc! {
+        let root_module = lazy_static_var!(
+            String,
+            get_root_module()
+                .as_ref()
+                .map_or("root module", |v| v)
+                .to_string()
+        );
 
-    let entry = if detailed_stack.is_empty() {
-        format!("[Out of `{root_module}` scope] {size}")
-    } else {
-        let descr_stack = build_stack(detailed_stack, None, ";");
+        let entry = if detailed_stack.is_empty() {
+            format!("[Out of `{root_module}` scope] {size}")
+        } else {
+            let descr_stack = build_stack(detailed_stack, None, ";");
 
-        debug_log!("descr_stack={descr_stack}");
-        format!("{descr_stack} {size}")
-    };
+            debug_log!("descr_stack={descr_stack}");
+            format!("{descr_stack} {size}")
+        };
 
-    let (memory_path, file) = if write_to_detail_file {
-        (get_memory_detail_path().unwrap(), MemoryDetailFile::get())
-    } else {
-        (get_memory_path().unwrap(), MemoryProfileFile::get())
-    };
-    let _ = Profile::write_profile_event(memory_path, file, &entry);
+        let (memory_path, file) = if write_to_detail_file {
+            (get_memory_detail_path().unwrap(), MemoryDetailFile::get())
+        } else {
+            (get_memory_path().unwrap(), MemoryProfileFile::get())
+        };
+        let _ = Profile::write_profile_event(memory_path, file, &entry);
+    }
 }
 
 #[allow(
@@ -742,7 +747,7 @@ pub fn record_dealloc(address: usize, size: usize) {
                 .iter()
                 .find(|frame| frame.contains("::profiling::Profile"))
         );
-        // debug_log!("...current backtrace: {:#?}", current_backtrace);
+        // debug_log!("...current backtrace: {current_backtrace:#?}");
         return;
     }
 
@@ -976,8 +981,8 @@ impl Drop for TaskGuard {
         // Run these operations with System allocator
         safe_alloc! {
             // Remove from active profiles
-            debug_log!("Deactivating task {}", self.task_id);
             ProfileReg::get().deactivate_task(self.task_id);
+            debug_log!("Deactivated task {}", self.task_id);
 
             // Flush logs directly
             if let Some(logger) = crate::DebugLogger::get() {

@@ -376,7 +376,14 @@ pub fn profile(_input: TokenStream) -> TokenStream {
     TokenStream::new()
 }
 
+#[cfg(not(feature = "full_profiling"))]
 #[proc_macro]
 pub fn safe_alloc(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)
+    input
+}
+
+#[cfg(feature = "full_profiling")]
+#[proc_macro]
+pub fn safe_alloc(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(true, "safe_alloc", &input, safe_alloc_impl)
 }

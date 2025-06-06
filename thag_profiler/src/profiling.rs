@@ -2,7 +2,7 @@
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use std::{
     collections::{BTreeSet, HashMap},
     env,
@@ -35,7 +35,7 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use backtrace::{Backtrace, BacktraceFrame};
 
 #[cfg(feature = "time_profiling")]
-use crate::{file_stem_from_path_str, flush_debug_log, get_base_location, warn_once};
+use crate::{flush_debug_log, get_base_location, warn_once};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -447,8 +447,8 @@ pub fn get_config_profile_type() -> ProfileType {
 }
 
 // Global registry of profiled functions
-static PROFILED_FUNCTIONS: Lazy<Mutex<HashMap<String, String>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static PROFILED_FUNCTIONS: Lazy<RwLock<HashMap<String, String>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -1561,7 +1561,9 @@ impl Profile {
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
-            let file_name_stem = file_stem_from_path_str(file_name);
+            let fname_start = file_name.rfind('/').unwrap() + 1;
+            let fname_dot = file_name.rfind('.').unwrap();
+            let file_name_stem = file_name[fname_start..fname_dot].to_string();
 
             // debug_log!("file_name={file_name_stem}");
 
@@ -1582,7 +1584,7 @@ impl Profile {
             // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
-                safe_alloc!(debug_log!("Empty cleaned stack found"));
+                debug_log!("Empty cleaned stack found");
                 return None;
             }
 
@@ -1613,7 +1615,7 @@ impl Profile {
             let path = extract_path(&cleaned_stack, Some(fn_name));
             debug_log!("cleaned_stack={cleaned_stack:#?}, path={path:#?}");
 
-            let stack = safe_alloc!(path.join(";"));
+            let stack = path.join(";");
 
             // debug_log!("fn_name={fn_name}, is_method={is_method}, maybe_method_name={maybe_method_name:?}, maybe_function_name={maybe_function_name:?}, desc_fn_name={desc_fn_name}");
             // debug_log!("Calling register_profiled_function({stack}, {desc_fn_name})");
@@ -1667,8 +1669,8 @@ impl Profile {
                 // Register this profile with the new ProfileRegistry
                 // First log the details to avoid potential deadlock
                 debug_log!(
-                        "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
-                    );
+                    "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
+                );
 
                 // Flush logs before calling register_profile
                 // flush_debug_log();
@@ -1735,14 +1737,11 @@ impl Profile {
                     memory_guard: Some(memory_guard),
                 }
             };
-            debug_log!("Time to create profile: {}ms", start.elapsed().as_millis());
+            // debug_log!("Time to create profile: {}ms", start.elapsed().as_millis());
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            debug_log!(
-                "About to register profile in module {file_name_stem}"
-
-            );
+            debug_log!("About to register profile in module {file_name_stem}");
             debug_log!(
                 "About to register profile in module {} for fn {} with line range {:?}..None",
                 file_name_stem,
@@ -1967,24 +1966,26 @@ pub fn build_stack(
     maybe_section_name: Option<&String>,
     sep: &str,
 ) -> std::string::String {
-    let mut vanilla_stack = String::new();
+    safe_alloc! {
+        let mut vanilla_stack = String::new();
 
-    path.iter()
-        .map(|fn_name_str| {
-            let stack_str = if vanilla_stack.is_empty() {
-                fn_name_str.to_string()
-            } else {
-                format!("{vanilla_stack};{fn_name_str}")
-            };
-            vanilla_stack.clone_from(&stack_str);
-            (stack_str, fn_name_str)
-        })
-        .map(|(stack_str, fn_name_str)| {
-            get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
-        })
-        .chain(maybe_section_name.cloned())
-        .collect::<Vec<String>>()
-        .join(sep)
+        path.iter()
+            .map(|fn_name_str| {
+                let stack_str = if vanilla_stack.is_empty() {
+                    fn_name_str.to_string()
+                } else {
+                    format!("{vanilla_stack};{fn_name_str}")
+                };
+                vanilla_stack.clone_from(&stack_str);
+                (stack_str, fn_name_str)
+            })
+            .map(|(stack_str, fn_name_str)| {
+                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
+            })
+            .chain(maybe_section_name.cloned())
+            .collect::<Vec<String>>()
+            .join(sep)
+    }
 }
 
 #[must_use]
@@ -2053,18 +2054,11 @@ pub fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
-#[cfg(feature = "time_profiling")]
+#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 pub fn extract_profile_callstack(
     start_pattern: &str,
     current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    safe_alloc!(current_backtrace.resolve());
-    let mut already_seen = HashSet::new();
-
-    // let end_point = "__rust_begin_short_backtrace";
-    let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
-    debug_log!("end_point={end_point}");
-
     // First, collect all relevant frames
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
@@ -2094,6 +2088,58 @@ pub fn extract_profile_callstack(
         .collect();
     // debug_log!("Callstack: {:#?}", callstack);
     // debug_log!("already_seen: {:#?}", already_seen);
+    callstack
+}
+
+#[cfg(feature = "full_profiling")]
+pub fn extract_profile_callstack(
+    start_pattern: &str,
+    current_backtrace: &mut Backtrace,
+) -> Vec<String> {
+    safe_alloc!(current_backtrace.resolve());
+    let mut already_seen = safe_alloc!(HashSet::new());
+
+    // let end_point = "__rust_begin_short_backtrace";
+    let end_point = safe_alloc!(get_base_location().unwrap_or("__rust_begin_short_backtrace"));
+    // debug_log!("end_point={end_point}");
+    let mut start = safe_alloc!(false);
+    let mut callstack = safe_alloc!(vec![]);
+
+    for frame in Backtrace::frames(current_backtrace) {
+        'inner: for symbol in frame.symbols() {
+            let maybe_symbol_name = safe_alloc!(symbol.name());
+            let Some(symbol_name) = maybe_symbol_name else {
+                continue;
+            };
+            let name = safe_alloc!(symbol_name.to_string());
+            if !start && (!name.contains(start_pattern) || name.contains("{{closure}}")) {
+                continue;
+            }
+            if !start && name.contains(start_pattern) && !name.contains("{{closure}}") {
+                start = true;
+                continue;
+            }
+            if name.contains(end_point) {
+                break;
+            }
+            if name.starts_with("tokio::") {
+                continue;
+            }
+            for &s in SCAFFOLDING_PATTERNS {
+                if name.contains(s) {
+                    continue 'inner;
+                }
+            }
+            let mut name = safe_alloc!(strip_hex_suffix(name));
+            let name = safe_alloc!(clean_function_name(&mut name));
+            if already_seen.contains(name.as_str()) {
+                continue;
+            }
+            let name_clone = safe_alloc!(name.clone());
+            safe_alloc!(already_seen.insert(name_clone));
+            safe_alloc!(callstack.push(name));
+        }
+    }
     callstack
 }
 
@@ -2518,11 +2564,11 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
     let name = safe_alloc!(name.to_string());
     let desc_name = safe_alloc!(desc_name.to_string());
     {
-        if let Some(mut lock) = PROFILED_FUNCTIONS.try_lock() {
+        if let Some(mut lock) = PROFILED_FUNCTIONS.try_write() {
             safe_alloc!(lock.insert(name, desc_name));
         } else {
             safe_alloc!(debug_log!(
-                "register_profiled_function failed to acquire lock on PROFILED_FUNCTIONS"
+                "register_profiled_function failed to acquire write lock on PROFILED_FUNCTIONS"
             ));
         }
     }
@@ -2535,9 +2581,9 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
 // Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
     // debug_log!("Checking if function is profiled: {}", name);
-    let contains_key = PROFILED_FUNCTIONS.try_lock().map_or_else(
+    let contains_key = PROFILED_FUNCTIONS.try_read().map_or_else(
         || {
-            debug_log!("is_profiled_function failed to acquire lock on PROFILED_FUNCTIONS");
+            debug_log!("is_profiled_function failed to acquire read lock on PROFILED_FUNCTIONS");
             false
         },
         |lock| lock.contains_key(name),
@@ -2548,19 +2594,17 @@ pub fn is_profiled_function(name: &str) -> bool {
 
 // Get the descriptive name of a profiled function
 pub fn get_reg_desc_name(name: &str) -> Option<String> {
-    // debug_log!(
-    //     "Getting the descriptive name of a profiled function: {}",
-    //     name
-    // );
-    let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_lock().map_or_else(
-        || {
-            debug_log!("get_reg_desc_name failed to acquire lock on PROFILED_FUNCTIONS");
-            None
-        },
-        |lock| lock.get(name).cloned(),
-    );
-    // debug_log!("...done");
-    maybe_reg_desc_name
+    safe_alloc! {
+        let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_read().map_or_else(
+            || {
+                debug_log!("get_reg_desc_name failed to acquire read lock on PROFILED_FUNCTIONS");
+                None
+            },
+            |lock| lock.get(name).cloned(),
+        );
+        // debug_log!("...done");
+        maybe_reg_desc_name
+    }
 }
 
 // Extract just the base function name from a fully qualified function name
@@ -2747,7 +2791,7 @@ pub const fn force_gc() {}
 /// This function is primarily intended for test and debugging use.
 #[cfg(any(test, debug_assertions))]
 pub fn dump_profiled_functions() -> Vec<(String, String)> {
-    let hash_map = { PROFILED_FUNCTIONS.lock().clone() };
+    let hash_map = { PROFILED_FUNCTIONS.read().clone() };
     hash_map
         .iter()
         .map(|(k, v)| (k.clone(), v.clone()))

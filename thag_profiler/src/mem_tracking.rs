@@ -11,10 +11,9 @@ use crate::{
     get_root_module, is_detailed_memory, lazy_static_var,
     mem_attribution::{DetailedAddressRegistry, ProfileReg},
     profiling::{
-        build_stack, clean_function_name, extract_alloc_callstack,
-        extract_detailed_alloc_callstack, get_memory_detail_dealloc_path, get_memory_detail_path,
-        get_memory_path, is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile,
-        MemoryProfileFile,
+        build_stack, clean_function_name, extract_detailed_alloc_callstack,
+        get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
+        is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
     },
     regex, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
 };
@@ -423,7 +422,7 @@ fn record_alloc(address: usize, size: usize) {
             // debug_log!("func_and_ancestors={func_and_ancestors:#?}");
 
             let in_profile_code = frames.iter().any(|(_, _, frame, _, _)| {
-                frame.contains("Backtrace::new") || frame.contains("Profile::new")
+                frame.contains("Profile::new")
             });
 
             if in_profile_code {
@@ -718,24 +717,24 @@ pub fn record_dealloc(address: usize, size: usize) {
     // Now we can safely use backtrace without recursion!
     let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
 
-    // debug_log!("Calling extract_callstack");
-    let mut current_backtrace = Backtrace::new_unresolved();
-    let cleaned_stack = extract_alloc_callstack(start_pattern, &mut current_backtrace);
-    // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
-    let in_profile_code = cleaned_stack
-        .iter()
-        .any(|frame| frame.contains("::profiling::Profile"));
+    // // debug_log!("Calling extract_dealloc_callstack");
+    // // let mut current_backtrace = Backtrace::new_unresolved();
+    // let cleaned_stack = extract_dealloc_callstack(start_pattern);
+    // // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
+    // let in_profile_code = cleaned_stack
+    //     .iter()
+    //     .any(|frame| frame.contains("::profiling::Profile"));
 
-    if in_profile_code {
-        debug_log!(
-            "Summary memory tracking ignoring deallocation request of size {size} for profiler code: frame={:?}",
-            cleaned_stack
-                .iter()
-                .find(|frame| frame.contains("::profiling::Profile"))
-        );
-        // debug_log!("...current backtrace: {current_backtrace:#?}");
-        return;
-    }
+    // if in_profile_code {
+    //     debug_log!(
+    //         "Summary memory tracking ignoring deallocation request of size {size} for profiler code: frame={:?}",
+    //         cleaned_stack
+    //             .iter()
+    //             .find(|frame| frame.contains("::profiling::Profile"))
+    //     );
+    //     // debug_log!("...current backtrace: {current_backtrace:#?}");
+    //     return;
+    // }
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     if size > 0 && detailed_memory {

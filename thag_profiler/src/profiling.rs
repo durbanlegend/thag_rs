@@ -25,13 +25,13 @@ use crate::{
 };
 
 #[cfg(feature = "full_profiling")]
+use backtrace::{resolve_frame, trace};
+
+#[cfg(feature = "full_profiling")]
 use regex::Regex;
 
 #[cfg(feature = "full_profiling")]
 use std::sync::{atomic::AtomicUsize, Arc};
-
-#[cfg(feature = "time_profiling")]
-use backtrace::{Backtrace, BacktraceFrame};
 
 #[cfg(feature = "time_profiling")]
 use crate::{flush_debug_log, get_base_location, warn_once};
@@ -1423,8 +1423,8 @@ impl Profile {
         // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
         let start_pattern = "Profile::new";
 
-        let mut current_backtrace = Backtrace::new_unresolved();
-        let cleaned_stack = extract_profile_callstack(start_pattern, &mut current_backtrace);
+        // let mut current_backtrace = Backtrace::new_unresolved();
+        let cleaned_stack = extract_profile_callstack(start_pattern);
 
         // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
@@ -1571,14 +1571,14 @@ impl Profile {
 
             // let fn_name = maybe_fn_name.unwrap();
 
-            let mut current_backtrace = Backtrace::new_unresolved();
+            // let mut current_backtrace = Backtrace::new_unresolved();
             // current_backtrace.resolve();
             // debug_log!("************\n{current_backtrace:?}\n************");
 
             let cleaned_stack = extract_profile_callstack(
                 // fn_name,
                 start_pattern,
-                &mut current_backtrace,
+                // &mut current_backtrace,
             );
             // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
@@ -2053,49 +2053,50 @@ pub fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
-#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
-pub fn extract_profile_callstack(
-    start_pattern: &str,
-    current_backtrace: &mut Backtrace,
-) -> Vec<String> {
-    // First, collect all relevant frames
-    let callstack: Vec<String> = Backtrace::frames(current_backtrace)
-        .iter()
-        .flat_map(BacktraceFrame::symbols)
-        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|name| !name.contains(start_pattern) || name.contains("{{closure}}"))
-        // Be careful, this is very sensitive to changes in the function signatures of this module.
-        .skip(1)
-        .take_while(|name| !name.contains(end_point))
-        .filter(|name| filter_scaffolding(name))
-        .map(strip_hex_suffix)
-        .map(|mut name| {
-            // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-            clean_function_name(&mut name)
-        })
-        // TODO May be problematic? - this will collapse legitimate nesting, but protects against recursion
-        .filter(|name| {
-            // Skip duplicate function calls (helps with the {{closure}} pattern)
-            if already_seen.contains(name.as_str()) {
-                false
-            } else {
-                already_seen.insert(name.clone());
-                true
-            }
-        })
-        // .map(|(_, name)| name.clone())
-        .collect();
-    // debug_log!("Callstack: {:#?}", callstack);
-    // debug_log!("already_seen: {:#?}", already_seen);
-    callstack
-}
+// #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+// pub fn extract_profile_callstack(
+//     start_pattern: &str,
+//     current_backtrace: &mut Backtrace,
+// ) -> Vec<String> {
+//     // First, collect all relevant frames
+//     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
+//         .iter()
+//         .flat_map(BacktraceFrame::symbols)
+//         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
+//         .skip_while(|name| !name.contains(start_pattern) || name.contains("{{closure}}"))
+//         // Be careful, this is very sensitive to changes in the function signatures of this module.
+//         .skip(1)
+//         .take_while(|name| !name.contains(end_point))
+//         .filter(|name| filter_scaffolding(name))
+//         .map(strip_hex_suffix)
+//         .map(|mut name| {
+//             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
+//             clean_function_name(&mut name)
+//         })
+//         // TODO May be problematic? - this will collapse legitimate nesting, but protects against recursion
+//         .filter(|name| {
+//             // Skip duplicate function calls (helps with the {{closure}} pattern)
+//             if already_seen.contains(name.as_str()) {
+//                 false
+//             } else {
+//                 already_seen.insert(name.clone());
+//                 true
+//             }
+//         })
+//         // .map(|(_, name)| name.clone())
+//         .collect();
+//     // debug_log!("Callstack: {:#?}", callstack);
+//     // debug_log!("already_seen: {:#?}", already_seen);
+//     callstack
+// }
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 pub fn extract_profile_callstack(
     start_pattern: &str,
-    current_backtrace: &mut Backtrace,
+    // current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    safe_alloc!(current_backtrace.resolve());
+    // safe_alloc!(current_backtrace.resolve());
+    /*
     let mut already_seen = safe_alloc!(HashSet::new());
 
     // let end_point = "__rust_begin_short_backtrace";
@@ -2139,23 +2140,99 @@ pub fn extract_profile_callstack(
             safe_alloc!(callstack.push(name));
         }
     }
-    callstack
+    */
+
+    let end_point = safe_alloc!(get_base_location().unwrap_or("__rust_begin_short_backtrace"));
+    let mut already_seen = safe_alloc!(HashSet::new());
+    safe_alloc! {
+        // Pre-allocate with fixed capacity to avoid reallocations
+        let capacity = 20;
+        let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
+        // let mut found_recursion = false;
+        let mut start = false;
+        let mut fin = false;
+        let mut i = 0;
+
+        trace(|frame| {
+            let mut suppress = false;
+
+            resolve_frame(frame, |symbol| {
+
+                'process_symbol: {
+                    let Some(name) = symbol.name() else {
+                        suppress = true;
+                        break 'process_symbol;
+                    };
+                    let name = name.to_string();
+                    if name.contains("tokio") {
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+                    if !start {
+                        if name.contains(start_pattern) && !name.contains("{{closure}}") {
+                            start = true;
+                        }
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+                    if name.contains(end_point) {
+                        fin = true;
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+
+                    for &s in SCAFFOLDING_PATTERNS {
+                        if name.contains(s) {
+                            suppress = true;
+                            break 'process_symbol;
+                        }
+                    }
+
+                    let mut name = strip_hex_suffix_slice(&name);
+                    let name = clean_function_name(&mut name);
+                    if already_seen.contains(&name) {
+                        suppress = true;
+                        break 'process_symbol;
+                    } else {
+                        already_seen.insert(name.clone());
+                    }
+                    if suppress { break 'process_symbol; }
+
+                    // // Check for our own functions (recursion detection)
+                    // if i > 0 && name.contains("extract_profile_callstack") {
+                    //     found_recursion = true;
+                    //     break 'process_symbol;
+                    // }
+
+                    // Safe to unwrap now
+                    callstack.push(name);
+                    i += 1;
+                    if i >= capacity {
+                        safe_alloc! {
+                             println!("frames={callstack:#?}");
+                         };
+                         panic!("Max limit of {capacity} frames exceeded");
+                    }
+                }
+            });
+            !fin
+        });
+        callstack
+    }
 }
 
-// Don't change name from "extract_callstack_..." as this is used in regression checking.
+// Don't change name from "extract_dealloc_callstack..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
 #[allow(clippy::missing_panics_doc)]
-pub fn extract_alloc_callstack(
-    start_pattern: &Regex,
-    current_backtrace: &mut Backtrace,
-) -> Vec<String> {
-    safe_alloc!(current_backtrace.resolve());
+pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
+    // safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     // let end_point = "__rust_begin_short_backtrace";
     let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
 
     // First, collect all relevant frames
+    /*
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
@@ -2189,17 +2266,93 @@ pub fn extract_alloc_callstack(
         })
         .map(|(frame, lineno)| format!("{frame}:{lineno}"))
         .collect();
-    // debug_log!("Callstack: {callstack:#?}");
-    // debug_log!("already_seen: {:#?}", already_seen);
-    callstack
+    */
+
+    safe_alloc! {
+        // Pre-allocate with fixed capacity to avoid reallocations
+        let capacity = 20;
+        let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
+        let mut found_recursion = false;
+        let mut start = false;
+        let mut fin = false;
+        let mut i = 0;
+
+        trace(|frame| {
+            let mut suppress = false;
+
+            resolve_frame(frame, |symbol| {
+
+                'process_symbol: {
+                    let Some(name) = symbol.name() else {
+                        suppress = true;
+                        break 'process_symbol;
+                    };
+                    let name = name.to_string();
+                    if name.contains("tokio") {
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+                    if !start {
+                        if start_pattern.is_match(&name) {
+                            start = true;
+                        }
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+                    if name.contains(end_point) {
+                        fin = true;
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+
+                    for &s in SCAFFOLDING_PATTERNS {
+                        if name.contains(s) {
+                            suppress = true;
+                            break 'process_symbol;
+                        }
+                    }
+
+                    let mut name = strip_hex_suffix_slice(&name);
+                    let name = clean_function_name(&mut name);
+                    if already_seen.contains(&name) {
+                        suppress = true;
+                        break 'process_symbol;
+                    } else {
+                        already_seen.insert(name.clone());
+                    }
+                    if suppress { break 'process_symbol; }
+
+                    // Check for our own functions (recursion detection)
+                    if i > 0 && name.contains("extract_dealloc_callstack") {
+                        found_recursion = true;
+                        break 'process_symbol;
+                    }
+
+                    // Safe to unwrap now
+                    let entry = format!("{name}:{}", symbol.lineno().unwrap_or(0));
+                    callstack.push(entry);
+                    i += 1;
+                    if i >= capacity {
+                        safe_alloc! {
+                             println!("frames={callstack:#?}");
+                         };
+                         panic!("Max limit of {capacity} frames exceeded");
+                    }
+                }
+            });
+            !found_recursion && !fin
+        });
+        if found_recursion {
+            vec![]
+        } else {
+            callstack
+        }
+    }
 }
 
-// Don't change name from "extract_callstack_..." as this is used in regression checking.
+// Don't change name from "extract_detailed_alloc_callstack..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
 pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
-    use backtrace::{resolve_frame, trace};
-
-    // safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     let end_point = "__rust_begin_short_backtrace";

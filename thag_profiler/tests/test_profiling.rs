@@ -507,14 +507,15 @@ fn test_stack_extraction() {
 
     with_sys_alloc(|| {
         // Create a backtrace
-        let mut backtrace = Backtrace::new();
+        // let mut backtrace = Backtrace::new();
 
         // eprintln!("backtrace={backtrace:#?}");
 
         // Extract the call stack
+        // TODO out of date
         let callstack = extract_profile_callstack(
             "thag_profiler::mem_tracking::with_sys_alloc", // Our parent function
-            &mut backtrace,
+                                                           // &mut backtrace,
         );
 
         // eprintln!("callstack={callstack:#?}");

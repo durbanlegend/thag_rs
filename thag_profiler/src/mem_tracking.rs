@@ -434,12 +434,6 @@ fn record_alloc(address: usize, size: usize) {
             let (filename, lineno, frame, fn_name, profile_ref) = &frames[0];
             let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
 
-            let mut maybe_current_backtrace: Option<Backtrace> = if detailed_memory || profile_ref.detailed_memory() {
-                let current_backtrace = safe_alloc! { Backtrace::new_unresolved() };
-                Some(current_backtrace)
-            } else {
-                None
-            };
             debug_log!("Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}");
 
             // Still record detailed allocations to -memory_detail.folded if requested
@@ -448,7 +442,6 @@ fn record_alloc(address: usize, size: usize) {
                     address,
                     size,
                     &ALLOC_START_PATTERN,
-                    maybe_current_backtrace.as_mut().unwrap(),
                     true,
                 );
             }
@@ -456,7 +449,7 @@ fn record_alloc(address: usize, size: usize) {
             // Try to record the allocation in the new profile registry
             if !filename.is_empty()
                 && *lineno > 0
-                && record_allocation(filename, fn_name, *lineno, size, maybe_current_backtrace.as_mut())
+                && record_allocation(filename, fn_name, *lineno, size)
             {
                 debug_log!("Recorded allocation of {size} bytes in {filename}::{fn_name}:{lineno} to a profile");
 
@@ -475,7 +468,8 @@ fn extract_callstack_with_recursion_check(
 ) -> Option<Vec<(String, u32, String, String, ProfileRef)>> {
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
-        let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(20); // Fixed size, no growing
+        let capacity = 100;
+        let mut frames: Vec<(String, u32, String, String, ProfileRef)> = Vec::with_capacity(capacity); // Fixed size, no growing
         let mut found_recursion = false;
         let mut fin = false;
         let mut i = 0;
@@ -533,11 +527,11 @@ fn extract_callstack_with_recursion_check(
                         // Safe to add this frame
                         frames.push((filename, lineno, name, fn_name, profile_ref));
                         i += 1;
-                        if i >= 20 {
+                        if i >= capacity {
                             safe_alloc! {
                                  println!("frames={frames:#?}");
                              };
-                             panic!("Max limit of 20 frames exceeded");
+                             panic!("Max limit of {capacity} frames exceeded");
                         }
                     }
                 }
@@ -553,13 +547,7 @@ fn extract_callstack_with_recursion_check(
 }
 
 /// Record an allocation with the profile registry based on module path and line number
-pub fn record_allocation(
-    file_name: &str,
-    fn_name: &str,
-    line: u32,
-    size: usize,
-    maybe_current_backtrace: Option<&mut Backtrace>,
-) -> bool {
+pub fn record_allocation(file_name: &str, fn_name: &str, line: u32, size: usize) -> bool {
     safe_alloc! {
         // First log (acquires debug log mutex)
         debug_log!(
@@ -588,7 +576,6 @@ pub fn record_allocation(
                 fn_name,
                 line,
                 size,
-                maybe_current_backtrace,
             );
             debug_log!("record_allocation on registry returned {result}");
         }
@@ -619,10 +606,9 @@ pub fn record_detailed_alloc(
     address: usize,
     size: usize,
     start_pattern: &Regex,
-    current_backtrace: &mut Backtrace,
     write_to_detail_file: bool,
 ) {
-    let detailed_stack = extract_detailed_alloc_callstack(start_pattern, current_backtrace);
+    let detailed_stack = extract_detailed_alloc_callstack(start_pattern);
     write_detailed_stack_alloc(size, write_to_detail_file, &detailed_stack);
     register_detailed_allocation(address, size, detailed_stack);
 }
@@ -753,8 +739,7 @@ pub fn record_dealloc(address: usize, size: usize) {
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     if size > 0 && detailed_memory {
-        let detailed_stack =
-            extract_detailed_alloc_callstack(start_pattern, &mut current_backtrace);
+        let detailed_stack = extract_detailed_alloc_callstack(start_pattern);
 
         let in_profile_code = detailed_stack
             .iter()
@@ -820,45 +805,6 @@ pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
     threshold
 });
 
-// /// Registry for tracking active profiles and task stacks
-// #[derive(Debug)]
-// struct ProfileRegistry {
-//     /// Set of active task IDs
-//     active_profiles: BTreeSet<usize>,
-// }
-
-// impl ProfileRegistry {
-//     const fn new() -> Self {
-//         Self {
-//             active_profiles: BTreeSet::new(),
-//         }
-//     }
-
-//     /// Add a task to active profiles
-//     pub fn activate_task(&mut self, task_id: usize) {
-//         self.active_profiles.insert(task_id);
-//     }
-
-//     /// Remove a task from active profiles
-//     pub fn deactivate_task(&mut self, task_id: usize) {
-//         self.active_profiles.remove(&task_id);
-//     }
-
-//     /// Get a copy of the active task IDs
-//     pub fn get_active_tasks(&self) -> Vec<usize> {
-//         self.active_profiles.iter().copied().collect()
-//     }
-
-//     /// Get the last (most recently added) active task
-//     pub fn get_last_active_task(&self) -> Option<usize> {
-//         self.active_profiles.iter().next_back().copied()
-//     }
-// }
-
-// Global profile registry
-// static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
-//     LazyLock::new(|| Mutex::new(ProfileRegistry::new()));
-
 // ========== PUBLIC REGISTRY API ==========
 
 /// Add a task to active profiles
@@ -875,25 +821,6 @@ pub fn deactivate_task(task_id: usize) {
         ProfileReg::get().deactivate_task(task_id);
     };
 }
-
-// /// Add a task to a thread's stack
-// pub fn push_task_to_stack(thread_id: ThreadId, task_id: usize) {
-//     safe_alloc! {
-//         PROFILE_REGISTRY
-//             .lock()
-//             .push_task_to_stack(thread_id, task_id);
-//     };
-// }
-
-// /// Remove a task from a thread's stack
-// #[allow(dead_code)]
-// pub fn pop_task_from_stack(thread_id: ThreadId, task_id: usize) {
-//     safe_alloc! {
-//         PROFILE_REGISTRY
-//             .lock()
-//             .pop_task_from_stack(thread_id, task_id);
-//     };
-// }
 
 /// Get active tasks
 #[must_use]

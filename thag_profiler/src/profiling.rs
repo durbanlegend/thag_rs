@@ -17,7 +17,6 @@ use std::{
 
 #[cfg(feature = "full_profiling")]
 use crate::{
-    get_root_module,
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
         activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
@@ -1669,8 +1668,8 @@ impl Profile {
                 // Register this profile with the new ProfileRegistry
                 // First log the details to avoid potential deadlock
                 debug_log!(
-                    "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
-                );
+                        "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
+                    );
 
                 // Flush logs before calling register_profile
                 // flush_debug_log();
@@ -2197,16 +2196,16 @@ pub fn extract_alloc_callstack(
 
 // Don't change name from "extract_callstack_..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
-pub fn extract_detailed_alloc_callstack(
-    start_pattern: &Regex,
-    current_backtrace: &mut Backtrace,
-) -> Vec<String> {
-    safe_alloc!(current_backtrace.resolve());
+pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
+    use backtrace::{resolve_frame, trace};
+
+    // safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     let end_point = "__rust_begin_short_backtrace";
 
     // First, collect all relevant frames
+    /*
     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
         .iter()
         .flat_map(BacktraceFrame::symbols)
@@ -2232,16 +2231,91 @@ pub fn extract_detailed_alloc_callstack(
             }
         })
         .collect();
+     */
+
+    let maybe_callstack: Option<Vec<String>> = safe_alloc! {
+        // Pre-allocate with fixed capacity to avoid reallocations
+        let capacity = 100;
+        let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
+        let mut found_recursion = false;
+        let mut start = false;
+        let mut fin = false;
+        let mut i = 0;
+
+        trace(|frame| {
+            let mut suppress = false;
+
+            resolve_frame(frame, |symbol| {
+
+                'process_symbol: {
+                    let Some(name) = symbol.name() else {
+                        suppress = true;
+                        break 'process_symbol;
+                    };
+                    let name = name.to_string();
+                    if !start {
+                        if start_pattern.is_match(&name) {
+                            start = true;
+                        }
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+                    if name.contains(end_point) {
+                        fin = true;
+                        suppress = true;
+                        break 'process_symbol;
+                    }
+
+                    let mut name = strip_hex_suffix_slice(&name);
+                    let name = clean_function_name(&mut name);
+                    if already_seen.contains(&name) {
+                        suppress = true;
+                        break 'process_symbol;
+                    } else {
+                        already_seen.insert(name.clone());
+                    }
+                    if suppress { break 'process_symbol; }
+
+                    // Check for our own functions (recursion detection)
+                    if i > 0 && name.contains("extract_detailed_alloc_callstack") {
+                        found_recursion = true;
+                        break 'process_symbol;
+                    }
+
+                    // Safe to unwrap now
+                    callstack.push(name.to_string());
+                    i += 1;
+                    if i >= capacity {
+                        safe_alloc! {
+                             println!("frames={callstack:#?}");
+                         };
+                         panic!("Max limit of {capacity} frames exceeded");
+                    }
+                }
+            });
+            !found_recursion && !fin
+        });
+        if found_recursion {
+            None // Signal to skip tracking
+        } else {
+            Some(callstack)
+        }
+    };
+
     // debug_log!("Callstack: {callstack:#?}");
     // debug_log!("already_seen: {:#?}", already_seen);
 
     // Redefine end-point as inclusive
-    let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
+    // let end_point = get_root_module().unwrap_or("__rust_begin_short_backtrace");
+
+    let Some(callstack) = maybe_callstack else {
+        return vec![];
+    };
 
     callstack
         .iter()
         .rev()
-        .skip_while(|frame| !frame.contains(end_point))
+        // .skip_while(|frame| !frame.contains(end_point))
         .cloned()
         .collect()
 }
@@ -2915,6 +2989,19 @@ pub fn strip_hex_suffix(name: String) -> String {
         }
     } else {
         name
+    }
+}
+
+#[must_use]
+pub fn strip_hex_suffix_slice(name: &str) -> String {
+    if let Some(hash_pos) = name.rfind("::h") {
+        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+            name[..hash_pos].to_string()
+        } else {
+            name.to_string()
+        }
+    } else {
+        name.to_string()
     }
 }
 

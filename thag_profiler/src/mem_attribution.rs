@@ -1,10 +1,10 @@
 use crate::{
     debug_log, flush_debug_log,
     mem_tracking::write_detailed_stack_alloc,
-    profiling::{clean_function_name, Profile},
-    regex, safe_alloc, static_lazy, strip_hex_suffix, ProfileError, ProfileResult,
+    profiling::{clean_function_name, strip_hex_suffix_slice, Profile},
+    regex, safe_alloc, static_lazy, ProfileError, ProfileResult,
 };
-use backtrace::{Backtrace, BacktraceFrame};
+use backtrace::{resolve_frame, trace};
 use dashmap::{DashMap, DashSet};
 use regex::Regex;
 use std::{
@@ -232,7 +232,6 @@ impl ProfileRegistry {
         fn_name: &str,
         line: u32,
         size: usize,
-        maybe_current_backtrace: Option<&mut Backtrace>,
     ) -> bool {
         // Find the profile for this allocation
         let profile_ref_opt = self.find_profile(file_name, fn_name, line);
@@ -243,12 +242,83 @@ impl ProfileRegistry {
             if let Some(profile) = profile_ref.profile() {
                 // Record the allocation to the profile
                 if profile_ref.detailed_memory() {
-                    let current_backtrace = maybe_current_backtrace.unwrap();
-                    // ... [existing detailed memory recording code]
                     let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
                     let end_point = profile.fn_name();
-                    current_backtrace.resolve();
                     let mut already_seen = HashSet::new();
+
+                    let maybe_callstack: Option<Vec<String>> = safe_alloc! {
+                        // Pre-allocate with fixed capacity to avoid reallocations
+                        let capacity = 100;
+                        let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
+                        let mut found_recursion = false;
+                        let mut start = false;
+                        let mut fin = false;
+                        let mut i = 0;
+
+                        trace(|frame| {
+                            let mut suppress = false;
+
+                            resolve_frame(frame, |symbol| {
+
+                                'process_symbol: {
+                                    let Some(name) = symbol.name() else {
+                                        suppress = true;
+                                        break 'process_symbol;
+                                    };
+                                    let name = name.to_string();
+                                    if !start {
+                                        if start_pattern.is_match(&name) {
+                                            start = true;
+                                        }
+                                        suppress = true;
+                                        break 'process_symbol;
+                                    }
+                                    if name.contains(end_point) {
+                                        fin = true;
+                                        suppress = true;
+                                        break 'process_symbol;
+                                    }
+
+                                    let mut name = strip_hex_suffix_slice(&name);
+                                    let name = clean_function_name(&mut name);
+                                    if already_seen.contains(&name) {
+                                        suppress = true;
+                                        break 'process_symbol;
+                                    } else {
+                                        already_seen.insert(name.clone());
+                                    }
+                                    if suppress { break 'process_symbol; }
+
+                                    // Check for our own functions (recursion detection)
+                                    if i > 0 && name.contains("record_allocation") {
+                                        found_recursion = true;
+                                        break 'process_symbol;
+                                    }
+
+                                    // Safe to unwrap now
+                                    callstack.push(name.to_string());
+                                    i += 1;
+                                    if i >= capacity {
+                                        safe_alloc! {
+                                             println!("frames={callstack:#?}");
+                                         };
+                                         panic!("Max limit of {capacity} frames exceeded");
+                                    }
+                                }
+                            });
+                            !found_recursion && !fin
+                        });
+                        if found_recursion {
+                            None // Signal to skip tracking
+                        } else {
+                            Some(callstack)
+                        }
+                    };
+
+                    /*
+                    let current_backtrace = maybe_current_backtrace.unwrap();
+                    // ... [existing detailed memory recording code]
+                    current_backtrace.resolve();
 
                     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
                         .iter()
@@ -268,8 +338,13 @@ impl ProfileRegistry {
                             }
                         })
                         .collect();
+                     */
 
-                    let detailed_stack: Vec<String> = profile
+                    let Some(callstack) = maybe_callstack else {
+                        return false;
+                    };
+
+                    let detailed_stack = profile
                         .path()
                         .iter()
                         .cloned()

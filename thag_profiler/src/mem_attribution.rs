@@ -128,21 +128,6 @@ impl ProfileRef {
 }
 
 impl ProfileRegistry {
-    // pub fn module_function_count(&self) -> usize {
-    //     self.module_functions.len()
-    // }
-
-    // pub fn active_instance_count(&self) -> usize {
-    //     self.active_instances.len()
-    // }
-
-    // pub fn new() -> Self {
-    //     Self {
-    //         module_functions: DashMap::new(),
-    //         active_instances: DashSet::new(),
-    //     }
-    // }
-
     /// Register a profile with the registry
     pub fn register_profile(&self, profile_ref: &ProfileRef) -> ProfileResult<()> {
         // Extract information from the ProfileRef and its contained Profile
@@ -284,9 +269,8 @@ impl ProfileRegistry {
                                     if already_seen.contains(&name) {
                                         suppress = true;
                                         break 'process_symbol;
-                                    } else {
-                                        already_seen.insert(name.clone());
                                     }
+                                    already_seen.insert(name.clone());
                                     if suppress { break 'process_symbol; }
 
                                     // Check for our own functions (recursion detection)
@@ -296,7 +280,7 @@ impl ProfileRegistry {
                                     }
 
                                     // Safe to unwrap now
-                                    callstack.push(name.to_string());
+                                    callstack.push(name);
                                     i += 1;
                                     if i >= capacity {
                                         safe_alloc! {
@@ -355,7 +339,7 @@ impl ProfileRegistry {
                     write_detailed_stack_alloc(size, false, &detailed_stack);
                 } else {
                     // Not detailed memory - regular allocation tracking
-                    debug_log!("Calling record_allocation on Profile for {size} bytes in {file_name}::{fn_name} at line {line}");
+                    // debug_log!("Calling record_allocation on Profile for {size} bytes in {file_name}::{fn_name} at line {line}");
                     let _ = profile.record_allocation(size);
                 }
                 return true;
@@ -375,9 +359,6 @@ type AllocationInfo = (Vec<String>, usize);
 type AddressAllocMap = DashMap<usize, AllocationInfo>;
 
 // Global profile registry instance
-// pub static PROFILE_REGISTRY: LazyLock<Mutex<ProfileRegistry>> =
-//     LazyLock::new(|| Mutex::new(ProfileRegistry::default()));
-// pub static PROFILE_REGISTRY: Lazy<ProfileRegistry> = Lazy::new(|| ProfileRegistry::new());
 static_lazy! {
     ProfileReg: ProfileRegistry = ProfileRegistry::new()
 }
@@ -385,10 +366,6 @@ static_lazy! {
 static_lazy! {
     DetailedAddressRegistry: AddressAllocMap = DashMap::new()
 }
-
-// New registry just for detailed memory tracking address-to-profile mapping
-// pub static DETAILED_ADDRESS_REGISTRY: LazyLock<AddressAllocMap> =
-//     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Thread-safe counter for generating unique profile IDs
 static NEXT_PROFILE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
@@ -403,8 +380,8 @@ pub fn get_next_profile_id() -> u64 {
 pub fn register_profile(profile: &Profile) {
     safe_alloc! {
         // First log the information (acquires debug log mutex)
-        debug_log!("Registering profile in registry: module={}, detailed_memory={}, start_line={:?}, end_line={:?}, instance_id={}",
-            profile.file_name(), profile.detailed_memory(), profile.start_line(), profile.end_line(), profile.instance_id());
+        // debug_log!("Registering profile in registry: module={}, detailed_memory={}, start_line={:?}, end_line={:?}, instance_id={}",
+        //     profile.file_name(), profile.detailed_memory(), profile.start_line(), profile.end_line(), profile.instance_id());
 
         // Then flush to ensure the debug log mutex is released before acquiring the PROFILE_REGISTRY mutex
         flush_debug_log();
@@ -460,7 +437,7 @@ pub fn deregister_profile(profile: &Profile) {
         let end_line = profile.end_line();
 
         // Log the deregistration
-        debug_log!("Calling deregister_profile for instance={instance_id}, module={file_name}");
+        // debug_log!("Calling deregister_profile for instance={instance_id}, module={file_name}");
         // flush_debug_log();
 
         // Now deregister with the captured information

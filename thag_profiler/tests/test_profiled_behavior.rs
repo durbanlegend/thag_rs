@@ -47,6 +47,9 @@ use thag_profiler::{
     ProfileType,
 };
 
+#[cfg(feature = "full_profiling")]
+use thag_profiler::mem_tracking;
+
 // Test basic time profiling with _test suffix
 #[cfg(feature = "time_profiling")]
 #[profiled(time)]

@@ -23,7 +23,7 @@ syn = { version = "2.0", default-features = false, features = [
     "proc-macro",
     "visit-mut",
 ] }
-toml = { version = "0.8.19" }
+toml = { version = "0.8" }
 
 [features]
 time_profiling = []                 # New feature for conditional compilation

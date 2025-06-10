@@ -212,7 +212,7 @@ mod tests {
     use crate::debug_log;
 
     #[cfg(feature = "full_profiling")]
-    use crate::{mem_tracking::with_sys_alloc, safe_alloc, ProfileType};
+    use crate::{safe_alloc, ProfileType};
 
     use std::fs::File;
     use std::io::{BufRead, BufReader};

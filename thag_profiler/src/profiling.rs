@@ -1228,9 +1228,9 @@ pub struct Profile {
     file_name: String,       // Filename where this profile was created
     instance_id: u64,        // Unique identifier for this Profile instance
     #[cfg(feature = "full_profiling")]
-    allocation_total: Arc<AtomicUsize>, // Using AtomicUsize for thread safety
+    allocation_total: Arc<AtomicUsize>, // All clones share the same underlying value
     #[cfg(feature = "full_profiling")]
-    memory_reported: Arc<AtomicBool>, // Default to false
+    memory_reported: Arc<AtomicBool>, // All clones share the same underlying value
     #[cfg(feature = "full_profiling")]
     memory_task: Option<TaskMemoryContext>,
     #[cfg(feature = "full_profiling")]
@@ -1602,17 +1602,8 @@ impl Profile {
             #[cfg(target_os = "windows")]
             let desc_fn_name = fn_name; // Windows already highlights async functions
 
-            // if let Some("print_docs") = section_name {
-            //     debug_log!("cleaned_stack={cleaned_stack:#?}");
-            //     debug_log!(
-            //         "is_profiled_function({fn_name})={:#?}",
-            //         is_profiled_function(fn_name)
-            //     );
-            //     debug_log!("desc_fn_name={desc_fn_name:#?}");
-            // }
-
             let path = extract_path(&cleaned_stack, Some(fn_name));
-            debug_log!("cleaned_stack={cleaned_stack:#?}, path={path:#?}");
+            // debug_log!("cleaned_stack={cleaned_stack:#?}, path={path:#?}");
 
             let stack = path.join(";");
 
@@ -1643,10 +1634,6 @@ impl Profile {
                     build_stack(&path, section_name.as_ref(), " -> ")
                 );
 
-                // Get current module path and line number
-                // let file_name = std::file!().to_string();
-                // let start_line = line!();
-
                 let mut profile = Self {
                     profile_type,
                     start: None,
@@ -1667,9 +1654,9 @@ impl Profile {
 
                 // Register this profile with the new ProfileRegistry
                 // First log the details to avoid potential deadlock
-                debug_log!(
-                        "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
-                    );
+                // debug_log!(
+                //         "About to register time_only profile in module {file_name} for fn {fn_name} with line range {start_line:?}..None",
+                //     );
 
                 // Flush logs before calling register_profile
                 // flush_debug_log();
@@ -1687,12 +1674,12 @@ impl Profile {
             let task_id = memory_task.id();
 
             // Register task path
-            debug_log!("Registering task path for task {task_id}: {path:?}");
+            // debug_log!("Registering task path for task {task_id}: {path:?}");
             let mut registry = TASK_PATH_REGISTRY.lock();
             registry.insert(task_id, path.clone());
             let reg_len = registry.len();
             drop(registry);
-            debug_log!("TASK_PATH_REGISTRY now has {reg_len} entries",);
+            // debug_log!("TASK_PATH_REGISTRY now has {reg_len} entries",);
 
             // Activate the task
             activate_task(task_id);
@@ -1700,23 +1687,23 @@ impl Profile {
             // Add to thread stack
             // push_task_to_stack(thread::current().id(), task_id);
 
-            debug_log!(
-                "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",
-                path.join(" -> "),
-                build_stack(&path, section_name.as_ref(), " -> ")
-            );
+            // debug_log!(
+            //     "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",
+            //     path.join(" -> "),
+            //     build_stack(&path, section_name.as_ref(), " -> ")
+            // );
 
             // Create memory guard
             let memory_guard = TaskGuard::new(task_id);
 
             let mut profile = {
                 // Create the profile with necessary components
-                debug_log!(
-                    "Creating profile for {} in file {} with memory profiling enabled={}",
-                    fn_name,
-                    file_name_stem,
-                    matches!(profile_type, ProfileType::Memory | ProfileType::Both)
-                );
+                // debug_log!(
+                //     "Creating profile for {} in file {} with memory profiling enabled={}",
+                //     fn_name,
+                //     file_name_stem,
+                //     matches!(profile_type, ProfileType::Memory | ProfileType::Both)
+                // );
 
                 Self {
                     profile_type,
@@ -1728,7 +1715,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name: file_name_stem.clone(),
+                    file_name: file_name_stem,
                     instance_id,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
                     memory_reported: Arc::new(AtomicBool::new(false)),
@@ -1740,13 +1727,12 @@ impl Profile {
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            debug_log!("About to register profile in module {file_name_stem}");
-            debug_log!(
-                "About to register profile in module {} for fn {} with line range {:?}..None",
-                file_name_stem,
-                fn_name,
-                start_line
-            );
+            // debug_log!(
+            //     "About to register profile in module {} for fn {} with line range {:?}..None",
+            //     file_name_stem,
+            //     fn_name,
+            //     start_line
+            // );
 
             // Flush logs before calling register_profile
             // flush_debug_log();
@@ -2193,9 +2179,8 @@ pub fn extract_profile_callstack(
                     if already_seen.contains(&name) {
                         suppress = true;
                         break 'process_symbol;
-                    } else {
-                        already_seen.insert(name.clone());
                     }
+                    already_seen.insert(name.clone());
                     if suppress { break 'process_symbol; }
 
                     // // Check for our own functions (recursion detection)
@@ -2317,9 +2302,8 @@ pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
                     if already_seen.contains(&name) {
                         suppress = true;
                         break 'process_symbol;
-                    } else {
-                        already_seen.insert(name.clone());
                     }
+                    already_seen.insert(name.clone());
                     if suppress { break 'process_symbol; }
 
                     // Check for our own functions (recursion detection)
@@ -2424,9 +2408,8 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                     if already_seen.contains(&name) {
                         suppress = true;
                         break 'process_symbol;
-                    } else {
-                        already_seen.insert(name.clone());
                     }
+                    already_seen.insert(name.clone());
                     if suppress { break 'process_symbol; }
 
                     // Check for our own functions (recursion detection)
@@ -2436,7 +2419,7 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                     }
 
                     // Safe to unwrap now
-                    callstack.push(name.to_string());
+                    callstack.push(name);
                     i += 1;
                     if i >= capacity {
                         safe_alloc! {

@@ -149,10 +149,6 @@ fn instrument_code(edition: Edition, source: &str) -> String {
             } else {
                 fn_token
             };
-            // eprintln!(
-            //     "target_token: {target_token:?}, function.body().is_some()? {}",
-            //     function.body().is_some()
-            // );
             let function_syntax: &SyntaxNode = function.syntax();
             if function.body().is_some()
                 && !function_syntax.descendants_with_tokens().any(|it| {
@@ -167,7 +163,6 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                     filtered_out
                 })
             {
-                // dbg!();
                 // Get original indentation.
                 // Previous whitespace will include all prior newlines.
                 // If there are any, we only want the last one, otherwise we will get

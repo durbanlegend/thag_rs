@@ -89,8 +89,8 @@ tokio = { version = "1.36.0", features = [
     "macros",
     "time",
 ], optional = true }
-toml = { version = "0.8.22" }
-toml_edit = { version = "0.22.24", optional = true }
+toml = { version = "0.8" }
+toml_edit = { version = "0.22", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
     "crossterm",

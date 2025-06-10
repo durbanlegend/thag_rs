@@ -45,12 +45,10 @@ use thag_profiler::profiling::{get_profile_config, get_time_path, set_profile_co
 
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
+    mem_tracking,
     profiling::{get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path},
     with_sys_alloc,
 };
-
-#[cfg(feature = "full_profiling")]
-use backtrace::Backtrace;
 
 // Set up a mutex for global test resources to avoid conflicts
 // static TEST_RESOURCES: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(Vec::new()));

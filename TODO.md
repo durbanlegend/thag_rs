@@ -38,7 +38,7 @@ cargo run --features=instrument-tool --bin thag-instrument --manifest-path thag_
 cargo run -p thag_profiler --features=analyze-tool --bin thag-analyze -- .
 
 cd thag_profiler
-cargo test --test profiling --features full_profiling
+# cargo test --test profiling --features full_profiling
 cargo test --lib
 cargo test --package thag_profiler --test test_profiled_behavior
 

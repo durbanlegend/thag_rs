@@ -26,10 +26,10 @@
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str,
-    mem_attribution::{find_profile /*, PROFILE_REGISTRY */},
-    profile, profiled,
-    profiling::{Profile, ProfileType},
-    with_sys_alloc,
+    mem_attribution::{find_profile, ProfileReg},
+    mem_tracking, profile, profiled,
+    profiling::{set_profile_config, Profile, ProfileType},
+    safe_alloc, with_sys_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -211,7 +211,7 @@ fn mem_attribution_manual_profile() {
 #[cfg(feature = "full_profiling")]
 fn mem_attribution_registry_functions() {
     // Verify file names in registry
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Can't clear the registry for this test
         // {
         //     eprintln!(
@@ -268,7 +268,7 @@ fn mem_attribution_registry_functions() {
             after_range.is_none(),
             "Should not find profile for line after range"
         );
-    });
+    };
 }
 
 /// Test overlapping profiles
@@ -339,12 +339,8 @@ fn mem_attribution_record_allocation() {
     let profile = record_alloc_section.as_ref().unwrap();
     let start_line = profile.start_line().unwrap();
 
-    // Manually create a backtrace for testing
-    let mut backtrace = backtrace::Backtrace::new_unresolved();
-    backtrace.resolve();
-
     // Access registry directly to test record_allocation
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Test valid allocation
         // assert!(!PROFILE_REGISTRY.is_locked());
         let valid = ProfileReg::get().record_allocation(
@@ -352,7 +348,6 @@ fn mem_attribution_record_allocation() {
             &fn_name,
             start_line + 1, // Line within range
             1024,           // Size
-            &mut backtrace,
         );
 
         assert!(
@@ -361,13 +356,8 @@ fn mem_attribution_record_allocation() {
         );
 
         // Test allocation for non-existent file
-        let invalid_file = ProfileReg::get().record_allocation(
-            "nonexistent_file",
-            &fn_name,
-            start_line,
-            1024,
-            &mut backtrace,
-        );
+        let invalid_file =
+            ProfileReg::get().record_allocation("nonexistent_file", &fn_name, start_line, 1024);
         assert!(
             !invalid_file,
             "Should not have recorded allocation for non-existent file"
@@ -379,7 +369,6 @@ fn mem_attribution_record_allocation() {
             "nonexistent_function",
             start_line,
             1024,
-            &mut backtrace,
         );
         assert!(
             !invalid_fn,
@@ -392,13 +381,12 @@ fn mem_attribution_record_allocation() {
             &fn_name,
             start_line - 10, // Before range
             1024,
-            &mut backtrace,
         );
         assert!(
             !out_of_range,
             "Should not have recorded allocation outside line range"
         );
-    });
+    };
 
     end!(record_alloc_section);
 }
@@ -411,8 +399,6 @@ fn mem_attribution_record_allocation() {
 #[cfg(feature = "full_profiling")]
 #[enable_profiling]
 fn test_mem_attribution_full_sequence() {
-    use thag_profiler::{profiling::set_profile_config, ProfileConfiguration};
-
     // Set debug logging off
     let _ = set_profile_config(
         ProfileConfiguration::try_from(vec!["both", "", "announce"].as_slice()).unwrap(),

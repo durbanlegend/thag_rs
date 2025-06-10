@@ -39,8 +39,6 @@ pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
 // Static atomics for minimal state tracking without allocations
 pub static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
 
-// static RECURSION_DEPTH: AtomicUsize = AtomicUsize::new(0);
-
 // Maximum safe allocation size - 1 GB, anything larger is suspicious
 const MAX_SAFE_ALLOCATION: usize = 1024 * 1024 * 1024;
 

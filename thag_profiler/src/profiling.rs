@@ -1,4 +1,4 @@
-// use backtrace::Backtrace;
+#![allow(unused_variables)]
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -2779,7 +2779,7 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
         } else {
             safe_alloc!(debug_log!(
                 "register_profiled_function failed to acquire write lock on PROFILED_FUNCTIONS"
-            ));
+            ););
         }
     }
     // debug_log!(

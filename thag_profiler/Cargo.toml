@@ -58,6 +58,7 @@ analyze_tool = [
 default = ["full_profiling"]
 time_profiling = ["thag_proc_macros/time_profiling"]
 full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
+debug_logging = ["thag_proc_macros/debug_logging"]
 tools = ["analyze_tool", "instrument_tool"] # Enable all tools
 instrument_tool = ["ra_ap_syntax"] # Dependencies for instrument
 

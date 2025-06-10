@@ -28,6 +28,7 @@ toml = { version = "0.8" }
 [features]
 time_profiling = []                 # New feature for conditional compilation
 full_profiling = ["time_profiling"]
+debug_logging = []                  # Zero-cost debug logging
 tui = ["crossterm"]
 default = []
 

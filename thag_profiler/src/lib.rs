@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 //! # `thag_profiler`
 //!
 //! A performance profiling library for Rust applications.
@@ -72,16 +73,20 @@ pub use paste; // Re-export paste crate
 pub use {
     mem_attribution::{find_profile, register_profile, ProfileRef /*, PROFILE_REGISTRY */},
     mem_tracking::{
-        create_memory_task, find_matching_task_id, get_last_active_task, record_allocation,
-        trim_backtrace, with_sys_alloc, Allocator, Dispatcher, TaskGuard, TaskMemoryContext,
-        TrackingAllocator,
+        create_memory_task, current_allocator, current_allocator_tls, find_matching_task_id,
+        get_last_active_task, get_tls_using_system, record_allocation, set_tls_using_system,
+        swap_tls_using_system, trim_backtrace, with_sys_alloc, with_sys_alloc_tls, Allocator,
+        Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator,
     },
     profiling::extract_path,
     thag_proc_macros::safe_alloc,
 };
 
+#[cfg(feature = "full_profiling")]
+pub use mem_tracking::{reset_global_allocator_state, reset_tls_allocator_state};
+
 // #[cfg(feature = "time_profiling")]
-pub use thag_proc_macros::{enable_profiling, end, profile, profiled};
+pub use thag_proc_macros::{enable_profiling, end, profile, profiled, safe_alloc_tls};
 
 #[cfg(feature = "time_profiling")]
 pub use profiling::PROFILING_MUTEX;

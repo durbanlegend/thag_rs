@@ -140,8 +140,8 @@ pub const fn flush_debug_log() {
     }
 }
 
-// Removed auto-flush for async difficulties
-#[cfg(feature = "full_profiling")]
+// Zero-cost debug logging with feature gate
+#[cfg(feature = "debug_logging")]
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
@@ -158,26 +158,12 @@ macro_rules! debug_log {
     };
 }
 
-#[cfg(not(feature = "full_profiling"))]
+// Zero-cost: compile to unit expression when debug_logging feature is disabled
+#[cfg(not(feature = "debug_logging"))]
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        if let Some(logger) = $crate::DebugLogger::get() {
-            static mut LOG_COUNT: usize = 0;
-            use std::io::Write;
-            let _write_result = {
-                let mut locked_writer = logger.lock();
-                writeln!(locked_writer, "{}", format!($($arg)*))
-            };
-
-            // Auto-flush periodically
-            unsafe {
-                LOG_COUNT += 1;
-                if LOG_COUNT % 1000 == 0 {
-                    $crate::flush_debug_log();
-                }
-            }
-        }
+        ()
     };
 }
 

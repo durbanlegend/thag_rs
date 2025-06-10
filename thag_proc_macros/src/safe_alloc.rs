@@ -22,15 +22,17 @@ pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         {
             // Inline the sys_alloc logic directly (no function call)
+            // Use compare_exchange for thread safety - only change false->true atomically
             let was_already_using_sys = crate::mem_tracking::USING_SYSTEM_ALLOCATOR
-                .swap(true, std::sync::atomic::Ordering::SeqCst);
+                .compare_exchange(false, true, std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst)
+                .is_err(); // true if exchange failed (was already true)
 
             // Execute the provided code (whether expression or statements)
             let result = {
                 #content
             };
 
-            // Restore flag only if we set it
+            // Restore flag only if we set it (compare_exchange succeeded)
             if !was_already_using_sys {
                 crate::mem_tracking::USING_SYSTEM_ALLOCATOR
                     .store(false, std::sync::atomic::Ordering::SeqCst);

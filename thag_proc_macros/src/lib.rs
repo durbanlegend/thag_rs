@@ -12,6 +12,11 @@ mod tool_errors;
 #[cfg(feature = "full_profiling")]
 mod safe_alloc;
 
+#[cfg(feature = "full_profiling")]
+mod safe_alloc_tls;
+
+
+
 #[cfg(feature = "tui")]
 mod tui_keys;
 
@@ -42,6 +47,11 @@ use syn::{parse_file, parse_str, Expr};
 
 #[cfg(feature = "full_profiling")]
 use crate::safe_alloc::safe_alloc_impl;
+
+#[cfg(feature = "full_profiling")]
+use crate::safe_alloc_tls::safe_alloc_tls_impl;
+
+
 
 #[cfg(feature = "time_profiling")]
 use crate::enable_profiling::enable_profiling_impl;
@@ -386,4 +396,19 @@ pub fn safe_alloc(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn safe_alloc(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)
+}
+
+
+
+/// Thread-local version of safe_alloc for better async/threading isolation
+#[cfg(feature = "full_profiling")]
+#[proc_macro]
+pub fn safe_alloc_tls(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "safe_alloc_tls", &input, safe_alloc_tls_impl)
+}
+
+#[cfg(not(feature = "full_profiling"))]
+#[proc_macro]
+pub fn safe_alloc_tls(input: TokenStream) -> TokenStream {
+    input
 }

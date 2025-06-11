@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling", "tls_allocator"] }
+# thag_profiler = { version = "0.1", features = ["full_profiling", "tls_allocator"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "tls_allocator"] }
 */
 
 /// Test async program (instrumented version) for `thag_profiler` testing.

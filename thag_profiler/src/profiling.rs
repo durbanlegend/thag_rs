@@ -15,13 +15,14 @@ use std::{
     time::Instant,
 };
 
+use crate::safe_alloc;
+
 #[cfg(feature = "full_profiling")]
 use crate::{
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
         activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
-    safe_alloc,
 };
 
 #[cfg(feature = "full_profiling")]

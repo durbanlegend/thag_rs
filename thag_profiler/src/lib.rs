@@ -63,7 +63,7 @@ pub use {
         parse_env_profile_config, strip_hex_suffix, Profile, /* ProfileSection,*/
         ProfileConfiguration, ProfileType,
     },
-    thag_proc_macros::fn_name,
+    thag_proc_macros::{fn_name, safe_alloc},
     // Only re-export what users need from mem_tracking
 };
 
@@ -73,20 +73,19 @@ pub use paste; // Re-export paste crate
 pub use {
     mem_attribution::{find_profile, register_profile, ProfileRef /*, PROFILE_REGISTRY */},
     mem_tracking::{
-        create_memory_task, find_matching_task_id, get_last_active_task, record_allocation,
-        trim_backtrace, current_allocator, 
-        Allocator, Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator,
+        create_memory_task, current_allocator, find_matching_task_id, get_last_active_task,
+        record_allocation, trim_backtrace, Allocator, Dispatcher, TaskGuard, TaskMemoryContext,
+        TrackingAllocator,
     },
     profiling::extract_path,
-    thag_proc_macros::safe_alloc,
 };
 
 // Export individual TLS/global variants for advanced usage
 #[cfg(feature = "full_profiling")]
 pub use mem_tracking::{
-    current_allocator_global, current_allocator_tls,
-    get_tls_using_system, set_tls_using_system, swap_tls_using_system,
-    reset_global_allocator_state, reset_tls_allocator_state, reset_allocator_state,
+    current_allocator_global, current_allocator_tls, get_tls_using_system, reset_allocator_state,
+    reset_global_allocator_state, reset_tls_allocator_state, set_tls_using_system,
+    swap_tls_using_system,
 };
 
 // #[cfg(feature = "time_profiling")]

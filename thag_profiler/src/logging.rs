@@ -102,7 +102,7 @@ pub fn get_debug_log_path() -> Option<String> {
 }
 
 // Define a function to flush the log buffer - can be called at strategic points
-pub const fn flush_debug_log() {
+pub fn flush_debug_log() {
     #[cfg(feature = "full_profiling")]
     {
         // // Always use system allocator for logging operations to prevent circular dependencies

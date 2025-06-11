@@ -29,6 +29,7 @@ toml = { version = "0.8" }
 time_profiling = []                 # New feature for conditional compilation
 full_profiling = ["time_profiling"]
 debug_logging = []                  # Zero-cost debug logging
+tls_allocator = []                  # Thread-local storage for allocator switching
 tui = ["crossterm"]
 default = []
 

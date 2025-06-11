@@ -58,7 +58,7 @@ Output analysis:
 
 ## Features
 
-- **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are disabled
+- **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are disabled.
 
 - **Execution time profiling**: Low-overhead profiling to highlight hotspots.
 
@@ -535,7 +535,7 @@ Format:
 |----------------|-------------|
 | `profile_type` | `both`, `memory`, `time`, `none` (default) |
 | `output_dir` *(optional)* | Output dir for `.folded` files. Default: current directory |
-| `debug_level` *(optional)* | `none` (default), `announce`, or `quiet`. Logs to `temp_dir()/thag_profiler/...` |
+| `debug_level` *(optional)* | `none` (default), `announce`, or `quiet`. Logs to `temp_dir()/thag_profiler/...`. Requires `debug_logging` feature |
 | `memory_detail` *(optional)* | `true` = detailed `.folded`; `false` (default) = minimal |
 
 Examples:
@@ -558,7 +558,7 @@ THAG_PROFILER=time cargo run
 THAG_PROFILER=memory,,quiet thag demo/document_pipeline_profile_minimal.rs  -ft
 ```
 
-  ...runs `thag` demo script document_pipeline_profile_minimal.rs with forced rebuild (-f) and timings (-t), memory profiling only, debug logging without announcing the log file path, and no detailed output `.folded` files.
+  ...runs `thag` demo script document_pipeline_profile_minimal.rs with forced rebuild (-f) and timings (-t), memory profiling only, internal debug logging without announcing the log file path, and no detailed output `.folded` files. Note that debug logging requires the `debug_logging` feature of the `thag_profiler` dependency to be enabled, otherwise the `debug_log!` macro compiles to `()` to provide a zero-cost abstraction.
 
 
 The function annotated with `#[enable_profiling]` will be taken to be the root of the profiling callstack.

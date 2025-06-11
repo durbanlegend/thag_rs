@@ -7,7 +7,7 @@ smol = { version = "2.0", optional = true }
 
 [features]
 dhat-heap = ["dep:dhat"]
-full_profiling = ["thag_profiler/full_profiling"]
+full_profiling = ["thag_profiler/full_profiling", "thag_profiler/tls_allocator"]
 tokio-runtime = ["dep:tokio"]
 smol-runtime = ["dep:smol"]
 default = []

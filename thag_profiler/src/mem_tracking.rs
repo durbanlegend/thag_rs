@@ -76,6 +76,20 @@ pub fn reset_tls_allocator_state() {
     USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(false));
 }
 
+/// Reset allocator state using the unified approach
+pub fn reset_allocator_state() {
+    #[cfg(feature = "tls_allocator")]
+    {
+        reset_tls_allocator_state();
+        reset_global_allocator_state(); // Reset both to be safe
+    }
+    #[cfg(not(feature = "tls_allocator"))]
+    {
+        reset_global_allocator_state();
+        reset_tls_allocator_state(); // Reset both to be safe
+    }
+}
+
 // Maximum safe allocation size - 1 GB, anything larger is suspicious
 const MAX_SAFE_ALLOCATION: usize = 1024 * 1024 * 1024;
 
@@ -97,85 +111,44 @@ impl fmt::Display for Allocator {
     }
 }
 
-/// Get the current allocator based on the atomic state
+/// Get the current allocator based on the configured approach
 #[inline]
 pub fn current_allocator() -> Allocator {
-    current_allocator_impl(false)
+    #[cfg(feature = "tls_allocator")]
+    {
+        let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
+        if using_system {
+            Allocator::System
+        } else {
+            Allocator::Tracking
+        }
+    }
+    #[cfg(not(feature = "tls_allocator"))]
+    {
+        if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
+            Allocator::System
+        } else {
+            Allocator::Tracking
+        }
+    }
 }
 
-/// Thread-local version for better async/threading isolation
-pub fn current_allocator_tls() -> Allocator {
-    current_allocator_impl(true)
-}
-
-fn current_allocator_impl(use_tls: bool) -> Allocator {
-    let using_system = if use_tls {
-        USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get())
-    } else {
-        USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst)
-    };
-
-    if using_system {
-        // eprintln!("Using system allocator");
+/// Global atomic version for cross-thread consistency
+pub fn current_allocator_global() -> Allocator {
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
         Allocator::System
     } else {
         Allocator::Tracking
     }
 }
 
-/// Run a function with the system allocator
-///
-/// This function temporarily switches to the system allocator while executing the provided
-/// closure, then switches back to the previous allocator afterward.
-pub fn with_sys_alloc<T>(f: impl FnOnce() -> T) -> T {
-    with_sys_alloc_impl(f, false)
-}
-
 /// Thread-local version for better async/threading isolation
-pub fn with_sys_alloc_tls<T>(f: impl FnOnce() -> T) -> T {
-    with_sys_alloc_impl(f, true)
-}
-
-fn with_sys_alloc_impl<T>(f: impl FnOnce() -> T, use_tls: bool) -> T {
-    if use_tls {
-        // Thread-local implementation - only change false->true, never true->false unless we set it
-        let was_already_using_sys = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
-
-        if !was_already_using_sys {
-            USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(true));
-        }
-
-        // Use panic safety without allocation
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
-
-        // Only reset to false if WE set it to true (was false before)
-        if !was_already_using_sys {
-            USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(false));
-        }
-
-        match result {
-            Ok(value) => value,
-            Err(panic) => std::panic::resume_unwind(panic),
-        }
+pub fn current_allocator_tls() -> Allocator {
+    let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
+    if using_system {
+        Allocator::System
     } else {
-        // Global atomic implementation - use compare_exchange for thread safety
-        // Only change false->true atomically, never true->false unless we set it
-        let was_already_using_sys = USING_SYSTEM_ALLOCATOR
-            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err(); // true if exchange failed (was already true)
-
-        // Use panic safety without allocation
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
-
-        // Only reset to false if WE set it to true (compare_exchange succeeded)
-        if !was_already_using_sys {
-            USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-        }
-
-        match result {
-            Ok(value) => value,
-            Err(panic) => std::panic::resume_unwind(panic),
-        }
+        Allocator::Tracking
     }
 }
 
@@ -1116,8 +1089,8 @@ fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
 /// This is called by the main `init_profiling` function.
 #[allow(clippy::missing_panics_doc)]
 pub fn initialize_memory_profiling() {
-    // Set up allocator state with Tracking as the default
-    USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
+    // Set up allocator state with Tracking as the default using unified approach
+    reset_allocator_state();
 
     // Use system allocator just for logging
     safe_alloc! {

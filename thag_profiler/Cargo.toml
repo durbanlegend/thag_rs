@@ -55,11 +55,13 @@ analyze_tool = [
     "serde_json",
     "regex/unicode-perl",
 ]
-default = ["full_profiling"]
+default = []
 time_profiling = ["thag_proc_macros/time_profiling"]
 full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
 debug_logging = ["thag_proc_macros/debug_logging"]
-tls_allocator = ["thag_proc_macros/tls_allocator"]  # Use thread-local storage for allocator switching
+tls_allocator = [
+    "thag_proc_macros/tls_allocator",
+] # Use thread-local storage for allocator switching
 tools = ["analyze_tool", "instrument_tool"] # Enable all tools
 instrument_tool = ["ra_ap_syntax"] # Dependencies for instrument
 

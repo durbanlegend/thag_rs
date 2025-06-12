@@ -101,41 +101,23 @@ pub fn get_debug_log_path() -> Option<String> {
     }
 }
 
+// No-op for full profiling to prevent deadlocks
+// The BufWriter will auto-flush on drop anyway
+#[cfg(feature = "full_profiling")]
+pub const fn flush_debug_log() {}
+
 // Define a function to flush the log buffer - can be called at strategic points
+#[cfg(not(feature = "full_profiling"))]
 pub fn flush_debug_log() {
-    #[cfg(feature = "full_profiling")]
-    {
-        // // Always use system allocator for logging operations to prevent circular dependencies
-        // safe_alloc! {
-        //     if let Some(logger) = DebugLogger::get() {
-        //         let flush_result = {
-        //             let mut locked_writer = logger.lock();
-        //             locked_writer.flush()
-        //         };
+    if let Some(logger) = DebugLogger::get() {
+        let flush_result = {
+            let mut locked_writer = logger.lock();
+            locked_writer.flush()
+        };
 
-        //         if let Err(e) = flush_result {
-        //             // Use eprintln for direct console output without going through our logger
-        //             eprintln!("Error flushing debug log: {e}");
-        //         }
-        //     }
-        // };
-
-        // No-op for full profiling to prevent deadlocks
-        // The BufWriter will auto-flush on drop anyway
-    }
-
-    #[cfg(not(feature = "full_profiling"))]
-    {
-        if let Some(logger) = DebugLogger::get() {
-            let flush_result = {
-                let mut locked_writer = logger.lock();
-                locked_writer.flush()
-            };
-
-            if let Err(e) = flush_result {
-                // Use eprintln for direct console output without going through our logger
-                eprintln!("Error flushing debug log: {e}");
-            }
+        if let Err(e) = flush_result {
+            // Use eprintln for direct console output without going through our logger
+            eprintln!("Error flushing debug log: {e}");
         }
     }
 }

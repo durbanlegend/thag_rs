@@ -158,6 +158,14 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         };
     };
 
+    #[cfg(not(feature = "full_profiling"))]
+    let import_mem_tracking = quote! {};
+
+    #[cfg(feature = "full_profiling")]
+    let import_mem_tracking = quote! {
+        use thag_profiler::mem_tracking;
+    };
+
     let ctx = FunctionContext {
         vis: &input.vis,
         fn_name,
@@ -170,6 +178,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
         profile_new,
         profile_drop,
         is_test_fn,
+        import_mem_tracking,
     };
 
     if is_async {
@@ -193,12 +202,13 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         profile_new,
         profile_drop,
         is_test_fn: _,
+        import_mem_tracking,
     }: &FunctionContext<'_> = ctx;
 
     quote! {
         #(#attrs)*
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
-            use thag_profiler::mem_tracking;
+            #import_mem_tracking
 
             // We pass None for the name as we rely on the backtrace to identify the function
             let profile = #profile_new;
@@ -224,6 +234,7 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
         profile_new,
         profile_drop,
         is_test_fn,
+        import_mem_tracking,
     } = ctx;
 
     // For test functions or functions with _test suffix, create a clone
@@ -263,7 +274,7 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
             use std::future::Future;
             use std::pin::Pin;
             use std::task::{Context, Poll};
-            use thag_profiler::mem_tracking;
+            #import_mem_tracking;
 
             struct ProfiledFuture<F> {
                 inner: F,
@@ -325,4 +336,6 @@ struct FunctionContext<'a> {
     profile_drop: proc_macro2::TokenStream,
     /// Is this a test function (either by name convention or explicit flag)
     is_test_fn: bool,
+    /// Import `mem_tracking` for `safe_alloc` if memory profiling
+    import_mem_tracking: proc_macro2::TokenStream,
 }

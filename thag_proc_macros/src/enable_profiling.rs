@@ -332,7 +332,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 use thag_profiler::{disable_profiling, finalize_profiling, init_profiling, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
-        _ => {
+        ProfilingMode::Disabled => {
             quote! {}
         }
     };
@@ -463,7 +463,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 #wrapped_block
             }
         }
-        _ => unreachable!(),
+        ProfilingMode::Disabled => unreachable!(),
     };
 
     #[cfg(feature = "full_profiling")]

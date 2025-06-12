@@ -378,7 +378,7 @@ pub fn profile(_input: TokenStream) -> TokenStream {
 
 #[cfg(not(feature = "full_profiling"))]
 #[proc_macro]
-pub fn safe_alloc(input: TokenStream) -> TokenStream {
+pub const fn safe_alloc(input: TokenStream) -> TokenStream {
     input
 }
 

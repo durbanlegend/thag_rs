@@ -129,6 +129,10 @@ impl ProfileRef {
 
 impl ProfileRegistry {
     /// Register a profile with the registry
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the `ProfileRef` does not reference a `Profile`.
     pub fn register_profile(&self, profile_ref: &ProfileRef) -> ProfileResult<()> {
         // Extract information from the ProfileRef and its contained Profile
         let instance_id = profile_ref.instance_id;
@@ -211,6 +215,7 @@ impl ProfileRegistry {
     /// # Panics
     ///
     /// Panics if it can't unwrap after get on a filename that is supposed to have been pre-checked.
+    #[allow(clippy::branches_sharing_code)]
     pub fn record_allocation(
         &self,
         file_name: &str,
@@ -376,7 +381,10 @@ pub fn get_next_profile_id() -> u64 {
     NEXT_PROFILE_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
 }
 
-/// Register a profile with the global registry
+/// Register a profile with the global registry///
+/// # Panics
+///
+/// Panics if the profile registration fails.
 pub fn register_profile(profile: &Profile) {
     safe_alloc! {
         // First log the information (acquires debug log mutex)

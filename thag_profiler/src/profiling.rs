@@ -25,7 +25,7 @@ use crate::{
     },
 };
 
-#[cfg(feature = "full_profiling")]
+#[cfg(feature = "time_profiling")]
 use backtrace::{resolve_frame, trace};
 
 #[cfg(feature = "full_profiling")]
@@ -35,7 +35,7 @@ use regex::Regex;
 use std::sync::{atomic::AtomicUsize, Arc};
 
 #[cfg(feature = "time_profiling")]
-use crate::{flush_debug_log, get_base_location, warn_once};
+use crate::{file_stem_from_path_str, flush_debug_log, get_base_location, warn_once};
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -1467,7 +1467,8 @@ impl Profile {
             build_stack(&path, section_name.as_ref(), " -> ")
         );
 
-        let file_name = file_stem_from_path_str(file_name);
+        let file_name_stem = file_stem_from_path_str(file_name);
+
         // Get a unique ID for this profile instance
         #[cfg(feature = "full_profiling")]
         let instance_id = get_next_profile_id();
@@ -1484,7 +1485,7 @@ impl Profile {
             start_line,
             end_line,
             detailed_memory,
-            file_name,
+            file_name: file_name_stem,
             instance_id,
             #[cfg(feature = "full_profiling")]
             memory_task: None,
@@ -1561,9 +1562,7 @@ impl Profile {
             let profile_type = requested_type;
             // eprintln!("requested_type={requested_type:?}");
 
-            let fname_start = file_name.rfind('/').unwrap() + 1;
-            let fname_dot = file_name.rfind('.').unwrap();
-            let file_name_stem = file_name[fname_start..fname_dot].to_string();
+            let file_name_stem = file_stem_from_path_str(file_name);
 
             // debug_log!("file_name={file_name_stem}");
 
@@ -1716,7 +1715,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name: file_name_stem.clone(),
+                    file_name: file_name_stem,
                     instance_id,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
                     memory_reported: Arc::new(AtomicBool::new(false)),
@@ -1909,6 +1908,7 @@ impl Profile {
     }
 
     #[cfg(feature = "full_profiling")]
+    #[allow(clippy::branches_sharing_code)]
     fn record_memory_change(&self, delta: usize) {
         if delta == 0 {
             return;
@@ -2000,6 +2000,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
 }
 
 #[cfg(feature = "full_profiling")]
+#[must_use]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
     safe_alloc! {
         let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
@@ -2076,7 +2077,13 @@ pub fn filter_scaffolding(name: &str) -> bool {
 //     callstack
 // }
 
+/// Extract the callstack for a `Profile`.
+///
+/// # Panics
+///
+/// Panics if the arbitrary limit of 20 frames is exceeded.
 #[cfg(feature = "time_profiling")]
+#[must_use]
 pub fn extract_profile_callstack(
     start_pattern: &str,
     // current_backtrace: &mut Backtrace,
@@ -2208,6 +2215,7 @@ pub fn extract_profile_callstack(
 
 // Don't change name from "extract_dealloc_callstack..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
+#[must_use]
 #[allow(clippy::missing_panics_doc)]
 pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
     // safe_alloc!(current_backtrace.resolve());
@@ -2334,8 +2342,14 @@ pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
     }
 }
 
+/// .
+///
+/// # Panics
+///
+/// Panics if arbitrary preset limit of 100 frames exceeded.
 // Don't change name from "extract_detailed_alloc_callstack..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
+#[must_use]
 pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
     let mut already_seen = HashSet::new();
 
@@ -2507,6 +2521,7 @@ impl Drop for Profile {
 
 #[cfg(feature = "full_profiling")]
 impl Drop for Profile {
+    #[allow(clippy::branches_sharing_code)]
     fn drop(&mut self) {
         safe_alloc! {
             // Capture the information needed for deregistration but use it only at the end
@@ -2591,6 +2606,7 @@ impl Drop for Profile {
 ///
 /// This function will bubble up any i/o errors that occur trying to convert the file.
 #[cfg(feature = "time_profiling")]
+#[allow(clippy::branches_sharing_code)]
 pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> ProfileResult<()> {
     debug_log!("Converting inclusive time profile to exclusive time");
 
@@ -2604,12 +2620,10 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 
     // Store stack lines as (stack_str, time) pairs
     let mut stack_lines: Vec<(String, u64)> = Vec::new();
-    let mut line_count = 0;
 
     // First pass: Parse the file and separate headers from stack lines
-    for line in reader.lines() {
+    for (line_count, line) in reader.lines().enumerate() {
         let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
-        line_count += 1;
 
         // // Preserve comment/header lines
         // if line.starts_with('#') || line.trim().is_empty() {
@@ -3135,15 +3149,16 @@ pub fn strip_hex_suffix(name: String) -> String {
 
 #[must_use]
 pub fn strip_hex_suffix_slice(name: &str) -> String {
-    if let Some(hash_pos) = name.rfind("::h") {
-        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-            name[..hash_pos].to_string()
-        } else {
-            name.to_string()
-        }
-    } else {
-        name.to_string()
-    }
+    name.rfind("::h").map_or_else(
+        || name.to_string(),
+        |hash_pos| {
+            if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+                name[..hash_pos].to_string()
+            } else {
+                name.to_string()
+            }
+        },
+    )
 }
 
 #[cfg(test)]

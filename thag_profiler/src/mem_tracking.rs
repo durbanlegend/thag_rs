@@ -1,4 +1,9 @@
-#![allow(clippy::uninlined_format_args, unused_variables)]
+#![allow(
+    clippy::branches_sharing_code,
+    clippy::if_same_then_else,
+    clippy::uninlined_format_args,
+    unused_variables
+)]
 #![deny(unsafe_op_in_unsafe_fn)]
 //! Task-aware memory allocator for profiling.
 //!
@@ -45,18 +50,20 @@ pub static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
 // Thread-local alternative for better async/threading isolation
 // Each thread maintains its own flag, preventing cross-thread interference
 thread_local! {
-    static USING_SYSTEM_ALLOCATOR_TLS: Cell<bool> = Cell::new(false);
+    static USING_SYSTEM_ALLOCATOR_TLS: Cell<bool> = const { Cell::new(false) };
 }
 
 // Helper functions to access thread-local state from macros
+#[must_use]
 pub fn get_tls_using_system() -> bool {
-    USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get())
+    USING_SYSTEM_ALLOCATOR_TLS.with(Cell::get)
 }
 
 pub fn set_tls_using_system(value: bool) {
-    USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(value))
+    USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(value));
 }
 
+#[must_use]
 pub fn swap_tls_using_system(value: bool) -> bool {
     USING_SYSTEM_ALLOCATOR_TLS.with(|flag| {
         let old = flag.get();
@@ -114,10 +121,11 @@ impl fmt::Display for Allocator {
 
 /// Get the current allocator based on the configured approach
 #[inline]
+#[must_use]
 pub fn current_allocator() -> Allocator {
     #[cfg(feature = "tls_allocator")]
     {
-        let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
+        let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(Cell::get);
         if using_system {
             Allocator::System
         } else {
@@ -134,24 +142,24 @@ pub fn current_allocator() -> Allocator {
     }
 }
 
-/// Global atomic version for cross-thread consistency
-pub fn current_allocator_global() -> Allocator {
-    if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
-        Allocator::System
-    } else {
-        Allocator::Tracking
-    }
-}
+// /// Global atomic version for cross-thread consistency
+// pub fn current_allocator_global() -> Allocator {
+//     if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
+//         Allocator::System
+//     } else {
+//         Allocator::Tracking
+//     }
+// }
 
-/// Thread-local version for better async/threading isolation
-pub fn current_allocator_tls() -> Allocator {
-    let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
-    if using_system {
-        Allocator::System
-    } else {
-        Allocator::Tracking
-    }
-}
+// /// Thread-local version for better async/threading isolation
+// pub fn current_allocator_tls() -> Allocator {
+//     let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
+//     if using_system {
+//         Allocator::System
+//     } else {
+//         Allocator::Tracking
+//     }
+// }
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator
 pub struct Dispatcher {
@@ -522,10 +530,10 @@ fn record_alloc(address: usize, size: usize) {
     };
 }
 
+type FrameSummary = (String, u32, String, String, ProfileRef);
+
 // Don't change name from "extract_callstack_..." as this is used in regression checking.
-fn extract_callstack_with_recursion_check(
-    file_names: &[String],
-) -> Option<Vec<(String, u32, String, String, ProfileRef)>> {
+fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<FrameSummary>> {
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
         let capacity = 100;
@@ -609,6 +617,7 @@ fn extract_callstack_with_recursion_check(
 }
 
 /// Record an allocation with the profile registry based on module path and line number
+#[must_use]
 pub fn record_allocation(file_name: &str, fn_name: &str, line: u32, size: usize) -> bool {
     safe_alloc! {
         // First log (acquires debug log mutex)

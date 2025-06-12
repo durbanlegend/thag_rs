@@ -83,9 +83,8 @@ pub use {
 // Export individual TLS/global variants for advanced usage
 #[cfg(feature = "full_profiling")]
 pub use mem_tracking::{
-    current_allocator_global, current_allocator_tls, get_tls_using_system, reset_allocator_state,
-    reset_global_allocator_state, reset_tls_allocator_state, set_tls_using_system,
-    swap_tls_using_system,
+    get_tls_using_system, reset_allocator_state, reset_global_allocator_state,
+    reset_tls_allocator_state, set_tls_using_system, swap_tls_using_system,
 };
 
 // #[cfg(feature = "time_profiling")]
@@ -149,9 +148,16 @@ pub fn get_root_module() -> Option<&'static str> {
     PROFILEE.get().map(|profilee| profilee.root_module)
 }
 
+/// Extract the file stem from a path string.
+///
+/// # Panics
+///
+/// Panics if the input path does not contain at least a slash and a dot.
 #[must_use]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
-    file_stem_from_path(Path::new(file_name))
+    let fname_start = file_name.rfind('/').unwrap() + 1;
+    let fname_dot = file_name.rfind('.').unwrap();
+    file_name[fname_start..fname_dot].to_string()
 }
 
 /// Extract the file stem from a Path.

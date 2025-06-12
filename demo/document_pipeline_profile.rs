@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling", "tls_allocator"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling", "tls_allocator"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "tls_allocator"] }
+# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling", "tls_allocator", "debug_logging"] }
+# thag_profiler = { version = "0.1", features = ["full_profiling", "tls_allocator", "debug_logging"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "tls_allocator", "debug_logging"] }
 */
 
 /// Test async program (instrumented version) for `thag_profiler` testing.
@@ -32,6 +32,8 @@ impl Document {
     #[profiled]
     fn new(id: usize, content: String) -> Self {
         // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));
+        let _dummy = vec![1, 2, 3, 4, 5];
+
         Document {
             id,
             content,
@@ -132,6 +134,8 @@ impl Document {
 async fn fetch_document(id: usize) -> Document {
     // Simulate network delay
     sleep(Duration::from_millis(50 + (id % 10 * 5) as u64)).await;
+
+    let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     // Generate some random content
     let content = format!(
@@ -236,6 +240,8 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     let mut tasks = Vec::new();
 
     for id in 0..count {
+        // For some reason, moving this up out of the async move makes the profile show up
+        // let doc = fetch_document(id).await;
         tasks.push(async move {
             let doc = fetch_document(id).await;
             process_document(doc).await

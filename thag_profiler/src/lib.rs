@@ -446,7 +446,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
     safe_alloc! {
-        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}");
+        eprintln!("root_module={root_module}, profile_config={profile_config:#?}, tls_allocator={:#?}", cfg!(feature = "tls_allocator"));
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling

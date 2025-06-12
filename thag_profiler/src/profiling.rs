@@ -21,7 +21,7 @@ use crate::safe_alloc;
 use crate::{
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
-        activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+        self, activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
 };
 
@@ -1688,23 +1688,23 @@ impl Profile {
             // Add to thread stack
             // push_task_to_stack(thread::current().id(), task_id);
 
-            // debug_log!(
-            //     "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",
-            //     path.join(" -> "),
-            //     build_stack(&path, section_name.as_ref(), " -> ")
-            // );
+            debug_log!(
+                "NEW PROFILE: Task {task_id} created for {}\ndesc_stack = {}",
+                path.join(" -> "),
+                build_stack(&path, section_name.as_ref(), " -> ")
+            );
 
             // Create memory guard
             let memory_guard = TaskGuard::new(task_id);
 
             let mut profile = {
                 // Create the profile with necessary components
-                // debug_log!(
-                //     "Creating profile for {} in file {} with memory profiling enabled={}",
-                //     fn_name,
-                //     file_name_stem,
-                //     matches!(profile_type, ProfileType::Memory | ProfileType::Both)
-                // );
+                debug_log!(
+                    "Creating profile for {} in file {} with memory profiling enabled={}",
+                    fn_name,
+                    file_name_stem,
+                    matches!(profile_type, ProfileType::Memory | ProfileType::Both)
+                );
 
                 Self {
                     profile_type,
@@ -1716,7 +1716,7 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
-                    file_name: file_name_stem,
+                    file_name: file_name_stem.clone(),
                     instance_id,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
                     memory_reported: Arc::new(AtomicBool::new(false)),
@@ -1728,12 +1728,12 @@ impl Profile {
 
             // Register this profile with the new ProfileRegistry
             // First log the details to avoid potential deadlock
-            // debug_log!(
-            //     "About to register profile in module {} for fn {} with line range {:?}..None",
-            //     file_name_stem,
-            //     fn_name,
-            //     start_line
-            // );
+            debug_log!(
+                "About to register profile in module {} for fn {} with line range {:?}..None",
+                file_name_stem,
+                fn_name,
+                start_line
+            );
 
             // Flush logs before calling register_profile
             // flush_debug_log();
@@ -1742,12 +1742,11 @@ impl Profile {
             #[cfg(feature = "full_profiling")]
             register_profile(&profile);
 
-            // // Log again after registration completes
-            // debug_log!(
-            //     "Successfully registered profile in module {}",
-            //     &profile.file_name
-            // );
-            // }
+            // Log again after registration completes
+            debug_log!(
+                "Successfully registered profile in module {}",
+                &profile.file_name
+            );
 
             profile.start = Some(Instant::now());
 
@@ -2551,6 +2550,11 @@ impl Drop for Profile {
                             self.registered_name
                         );
                         self.record_memory_change(total_allocated);
+                    } else {
+                        debug_log!(
+                            "0-byte memory allocation not recorded for profile {}",
+                            self.registered_name
+                        );
                     }
                 } else {
                     debug_log!(

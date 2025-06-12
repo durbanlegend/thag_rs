@@ -91,7 +91,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
 
     #[cfg(feature = "full_profiling")]
     let expanded = quote! {
-        let #profile_id = ::thag_profiler::with_sys_alloc(|| {
+        let #profile_id = ::thag_profiler::safe_alloc! {
             ::thag_profiler::Profile::new(
                 Some(#name),
                 None,
@@ -102,7 +102,7 @@ pub fn profile_impl(input: TokenStream) -> TokenStream {
                 #start_line,
                 #end_line
             )
-        });
+        };
     };
 
     expanded.into()

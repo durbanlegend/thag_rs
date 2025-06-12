@@ -34,11 +34,11 @@ pub fn end_impl(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         fn #func_name() -> u32 { line!() }
 
-        ::thag_profiler::with_sys_alloc(    || {
+        ::thag_profiler::safe_alloc! {
             if let Some(profile) = #profile_id {
                 drop(profile);
             }
-        });
+        };
     };
 
     #[cfg(not(feature = "full_profiling"))]

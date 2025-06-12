@@ -23,10 +23,10 @@ pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         {
             // Inline the sys_alloc logic directly with unified TLS/global support
-            let was_already_using_sys = crate::mem_tracking::get_tls_using_system();
+            let was_already_using_sys = mem_tracking::get_tls_using_system();
 
             if !was_already_using_sys {
-                crate::mem_tracking::set_tls_using_system(true);
+                mem_tracking::set_tls_using_system(true);
             }
 
             // Execute the provided code (whether expression or statements)
@@ -36,7 +36,7 @@ pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
 
             // Restore flag only if we set it
             if !was_already_using_sys {
-                crate::mem_tracking::set_tls_using_system(false);
+                mem_tracking::set_tls_using_system(false);
             }
 
             result
@@ -52,8 +52,7 @@ pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         {
-            let was_already_using_sys = crate::mem_tracking::USING_SYSTEM_ALLOCATOR
-                .swap(true, std::sync::atomic::Ordering::SeqCst);
+            let was_already_using_sys = mem_tracking::USING_SYSTEM_ALLOCATOR
                 .compare_exchange(false, true, std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst)
                 .is_err(); // true if exchange failed (was already true)
 
@@ -64,7 +63,7 @@ pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
 
             // Restore flag only if we set it
             if !was_already_using_sys {
-                crate::mem_tracking::USING_SYSTEM_ALLOCATOR
+                mem_tracking::USING_SYSTEM_ALLOCATOR
                     .store(false, std::sync::atomic::Ordering::SeqCst);
             }
 

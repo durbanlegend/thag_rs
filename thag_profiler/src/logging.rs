@@ -7,7 +7,7 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 #[cfg(feature = "full_profiling")]
-use crate::safe_alloc;
+use crate::{mem_tracking, safe_alloc};
 
 static_lazy! {
     DebugLogger: Option<Mutex<BufWriter<File>>> = {

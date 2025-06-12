@@ -10,6 +10,7 @@ use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, get_global_profile_type,
     get_root_module, is_detailed_memory, lazy_static_var,
     mem_attribution::{DetailedAddressRegistry, ProfileReg},
+    mem_tracking,
     profiling::{
         build_stack, clean_function_name, extract_detailed_alloc_callstack,
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
@@ -425,7 +426,7 @@ fn record_alloc(address: usize, size: usize) {
         // assert!(!in_tracking);
 
         if in_tracking {
-            debug_log!("*** Caution: already tracking: proceeding for deallocation of {size} B");
+            debug_log!("*** Caution: already tracking: proceeding for allocation of {size} B");
             // return ptr;
         }
 
@@ -490,7 +491,10 @@ fn record_alloc(address: usize, size: usize) {
             let (filename, lineno, frame, fn_name, profile_ref) = &frames[0];
             let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
 
-            debug_log!("Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?}");
+            // if size == 40 {
+                debug_log!("frames: {frames:#?} for size {size}");
+            // }
+            debug_log!("Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?} for size {size}");
 
             // Still record detailed allocations to -memory_detail.folded if requested
             if detailed_memory {
@@ -589,6 +593,8 @@ fn extract_callstack_with_recursion_check(
                              };
                              panic!("Max limit of {capacity} frames exceeded");
                         }
+                    } else {
+                        debug_log!("No profile found for {filename}, {fn_name}, {lineno}");
                     }
                 }
             });

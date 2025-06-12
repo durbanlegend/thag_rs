@@ -198,6 +198,8 @@ fn generate_sync_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
     quote! {
         #(#attrs)*
         #vis fn #fn_name #generics (#inputs) #output #where_clause {
+            use thag_profiler::mem_tracking;
+
             // We pass None for the name as we rely on the backtrace to identify the function
             let profile = #profile_new;
             let result = { #body };
@@ -261,6 +263,7 @@ fn generate_async_wrapper(ctx: &FunctionContext) -> proc_macro2::TokenStream {
             use std::future::Future;
             use std::pin::Pin;
             use std::task::{Context, Poll};
+            use thag_profiler::mem_tracking;
 
             struct ProfiledFuture<F> {
                 inner: F,

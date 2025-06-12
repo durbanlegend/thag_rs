@@ -32,7 +32,13 @@ impl Document {
     #[profiled]
     fn new(id: usize, content: String) -> Self {
         // let _ = sleep(Duration::from_millis(50 + (id % 10 * 5) as u64));
-        let _dummy = vec![1, 2, 3, 4, 5];
+
+        let _create_something = vec![
+            "Hello".to_string(),
+            "world".to_string(),
+            "testing".to_string(),
+            "testing".to_string(),
+        ];
 
         Document {
             id,
@@ -240,7 +246,12 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     let mut tasks = Vec::new();
 
     for id in 0..count {
-        // For some reason, moving this up out of the async move makes the profile show up
+        // Document::new without the added Vec allocation seems to have a zero-byte runtime allocation.
+        // In order for the `fetch_document` profile to show up, we either have to add an extra allocation
+        // to Document::new to force its parent to display, or move `fetch_document` up out of the async move
+        // as per the commented-out line below and as per document_pipeline_profile_minimal.rs.
+        // The same applies to process_document except that `count_words` naturally has a non-zero allocation
+        // which forces its parent to appear.
         // let doc = fetch_document(id).await;
         tasks.push(async move {
             let doc = fetch_document(id).await;

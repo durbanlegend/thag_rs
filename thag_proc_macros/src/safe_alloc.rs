@@ -16,55 +16,17 @@ impl Parse for SafeAllocInput {
     }
 }
 
-#[cfg(feature = "tls_allocator")]
 pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
     let SafeAllocInput { content } = parse_macro_input!(input as SafeAllocInput);
 
     let expanded = quote! {
         {
-            // Inline the sys_alloc logic directly with unified TLS/global support
-            let was_already_using_sys = mem_tracking::get_tls_using_system();
+            let was_already_using_sys = mem_tracking::compare_exchange_using_system(false, true).is_err();
+
+            let result = { #content };
 
             if !was_already_using_sys {
-                mem_tracking::set_tls_using_system(true);
-            }
-
-            // Execute the provided code (whether expression or statements)
-            let result = {
-                #content
-            };
-
-            // Restore flag only if we set it
-            if !was_already_using_sys {
-                mem_tracking::set_tls_using_system(false);
-            }
-
-            result
-        }
-    };
-
-    TokenStream::from(expanded)
-}
-
-#[cfg(not(feature = "tls_allocator"))]
-pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
-    let SafeAllocInput { content } = parse_macro_input!(input as SafeAllocInput);
-
-    let expanded = quote! {
-        {
-            let was_already_using_sys = mem_tracking::USING_SYSTEM_ALLOCATOR
-                .compare_exchange(false, true, std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst)
-                .is_err(); // true if exchange failed (was already true)
-
-            // Execute the provided code (whether expression or statements)
-            let result = {
-                #content
-            };
-
-            // Restore flag only if we set it
-            if !was_already_using_sys {
-                mem_tracking::USING_SYSTEM_ALLOCATOR
-                    .store(false, std::sync::atomic::Ordering::SeqCst);
+                mem_tracking::set_using_system(false);
             }
 
             result

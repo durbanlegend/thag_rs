@@ -28,73 +28,105 @@ use parking_lot::Mutex;
 use regex::Regex;
 use std::{
     alloc::{GlobalAlloc, Layout, System},
-    cell::Cell,
     collections::{HashMap, HashSet},
     env, fmt,
     io::{self, Write},
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicUsize, Ordering},
         LazyLock,
     },
-    thread_local,
     time::Instant,
 };
+
+#[cfg(feature = "tls_allocator")]
+use std::{cell::Cell, thread_local};
+
+#[cfg(not(feature = "tls_allocator"))]
+use std::sync::atomic::AtomicBool;
 
 // Fast path atomic for checking current allocator without locking
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
-// Static atomics for minimal state tracking without allocations
-pub static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
+// Global static atomic for minimal state tracking without allocations
+#[cfg(not(feature = "tls_allocator"))]
+static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
 
 // Thread-local alternative for better async/threading isolation
 // Each thread maintains its own flag, preventing cross-thread interference
+#[cfg(feature = "tls_allocator")]
 thread_local! {
-    static USING_SYSTEM_ALLOCATOR_TLS: Cell<bool> = const { Cell::new(false) };
+    static USING_SYSTEM_ALLOCATOR: Cell<bool> = const { Cell::new(false) };
 }
 
-// Helper functions to access thread-local state from macros
+// Unified interface functions
+#[cfg(not(feature = "tls_allocator"))]
+#[inline]
 #[must_use]
-pub fn get_tls_using_system() -> bool {
-    USING_SYSTEM_ALLOCATOR_TLS.with(Cell::get)
+pub fn get_using_system() -> bool {
+    USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst)
 }
 
-pub fn set_tls_using_system(value: bool) {
-    USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(value));
-}
-
+#[cfg(feature = "tls_allocator")]
+#[inline]
 #[must_use]
-pub fn swap_tls_using_system(value: bool) -> bool {
-    USING_SYSTEM_ALLOCATOR_TLS.with(|flag| {
-        let old = flag.get();
-        // Only change false->true, never change an existing true value
-        if !old && value {
-            flag.set(value);
+pub fn get_using_system() -> bool {
+    USING_SYSTEM_ALLOCATOR.with(Cell::get)
+}
+
+#[cfg(not(feature = "tls_allocator"))]
+#[inline]
+pub fn set_using_system(value: bool) {
+    USING_SYSTEM_ALLOCATOR.store(value, Ordering::SeqCst);
+}
+
+#[cfg(feature = "tls_allocator")]
+#[inline]
+pub fn set_using_system(value: bool) {
+    USING_SYSTEM_ALLOCATOR.with(|cell| cell.set(value));
+}
+
+/// Try swapping the boolean TLS `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
+///
+/// # Errors
+///
+/// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
+/// We expect to handle this error in normal operation.
+#[cfg(not(feature = "tls_allocator"))]
+#[inline]
+pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
+    USING_SYSTEM_ALLOCATOR.compare_exchange(current, new, Ordering::SeqCst, Ordering::SeqCst)
+}
+
+/// Try swapping the boolean global `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
+///
+/// # Errors
+///
+/// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
+/// We expect to handle this error in normal operation.
+#[cfg(feature = "tls_allocator")]
+#[inline]
+pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
+    USING_SYSTEM_ALLOCATOR.with(|cell| {
+        let actual = cell.get();
+        if actual == current {
+            cell.set(new);
+            Ok(actual)
+        } else {
+            Err(actual)
         }
-        old
     })
-}
-
-// Test utility functions to reset state for test isolation
-pub fn reset_global_allocator_state() {
-    USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-}
-
-pub fn reset_tls_allocator_state() {
-    USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.set(false));
 }
 
 /// Reset allocator state using the unified approach
 pub fn reset_allocator_state() {
     #[cfg(feature = "tls_allocator")]
     {
-        reset_tls_allocator_state();
-        reset_global_allocator_state(); // Reset both to be safe
+        USING_SYSTEM_ALLOCATOR.with(|flag| flag.set(false));
     }
     #[cfg(not(feature = "tls_allocator"))]
     {
-        reset_global_allocator_state();
-        reset_tls_allocator_state(); // Reset both to be safe
+        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
 }
 
@@ -120,25 +152,25 @@ impl fmt::Display for Allocator {
 }
 
 /// Get the current allocator based on the configured approach
-#[inline]
 #[must_use]
+#[cfg(feature = "tls_allocator")]
 pub fn current_allocator() -> Allocator {
-    #[cfg(feature = "tls_allocator")]
-    {
-        let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(Cell::get);
-        if using_system {
-            Allocator::System
-        } else {
-            Allocator::Tracking
-        }
+    let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
+    if using_system {
+        Allocator::System
+    } else {
+        Allocator::Tracking
     }
-    #[cfg(not(feature = "tls_allocator"))]
-    {
-        if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
-            Allocator::System
-        } else {
-            Allocator::Tracking
-        }
+}
+
+/// Get the current allocator based on the configured approach
+#[must_use]
+#[cfg(not(feature = "tls_allocator"))]
+pub fn current_allocator() -> Allocator {
+    if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
+        Allocator::System
+    } else {
+        Allocator::Tracking
     }
 }
 

@@ -21,10 +21,7 @@ use std::thread;
 // Test utility to reset state
 #[cfg(feature = "full_profiling")]
 fn reset_allocator_states() {
-    // Reset global state
-    thag_profiler::mem_tracking::reset_global_allocator_state();
-    // Reset thread-local state
-    thag_profiler::mem_tracking::reset_tls_allocator_state();
+    thag_profiler::mem_tracking::reset_allocator_state();
 }
 
 #[test]

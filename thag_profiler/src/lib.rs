@@ -83,8 +83,7 @@ pub use {
 // Export individual TLS/global variants for advanced usage
 #[cfg(feature = "full_profiling")]
 pub use mem_tracking::{
-    get_tls_using_system, reset_allocator_state, reset_global_allocator_state,
-    reset_tls_allocator_state, set_tls_using_system, swap_tls_using_system,
+    compare_exchange_using_system, get_using_system, reset_allocator_state, set_using_system,
 };
 
 // #[cfg(feature = "time_profiling")]

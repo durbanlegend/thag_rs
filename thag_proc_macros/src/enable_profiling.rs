@@ -341,7 +341,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, init_profiling, parse_env_profile_config,Allocator, PROFILING_MUTEX};
+                use ::thag_profiler::{finalize_profiling, init_profiling, mem_tracking, parse_env_profile_config,Allocator, PROFILING_MUTEX};
 
                 let should_profile = ::thag_profiler::safe_alloc! {
                     std::env::var("THAG_PROFILER").ok().is_some()
@@ -354,7 +354,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Enabled => {
             quote! {
-                use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, profiled, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
+                use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, mem_tracking, profiled, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
         ProfilingMode::Disabled => {

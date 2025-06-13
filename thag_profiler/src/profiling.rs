@@ -1715,6 +1715,9 @@ impl Profile {
                     start_line,
                     end_line,
                     detailed_memory,
+                    #[cfg(feature = "debug_logging")]
+                    file_name: file_name_stem.clone(),
+                    #[cfg(not(feature = "debug_logging"))]
                     file_name: file_name_stem,
                     instance_id,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
@@ -2606,7 +2609,7 @@ impl Drop for Profile {
 ///
 /// This function will bubble up any i/o errors that occur trying to convert the file.
 #[cfg(feature = "time_profiling")]
-#[allow(clippy::branches_sharing_code)]
+#[allow(clippy::branches_sharing_code, unused_assignments)]
 pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> ProfileResult<()> {
     debug_log!("Converting inclusive time profile to exclusive time");
 
@@ -2620,11 +2623,12 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 
     // Store stack lines as (stack_str, time) pairs
     let mut stack_lines: Vec<(String, u64)> = Vec::new();
+    let mut input_lines = 0;
 
     // First pass: Parse the file and separate headers from stack lines
     for (line_count, line) in reader.lines().enumerate() {
+        input_lines = line_count;
         let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
-
         // // Preserve comment/header lines
         // if line.starts_with('#') || line.trim().is_empty() {
         //     header_lines.push(line);
@@ -2708,7 +2712,7 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .flush()
         .map_err(|e| ProfileError::General(format!("Failed to flush writer: {e}")))?;
 
-    debug_log!("Successfully processed {line_count} lines");
+    debug_log!("Successfully processed {input_lines} lines");
     debug_log!("Found {len} stacks");
 
     // Sum up exclusive times to validate

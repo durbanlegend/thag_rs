@@ -90,7 +90,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
 
-    let imports = ["use thag_profiler::{enable_profiling, end, mem_tracking, profile, profiled};"];
+    let imports = ["use thag_profiler::{enable_profiling, end, profile, profiled};"];
 
     for import_text in imports.iter() {
         if !source.contains(import_text) {

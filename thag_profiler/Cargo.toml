@@ -20,6 +20,12 @@ categories = [
     "command-line-utilities",
 ]
 
+[package.metadata.wix]
+upgrade-guid = "0C80A2EF-343B-4EA3-BCE0-2985B10A2893"
+path-guid = "DB87B3CE-6DCB-436A-85FA-C90A0061C9B3"
+license = false
+eula = false
+
 [dependencies]
 backtrace = "0.3"
 chrono = "0.4.39"

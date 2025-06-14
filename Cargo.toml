@@ -146,6 +146,9 @@ install-updater = false
 # Trigger releases manually instead of on tag-push (DHF temp)
 # dispatch-releases = false
 #
+# Suppress dist failure because we bumped ubuntu-20.04 to ubuntu-22.04
+allow-dirty = ["ci"]
+
 [[workspace.metadata.dist.extra-artifacts]]
 artifacts = ["demo.zip"]
 build = ["sh", "-c", "zip demo.zip demo/*"]

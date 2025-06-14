@@ -841,17 +841,17 @@ Section profiling requires either:
   **1. Recommended:** an `end!(<identifier>)` macro to drop the   profile outside of user code and to mark the end of the section so that memory allocations can be
   accurately attributed to the correct section by line number.   This macro invocation must not be outside the normal Rust scope   of the `profile!` macro.
 
-  The identifier must be identical to the one used in the  matching   `profile!` macro call, as it is used to match up  the two.
+  The identifier must be identical to the one used in the  matching `profile!` macro call, as it is used to match up  the two.
 
 or:
 
-  **2.** An `unbounded` argument to allow the profile to be dropped at   the end of the _function_ and to assist memory profiling.
+  **2.** An `unbounded` argument to allow the profile to be dropped at the end of the _function_ and to assist memory profiling.
 
   This is not preferred because:
 
-  a. The profile inevitably gets dropped in user code, leaving it   up to the allocation tracker to identify and filter out its   allocations in the first place. This is not as clean and precise   as using the `end!` mechanism to ring-fence the profiler code,   and thus creates more overhead and greater exposure to any   potential loopholes in the filtering algorithm.
+  a. The profile inevitably gets dropped in user code, leaving it up to the allocation tracker to identify and filter out its allocations in the first place. This is not as clean and precise   as using the `end!` mechanism to ring-fence the profiler code,  and thus creates more overhead and greater exposure to any   potential loopholes in the filtering algorithm.
 
-  b. It has limited applicability and is open to misuse. It may   only be used to profile the remainder of a function. For more   limited scopes you must use an `end!` macro.
+  b. It has limited applicability and is open to misuse. It may only be used to profile the remainder of a function. For more  limited scopes you must use an `end!` macro.
 
   The 'unbounded` option may be dropped in future.
 

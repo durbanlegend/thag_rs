@@ -299,7 +299,7 @@ pub fn generate_theme_types(input: TokenStream) -> TokenStream {
     )
 }
 
-/// Preload themes into memory at compile time.
+/// Preload visual themes into memory at compile time.
 ///
 /// Syntax:
 ///
@@ -341,7 +341,8 @@ pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
     maybe_expand_attr_macro(false, "fn_name", &attr, &item, fn_name_impl)
 }
 
-/// Attribute macro intended for user `main` function to enable and control profiling of the user code.
+/// Attribute macro for use with `thag_profiler`. This macro is intended to annotate the user `main`
+/// function in order to to enable and control profiling of the user code.
 ///
 /// Zero-cost abstraction: only alters function if feature `time_profiling` is enabled.
 ///
@@ -354,20 +355,28 @@ pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// }
 /// ```
 ///
-/// Arguments:
-/// - time                  Enable time profiling.
-/// - memory                Enable memory profiling.
-/// - both                  Enable time and memory profiling.
-/// - yes                   (default) Same as "both".
-/// - no                    Disable memory profiling.
-/// - runtime               Control profiling via `THAG_PROFILER` environment variable args at runtime.
-/// - function(arg1 ...)    Pass arguments applicable to the current function as per `profiled`:
-///     - time                  Enable time/performance profiling for this function.
-///     - mem_summary           Enable basic memory profiling for this function.
-///     - mem_detail            Enable detailed memory profiling for this function.
-///     - both                  Enable time and basic memory profiling for this function.
-///     - global                Enable profiling for this function according to the global setting.
-///     - test                  Enable clone of profile for test access.
+/// ## Arguments
+///
+/// | Argument | Description |
+/// |----------|-------------|
+/// | `time` | Enable time profiling. |
+/// | `memory` | Enable memory profiling. |
+/// | `both` | Enable time and memory profiling. |
+/// | `yes` | (default) Same as "both". |
+/// | `no` | Disable memory profiling. |
+/// | `runtime` | Control profiling via `THAG_PROFILER` environment variable args at runtime. |
+/// | `function(arg1 ...)` | Pass arguments applicable to the current function as per `profiled`: |
+///
+/// ### Function Arguments
+///
+/// | Argument | Description |
+/// |----------|-------------|
+/// | `time` | Enable time/performance profiling for this function. |
+/// | `mem_summary` | Enable basic memory profiling for this function. |
+/// | `mem_detail` | Enable detailed memory profiling for this function. |
+/// | `both` | Enable time and basic memory profiling for this function. |
+/// | `global` | Enable profiling for this function according to the global setting. |
+/// | `test` | Enable clone of profile for test access. |
 ///
 /// E.g.:
 ///
@@ -397,32 +406,37 @@ pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Attribute macro intended for user functions other than `main` to control profiling of the function.
+/// Attribute macro for use with `thag_profiler`. This macro is intended to annotate user
+/// functions other than `main` in order to to control profiling of each function
+/// individually.
 ///
 /// Zero-cost abstraction: only alters function if feature `time_profiling` is enabled.
 ///
 /// Syntax:
 ///
 /// ```Rust
-/// #[enable_profiling]
-/// fn main() {
+/// #[profiled]
+/// fn my_function() {
 ///     ...
 /// }
 /// ```
 ///
-/// Arguments:
-/// - time            Enable time/performance profiling for this function.
-/// - mem_summary     Enable basic memory profiling for this function.
-/// - mem_detail      Enable detailed memory profiling for this function.
-/// - both            Enable time and basic memory profiling for this function.
-/// - global          Enable profiling for this function according to the global setting.
-/// - test            Enable clone of profile for test access.
+/// ## Arguments
+///
+/// | Argument | Description |
+/// |----------|-------------|
+/// | `time` | Enable time/performance profiling for this function. |
+/// | `mem_summary` | Enable basic memory profiling for this function. |
+/// | `mem_detail` | Enable detailed memory profiling for this function. |
+/// | `both` | Enable time and basic memory profiling for this function. |
+/// | `global` | Enable profiling for this function according to the global setting. |
+/// | `test` | Enable clone of profile for test access. |
 ///
 /// E.g.:
 ///
 /// ```Rust
-/// #[enable_profiling(runtime)]
-/// fn main() {
+/// #[profiled(both)]
+/// fn my_function() {
 ///     ...
 /// }
 /// ```
@@ -441,55 +455,138 @@ pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
-/// Creates a function with the name specified in the string literal
-/// that returns the line number where the function is called.
+/// Proc macro for use with `thag_profiler`. This macro defines the end of the scope of a `profile!`
+/// macro with the same name argument, and also explicitly drops the profile in ring-fenced profiler code.
+///
+/// Creates a function `end_<name>` that returns its own starting line number for the `profile!`
+/// macro to call to determine where its own scope ends.
+///
+/// Zero-cost abstraction: no-op unless `time_profiling` is enabled.
+///
+/// Syntax:
+///
+/// ```Rust
+/// end!(name);
+/// ```
+/// where `name` is the same as the `name` argument to the preceding `profile!(name)` macro.
 ///
 /// # Example
 ///
-/// ```
-/// use thag_profiler::end;
+/// ```Rust
+/// use thag_profiler::{end, profile};
 ///
-/// // Intended for use with `profile!(my_section, detailed_memory)`,
-/// // so `profile!` can get section end line number
-/// println!("Current line: {}", end_my_section()); // prints the `end!` line number
-///
+/// profile!(my_section, mem_summary);
+/// // User code section
+/// ...
+/// // Show off the `end_<name>` function generated for internal use by `profile!`
+/// println!("This section ends on line: {}", end_my_section()); // prints the `end!` line number
+/// ...
 /// end!(my_section);
 ///
 /// ```
-#[cfg(feature = "time_profiling")]
 #[proc_macro]
 pub fn end(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "end", &input, end_impl)
+    #[cfg(feature = "time_profiling")]
+    {
+        maybe_expand_proc_macro(false, "end", &input, end_impl)
+    }
+
+    #[cfg(not(feature = "time_profiling"))]
+    {
+        // Return an empty token stream to make this a no-op
+        TokenStream::new()
+    }
 }
 
-#[cfg(not(feature = "time_profiling"))]
-#[proc_macro]
-pub fn end(_input: TokenStream) -> TokenStream {
-    // Return an empty token stream to make this a no-op
-    TokenStream::new()
-}
-
-#[cfg(feature = "time_profiling")]
+/// Proc macro for use with `thag_profiler`. This macro profiles a section of user code between itself
+/// and an optional `end!` macro with a matching name argument.
+///
+/// If no matching `end!` macro is provided, the `unbounded` flag is required, to confirm that the
+/// section ends at the very end of the function. It is the user's responsibility to ensure that
+/// the `profile!` macro is scoped to the very end of the function and not within any inner block,
+/// as the `Profile` it generates will be implicitly dropped when it goes out of scope, and if this
+/// is before the end of the function it will cause any profiling data from that point to the end
+/// of the function to be lost.
+///
+/// Since `unbounded` means the profile is unavoidably dropped implicitly in user code, `end!`
+/// is preferred in order to guarantee ring fencing of the profiler code.
+///
+/// `profile!` scopes must not be nested or overlapped.
+///
+/// Section profiles as provided by this macro are of limited usefulness, as they may have parent
+/// functions but not child functions in the callstack, since they are grafted on to the backtrace
+/// mechanism that produces the callstack. A function called from within a profiled section will
+/// appear in flamegraphs, not as a child of the section but as a child of the parent function and
+/// a sibling of the section.
+///
+/// Zero-cost abstraction: no-op unless `time_profiling` is enabled.
+///
+/// Syntax:
+///
+/// ```Rust
+/// profile!(name[, flag1[, flag2[, ...]]]);
+/// ```
+///
+/// | Flag | Description |
+/// |------|-------------|
+/// | `time` | Enable time profiling for this section |
+/// | `mem_summary` | Enable basic memory allocation tracking |
+/// | `mem_detail` | Enable detailed memory allocation tracking |
+/// | `async_fn` | Mark that this profile is for an async function |
+/// | `unbounded` | This is equivalent to an `end!` macro at the end of the function |
+///
+/// # Example
+///
+/// ```Rust
+/// use thag_profiler::profile;
+/// fn my_function() -> Result(()) {
+///     ...
+///     profile!(my_section, mem_detail, unbounded);
+///     // User code section
+///     ...
+///
+///     Ok(())
+/// } // my_section ends at end of function
+///
+/// ```
 #[proc_macro]
 pub fn profile(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "profile", &input, profile_impl)
+    #[cfg(feature = "time_profiling")]
+    {
+        maybe_expand_proc_macro(false, "profile", &input, profile_impl)
+    }
+
+    #[cfg(not(feature = "time_profiling"))]
+    {
+        // Return an empty token stream to make this a no-op
+        TokenStream::new()
+    }
 }
 
-#[cfg(not(feature = "time_profiling"))]
-#[proc_macro]
-pub fn profile(_input: TokenStream) -> TokenStream {
-    // Return an empty token stream to make this a no-op
-    TokenStream::new()
-}
-
-#[cfg(not(feature = "full_profiling"))]
+/// Internal proc macro for use by `thag_profiler` code to ring-fence profiler code by
+/// ensuring as far as possible that any memory allocations in the included code will
+/// be handled by the system allocator, and not by the tracking allocator intended for
+/// profiling user code.
+///
+/// Zero-cost abstraction: no change to code unless `full_profiling` is enabled.
+///
+/// Syntax:
+///
+/// ```Rust
+///     safe_alloc! {
+///       // Profiler code
+///     }
+/// ```
+///
 #[proc_macro]
 pub const fn safe_alloc(input: TokenStream) -> TokenStream {
-    input
-}
+    #[cfg(feature = "full_profiling")]
+    {
+        maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)
+    }
 
-#[cfg(feature = "full_profiling")]
-#[proc_macro]
-pub fn safe_alloc(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)
+    #[cfg(not(feature = "full_profiling"))]
+    {
+        input
+    }
 }

@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
+use crate::{debug_log, fn_name, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
@@ -2216,10 +2216,10 @@ pub fn extract_profile_callstack(
     }
 }
 
-// Don't change name from "extract_dealloc_callstack..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
+#[fn_name]
 pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
     // safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
@@ -2318,7 +2318,7 @@ pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
                     if suppress { break 'process_symbol; }
 
                     // Check for our own functions (recursion detection)
-                    if i > 0 && name.contains("extract_dealloc_callstack") {
+                    if i > 0 && name.contains(fn_name) {
                         found_recursion = true;
                         break 'process_symbol;
                     }
@@ -2350,9 +2350,9 @@ pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
 /// # Panics
 ///
 /// Panics if arbitrary preset limit of 100 frames exceeded.
-// Don't change name from "extract_detailed_alloc_callstack..." as this is used in regression checking.
 #[cfg(feature = "full_profiling")]
 #[must_use]
+#[fn_name]
 pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
     let mut already_seen = HashSet::new();
 
@@ -2430,7 +2430,7 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
                     if suppress { break 'process_symbol; }
 
                     // Check for our own functions (recursion detection)
-                    if i > 0 && name.contains("extract_detailed_alloc_callstack") {
+                    if i > 0 && name.contains(fn_name) {
                         found_recursion = true;
                         break 'process_symbol;
                     }

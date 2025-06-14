@@ -12,8 +12,8 @@
 //! the custom memory allocator implementation that enables memory profiling.
 
 use crate::{
-    debug_log, file_stem_from_path, find_profile, flush_debug_log, get_global_profile_type,
-    get_root_module, is_detailed_memory, lazy_static_var,
+    debug_log, file_stem_from_path, find_profile, flush_debug_log, fn_name,
+    get_global_profile_type, get_root_module, is_detailed_memory, lazy_static_var,
     mem_attribution::{DetailedAddressRegistry, ProfileReg},
     mem_tracking,
     profiling::{
@@ -564,7 +564,7 @@ fn record_alloc(address: usize, size: usize) {
 
 type FrameSummary = (String, u32, String, String, ProfileRef);
 
-// Don't change name from "extract_callstack_..." as this is used in regression checking.
+#[fn_name]
 fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<FrameSummary>> {
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
@@ -596,7 +596,7 @@ fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<F
                     if suppress { break 'process_symbol; }
 
                     // Check for our own functions (recursion detection)
-                    if i > 0 && name.contains("extract_callstack_with_recursion_check") {
+                    if i > 0 && name.contains(fn_name) {
                         found_recursion = true;
                         break 'process_symbol;
                     }

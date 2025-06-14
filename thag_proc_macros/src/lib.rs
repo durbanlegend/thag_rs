@@ -58,7 +58,8 @@ use crate::end::end_impl;
 #[cfg(feature = "tui")]
 use crate::tui_keys::key_impl;
 
-/// Generates a `Category` enum with predefined variants and utility implementations.
+/// Generates a `Category` enum with predefined variants and utility implementations for use with the
+/// `thag_gen_readme` utility to generate a README.md for a directory such as demo/.
 ///
 /// The `category_enum` macro defines an enum `Category` with a hardcoded set of variants.
 /// This ensures consistency across all callers and centralizes control over the available categories.
@@ -273,11 +274,21 @@ pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "ansi_code_derive", &input, ansi_code_derive_impl)
 }
 
+/// Generates a `FileNavigator` to allow the user to navigate the file system and select files and directories
+/// from a command-line interface.
+///
+/// Syntax:
+///
+/// ```Rust
+///     file_navigator! {}
+/// ```
+///
 #[proc_macro]
 pub fn file_navigator(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "file_navigator", &input, file_navigator_impl)
 }
 
+#[doc(hidden)]
 #[proc_macro]
 pub fn generate_theme_types(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(
@@ -288,51 +299,146 @@ pub fn generate_theme_types(input: TokenStream) -> TokenStream {
     )
 }
 
+/// Preload themes into memory at compile time.
+///
+/// Syntax:
+///
+/// ```Rust
+///     preload_themes! {}
+/// ```
+///
 #[proc_macro]
 pub fn preload_themes(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "preload_themes", &input, preload_themes_impl)
 }
 
+/// Define common errors for `thag` tools.
+///
+/// Syntax:
+///
+/// ```Rust
+///     tool_errors! {}
+/// ```
+///
 #[proc_macro]
 pub fn tool_errors(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
 }
 
+/// Attribute macro to give a function access to its own name by inserting the statement `let fn_name = <function name>;`.
+///
+/// Syntax:
+///
+/// ```Rust
+/// #[fn_name]
+/// fn my_function() {
+///     ...
+/// }
+/// ```
+///
 #[proc_macro_attribute]
 pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
     maybe_expand_attr_macro(false, "fn_name", &attr, &item, fn_name_impl)
 }
 
-#[proc_macro_attribute]
-#[cfg(feature = "time_profiling")]
-pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(
-        false,
-        "enable_profiling",
-        &attr,
-        &item,
-        enable_profiling_impl,
-    )
-}
-
-#[cfg(not(feature = "time_profiling"))]
+/// Attribute macro intended for user `main` function to enable and control profiling of the user code.
+///
+/// Zero-cost abstraction: only alters function if feature `time_profiling` is enabled.
+///
+/// Syntax:
+///
+/// ```Rust
+/// #[enable_profiling]
+/// fn main() {
+///     ...
+/// }
+/// ```
+///
+/// Arguments:
+/// - time                  Enable time profiling.
+/// - memory                Enable memory profiling.
+/// - both                  Enable time and memory profiling.
+/// - yes                   (default) Same as "both".
+/// - no                    Disable memory profiling.
+/// - runtime               Control profiling via `THAG_PROFILER` environment variable args at runtime.
+/// - function(arg1 ...)    Pass arguments applicable to the current function as per `profiled`:
+///     - time                  Enable time/performance profiling for this function.
+///     - mem_summary           Enable basic memory profiling for this function.
+///     - mem_detail            Enable detailed memory profiling for this function.
+///     - both                  Enable time and basic memory profiling for this function.
+///     - global                Enable profiling for this function according to the global setting.
+///     - test                  Enable clone of profile for test access.
+///
+/// E.g.:
+///
+/// ```Rust
+/// #[enable_profiling(runtime)]
+/// fn main() {
+///     ...
+/// }
+/// ```
+///
 #[proc_macro_attribute]
 pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
+    #[cfg(feature = "time_profiling")]
+    {
+        maybe_expand_attr_macro(
+            false,
+            "enable_profiling",
+            &attr,
+            &item,
+            enable_profiling_impl,
+        )
+    }
+
+    #[cfg(not(feature = "time_profiling"))]
+    {
+        item
+    }
 }
 
-#[cfg(feature = "time_profiling")]
-#[proc_macro_attribute]
-pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // eprintln!("DEBUGLIB: profiled attribute macro called");
-    // Set to true to enable macro expansion output
-    maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
-}
-
+/// Attribute macro intended for user functions other than `main` to control profiling of the function.
+///
+/// Zero-cost abstraction: only alters function if feature `time_profiling` is enabled.
+///
+/// Syntax:
+///
+/// ```Rust
+/// #[enable_profiling]
+/// fn main() {
+///     ...
+/// }
+/// ```
+///
+/// Arguments:
+/// - time            Enable time/performance profiling for this function.
+/// - mem_summary     Enable basic memory profiling for this function.
+/// - mem_detail      Enable detailed memory profiling for this function.
+/// - both            Enable time and basic memory profiling for this function.
+/// - global          Enable profiling for this function according to the global setting.
+/// - test            Enable clone of profile for test access.
+///
+/// E.g.:
+///
+/// ```Rust
+/// #[enable_profiling(runtime)]
+/// fn main() {
+///     ...
+/// }
+/// ```
+///
 #[cfg(not(feature = "time_profiling"))]
 #[proc_macro_attribute]
 pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
+    #[cfg(feature = "time_profiling")]
+    {
+        maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
+    }
+
+    #[cfg(not(feature = "time_profiling"))]
+    {
+        item
+    }
 }
 
 /// Creates a function with the name specified in the string literal

@@ -154,3 +154,8 @@ build = ["sh", "-c", "zip demo.zip demo/*"]
 artifacts = ["assets/default_config.toml"]
 # no-op:
 build = ["true"]
+
+[dist.github-custom-runners]
+x86_64-unknown-linux-gnu = "ubuntu-22.04"
+aarch64-unknown-linux-gnu = "ubuntu-22.04-arm"
+global = "ubuntu-22.04"

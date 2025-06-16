@@ -1087,7 +1087,7 @@ pub(crate) fn enable_profiling(
 //     Ok(())
 // }
 
-/// Disable profiling.
+/// Disables profiling.
 ///
 /// This function disables profiling and resets the profiling state.
 /// Use this to explicitly stop profiling that was enabled via the
@@ -1911,7 +1911,7 @@ impl Profile {
         Self::write_profile_event(memory_path, MemoryProfileFile::get(), &entry)
     }
 
-    /// Convert function names in the stack into their descriptive names.
+    /// Converts function names in the stack into their descriptive names.
     #[cfg(feature = "time_profiling")]
     #[must_use]
     pub fn build_stack(&self, path: &[String]) -> std::string::String {
@@ -1973,7 +1973,7 @@ impl Profile {
     }
 }
 
-/// Convert function names in the stack into their descriptive names.
+/// Converts function names in the stack into their descriptive names.
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn build_stack(
@@ -2003,7 +2003,6 @@ pub fn build_stack(
     }
 }
 
-#[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
 /// Extracts the call path from a cleaned stack trace.
 ///
 /// This function processes a cleaned stack trace and builds a path of profiled functions,
@@ -2017,32 +2016,33 @@ pub fn build_stack(
 /// A vector of strings representing the call path of profiled functions
 #[must_use]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
-    let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
-        == Some(true);
-    let start = usize::from(dup);
-    cleaned_stack[start..]
-        .iter()
-        // Reverse the path so it goes from root caller to current function
-        .rev()
-        // Add path elements that make for a registered function name stack
-        .fold(vec![], |stack: Vec<String>, fn_name_str| {
-            let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
-            let stack_str = new_vec.join(";");
-            if is_profiled_function(&stack_str) {
-                new_vec
-            } else {
-                stack
-            }
-        })
-        .iter()
-        .chain(maybe_append)
-        .cloned()
-        .collect()
-}
+    #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+    {
+        let dup = maybe_append
+            .and_then(|append| cleaned_stack.first().map(|first| first == append))
+            == Some(true);
+        let start = usize::from(dup);
+        cleaned_stack[start..]
+            .iter()
+            // Reverse the path so it goes from root caller to current function
+            .rev()
+            // Add path elements that make for a registered function name stack
+            .fold(vec![], |stack: Vec<String>, fn_name_str| {
+                let new_vec: Vec<String> = stack.iter().chain(Some(fn_name_str)).cloned().collect();
+                let stack_str = new_vec.join(";");
+                if is_profiled_function(&stack_str) {
+                    new_vec
+                } else {
+                    stack
+                }
+            })
+            .iter()
+            .chain(maybe_append)
+            .cloned()
+            .collect()
+    }
 
-#[cfg(feature = "full_profiling")]
-#[must_use]
-pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
+    #[cfg(feature = "full_profiling")]
     safe_alloc! {
         let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
             == Some(true);
@@ -2119,7 +2119,7 @@ pub fn filter_scaffolding(name: &str) -> bool {
 //     callstack
 // }
 
-/// Extract the callstack for a `Profile`.
+/// Extracts the callstack for a `Profile`.
 ///
 /// # Panics
 ///
@@ -2640,7 +2640,7 @@ impl Drop for Profile {
     }
 }
 
-/// Convert an inclusive time profile to exclusive time
+/// Converts an inclusive time profile to exclusive time
 ///
 /// This function reads a folded file with inclusive times (total time spent in each function)
 /// and converts it to exclusive times (time spent only in the function itself, excluding child calls).
@@ -2920,7 +2920,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     // "Profile::new",
 ];
 
-/// Normalise function names by removing closure references and hash suffixes.
+/// Normalises function names by removing closure references and hash suffixes.
 pub fn clean_function_name(clean_name: &mut str) -> String {
     // Remove any closure markers
     let mut clean_name: &mut str = if let Some(closure_pos) = clean_name.find("::{{closure}}") {

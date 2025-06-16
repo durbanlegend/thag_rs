@@ -1,5 +1,5 @@
 #![allow(clippy::missing_panics_doc)]
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 //! # `thag_proc_macros`
 //!
 //! Proc macros for `thag_rs` (`thag`) and `thag_profiler`.
@@ -395,7 +395,7 @@ pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 ///
 #[proc_macro_attribute]
-pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(feature = "time_profiling")]
     {
         maybe_expand_attr_macro(
@@ -448,9 +448,8 @@ pub fn enable_profiling(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// }
 /// ```
 ///
-#[cfg(not(feature = "time_profiling"))]
 #[proc_macro_attribute]
-pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(feature = "time_profiling")]
     {
         maybe_expand_attr_macro(false, "profiled", &attr, &item, profiled_impl)
@@ -588,7 +587,7 @@ pub fn profile(input: TokenStream) -> TokenStream {
 /// ```
 ///
 #[proc_macro]
-pub const fn safe_alloc(input: TokenStream) -> TokenStream {
+pub fn safe_alloc(input: TokenStream) -> TokenStream {
     #[cfg(feature = "full_profiling")]
     {
         maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)

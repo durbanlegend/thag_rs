@@ -45,11 +45,14 @@
 mod errors;
 mod logging;
 
+/// Core profiling module for profile definition and handling.
 pub mod profiling;
 
+/// Memory tracking module for use with the `full_profiling` feature.
 #[cfg(feature = "full_profiling")]
 pub mod mem_tracking;
 
+/// Memory attribution module manages a profile registry for use with the `full_profiling` feature.
 #[cfg(feature = "full_profiling")]
 pub mod mem_attribution;
 
@@ -100,12 +103,14 @@ pub use profiling::PROFILING_MUTEX;
 // Removed use of function-based enable_profiling as it's being deprecated
 // in favor of the attribute macro #[enable_profiling]
 
+/// Static variable to manage base location for profile backtrace cutoff (typically `lib.rs::init_profiling`)
 #[cfg(feature = "time_profiling")]
-pub static PROFILER: OnceLock<Profiler> = OnceLock::new();
+static PROFILER: OnceLock<Profiler> = OnceLock::new();
 
+/// Struct to manage base location for profile backtrace cutoff (typically `lib.rs::init_profiling`)
 #[cfg(feature = "time_profiling")]
 #[derive(Debug)]
-pub struct Profiler {
+struct Profiler {
     base_location: &'static str,
 }
 
@@ -114,11 +119,6 @@ impl Profiler {
     const fn new(base_location: &'static str) -> Self {
         Self { base_location }
     }
-}
-
-#[cfg(feature = "time_profiling")]
-pub fn get_profiler() -> Option<&'static Profiler> {
-    PROFILER.get()
 }
 
 #[cfg(feature = "time_profiling")]
@@ -892,10 +892,6 @@ mod lib_tests {
 
         // Test base location setting (creates a profiler)
         set_base_location(file!(), "test_function", line!());
-
-        // Get profiler instance
-        let profiler = get_profiler();
-        assert!(profiler.is_some());
 
         // Test base location getter
         let location = get_base_location();

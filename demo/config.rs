@@ -6,7 +6,7 @@ home = "0.5.9"
 log = "0.4.22"
 mockall = "0.13.1"
 serde = { version = "1.0", features = ["derive"] }
-serde_with = "3.11.0"
+serde_with = "3"
 toml = "0.8.19"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }

@@ -81,17 +81,17 @@ impl From<io::Error> for ThagError {
     fn from(err: io::Error) -> Self {
         // Enable backtraces in all build types - this is a development tool after all
         use std::backtrace::Backtrace;
-        
+
         // Get more context about the IO error
         eprintln!("IO Error: {err}");
         eprintln!("Kind: {:?}", err.kind());
         eprintln!("Raw OS Error: {:?}", err.raw_os_error());
-        
+
         // Always collect and print a backtrace for IO errors
         // This ensures we get diagnostics in both debug and release builds
         let backtrace = Backtrace::force_capture(); // Always capture, even in release mode
         eprintln!("Location:\n{backtrace}");
-        
+
         Self::Io(err)
     }
 }

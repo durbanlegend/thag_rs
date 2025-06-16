@@ -76,7 +76,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
     None
 }
 
-// Update the helper function to include debug level check
+/// Retrieve the debug log path
 #[must_use]
 pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
@@ -101,25 +101,27 @@ pub fn get_debug_log_path() -> Option<String> {
     }
 }
 
-// No-op for full profiling to prevent deadlocks
-// The BufWriter will auto-flush on drop anyway
-#[cfg(feature = "full_profiling")]
-pub const fn flush_debug_log() {}
-
-// Define a function to flush the log buffer - can be called at strategic points
-#[cfg(not(feature = "full_profiling"))]
+/// A function to flush the log buffer - can be called at strategic points
 pub fn flush_debug_log() {
-    if let Some(logger) = DebugLogger::get() {
-        let flush_result = {
-            let mut locked_writer = logger.lock();
-            locked_writer.flush()
-        };
+    #[cfg(not(feature = "full_profiling"))]
+    {
+        if let Some(logger) = DebugLogger::get() {
+            let flush_result = {
+                let mut locked_writer = logger.lock();
+                locked_writer.flush()
+            };
 
-        if let Err(e) = flush_result {
-            // Use eprintln for direct console output without going through our logger
-            eprintln!("Error flushing debug log: {e}");
+            if let Err(e) = flush_result {
+                // Use eprintln for direct console output without going through our logger
+                eprintln!("Error flushing debug log: {e}");
+            }
         }
     }
+
+    // No-op for full profiling to prevent deadlocks
+    // The BufWriter will auto-flush on drop anyway
+    #[cfg(feature = "full_profiling")]
+    {}
 }
 
 /// Zero-cost debug logging gated behind feature `debug_logging`.

@@ -55,7 +55,7 @@ use std::{
 #[cfg(feature = "time_profiling")]
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
-// Mutex to prevent concurrent access to profiling by different executions.
+/// Mutex to prevent concurrent access to profiling by different executions.
 #[cfg(feature = "time_profiling")]
 pub static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
 
@@ -66,9 +66,13 @@ pub struct ProfileCapability(pub u8);
 
 #[allow(dead_code)]
 impl ProfileCapability {
+    /// No profiling capabilities
     pub const NONE: Self = Self(0);
+    /// Time profiling capability
     pub const TIME: Self = Self(1);
+    /// Memory profiling capability
     pub const MEMORY: Self = Self(2);
+    /// Both time and memory profiling capabilities
     pub const BOTH: Self = Self(3); // TIME | MEMORY
 
     /// Returns the capabilities available based on enabled features
@@ -134,7 +138,7 @@ const PROFILING_FEATURE: bool = true;
 #[cfg(all(feature = "time_profiling", test))]
 const PROFILING_FEATURE: bool = false;
 
-pub static GLOBAL_PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
+static GLOBAL_PROFILE_TYPE: AtomicU8 = AtomicU8::new(0); // 0 = None, 1 = Time, 2 = Memory, 3 = Both
 
 // Implementation for ProfileCapability is defined above
 
@@ -190,10 +194,14 @@ pub fn set_profile_config(config: ProfileConfiguration) {
 #[allow(dead_code)]
 // Define the DebugLog enum
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+/// Debug level for profiling output
 pub enum DebugLevel {
     #[default]
+    /// No debug output
     None,
+    /// Quiet debug output (debug without announcing debug log file location)
     Quiet,
+    /// Announce debug output (debug, announcing debug log file location to `stderr`)
     Announce,
 }
 
@@ -223,6 +231,11 @@ impl FromStr for DebugLevel {
 }
 
 #[derive(Debug, Clone)]
+/// Configuration for profiling operations.
+///
+/// This struct contains all the settings needed to configure profiling behavior,
+/// including the type of profiling to perform, output directory, debug level,
+/// and whether to enable detailed memory profiling.
 pub struct ProfileConfiguration {
     enabled: bool,
     profile_type: Option<ProfileType>,
@@ -319,25 +332,30 @@ impl TryFrom<&[&str]> for ProfileConfiguration {
 }
 
 impl ProfileConfiguration {
+    /// Returns whether profiling is enabled in this configuration.
     #[must_use]
     pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
+    /// Returns the profile type configured for this configuration.
     #[must_use]
     pub const fn profile_type(&self) -> Option<ProfileType> {
         self.profile_type
     }
 
+    /// Sets the profile type for this configuration.
     pub fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
         self.profile_type = profile_type;
     }
 
+    /// Returns the debug level configured for this configuration.
     #[must_use]
     pub const fn debug_level(&self) -> Option<DebugLevel> {
         self.debug_level
     }
 
+    /// Returns whether detailed memory profiling is enabled in this configuration.
     #[must_use]
     pub const fn is_detailed_memory(&self) -> bool {
         self.detailed_memory
@@ -431,16 +449,42 @@ impl Display for ProfileConfiguration {
     }
 }
 
-#[must_use]
+/// Gets the current debug level from the profile configuration.
+///
+/// This function retrieves the debug level setting from the current profile
+/// configuration, returning `DebugLevel::None` as the default if no debug
+/// level is explicitly configured.
+///
+/// # Returns
+///
+/// The configured `DebugLevel`, or `DebugLevel::None` if not set.
 pub fn get_debug_level() -> DebugLevel {
     get_profile_config().debug_level.unwrap_or_default()
 }
 
 #[must_use]
+/// Checks if detailed memory profiling is enabled in the current configuration.
+///
+/// This function retrieves the detailed memory setting from the current profile
+/// configuration. Detailed memory profiling provides more granular memory tracking
+/// information when enabled.
+///
+/// # Returns
+///
+/// `true` if detailed memory profiling is enabled, `false` otherwise.
 pub fn is_detailed_memory() -> bool {
     get_profile_config().detailed_memory
 }
 
+/// Gets the profile type from the current configuration.
+///
+/// This function retrieves the profile type setting from the current profile
+/// configuration, returning `ProfileType::default()` if no profile type is
+/// explicitly configured.
+///
+/// # Returns
+///
+/// The configured `ProfileType`, or the default profile type if not set.
 #[must_use]
 pub fn get_config_profile_type() -> ProfileType {
     // parse_env_profile_config().profile_type.unwrap_or_default()
@@ -510,8 +554,12 @@ static_lazy! {
 }
 
 #[cfg(feature = "time_profiling")]
-pub static START_TIME: AtomicU64 = AtomicU64::new(0);
+static START_TIME: AtomicU64 = AtomicU64::new(0);
 
+/// Stores file paths for different types of profiling output files.
+///
+/// This struct contains the paths to various output files generated during profiling,
+/// including time profiles, memory profiles, debug logs, and other metadata.
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct ProfileFilePaths {
@@ -520,9 +568,12 @@ pub struct ProfileFilePaths {
     memory: String,
     memory_detail: String,
     memory_detail_dealloc: String,
-    pub debug_log: String,       // The full path to the debug log file
-    pub executable_stem: String, // Store the executable stem for reuse
-    pub timestamp: String,       // Store the timestamp for reuse
+    /// The full path to the debug log file
+    pub debug_log: String,
+    /// Store the executable stem for reuse
+    pub executable_stem: String,
+    /// Store the timestamp for reuse
+    pub timestamp: String,
 }
 
 /// Get the path to the plain `.folded` output file.
@@ -895,6 +946,16 @@ pub fn get_global_profile_type() -> ProfileType {
 }
 
 #[allow(clippy::missing_panics_doc)]
+/// Sets the global profile type.
+///
+/// This function updates the global profile type atomically. It validates that the
+/// profile type is valid for the current feature set in debug builds.
+///
+/// # Arguments
+/// * `profile_type` - The profile type to set globally
+///
+/// # Panics
+/// In debug builds, panics if the profile type is not valid for the current feature set.
 pub fn set_global_profile_type(profile_type: ProfileType) {
     #[cfg(debug_assertions)]
     assert!(
@@ -1142,27 +1203,21 @@ pub const fn is_profiling_state_enabled() -> bool {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+/// Types of profiling that can be performed.
+///
+/// This enum defines the different profiling modes available in the system.
+/// The profiling type determines what metrics are collected and reported.
 pub enum ProfileType {
+    /// Time profiling only - measures wall clock/elapsed time
     Time, // Wall clock/elapsed time
+    /// Memory profiling only - tracks memory allocations and deallocations
     Memory,
+    /// Both time and memory profiling - combines both measurement types
     #[default]
     Both,
+    /// No profiling - disables all profiling operations
     None,
 }
-
-// impl ProfileType {
-//     #[must_use]
-//     #[allow(clippy::should_implement_trait)]
-//     pub fn from_str(s: &str) -> Option<Self> {
-//         match s {
-//             "time" => Some(Self::Time),
-//             "memory" => Some(Self::Memory),
-//             "both" => Some(Self::Both),
-//             "none" => Some(Self::None),
-//             _ => None,
-//         }
-//     }
-// }
 
 impl Display for ProfileType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -1240,41 +1295,13 @@ pub struct Profile {
 }
 
 impl Profile {
-    /// Creates a new `Profile` to profile a section of code.
-    ///
-    /// This will track execution time by default. When the `full_profiling` feature
-    /// is enabled, it will also track memory usage if requested via `ProfileType`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use thag_profiler::{Profile, ProfileType};
-    ///
-    /// // Time profiling only
-    /// #[cfg(feature = "time_profiling")]
-    /// {
-    ///     let _p = Profile::new(Some("time_only_function"), None, ProfileType::Time, false, false, file!(), None, None);
-    ///     // Code to profile...
-    /// }
-    ///
-    /// // With memory profiling (requires `full_profiling` feature)
-    /// #[cfg(feature = "full_profiling")]
-    /// {
-    ///     let _p = Profile::new(Some("memory_tracking_function"), None, ProfileType::Memory, false, false, file!(), None, None);
-    ///     // Code to profile with memory tracking...
-    /// }
-    /// ```
-    /// # Panics
-    ///
-    /// Panics if stack validation fails.
-    ///
     /// Get the module path of this profile
     #[must_use]
     pub fn file_name(&self) -> &str {
         &self.file_name
     }
 
-    /// Get the `fn_name`œ of this profile
+    /// Get the `fn_name` of this profile
     #[must_use]
     pub fn fn_name(&self) -> &str {
         self.fn_name.as_str()
@@ -1310,6 +1337,7 @@ impl Profile {
         self.section_name.clone()
     }
 
+    /// Get the unique identifier for this profile
     #[must_use]
     pub const fn instance_id(&self) -> u64 {
         self.instance_id
@@ -1440,7 +1468,7 @@ impl Profile {
         };
 
         #[cfg(target_os = "windows")]
-        let desc_fn_name = fn_name; // Windows already highlights async functions
+        let desc_fn_name = fn_name.to_string(); // Windows already highlights async functions
 
         let path = extract_path(&cleaned_stack, Some(fn_name));
 
@@ -1488,10 +1516,6 @@ impl Profile {
             detailed_memory,
             file_name: file_name_stem,
             instance_id,
-            #[cfg(feature = "full_profiling")]
-            memory_task: None,
-            #[cfg(feature = "full_profiling")]
-            memory_guard: None,
         })
     }
 
@@ -1601,7 +1625,7 @@ impl Profile {
             };
 
             #[cfg(target_os = "windows")]
-            let desc_fn_name = fn_name; // Windows already highlights async functions
+            let desc_fn_name = safe_alloc!(fn_name.to_string()); // Windows already highlights async functions
 
             let path = extract_path(&cleaned_stack, Some(fn_name));
             // debug_log!("cleaned_stack={cleaned_stack:#?}, path={path:#?}");
@@ -1757,6 +1781,7 @@ impl Profile {
         }
     }
 
+    /// The defining path for this profile, as a `Vec` of `String`s
     #[must_use]
     pub const fn path(&self) -> &Vec<String> {
         &self.path
@@ -1935,12 +1960,13 @@ impl Profile {
         }
     }
 
-    // Public methods for testing
+    /// Returns the profile type for this profile
     #[must_use]
     pub const fn get_profile_type(&self) -> ProfileType {
         self.profile_type
     }
 
+    /// Returns whether this profile uses detailed memory tracking
     #[must_use]
     pub const fn is_detailed_memory(&self) -> bool {
         self.detailed_memory
@@ -1977,8 +2003,19 @@ pub fn build_stack(
     }
 }
 
-#[must_use]
 #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
+/// Extracts the call path from a cleaned stack trace.
+///
+/// This function processes a cleaned stack trace and builds a path of profiled functions,
+/// filtering out non-profiled functions and handling optional append names.
+///
+/// # Arguments
+/// * `cleaned_stack` - A slice of function names from the stack trace
+/// * `maybe_append` - An optional function name to append to the path
+///
+/// # Returns
+/// A vector of strings representing the call path of profiled functions
+#[must_use]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
     let dup = maybe_append.and_then(|append| cleaned_stack.first().map(|first| first == append))
         == Some(true);
@@ -2038,6 +2075,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
     }
 }
 
+/// Filter out backtrace lines identified as scaffolding.
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn filter_scaffolding(name: &str) -> bool {
@@ -2812,7 +2850,7 @@ pub fn register_profiled_function(name: &str, desc_name: &str) {
     // );
 }
 
-// Check if a function is registered for profiling
+/// Check if a function is registered for profiling
 pub fn is_profiled_function(name: &str) -> bool {
     // debug_log!("Checking if function is profiled: {}", name);
     let contains_key = PROFILED_FUNCTIONS.try_read().map_or_else(
@@ -2826,7 +2864,7 @@ pub fn is_profiled_function(name: &str) -> bool {
     contains_key
 }
 
-// Get the descriptive name of a profiled function
+/// Get the descriptive name of a profiled function
 pub fn get_reg_desc_name(name: &str) -> Option<String> {
     safe_alloc! {
         let maybe_reg_desc_name = PROFILED_FUNCTIONS.try_read().map_or_else(
@@ -2882,7 +2920,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
     // "Profile::new",
 ];
 
-// #[cfg(feature = "time_profiling")]
+/// Normalise function names by removing closure references and hash suffixes.
 pub fn clean_function_name(clean_name: &mut str) -> String {
     // Remove any closure markers
     let mut clean_name: &mut str = if let Some(closure_pos) = clean_name.find("::{{closure}}") {
@@ -2921,28 +2959,23 @@ pub fn clean_function_name(clean_name: &mut str) -> String {
 
 // Optional: add memory info to error handling
 #[derive(Debug)]
+/// Errors related to memory profiling operations
 pub enum MemoryError {
+    /// Memory statistics are not available
     StatsUnavailable,
+    /// Failed to calculate memory delta
     DeltaCalculationFailed,
 }
 
-// #[macro_export]
-// #[cfg(feature = "time_profiling")]
-// macro_rules! end {
-//     ($name:expr) => {
-//         $crate::paste::paste! {
-//             fn [<end_ $name>]() -> u32 { line!() }
-
-//             ::thag_profiler::safe_alloc! {
-//                 drop(section_profile);
-//             };
-//         };
-//     };
-// }
-
 #[derive(Default)]
+/// Statistics for profiled functions, tracking performance metrics.
+///
+/// This struct maintains both per-function statistics (calls and total_time)
+/// and legacy aggregate statistics for backwards compatibility.
 pub struct ProfileStats {
+    /// Number of calls made to each profiled function
     pub calls: HashMap<String, u64>,
+    /// Total execution time in microseconds for each profiled function
     pub total_time: HashMap<String, u128>,
     // Keep existing fields for backwards compatibility
     count: u64,
@@ -3007,18 +3040,18 @@ impl ProfileStats {
     }
 }
 
-#[cfg(feature = "full_profiling")]
-pub fn force_gc() {
-    // Allocate and immediately drop a large object to encourage GC
-    let pressure = vec![0u8; 1024 * 1024];
-    drop(pressure);
+// #[cfg(feature = "full_profiling")]
+// pub fn force_gc() {
+//     // Allocate and immediately drop a large object to encourage GC
+//     let pressure = vec![0u8; 1024 * 1024];
+//     drop(pressure);
 
-    // Sleep briefly to give the system time to process deallocations
-    std::thread::sleep(std::time::Duration::from_millis(10));
-}
+//     // Sleep briefly to give the system time to process deallocations
+//     std::thread::sleep(std::time::Duration::from_millis(10));
+// }
 
-#[cfg(not(feature = "full_profiling"))]
-pub const fn force_gc() {}
+// #[cfg(not(feature = "full_profiling"))]
+// pub const fn force_gc() {}
 
 /// Dumps the contents of the profiled functions registry for debugging purposes
 ///
@@ -3139,6 +3172,26 @@ pub fn safely_cleanup_profiling_after_test() {
 #[cfg(feature = "time_profiling")]
 static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
 
+/// Strips hexadecimal suffixes from Rust function names.
+///
+/// This function removes hash suffixes (like `::h1234abcd`) that are added
+/// by the Rust compiler for symbol disambiguation.
+///
+/// # Arguments
+/// * `name` - The function name that may contain a hex suffix
+///
+/// # Returns
+/// A `String` with the hex suffix removed, or the original name if no suffix was found
+///
+/// # Examples
+/// ```
+/// # use thag_profiler::strip_hex_suffix_slice;
+/// let name = "my_function::h1234abcd";
+/// assert_eq!(strip_hex_suffix_slice(name), "my_function");
+///
+/// let name = "no_suffix";
+/// assert_eq!(strip_hex_suffix_slice(name), "no_suffix");
+/// ```
 #[must_use]
 pub fn strip_hex_suffix(name: String) -> String {
     if let Some(hash_pos) = name.rfind("::h") {
@@ -3152,6 +3205,26 @@ pub fn strip_hex_suffix(name: String) -> String {
     }
 }
 
+/// Strips hexadecimal suffixes from Rust function names.
+///
+/// This function removes hash suffixes (like `::h1234abcd`) that are added
+/// by the Rust compiler for symbol disambiguation.
+///
+/// # Arguments
+/// * `name` - The function name that may contain a hex suffix
+///
+/// # Returns
+/// A `String` with the hex suffix removed, or the original name if no suffix was found
+///
+/// # Examples
+/// ```
+/// # use thag_profiler::strip_hex_suffix_slice;
+/// let name = "my_function::h1234abcd";
+/// assert_eq!(strip_hex_suffix_slice(name), "my_function");
+///
+/// let name = "no_suffix";
+/// assert_eq!(strip_hex_suffix_slice(name), "no_suffix");
+/// ```
 #[must_use]
 pub fn strip_hex_suffix_slice(name: &str) -> String {
     name.rfind("::h").map_or_else(

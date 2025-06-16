@@ -1,4 +1,4 @@
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 #![allow(unused_variables)]
 //! # `thag_profiler`
 //!
@@ -121,17 +121,18 @@ impl Profiler {
     }
 }
 
+/// Retrieve preset base location for profile backtrace cutoff (typically `lib.rs::init_profiling`)
 #[cfg(feature = "time_profiling")]
 pub fn get_base_location() -> Option<&'static str> {
     PROFILER.get().map(|profiler| profiler.base_location)
 }
 
 #[cfg(feature = "time_profiling")]
-pub static PROFILEE: OnceLock<Profilee> = OnceLock::new();
+static PROFILEE: OnceLock<Profilee> = OnceLock::new();
 
 #[cfg(feature = "time_profiling")]
 #[derive(Debug)]
-pub struct Profilee {
+struct Profilee {
     root_module: &'static str,
 }
 
@@ -142,11 +143,13 @@ impl Profilee {
     }
 }
 
-#[cfg(feature = "time_profiling")]
-pub fn get_profilee() -> Option<&'static Profilee> {
-    PROFILEE.get()
-}
+// /// Retrieve profiled root module holder
+// #[cfg(feature = "time_profiling")]
+// pub fn get_profilee() -> Option<&'static Profilee> {
+//     PROFILEE.get()
+// }
 
+/// Retrieve profiled root module
 #[cfg(feature = "time_profiling")]
 pub fn get_root_module() -> Option<&'static str> {
     PROFILEE.get().map(|profilee| profilee.root_module)
@@ -186,9 +189,11 @@ pub fn file_stem_from_path(path: &Path) -> String {
     safe_alloc!(path.file_stem().unwrap().to_string_lossy().to_string())
 }
 
+/// Constant reflecting whether any profiling feature is enabled.
 #[cfg(feature = "time_profiling")]
 pub const PROFILING_FEATURE_ENABLED: bool = true;
 
+/// Constant reflecting whether any profiling feature is enabled.
 #[cfg(not(feature = "time_profiling"))]
 pub const PROFILING_FEATURE_ENABLED: bool = false;
 
@@ -239,15 +244,18 @@ macro_rules! regex {
 #[doc(hidden)] // Makes it not appear in documentation
 macro_rules! static_lazy {
     ($name:ident: Option<$inner_type:ty> = $init:expr) => {
+        /// A struct for the static
         pub struct $name;
 
         impl $name {
+            /// A getter for the static value
             pub fn get() -> Option<&'static $inner_type> {
                 static INSTANCE: std::sync::OnceLock<Option<$inner_type>> =
                     std::sync::OnceLock::new();
                 INSTANCE.get_or_init(|| $init).as_ref()
             }
 
+            /// An initializer for the static value
             #[allow(dead_code)]
             pub fn init() {
                 let _ = Self::get();
@@ -256,15 +264,18 @@ macro_rules! static_lazy {
     };
 
     ($name:ident: $type:ty = $init:expr) => {
+        /// A struct for the static
         pub struct $name;
 
         impl $name {
+            /// A getter for the static value
             #[allow(clippy::missing_panics_doc)]
             pub fn get() -> &'static $type {
                 static INSTANCE: std::sync::OnceLock<$type> = std::sync::OnceLock::new();
                 INSTANCE.get_or_init(|| $init)
             }
 
+            /// An initializer for the static value
             #[allow(dead_code)]
             pub fn init() {
                 let _ = Self::get();

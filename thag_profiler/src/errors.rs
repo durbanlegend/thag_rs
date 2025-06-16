@@ -1,10 +1,19 @@
 use std::error::Error;
 
 #[derive(Clone, Debug)]
+/// Error types that can occur during profile operations.
+///
+/// This enum represents the various error conditions that can arise when
+/// working with profiles, including I/O errors, validation errors, and
+/// user interaction errors.
 pub enum ProfileError {
+    /// A general profiling error with a descriptive message.
     General(String),
+    /// An error that occurred during user inquiry/interaction with the `inquire` crate.
     Inquire(String),
+    /// An error indicating an invalid profile section was encountered.
     InvalidSection(String),
+    /// An I/O operation error with details about the failure.
     Io(String),
 }
 
@@ -43,6 +52,8 @@ impl From<inquire::InquireError> for ProfileError {
     }
 }
 
+/// A specialized `Result` type for profiling operations.
+/// Provides a convenient shorthand for `Result<T, ProfileError>`.
 pub type ProfileResult<T> = Result<T, ProfileError>;
 
 #[cfg(test)]

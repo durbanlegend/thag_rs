@@ -1,6 +1,7 @@
-#![allow(clippy::missing_panics_doc, unused_imports)]
+#![allow(clippy::missing_panics_doc, dead_code, unused_imports)]
 //! Procedural macros for generating enums and utilities for managing script categories.
 //!
+mod ansi_code_derive;
 mod attrib_key_map_list;
 mod attribute_basic;
 mod const_demo;
@@ -21,6 +22,7 @@ mod organizing_code_const;
 mod organizing_code_tokenstream;
 mod repeat_dash;
 
+use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::attrib_key_map_list::use_mappings_impl;
 use crate::attribute_basic::attribute_basic_impl;
 use crate::const_demo::const_demo_impl;
@@ -46,17 +48,23 @@ use std::fs;
 use std::path::Path;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, LitStr, Token,
+    parse_file, parse_macro_input, parse_str, DeriveInput, Expr, ExprArray, Ident, LitInt, LitStr,
+    Token,
 };
+
+/// For an enum of ANDI colors, generates a `name` method to generate a human-readable name for each color, and
+/// a `from_str` trait implementation method to parse a variant from a `snake_case` name.
+///
+/// Used by `demo/proc_macro_ansi_code_derive.rs`
+///
+#[proc_macro_derive(AnsiCodeDerive, attributes(ansi_name))]
+pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "ansi_code_derive", &input, ansi_code_derive_impl)
+}
 
 #[proc_macro_attribute]
 pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    intercept_and_debug(
-        cfg!(feature = "expand"),
-        "attribute_basic",
-        &input,
-        attribute_basic_impl,
-    )
+    maybe_expand_proc_macro(true, "attribute_basic", &input, attribute_basic_impl)
 }
 
 #[proc_macro_derive(DeriveBasic, attributes(expand_macro))]
@@ -74,18 +82,17 @@ pub fn derive_basic(input: TokenStream) -> TokenStream {
     #[cfg(not(feature = "expand"))]
     let should_expand = false;
 
-    intercept_and_debug(
+    maybe_expand_proc_macro(
         should_expand,
         "derive_basic",
         &input_clone,
         derive_basic_impl,
     )
-    // intercept_and_debug(cfg!(feature = "expand"), "derive_basic", &input, derive_basic_impl)
 }
 
 #[proc_macro]
 pub fn function_like_basic(input: TokenStream) -> TokenStream {
-    intercept_and_debug(
+    maybe_expand_proc_macro(
         cfg!(feature = "expand"),
         "function_like_basic",
         &input,
@@ -101,7 +108,7 @@ pub fn function_like_basic(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
 pub fn derive_custom_model(input: TokenStream) -> TokenStream {
-    intercept_and_debug(
+    maybe_expand_proc_macro(
         true,
         "derive_custom_model",
         &input,
@@ -147,7 +154,7 @@ pub fn organizing_code_tokenstream(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveConst, attributes(adjust, use_mappings))]
 pub fn organizing_code_const(input: TokenStream) -> TokenStream {
     // organizing_code_const_impl(input.into()).unwrap().into()
-    intercept_and_debug(true, "organizing_code_const", &input, |tokens| {
+    maybe_expand_proc_macro(true, "organizing_code_const", &input, |tokens| {
         organizing_code_const_impl(tokens.into()).unwrap().into()
     })
 }
@@ -168,7 +175,7 @@ pub fn use_mappings(attr: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
-    intercept_and_debug(
+    maybe_expand_proc_macro(
         cfg!(feature = "expand"),
         "repeat_dash",
         &input,
@@ -244,7 +251,7 @@ pub fn host_port_const(tokens: TokenStream) -> TokenStream {
     host_port_const_impl(tokens.into()).into()
 }
 
-fn intercept_and_debug<F>(
+fn maybe_expand_proc_macro<F>(
     expand: bool,
     name: &str,
     input: &TokenStream,
@@ -253,36 +260,81 @@ fn intercept_and_debug<F>(
 where
     F: Fn(TokenStream) -> TokenStream,
 {
-    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
-
     // Call the provided macro function
     let output = proc_macro(input.clone());
 
     if expand {
-        // Pretty-print the expanded tokens
-        let output: proc_macro2::TokenStream = output.clone().into();
-        let token_str = output.to_string();
-        match parse_file(&token_str) {
-            Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
-            Ok(syn_file) => {
-                let pretty_output = prettyplease::unparse(&syn_file);
-                let dash_line = "─".repeat(70);
-                eprintln!("{style_reset}{dash_line}{style_reset}");
-                eprintln!(
-                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
-                );
-                eprint!("{pretty_output}");
-                eprintln!("{style_reset}{dash_line}{style_reset}");
-            }
-        }
+        expand_output(name, &output);
     }
 
     output
 }
 
+fn maybe_expand_attr_macro<F>(
+    expand: bool,
+    name: &str,
+    attr: &TokenStream,
+    item: &TokenStream,
+    attr_macro: F,
+) -> TokenStream
+where
+    F: Fn(TokenStream, TokenStream) -> TokenStream,
+{
+    // Call the provided macro function
+    let output = attr_macro(attr.clone(), item.clone());
+
+    if expand {
+        expand_output(name, &output);
+    }
+
+    output
+}
+
+fn expand_output(name: &str, output: &TokenStream) {
+    // Pretty-print the expanded tokens
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
+    let output: proc_macro2::TokenStream = output.clone().into();
+    let token_str = output.to_string();
+    let dash_line = "─".repeat(70);
+
+    // First try to parse as a file
+    match parse_file(&token_str) {
+        Ok(syn_file) => {
+            let pretty_output = prettyplease::unparse(&syn_file);
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+            eprintln!(
+                "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+            );
+            eprint!("{pretty_output}");
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+        }
+        // If parsing as a file fails, try parsing as an expression
+        Err(_) => match parse_str::<Expr>(&token_str) {
+            Ok(expr) => {
+                // For expressions, we don't have a pretty printer, so just output the token string
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                            "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
+                        );
+                eprintln!("{}", quote!(#expr));
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+            Err(_e) => {
+                // eprintln!("Failed to parse tokens as file or expression: {e:?}");
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                            "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
+                        );
+                eprintln!("{token_str}");
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+        },
+    }
+}
+
 #[proc_macro_derive(DocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, "derive_doc_comment", &input, |tokens| {
+    maybe_expand_proc_macro(true, "derive_doc_comment", &input, |tokens| {
         derive_doc_comment_impl(tokens)
     })
 }
@@ -315,7 +367,7 @@ pub fn embed_file(input: TokenStream) -> TokenStream {
 /// More advanced embedding can handle a directory.
 #[proc_macro]
 pub fn load_static_map(input: TokenStream) -> TokenStream {
-    intercept_and_debug(true, "load_static_map", &input, load_static_map_impl)
+    maybe_expand_proc_macro(true, "load_static_map", &input, load_static_map_impl)
 }
 
 /// Creates a function with the name specified in the string literal

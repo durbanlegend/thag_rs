@@ -1,5 +1,18 @@
 #![allow(clippy::missing_panics_doc)]
-mod ansi_code_derive;
+// #![warn(missing_docs)]
+//! # `thag_proc_macros`
+//!
+//! Proc macros for `thag_rs` (`thag`) and `thag_profiler`.
+//!
+//! ## Features
+//!
+//! - `time_profiling`:     Enable time-based performance profiling (default)
+//! - `full_profiling`:     Enable comprehensive profiling including time and memory usage
+//! - `debug_logging`:      Enable debug logging of profiling functions
+//! - `tls_allocator`:      Use thread-local storage for allocator tracking
+//! - `analyze_tool`:       Include dependencies required only for `thag_profile` binary.
+//! - `instrument_tool`:    Include dependencies required only for `thag_instrument` and `thag_uninstrument` binaries.
+//!
 mod category_enum;
 mod file_navigator;
 mod fn_name;
@@ -27,7 +40,6 @@ mod profile;
 #[cfg(feature = "time_profiling")]
 mod end;
 
-use crate::ansi_code_derive::ansi_code_derive_impl;
 use crate::category_enum::category_enum_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
@@ -269,11 +281,6 @@ pub fn palette_methods(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "palette_methods", &input, palette_methods_impl)
 }
 
-#[proc_macro_derive(AnsiCodeDerive, attributes(ansi_name))]
-pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "ansi_code_derive", &input, ansi_code_derive_impl)
-}
-
 /// Generates a `FileNavigator` to allow the user to navigate the file system and select files and directories
 /// from a command-line interface.
 ///
@@ -485,6 +492,7 @@ pub fn profiled(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ```
 #[proc_macro]
+#[allow(unused_variables)]
 pub fn end(input: TokenStream) -> TokenStream {
     #[cfg(feature = "time_profiling")]
     {
@@ -550,6 +558,7 @@ pub fn end(input: TokenStream) -> TokenStream {
 ///
 /// ```
 #[proc_macro]
+#[allow(unused_variables)]
 pub fn profile(input: TokenStream) -> TokenStream {
     #[cfg(feature = "time_profiling")]
     {

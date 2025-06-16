@@ -87,6 +87,14 @@ impl ChartType {
     }
 }
 
+/// A stand-alone convenience tool to select, analyze and graph `.folded` file output from `thag_profiler`
+/// or potentially from other sources.
+///
+/// E.g.
+///
+/// ```
+/// thag_profile .
+/// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {

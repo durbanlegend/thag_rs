@@ -917,7 +917,7 @@ Caution: this may be prohibitively slow, depending on your project, although the
 
 Here we try it on a `thag(_rs)` script that uses `syn` to print out an AST for a Rust source file. The code is available in the `thag_rs` project.
 
-The script is `demo/syn_dump_syntax_profile_syn.rs` and we run it with `thag` to print out the `syn` AST for another, simple script called demo/hello_main.rs. Below is the execution showing the AST printout, followed by the detailed memory allocation profile for the run from thag_profile:
+The script is `demo/syn_dump_syntax_profile_syn.rs` and we run it with `thag` to print out the `syn` AST for another, simple script called demo/hello_main.rs. Below is the execution showing the AST printout, followed by the detailed memory allocation profile for the run from `thag_profile`:
 
 ```zsh
 donf@MacBook-Air thag_rs % THAG_PROFILER=both,,announce,true thag demo/syn_dump_syntax_profile_syn.rs --timings -- demo/hello_main.rs
@@ -1221,7 +1221,7 @@ Profiles generate "folded" stack traces in the output directory by default:
 
 These files can be visualized with the included `thag_profile` or with tools like [inferno-flamegraph](https://github.com/jonhoo/inferno) or the beautiful [speedscope](https://www.speedscope.app/).
 
-`thag_profile` is recommended because:
+`thag_profile` is recommended because it offers:
 
  1. Correct handling of units.
 

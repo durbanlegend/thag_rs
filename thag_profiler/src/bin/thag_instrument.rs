@@ -18,7 +18,7 @@ use std::io::Read;
 /// It's also recommended to do a side-by-side comparison of the original and instrumented code
 /// to ensure that the instrumentation did not introduce any unintended changes.
 /// Free tools for this purpose include `diff`, `sdiff` git diff, GitHub desktop and BBEdit.
-
+///
 /// This tool attempts to position the injected code sensibly and to avoid duplication of existing
 /// `thag_profiler` profiling code. It implements default profiling which currently includes both execution
 /// time and memory usage, but this is easily tweaked manually by modifying the instrumented code by
@@ -58,6 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[doc(hidden)]
 fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
     let parse: Parse<ast::SourceFile> = SourceFile::parse(attr, Edition::Edition2021);
     parse
@@ -67,6 +68,7 @@ fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
         .map(|node| node.clone_for_update())
 }
 
+#[doc(hidden)]
 fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
     // Look for the first non-USE node
     let item = tree
@@ -86,6 +88,7 @@ fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
     )
 }
 
+#[doc(hidden)]
 fn instrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
@@ -204,6 +207,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
     tree.syntax().to_string()
 }
 
+#[doc(hidden)]
 fn read_stdin() -> std::io::Result<String> {
     let mut buffer = String::new();
     std::io::stdin().read_to_string(&mut buffer)?;

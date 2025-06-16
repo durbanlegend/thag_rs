@@ -214,6 +214,7 @@ pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
 /// Copied from `crokey` under MIT licence.
 /// Copyright (c) 2022 Canop
 ///
+#[cfg(feature = "tui")]
 pub mod __private {
     pub use ratatui::crossterm;
     pub use strict::OneToThree;

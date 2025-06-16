@@ -9,7 +9,7 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
-use thag_proc_macros::{preload_themes, AnsiCodeDerive, PaletteMethods};
+use thag_proc_macros::{preload_themes, PaletteMethods};
 use thag_profiler::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "color_detect")]
@@ -28,39 +28,6 @@ use crate::debug_log;
 // #[cfg(feature = "color_detect")]
 #[cfg(feature = "config")]
 const THRESHOLD: f32 = 30.0; // Adjust this value as needed
-
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, AnsiCodeDerive)]
-#[serde(rename_all = "snake_case")]
-pub enum AnsiCode {
-    // Standard colors (30-37)
-    Black = 30,
-    Red = 31,
-    Green = 32,
-    Yellow = 33,
-    Blue = 34,
-    Magenta = 35,
-    Cyan = 36,
-    White = 37,
-
-    // High intensity colors (90-97)
-    #[ansi_name = "Dark Gray"]
-    BrightBlack = 90,
-    BrightRed = 91,
-    BrightGreen = 92,
-    BrightYellow = 93,
-    BrightBlue = 94,
-    BrightMagenta = 95,
-    BrightCyan = 96,
-    BrightWhite = 97,
-}
-
-impl AnsiCode {
-    // Get the numeric code
-    #[must_use]
-    pub const fn code(self) -> u8 {
-        self as u8
-    }
-}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]

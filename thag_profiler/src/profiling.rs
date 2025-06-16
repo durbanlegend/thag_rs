@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{debug_log, fn_name, static_lazy, ProfileError, ProfileResult};
+use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
@@ -19,6 +19,7 @@ use crate::safe_alloc;
 
 #[cfg(feature = "full_profiling")]
 use crate::{
+    fn_name,
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
         self, activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,

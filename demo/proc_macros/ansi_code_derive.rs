@@ -22,6 +22,10 @@ pub fn ansi_code_derive_impl(input: TokenStream) -> TokenStream {
             .find(|attr| attr.path().is_ident("ansi_name"))
             .and_then(|attr| attr.parse_args::<LitStr>().ok().map(|lit| lit.value()));
 
+        // if let Some(custom_name) = custom_name.clone() {
+        //     eprintln!("custom_name={custom_name}");
+        // }
+
         // Use custom name or generate from variant name
         let name_str = custom_name.unwrap_or_else(|| match variant_ident.to_string().as_str() {
             s if s.starts_with("Bright") => {
@@ -32,6 +36,7 @@ pub fn ansi_code_derive_impl(input: TokenStream) -> TokenStream {
             }
             s => s.to_string(),
         });
+        // eprintln!("name_str={name_str}");
 
         quote! {
             Self::#variant_ident => #name_str,
@@ -62,15 +67,17 @@ pub fn ansi_code_derive_impl(input: TokenStream) -> TokenStream {
 
     // Generate documentation
     let doc = format!(
-        " Get a human-readable name for the ANSI color.\n\n\
-         Returns a static string representing the color name.\n\n\
-         # Examples\n\
-         ```\n\
-         use thag_rs::styling::AnsiCode;
-         assert_eq!({name}::Red.name(), \"Red\");\n\
-         assert_eq!({name}::BrightBlue.name(), \"Bright Blue\");\n\
-         ```\n\
-         ",
+        r#" Get a human-readable name for the ANSI color.
+
+Returns a static string representing the color name.
+
+# Examples
+```
+use thag_rs::styling::AnsiCode;
+assert_eq!({name}::Red.name(), "Red");
+assert_eq!({name}::BrightBlue.name(), "Bright Blue");
+```
+"#,
     );
 
     let expanded = quote! {

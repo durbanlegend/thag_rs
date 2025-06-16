@@ -122,7 +122,9 @@ pub fn flush_debug_log() {
     }
 }
 
-// Zero-cost debug logging with feature gate
+/// Zero-cost debug logging gated behind feature `debug_logging`.
+///
+/// Compiles to unit expression when debug_logging feature is disabled
 #[cfg(feature = "debug_logging")]
 #[macro_export]
 macro_rules! debug_log {
@@ -140,7 +142,9 @@ macro_rules! debug_log {
     };
 }
 
-// Zero-cost: compile to unit expression when debug_logging feature is disabled
+/// Zero-cost debug logging gated behind feature `debug_logging`.
+///
+/// Compiles to unit expression when debug_logging feature is disabled
 #[cfg(not(feature = "debug_logging"))]
 #[macro_export]
 macro_rules! debug_log {

@@ -49,6 +49,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// Uninstrument or deinstrument? Discuss.
+#[doc(hidden)]
 fn deinstrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
@@ -189,6 +191,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
     tree.syntax().to_string()
 }
 
+#[doc(hidden)]
 fn read_stdin() -> std::io::Result<String> {
     let mut buffer = String::new();
     std::io::stdin().read_to_string(&mut buffer)?;

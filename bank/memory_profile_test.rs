@@ -43,9 +43,6 @@ fn allocate_some_memory() {
     // let _guard = task.enter().expect("Failed to enter task context");
     // println!("Entered task context");
 
-    // // Check task ID
-    // println!("Task ID: {}", task.id());
-
     let task_id = safe_alloc! {
         'alloc: {
             let mut current_backtrace = Backtrace::new_unresolved();
@@ -120,6 +117,9 @@ fn allocate_some_memory() {
         }
     }
     .unwrap();
+
+    // Check task ID
+    println!("Task ID: {task_id}");
 
     safe_alloc!(println!("Allocating memory..."););
 

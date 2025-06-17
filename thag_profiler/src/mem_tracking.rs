@@ -1009,58 +1009,15 @@ impl Drop for TaskGuard {
 
 // ========== TASK PATH MANAGEMENT ==========
 
-/// Registry mapping task IDs to their execution paths for debugging purposes.
+/// Registry mapping task IDs to their execution paths for flamegraph generation.
 /// Each task ID maps to a vector of strings representing the call stack path.
+/// This ensures all paths are written to the .folded file, even with zero allocations,
+/// to provide complete call hierarchy information for flamegraph construction.
 pub static TASK_PATH_REGISTRY: LazyLock<Mutex<HashMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-// 2. Function to look up a task's path by ID
-pub fn lookup_task_path(task_id: usize) -> Option<Vec<String>> {
-    let registry = TASK_PATH_REGISTRY.lock();
-    registry.get(&task_id).cloned()
-}
-
-// 3. Function to dump the entire registry
-#[allow(dead_code)]
-pub fn dump_task_path_registry() {
-    debug_log!("==== TASK PATH REGISTRY DUMP ====");
-    let task_paths = TASK_PATH_REGISTRY.lock().clone();
-    debug_log!("Total registered tasks: {}", task_paths.len());
-
-    let mut v = task_paths
-        .iter()
-        .map(|(&task_id, path)| (task_id, path.join("::")))
-        .collect::<Vec<(usize, String)>>();
-
-    v.sort();
-
-    for (task_id, path) in &v {
-        debug_log!("Task {}: {}", task_id, path);
-    }
-    drop(task_paths);
-    debug_log!("=================================");
-    flush_debug_log();
-}
-
-// 4. Utility function to look up and print a specific task's path
-#[allow(dead_code)]
-pub fn print_task_path(task_id: usize) {
-    if let Some(path) = lookup_task_path(task_id) {
-        debug_log!("Task {task_id} path: {}", path.join("::"));
-    } else {
-        debug_log!("No path registered for task {task_id}");
-    }
-    flush_debug_log();
-}
-
-// 5. Function to remove an entry from the TASK_PATH_REGISTRY
-#[allow(dead_code)]
-pub fn remove_task_path(task_id: usize) {
-    let mut registry = TASK_PATH_REGISTRY.lock();
-    registry.remove(&task_id);
-}
-
-// Helper function to find the best matching task_id
+/// Find the best matching task ID for a given path.
+/// Used to correlate memory allocations with their originating tasks.
 pub fn find_matching_task_id(path: &[String]) -> usize {
     let path_registry = TASK_PATH_REGISTRY.lock();
     // For each active profile, compute a similarity score
@@ -1068,7 +1025,6 @@ pub fn find_matching_task_id(path: &[String]) -> usize {
     let mut best_score = 0;
     let path_len = path.len();
 
-    // debug_log!("get_active_tasks()={:#?}", get_active_tasks());
     #[allow(unused_assignments)]
     let mut score = 0;
     for task_id in get_active_tasks().iter().rev() {
@@ -1094,7 +1050,8 @@ pub fn find_matching_task_id(path: &[String]) -> usize {
     get_last_active_task().unwrap_or(0)
 }
 
-// Compute similarity between a task path and backtrace frames
+/// Compute similarity between a task path and registry path.
+/// Returns the number of matching path segments.
 fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
     if task_path.is_empty() || reg_path.is_empty() {
         debug_log!("task_path.is_empty() || reg_path.is_empty()");

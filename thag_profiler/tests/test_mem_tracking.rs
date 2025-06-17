@@ -142,20 +142,17 @@ fn test_with_sys_alloc() {
             "First level: Allocator should be System"
         );
 
-        thag_profiler::mem_tracking::safe_alloc! {
+        safe_alloc! {
             assert_eq!(
                 thag_profiler::mem_tracking::current_allocator(),
                 Allocator::System,
                 "Second level: Allocator should be System"
             );
-        });
+        };
         "success"
     };
 
-    assert_eq!(
-        nested_result, "success",
-        "Nested safe_alloc! should work"
-    );
+    assert_eq!(nested_result, "success", "Nested safe_alloc! should work");
 
     // After both safe_alloc! calls, allocator should be back to Tracking
     assert_eq!(
@@ -195,7 +192,7 @@ fn test_task_state() {
             current_id + 2,
             "Third task ID should be current_id + 2"
         );
-    });
+    };
 }
 
 /// Test profiled memory allocations

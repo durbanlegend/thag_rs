@@ -4,7 +4,7 @@ use std::thread;
 /// Test demonstrating the unified allocator approach
 /// The same code works with either global or thread-local implementation
 /// based on the tls_allocator feature flag.
-use thag_profiler::{current_allocator, safe_alloc, Allocator};
+use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
 
 #[cfg(feature = "full_profiling")]
 use thag_profiler::reset_allocator_state;

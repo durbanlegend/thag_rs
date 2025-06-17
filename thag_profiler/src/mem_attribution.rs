@@ -12,7 +12,7 @@ use std::{
 };
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
-pub struct ProfileKey {
+struct ProfileKey {
     pub module: String,
     pub function: String,
     pub line_range: Range<u32>,
@@ -34,6 +34,12 @@ impl ProfileKey {
     }
 }
 
+/// A thread-safe registry for managing profile instances and their metadata.
+///
+/// The `ProfileRegistry` provides centralized storage and lookup capabilities for profiles,
+/// supporting operations like registration, deregistration, and finding profiles by
+/// module, function, and line number. It also tracks active tasks and provides
+/// efficient cleanup through instance ID mapping.
 pub struct ProfileRegistry {
     // Main profile storage - single flat map
     profiles: DashMap<ProfileKey, ProfileRef>,
@@ -57,6 +63,7 @@ impl Default for ProfileRegistry {
 }
 
 impl ProfileRegistry {
+    /// Creates a new `ProfileRegistry` instance with empty collections
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -67,19 +74,23 @@ impl ProfileRegistry {
         }
     }
 
+    /// Activates a task by adding its ID to the active tasks set
     pub fn activate_task(&self, task_id: usize) {
         self.active_tasks.insert(task_id); // or just insert if using DashSet
     }
 
+    /// Deactivates a task by removing its ID from the active tasks set
     pub fn deactivate_task(&self, task_id: usize) {
         self.active_tasks.remove(&task_id);
     }
 
+    /// Returns a vector of all currently active task IDs
     #[must_use]
     pub fn get_active_tasks(&self) -> Vec<usize> {
         self.active_tasks.iter().map(|entry| *entry.key()).collect()
     }
 
+    /// Returns the highest active task ID, if any tasks are active
     #[must_use]
     pub fn get_last_active_task(&self) -> Option<usize> {
         // This might need more sophisticated logic for "max_by_key" equivalent
@@ -106,21 +117,25 @@ pub struct ProfileRef {
 }
 
 impl ProfileRef {
+    /// Returns the name of the profile
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns whether this profile does detailed memory tracking
     #[must_use]
     pub const fn detailed_memory(&self) -> bool {
         self.detailed_memory
     }
 
+    /// Returns the unique identifier for this profile instance
     #[must_use]
     pub const fn instance_id(&self) -> u64 {
         self.instance_id
     }
 
+    /// Returns a reference to the contained Profile, if any
     #[must_use]
     pub fn profile(&self) -> Option<&Profile> {
         self.profile.as_ref().map(AsRef::as_ref)
@@ -201,6 +216,9 @@ impl ProfileRegistry {
         None
     }
 
+    /// Get all registered file names
+    ///
+    /// Returns a vector containing the names of all modules that have been registered
     #[must_use]
     pub fn get_file_names(&self) -> Vec<String> {
         self.modules

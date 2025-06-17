@@ -312,5 +312,5 @@ fn test_profiled_behavior() {
     #[cfg(not(feature = "full_profiling"))]
     closure();
 
-    with_sys_alloc(closure);
+    safe_alloc!(closure);
 }

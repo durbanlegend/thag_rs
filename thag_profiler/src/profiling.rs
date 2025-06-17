@@ -2255,12 +2255,26 @@ pub fn extract_profile_callstack(
     }
 }
 
+/// Extracts the callstack for memory deallocation tracking.
+///
+/// This function captures the current call stack starting from a pattern match
+/// and builds a vector of function names with line numbers for detailed memory
+/// deallocation tracking.
+///
+/// # Arguments
+/// * `start_pattern` - A regex pattern to identify where to start capturing the stack
+///
+/// # Returns
+/// A vector of strings in the format "function_name:line_number" representing
+/// the call stack, or an empty vector if recursion is detected
+///
+/// # Panics
+/// Panics if the arbitrary limit of 20 frames is exceeded during stack traversal
 #[cfg(feature = "full_profiling")]
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
 #[fn_name]
 pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
-    // safe_alloc!(current_backtrace.resolve());
     let mut already_seen = HashSet::new();
 
     // let end_point = "__rust_begin_short_backtrace";

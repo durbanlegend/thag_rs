@@ -7,7 +7,7 @@
 ///
 /// 1. Individual test functions for each aspect of the memory tracking system
 /// 2. A single main `#[test]` function that runs all the tests sequentially
-/// 3. Use of `with_sys_alloc(|| { ... })` to prevent infinite recursion
+/// 3. Use of `safe_alloc! { ... })` to prevent infinite recursion
 /// 4. A safe approach to testing persistent allocations using a `Mutex`
 /// 5. Proper state initialization and cleanup
 ///
@@ -18,17 +18,14 @@
 /// - Thread task stacks and tracking
 /// - Task path registry and matching
 /// - Allocation registry functionality
-/// - `with_sys_alloc(` behavior
+/// - `safe_alloc!` behavior
 /// - Task state and ID generation
 /// - Memory profiling lifecycle
 ///
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
-    mem_tracking::{
-        self, create_memory_task, get_last_active_task, with_sys_alloc, Allocator,
-        TASK_PATH_REGISTRY,
-    },
-    profiled,
+    mem_tracking::{self, create_memory_task, get_last_active_task, Allocator, TASK_PATH_REGISTRY},
+    profiled, safe_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -46,7 +43,7 @@ static TEST_MEMORY: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(
 #[cfg(feature = "full_profiling")]
 fn test_task_path_registry() {
     // Use the system allocator
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Create a task
         let task = create_memory_task();
         let task_id = task.id();
@@ -96,10 +93,10 @@ fn test_task_path_registry() {
             let mut registry = TASK_PATH_REGISTRY.lock();
             registry.remove(&task_id);
         }
-    });
+    };
 }
 
-/// Test with_sys_alloc function
+/// Test safe_alloc!
 #[cfg(feature = "full_profiling")]
 fn test_with_sys_alloc() {
     // Start with the default Tracking allocator
@@ -110,42 +107,42 @@ fn test_with_sys_alloc() {
     );
 
     // Run code with System allocator
-    let result = with_sys_alloc(|| {
+    let result = safe_alloc! {
         // Inside this closure, allocator should be System
         let current = thag_profiler::mem_tracking::current_allocator();
         assert_eq!(
             current,
             Allocator::System,
-            "Allocator should be System inside with_sys_alloc"
+            "Allocator should be System inside safe_alloc!"
         );
 
         // Return the current allocator for verification
         current
-    });
+    };
 
     // Verify the result
     assert_eq!(
         result,
         Allocator::System,
-        "with_sys_alloc should return closure result"
+        "safe_alloc! should return closure result"
     );
 
-    // After with_sys_alloc, allocator should be back to Tracking
+    // After safe_alloc!, allocator should be back to Tracking
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
         Allocator::Tracking,
-        "Allocator should be restored to Tracking after with_sys_alloc"
+        "Allocator should be restored to Tracking after safe_alloc!"
     );
 
-    // Nested with_sys_alloc calls
-    let nested_result = with_sys_alloc(|| {
+    // Nested safe_alloc! calls
+    let nested_result = safe_alloc! {
         assert_eq!(
             thag_profiler::mem_tracking::current_allocator(),
             Allocator::System,
             "First level: Allocator should be System"
         );
 
-        thag_profiler::mem_tracking::with_sys_alloc(|| {
+        thag_profiler::mem_tracking::safe_alloc! {
             assert_eq!(
                 thag_profiler::mem_tracking::current_allocator(),
                 Allocator::System,
@@ -153,18 +150,18 @@ fn test_with_sys_alloc() {
             );
         });
         "success"
-    });
+    };
 
     assert_eq!(
         nested_result, "success",
-        "Nested with_sys_alloc should work"
+        "Nested safe_alloc! should work"
     );
 
-    // After both with_sys_alloc calls, allocator should be back to Tracking
+    // After both safe_alloc! calls, allocator should be back to Tracking
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),
         Allocator::Tracking,
-        "Allocator should be restored to Tracking after nested with_sys_alloc"
+        "Allocator should be restored to Tracking after nested safe_alloc!"
     );
 }
 
@@ -172,7 +169,7 @@ fn test_with_sys_alloc() {
 #[cfg(feature = "full_profiling")]
 fn test_task_state() {
     // Use the system allocator
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Get the current next_task_id value
         let current_id = thag_profiler::mem_tracking::TASK_STATE
             .next_task_id
@@ -240,7 +237,7 @@ fn test_persistent_allocations() {
 #[cfg(feature = "full_profiling")]
 fn test_trim_backtrace() {
     // Use the system allocator
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Create a backtrace
         let backtrace = backtrace::Backtrace::new();
 
@@ -258,7 +255,7 @@ fn test_trim_backtrace() {
                 .all(|frame| !frame.contains("__rust_begin_short_backtrace")),
             "Trimmed backtrace should not contain __rust_begin_short_backtrace"
         );
-    });
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -282,8 +279,8 @@ fn test_mem_tracking_full_sequence() {
     eprintln!("Testing task path registry...");
     test_task_path_registry();
 
-    // with_sys_alloc tests
-    eprintln!("Testing with_sys_alloc function...");
+    // safe_alloc! tests
+    eprintln!("Testing safe_alloc! function...");
     test_with_sys_alloc();
 
     // Task state tests

@@ -534,42 +534,36 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
 /// # Panics
 ///
 /// This function panics if profiling cannot be disabled.
-#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 pub fn finalize_profiling() {
-    // Ensure debug log is flushed before we disable profiling
+    #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
+    {
+        // Ensure debug log is flushed before we disable profiling
 
-    flush_debug_log();
+        flush_debug_log();
 
-    // Disable profiling
-    disable_profiling();
+        // Disable profiling
+        disable_profiling();
 
-    let global_profile_type = get_global_profile_type();
+        let global_profile_type = get_global_profile_type();
 
-    // Process any recorded profiles
-    if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
-        // Convert inclusive time profile to exclusive time if enabled
-        if profiling::is_convert_to_exclusive_time_enabled() {
-            if let Err(e) = profiling::process_time_profile() {
-                debug_log!("Error converting time profile to exclusive time: {e:?}");
+        // Process any recorded profiles
+        if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
+            // Convert inclusive time profile to exclusive time if enabled
+            if profiling::is_convert_to_exclusive_time_enabled() {
+                if let Err(e) = profiling::process_time_profile() {
+                    debug_log!("Error converting time profile to exclusive time: {e:?}");
+                }
             }
         }
+
+        // Final flush to ensure all data is written
+        flush_debug_log();
+
+        // Add a delay to ensure flush completes before program exit
+        std::thread::sleep(std::time::Duration::from_millis(10));
     }
 
-    // Final flush to ensure all data is written
-    flush_debug_log();
-
-    // Add a delay to ensure flush completes before program exit
-    std::thread::sleep(std::time::Duration::from_millis(10));
-}
-
-/// Finalize profiling and write out data files.
-/// This should be called at the end of your program.
-///
-/// # Panics
-///
-/// This function panics if profiling cannot be disabled.
-#[cfg(feature = "full_profiling")]
-pub fn finalize_profiling() {
+    #[cfg(feature = "full_profiling")]
     safe_alloc! {
         // Ensure debug log is flushed before we disable profiling
         // flush_debug_log();
@@ -599,10 +593,10 @@ pub fn finalize_profiling() {
         // Add a delay to ensure flush completes before program exit
         std::thread::sleep(std::time::Duration::from_millis(10));
     };
-}
 
-#[cfg(not(feature = "time_profiling"))]
-pub const fn finalize_profiling() {}
+    #[cfg(not(feature = "time_profiling"))]
+    {}
+}
 
 // /// Resets profiling configuration state for tests.
 // ///

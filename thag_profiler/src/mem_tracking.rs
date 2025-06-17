@@ -44,7 +44,7 @@ use std::{cell::Cell, thread_local};
 #[cfg(not(feature = "tls_allocator"))]
 use std::sync::atomic::AtomicBool;
 
-// Fast path atomic for checking current allocator without locking
+/// Regular expression pattern to identify allocation start points in backtraces
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
@@ -59,31 +59,40 @@ thread_local! {
     static USING_SYSTEM_ALLOCATOR: Cell<bool> = const { Cell::new(false) };
 }
 
-// Unified interface functions
-#[cfg(not(feature = "tls_allocator"))]
 #[inline]
 #[must_use]
+/// Get the current state of the system allocator flag
+///
+/// Returns `true` if the system allocator is currently being used,
+/// `false` if the tracking allocator is being used.
 pub fn get_using_system() -> bool {
-    USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst)
+    #[cfg(not(feature = "tls_allocator"))]
+    {
+        USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst)
+    }
+
+    #[cfg(feature = "tls_allocator")]
+    {
+        USING_SYSTEM_ALLOCATOR.with(Cell::get)
+    }
 }
 
-#[cfg(feature = "tls_allocator")]
-#[inline]
-#[must_use]
-pub fn get_using_system() -> bool {
-    USING_SYSTEM_ALLOCATOR.with(Cell::get)
-}
-
-#[cfg(not(feature = "tls_allocator"))]
+/// Set the current state of the system allocator flag
+///
+/// # Arguments
+///
+/// * `value` - `true` to use the system allocator, `false` to use the tracking allocator
 #[inline]
 pub fn set_using_system(value: bool) {
-    USING_SYSTEM_ALLOCATOR.store(value, Ordering::SeqCst);
-}
+    #[cfg(not(feature = "tls_allocator"))]
+    {
+        USING_SYSTEM_ALLOCATOR.store(value, Ordering::SeqCst);
+    }
 
-#[cfg(feature = "tls_allocator")]
-#[inline]
-pub fn set_using_system(value: bool) {
-    USING_SYSTEM_ALLOCATOR.with(|cell| cell.set(value));
+    #[cfg(feature = "tls_allocator")]
+    {
+        USING_SYSTEM_ALLOCATOR.with(|cell| cell.set(value));
+    }
 }
 
 /// Try swapping the boolean TLS `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
@@ -133,8 +142,12 @@ pub fn reset_allocator_state() {
 // Maximum safe allocation size - 1 GB, anything larger is suspicious
 const MAX_SAFE_ALLOCATION: usize = 1024 * 1024 * 1024;
 
-// Define allocator types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+/// Memory allocator types for the profiling system
+///
+/// This enum defines the different allocator backends that can be used
+/// during profiling operations. The dispatcher switches between these
+/// based on the current profiling state.
 pub enum Allocator {
     /// Task-aware allocator that tracks which task allocated memory
     Tracking,
@@ -153,53 +166,37 @@ impl fmt::Display for Allocator {
 
 /// Get the current allocator based on the configured approach
 #[must_use]
-#[cfg(feature = "tls_allocator")]
 pub fn current_allocator() -> Allocator {
-    let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
-    if using_system {
-        Allocator::System
-    } else {
-        Allocator::Tracking
+    #[cfg(feature = "tls_allocator")]
+    {
+        let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
+        if using_system {
+            Allocator::System
+        } else {
+            Allocator::Tracking
+        }
+    }
+
+    #[cfg(not(feature = "tls_allocator"))]
+    {
+        if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
+            Allocator::System
+        } else {
+            Allocator::Tracking
+        }
     }
 }
-
-/// Get the current allocator based on the configured approach
-#[must_use]
-#[cfg(not(feature = "tls_allocator"))]
-pub fn current_allocator() -> Allocator {
-    if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
-        Allocator::System
-    } else {
-        Allocator::Tracking
-    }
-}
-
-// /// Global atomic version for cross-thread consistency
-// pub fn current_allocator_global() -> Allocator {
-//     if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
-//         Allocator::System
-//     } else {
-//         Allocator::Tracking
-//     }
-// }
-
-// /// Thread-local version for better async/threading isolation
-// pub fn current_allocator_tls() -> Allocator {
-//     let using_system = USING_SYSTEM_ALLOCATOR_TLS.with(|flag| flag.get());
-//     if using_system {
-//         Allocator::System
-//     } else {
-//         Allocator::Tracking
-//     }
-// }
 
 /// Dispatcher allocator that routes allocation requests to the appropriate allocator
 pub struct Dispatcher {
+    /// Task-aware allocator that tracks allocations by logical tasks
     pub tracking: TrackingAllocator,
+    /// Standard system allocator for fallback operations
     pub system: std::alloc::System,
 }
 
 impl Dispatcher {
+    /// Creates a new dispatcher with default tracking and system allocators.
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -218,18 +215,6 @@ impl Default for Dispatcher {
 unsafe impl GlobalAlloc for Dispatcher {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let current = current_allocator();
-
-        // // For debugging, log larger allocations
-        // if layout.size() > 1024 * 1024 {
-        //     // 1MB
-        //     safe_alloc! {
-        //         debug_log!(
-        //             "Large allocation of {} bytes using allocator: {:?}",
-        //             layout.size(),
-        //             current
-        //         )
-        //     };
-        // }
 
         match current {
             Allocator::System => unsafe { self.system.alloc(layout) },
@@ -337,7 +322,7 @@ pub struct TrackingAllocator;
 // Static instance for global access
 static TRACKING_ALLOCATOR: TrackingAllocator = TrackingAllocator;
 
-// Helper to get the allocator instance
+/// Helper to get the allocator instance
 #[must_use]
 pub fn get_allocator() -> &'static TrackingAllocator {
     &TRACKING_ALLOCATOR
@@ -1024,8 +1009,8 @@ impl Drop for TaskGuard {
 
 // ========== TASK PATH MANAGEMENT ==========
 
-// Task Path Registry for debugging
-// 1. Declare the TASK_PATH_REGISTRY
+/// Registry mapping task IDs to their execution paths for debugging purposes.
+/// Each task ID maps to a vector of strings representing the call stack path.
 pub static TASK_PATH_REGISTRY: LazyLock<Mutex<HashMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
@@ -1156,8 +1141,7 @@ pub fn finalize_memory_profiling() {
     flush_debug_log();
 }
 
-/// Write memory profile data to a file
-#[allow(clippy::too_many_lines)]
+/// Write final memory profile data to a file for completeness
 fn write_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
@@ -1177,37 +1161,6 @@ fn write_memory_profile_data() {
             debug_log!("Creating new file");
             match File::create(memory_path) {
                 Ok(file) => {
-                    // // Write headers similar to time profile file
-                    // if let Err(e) = writeln!(file, "# Memory Profile") {
-                    //     debug_log!("Error writing header: {e}");
-                    //     return;
-                    // }
-
-                    // if let Err(e) = writeln!(
-                    //     file,
-                    //     "# Script: {}",
-                    //     std::env::current_exe().unwrap_or_default().display()
-                    // ) {
-                    //     debug_log!("Error writing script path: {e}");
-                    //     return;
-                    // }
-
-                    // if let Err(e) =
-                    //     writeln!(file, "# Started: {}", START_TIME.load(Ordering::SeqCst))
-                    // {
-                    //     debug_log!("Error writing date: {e}");
-                    //     return;
-                    // }
-
-                    // if let Err(e) = writeln!(file, "# Version: {}", env!("CARGO_PKG_VERSION")) {
-                    //     debug_log!("Error writing version: {e}");
-                    //     return;
-                    // }
-
-                    // if let Err(e) = writeln!(file) {
-                    //     debug_log!("Error writing newline: {e}");
-                    //     return;
-                    // }
 
                     Ok(file)
                 }

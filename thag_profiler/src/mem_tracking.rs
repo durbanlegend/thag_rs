@@ -984,31 +984,6 @@ pub fn create_memory_task() -> TaskMemoryContext {
     allocator.create_task_context()
 }
 
-/// Trims a backtrace to extract relevant function names for memory profiling.
-///
-/// This function processes a backtrace to extract function names, starting from frames
-/// that match the provided pattern and continuing until it encounters the Rust runtime
-/// boundary marker. It cleans function names to make them more readable in profiles.
-///
-/// # Arguments
-///
-/// * `start_pattern` - Regular expression pattern to identify where to start extracting frames
-/// * `current_backtrace` - The backtrace to process
-///
-/// # Returns
-///
-/// A vector of cleaned function names representing the relevant call stack
-pub fn trim_backtrace(start_pattern: &Regex, current_backtrace: &Backtrace) -> Vec<String> {
-    Backtrace::frames(current_backtrace)
-        .iter()
-        .flat_map(backtrace::BacktraceFrame::symbols)
-        .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-        .skip_while(|element| !start_pattern.is_match(element))
-        .take_while(|name| !name.contains("__rust_begin_short_backtrace"))
-        .map(|mut name| clean_function_name(&mut name))
-        .collect::<Vec<String>>()
-}
-
 // ========== TASK STATE MANAGEMENT ==========
 
 /// Task state management for memory profiling

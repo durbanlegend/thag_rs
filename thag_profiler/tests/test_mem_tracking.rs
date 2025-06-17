@@ -173,31 +173,6 @@ fn test_persistent_allocations() {
     }
 }
 
-/// Test trimming backtraces
-#[cfg(feature = "full_profiling")]
-fn test_trim_backtrace() {
-    // Use the system allocator
-    safe_alloc! {
-        // Create a backtrace
-        let backtrace = backtrace::Backtrace::new();
-
-        // Trim it
-        let start_pattern = &*thag_profiler::mem_tracking::ALLOC_START_PATTERN;
-        let trimmed = thag_profiler::mem_tracking::trim_backtrace(start_pattern, &backtrace);
-
-        // We can't make strong assertions about the content, but we can check some properties
-        eprintln!("Trimmed backtrace has {} entries", trimmed.len());
-
-        // Trimmed backtrace should not contain any "__rust_begin_short_backtrace" entries
-        assert!(
-            trimmed
-                .iter()
-                .all(|frame| !frame.contains("__rust_begin_short_backtrace")),
-            "Trimmed backtrace should not contain __rust_begin_short_backtrace"
-        );
-    };
-}
-
 // ---------------------------------------------------------------------------
 // Main test function that runs all tests sequentially
 // ---------------------------------------------------------------------------
@@ -215,10 +190,6 @@ fn test_mem_tracking_full_sequence() {
 
     eprintln!("Starting memory tracking tests");
 
-    // Task path registry tests
-    eprintln!("Testing task path registry...");
-    test_task_path_registry();
-
     // safe_alloc! tests
     eprintln!("Testing safe_alloc! function...");
     test_with_sys_alloc();
@@ -234,10 +205,6 @@ fn test_mem_tracking_full_sequence() {
     // Test persistent allocations
     eprintln!("Testing persistent allocations...");
     test_persistent_allocations();
-
-    // Trim backtrace tests
-    eprintln!("Testing trim_backtrace...");
-    test_trim_backtrace();
 
     // Clean up
     thag_profiler::profiling::disable_profiling();

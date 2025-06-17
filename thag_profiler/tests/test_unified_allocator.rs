@@ -9,18 +9,6 @@ use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
 #[cfg(feature = "full_profiling")]
 use thag_profiler::reset_allocator_state;
 
-// Test utility to reset state for both approaches
-#[cfg(feature = "full_profiling")]
-fn reset_allocator_state() {
-    // Reset both global and TLS state to be safe
-    reset_allocator_state();
-}
-
-#[cfg(not(feature = "full_profiling"))]
-fn reset_allocator_state() {
-    // No-op when profiling is disabled
-}
-
 #[test]
 #[cfg(feature = "full_profiling")]
 #[serial]

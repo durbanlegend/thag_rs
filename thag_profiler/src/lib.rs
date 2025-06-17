@@ -81,9 +81,8 @@ pub use paste; // Re-export paste crate
 pub use {
     mem_attribution::{find_profile, register_profile, ProfileRef /*, PROFILE_REGISTRY */},
     mem_tracking::{
-        create_memory_task, current_allocator, find_matching_task_id, get_last_active_task,
-        record_allocation, trim_backtrace, Allocator, Dispatcher, TaskGuard, TaskMemoryContext,
-        TrackingAllocator,
+        create_memory_task, current_allocator, get_last_active_task, record_allocation,
+        trim_backtrace, Allocator, Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator,
     },
     profiling::extract_path,
 };

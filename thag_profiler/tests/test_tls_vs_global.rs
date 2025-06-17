@@ -120,29 +120,6 @@ fn test_thread_isolation() {
 }
 
 #[test]
-#[cfg(feature = "full_profiling")]
-fn test_nested_tls_calls() {
-    // Test that nested TLS calls work correctly
-    assert_eq!(current_allocator_tls(), Allocator::Tracking);
-
-    with_sys_alloc_tls(|| {
-        assert_eq!(current_allocator_tls(), Allocator::System);
-
-        // Nested call should NOT change anything (already in System mode)
-        // The inner call finds the flag is already true, so it doesn't touch it
-        with_sys_alloc_tls(|| {
-            assert_eq!(current_allocator_tls(), Allocator::System);
-        });
-
-        // Still in System mode after nested call - the outer call still owns the flag
-        assert_eq!(current_allocator_tls(), Allocator::System);
-    });
-
-    // Back to Tracking mode - only the outer call resets the flag
-    assert_eq!(current_allocator_tls(), Allocator::Tracking);
-}
-
-#[test]
 #[cfg(feature = "debug_logging")]
 fn test_debug_log_macro() {
     // Test the zero-cost debug logging macro

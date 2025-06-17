@@ -39,63 +39,6 @@ static TEST_MEMORY: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(
 // Test functions for memory tracking
 // ---------------------------------------------------------------------------
 
-/// Test task path registry
-#[cfg(feature = "full_profiling")]
-fn test_task_path_registry() {
-    // Use the system allocator
-    safe_alloc! {
-        // Create a task
-        let task = create_memory_task();
-        let task_id = task.id();
-
-        // Create a path for this task
-        let path = vec![
-            "module".to_string(),
-            "submodule".to_string(),
-            "function".to_string(),
-        ];
-
-        // Register the path
-        {
-            let mut registry = TASK_PATH_REGISTRY.lock();
-            registry.insert(task_id, path.clone());
-        }
-
-        // Test finding matching task ID
-        let path_copy = path.clone();
-        let matching_id = thag_profiler::mem_tracking::find_matching_task_id(&path_copy);
-        assert_eq!(
-            matching_id, task_id,
-            "Should find the correct task ID for the path"
-        );
-
-        // Test with a subset of the path
-        let subset_path = vec!["module".to_string(), "submodule".to_string()];
-        let partial_match = thag_profiler::mem_tracking::find_matching_task_id(&subset_path);
-        assert_eq!(
-            partial_match, task_id,
-            "Should find task with partial path match"
-        );
-
-        // Test with completely different path
-        let different_path = vec!["other".to_string(), "path".to_string()];
-        let no_match = thag_profiler::mem_tracking::find_matching_task_id(&different_path);
-
-        // With no good match, should return the most recently activated task
-        assert_eq!(
-            no_match,
-            get_last_active_task().unwrap_or(0),
-            "Should return last active task when no match found"
-        );
-
-        // Clean up
-        {
-            let mut registry = TASK_PATH_REGISTRY.lock();
-            registry.remove(&task_id);
-        }
-    };
-}
-
 /// Test safe_alloc!
 #[cfg(feature = "full_profiling")]
 fn test_with_sys_alloc() {

@@ -682,6 +682,16 @@ pub fn record_allocation(file_name: &str, fn_name: &str, line: u32, size: usize)
     }
 }
 
+/// Register a detailed allocation with its stack trace and size for later deallocation tracking
+///
+/// This function stores allocation details in the detailed address registry, which is used
+/// to track stack traces for deallocations when detailed memory profiling is enabled.
+///
+/// # Arguments
+///
+/// * `address` - The memory address of the allocation
+/// * `size` - The size in bytes of the allocation
+/// * `stack` - The call stack trace at the time of allocation
 pub fn register_detailed_allocation(address: usize, size: usize, stack: Vec<String>) {
     safe_alloc! {
         if is_detailed_memory() {
@@ -690,6 +700,17 @@ pub fn register_detailed_allocation(address: usize, size: usize, stack: Vec<Stri
     }
 }
 
+/// Records a detailed memory allocation with its call stack for profiling purposes.
+///
+/// This function captures the call stack at the allocation point, writes it to the appropriate
+/// detail file if requested, and registers the allocation for later deallocation tracking.
+///
+/// # Arguments
+///
+/// * `address` - The memory address of the allocation
+/// * `size` - The size in bytes of the allocation
+/// * `start_pattern` - Regular expression pattern to identify allocation start points in backtraces
+/// * `write_to_detail_file` - Whether to write the allocation details to the detail file
 pub fn record_detailed_alloc(
     address: usize,
     size: usize,
@@ -706,6 +727,17 @@ pub fn record_detailed_alloc(
     clippy::missing_panics_doc,
     reason = "debug_assertions"
 )]
+/// Write detailed stack allocation information to the appropriate memory profile file.
+///
+/// This function formats and writes allocation details including the call stack and size
+/// to either the detailed memory file or the standard memory profile file based on the
+/// `write_to_detail_file` parameter.
+///
+/// # Arguments
+///
+/// * `size` - The size in bytes of the allocation
+/// * `write_to_detail_file` - If true, writes to the detailed memory file; otherwise writes to the standard memory profile file
+/// * `detailed_stack` - The call stack trace as a vector of strings
 pub fn write_detailed_stack_alloc(
     size: usize,
     write_to_detail_file: bool,
@@ -743,6 +775,17 @@ pub fn write_detailed_stack_alloc(
     clippy::missing_panics_doc,
     reason = "debug_assertions"
 )]
+/// Records a memory deallocation for detailed profiling purposes.
+///
+/// This function tracks memory deallocations by capturing call stack information
+/// and writing it to the detailed memory deallocation profile file when detailed
+/// memory profiling is enabled. It includes recursion prevention and filtering
+/// to avoid tracking profiler-internal allocations.
+///
+/// # Arguments
+///
+/// * `address` - The memory address being deallocated
+/// * `size` - The size in bytes of the deallocation
 pub fn record_dealloc(address: usize, size: usize) {
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
@@ -806,25 +849,6 @@ pub fn record_dealloc(address: usize, size: usize) {
     // Now we can safely use backtrace without recursion!
     let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
 
-    // // debug_log!("Calling extract_dealloc_callstack");
-    // // let mut current_backtrace = Backtrace::new_unresolved();
-    // let cleaned_stack = extract_dealloc_callstack(start_pattern);
-    // // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
-    // let in_profile_code = cleaned_stack
-    //     .iter()
-    //     .any(|frame| frame.contains("::profiling::Profile"));
-
-    // if in_profile_code {
-    //     debug_log!(
-    //         "Summary memory tracking ignoring deallocation request of size {size} for profiler code: frame={:?}",
-    //         cleaned_stack
-    //             .iter()
-    //             .find(|frame| frame.contains("::profiling::Profile"))
-    //     );
-    //     // debug_log!("...current backtrace: {current_backtrace:#?}");
-    //     return;
-    // }
-
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     if size > 0 && detailed_memory {
         let detailed_stack = extract_detailed_alloc_callstack(start_pattern);
@@ -879,6 +903,15 @@ static ALLOCATOR: Dispatcher = Dispatcher::new();
 
 // ========== ALLOCATION TRACKING DEFINITIONS ==========
 
+/// Threshold for size-based memory allocation tracking.
+///
+/// This static value determines the minimum allocation size that will be tracked
+/// during memory profiling. Allocations smaller than this threshold are ignored
+/// to reduce profiling overhead. The value can be configured via the
+/// `SIZE_TRACKING_THRESHOLD` environment variable, defaulting to 0 if not set.
+///
+/// When set to 0, all allocations are tracked regardless of size.
+/// When set to a positive value, only allocations exceeding that threshold are tracked.
 pub static SIZE_TRACKING_THRESHOLD: LazyLock<usize> = LazyLock::new(|| {
     let threshold = env::var("SIZE_TRACKING_THRESHOLD")
         .or_else(|_| Ok::<String, &str>(String::from("0")))
@@ -927,6 +960,7 @@ pub fn get_last_active_task() -> Option<usize> {
 /// Task context for tracking allocations
 #[derive(Debug, Clone)]
 pub struct TaskMemoryContext {
+    /// Unique identifier for this task context
     pub task_id: usize,
 }
 
@@ -938,7 +972,7 @@ impl TaskMemoryContext {
     }
 }
 
-// Provide a dummy TaskMemoryContext type for when full_profiling is disabled
+/// Task context for tracking allocations
 #[cfg(not(feature = "full_profiling"))]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TaskMemoryContext;
@@ -950,6 +984,20 @@ pub fn create_memory_task() -> TaskMemoryContext {
     allocator.create_task_context()
 }
 
+/// Trims a backtrace to extract relevant function names for memory profiling.
+///
+/// This function processes a backtrace to extract function names, starting from frames
+/// that match the provided pattern and continuing until it encounters the Rust runtime
+/// boundary marker. It cleans function names to make them more readable in profiles.
+///
+/// # Arguments
+///
+/// * `start_pattern` - Regular expression pattern to identify where to start extracting frames
+/// * `current_backtrace` - The backtrace to process
+///
+/// # Returns
+///
+/// A vector of cleaned function names representing the relevant call stack
 pub fn trim_backtrace(start_pattern: &Regex, current_backtrace: &Backtrace) -> Vec<String> {
     Backtrace::frames(current_backtrace)
         .iter()
@@ -963,30 +1011,54 @@ pub fn trim_backtrace(start_pattern: &Regex, current_backtrace: &Backtrace) -> V
 
 // ========== TASK STATE MANAGEMENT ==========
 
-// Task tracking state
+/// Task state management for memory profiling
+///
+/// This struct maintains global state for tracking memory allocations
+/// across different tasks in the profiling system.
 pub struct TaskState {
-    // Counter for generating task IDs
+    /// Counter for generating unique task IDs
+    ///
+    /// This atomic counter ensures each task gets a unique identifier
+    /// for tracking memory allocations in multi-threaded environments.
     pub next_task_id: AtomicUsize,
 }
 
-// Global task state
+/// Global task state for memory profiling
+///
+/// This static instance manages the global state for tracking memory allocations
+/// across different tasks in the profiling system. It provides thread-safe
+/// access to task ID generation and other task-related state.
 pub static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| TaskState {
     next_task_id: AtomicUsize::new(1),
 });
 
-// To handle active task tracking, instead of thread-locals, we'll use task-specific techniques
+/// Task guard that automatically deactivates a task when dropped
+///
+/// This guard ensures that tasks are properly cleaned up when they go out of scope,
+/// preventing memory leaks in the task tracking system.
 #[derive(Clone, Debug)]
 pub struct TaskGuard {
     task_id: usize,
 }
 
 impl TaskGuard {
+    /// Creates a new task guard for the given task ID
+    ///
+    /// The guard will automatically deactivate the task when dropped.
+    ///
+    /// # Arguments
+    ///
+    /// * `task_id` - The unique identifier for the task to guard
     #[must_use]
     pub const fn new(task_id: usize) -> Self {
         Self { task_id }
     }
 }
 
+/// Task guard that automatically deactivates a task when dropped
+///
+/// This guard ensures that tasks are properly cleaned up when they go out of scope,
+/// preventing memory leaks in the task tracking system.
 #[cfg(not(feature = "full_profiling"))]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TaskGuard;
@@ -1016,62 +1088,6 @@ impl Drop for TaskGuard {
 pub static TASK_PATH_REGISTRY: LazyLock<Mutex<HashMap<usize, Vec<String>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Find the best matching task ID for a given path.
-/// Used to correlate memory allocations with their originating tasks.
-pub fn find_matching_task_id(path: &[String]) -> usize {
-    let path_registry = TASK_PATH_REGISTRY.lock();
-    // For each active profile, compute a similarity score
-    let mut best_match = 0;
-    let mut best_score = 0;
-    let path_len = path.len();
-
-    #[allow(unused_assignments)]
-    let mut score = 0;
-    for task_id in get_active_tasks().iter().rev() {
-        if let Some(reg_path) = path_registry.get(task_id) {
-            score = compute_similarity(path, reg_path);
-            if score > best_score || score == path_len {
-                best_score = score;
-                best_match = *task_id;
-            }
-            if score == path_len {
-                break;
-            }
-        }
-    }
-
-    // Return the best match if found, otherwise fall back to last active task
-    if best_match > 0 {
-        return best_match;
-    }
-
-    // Fallback: Return the most recently activated profile
-    debug_log!("...returning fallback: most recently activated profile - for path: {path:?}");
-    get_last_active_task().unwrap_or(0)
-}
-
-/// Compute similarity between a task path and registry path.
-/// Returns the number of matching path segments.
-fn compute_similarity(task_path: &[String], reg_path: &[String]) -> usize {
-    if task_path.is_empty() || reg_path.is_empty() {
-        debug_log!("task_path.is_empty() || reg_path.is_empty()");
-        return 0;
-    }
-
-    let score = task_path
-        .iter()
-        .zip(reg_path.iter())
-        .filter(|(path_func, frame)| frame == path_func)
-        .count();
-
-    if score == 0 {
-        debug_log!("score = {score} for path of length {}", task_path.len());
-        debug_log!("{}\n{}", task_path.join("->"), reg_path.join("->"));
-    }
-
-    score
-}
-
 // ========== MEMORY PROFILING LIFECYCLE ==========
 
 /// Initialize memory profiling.
@@ -1093,13 +1109,13 @@ pub fn initialize_memory_profiling() {
 /// Finalize memory profiling and write out data.
 /// This is called by the main `finalize_profiling` function.
 pub fn finalize_memory_profiling() {
-    write_memory_profile_data();
+    write_final_memory_profile_data();
     // write_memory_dealloc_data();
     flush_debug_log();
 }
 
 /// Write final memory profile data to a file for completeness
-fn write_memory_profile_data() {
+fn write_final_memory_profile_data() {
     use std::{collections::HashMap, fs::File, path::Path};
 
     safe_alloc! {

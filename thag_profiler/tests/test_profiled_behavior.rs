@@ -47,9 +47,6 @@ use thag_profiler::{
     ProfileType,
 };
 
-#[cfg(feature = "full_profiling")]
-use thag_profiler::mem_tracking;
-
 // Test basic time profiling with _test suffix
 #[cfg(feature = "time_profiling")]
 #[profiled(time)]
@@ -280,6 +277,8 @@ fn profiled_function_both_legacy_params_test() {
 #[cfg(feature = "time_profiling")]
 #[enable_profiling]
 fn test_profiled_behavior() {
+    use thag_profiler::safe_alloc;
+
     let closure = || {
         #[cfg(feature = "full_profiling")]
         {
@@ -312,5 +311,5 @@ fn test_profiled_behavior() {
     #[cfg(not(feature = "full_profiling"))]
     closure();
 
-    safe_alloc!(closure);
+    safe_alloc!(closure());
 }

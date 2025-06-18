@@ -47,7 +47,7 @@ use thag_profiler::profiling::{get_profile_config, get_time_path, set_profile_co
 use thag_profiler::{
     mem_tracking,
     profiling::{get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path},
-    with_sys_alloc,
+    safe_alloc,
 };
 
 // Set up a mutex for global test resources to avoid conflicts
@@ -503,17 +503,10 @@ fn test_profile_stats() {
 fn test_stack_extraction() {
     use thag_profiler::profiling::extract_profile_callstack;
 
-    with_sys_alloc(|| {
-        // Create a backtrace
-        // let mut backtrace = Backtrace::new();
-
-        // eprintln!("backtrace={backtrace:#?}");
-
+    safe_alloc! {
         // Extract the call stack
-        // TODO out of date
         let callstack = extract_profile_callstack(
-            "thag_profiler::mem_tracking::with_sys_alloc", // Our parent function
-                                                           // &mut backtrace,
+            "thag_profiler::profiling::extract_profile_callstack", // Starting function
         );
 
         // eprintln!("callstack={callstack:#?}");
@@ -526,7 +519,7 @@ fn test_stack_extraction() {
             callstack[0].contains("test_stack_extraction"),
             "First frame should be the current function"
         );
-    });
+    };
 }
 
 /// Test using a profiled function attribute
@@ -553,7 +546,7 @@ fn test_profiled_function() {
     };
 
     #[cfg(feature = "full_profiling")]
-    with_sys_alloc(closure);
+    safe_alloc!(closure());
 
     #[cfg(not(feature = "full_profiling"))]
     closure();

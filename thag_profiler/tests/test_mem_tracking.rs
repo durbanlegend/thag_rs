@@ -24,7 +24,7 @@
 ///
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
-    mem_tracking::{self, create_memory_task, get_last_active_task, Allocator, TASK_PATH_REGISTRY},
+    mem_tracking::{self, create_memory_task, Allocator},
     profiled, safe_alloc,
 };
 

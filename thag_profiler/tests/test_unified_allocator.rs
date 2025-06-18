@@ -208,11 +208,6 @@ fn test_feature_flag_behavior() {
 fn test_advanced_api_availability() {
     // Test that advanced APIs are available when needed
 
-    // These should always be available for advanced usage
-    let _ = thag_profiler::current_allocator_global();
-    let _ = thag_profiler::current_allocator_tls();
-
     // Test advanced allocator checking functions
-    let _global_state = thag_profiler::current_allocator_global();
-    let _tls_state = thag_profiler::current_allocator_tls();
+    let _state = thag_profiler::current_allocator();
 }

@@ -1,10 +1,7 @@
 use std::sync::{Arc, Barrier};
 use std::thread;
 /// Test comparing global atomic vs thread-local allocator switching behavior
-use thag_profiler::{
-    current_allocator, debug_log, mem_tracking, safe_alloc, with_sys_alloc, with_sys_alloc_tls,
-    Allocator,
-};
+use thag_profiler::{current_allocator, debug_log, mem_tracking, safe_alloc, Allocator};
 
 #[test]
 #[cfg(feature = "full_profiling")]
@@ -13,23 +10,19 @@ fn test_global_vs_tls_allocator_switching() {
 
     // Initially both should be in Tracking mode
     assert_eq!(current_allocator(), Allocator::Tracking);
-    assert_eq!(current_allocator_tls(), Allocator::Tracking);
 
-    // Test global version - changes global flag from false->true, then back to false
-    with_sys_alloc(|| {
+    // Changes global flag from false->true, then back to false
+    safe_alloc! {
         assert_eq!(current_allocator(), Allocator::System);
-        assert_eq!(current_allocator_tls(), Allocator::Tracking); // TLS unaffected
-    });
+    };
 
-    // Test TLS version - changes TLS flag from false->true, then back to false
-    with_sys_alloc_tls(|| {
-        assert_eq!(current_allocator(), Allocator::Tracking); // Global unaffected
-        assert_eq!(current_allocator_tls(), Allocator::System);
-    });
+    // Changes global flag from false->true, then back to false
+    safe_alloc! {
+        assert_eq!(current_allocator(), Allocator::System); // Global unaffected
+    };
 
     // Both should be back to Tracking (flags reset by their respective setters)
     assert_eq!(current_allocator(), Allocator::Tracking);
-    assert_eq!(current_allocator_tls(), Allocator::Tracking);
 }
 
 #[test]
@@ -39,26 +32,24 @@ fn test_macro_versions() {
 
     safe_alloc! {
         assert_eq!(current_allocator(), Allocator::System);
-        assert_eq!(current_allocator_tls(), Allocator::Tracking); // TLS unaffected
     };
 
-    safe_alloc_tls! {
-        assert_eq!(current_allocator(), Allocator::Tracking); // Global unaffected
-        assert_eq!(current_allocator_tls(), Allocator::System);
+    safe_alloc! {
+        assert_eq!(current_allocator(), Allocator::System);
     };
 
     // Test nested usage - inner macro finds flag already set, doesn't touch it
     safe_alloc! {
         assert_eq!(current_allocator(), Allocator::System);
 
-        safe_alloc_tls! {
+        safe_alloc! {
             assert_eq!(current_allocator(), Allocator::System); // Still system
-            assert_eq!(current_allocator_tls(), Allocator::System); // Now TLS is also system
         };
 
         assert_eq!(current_allocator(), Allocator::System); // Still system
-        assert_eq!(current_allocator_tls(), Allocator::Tracking); // TLS back to tracking (inner macro reset it)
     };
+
+    assert_eq!(current_allocator(), Allocator::Tracking);
 }
 
 #[test]
@@ -73,14 +64,13 @@ fn test_thread_isolation() {
     handles.push(thread::spawn(move || {
         barrier1.wait(); // Synchronize start
 
-        with_sys_alloc(|| {
+        safe_alloc! {
             // This thread is in System mode
             assert_eq!(current_allocator(), Allocator::System);
-            assert_eq!(current_allocator_tls(), Allocator::Tracking);
 
             // Sleep to ensure other threads can check their state
             thread::sleep(std::time::Duration::from_millis(10));
-        });
+        };
     }));
 
     // Thread 2: Uses TLS allocator switching
@@ -88,14 +78,13 @@ fn test_thread_isolation() {
     handles.push(thread::spawn(move || {
         barrier2.wait(); // Synchronize start
 
-        with_sys_alloc_tls(|| {
+        safe_alloc! {
             // This thread is in System mode (TLS)
-            assert_eq!(current_allocator(), Allocator::Tracking); // Global unaffected
-            assert_eq!(current_allocator_tls(), Allocator::System);
+            assert_eq!(current_allocator(), Allocator::System); // Global unaffected
 
             // Sleep to ensure other threads can check their state
             thread::sleep(std::time::Duration::from_millis(10));
-        });
+        };
     }));
 
     // Thread 3: Checks it's unaffected by other threads
@@ -107,7 +96,7 @@ fn test_thread_isolation() {
         thread::sleep(std::time::Duration::from_millis(5));
 
         // Should be in Tracking mode despite other threads
-        assert_eq!(current_allocator_tls(), Allocator::Tracking);
+        assert_eq!(current_allocator(), Allocator::Tracking);
 
         // Global might be affected by thread 1, but TLS should be isolated
         // We can't assert the global state since thread 1 might still be running

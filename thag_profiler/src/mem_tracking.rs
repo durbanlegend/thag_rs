@@ -23,7 +23,7 @@ use crate::{
     },
     regex, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
 };
-use backtrace::{resolve_frame, trace, Backtrace};
+use backtrace::{resolve_frame, trace};
 use parking_lot::Mutex;
 use regex::Regex;
 use std::{

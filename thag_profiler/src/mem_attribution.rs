@@ -205,15 +205,28 @@ impl ProfileRegistry {
     #[allow(clippy::missing_panics_doc, reason = "checked start_line.is_some()")]
     pub fn find_profile(&self, module: &str, function: &str, line: u32) -> Option<ProfileRef> {
         // Search through profiles for matching module/function/line
+        let mut best_match: Option<(u32, ProfileRef)> = None;
+
         for entry in &self.profiles {
             let key = entry.key();
             let profile_ref = entry.value();
 
             if key.module == module && key.function == function && key.contains_line(line) {
-                return Some(profile_ref.clone());
+                let start_line = key.line_range.start;
+
+                match &best_match {
+                    None => {
+                        best_match = Some((start_line, profile_ref.clone()));
+                    }
+                    Some((best_start, _)) if start_line < *best_start => {
+                        best_match = Some((start_line, profile_ref.clone()));
+                    }
+                    _ => {} // Current match has higher start line, keep existing best
+                }
             }
         }
-        None
+
+        best_match.map(|(_, profile_ref)| profile_ref)
     }
 
     /// Get all registered file names

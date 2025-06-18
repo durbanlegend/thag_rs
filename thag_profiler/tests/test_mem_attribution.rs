@@ -29,7 +29,7 @@ use thag_profiler::{
     mem_attribution::{find_profile, ProfileReg},
     mem_tracking, profile, profiled,
     profiling::{set_profile_config, Profile, ProfileType},
-    safe_alloc, with_sys_alloc,
+    safe_alloc,
 };
 
 #[cfg(feature = "full_profiling")]
@@ -172,7 +172,7 @@ fn mem_attribution_persistent_allocations() {
 #[cfg(feature = "full_profiling")]
 // #[enable_profiling]
 fn mem_attribution_manual_profile() {
-    with_sys_alloc(|| {
+    safe_alloc! {
         // Create a profile manually
         let file_name = file_stem_from_path_str(file!());
         let fn_name = "manual_profile_test";
@@ -204,7 +204,7 @@ fn mem_attribution_manual_profile() {
         // Allocate memory
         let data = vec![0u8; 16384];
         assert_eq!(data.len(), 16384);
-    });
+    };
 }
 
 /// Test registry functionality directly
@@ -320,7 +320,7 @@ fn mem_attribution_overlapping_profiles() {
     if let Some(profile_ref) = overlap {
         assert_eq!(
             profile_ref.name(),
-            "overlap_second",
+            "overlap_first",
             "Should find the profile that starts first (overlap_first)"
         );
     }

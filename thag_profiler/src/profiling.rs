@@ -2,7 +2,7 @@
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::{Mutex, ReentrantMutex, RwLock};
 use std::{
     collections::{BTreeSet, HashMap},
     env,
@@ -57,7 +57,7 @@ static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
 /// Mutex to prevent concurrent access to profiling by different executions.
 #[cfg(feature = "time_profiling")]
-pub static PROFILING_MUTEX: Mutex<()> = Mutex::new(());
+pub static PROFILING_MUTEX: ReentrantMutex<()> = ReentrantMutex::new(());
 
 /// Profiling capability flags (bitflags pattern) for determining which profiling types are supported
 #[allow(dead_code)]
@@ -998,6 +998,7 @@ pub(crate) fn enable_profiling(
     enabled: bool,
     maybe_profile_type: Option<ProfileType>,
 ) -> ProfileResult<()> {
+    let _guard = PROFILING_MUTEX.lock();
     // When running tests (either unit or integration), we want to ensure our configuration
     // is up-to-date with the latest environment variables
     #[cfg(test)]
@@ -1071,6 +1072,7 @@ pub(crate) fn enable_profiling(
     // Whether enabling or disabling, set the state
     PROFILING_STATE.store(enabled, Ordering::SeqCst);
     debug_log!("Profiling state set to {}", enabled);
+
     Ok(())
 }
 
@@ -3199,12 +3201,12 @@ static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
 ///
 /// # Examples
 /// ```
-/// # use thag_profiler::strip_hex_suffix_slice;
-/// let name = "my_function::h1234abcd";
-/// assert_eq!(strip_hex_suffix_slice(name), "my_function");
+/// # use thag_profiler::strip_hex_suffix;
+/// let name = "my_function::h1234abcd".to_string();
+/// assert_eq!(strip_hex_suffix(name), "my_function");
 ///
-/// let name = "no_suffix";
-/// assert_eq!(strip_hex_suffix_slice(name), "no_suffix");
+/// let name = "no_suffix".to_string();
+/// assert_eq!(strip_hex_suffix(name), "no_suffix");
 /// ```
 #[must_use]
 pub fn strip_hex_suffix(name: String) -> String {

@@ -68,7 +68,8 @@ pub use {
     profiling::{
         clear_profile_config_cache, disable_profiling, get_config_profile_type,
         get_global_profile_type, is_detailed_memory, is_profiling_enabled,
-        parse_env_profile_config, strip_hex_suffix, Profile, /* ProfileSection,*/
+        parse_env_profile_config, strip_hex_suffix, strip_hex_suffix_slice,
+        Profile, /* ProfileSection,*/
         ProfileConfiguration, ProfileType,
     },
     thag_proc_macros::{fn_name, safe_alloc},
@@ -161,8 +162,8 @@ pub fn get_root_module() -> Option<&'static str> {
 /// Panics if the input path does not contain at least a slash and a dot.
 #[must_use]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
-    let fname_start = file_name.rfind('/').unwrap() + 1;
-    let fname_dot = file_name.rfind('.').unwrap();
+    let fname_start = file_name.rfind('/').map_or_else(|| 0, |pos| pos + 1);
+    let fname_dot = file_name.rfind('.').unwrap_or_else(|| file_name.len());
     file_name[fname_start..fname_dot].to_string()
 }
 
@@ -292,7 +293,7 @@ macro_rules! static_lazy {
 ///
 /// # Example
 /// ```
-/// use thag_profiler::{debug_log, warn_once};
+/// use thag_profiler::{debug_log, mem_tracking, warn_once};
 /// let is_disabled = true;
 /// warn_once!(is_disabled, || {
 ///     debug_log!("This feature is disabled");
@@ -794,6 +795,10 @@ mod lib_tests {
         // Test with file having multiple extensions
         let multi_ext = "test.data.rs";
         assert_eq!(file_stem_from_path_str(multi_ext), "test.data");
+
+        // Test with just stem (no directory or extension)
+        let bare_stem = "bare";
+        assert_eq!(file_stem_from_path_str(bare_stem), "bare");
     }
 
     #[test]
@@ -943,6 +948,7 @@ mod lib_tests {
     #[cfg(feature = "time_profiling")]
     #[test]
     fn test_init_and_finalize() {
+        let _guard = PROFILING_MUTEX.lock();
         // Setup: Make sure profiling is disabled
         disable_profiling();
 

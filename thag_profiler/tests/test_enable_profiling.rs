@@ -44,7 +44,7 @@ use std::env;
 
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    end, profile,
+    end, mem_tracking, profile,
     profiling::{
         disable_profiling, is_profiling_enabled, is_profiling_state_enabled, set_profile_config,
     },

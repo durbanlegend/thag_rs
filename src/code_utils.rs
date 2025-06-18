@@ -461,6 +461,8 @@ pub fn strip_curly_braces(haystack: &str) -> Option<String> {
 
 #[must_use]
 #[cfg(feature = "build")]
+/// Get the source path for the build, either from the original source or the target directory.
+/// Returns the appropriately escaped path string for the current platform.
 #[profiled]
 pub fn get_source_path(build_state: &BuildState) -> String {
     let binding: &PathBuf = if build_state.build_from_orig_source {

@@ -203,32 +203,59 @@ bitflags! {
     // #[derive(Debug)]
     #[derive(Clone, Default, PartialEq, Eq)]
     pub struct ProcFlags: u32 {
+        /// Generate flag
         const GENERATE      = 1;
+        /// Build flag
         const BUILD         = 2;
+        /// Force flag
         const FORCE         = 4;
+        /// Run flag
         const RUN           = 8;
+        /// No-run flag
         const NORUN         = 16;
+        /// Executable flag
         const EXECUTABLE    = 32;
+        /// Check flag
         const CHECK         = 64;
+        /// REPL flag
         const REPL          = 128;
+        /// Expression flag
         const EXPR          = 256;
+        /// Stdin flag
         const STDIN         = 512;
+        /// Edit flag
         const EDIT          = 1024;
+        /// Loop flag
         const LOOP          = 2048;
+        /// Multi flag
         const MULTI         = 4096;
+        /// Timings flag
         const TIMINGS       = 8192;
+        /// Debug flag
         const DEBUG         = 16384;
+        /// Verbose flag
         const VERBOSE       = 32768;
+        /// Normal flag
         const NORMAL        = 65536;
+        /// Quiet flag
         const QUIET         = 131_072;
+        /// Quieter flag
         const QUIETER       = 262_144;
+        /// Unquote flag
         const UNQUOTE       = 524_288;
+        /// Config flag
         const CONFIG        = 1_048_576;
+        /// Expand flag
         const EXPAND        = 2_097_152;
+        /// Cargo flag
         const CARGO         = 4_194_304;
+        /// Infer flag
         const INFER         = 8_388_608;
+        /// Test only flag
         const TEST_ONLY     = 16_777_216;
+        /// Tools flag
         const TOOLS         = 33_554_432;
+        /// Features flag
         const FEATURES      = 67_108_864;
     }
 }

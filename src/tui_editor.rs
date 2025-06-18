@@ -43,14 +43,19 @@ use std::{
 use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, TextArea};
 
+/// Title displayed at the top of the key bindings popup
 pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
+/// Title displayed at the bottom of the key bindings popup
 pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
 
+/// Type alias for the crossterm backend with stdout lock
 pub type BackEnd<'a> = CrosstermBackend<std::io::StdoutLock<'a>>;
+/// Type alias for a terminal with the backend
 pub type Term<'a> = Terminal<BackEnd<'a>>;
+/// Type alias for a closure that resets the terminal
 pub type ResetTermClosure<'a> = Box<dyn FnOnce(Term<'a>)>;
+/// Type alias for a scope guard that manages terminal cleanup
 pub type TermScopeGuard<'a> = ScopeGuard<Term<'a>, ResetTermClosure<'a>>;
-
 /// A trait to allow mocking of the event reader for testing purposes.
 #[automock]
 pub trait EventReader {
@@ -84,6 +89,10 @@ impl EventReader for CrosstermEventReader {
     }
 }
 
+/// A wrapper around a terminal with scope guard for automatic cleanup.
+///
+/// This struct manages a terminal instance and ensures proper cleanup
+/// when the terminal goes out of scope, regardless of how the program exits.
 pub struct ManagedTerminal<'a> {
     terminal: TermScopeGuard<'a>,
 }
@@ -143,8 +152,15 @@ pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Represents a single entry in the edit history.
+///
+/// An entry contains both an index for ordering and the actual text content
+/// stored as individual lines. This structure is used to maintain a history
+/// of text edits that can be navigated and restored.
 pub struct Entry {
-    pub index: usize,       // Holds the entry's index
+    /// The index of this entry in the history collection
+    pub index: usize, // Holds the entry's index
+    /// The text content of this entry, stored as separate lines
     pub lines: Vec<String>, // Holds editor content as lines
 }
 
@@ -156,6 +172,14 @@ impl Display for Entry {
 }
 
 impl Entry {
+    /// Creates a new Entry with the given index and content.
+    ///
+    /// The content string is split into individual lines and stored in the `lines` field.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of this entry in the history collection
+    /// * `content` - The text content to store, which will be split into lines
     #[profiled]
     pub fn new(index: usize, content: &str) -> Self {
         Self {
@@ -164,7 +188,14 @@ impl Entry {
         }
     }
 
-    // Extracts string contents of entry for use in the editor
+    /// Extracts string contents of entry for use in the editor.
+    ///
+    /// Joins all lines in the entry with newline characters to reconstruct
+    /// the original text content.
+    ///
+    /// # Returns
+    ///
+    /// A String containing the full text content with lines joined by newlines
     #[must_use]
     #[profiled]
     pub fn contents(&self) -> String {
@@ -172,13 +203,25 @@ impl Entry {
     }
 }
 
+/// Represents the edit history for a text editor.
+///
+/// This struct maintains a collection of text entries that can be navigated
+/// through, similar to command history in a shell. It tracks the current
+/// position within the history and provides methods for adding, updating,
+/// and navigating through entries.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct History {
+    /// The index of the currently selected entry in the history.
+    /// `None` indicates no current selection or an empty history.
     pub current_index: Option<usize>,
+    /// A double-ended queue containing all history entries.
+    /// Entries are stored as `Entry` objects which contain both
+    /// an index and the text content as lines.
     pub entries: VecDeque<Entry>, // Now a VecDeque of Entries
 }
 
 impl History {
+    /// Creates a new empty History instance.
     #[must_use]
     #[profiled]
     pub fn new() -> Self {
@@ -188,6 +231,15 @@ impl History {
         }
     }
 
+    /// Loads a History instance from a file.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path to the file to load from
+    ///
+    /// # Returns
+    ///
+    /// A History instance loaded from the file, or a new empty instance if loading fails
     #[must_use]
     #[profiled]
     pub fn load_from_file(path: &PathBuf) -> Self {
@@ -216,6 +268,7 @@ impl History {
         history
     }
 
+    /// Returns true if the current position is at the start of the history.
     #[must_use]
     #[profiled]
     pub fn at_start(&self) -> bool {
@@ -224,6 +277,7 @@ impl History {
             .is_none_or(|current_index| current_index == 0)
     }
 
+    /// Returns true if the current position is at the end of the history.
     #[must_use]
     #[profiled]
     pub fn at_end(&self) -> bool {
@@ -232,6 +286,11 @@ impl History {
             .is_none_or(|current_index| current_index == self.entries.len() - 1)
     }
 
+    /// Adds a new entry to the history.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text content to add to the history
     #[profiled]
     pub fn add_entry(&mut self, text: &str) {
         let new_index = self.entries.len(); // Assign the next index based on current length
@@ -251,6 +310,12 @@ impl History {
         debug_log!("history={self:?}");
     }
 
+    /// Updates an existing entry in the history or adds a new one if it doesn't exist.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to update
+    /// * `text` - The new text content for the entry
     #[profiled]
     pub fn update_entry(&mut self, index: usize, text: &str) {
         debug_log!("update_entry for index {index}...");
@@ -266,6 +331,11 @@ impl History {
         }
     }
 
+    /// Deletes an entry from the history by index.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to delete
     #[profiled]
     pub fn delete_entry(&mut self, index: usize) {
         self.entries.retain(|entry| entry.index != index);
@@ -317,6 +387,11 @@ impl History {
         Ok(())
     }
 
+    /// Gets the currently selected entry from the history.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the current entry, or None if the history is empty
     #[profiled]
     pub fn get_current(&mut self) -> Option<&Entry> {
         if self.entries.is_empty() {
@@ -333,6 +408,15 @@ impl History {
         }
     }
 
+    /// Gets an entry at the specified index and sets it as the current entry.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to retrieve
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the entry at the specified index
     #[profiled]
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
         debug_log!("get({index})...");
@@ -351,6 +435,15 @@ impl History {
         entry
     }
 
+    /// Gets a mutable reference to an entry at the specified index and sets it as the current entry.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to retrieve
+    ///
+    /// # Returns
+    ///
+    /// An optional mutable reference to the entry at the specified index
     #[profiled]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
         debug_log!("get_mut({index})...");
@@ -455,6 +548,11 @@ impl History {
         )
     }
 
+    /// Gets the last (most recent) entry in the history.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the last entry, or None if the history is empty
     #[profiled]
     pub fn get_last(&mut self) -> Option<&Entry> {
         if self.entries.is_empty() {
@@ -464,7 +562,7 @@ impl History {
         self.entries.back()
     }
 
-    // Reassign indices so that the newest entry has index 0, and the oldests has len - 1
+    /// Reassigns indices so that the newest entry has index 0, and the oldest has len - 1.
     #[profiled]
     fn reassign_indices(&mut self) {
         // let len = self.entries.len();
@@ -474,14 +572,19 @@ impl History {
     }
 }
 
-// Struct to hold data-related parameters
 #[allow(dead_code)]
 #[derive(Debug, Default)]
+/// Struct to hold data-related parameters for the TUI editor
 pub struct EditData<'a> {
+    /// Whether to return the edited text as part of the result
     pub return_text: bool,
+    /// The initial content to display in the editor
     pub initial_content: &'a str,
+    /// Optional path where the edited content should be saved
     pub save_path: Option<&'a mut PathBuf>,
+    /// Optional path to the history file for storing edit history
     pub history_path: Option<&'a PathBuf>,
+    /// Optional history object for managing edit history
     pub history: Option<History>,
 }
 
@@ -516,29 +619,46 @@ impl From<&Role> for Color {
     }
 }
 
-// Struct to hold display-related parameters
+/// Struct to hold display-related parameters for the TUI editor
 #[derive(Debug)]
 pub struct KeyDisplay<'a> {
+    /// The title to display at the top of the editor
     pub title: &'a str,
+    /// The style to apply to the title text
     pub title_style: RataStyle,
+    /// Keys to remove from the default key mappings display
     pub remove_keys: &'a [&'a str],
+    /// Additional key mappings to add to the display
     pub add_keys: &'a [KeyDisplayLine],
 }
 
+/// Represents the different actions that can be taken in response to user input in the TUI editor.
+///
+/// This enum is used to communicate between key handlers and the main editor loop,
+/// indicating what action should be taken based on the user's key press.
 #[derive(Debug)]
 pub enum KeyAction {
+    /// Abandon any unsaved changes and exit without saving
     AbandonChanges,
+    /// Continue with normal editor operation - no special action needed
     Continue, // For other inputs that don't need specific handling
+    /// Quit the editor, with a boolean indicating whether changes have been saved
     Quit(bool),
+    /// Save the current content to file
     Save,
+    /// Save the current content and then exit the editor
     SaveAndExit,
+    /// Show the help screen with key bindings
     ShowHelp,
+    /// Save the current content and submit it (e.g., for REPL execution)
     SaveAndSubmit,
+    /// Submit the current content without necessarily saving to file
     Submit,
+    /// Toggle the syntax highlighting colors
     ToggleHighlight,
+    /// Toggle the visibility of the popup help screen
     TogglePopup,
 }
-
 /// Edit content with a TUI
 ///
 /// # Panics
@@ -892,6 +1012,15 @@ where
     }
 }
 
+/// Highlight the selected text in the textarea with the specified color role.
+///
+/// This function applies styling to the selected text in the textarea, setting
+/// the foreground color based on the provided Role and making it bold.
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the TextArea to apply highlighting to
+/// * `tui_highlight_fg` - The Role that determines the foreground color for highlighting
 #[profiled]
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
     textarea.set_selection_style(
@@ -1143,6 +1272,20 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     Ok(())
 }
 
+/// Display a popup with key mappings and descriptions.
+///
+/// This function renders a centered popup window containing a list of key bindings
+/// and their descriptions. The popup is styled with borders and titles, and each
+/// key mapping is displayed in a two-column layout.
+///
+/// # Arguments
+///
+/// * `mappings` - A slice of `KeyDisplayLine` structs containing the key mappings to display
+/// * `title_top` - The title text to display at the top of the popup
+/// * `title_bottom` - The title text to display at the bottom of the popup
+/// * `max_key_len` - The maximum length of key strings for column width calculation
+/// * `max_desc_len` - The maximum length of description strings for column width calculation
+/// * `f` - A mutable reference to the ratatui Frame for rendering
 #[profiled]
 pub fn display_popup(
     mappings: &[KeyDisplayLine],
@@ -1219,6 +1362,21 @@ pub fn display_popup(
 }
 
 #[must_use]
+/// Creates a centered rectangle within the given area with the specified maximum dimensions.
+///
+/// This function creates a popup-style rectangle that is centered both horizontally
+/// and vertically within the provided area, constrained by the given maximum width
+/// and height.
+///
+/// # Arguments
+///
+/// * `max_width` - The maximum width of the centered rectangle
+/// * `max_height` - The maximum height of the centered rectangle
+/// * `r` - The area within which to center the rectangle
+///
+/// # Returns
+///
+/// A `Rect` representing the centered rectangle
 #[profiled]
 pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
     let popup_layout = Layout::vertical([
@@ -1332,6 +1490,15 @@ pub fn save_if_changed(
 //     Ok(())
 // }
 
+/// Paste the contents of a history entry into a text area.
+///
+/// This function clears the current content of the textarea by selecting all
+/// and cutting it, then inserts the content from the provided history entry.
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the TextArea to paste into
+/// * `entry` - The history entry containing the content to paste
 #[profiled]
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
     textarea.select_all();
@@ -1357,6 +1524,15 @@ pub fn preserve(
     Ok(())
 }
 
+/// Save content from textarea to history if it's not empty.
+///
+/// This function copies the text content from the textarea and adds it to the history
+/// collection if the content is not empty (after trimming whitespace).
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the TextArea to copy from
+/// * `hist` - A mutable reference to the History to add the entry to
 #[profiled]
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
     debug_log!("save_if_not_empty...");
@@ -1368,6 +1544,18 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
     }
 }
 
+/// Copy the entire text content from a `TextArea`.
+///
+/// This function selects all text in the textarea, copies it, and returns
+/// the content as a single string with newlines preserved.
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the TextArea to copy from
+///
+/// # Returns
+///
+/// A String containing the entire text content of the textarea
 #[profiled]
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
     textarea.select_all();
@@ -1437,6 +1625,7 @@ macro_rules! key_mappings {
     };
 }
 
+/// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
 pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
     (
@@ -1457,14 +1646,14 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     ),
     (60, "Ctrl+d", "Submit"),
     (70, "Ctrl+q", "Cancel and quit"),
-    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
-    (90, "Ctrl+i, Tab", "Indent"),
-    (100, "Ctrl+m, Enter", "Insert newline"),
+    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (90, "Ctrl+i, Tab", "Indent"),
+    (100, "Ctrl+m, Enter", "Insert newline"),
     (110, "Ctrl+k", "Delete from cursor to end of line"),
     (120, "Ctrl+j", "Delete from cursor to start of line"),
     (
         130,
-        "Ctrl+w, Alt+Backspace",
+        "Ctrl+w, Alt+Backspace",
         "Delete one word before cursor"
     ),
     (140, "Alt+d, Delete", "Delete one word from cursor position"),
@@ -1475,36 +1664,36 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (190, "Ctrl+y", "Paste yanked text"),
     (
         200,
-        "Ctrl+v, Shift+Ins, Cmd+v",
+        "Ctrl+v, Shift+Ins, Cmd+v",
         "Paste from system clipboard"
     ),
-    (210, "Ctrl+f, →", "Move cursor forward one character"),
-    (220, "Ctrl+b, ←", "Move cursor backward one character"),
-    (230, "Ctrl+p, ↑", "Move cursor up one line"),
-    (240, "Ctrl+n, ↓", "Move cursor down one line"),
-    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (210, "Ctrl+f, →", "Move cursor forward one character"),
+    (220, "Ctrl+b, ←", "Move cursor backward one character"),
+    (230, "Ctrl+p, ↑", "Move cursor up one line"),
+    (240, "Ctrl+n, ↓", "Move cursor down one line"),
+    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
     (260, "Alt+Shift+f", "Move cursor to next word end"),
-    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
+    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
+    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
+    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
     (
         300,
-        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
+        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
         "Move cursor to end of line"
     ),
     (
         310,
-        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
+        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
         "Move cursor to start of line"
     ),
-    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
+    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
     (
         330,
-        "Alt+>, Ctrl+Alt+n or ↓",
+        "Alt+>, Ctrl+Alt+n or ↓",
         "Move cursor to bottom of file"
     ),
     (340, "PageDown, Cmd+↓", "Page down"),
-    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
+    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
     (360, "Ctrl+l", "Toggle keys display (this screen)"),
     (370, "Ctrl+t", "Toggle selection highlight colours"),
     (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
@@ -1525,9 +1714,14 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// A struct representing a line in the key display help screen.
+/// Contains information about key bindings and their descriptions.
 pub struct KeyDisplayLine {
+    /// Sequence number for ordering the display lines
     pub seq: usize,
+    /// The key combination string to display
     pub keys: &'static str, // Or String if you plan to modify the keys later
+    /// The description of what the key combination does
     pub desc: &'static str, // Or String for modifiability
 }
 
@@ -1548,6 +1742,13 @@ impl Ord for KeyDisplayLine {
 }
 
 impl KeyDisplayLine {
+    /// Creates a new `KeyDisplayLine` with the specified sequence number, key combination, and description.
+    ///
+    /// # Arguments
+    ///
+    /// * `seq` - The sequence number for ordering the display lines
+    /// * `keys` - The key combination string to display
+    /// * `desc` - The description of what the key combination does
     #[must_use]
     pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
         Self { seq, keys, desc }

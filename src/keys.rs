@@ -8,7 +8,9 @@ use strict::OneToThree;
 /// (ctrl, alt, shift).
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct KeyCombination {
+    /// The key codes that make up this combination (one to three keys)
     pub codes: OneToThree<KeyCode>,
+    /// The modifiers (ctrl, alt, shift) applied to this key combination
     pub modifiers: KeyModifiers,
 }
 

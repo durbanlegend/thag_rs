@@ -33,7 +33,9 @@ use tui_textarea::{Input, TextArea};
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]
 pub enum DialogMode {
+    /// Open file dialog mode for selecting existing files
     Open,
+    /// Save file dialog mode for specifying file names to save
     Save,
 }
 
@@ -48,13 +50,19 @@ pub enum FilePattern {
 /// Enum to represent which part of the dialog has focus.
 #[derive(Debug, PartialEq, Eq)]
 pub enum DialogFocus {
-    List,  // Focus on file list
-    Input, // Focus on input area
+    /// Focus on file list
+    List,
+    /// Focus on input area
+    Input,
 }
 
+/// Status enum to represent the completion state of file dialog operations.
 pub enum Status {
+    /// Operation completed successfully
     Complete,
+    /// Operation is still in progress
     Incomplete,
+    /// User requested to quit the operation
     Quit,
 }
 
@@ -86,12 +94,14 @@ pub struct FileDialog<'a> {
     /// Current focus of the Save dialog (List or Input)
     focus: DialogFocus,
 
+    /// Whether to show the popup with key bindings
     pub popup: bool,
     title_bottom: &'a str,
 
     /// Input for the file name in Input mode
     pub input: TextArea<'a>,
 
+    /// Buffer for search/filter functionality
     pub buf: String,
     // term_attrs: &'static TermAttributes,
 }

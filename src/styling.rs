@@ -10,7 +10,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, PaletteMethods};
-use thag_profiler::{enable_profiling, end, profile, profiled};
+use thag_profiler::{enable_profiling, end, mem_tracking, profile, profiled};
 
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg_rgb, is_light_color};
@@ -31,10 +31,23 @@ const THRESHOLD: f32 = 30.0; // Adjust this value as needed
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
+/// Represents different color value formats for terminal styling
 pub enum ColorValue {
-    Basic { basic: [String; 2] }, // [ANSI code, index]
-    Color256 { color256: u8 },    // 256-color index
-    TrueColor { rgb: [u8; 3] },   // RGB values
+    /// Basic ANSI color with code and index
+    Basic {
+        /// Array containing ANSI code and index as strings
+        basic: [String; 2],
+    }, // [ANSI code, index]
+    /// 256-color palette index
+    Color256 {
+        /// Color index in the 256-color palette
+        color256: u8,
+    }, // 256-color index
+    /// True color RGB values
+    TrueColor {
+        /// RGB color values as [red, green, blue]
+        rgb: [u8; 3],
+    }, // RGB values
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -45,14 +58,23 @@ struct StyleConfig {
     style: Vec<String>, // ["bold", "italic", etc.]
 }
 
+/// Contains color information including the color value, ANSI escape sequence, and palette index
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
+    /// The color value in one of the supported formats (Basic, Color256, or TrueColor)
     pub value: ColorValue,
+    /// The ANSI escape sequence string for this color
     pub ansi: &'static str,
+    /// The color palette index (0-255 for indexed colors, or closest match for RGB)
     pub index: u8,
 }
 
 impl ColorInfo {
+    /// Creates a new ColorInfo with basic ANSI color format
+    ///
+    /// # Arguments
+    /// * `ansi` - The ANSI escape sequence for this color
+    /// * `index` - The color palette index (0-15 for basic colors)
     #[must_use]
     #[profiled]
     pub fn basic(ansi: &'static str, index: u8) -> Self {
@@ -65,6 +87,10 @@ impl ColorInfo {
         }
     }
 
+    /// Creates a new ColorInfo with 256-color palette format
+    ///
+    /// # Arguments
+    /// * `index` - The color index in the 256-color palette (0-255)
     #[must_use]
     #[profiled]
     pub fn color256(index: u8) -> Self {
@@ -75,6 +101,12 @@ impl ColorInfo {
         }
     }
 
+    /// Creates a new ColorInfo with true color RGB format
+    ///
+    /// # Arguments
+    /// * `r` - Red component (0-255)
+    /// * `g` - Green component (0-255)
+    /// * `b` - Blue component (0-255)
     #[must_use]
     #[profiled]
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
@@ -85,7 +117,11 @@ impl ColorInfo {
         }
     }
 
-    // Helper to create appropriate ColorInfo based on terminal support
+    /// Creates appropriate ColorInfo based on terminal color support level
+    ///
+    /// # Arguments
+    /// * `rgb` - RGB color values as a tuple (r, g, b)
+    /// * `support` - The color support level of the terminal
     #[must_use]
     #[profiled]
     pub fn with_support(rgb: (u8, u8, u8), support: ColorSupport) -> Self {
@@ -101,14 +137,20 @@ impl ColorInfo {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Style {
+    /// Optional foreground color information for this style
     pub foreground: Option<ColorInfo>,
+    /// Whether this style should be rendered in bold
     pub bold: bool,
+    /// Whether this style should be rendered in italic
     pub italic: bool,
+    /// Whether this style should be rendered dimmed/faint
     pub dim: bool,
+    /// Whether this style should be rendered with underline
     pub underline: bool,
 }
 
 impl Style {
+    /// Creates a new Style with default values (no formatting)
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -196,35 +238,41 @@ impl Style {
         }
     }
 
+    /// Returns a new Style with bold formatting enabled
     #[must_use]
     pub const fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
+    /// Returns a new Style with italic formatting enabled
     #[must_use]
     pub const fn italic(mut self) -> Self {
         self.italic = true;
         self
     }
 
+    /// Returns the Style unchanged (used for method chaining)
     #[must_use]
     pub const fn normal(self) -> Self {
         self
     }
 
+    /// Returns a new Style with dim/faint formatting enabled
     #[must_use]
     pub const fn dim(mut self) -> Self {
         self.dim = true;
         self
     }
 
+    /// Returns a new Style with underline formatting enabled
     #[must_use]
     pub const fn underline(mut self) -> Self {
         self.underline = true;
         self
     }
 
+    /// Resets all text formatting flags to their default (false) state
     #[profiled]
     pub fn reset(&mut self) {
         self.bold = false;
@@ -233,6 +281,7 @@ impl Style {
         self.underline = false;
     }
 
+    /// Applies this style's formatting to the given displayable value and returns the formatted string
     #[profiled]
     pub fn paint<D>(&self, val: D) -> String
     where
@@ -284,6 +333,7 @@ impl Style {
         result
     }
 
+    /// Creates a new Style with the specified 256-color palette index
     #[must_use]
     #[profiled]
     pub fn with_color_index(index: u8) -> Self {
@@ -308,6 +358,7 @@ impl Default for Style {
     }
 }
 
+/// Provides static methods for creating basic ANSI color styles
 pub struct Color;
 
 #[allow(dead_code)]
@@ -332,6 +383,7 @@ impl Color {
     const LIGHT_CYAN: &'static str = "\x1b[96m"; // index 14
     const LIGHT_GRAY: &'static str = "\x1b[97m"; // index 15
 
+    /// Creates a new Style with black foreground color
     #[must_use]
     #[profiled]
     pub fn black() -> Style {
@@ -341,6 +393,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with red foreground color
     #[must_use]
     #[profiled]
     pub fn red() -> Style {
@@ -350,6 +403,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with green foreground color
     #[must_use]
     #[profiled]
     pub fn green() -> Style {
@@ -359,6 +413,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with yellow foreground color
     #[must_use]
     #[profiled]
     pub fn yellow() -> Style {
@@ -368,6 +423,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with blue foreground color
     #[must_use]
     #[profiled]
     pub fn blue() -> Style {
@@ -377,6 +433,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with magenta foreground color
     #[must_use]
     #[profiled]
     pub fn magenta() -> Style {
@@ -386,6 +443,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with cyan foreground color
     #[must_use]
     #[profiled]
     pub fn cyan() -> Style {
@@ -395,6 +453,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with white foreground color
     #[must_use]
     #[profiled]
     pub fn white() -> Style {
@@ -404,6 +463,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with dark gray foreground color
     #[must_use]
     #[profiled]
     pub fn dark_gray() -> Style {
@@ -413,6 +473,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with light yellow foreground color
     #[must_use]
     #[profiled]
     pub fn light_yellow() -> Style {
@@ -422,6 +483,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with light cyan foreground color
     #[must_use]
     #[profiled]
     pub fn light_cyan() -> Style {
@@ -431,6 +493,7 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with light gray foreground color
     #[must_use]
     #[profiled]
     pub fn light_gray() -> Style {
@@ -440,6 +503,10 @@ impl Color {
         }
     }
 
+    /// Creates a new Style with the specified color index
+    ///
+    /// # Arguments
+    /// * `index` - Color index (0-15 for basic colors, 16-255 for extended colors)
     #[must_use]
     #[profiled]
     pub fn fixed(index: u8) -> Style {
@@ -556,40 +623,69 @@ impl Default for TermBgLuma {
 }
 
 // For backward compatibility
+/// Deprecated alias for `Role` - use `Role` directly instead
+#[deprecated = "Use `Role` directly instead of `Level`"]
 pub type Level = Role;
 
 impl Level {
+    /// Deprecated alias for `Role::Heading1`
     pub const HEAD: Self = Self::Heading1;
+    /// Deprecated alias for `Role::Heading2`
     pub const SUBH: Self = Self::Heading2;
     // pub const ERR: Self = Self::Error;
     // pub const WARN: Self = Self::Warning;
+    /// Deprecated alias for `Role::Info`
     pub const BRI: Self = Self::Info;
     // pub const EMPH: Self = Self::Emphasis;
     // pub const NORM: Self = Self::Normal;
+    /// Deprecated alias for `Role::Hint`
     pub const GHOS: Self = Self::Hint;
     // pub const DBUG: Self = Self::Debug;
 }
 
+/// Type alias for `Role` - provides shorter naming for role constants
 pub type Lvl = Role;
 
 impl Lvl {
+    /// Short alias for `Role::Heading1`
     pub const HD1: Self = Self::Heading1;
+    /// Short alias for `Role::Heading2`
     pub const HD2: Self = Self::Heading2;
+    /// Short alias for `Role::Heading3`
     pub const HD3: Self = Self::Heading3;
+    /// Short alias for `Role::Error`
     pub const ERR: Self = Self::Error;
+    /// Short alias for `Role::Warning`
     pub const WARN: Self = Self::Warning;
+    /// Short alias for `Role::Success`
     pub const SUCC: Self = Self::Success;
+    /// Short alias for `Role::Info`
     pub const INFO: Self = Self::Info;
+    /// Short alias for `Role::Emphasis`
     pub const EMPH: Self = Self::Emphasis;
+    /// Short alias for `Role::Code`
     pub const CODE: Self = Self::Code;
+    /// Short alias for `Role::Normal`
     pub const NORM: Self = Self::Normal;
+    /// Short alias for `Role::Subtle`
     pub const SUBT: Self = Self::Subtle;
+    /// Short alias for `Role::Hint`
     pub const HINT: Self = Self::Hint;
+    /// Short alias for `Role::Debug`
     pub const DBUG: Self = Self::Debug;
+    /// Short alias for `Role::Trace`
     pub const TRCE: Self = Self::Trace;
 }
 
 impl Role {
+    /// Returns the color index for this role from the current theme
+    ///
+    /// Gets the style for this role from the currently loaded theme and returns
+    /// the color index from its foreground color. If no foreground color is set,
+    /// returns 7 (white) as a fallback.
+    ///
+    /// # Returns
+    /// The color palette index (0-255) for this role's foreground color
     #[must_use]
     #[profiled]
     pub fn color_index(&self) -> u8 {
@@ -608,14 +704,49 @@ impl From<&Role> for u8 {
 
 #[derive(Clone, Debug)]
 #[non_exhaustive]
+/// Strategies for initializing terminal color attributes and theme selection
+///
+/// This enum defines different approaches for determining the appropriate color support
+/// and theme based on terminal capabilities, configuration, or defaults.
 pub enum ColorInitStrategy {
+    /// Use explicitly configured color support, background luminance, and optional background RGB
+    ///
+    /// Parameters:
+    /// - `ColorSupport`: The configured color support level
+    /// - `TermBgLuma`: The configured background luminance (light/dark)
+    /// - `Option<(u8, u8, u8)>`: Optional RGB values for the background color
     Configure(ColorSupport, TermBgLuma, Option<(u8, u8, u8)>),
+    /// Use safe default values without detection or configuration
+    ///
+    /// Falls back to basic color support with dark background theme
     Default,
     // #[cfg(feature = "color_detect")]
+    /// Automatically detect terminal capabilities and match appropriate theme
+    ///
+    /// Uses terminal detection to determine color support and background luminance,
+    /// then selects the best matching theme
     Match,
 }
 
 impl ColorInitStrategy {
+    /// Determines the appropriate color initialization strategy based on available features and configuration.
+    ///
+    /// This method evaluates the current environment and available features to select the most
+    /// appropriate strategy for initializing terminal color attributes:
+    ///
+    /// - **With `color_detect` feature**: Uses auto-detection unless in test environment
+    /// - **With `config` feature only**: Uses configuration values or falls back to defaults
+    /// - **Neither feature**: Always uses safe defaults
+    ///
+    /// # Returns
+    /// A static reference to the determined `ColorInitStrategy`
+    ///
+    /// # Behavior
+    /// - In test environments (`TEST_ENV` set): Always returns `Default` strategy
+    /// - On Windows with `color_detect`: Uses `Configure` strategy with detected values
+    /// - Other platforms with `color_detect`: Uses `Match` strategy for auto-detection
+    /// - With config only: Uses `Configure` or `Match` based on configuration completeness
+    /// - No features: Uses `Default` strategy
     #[must_use]
     #[profiled]
     pub fn determine() -> &'static Self {
@@ -688,20 +819,30 @@ fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
 }
 
 #[derive(Debug, Display)]
+/// Indicates how terminal attributes were initialized
 pub enum HowInitialized {
+    /// Attributes were explicitly configured by the user
     Configured,
+    /// Attributes were set to safe default values
     Defaulted,
+    /// Attributes were automatically detected from the terminal
     Detected,
 }
 
 /// Manages terminal color attributes and styling based on terminal capabilities and theme
 #[derive(Debug)]
 pub struct TermAttributes {
+    /// Indicates how the terminal attributes were initialized (configured, defaulted, or detected)
     pub how_initialized: HowInitialized,
+    /// The level of color support available in the terminal
     pub color_support: ColorSupport,
+    /// The terminal background color as a hex string (e.g., "#1e1e1e")
     pub term_bg_hex: Option<String>,
+    /// The terminal background color as RGB values (red, green, blue)
     pub term_bg_rgb: Option<(u8, u8, u8)>,
+    /// The luminance (light/dark) of the terminal background
     pub term_bg_luma: TermBgLuma,
+    /// The currently loaded theme containing color palette and styling information
     pub theme: Theme,
 }
 
@@ -912,32 +1053,6 @@ impl TermAttributes {
         INSTANCE.get().unwrap()
     }
 
-    // /// Gets the global `TermAttributes` instance, panicking if it hasn't been initialized
-    // ///
-    // /// # Panics
-    // ///
-    // /// This function will panic if `initialize` hasn't been called first
-    // pub fn get() -> &'static Self {
-    //     INSTANCE
-    //         .get()
-    //         .expect("TermAttributes not initialized. Call get_or_init()")
-    // }
-
-    // #[must_use]
-    // pub fn get_theme(&self) -> TermBgLuma {
-    //     if self.theme != TermBgLuma::Undetermined {
-    //         return self.theme.clone();
-    //     }
-
-    //     #[cfg(feature = "color_detect")]
-    //     {
-    //         terminal::detect_theme().clone()
-    //     }
-
-    //     #[cfg(not(feature = "color_detect"))]
-    //     TermBgLuma::Dark
-    // }
-
     /// Returns the appropriate style for the given message level
     ///
     /// The style is determined by the current color support level and theme.
@@ -956,35 +1071,8 @@ impl TermAttributes {
     #[deprecated = "Use `Style::for_role`"]
     #[allow(unused_variables)]
     #[profiled]
-    pub fn style_for_level(&self, level: Level) -> Style {
+    pub fn style_for_level(&self, level: Role) -> Style {
         Style::for_role(level)
-
-        // // Convert Level to Role
-        // let role = Role::from(level);
-
-        // // Validate theme against terminal capabilities
-        // match self
-        //     .theme
-        //     .validate(&self.color_support, &self.theme.term_bg_luma)
-        // {
-        //     Ok(()) => {
-        //         let style = if self.color_support == ColorSupport::None {
-        //             Style::default()
-        //         } else {
-        //             self.theme.style_for(role)
-        //         };
-        //         if style == Style::default() {
-        //             #[cfg(debug_assertions)]
-        //             debug_log!("No style defined for role {:?}", role);
-        //         }
-        //         style
-        //     }
-        //     Err(e) => {
-        //         #[cfg(debug_assertions)]
-        //         debug_log!("Theme validation failed: {:?}", e);
-        //         Style::default()
-        //     }
-        // }
     }
 
     /// Updates the current theme to the specified built-in theme.
@@ -1007,77 +1095,19 @@ impl TermAttributes {
         Ok(self)
     }
 
-    // If you need to override color support
+    /// Creates a new instance with the specified color support level
+    ///
+    /// # Arguments
+    /// * `support` - The color support level to set
+    ///
+    /// # Returns
+    /// A new `TermAttributes` instance with the updated color support
     #[must_use]
     pub const fn with_color_support(mut self, support: ColorSupport) -> Self {
         self.color_support = support;
         self
     }
 }
-
-// /// Returns the style for basic (16-color) light theme
-// #[must_use]
-// pub fn basic_light_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::red().bold(),
-//         Level::Warning => Color::magenta().bold(),
-//         Level::Heading => Color::blue().bold(),
-//         Level::Subheading => Color::cyan().bold(),
-//         Level::Emphasis => Color::green().bold(),
-//         Level::Bright => Color::green(),
-//         Level::Normal => Color::dark_gray(),
-//         Level::Debug => Color::cyan(),
-//         Level::Ghost => Color::cyan().italic(),
-//     }
-// }
-
-// /// Returns the style for basic (16-color) dark theme
-// #[must_use]
-// pub fn basic_dark_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::red().bold(),
-//         Level::Warning => Color::yellow().bold(),
-//         Level::Heading => Color::green().bold(),
-//         Level::Subheading => Color::blue().bold(),
-//         Level::Emphasis => Color::cyan().bold(),
-//         Level::Bright => Color::light_yellow(),
-//         Level::Normal => Color::white(),
-//         Level::Debug => Color::light_cyan(),
-//         Level::Ghost => Color::light_gray().italic(),
-//     }
-// }
-
-// /// Returns the style for full (256-color) light theme
-// #[must_use]
-// pub fn full_light_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::fixed(160).bold(),   // GuardsmanRed
-//         Level::Warning => Color::fixed(164).bold(), // DarkPurplePizzazz
-//         Level::Heading => Color::fixed(19).bold(),  // MidnightBlue
-//         Level::Subheading => Color::fixed(26).bold(), // ScienceBlue
-//         Level::Emphasis => Color::fixed(167).bold(), // RomanOrange
-//         Level::Bright => Color::fixed(42).bold(),   // CaribbeanGreen
-//         Level::Normal => Color::fixed(16),          // Black
-//         Level::Debug => Color::fixed(32),           // LochmaraBlue
-//         Level::Ghost => Color::fixed(232).italic(), // DarkCodGray
-//     }
-// }
-
-// /// Returns the style for full (256-color) dark theme
-// #[must_use]
-// pub fn full_dark_style(level: Level) -> Style {
-//     match level {
-//         Level::Error => Color::fixed(1).bold(),      // UserRed
-//         Level::Warning => Color::fixed(171).bold(),  // LighterHeliotrope
-//         Level::Heading => Color::fixed(33).bold(),   // AzureRadiance
-//         Level::Subheading => Color::fixed(44),       // RobinEggBlue
-//         Level::Emphasis => Color::fixed(173).bold(), // Copperfield
-//         Level::Bright => Color::fixed(118).italic(), // ChartreuseGreen
-//         Level::Normal => Color::fixed(231),          // White
-//         Level::Debug => Color::fixed(37),            // BondiBlue
-//         Level::Ghost => Color::fixed(251).italic(),  // Silver
-//     }
-// }
 
 #[must_use]
 #[profiled]
@@ -1129,24 +1159,12 @@ pub enum Role {
     Trace,
 }
 
-// impl From<Level> for Role {
-//     fn from(level: Level) -> Self {
-//         profile_method!("Role::from");
-//         match level {
-//             Level::Error => Self::Error,
-//             Level::Warning => Self::Warning,
-//             Level::Heading => Self::Heading1,
-//             Level::Subheading => Self::Heading2,
-//             Level::Emphasis => Self::Emphasis,
-//             Level::Bright => Self::Info,   // Highlighting important info
-//             Level::Normal => Self::Normal, // Default display style
-//             Level::Debug => Self::Debug,
-//             Level::Ghost => Self::Hint,
-//         }
-//     }
-// }
-
 #[derive(Clone, Debug, Deserialize)]
+/// Configuration structure for theme palette colors and styles
+///
+/// This structure defines the color and style configuration for all message roles
+/// used in the theme system. Each field corresponds to a specific role and contains
+/// both color information and text styling attributes.
 pub struct PaletteConfig {
     heading1: StyleConfig,
     heading2: StyleConfig,
@@ -1164,21 +1182,43 @@ pub struct PaletteConfig {
     trace: StyleConfig,
 }
 
-#[derive(Clone, Debug, Default, PaletteMethods)]
+/// Color palette containing predefined styles for all message roles
+///
+/// This structure holds the complete set of styling information for a theme,
+/// with each field corresponding to a specific role in the message hierarchy.
+/// The styles define both color and text formatting attributes for consistent
+/// visual presentation across different message types.
+#[derive(Clone, Debug, Default)]
+#[allow(missing_docs)]
+#[derive(PaletteMethods)]
 pub struct Palette {
+    /// Style for primary headings (highest prominence)
     pub heading1: Style,
+    /// Style for secondary headings
     pub heading2: Style,
+    /// Style for tertiary headings
     pub heading3: Style,
+    /// Style for critical errors requiring immediate attention
     pub error: Style,
+    /// Style for important cautions or potential issues
     pub warning: Style,
+    /// Style for positive completion or status messages
     pub success: Style,
+    /// Style for general informational messages
     pub info: Style,
+    /// Style for text that needs to stand out
     pub emphasis: Style,
+    /// Style for code snippets or commands
     pub code: Style,
+    /// Style for standard text with default prominence
     pub normal: Style,
+    /// Style for de-emphasized but clearly visible text
     pub subtle: Style,
+    /// Style for completion suggestions or placeholder text
     pub hint: Style,
+    /// Style for development/diagnostic information
     pub debug: Style,
+    /// Style for detailed execution tracking
     pub trace: Style,
 }
 
@@ -1205,31 +1245,6 @@ impl Palette {
     }
 }
 
-// Make sure each test gets a fresh Palette
-// impl Default for Palette {
-//     fn default() -> Self {
-//         Self {
-//             heading1: Style::default(),
-//             heading2: Style::default(),
-//             heading3: Style::default(),
-//             error: Style::default(),
-//             warning: Style::default(),
-//             success: Style::default(),
-//             info: Style::default(),
-//             emphasis: Style::default(),
-//             code: Style::default(),
-//             normal: Style::default(),
-//             subtle: Style::default(),
-//             hint: Style::default(),
-//             debug: Style::default(),
-//             trace: Style::default(),
-//         }
-//     }
-// }
-
-// ThemeDefinition & ThemeSignature and their impls
-// generate_theme_types! {}
-
 // ThemeIndex, THEME_INDEX and BG_LOOKUP
 preload_themes! {}
 
@@ -1239,8 +1254,10 @@ preload_themes! {}
 pub struct ThemeDefinition {
     name: String,
     #[serde(skip)]
+    /// Path to the theme file (e.g., "themes/built_in/dracula.toml")
     pub filename: PathBuf, // e.g., "themes/built_in/dracula.toml"
     #[serde(skip)]
+    /// Whether this is a built-in theme or a custom theme
     pub is_builtin: bool, // true for built-in themes, false for custom    pub term_bg_luma: TermBgLuma,
     /// Light or dark background requirement
     pub term_bg_luma: String,
@@ -1279,15 +1296,43 @@ impl ThemeDefinition {
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
+/// Represents a complete theme configuration with color palette and styling information
+///
+/// A `Theme` encapsulates all the styling information needed to consistently format
+/// terminal output, including color palettes, text formatting attributes, and metadata
+/// about the theme's requirements and characteristics.
+///
+/// # Examples
+///
+/// ```
+/// use thag_rs::styling::{Theme, ColorSupport};
+///
+/// // Load a built-in theme
+/// let theme = Theme::get_builtin("dracula")?;
+///
+/// // Get styling for a specific role
+/// let error_style = theme.style_for(Role::Error);
+/// println!("{}", error_style.paint("This is an error message"));
+/// # Ok::<(), thag_rs::ThagError>(())
+/// ```
 pub struct Theme {
-    pub name: String,      // e.g., "Dracula"
-    pub filename: PathBuf, // e.g., "themes/built_in/dracula.toml"
-    pub is_builtin: bool,  // true for built-in themes, false for custom
+    /// The human-readable name of the theme (e.g., "Dracula", "GitHub Light")
+    pub name: String,
+    /// Path to the theme definition file (e.g., "themes/built_in/dracula.toml")
+    pub filename: PathBuf,
+    /// Whether this is a built-in theme (true) or a custom user theme (false)
+    pub is_builtin: bool,
+    /// The background luminance requirement (light or dark) for this theme
     pub term_bg_luma: TermBgLuma,
+    /// The minimum color support level required by this theme
     pub min_color_support: ColorSupport,
+    /// The complete color palette containing styles for all message roles
     pub palette: Palette,
+    /// Background color values as hex strings (e.g., ["#282a36", "#44475a"])
     pub backgrounds: Vec<String>,
-    pub bg_rgbs: Vec<(u8, u8, u8)>, // Official first
+    /// Background color values as RGB tuples, with the primary/official color first
+    pub bg_rgbs: Vec<(u8, u8, u8)>,
+    /// A human-readable description of the theme's characteristics and origin
     pub description: String,
 }
 
@@ -2520,6 +2565,21 @@ fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
 }
 
 #[macro_export]
+/// Conditionally logs a message with styling based on role if logging is enabled.
+///
+/// This macro checks if logging is enabled via the `LOGGING_ENABLED` atomic flag,
+/// and if so, applies the appropriate style for the given role and prints the formatted message.
+///
+/// # Arguments
+/// * `$role` - The `Role` that determines the styling to apply
+/// * `$($arg:tt)*` - Format string and arguments, same as `println!` macro
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::Role;
+/// clog!(Role::Error, "Something went wrong: {}", error_msg);
+/// clog!(Role::Info, "Processing file: {}", filename);
+/// ```
 macro_rules! clog {
     ($role:expr, $($arg:tt)*) => {{
         if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
@@ -2530,60 +2590,186 @@ macro_rules! clog {
 }
 
 #[macro_export]
+/// Logs an error message with error styling if logging is enabled.
+///
+/// This is a convenience macro that applies error role styling to the message.
+/// It's equivalent to calling `clog!(Role::Error, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_error!("Failed to process file: {}", filename);
+/// clog_error!("Invalid input: {}", error_details);
+/// ```
+#[macro_export]
 macro_rules! clog_error {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Error, $($arg)*) };
 }
 
 #[macro_export]
+/// Logs a warning message with warning styling if logging is enabled.
+///
+/// This is a convenience macro that applies warning role styling to the message.
+/// It's equivalent to calling `clog!(Role::Warning, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_warning!("This operation might be slow: {}", operation_name);
+/// clog_warning!("Deprecated feature used: {}", feature_name);
+/// ```
 macro_rules! clog_warning {
-        ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Warning, $($arg)*) };
-    }
+    ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Warning, $($arg)*) };
+}
 
+/// Logs a heading1 message with heading1 styling if logging is enabled.
+///
+/// This is a convenience macro that applies heading1 role styling to the message.
+/// It's equivalent to calling `clog!(Role::Heading1, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_heading1!("Main Section: {}", section_name);
+/// clog_heading1!("Processing started");
+/// ```
 #[macro_export]
 macro_rules! clog_heading1 {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Heading1, $($arg)*) };
 }
 
+/// Logs a heading2 message with heading2 styling if logging is enabled.
+///
+/// This is a convenience macro that applies heading2 role styling to the message.
+/// It's equivalent to calling `clog!(Role::Heading2, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_heading2!("Subsection: {}", subsection_name);
+/// clog_heading2!("Configuration loaded");
+/// ```
 #[macro_export]
 macro_rules! clog_heading2 {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Heading2, $($arg)*) };
 }
 
+/// Logs a heading3 message with heading3 styling if logging is enabled.
+///
+/// This is a convenience macro that applies heading3 role styling to the message.
+/// It's equivalent to calling `clog!(Role::Heading3, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_heading3!("Details: {}", detail_name);
+/// clog_heading3!("Step completed");
+/// ```
 #[macro_export]
-macro_rules! heading3 {
+macro_rules! clog_heading3 {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Heading3, $($arg)*) };
 }
 
+/// Logs an emphasis message with emphasis styling if logging is enabled.
+///
+/// This is a convenience macro that applies emphasis role styling to the message.
+/// It's equivalent to calling `clog!(Role::Emphasis, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_emphasis!("Important note: {}", note);
+/// clog_emphasis!("This requires attention");
+/// ```
 #[macro_export]
 macro_rules! clog_emphasis {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Emphasis, $($arg)*) };
 }
-
+/// Logs a success message with success styling if logging is enabled.
+///
+/// This is a convenience macro that applies success role styling to the message.
+/// It's equivalent to calling `clog!(Role::Success, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_success!("Operation completed successfully: {}", operation_name);
+/// clog_success!("File saved");
+/// ```
 #[macro_export]
 macro_rules! clog_success {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Success, $($arg)*) };
 }
 
+/// Logs an info message with info styling if logging is enabled.
+///
+/// This is a convenience macro that applies info role styling to the message.
+/// It's equivalent to calling `clog!(Role::Info, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_info!("Processing file: {}", filename);
+/// clog_info!("Configuration loaded");
+/// ```
 #[macro_export]
 macro_rules! clog_info {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Info, $($arg)*) };
 }
 
+/// Logs a normal message with normal styling if logging is enabled.
+///
+/// This is a convenience macro that applies normal role styling to the message.
+/// It's equivalent to calling `clog!(Role::Normal, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_normal!("Standard message: {}", content);
+/// clog_normal!("Regular output");
+/// ```
 #[macro_export]
 macro_rules! clog_normal {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Normal, $($arg)*) };
 }
 
+/// Logs a debug message with debug styling if logging is enabled.
+///
+/// This is a convenience macro that applies debug role styling to the message.
+/// It's equivalent to calling `clog!(Role::Debug, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_debug!("Debug info: {}", debug_data);
+/// clog_debug!("Variable value: {:?}", variable);
+/// ```
 #[macro_export]
 macro_rules! clog_debug {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Debug, $($arg)*) };
 }
 
+/// Logs a subtle message with subtle styling if logging is enabled.
+///
+/// This is a convenience macro that applies subtle role styling to the message.
+/// It's equivalent to calling `clog!(Role::Subtle, ...)`.
+///
+/// # Examples
+/// ```
+/// clog_subtle!("Background process: {}", process_name);
+/// clog_subtle!("Minor detail");
+/// ```
 #[macro_export]
 macro_rules! clog_subtle {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Subtle, $($arg)*) };
 }
 
+/// Conditionally logs a message with verbosity control and styling.
+///
+/// This macro checks if logging is enabled and the verbosity level meets the threshold,
+/// then applies appropriate styling based on the role and logs the message.
+///
+/// # Arguments
+/// * `$verbosity` - The verbosity level required for this message
+/// * `$level` - The role that determines the styling to apply
+/// * `$($arg:tt)*` - Format string and arguments, same as `println!` macro
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// use thag_rs::styling::Role;
+/// cvlog!(Verbosity::VV, Role::Info, "Detailed info: {}", details);
+/// ```
 #[macro_export]
 macro_rules! cvlog {
     ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
@@ -2610,46 +2796,136 @@ macro_rules! cvlog {
     }};
 }
 
+/// Logs an error message with verbosity control and error styling.
+///
+/// This is a convenience macro that applies error role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Error, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_error!(Verbosity::V, "Critical error: {}", error_msg);
+/// ```
 #[macro_export]
 macro_rules! cvlog_error {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Error, $verbosity, $($arg)*) };
 }
 
+/// Logs a warning message with verbosity control and warning styling.
+///
+/// This is a convenience macro that applies warning role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Warning, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_warning!(Verbosity::V, "Potential issue: {}", warning_msg);
+/// ```
 #[macro_export]
 macro_rules! cvlog_warning {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Warning, $verbosity, $($arg)*) };
 }
 
+/// Logs a heading message with verbosity control and heading1 styling.
+///
+/// This is a convenience macro that applies heading1 role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Heading1, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_heading!(Verbosity::V, "Main Section: {}", section_name);
+/// ```
 #[macro_export]
 macro_rules! cvlog_heading {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Heading1, $verbosity, $($arg)*) };
 }
 
+/// Logs a subheading message with verbosity control and heading2 styling.
+///
+/// This is a convenience macro that applies heading2 role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Heading2, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_subheading!(Verbosity::V, "Subsection: {}", subsection_name);
+/// ```
 #[macro_export]
 macro_rules! cvlog_subheading {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Heading2, $verbosity, $($arg)*) };
 }
 
+/// Logs an emphasis message with verbosity control and emphasis styling.
+///
+/// This is a convenience macro that applies emphasis role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Emphasis, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_emphasis!(Verbosity::V, "Important: {}", important_msg);
+/// ```
 #[macro_export]
 macro_rules! cvlog_emphasis {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Emphasis, $verbosity, $($arg)*) };
 }
 
+/// Logs a bright/info message with verbosity control and info styling.
+///
+/// This is a convenience macro that applies info role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Info, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_bright!(Verbosity::V, "Highlighted info: {}", info_msg);
+/// ```
 #[macro_export]
 macro_rules! cvlog_bright {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Info, $verbosity, $($arg)*) };
 }
 
+/// Logs a normal message with verbosity control and normal styling.
+///
+/// This is a convenience macro that applies normal role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Normal, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_normal!(Verbosity::V, "Standard message: {}", msg);
+/// ```
 #[macro_export]
 macro_rules! cvlog_normal {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Normal, $verbosity, $($arg)*) };
 }
 
+/// Logs a debug message with verbosity control and debug styling.
+///
+/// This is a convenience macro that applies debug role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Debug, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_debug!(Verbosity::VV, "Debug info: {}", debug_data);
+/// ```
 #[macro_export]
 macro_rules! cvlog_debug {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Debug, $verbosity, $($arg)*) };
 }
 
+/// Logs a ghost/hint message with verbosity control and hint styling.
+///
+/// This is a convenience macro that applies hint role styling to the message
+/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Hint, ...)`.
+///
+/// # Examples
+/// ```
+/// use thag_rs::logging::Verbosity;
+/// cvlog_ghost!(Verbosity::VVV, "Subtle hint: {}", hint_msg);
+/// ```
 #[macro_export]
 macro_rules! cvlog_ghost {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Hint, $verbosity, $($arg)*) };

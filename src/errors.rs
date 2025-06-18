@@ -29,43 +29,76 @@ use serde_merge::error::Error as SerdeMergeError;
 #[cfg(feature = "syn")]
 use syn::Error as SynError;
 
+/// Result type alias for Thag operations that may fail with a `ThagError`.
 pub type ThagResult<T> = Result<T, ThagError>;
 
 #[derive(Debug)]
+/// Error type for all Thag operations.
+///
+/// This enum encompasses all possible error conditions that can occur
+/// during Thag's execution, including I/O errors, parsing errors,
+/// configuration errors, and errors from external dependencies.
 pub enum ThagError {
     #[cfg(feature = "bitflags")]
+    /// Error parsing bitflags values
     BitFlagsParse(BitFlagsParseError), // For bitflags parse error
+    /// User cancelled the operation
     Cancelled, // For user electing to cancel
     #[cfg(feature = "clap")]
+    /// Error from clap command-line parsing
     ClapError(ClapError), // For clap errors
+    /// Error during Cargo build or program execution
     Command(&'static str), // For errors during Cargo build or program execution
+    /// Boxed dynamic error from third-party libraries
     Dyn(Box<dyn Error + Send + Sync + 'static>), // For boxed dynamic errors from 3rd parties
+    /// Simple error from a string message
     FromStr(Cow<'static, str>), // For simple errors from a string
+    /// Error converting from UTF-8 bytes
     FromUtf8(FromUtf8Error), // For simple errors from a utf8 array
+    /// I/O operation error
     Io(std::io::Error), // For I/O errors
+    /// Mutex guard lock error
     LockMutexGuard(&'static str), // For lock errors with MutexGuard
+    /// Logic error in program flow
     Logic(&'static str), // For logic errors
+    /// Error unwrapping None from Option
     NoneOption(String), // For unwrapping Options
+    /// Error converting OsString to valid UTF-8
     OsString(std::ffi::OsString), // For unconvertible OsStrings
+    /// Generic parsing error
     Parse,
+    /// Integer parsing error
     ParseInt(ParseIntError),
+    /// Profiling system error
     Profiling(String),
     #[cfg(feature = "reedline")]
+    /// Reedline terminal interaction error
     Reedline(ReedlineError), // For reedline errors
     #[cfg(feature = "serde_merge")]
+    /// Serde merge operation error
     SerdeMerge(SerdeMergeError), // For serde_merge errors
+    /// Strum enum parsing error
     StrumParse(StrumParseError), // For strum parse enum
     #[cfg(feature = "syn")]
+    /// Syn syntax parsing error
     Syn(SynError), // For syn errors
     #[cfg(feature = "color_detect")]
+    /// Terminal background detection error
     Termbg(termbg::Error), // For termbg errors
-    Theme(ThemeError),           // For thag_rs::styling theme errors
-    TomlDe(TomlDeError),         // For TOML deserialization errors
-    TomlSer(TomlSerError),       // For TOML serialization errors
+    /// Theme-related error
+    Theme(ThemeError), // For thag_rs::styling theme errors
+    /// TOML deserialization error
+    TomlDe(TomlDeError), // For TOML deserialization errors
+    /// TOML serialization error
+    TomlSer(TomlSerError), // For TOML serialization errors
     #[cfg(feature = "cargo_toml")]
+    /// Cargo.toml parsing error
     Toml(CargoTomlError), // For cargo_toml errors
-    UnsupportedTerm(String),     // For terminal interrogation
-    Validation(String),          // For config.toml and similar validation
+    /// Unsupported terminal type error
+    UnsupportedTerm(String), // For terminal interrogation
+    /// Configuration validation error
+    Validation(String), // For config.toml and similar validation
+    /// Environment variable error
     VarError(std::env::VarError), // For std::env::var errors
 }
 
@@ -349,25 +382,47 @@ impl Error for ThagError {
 }
 
 #[derive(Debug)]
+/// Error type for theme-related operations.
+///
+/// This enum encompasses all possible error conditions that can occur
+/// during theme loading, validation, and application, including color
+/// support mismatches, invalid configurations, and terminal compatibility issues.
 pub enum ThemeError {
+    /// Failed to detect terminal background color
     BackgroundDetectionFailed,
+    /// Color support mismatch between theme requirements and terminal capabilities
     ColorSupportMismatch {
+        /// The color support level required by the theme
         required: ColorSupport,
+        /// The color support level available in the terminal
         available: ColorSupport,
     },
+    /// Attempted to use a dark theme with a light terminal background
     DarkThemeLightTerm,
+    /// Terminal does not support sufficient colors for the requested operation
     InsufficientColorSupport,
+    /// Invalid ANSI escape code format
     InvalidAnsiCode(String),
+    /// Invalid color support specification
     InvalidColorSupport(String),
+    /// Invalid color value format or specification
     InvalidColorValue(String),
+    /// Invalid style attribute specification
     InvalidStyle(String),
+    /// Invalid terminal background luminance value
     InvalidTermBgLuma(String),
+    /// Attempted to use a light theme with a dark terminal background
     LightThemeDarkTerm,
+    /// No valid background color found for the specified theme
     NoValidBackground(String),
+    /// Terminal background luminance mismatch with theme requirements
     TermBgLumaMismatch {
+        /// The background luminance required by the theme
         theme: TermBgLuma,
+        /// The actual background luminance of the terminal
         terminal: TermBgLuma,
     },
+    /// Unknown or unrecognized theme name
     UnknownTheme(String),
 }
 

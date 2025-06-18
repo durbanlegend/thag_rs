@@ -21,11 +21,24 @@ fn reset_terminal_state() {
 }
 
 #[allow(clippy::module_name_repetitions)]
+/// Guards the terminal state during operations that may affect raw mode
+///
+/// This struct preserves the raw mode status of the terminal and restores it
+/// when dropped, ensuring that terminal detection operations don't leave the
+/// terminal in an unexpected state.
 pub struct TerminalStateGuard {
+    /// The raw mode status to restore when the guard is dropped
     pub raw_mode: bool,
 }
 
 impl TerminalStateGuard {
+    /// Creates a new terminal state guard with the specified raw mode status
+    ///
+    /// The guard will restore the terminal to this raw mode status when dropped.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw_mode` - The raw mode status to restore when the guard is dropped
     #[must_use]
     pub const fn new(raw_mode: bool) -> Self {
         Self { raw_mode }
@@ -163,6 +176,28 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
 }
 
 #[must_use]
+/// Determines if a color is light based on perceived brightness
+///
+/// Uses the standard perceived brightness formula to calculate luminance
+/// from RGB values and determines if the color appears light or dark.
+///
+/// # Arguments
+///
+/// * `(r, g, b)` - RGB color values as a tuple of u8 values
+///
+/// # Returns
+///
+/// Returns `true` if the color is perceived as light (brightness > 0.5),
+/// `false` otherwise.
+///
+/// # Examples
+///
+/// ```
+/// use thag_rs::terminal::is_light_color;
+///
+/// assert!(is_light_color((255, 255, 255))); // white is light
+/// assert!(!is_light_color((0, 0, 0)));      // black is dark
+/// ```
 #[profiled]
 pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
     // Using perceived brightness formula

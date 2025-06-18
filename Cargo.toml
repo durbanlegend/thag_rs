@@ -39,7 +39,7 @@ chrono = "0.4.39"
 clap = { version = "4.5", features = ["cargo", "derive"], optional = true }
 crossterm = { version = "0.29", features = ["use-dev-tty"], optional = true }
 dirs = "6.0"
-document-features = "0.2.10"
+document-features = { version = "0.2", optional = true }
 documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.8", optional = true }
@@ -217,28 +217,31 @@ required-features = ["tools"]
 # required-features = ["tools"]
 
 [features]
-# Core and Logging Features
+## Core and Logging Features
 core = ["error_handling", "log_impl"] # Foundation for all features
 error_handling = []
 log_impl = []                         # Requires either simplelog or env_logger
 
-# Logging implementations (mutually exclusive)
+## `simplelog` crate
 simplelog = ["dep:simplelog", "log_impl"]
+
+## `env_logger` crate (alternative to `simplelog`)
 env_logger = ["dep:env_logger", "log_impl"]
 
-# AST and Parsing
+## AST and Parsing
 ast = [
     "core",  # Explicit dependency on core for logging
     "quote",
     "syn",
 ]
 
-# Configuration and Color Support
+## Configuration
 config = ["core", "edit", "mockall", "toml_edit"]
 
+## Terminal color support
 color_detect = ["config", "crossterm", "scopeguard", "supports-color", "termbg"]
 
-# Build and Analysis
+## Build and Analysis
 build = [
     "ast",               # For syntax parsing
     "bitflags",
@@ -252,6 +255,7 @@ build = [
     "side-by-side-diff",
 ]
 
+## TUI editing
 tui = [
     "build",                # Full build capabilities
     "ratatui",
@@ -261,14 +265,17 @@ tui = [
     "thag_proc_macros/tui",
 ] # UI Features
 
+## REPL capability
 repl = [
     "tui",          # Includes all TUI features
     "nu-ansi-term",
     "reedline",
 ]
 
+## All features
 full = ["color_detect", "repl"] # Simplified as repl includes everything
 
+## Tools feature - includes all dependencies needed by tools
 tools = [
     "dep:anyhow",
     "dep:atty",
@@ -288,12 +295,12 @@ tools = [
     "dep:url",
     "dep:warp",
     # "dep:dhat",
-] # Tools feature - includes all dependencies needed by tools
+]
 
-# Default Configuration
+## Default Configuration
 default = ["full", "simplelog"] # Full features with simplelog
 
-# Optional/Debug Features
+## Optional/Debug Features
 debug-logs = []
 nightly = []
 format_snippet = []
@@ -407,3 +414,7 @@ harness = false
 [workspace]
 members = ["thag_proc_macros", "thag_profiler"]
 exclude = ["bank/proc_macros", "demo/proc_macros"]
+
+[package.metadata.docs.rs]
+# features = ["document-features"]
+all-features = true

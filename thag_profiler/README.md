@@ -311,7 +311,7 @@ cargo run --features thag_profiler/time_profiling
 
 #### In scripts run with the `thag` script runner
 
-  This section applies only to the `thag_rs` script runner, aka `thag`(../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not already a prothagonist.
+  This section applies only to the `thag_rs` script runner, aka [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not already a prothagonist.
 
   Profiled scripts must have a `main` function to be annotated with `#[enable_profiling]`, in other words snippets are not supported.
 

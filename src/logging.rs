@@ -36,12 +36,14 @@ pub fn get_verbosity() -> Verbosity {
     LOGGER.lock().unwrap().verbosity
 }
 
+/// Enables debug logging by setting the global debug flag to true.
 #[allow(clippy::module_name_repetitions)]
 #[profiled]
 pub fn enable_debug_logging() {
     DEBUG_LOG_ENABLED.store(true, Ordering::SeqCst);
 }
 
+/// Returns whether debug logging is currently enabled.
 #[profiled]
 pub fn is_debug_logging_enabled() -> bool {
     DEBUG_LOG_ENABLED.load(Ordering::SeqCst)
@@ -81,20 +83,28 @@ pub enum Verbosity {
     Debug = 4,
 }
 
+/// Type alias for Verbosity to provide a shorter name for convenience
 pub type V = Verbosity;
 
 impl V {
+    /// Shorthand for `Verbosity::Quieter`
     pub const QQ: Self = Self::Quieter;
+    /// Shorthand for `Verbosity::Quiet`
     pub const Q: Self = Self::Quiet;
+    /// Shorthand for `Verbosity::Normal`
     pub const N: Self = Self::Normal;
+    /// Shorthand for `Verbosity::Verbose`
     pub const V: Self = Self::Verbose;
+    /// Shorthand for `Verbosity::Debug`
     pub const VV: Self = Self::Debug;
+    /// Shorthand for `Verbosity::Debug`
     pub const D: Self = Self::Debug;
 }
 
 /// Define the Logger.
 #[derive(Debug)]
 pub struct Logger {
+    /// The current verbosity level for this logger
     pub verbosity: Verbosity,
 }
 

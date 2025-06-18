@@ -1,4 +1,5 @@
-//! Introducing `thag_rs` (command `thag`) - a set of creative solutions to ease your Rust development experience. `thag` combines a script runner, expression evaluator, and REPL into one tool,
+//! Introducing `thag_rs` (command `thag`) - a set of creative solutions to enhance your Rust development experience.
+//! `thag` combines a script runner, expression evaluator, and REPL into one tool,
 //! with an array of smart features.
 //!
 //! `thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
@@ -49,7 +50,8 @@
 //!
 //! 💡 **Getting Started:**
 //!
-//! Jump into `thag`'s collection of 230+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Got a cool script to share? We'd love to see it (under MIT/Apache 2 license)!
+//! Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible.
+//! Contributions will be considered under MIT/Apache 2 license.
 //!
 //! Whether you're prototyping, learning, or building tools, `thag_rs` adapts to your style - from quick one-liners to full-featured programs.
 //!
@@ -57,8 +59,12 @@
 //!  `thag_rs` is a full-featured binary, but it is also a library so that you can call `thag_rs`
 //!  functionality from your code. When you do so, the script build time can be greatly reduced
 //!  by only specifying the features you need. See the demo script library for examples.
-#![doc = document_features::document_features!()]
-#![warn(clippy::pedantic)]
+//!
+#![cfg_attr(
+    feature = "document-features",
+    cfg_attr(doc, doc = ::document_features::document_features!())
+)]
+#![warn(clippy::pedantic, missing_docs)]
 //-----------------------------------------------------------------------------
 // Core functionality (core feature):
 // Required for basic script operations
@@ -117,6 +123,7 @@ pub mod terminal; // Colour support and theme detection
 #[cfg(feature = "tui")]
 pub mod file_dialog;
 #[cfg(feature = "tui")]
+/// TUI key handling and combinations
 pub mod keys;
 /// Paste-and-run and standard input handling
 #[cfg(feature = "tui")]
@@ -189,6 +196,7 @@ use std::path::PathBuf;
 use std::{env, sync::LazyLock};
 
 // Common constants and statics
+/// Built-in crates that are always available in Rust
 pub const BUILT_IN_CRATES: [&str; 7] = [
     "std",
     "core",
@@ -198,19 +206,29 @@ pub const BUILT_IN_CRATES: [&str; 7] = [
     "crate",
     "self",
 ];
+/// Subdirectory name for dynamic/temporary Rust files
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
+/// Length of decorative flower box borders for output formatting
 pub const FLOWER_BOX_LEN: usize = 70;
+/// Package name from Cargo.toml
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
+/// Default filename for REPL scripts
 pub const REPL_SCRIPT_NAME: &str = "repl_script.rs";
+/// Subdirectory name for REPL files
 pub const REPL_SUBDIR: &str = "rs_repl";
+/// Rust source file extension
 pub const RS_SUFFIX: &str = ".rs";
+/// Temporary directory name
 pub const TEMP_DIR_NAME: &str = "temp";
+/// Default filename for temporary scripts
 pub const TEMP_SCRIPT_NAME: &str = "temp.rs";
+/// Cargo manifest filename
 pub const TOML_NAME: &str = "Cargo.toml";
+/// Package version from Cargo.toml
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// System temporary directory path
 pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
-
 /// Copied from `crokey` under MIT licence.
 /// Copyright (c) 2022 Canop
 ///
@@ -222,13 +240,21 @@ pub mod __private {
 
     pub use crate::KeyCombination;
     use ratatui::crossterm::event::KeyModifiers;
+    /// No modifier keys pressed
     pub const MODS: KeyModifiers = KeyModifiers::NONE;
+    /// Control key modifier
     pub const MODS_CTRL: KeyModifiers = KeyModifiers::CONTROL;
+    /// Alt key modifier
     pub const MODS_ALT: KeyModifiers = KeyModifiers::ALT;
+    /// Shift key modifier
     pub const MODS_SHIFT: KeyModifiers = KeyModifiers::SHIFT;
+    /// Control and Alt key modifiers combined
     pub const MODS_CTRL_ALT: KeyModifiers = KeyModifiers::CONTROL.union(KeyModifiers::ALT);
+    /// Alt and Shift key modifiers combined
     pub const MODS_ALT_SHIFT: KeyModifiers = KeyModifiers::ALT.union(KeyModifiers::SHIFT);
+    /// Control and Shift key modifiers combined
     pub const MODS_CTRL_SHIFT: KeyModifiers = KeyModifiers::CONTROL.union(KeyModifiers::SHIFT);
+    /// Control, Alt, and Shift key modifiers combined
     pub const MODS_CTRL_ALT_SHIFT: KeyModifiers = KeyModifiers::CONTROL
         .union(KeyModifiers::ALT)
         .union(KeyModifiers::SHIFT);

@@ -51,13 +51,16 @@ pub(crate) static FILTER_WORDS: phf::Set<&'static str> = phf_set! {
 #[derive(Clone, Debug, Display)]
 // #[cfg(any(feature = "ast", feature = "build"))]
 pub enum Ast {
+    /// A complete Rust source file parsed as a syntax tree
     File(syn::File),
+    /// A Rust expression parsed as a syntax tree
     Expr(syn::Expr),
     // None,
 }
 
 // #[cfg(any(feature = "ast", feature = "build"))]
 impl Ast {
+    /// Returns `true` if the AST represents a complete file, `false` if it's an expression.
     #[must_use]
     #[profiled]
     pub const fn is_file(&self) -> bool {
@@ -69,7 +72,6 @@ impl Ast {
 }
 
 /// Required to use quote! macro to generate code to resolve expression.
-// #[cfg(any(feature = "ast", feature = "build"))]
 impl ToTokens for Ast {
     #[profiled]
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -81,8 +83,15 @@ impl ToTokens for Ast {
 }
 
 #[derive(Clone, Debug, Default)]
+/// Visitor struct for finding crate dependencies in Rust AST nodes.
+///
+/// This struct implements the `Visit` trait to traverse an abstract syntax tree
+/// and collect crate names that appear to be external dependencies, while also
+/// tracking names that should be excluded from the final dependency list.
 pub struct CratesFinder {
+    /// Vector of crate names found during AST traversal that may be dependencies.
     pub crates: Vec<String>,
+    /// Vector of names to exclude from the final dependency list (e.g., local modules, renamed imports).
     pub names_to_exclude: Vec<String>,
 }
 
@@ -101,7 +110,7 @@ impl<'a> Visit<'a> for CratesFinder {
                         }
                     }
                 }
-            },
+            }
             syn::Meta::List(meta_list) => {
                 // Handle paths in list-style attributes like #[crate::attr(args)]
                 if meta_list.path.segments.len() > 1 {
@@ -113,7 +122,7 @@ impl<'a> Visit<'a> for CratesFinder {
                         }
                     }
                 }
-            },
+            }
             syn::Meta::NameValue(meta_name_value) => {
                 // Handle paths in name-value attributes like #[crate::attr = value]
                 if meta_name_value.path.segments.len() > 1 {
@@ -127,11 +136,11 @@ impl<'a> Visit<'a> for CratesFinder {
                 }
             }
         }
-        
+
         // Continue normal traversal to catch any paths in the attribute's content
         syn::visit::visit_attribute(self, attr);
     }
-    
+
     #[profiled]
     fn visit_item_use(&mut self, node: &'a ItemUse) {
         // Handle simple case `use a as b;`
@@ -340,10 +349,19 @@ impl<'a> Visit<'a> for CratesFinder {
 }
 
 #[derive(Clone, Debug, Default)]
+/// Visitor struct for finding metadata information in Rust AST nodes.
+///
+/// This struct implements the `Visit` trait to traverse an abstract syntax tree
+/// and collect metadata such as extern crate declarations, module names, renamed
+/// imports, and the count of main functions.
 pub struct MetadataFinder {
+    /// Vector of extern crate names found during AST traversal.
     pub extern_crates: Vec<String>,
+    /// Vector of module names to exclude from the final dependency list.
     pub mods_to_exclude: Vec<String>,
+    /// Vector of renamed import names to exclude from the final dependency list.
     pub names_to_exclude: Vec<String>,
+    /// Count of main functions found during AST traversal.
     pub main_count: usize,
 }
 
@@ -472,6 +490,18 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
 }
 
 #[must_use]
+/// Finds crates referenced in the given syntax tree.
+///
+/// This function creates a `CratesFinder` visitor and uses it to traverse
+/// the provided AST to collect crate dependencies.
+///
+/// # Arguments
+///
+/// * `syntax_tree` - The AST to analyze for crate references
+///
+/// # Returns
+///
+/// A `CratesFinder` containing the collected crate names and exclusions
 #[profiled]
 pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
     let mut crates_finder = CratesFinder::default();
@@ -485,6 +515,19 @@ pub fn find_crates(syntax_tree: &Ast) -> CratesFinder {
 }
 
 #[must_use]
+/// Finds metadata information referenced in the given syntax tree.
+///
+/// This function creates a `MetadataFinder` visitor and uses it to traverse
+/// the provided AST to collect metadata such as extern crate declarations,
+/// module names, renamed imports, and the count of main functions.
+///
+/// # Arguments
+///
+/// * `syntax_tree` - The AST to analyze for metadata information
+///
+/// # Returns
+///
+/// A `MetadataFinder` containing the collected metadata information
 #[profiled]
 pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
     let mut metadata_finder = MetadataFinder::default();
@@ -497,6 +540,19 @@ pub fn find_metadata(syntax_tree: &Ast) -> MetadataFinder {
     metadata_finder
 }
 
+/// Determines whether a dependency name should be filtered out from the dependency list.
+///
+/// This function filters out dependency names that are:
+/// - Capitalized (likely type names rather than crate names)
+/// - Common Rust primitives, keywords, or standard library modules
+///
+/// # Arguments
+///
+/// * `name` - The dependency name to check
+///
+/// # Returns
+///
+/// `true` if the dependency should be filtered out, `false` otherwise
 #[must_use]
 #[profiled]
 pub fn should_filter_dependency(name: &str) -> bool {

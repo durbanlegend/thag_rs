@@ -225,6 +225,7 @@ impl Default for Dependencies {
 }
 
 impl Dependencies {
+    /// Filter features based on configuration rules and return filtered features with default_features flag
     #[must_use]
     #[profiled]
     pub fn filter_maximal_features(
@@ -333,7 +334,7 @@ impl Dependencies {
         (filtered.clone(), default_features)
     }
 
-    // Make should_include_feature use filter_features
+    /// Check if a specific feature should be included for a crate
     #[must_use]
     #[profiled]
     pub fn should_include_feature(&self, feature: &str, crate_name: &str) -> bool {
@@ -342,7 +343,7 @@ impl Dependencies {
             .contains(&feature.to_string())
     }
 
-    // New method for config features based on overrides
+    /// Apply configuration-based feature selection for a crate
     #[must_use]
     #[profiled]
     pub fn apply_config_features(
@@ -398,7 +399,7 @@ impl Dependencies {
         (config_features, default_features)
     }
 
-    // Method to get features based on inference level
+    /// Get features based on the specified dependency inference level
     #[must_use]
     #[profiled]
     pub fn get_features_for_inference_level(
@@ -422,6 +423,7 @@ impl Dependencies {
         }
     }
 
+    /// Validate the dependency configuration for consistency
     #[profiled]
     fn validate(&self) -> Result<(), String> {
         // Validate feature overrides
@@ -480,7 +482,6 @@ pub struct FeatureOverride {
 }
 
 /// Logging settings
-// #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Logging {
@@ -630,14 +631,19 @@ fn boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error>
 }
 
 #[automock]
+/// Trait for providing configuration context, allowing for different implementations
+/// in production versus testing environments.
 pub trait Context: Debug {
+    /// Returns the path where the configuration file should be located.
     fn get_config_path(&self) -> PathBuf;
+    /// Returns true if this is a real context (not a mock for testing).
     fn is_real(&self) -> bool;
 }
 
 /// A struct for use in normal execution, as opposed to use in testing.
 #[derive(Debug, Default)]
 pub struct RealContext {
+    /// Base directory for configuration files
     pub base_dir: PathBuf,
 }
 

@@ -23,8 +23,8 @@ pub fn disentangle(text_wall: &str) -> String {
     reassemble(text_wall.lines())
 }
 
-// Helper function to sort out the issues caused by Windows using the escape character as
-// the file separator.
+/// Helper function to sort out the issues caused by Windows using the escape character as
+/// the file separator.
 #[must_use]
 #[inline]
 #[cfg(target_os = "windows")]
@@ -33,8 +33,10 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.replace('\\', "/")
 }
 
+/// No-op function for non-Windows platforms.
 #[must_use]
 #[cfg(not(target_os = "windows"))]
+#[inline]
 #[profiled]
 pub fn escape_path_for_windows(path_str: &str) -> String {
     path_str.to_string()
@@ -120,6 +122,25 @@ macro_rules! regex {
 }
 
 #[macro_export]
+/// Lazy-static variable generator with struct-based interface.
+///
+/// Creates a struct that provides lazy initialization of a static value.
+/// The struct provides `get()` method to access the value and `init()` method
+/// to force initialization.
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_rs::static_lazy;
+///
+/// static_lazy!(MY_CONFIG: String = "default_config".to_string());
+///
+/// // Access the value
+/// let config = MY_CONFIG::get();
+///
+/// // Force initialization
+/// MY_CONFIG::init();
+/// ```
 macro_rules! static_lazy {
     ($name:ident: $type:ty = $init:expr) => {
         struct $name;

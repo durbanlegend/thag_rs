@@ -21,6 +21,18 @@ use crate::debug_timings;
 
 #[allow(clippy::missing_panics_doc)]
 #[must_use]
+/// Looks up a crate's latest stable version using cargo-lookup.
+///
+/// Attempts to find the crate by name, trying both the original name and a hyphenated
+/// version (replacing underscores with hyphens). Returns the crate name and version
+/// if found.
+///
+/// # Arguments
+/// * `dep_crate` - The name of the crate to look up
+///
+/// # Returns
+/// * `Some((name, version))` if the crate is found with a stable version
+/// * `None` if the crate is not found or has no stable versions
 #[profiled]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
     // Try both original and hyphenated versions
@@ -381,6 +393,16 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
     }
 }
 
+/// Lookup dependencies and add them to the manifest's dependency map.
+///
+/// This function takes a list of inferred dependency names from Rust source code
+/// and attempts to look up their versions using cargo lookup. Based on the
+/// inference level, it will add basic dependencies or include features.
+///
+/// # Arguments
+/// * `inference_level` - The level of dependency inference to perform
+/// * `rs_inferred_deps` - List of dependency names inferred from source code
+/// * `rs_dep_map` - Mutable reference to the dependency map to populate
 #[allow(clippy::missing_panics_doc)]
 #[profiled]
 pub fn lookup_deps(

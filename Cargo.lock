@@ -3816,6 +3816,7 @@ dependencies = [
  "chrono",
  "dashmap",
  "dirs",
+ "document-features",
  "inferno",
  "inline_colorization",
  "inquire",

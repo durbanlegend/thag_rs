@@ -102,6 +102,25 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
     // eprintln!("Done!");
 
     quote! {
+        /// Generated theme index and background lookup tables
+        ///
+        /// This macro generates the `THEME_INDEX` and `BG_LOOKUP` static data structures
+        /// that contain preloaded theme definitions and background color mappings.
+        ///
+        /// # Generated Structures
+        ///
+        /// ## `ThemeIndex`
+        /// A struct containing theme metadata and content:
+        /// - `content`: The raw TOML content of the theme
+        /// - `term_bg_luma`: Background luminance requirement
+        /// - `min_color_support`: Minimum color support level
+        /// - `bg_rgbs`: RGB values for theme backgrounds
+        ///
+        /// ## `THEME_INDEX`
+        /// A static HashMap mapping theme names to their `ThemeIndex` data
+        ///
+        /// ## `BG_LOOKUP`
+        /// A static HashMap mapping background color hex values to theme names
         #[derive(Debug)]
         pub struct ThemeIndex {
             pub name: &'static str,

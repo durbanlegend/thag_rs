@@ -67,8 +67,8 @@ pub fn palette_methods_impl(input: TokenStream) -> TokenStream {
                 })
             }
 
-            // New method to get mutable iterator over all styles
-             pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Style> {
+            /// New method to get mutable iterator over all styles
+            pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Style> {
                  vec![
                      #(#style_refs,)*
                  ].into_iter()

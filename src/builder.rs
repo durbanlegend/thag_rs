@@ -124,27 +124,47 @@ struct BuildPaths {
 #[derive(Clone, Debug, Default)]
 #[cfg(feature = "build")]
 pub struct BuildState {
+    /// The working directory path where the build is initiated
     #[allow(dead_code)]
     pub working_dir_path: PathBuf,
+    /// The source file name without the .rs extension
     pub source_stem: String,
+    /// The full source file name including the .rs extension
     pub source_name: String,
+    /// The directory path containing the source file
     #[allow(dead_code)]
     pub source_dir_path: PathBuf,
+    /// The full path to the source file
     pub source_path: PathBuf,
+    /// The path to the Cargo home directory
     pub cargo_home: PathBuf,
+    /// The path to the target directory for build artifacts
     pub target_dir_path: PathBuf,
+    /// The path to the compiled executable
     pub target_path: PathBuf,
+    /// The path to the generated Cargo.toml file
     pub cargo_toml_path: PathBuf,
+    /// The manifest extracted from the Rust source code
     pub rs_manifest: Option<Manifest>,
+    /// The final Cargo manifest to be used for building
     pub cargo_manifest: Option<Manifest>,
+    /// Flag indicating whether generation step must be performed
     pub must_gen: bool,
+    /// Flag indicating whether build step must be performed
     pub must_build: bool,
+    /// Flag indicating whether to build from original source without wrapping
     pub build_from_orig_source: bool,
+    /// The parsed abstract syntax tree of the source code
     pub ast: Option<Ast>,
+    /// Finder for extracting crate dependencies from the AST
     pub crates_finder: Option<ast::CratesFinder>,
+    /// Finder for extracting metadata from the AST
     pub metadata_finder: Option<ast::MetadataFinder>,
+    /// The level of dependency inference to apply
     pub infer: DependencyInference,
+    /// Optional feature flags to pass to Cargo
     pub features: Option<String>,
+    /// Command-line arguments to pass to the built program
     pub args: Vec<String>,
 }
 
@@ -456,12 +476,16 @@ pub enum ScriptState {
     Anonymous,
     /// Repl with script name.
     NamedEmpty {
+        /// The script name/path
         script: String,
+        /// The directory path containing the script
         script_dir_path: PathBuf,
     },
     /// Script name provided by user
     Named {
+        /// The script name/path
         script: String,
+        /// The directory path containing the script
         script_dir_path: PathBuf,
     },
 }

@@ -34,7 +34,7 @@ As of version 0.2, `thag` offers an easy-to use profiler that works consistently
 
 - Filtering of unwanted output from flamegraphs.
 
-Read about it here: [thag_profiling](thag_profiler/README.md)
+Read about it here: [thag_profiler](thag_profiler/README.md)
 
 
 Whether you're:

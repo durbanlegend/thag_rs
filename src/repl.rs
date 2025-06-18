@@ -51,7 +51,10 @@ impl From<&ColorInfo> for NuColor {
     }
 }
 
+/// The filename for the REPL history file.
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
+
+/// The default multiline indicator string used in the REPL prompt.
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 const EVENT_DESCS: &[[&str; 2]; 33] = &[
@@ -313,6 +316,7 @@ fn get_subhead_style() -> &'static Style {
     lazy_static_var!(Style, Style::for_role(Role::HD2))
 }
 
+/// Add menu keybindings to the provided keybindings configuration.
 #[profiled]
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     keybindings.add_binding(
@@ -952,6 +956,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     })
 }
 
+/// Display key bindings with their descriptions.
 #[profiled]
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
@@ -970,7 +975,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     println!();
 }
 
-// Helper function to convert KeyModifiers to string
+/// Helper function to convert KeyModifiers to string
 #[must_use]
 #[profiled]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
@@ -992,7 +997,7 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
     }
 }
 
-// Helper function to convert KeyCode to string
+/// Helper function to convert KeyCode to string
 #[must_use]
 #[profiled]
 pub fn format_key_code(key_code: KeyCode) -> String {
@@ -1027,7 +1032,7 @@ pub fn format_key_code(key_code: KeyCode) -> String {
     }
 }
 
-// Helper function to format ReedlineEvents other than Edit, and their doc comments
+/// Helper function to format ReedlineEvents other than Edit, and their doc comments
 /// # Panics
 /// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]

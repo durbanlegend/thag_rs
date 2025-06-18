@@ -1,7 +1,7 @@
 use std::error::Error;
 
 #[derive(Clone, Debug)]
-/// Error types that can occur during profile operations.
+/// Error types that can occur during profiling operations.
 ///
 /// This enum represents the various error conditions that can arise when
 /// working with profiles, including I/O errors, validation errors, and

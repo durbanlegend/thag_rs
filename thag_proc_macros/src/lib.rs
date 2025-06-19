@@ -395,6 +395,7 @@ pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 ///
 #[proc_macro_attribute]
+#[allow(unused_variables)]
 pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(feature = "time_profiling")]
     {
@@ -449,6 +450,7 @@ pub fn enable_profiling(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 ///
 #[proc_macro_attribute]
+#[allow(unused_variables)]
 pub fn profiled(attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(feature = "time_profiling")]
     {

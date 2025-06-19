@@ -138,6 +138,7 @@ impl Logger {
     }
 }
 
+/// Global logger instance protected by a mutex for thread-safe access
 pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger::new(V::N)));
 
 /// Set the logging verbosity for the current execution.

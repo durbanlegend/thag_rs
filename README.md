@@ -113,6 +113,38 @@ ___
 
 Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
+## Installation
+
+### Minimum Supported Rust Version
+The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.81.0.
+
+### Installation options
+
+#### Cargo install
+You can install `thag_rs` using `cargo install`:
+
+Full `thag` binary install with additional tools (recommended):
+
+```bash
+cargo install thag_rs --features tools
+```
+
+[The additional tools](src/bin/README.md)
+
+`thag` binary install without tools:
+
+```bash
+cargo install thag_rs
+```
+
+#### Downloading the starter kit (demo directory)
+As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
+
+Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
+
+As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
+Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose `Ctrl-d` to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
+
 ## Quick start: ways to run the `thag` command
 
 ### * With an expression argument:
@@ -400,27 +432,6 @@ at the start of the script, as you will see done in most of the demos. To help w
         let formatted = prettyplease::unparse(&syntax_tree);
         print!("{}", formatted);
     }
-
-## Installation
-
-### Minimum Supported Rust Version
-The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.81.0.
-
-### Installation options
-
-#### Cargo install
-You can install `thag_rs` using `cargo install`:
-
-```bash
-cargo install thag_rs
-```
-#### Downloading the starter kit (demo directory)
-As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
-
-Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
-
-As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
-Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose `Ctrl-d` to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 
 ## Usage
 Once installed, you can use the `thag` command from the command line. `thag` uses `clap` to process command-line arguments including `--help`.

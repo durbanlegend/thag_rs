@@ -148,7 +148,7 @@ pub use {
     shared::{
         debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, thousands,
     },
-    styling::{Color, ColorSupport, Level, Lvl, Role, Style, TermBgLuma},
+    styling::{Color, ColorSupport, Lvl, Role, Style, TermBgLuma},
 };
 
 pub use thag_profiler::*; // Re-export everything from profiler

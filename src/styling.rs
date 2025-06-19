@@ -10,7 +10,10 @@ use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, PaletteMethods};
-use thag_profiler::{enable_profiling, end, mem_tracking, profile, profiled};
+use thag_profiler::{enable_profiling, end, profile, profiled};
+
+#[cfg(feature = "profiling")]
+use thag_profiler::mem_tracking;
 
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg_rgb, is_light_color};
@@ -622,26 +625,26 @@ impl Default for TermBgLuma {
     }
 }
 
-// For backward compatibility
-/// Deprecated alias for `Role` - use `Role` directly instead
-#[deprecated = "Use `Role` directly instead of `Level`"]
-pub type Level = Role;
+// // For backward compatibility
+// /// Deprecated alias for `Role` - use `Role` directly instead
+// #[deprecated = "Use `Role` directly instead of `Level`"]
+// pub type Level = Role;
 
-impl Level {
-    /// Deprecated alias for `Role::Heading1`
-    pub const HEAD: Self = Self::Heading1;
-    /// Deprecated alias for `Role::Heading2`
-    pub const SUBH: Self = Self::Heading2;
-    // pub const ERR: Self = Self::Error;
-    // pub const WARN: Self = Self::Warning;
-    /// Deprecated alias for `Role::Info`
-    pub const BRI: Self = Self::Info;
-    // pub const EMPH: Self = Self::Emphasis;
-    // pub const NORM: Self = Self::Normal;
-    /// Deprecated alias for `Role::Hint`
-    pub const GHOS: Self = Self::Hint;
-    // pub const DBUG: Self = Self::Debug;
-}
+// impl Level {
+//     /// Deprecated alias for `Role::Heading1`
+//     pub const HEAD: Self = Self::Heading1;
+//     /// Deprecated alias for `Role::Heading2`
+//     pub const SUBH: Self = Self::Heading2;
+//     // pub const ERR: Self = Self::Error;
+//     // pub const WARN: Self = Self::Warning;
+//     /// Deprecated alias for `Role::Info`
+//     pub const BRI: Self = Self::Info;
+//     // pub const EMPH: Self = Self::Emphasis;
+//     // pub const NORM: Self = Self::Normal;
+//     /// Deprecated alias for `Role::Hint`
+//     pub const GHOS: Self = Self::Hint;
+//     // pub const DBUG: Self = Self::Debug;
+// }
 
 /// Type alias for `Role` - provides shorter naming for role constants
 pub type Lvl = Role;
@@ -2589,7 +2592,6 @@ macro_rules! clog {
     }};
 }
 
-#[macro_export]
 /// Logs an error message with error styling if logging is enabled.
 ///
 /// This is a convenience macro that applies error role styling to the message.

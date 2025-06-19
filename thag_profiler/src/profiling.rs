@@ -2,7 +2,7 @@
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use once_cell::sync::Lazy;
-use parking_lot::{Mutex, ReentrantMutex, RwLock};
+use parking_lot::{Mutex, RwLock};
 use std::{
     collections::{BTreeSet, HashMap},
     env,
@@ -29,14 +29,11 @@ use crate::{
 #[cfg(feature = "time_profiling")]
 use backtrace::{resolve_frame, trace};
 
-#[cfg(feature = "full_profiling")]
-use regex::Regex;
-
-#[cfg(feature = "full_profiling")]
-use std::sync::{atomic::AtomicUsize, Arc};
-
 #[cfg(feature = "time_profiling")]
 use crate::{file_stem_from_path_str, flush_debug_log, get_base_location, warn_once};
+
+#[cfg(feature = "time_profiling")]
+use parking_lot::ReentrantMutex;
 
 #[cfg(feature = "time_profiling")]
 use std::{
@@ -50,6 +47,12 @@ use std::{
     },
     time::SystemTime,
 };
+
+#[cfg(feature = "full_profiling")]
+use regex::Regex;
+
+#[cfg(feature = "full_profiling")]
+use std::sync::{atomic::AtomicUsize, Arc};
 
 // Single atomic for runtime profiling state
 #[cfg(feature = "time_profiling")]

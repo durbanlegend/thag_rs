@@ -75,6 +75,9 @@
 /// Core: Error handling
 #[cfg(feature = "core")]
 pub mod errors;
+/// Core: Lightweight help system for tools
+#[cfg(feature = "core")]
+pub mod help_system;
 /// Core: Basic logging
 #[cfg(feature = "core")]
 pub mod logging;

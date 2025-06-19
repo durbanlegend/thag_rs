@@ -3,6 +3,7 @@
 atty = "0.2.14"
 colored = "2.1.0"
 inquire = "0.7.5"
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 /// `thag` prompted front-end command to run `clippy` on scripts.
 ///
@@ -10,9 +11,11 @@ inquire = "0.7.5"
 /// script's generated project, and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 //# Categories: technique, thag_front_ends, tools
+//# Usage: thag_clippy [script_path] or thag_clippy (interactive mode)
 use colored::Colorize;
 use inquire::{Confirm, MultiSelect, Select};
 use std::{env, error::Error, path::PathBuf, process::Command};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 #[derive(Debug, Clone)] // Added Clone
 struct ClippyLintGroup {
@@ -246,6 +249,10 @@ enum ScriptMode {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_clippy");
+    check_help_and_exit(&help);
+
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
             eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");

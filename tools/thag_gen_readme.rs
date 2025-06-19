@@ -309,6 +309,18 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     md
 }
 
+fn determine_boilerplate_path(scripts_dir: &Path) -> PathBuf {
+    // Check if this is a src/bin directory (contains tools)
+    if scripts_dir.ends_with("src/bin")
+        || scripts_dir.file_name().map_or(false, |name| name == "bin")
+    {
+        PathBuf::from("assets/bin_boilerplate.md")
+    } else {
+        // Default to the original boilerplate for demo and other directories
+        PathBuf::from("assets/boilerplate.md")
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut navigator = FileNavigator::new();
     // ... use the navigator to select a directory
@@ -323,10 +335,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let output_path = scripts_dir.join("README.md");
-    let boilerplate_path = Path::new("assets/boilerplate.md");
+    let boilerplate_path = determine_boilerplate_path(&scripts_dir);
 
     let all_metadata = collect_all_metadata(&scripts_dir);
-    generate_readme(&all_metadata, &output_path, boilerplate_path);
+    generate_readme(&all_metadata, &output_path, &boilerplate_path);
 
     println!("{} generated successfully.", output_path.display());
 

@@ -13,6 +13,7 @@
 //! - `analyze_tool`:       Include dependencies required only for `thag_profile` binary.
 //! - `instrument_tool`:    Include dependencies required only for `thag_instrument` and `thag_uninstrument` binaries.
 //!
+
 mod category_enum;
 mod file_navigator;
 mod fn_name;
@@ -27,6 +28,8 @@ mod safe_alloc;
 
 #[cfg(feature = "tui")]
 mod tui_keys;
+
+// Remove the proc macro implementations since we're using the runtime approach instead
 
 #[cfg(feature = "time_profiling")]
 mod enable_profiling;

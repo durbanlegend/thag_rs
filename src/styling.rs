@@ -2624,16 +2624,13 @@ pub fn display_theme_roles(theme: &Theme) {
 /// # Examples
 /// ```
 /// use thag_rs::styling::display_theme_details;
-/// display_theme_details();
+/// display_theme_details(theme);
 /// ```
 #[profiled]
-pub fn display_theme_details() {
-    let term_attrs = TermAttributes::get_or_init();
-    let theme = &term_attrs.theme;
-    let theme_bgs = &term_attrs.theme.bg_rgbs;
+pub fn display_theme_details(theme: &Theme) {
+    let theme_bgs = &theme.bg_rgbs;
     let theme_bgs = if theme_bgs.is_empty() {
-        &term_attrs
-            .theme
+        &theme
             .backgrounds
             .iter()
             .filter_map(|hex| hex_to_rgb(hex).ok())
@@ -2643,23 +2640,23 @@ pub fn display_theme_details() {
     };
     // eprintln!(
     //     "theme_bgs={theme_bgs:?}, backgrounds={:?}",
-    //     term_attrs.theme.backgrounds
+    //     theme.backgrounds
     // );
     let rgb_disp = if theme_bgs.is_empty() {
         "None".to_string()
-    } else if let Some(term_bg_rgb) = term_attrs.term_bg_rgb {
-        let mut min_distance = f32::MAX;
-        let mut closest_rgb: (u8, u8, u8) = (0, 0, 0);
-        for rgb in theme_bgs {
-            let color_distance = color_distance(term_bg_rgb, *rgb);
-            if color_distance < min_distance {
-                min_distance = color_distance;
-                closest_rgb = *rgb;
-            }
-        }
-        dual_format_rgb(closest_rgb)
     } else {
-        "None".to_string()
+        // Display all background colors for the theme
+        if theme_bgs.len() == 1 {
+            dual_format_rgb(theme_bgs[0])
+        } else if theme_bgs.len() > 1 {
+            theme_bgs
+                .iter()
+                .map(|rgb| dual_format_rgb(*rgb))
+                .collect::<Vec<_>>()
+                .join(", ")
+        } else {
+            "None".to_string()
+        }
     };
 
     let theme_docs: &[(&str, &str)] = &[
@@ -2704,6 +2701,21 @@ pub fn display_theme_details() {
     }
 
     println!("\t{}\n", "─".repeat(flower_box_len));
+}
+
+/// Display terminal attributes information
+///
+/// Shows information about the current terminal configuration including
+/// color support, background detection, and initialization method.
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::display_terminal_attributes;
+/// display_terminal_attributes();
+/// ```
+#[profiled]
+pub fn display_terminal_attributes() {
+    let term_attrs = TermAttributes::get_or_init();
 
     let how_initialized = term_attrs.how_initialized.to_string();
     let terminal_docs: &[(&str, &str)] = &[

@@ -100,7 +100,7 @@ ___
 
 - **New in 0.2.0:** The `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, as described above.
 
-- **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, displaying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
+- **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
 
 - **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
 

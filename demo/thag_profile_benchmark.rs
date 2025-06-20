@@ -12,7 +12,7 @@ default = []
 /// Benchmark comparison between thag_profiler and dhat-rs for memory profiling accuracy.
 /// This creates known allocation patterns and compares the results from both profilers.
 //# Purpose: Validate thag_profiler accuracy against dhat-rs reference implementation
-//# Categories: profiling, benchmark, validation
+//# Categories: benchmark, profiling
 use std::collections::HashMap;
 use thag_profiler::{enable_profiling, profiled};
 

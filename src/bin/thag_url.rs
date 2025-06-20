@@ -4,7 +4,7 @@ syn = { version = "2", default-features = false, features = ["derive", "parsing"
 tempfile = "3.14.0"
 tinyget = { version = "1.0.2", features = ["https"] }
 url = "2.5.4"
-thag_rs = { path = "../..", default-features = false
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 /// `thag` front-end command to run scripts from URLs.
 ///
@@ -12,8 +12,8 @@ thag_rs = { path = "../..", default-features = false
 //# Categories: technique, thag_front_ends, tools
 use std::{error::Error, process::Command, string::ToString};
 use syn::{parse_file, Expr};
-use url::Url;
 use thag_rs::{auto_help, help_system::check_help_and_exit};
+use url::Url;
 
 enum SourceType {
     GitHub,

@@ -6,7 +6,7 @@ reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 rfd = "0.14.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thag_rs = { path = "../..", default-features = false
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// Downloader for the `demo` directory. Basics courtesy of GPT.

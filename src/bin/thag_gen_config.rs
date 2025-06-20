@@ -13,7 +13,7 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 # thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
 toml = "0.8"
-thag_rs = { path = "../..", default-features = false
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// Prompted config file builder for `thag`.

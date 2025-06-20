@@ -115,12 +115,12 @@ which will give identical output to the above.
 
 **Categories:** profiling, prototype
 
-**Link:** [alloc_proto_atomic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_atomic.rs)
+**Link:** [alloc_proto_atomic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atomic.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_atomic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atomic.rs
 ```
 
 ---
@@ -168,12 +168,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_at
 
 **Categories:** profiling, prototype
 
-**Link:** [alloc_proto_rwlock.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_rwlock.rs)
+**Link:** [alloc_proto_rwlock.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_rwlock.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_rwlock.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_rwlock.rs
 ```
 
 ---
@@ -194,12 +194,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/alloc_proto_rw
 
 **Categories:** AST, technique
 
-**Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs)
+**Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_1.rs
 ```
 
 ---
@@ -220,12 +220,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 
 **Categories:** AST, technique
 
-**Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs)
+**Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_2.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_2.rs
 ```
 
 ---
@@ -248,12 +248,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 
 **Categories:** AST, technique
 
-**Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs)
+**Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_3.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_3.rs
 ```
 
 ---
@@ -276,12 +276,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 
 **Categories:** exploration, type_identification, technique
 
-**Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
+**Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/any.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/any.rs
 ```
 
 ---
@@ -297,12 +297,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
 
 **Categories:** learning, technique
 
-**Link:** [append_option_to_iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/append_option_to_iter.rs)
+**Link:** [append_option_to_iter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/append_option_to_iter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/append_option_to_iter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/append_option_to_iter.rs
 ```
 
 ---
@@ -321,12 +321,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/append_option_
 
 **Categories:** benchmark, profiling
 
-**Link:** [benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark.rs)
+**Link:** [benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark.rs
 ```
 
 ---
@@ -345,12 +345,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark.rs
 
 **Categories:** benchmark, profiling
 
-**Link:** [benchmark_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_firestorm.rs)
+**Link:** [benchmark_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_firestorm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_firestorm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_firestorm.rs
 ```
 
 ---
@@ -369,12 +369,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_fire
 
 **Categories:** benchmark, profiling
 
-**Link:** [benchmark_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_profile.rs)
+**Link:** [benchmark_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_profile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_profile.rs
 ```
 
 ---
@@ -391,12 +391,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/benchmark_prof
 
 **Categories:** crates, exploration, technique
 
-**Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs)
+**Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bitflags.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bitflags.rs
 ```
 
 ---
@@ -412,12 +412,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs
 
 **Categories:** technique
 
-**Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs)
+**Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/borrow_wrapped.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/borrow_wrapped.rs
 ```
 
 ---
@@ -436,12 +436,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped
 
 **Categories:** CLI, crates, technique
 
-**Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs)
+**Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_asm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_asm.rs
 ```
 
 ---
@@ -460,12 +460,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_sho
 
 **Categories:** CLI, crates, technique
 
-**Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs)
+**Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.rs
 ```
 
 ---
@@ -484,12 +484,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain
 
 **Categories:** CLI, crates, technique
 
-**Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs)
+**Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_derive.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_derive.rs
 ```
 
 ---
@@ -508,12 +508,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs
 
 **Categories:** technique
 
-**Link:** [cargo_capture_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs)
+**Link:** [cargo_capture_output.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_capture_output.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_capture_output.rs
 ```
 
 ---
@@ -532,12 +532,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_
 
 **Categories:** technique, testing
 
-**Link:** [cargo_debug_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_debug_test_case.rs)
+**Link:** [cargo_debug_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_debug_test_case.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_debug_test_case.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_debug_test_case.rs
 ```
 
 ---
@@ -556,12 +556,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_debug_te
 
 **Categories:** crates, technique
 
-**Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs)
+**Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs -- serde
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup.rs -- serde
 ```
 
 ---
@@ -580,12 +580,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.r
 
 **Categories:** technique
 
-**Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs)
+**Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs
 ```
 
 ---
@@ -603,12 +603,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.r
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs)
+**Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.rs
 ```
 
 ---
@@ -627,12 +627,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_stru
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs)
+**Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs
 ```
 
 ---
@@ -650,12 +650,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.r
 
 **Categories:** REPL, technique
 
-**Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs)
+**Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_rustyline.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_rustyline.rs
 ```
 
 ---
@@ -673,12 +673,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crat
 
 **Categories:** REPL, technique
 
-**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs)
+**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs
 ```
 
 ---
@@ -697,12 +697,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs)
+**Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder_01_quick.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder_01_quick.rs
 ```
 
 ---
@@ -721,12 +721,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_build
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs)
+**Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_03_04_subcommands.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 ```
 
 ---
@@ -745,12 +745,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs)
+**Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_01_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs -- fast
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_01_enum.rs -- fast
 ```
 
 ---
@@ -769,12 +769,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs)
+**Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_03_relations.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
 ```
 
 ---
@@ -793,12 +793,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Categories:** CLI, crates, prototype, technique
 
-**Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs)
+**Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
 ```
 
 ---
@@ -818,12 +818,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs --
 
 **Categories:** CLI, crates, technique
 
-**Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs)
+**Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_bpaf_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world
 ```
 
 ---
@@ -842,12 +842,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_
 
 **Categories:** CLI, crates, technique
 
-**Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs)
+**Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_clap.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs -- -atv hello.sh
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_clap.rs -- -atv hello.sh
 ```
 
 ---
@@ -866,12 +866,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.
 
 **Categories:** technique
 
-**Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs)
+**Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.rs
 ```
 
 ---
@@ -895,7 +895,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Categories:** demo, testing
 
-**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
+**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -917,7 +917,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Categories:** prototype, reference, testing
 
-**Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
+**Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors_old.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -939,7 +939,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Categories:** prototype, reference, testing
 
-**Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
+**Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors_orig.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -966,12 +966,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Categories:** prototype, technique
 
-**Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs)
+**Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
 ```
 
 ---
@@ -1034,12 +1034,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
 
 **Categories:** technique, testing
 
-**Link:** [config_with_tests.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config_with_tests.rs)
+**Link:** [config_with_tests.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_tests.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config_with_tests.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_tests.rs
 ```
 
 ---
@@ -1059,12 +1059,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config_with_te
 
 **Categories:** AST, prototype, technique
 
-**Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs)
+**Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/count_main_methods.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/count_main_methods.rs
 ```
 
 ---
@@ -1082,12 +1082,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_met
 
 **Categories:** technique
 
-**Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs)
+**Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/create_next_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/create_next_file.rs
 ```
 
 ---
@@ -1104,12 +1104,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_fi
 
 **Categories:** crates, technique
 
-**Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs)
+**Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_deser.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_deser.rs
 ```
 
 ---
@@ -1126,12 +1126,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.r
 
 **Categories:** crates, technique
 
-**Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs)
+**Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key.rs
 ```
 
 ---
@@ -1148,12 +1148,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_k
 
 **Categories:** crates, technique
 
-**Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs)
+**Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key_no_combiner.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key_no_combiner.rs
 ```
 
 ---
@@ -1172,12 +1172,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_k
 
 **Categories:** crates
 
-**Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs)
+**Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_fibonacci.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_fibonacci.rs
 ```
 
 ---
@@ -1195,12 +1195,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
 
 **Categories:** crates
 
-**Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs)
+**Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_matching.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_matching.rs
 ```
 
 ---
@@ -1220,12 +1220,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
 
 **Categories:** crates
 
-**Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs)
+**Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_stopwatch.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_stopwatch.rs
 ```
 
 ---
@@ -1249,12 +1249,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
 
 **Categories:** crates, technique
 
-**Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs)
+**Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_epoch_sanitize.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_epoch_sanitize.rs
 ```
 
 ---
@@ -1273,12 +1273,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoc
 
 **Categories:** crates, technique
 
-**Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
+**Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs
 ```
 
 ---
@@ -1299,12 +1299,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs)
+**Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_alternate_screen.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs -- true
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_alternate_screen.rs -- true
 ```
 
 ---
@@ -1325,12 +1325,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alte
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs)
+**Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_command_macro.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_command_macro.rs
 ```
 
 ---
@@ -1350,12 +1350,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_comm
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs)
+**Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_read.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_read.rs
 ```
 
 ---
@@ -1378,12 +1378,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_even
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs)
+**Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_key_events.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_key_events.rs
 ```
 
 ---
@@ -1400,12 +1400,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_
 
 **Categories:** crates, technique
 
-**Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
+**Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ctrlc_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ctrlc_demo.rs
 ```
 
 ---
@@ -1426,12 +1426,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs
 
 **Categories:** crates, technique
 
-**Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs)
+**Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/curl.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/curl.rs
 ```
 
 ---
@@ -1449,12 +1449,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs
 
 **Categories:** crates, exploration, technique
 
-**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_fields.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_fields.rs
 ```
 
 ---
@@ -1472,12 +1472,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consum
 
 **Categories:** crates, exploration, technique
 
-**Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
+**Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_struct.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_struct.rs
 ```
 
 ---
@@ -1494,12 +1494,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct
 
 **Categories:** crates, exploration, technique
 
-**Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs)
+**Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/derive_deftly.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/derive_deftly.rs
 ```
 
 ---
@@ -1521,12 +1521,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.
 
 **Categories:** crates, technique, tools
 
-**Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs)
+**Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/dethag_re.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/dethag_re.rs
 ```
 
 ---
@@ -1545,12 +1545,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
 
 **Categories:** prototype, testing
 
-**Link:** [document_pipeline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline.rs)
+**Link:** [document_pipeline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline.rs
 ```
 
 ---
@@ -1569,12 +1569,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 **Categories:** prototype, testing
 
-**Link:** [document_pipeline_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile.rs)
+**Link:** [document_pipeline_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile.rs
 ```
 
 ---
@@ -1593,12 +1593,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 **Categories:** prototype, testing
 
-**Link:** [document_pipeline_profile_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal.rs)
+**Link:** [document_pipeline_profile_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal.rs
 ```
 
 ---
@@ -1617,12 +1617,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 **Categories:** prototype, testing
 
-**Link:** [document_pipeline_profile_minimal_alt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal_alt.rs)
+**Link:** [document_pipeline_profile_minimal_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal_alt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_minimal_alt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal_alt.rs
 ```
 
 ---
@@ -1653,12 +1653,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 **Categories:** prototype, testing
 
-**Link:** [document_pipeline_profile_sync.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync.rs)
+**Link:** [document_pipeline_profile_sync.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync.rs
 ```
 
 ---
@@ -1691,12 +1691,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 **Categories:** prototype, testing
 
-**Link:** [document_pipeline_profile_sync_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync_firestorm.rs)
+**Link:** [document_pipeline_profile_sync_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync_firestorm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipeline_profile_sync_firestorm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync_firestorm.rs
 ```
 
 ---
@@ -1714,12 +1714,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/document_pipel
 
 **Categories:** crates, exploration, technique
 
-**Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs)
+**Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/documented.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented.rs
 ```
 
 ---
@@ -1737,12 +1737,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
 
 **Categories:** crates, prototype, technique
 
-**Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs)
+**Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_dependencies.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_dependencies.rs
 ```
 
 ---
@@ -1780,12 +1780,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dep
 
 **Categories:** technique
 
-**Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs)
+**Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/duration_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/duration_snippet.rs
 ```
 
 ---
@@ -1806,12 +1806,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snipp
 
 **Categories:** crates, technique
 
-**Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs)
+**Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/edit.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit.rs
 ```
 
 ---
@@ -1832,12 +1832,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
 
 **Categories:** crates, profiling, technique
 
-**Link:** [edit_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit_profile.rs)
+**Link:** [edit_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit_profile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs
 ```
 
 ---
@@ -1854,12 +1854,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit_profile.r
 
 **Categories:** crates, prototype
 
-**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs)
+**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs
 ```
 
 ---
@@ -1881,12 +1881,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_edit
 
 **Categories:** crates, prototype, technique
 
-**Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs)
+**Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/enum_select.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/enum_select.rs
 ```
 
 ---
@@ -1905,12 +1905,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
 
 **Categories:** profiling, prototype
 
-**Link:** [exclusify.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/exclusify.rs)
+**Link:** [exclusify.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/exclusify.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/exclusify.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/exclusify.rs
 ```
 
 ---
@@ -1932,12 +1932,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/exclusify.rs
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs)
+**Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_dashu_product.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_dashu_product.rs -- 50
 ```
 
 ---
@@ -1971,12 +1971,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dash
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs)
+**Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig.rs -- 50
 ```
 
 ---
@@ -2000,12 +2000,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs)
+**Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product.rs -- 50
 ```
 
 ---
@@ -2025,12 +2025,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Categories:** profiling
 
-**Link:** [factorial_ibig_product_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs)
+**Link:** [factorial_ibig_product_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_instr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_instr.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_instr.rs -- 50
 ```
 
 ---
@@ -2054,12 +2054,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_ibig_product_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_profile.rs)
+**Link:** [factorial_ibig_product_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product_profile.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_profile.rs -- 50
 ```
 
 ---
@@ -2075,12 +2075,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Categories:** learning, math, recreational, technique
 
-**Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs)
+**Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_main_u128_product.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs -- 34
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_main_u128_product.rs -- 34
 ```
 
 ---
@@ -2103,12 +2103,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs)
+**Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_ibig.rs -- 50
 ```
 
 ---
@@ -2133,12 +2133,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs)
+**Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_rug.rs -- 50
 ```
 
 ---
@@ -2164,12 +2164,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 
 **Categories:** learning, math, recreational, technique
 
-**Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs)
+**Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -- 90
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic.rs -- 90
 ```
 
 ---
@@ -2187,12 +2187,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs)
+**Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic_ibig.rs -- 100
 ```
 
 ---
@@ -2220,12 +2220,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs)
+**Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_big_clap_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_big_clap_rug.rs -- 100
 ```
 
 ---
@@ -2254,12 +2254,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_r
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs)
+**Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_astro_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_astro_snippet.rs -- 100
 ```
 
 ---
@@ -2282,12 +2282,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astr
 
 **Categories:** learning, math, recreational, technique
 
-**Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs)
+**Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_snippet.rs -- 100
 ```
 
 ---
@@ -2308,12 +2308,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snip
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs)
+**Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig.rs -- 100
 ```
 
 ---
@@ -2340,12 +2340,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs)
+**Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig_instrumented.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig_instrumented.rs -- 100
 ```
 
 ---
@@ -2369,12 +2369,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs)
+**Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_dashu_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_dashu_snippet.rs -- 100
 ```
 
 ---
@@ -2406,12 +2406,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snip
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs)
+**Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_ibig.rs -- 100
 ```
 
 ---
@@ -2434,12 +2434,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
+**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_ibig.rs -- 100
 ```
 
 ---
@@ -2464,12 +2464,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
+**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_rug.rs -- 100
 ```
 
 ---
@@ -2489,12 +2489,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs)
+**Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig.rs -- 100
 ```
 
 ---
@@ -2548,12 +2548,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
+**Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_1.rs -- 100
 ```
 
 ---
@@ -2608,12 +2608,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
+**Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_2.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_2.rs -- 100
 ```
 
 ---
@@ -2653,12 +2653,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs)
+**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig.rs -- 100
 ```
 
 ---
@@ -2680,12 +2680,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_r
 
 **Categories:** learning, math, recreational, technique
 
-**Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
+**Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix.rs -- 100
 ```
 
 ---
@@ -2718,12 +2718,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs 
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs)
+**Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_dashu.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_dashu.rs -- 100
 ```
 
 ---
@@ -2756,12 +2756,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_das
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs)
+**Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_ibig.rs -- 100
 ```
 
 ---
@@ -2786,12 +2786,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibi
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs)
+**Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_rug.rs -- 100
 ```
 
 ---
@@ -2812,12 +2812,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
+**Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_quadrupling_recursive_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_quadrupling_recursive_ibig.rs -- 100
 ```
 
 ---
@@ -2834,12 +2834,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadruplin
 
 **Categories:** learning, technique
 
-**Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
+**Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_blandy_orendorff.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_blandy_orendorff.rs
 ```
 
 ---
@@ -2854,12 +2854,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blan
 
 **Categories:** learning, technique
 
-**Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs)
+**Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_gpt.rs
 ```
 
 ---
@@ -2877,12 +2877,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.
 
 **Categories:** async, crates, technique
 
-**Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
+**Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async.rs
 ```
 
 ---
@@ -2903,12 +2903,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
 
 **Categories:** async, crates, proc_macros, profiling, technique
 
-**Link:** [flume_async_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async_profile.rs)
+**Link:** [flume_async_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async_profile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async_profile.rs
 ```
 
 ---
@@ -2925,12 +2925,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async_pr
 
 **Categories:** crates, technique
 
-**Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs)
+**Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_perf.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_perf.rs
 ```
 
 ---
@@ -2948,12 +2948,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs
 
 **Categories:** async, crates, technique
 
-**Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs)
+**Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_select.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_select.rs
 ```
 
 ---
@@ -2971,12 +2971,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.r
 
 **Categories:** technique
 
-**Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs)
+**Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/gen_names.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/gen_names.rs
 ```
 
 ---
@@ -2993,12 +2993,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
 
 **Categories:** CLI, crates, technique
 
-**Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs)
+**Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/gpt_clap_derive.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs -- -bgtv dummy_script.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/gpt_clap_derive.rs -- -bgtv dummy_script.rs
 ```
 
 ---
@@ -3019,7 +3019,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_deriv
 
 **Categories:** crates, technique
 
-**Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs)
+**Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/gpt_lazy_static_theme.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3036,12 +3036,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_deriv
 
 **Categories:** basic
 
-**Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs)
+**Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hello.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello.rs
 ```
 
 ---
@@ -3056,12 +3056,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 **Categories:** basic
 
-**Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs)
+**Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_main.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_main.rs
 ```
 
 ---
@@ -3076,12 +3076,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs
 
 **Categories:** basic
 
-**Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs)
+**Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_minimal.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_minimal.rs
 ```
 
 ---
@@ -3099,12 +3099,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.
 
 **Categories:** testing
 
-**Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs)
+**Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/history_debug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/history_debug.rs
 ```
 
 ---
@@ -3128,12 +3128,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.
 
 **Categories:** async, crates, technique
 
-**Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs)
+**Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_client.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs -- http://127.0.0.1:3000
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_client.rs -- http://127.0.0.1:3000
 ```
 
 ---
@@ -3156,12 +3156,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.r
 
 **Categories:** async, crates, technique
 
-**Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs)
+**Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_echo_server.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_echo_server.rs
 ```
 
 ---
@@ -3181,12 +3181,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_ser
 
 **Categories:** async, crates, technique
 
-**Link:** [hyper_hello_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs)
+**Link:** [hyper_hello_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_hello_server.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_hello_server.rs
 ```
 
 ---
@@ -3203,12 +3203,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_se
 
 **Categories:** big_numbers, crates, technique
 
-**Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs)
+**Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ibig_big_integers.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ibig_big_integers.rs
 ```
 
 ---
@@ -3225,12 +3225,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integ
 
 **Categories:** crates, technique
 
-**Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs)
+**Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/iced_tour.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iced_tour.rs
 ```
 
 ---
@@ -3247,12 +3247,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs
 
 **Categories:** async, crates, technique
 
-**Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs)
+**Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs
 ```
 
 ---
@@ -3272,7 +3272,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
 
 **Categories:** basic, learning, technique
 
-**Link:** [include_str.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/include_str.rs)
+**Link:** [include_str.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/include_str.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3293,12 +3293,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
 
 **Categories:** crates, REPL, technique
 
-**Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs)
+**Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs
 ```
 
 ---
@@ -3316,12 +3316,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
 
 **Categories:** async, crates, technique
 
-**Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs)
+**Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorization.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorization.rs
 ```
 
 ---
@@ -3355,12 +3355,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_coloriz
 
 **Categories:** CLI, crates, technique
 
-**Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs)
+**Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/interactive_clap_adv_struct.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/interactive_clap_adv_struct.rs
 ```
 
 ---
@@ -3375,12 +3375,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_cl
 
 **Categories:** basic
 
-**Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs)
+**Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/iter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iter.rs
 ```
 
 ---
@@ -3397,12 +3397,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs
 
 **Categories:** crates, technique
 
-**Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs)
+**Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/json.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/json.rs
 ```
 
 ---
@@ -3420,12 +3420,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs
 
 **Categories:** crates, technique
 
-**Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs)
+**Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/json_parse.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/json_parse.rs
 ```
 
 ---
@@ -3444,12 +3444,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
 
 **Categories:** testing
 
-**Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs)
+**Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/just_a_test_expression.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/just_a_test_expression.rs
 ```
 
 ---
@@ -3465,12 +3465,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_ex
 
 **Categories:** basic, technique
 
-**Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs)
+**Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/list_files.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/list_files.rs
 ```
 
 ---
@@ -3489,12 +3489,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
 
 **Categories:** exploration, technique
 
-**Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs)
+**Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_closure.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_closure.rs
 ```
 
 ---
@@ -3513,12 +3513,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.r
 
 **Categories:** exploration, technique
 
-**Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs)
+**Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_expr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_expr.rs
 ```
 
 ---
@@ -3537,12 +3537,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
 
 **Categories:** exploration, technique
 
-**Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
+**Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_pre_post.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
 ```
 
 ---
@@ -3557,12 +3557,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.
 
 **Categories:** learning, technique
 
-**Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs)
+**Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_fn_lazy_static.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_fn_lazy_static.rs
 ```
 
 ---
@@ -3578,12 +3578,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_
 
 **Categories:** macros, technique
 
-**Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs)
+**Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_enum.rs
 ```
 
 ---
@@ -3598,12 +3598,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum
 
 **Categories:** macros, technique
 
-**Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs)
+**Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_styles_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_styles_enum.rs
 ```
 
 ---
@@ -3624,12 +3624,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styl
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_advanced.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs)
+**Link:** [macro_lazy_static_var_advanced.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced.rs
 ```
 
 ---
@@ -3656,12 +3656,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_advanced_alt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs)
+**Link:** [macro_lazy_static_var_advanced_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced_alt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced_alt.rs
 ```
 
 ---
@@ -3677,12 +3677,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_error_handling.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs)
+**Link:** [macro_lazy_static_var_error_handling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_error_handling.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_error_handling.rs
 ```
 
 ---
@@ -3701,12 +3701,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_errs.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs)
+**Link:** [macro_lazy_static_var_errs.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_errs.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_errs.rs
 ```
 
 ---
@@ -3723,12 +3723,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique, type_identification
 
-**Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs)
+**Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_print.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_print.rs
 ```
 
 ---
@@ -3745,12 +3745,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs
 
 **Categories:** crates, prototype, technique
 
-**Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs)
+**Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs
 ```
 
 ---
@@ -3767,12 +3767,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs
 
 **Categories:** crates, technique, testing
 
-**Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs)
+**Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs
 ```
 
 ---
@@ -3791,12 +3791,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
 
 **Categories:** prototype, technique
 
-**Link:** [multi_allocator.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multi_allocator.rs)
+**Link:** [multi_allocator.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_allocator.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multi_allocator.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_allocator.rs
 ```
 
 ---
@@ -3811,12 +3811,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multi_allocato
 
 **Categories:** error_handling, technique
 
-**Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs)
+**Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs
 ```
 
 ---
@@ -3835,12 +3835,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.
 
 **Categories:** CLI, crates, technique
 
-**Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs)
+**Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs -- add patrick
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs -- add patrick
 ```
 
 ---
@@ -3859,7 +3859,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** crates, exploration
 
-**Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
+**Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_msg_colors_1_basic_gpt.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3884,7 +3884,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** crates, prototype, technique
 
-**Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
+**Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_msg_colors_2_adv_gpt.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3903,7 +3903,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** crates, exploration, technique
 
-**Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs)
+**Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_styles.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3923,12 +3923,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** prototype, technique
 
-**Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs)
+**Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_script_rs_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_script_rs_toml.rs
 ```
 
 ---
@@ -3945,12 +3945,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_r
 
 **Categories:** prototype
 
-**Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs)
+**Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_toml.rs
 ```
 
 ---
@@ -3970,7 +3970,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
 
 **Categories:** crates
 
-**Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs)
+**Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/pomprt_completion.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3989,12 +3989,37 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
 
 **Categories:** AST, crates, technique
 
-**Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs)
+**Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/prettyplease.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/prettyplease.rs
+```
+
+---
+
+### Script: proc_macro_ansi_code_derive.rs
+
+**Description:**  Demonstrate embellishing an enum of the 16 basic colours, to allow renaming, generating a descriptive
+ name, and instantiating a variant from its name string.
+
+ This proc macro was originally used by the `thag` `styling` module.
+
+**Purpose:** Sample model of a basic attribute proc macro.
+
+**Crates:** `serde`, `strum`, `thag_demo_proc_macros`, `thag_rs`
+
+**Type:** Snippet
+
+**Categories:** proc_macros, technique
+
+**Link:** [proc_macro_ansi_code_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs
 ```
 
 ---
@@ -4012,12 +4037,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.r
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs)
+**Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_attribute_basic.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_attribute_basic.rs
 ```
 
 ---
@@ -4035,12 +4060,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_att
 
 **Categories:** missing
 
-**Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs)
+**Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_category_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_category_enum.rs
 ```
 
 ---
@@ -4057,12 +4082,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_cat
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs)
+**Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo.rs
 ```
 
 ---
@@ -4079,12 +4104,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_con
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs)
+**Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_debug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_debug.rs
 ```
 
 ---
@@ -4102,12 +4127,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_con
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs)
+**Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_expand.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_expand.rs
 ```
 
 ---
@@ -4124,12 +4149,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_con
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_derive_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs)
+**Link:** [proc_macro_derive_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_basic.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_basic.rs
 ```
 
 ---
@@ -4146,12 +4171,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs)
+**Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_custom_model.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_custom_model.rs
 ```
 
 ---
@@ -4169,12 +4194,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs)
+**Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_doc_comment.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_doc_comment.rs
 ```
 
 ---
@@ -4192,12 +4217,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs)
+**Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_key_map_list.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_key_map_list.rs
 ```
 
 ---
@@ -4228,12 +4253,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_der
 
 **Categories:** proc_macros, profiling, prototype, technique
 
-**Link:** [proc_macro_end.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_end.rs)
+**Link:** [proc_macro_end.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_end.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_end.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_end.rs
 ```
 
 ---
@@ -4250,12 +4275,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_end
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs)
+**Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_expander_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_expander_demo.rs
 ```
 
 ---
@@ -4273,12 +4298,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_exp
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs)
+**Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_functionlike_basic.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_functionlike_basic.rs
 ```
 
 ---
@@ -4295,12 +4320,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_fun
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs)
+**Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_host_port_const.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_host_port_const.rs
 ```
 
 ---
@@ -4318,12 +4343,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_hos
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_load_static_map.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_load_static_map.rs)
+**Link:** [proc_macro_load_static_map.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_load_static_map.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_load_static_map.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_load_static_map.rs
 ```
 
 ---
@@ -4340,12 +4365,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_loa
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs)
+**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code.rs
 ```
 
 ---
@@ -4362,12 +4387,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_org
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs)
+**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_const.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_const.rs
 ```
 
 ---
@@ -4384,12 +4409,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_org
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
+**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_tokenstream.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_tokenstream.rs
 ```
 
 ---
@@ -4406,12 +4431,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_org
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_repeat_dash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs)
+**Link:** [proc_macro_repeat_dash.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_repeat_dash.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_repeat_dash.rs
 ```
 
 ---
@@ -4428,12 +4453,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_rep
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs)
+**Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_string_concat.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_string_concat.rs
 ```
 
 ---
@@ -4451,12 +4476,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_str
 
 **Categories:** Learning, Technique
 
-**Link:** [process_results.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/process_results.rs)
+**Link:** [process_results.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/process_results.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.rs
 ```
 
 ---
@@ -4480,12 +4505,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/process_result
 
 **Categories:** AST, crates, demo, learning, profiling, technique
 
-**Link:** [profile_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.rs)
+**Link:** [profile_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/profile_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profile_file.rs
 ```
 
 ---
@@ -4503,12 +4528,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profile_file.r
 
 **Categories:** crates
 
-**Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs)
+**Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin_demo.rs
 ```
 
 ---
@@ -4525,12 +4550,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puff
 
 **Categories:** crates
 
-**Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs)
+**Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_profiler_egui.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_profiler_egui.rs
 ```
 
 ---
@@ -4568,12 +4593,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profile
 
 **Categories:** learning, math, recreational
 
-**Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs)
+**Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/py_thag.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/py_thag.rs
 ```
 
 ---
@@ -4593,12 +4618,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
 
 **Categories:** AST, crates, technique
 
-**Link:** [ra_ap_syntax_tree.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ra_ap_syntax_tree.rs)
+**Link:** [ra_ap_syntax_tree.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tree.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ra_ap_syntax_tree.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tree.rs
 ```
 
 ---
@@ -4615,12 +4640,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ra_ap_syntax_t
 
 **Categories:** crates
 
-**Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs)
+**Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input.rs
 ```
 
 ---
@@ -4637,12 +4662,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_i
 
 **Categories:** crates
 
-**Link:** [ratatui_user_input_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input_profile.rs)
+**Link:** [ratatui_user_input_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input_profile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs
 ```
 
 ---
@@ -4661,12 +4686,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_i
 
 **Categories:** crates
 
-**Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs)
+**Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crossterm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crossterm.rs
 ```
 
 ---
@@ -4683,12 +4708,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_cross
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs)
+**Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_keybindings.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_keybindings.rs
 ```
 
 ---
@@ -4705,12 +4730,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs)
+**Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_completions.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_completions.rs
 ```
 
 ---
@@ -4727,12 +4752,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_compl
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs)
+**Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_listener.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_listener.rs
 ```
 
 ---
@@ -4749,12 +4774,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs)
+**Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlighter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlighter.rs
 ```
 
 ---
@@ -4771,12 +4796,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highl
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs)
+**Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.rs
 ```
 
 ---
@@ -4793,12 +4818,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinte
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs)
+**Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history.rs
 ```
 
 ---
@@ -4818,12 +4843,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_histo
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs)
+**Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_completions.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_completions.rs
 ```
 
 ---
@@ -4841,12 +4866,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_c
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs)
+**Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bindings.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bindings.rs
 ```
 
 ---
@@ -4864,12 +4889,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs)
+**Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multiline.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multiline.rs
 ```
 
 ---
@@ -4886,12 +4911,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multi
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs)
+**Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_stdin.rs
 ```
 
 ---
@@ -4908,12 +4933,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs)
+**Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs
 ```
 
 ---
@@ -4931,12 +4956,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs)
+**Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_context.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_context.rs
 ```
 
 ---
@@ -4958,12 +4983,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs)
+**Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bindings.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bindings.rs
 ```
 
 ---
@@ -4980,12 +5005,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs)
+**Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.rs
 ```
 
 ---
@@ -5002,12 +5027,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin
 
 **Categories:** crates, REPL, technique
 
-**Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs)
+**Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_transient_prompt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_transient_prompt.rs
 ```
 
 ---
@@ -5027,12 +5052,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_trans
 
 **Categories:** prototype
 
-**Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs)
+**Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_toml.rs
 ```
 
 ---
@@ -5049,12 +5074,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_
 
 **Categories:** crates, REPL, technique
 
-**Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs)
+**Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs
 ```
 
 ---
@@ -5071,12 +5096,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
 
 **Categories:** crates, REPL, technique
 
-**Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs)
+**Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs
 ```
 
 ---
@@ -5099,12 +5124,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_m
 
 **Categories:** crates, technique
 
-**Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs)
+**Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rug_arbitrary_precision_nums.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rug_arbitrary_precision_nums.rs
 ```
 
 ---
@@ -5123,12 +5148,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_
 
 **Categories:** crates, technique
 
-**Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
+**Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt.rs
 ```
 
 ---
@@ -5143,12 +5168,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs
 
 **Categories:** crates, technique
 
-**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
+**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt_stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt_stdin.rs
 ```
 
 ---
@@ -5163,12 +5188,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.
 
 **Categories:** learning
 
-**Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs)
+**Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustlings_smart_pointers_rc1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustlings_smart_pointers_rc1.rs
 ```
 
 ---
@@ -5185,12 +5210,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smar
 
 **Categories:** crates, REPL, technique
 
-**Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs)
+**Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.rs
 ```
 
 ---
@@ -5209,12 +5234,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_comp
 
 **Categories:** crates, REPL, technique
 
-**Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs)
+**Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs
 ```
 
 ---
@@ -5231,12 +5256,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full
 
 **Categories:** prototype, technique
 
-**Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs)
+**Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/semver_exclude_prerelease.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/semver_exclude_prerelease.rs
 ```
 
 ---
@@ -5253,12 +5278,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude
 
 **Categories:** crates, exploration
 
-**Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs)
+**Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/side_by_side_diff.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/side_by_side_diff.rs
 ```
 
 ---
@@ -5275,12 +5300,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_d
 
 **Categories:** crates
 
-**Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs)
+**Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/slog_expressions.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/slog_expressions.rs
 ```
 
 ---
@@ -5298,12 +5323,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressio
 
 **Categories:** demo
 
-**Link:** [smol_chat_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_client.rs)
+**Link:** [smol_chat_client.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_client.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_client.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_client.rs
 ```
 
 ---
@@ -5324,12 +5349,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_clie
 
 **Categories:** demo
 
-**Link:** [smol_chat_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server.rs)
+**Link:** [smol_chat_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server.rs
 ```
 
 ---
@@ -5365,12 +5390,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_serv
 
 **Categories:** profiling, testing
 
-**Link:** [smol_chat_server_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server_profile.rs)
+**Link:** [smol_chat_server_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server_profile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_server_profile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server_profile.rs
 ```
 
 ---
@@ -5387,12 +5412,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/smol_chat_serv
 
 **Categories:** crates, learning
 
-**Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs)
+**Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_import_scope.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_import_scope.rs
 ```
 
 ---
@@ -5409,12 +5434,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import
 
 **Categories:** crates, learning
 
-**Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
+**Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_name_clash.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_name_clash.rs
 ```
 
 ---
@@ -5431,12 +5456,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_c
 
 **Categories:** crates, learning, technique
 
-**Link:** [sort_itertools.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_itertools.rs)
+**Link:** [sort_itertools.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_itertools.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_itertools.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_itertools.rs
 ```
 
 ---
@@ -5451,12 +5476,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_itertools
 
 **Categories:** crates, learning, technique
 
-**Link:** [sort_std.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_std.rs)
+**Link:** [sort_std.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_std.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_std.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_std.rs
 ```
 
 ---
@@ -5476,12 +5501,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/sort_std.rs
 
 **Categories:** crates, prototype, technique
 
-**Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
+**Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs
 ```
 
 ---
@@ -5503,12 +5528,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
 
 **Categories:** testing
 
-**Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs)
+**Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs
 ```
 
 ---
@@ -5526,12 +5551,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
 
 **Categories:** testing
 
-**Link:** [stdin_main_instr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_instr.rs)
+**Link:** [stdin_main_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_instr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_instr.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_instr.rs
 ```
 
 ---
@@ -5550,12 +5575,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main_ins
 
 **Categories:** learning, technique
 
-**Link:** [string_to_static_str.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/string_to_static_str.rs)
+**Link:** [string_to_static_str.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/string_to_static_str.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/string_to_static_str.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/string_to_static_str.rs
 ```
 
 ---
@@ -5574,12 +5599,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/string_to_stat
 
 **Categories:** CLI, crates, technique
 
-**Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs)
+**Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
 ```
 
 ---
@@ -5599,12 +5624,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_
 
 **Categories:** prototype, reference, testing
 
-**Link:** [styling_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/styling_demo.rs)
+**Link:** [styling_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/styling_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs
 ```
 
 ---
@@ -5625,12 +5650,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/styling_demo.r
 
 **Categories:** crates
 
-**Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs)
+**Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color.rs
 ```
 
 ---
@@ -5646,12 +5671,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color
 
 **Categories:** crates, prototype
 
-**Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs)
+**Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color_win.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color_win.rs
 ```
 
 ---
@@ -5674,12 +5699,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color
 
 **Categories:** AST, crates, technique
 
-**Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs)
+**Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs -- demo/hello_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax.rs -- demo/hello_main.rs
 ```
 
 ---
@@ -5710,12 +5735,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_synta
 
 **Categories:** AST, crates, technique
 
-**Link:** [syn_dump_syntax_profile_syn.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax_profile_syn.rs)
+**Link:** [syn_dump_syntax_profile_syn.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax_profile_syn.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax_profile_syn.rs -- demo/hello_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax_profile_syn.rs -- demo/hello_main.rs
 ```
 
 ---
@@ -5745,12 +5770,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_synta
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs)
+**Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_quote.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_quote.rs
 ```
 
 ---
@@ -5768,12 +5793,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs)
+**Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_remove_attributes.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_remove_attributes.rs
 ```
 
 ---
@@ -5793,12 +5818,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_att
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs)
+**Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_expr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs -- demo/just_a_test_expression.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_expr.rs -- demo/just_a_test_expression.rs
 ```
 
 ---
@@ -5818,12 +5843,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_exte
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs)
+**Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs -- demo/syn_visit_extern_crate_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_file.rs -- demo/syn_visit_extern_crate_file.rs
 ```
 
 ---
@@ -5844,12 +5869,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_exte
 
 **Categories:** AST, crates, technique
 
-**Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs)
+**Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_node_type.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_node_type.rs
 ```
 
 ---
@@ -5869,12 +5894,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs)
+**Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_expr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs -- demo/just_a_test_expression.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_expr.rs -- demo/just_a_test_expression.rs
 ```
 
 ---
@@ -5894,12 +5919,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs)
+**Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs -- demo/syn_visit_use_path_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_file.rs -- demo/syn_visit_use_path_file.rs
 ```
 
 ---
@@ -5920,12 +5945,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
+**Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_rename.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs -- demo/crossbeam_epoch_sanitize.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_rename.rs -- demo/crossbeam_epoch_sanitize.rs
 ```
 
 ---
@@ -5945,12 +5970,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
+**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_tree_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs -- demo/syn_visit_use_tree_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_tree_file.rs -- demo/syn_visit_use_tree_file.rs
 ```
 
 ---
@@ -5967,12 +5992,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** crates
 
-**Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs)
+**Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tempfile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tempfile.rs
 ```
 
 ---
@@ -5991,7 +6016,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Categories:** crates
 
-**Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs)
+**Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/termbg.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6011,12 +6036,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Categories:** crates
 
-**Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs)
+**Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light.rs
 ```
 
 ---
@@ -6034,12 +6059,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Categories:** crates, recreational
 
-**Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs)
+**Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_fading.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_fading.rs
 ```
 
 ---
@@ -6057,12 +6082,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Categories:** crates
 
-**Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs)
+**Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_skins.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_skins.rs
 ```
 
 ---
@@ -6087,12 +6112,105 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Categories:** crates, testing
 
-**Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs)
+**Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs -- --write --show-hex
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs -- --write --show-hex
+```
+
+---
+
+### Script: thag_async_benchmark.rs
+
+**Description:**  Focused async benchmark comparing tokio vs smol memory profiling with thag_profiler vs dhat-rs.
+ Tests async runtime overhead and task spawning memory usage.
+
+ # Test with tokio + thag_profiler
+ thag --features 'full_profiling,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+
+ # Test with tokio + dhat
+ thag --features 'dhat-heap,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+
+ # Test with smol + thag_profiler
+ thag --features 'full_profiling,smol-runtime' tools/thag_async_benchmark.rs -tfm
+
+ # Test with smol + dhat
+ thag --features 'dhat-heap,smol-runtime' tools/thag_async_benchmark.rs -tfm
+
+**Purpose:** Validate async memory profiling accuracy across different runtimes
+
+**Crates:** `dhat`, `smol`, `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, benchmark, profiling
+
+**Link:** [thag_async_benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark.rs
+```
+
+---
+
+### Script: thag_async_benchmark_gpt.rs
+
+**Description:**  Focused async benchmark comparing tokio vs smol memory profiling with thag_profiler vs dhat-rs.
+ Tests async runtime overhead and task spawning memory usage.
+
+ # Test with tokio + thag_profiler
+ thag --features 'full_profiling,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+
+ # Test with tokio + dhat
+ thag --features 'dhat-heap,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+
+ # Test with smol + thag_profiler
+ thag --features 'full_profiling,smol-runtime' tools/thag_async_benchmark.rs -tfm
+
+ # Test with smol + dhat
+ thag --features 'dhat-heap,smol-runtime' tools/thag_async_benchmark.rs -tfm
+
+**Purpose:** Validate async memory profiling accuracy across different runtimes
+
+**Crates:** `dhat`, `futures`, `rand`, `smol`, `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, benchmark, profiling
+
+**Link:** [thag_async_benchmark_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark_gpt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark_gpt.rs
+```
+
+---
+
+### Script: thag_profile_benchmark.rs
+
+**Description:**  Benchmark comparison between thag_profiler and dhat-rs for memory profiling accuracy.
+ This creates known allocation patterns and compares the results from both profilers.
+
+**Purpose:** Validate thag_profiler accuracy against dhat-rs reference implementation
+
+**Crates:** `dhat`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [thag_profile_benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_benchmark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_benchmark.rs
 ```
 
 ---
@@ -6109,12 +6227,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707
 
 **Categories:** prototype, thag_front_ends, tools
 
-**Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
+**Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_prompt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_prompt.rs
+```
+
+---
+
+### Script: thag_validate_precise.rs
+
+**Description:**  Precise validation test with exactly known allocation sizes to verify
+ thag_profiler accuracy and understand differences with dhat-rs.
+
+**Purpose:** Validate profiler accuracy with precisely measurable allocations
+
+**Crates:** `dhat`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** profiling, testing
+
+**Link:** [thag_validate_precise.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_validate_precise.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_validate_precise.rs
 ```
 
 ---
@@ -6129,12 +6270,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs
 
 **Categories:** technique
 
-**Link:** [theme_dracula_dark.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_dracula_dark.rs)
+**Link:** [theme_dracula_dark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_dracula_dark.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_dracula_dark.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_dracula_dark.rs
 ```
 
 ---
@@ -6149,12 +6290,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_dracula_
 
 **Categories:** technique
 
-**Link:** [theme_gruvbox_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light.rs)
+**Link:** [theme_gruvbox_light.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light.rs
 ```
 
 ---
@@ -6169,12 +6310,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_
 
 **Categories:** technique
 
-**Link:** [theme_gruvbox_light_hard.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light_hard.rs)
+**Link:** [theme_gruvbox_light_hard.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light_hard.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_light_hard.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light_hard.rs
 ```
 
 ---
@@ -6193,12 +6334,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/theme_gruvbox_
 
 **Categories:** basic
 
-**Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs)
+**Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/time_cookbook.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/time_cookbook.rs
 ```
 
 ---
@@ -6213,12 +6354,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.
 
 **Categories:** learning, technique
 
-**Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
+**Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tlborm_callbacks.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tlborm_callbacks.rs
 ```
 
 ---
@@ -6235,12 +6376,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbac
 
 **Categories:** crates, technique
 
-**Link:** [to_relative_path.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/to_relative_path.rs)
+**Link:** [to_relative_path.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/to_relative_path.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/to_relative_path.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/to_relative_path.rs
 ```
 
 ---
@@ -6258,12 +6399,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/to_relative_pa
 
 **Categories:** async, learning, technique
 
-**Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs)
+**Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_short.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_short.rs
 ```
 
 ---
@@ -6281,12 +6422,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_sh
 
 **Categories:** async, learning, technique
 
-**Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
+**Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_world.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_world.rs
 ```
 
 ---
@@ -6305,7 +6446,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** crates, exploration, technique
 
-**Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
+**Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_scrollview.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6330,7 +6471,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** crates, exploration, technique
 
-**Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
+**Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_editor.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6352,7 +6493,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** crates, profiling, technique
 
-**Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
+**Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_editor_profile.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6373,7 +6514,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** crates, exploration, technique
 
-**Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
+**Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_minimal.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6395,7 +6536,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** crates
 
-**Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
+**Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_vim.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6419,7 +6560,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** async, crates, learning, exploration, technique
 
-**Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
+**Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_tokio_editor_gpt.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6440,12 +6581,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** type_identification, technique
 
-**Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs)
+**Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_1.rs
 ```
 
 ---
@@ -6471,12 +6612,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_com
 
 **Categories:** type_identification, technique
 
-**Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs)
+**Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_2.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_2.rs
 ```
 
 ---
@@ -6494,12 +6635,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_com
 
 **Categories:** type_identification, technique
 
-**Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs)
+**Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_run_time.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_run_time.rs
 ```
 
 ---
@@ -6516,12 +6657,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run
 
 **Categories:** big_numbers, learning, reference, technique
 
-**Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs)
+**Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ubig_product_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ubig_product_gpt.rs
 ```
 
 ---
@@ -6536,12 +6677,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_g
 
 **Categories:** technique
 
-**Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs)
+**Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs
 ```
 
 ---
@@ -6572,12 +6713,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
 
 **Categories:** demo, macros, technique
 
-**Link:** [warn_once.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/warn_once.rs)
+**Link:** [warn_once.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/warn_once.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once.rs
 ```
 
 ---
@@ -6594,12 +6735,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/warn_once.rs
 
 **Categories:** demo, reference, testing
 
-**Link:** [web_safe_colors_to_256.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_colors_to_256.rs)
+**Link:** [web_safe_colors_to_256.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/web_safe_colors_to_256.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_colors_to_256.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/web_safe_colors_to_256.rs
 ```
 
 ---
@@ -6614,12 +6755,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/web_safe_color
 
 **Categories:** testing
 
-**Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs)
+**Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_control.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_control.rs
 ```
 
 ---
@@ -6636,12 +6777,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_contr
 
 **Categories:** testing
 
-**Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs)
+**Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_supports_color.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_supports_color.rs
 ```
 
 ---
@@ -6658,7 +6799,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_suppo
 
 **Categories:** testing
 
-**Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs)
+**Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_termbg.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -6677,12 +6818,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_suppo
 
 **Categories:** testing
 
-**Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
+**Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_terminal_light.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_terminal_light.rs
 ```
 
 ---
@@ -6716,12 +6857,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termi
 
 **Categories:** testing
 
-**Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs)
+**Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs
 ```
 
 ---

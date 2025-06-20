@@ -12,11 +12,15 @@ use thag_rs::{auto_help, help_system::check_help_and_exit};
 /// Uses the GitHub REST API endpoint `/markdown` to convert Markdown to HTML and serves the HTML using the `warp` web framework. Make sure your Markdown file is less than 400 KB, as per the API's limitations.
 ///
 /// ### Instructions:
+///
 /// 1. Set the `GITHUB_TOKEN` environment variable with your GitHub token (classic or fine-grained).
+///
 /// 2. Run the script:
+///
 ///    ```bash
-///    thag -q tools/github_markdown_viewer.rs -- <path_to_markdown_file>
+///    thag_markdown <path_to_markdown_file>
 ///    ```
+///
 /// 3. Open `http://localhost:8080` in your browser to view the rendered HTML.
 //# Purpose: Useful tool and demo.
 //# Categories: demo, tools

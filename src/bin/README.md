@@ -71,12 +71,12 @@ Many of these tools integrate with the main `thag` command and can be used as pa
 
 **Categories:** AST, crates, technique, tools
 
-**Link:** [thag_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_ast.rs)
+**Link:** [thag_ast.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_ast.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_ast.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_ast.rs
 ```
 
 ---
@@ -96,12 +96,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_ast.rs
 
 **Categories:** technique, thag_front_ends, tools
 
-**Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_cargo.rs)
+**Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_cargo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_cargo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_cargo.rs
 ```
 
 ---
@@ -121,12 +121,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_cargo.
 
 **Categories:** technique, thag_front_ends, tools
 
-**Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_clippy.rs)
+**Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_clippy.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_clippy.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_clippy.rs
 ```
 
 ---
@@ -143,12 +143,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_clippy
 
 **Categories:** tools
 
-**Link:** [thag_convert_themes.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_convert_themes.rs)
+**Link:** [thag_convert_themes.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_convert_themes.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_convert_themes.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_convert_themes.rs
 ```
 
 ---
@@ -168,12 +168,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_conver
 
 **Categories:** demo, tools
 
-**Link:** [thag_demo_help.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_demo_help.rs)
+**Link:** [thag_demo_help.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_help.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_demo_help.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_help.rs
 ```
 
 ---
@@ -193,7 +193,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_demo_h
 
 **Categories:** crates, tools
 
-**Link:** [thag_detect_term.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_detect_term.rs)
+**Link:** [thag_detect_term.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_detect_term.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -219,12 +219,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_demo_h
 
 **Categories:** diagnosis, technique, thag_front_ends, tools
 
-**Link:** [thag_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_expand.rs)
+**Link:** [thag_expand.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_expand.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_expand.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_expand.rs
 ```
 
 ---
@@ -243,12 +243,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_expand
 
 **Categories:** technique, tools
 
-**Link:** [thag_find_demos.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_find_demos.rs)
+**Link:** [thag_find_demos.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_find_demos.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_find_demos.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_find_demos.rs
 ```
 
 ---
@@ -270,12 +270,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_find_d
 
 **Categories:** crates, technique, tools
 
-**Link:** [thag_gen_config.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_config.rs)
+**Link:** [thag_gen_config.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_config.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_config.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_config.rs
 ```
 
 ---
@@ -299,12 +299,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_co
 
 **Categories:** technique, tools
 
-**Link:** [thag_gen_errors.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_errors.rs)
+**Link:** [thag_gen_errors.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_errors.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_errors.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_errors.rs
 ```
 
 ---
@@ -324,12 +324,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_er
 
 **Categories:** technique, tools
 
-**Link:** [thag_gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_readme.rs)
+**Link:** [thag_gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_readme.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_readme.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_readme.rs
 ```
 
 ---
@@ -346,12 +346,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_gen_re
 
 **Categories:** crates, technique, tools
 
-**Link:** [thag_get_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_get_demo.rs)
+**Link:** [thag_get_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_get_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_get_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_get_demo.rs
 ```
 
 ---
@@ -375,12 +375,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_get_de
 
 **Categories:** crates, technique, tools
 
-**Link:** [thag_legible.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_legible.rs)
+**Link:** [thag_legible.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_legible.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_legible.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_legible.rs
 ```
 
 ---
@@ -409,12 +409,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_legibl
 
 **Categories:** demo, tools
 
-**Link:** [thag_markdown.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_markdown.rs)
+**Link:** [thag_markdown.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_markdown.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_markdown.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_markdown.rs
 ```
 
 ---
@@ -437,12 +437,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_markdo
 
 **Categories:** tools
 
-**Link:** [thag_migrate_tool.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_migrate_tool.rs)
+**Link:** [thag_migrate_tool.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_migrate_tool.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_migrate_tool.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_migrate_tool.rs
 ```
 
 ---
@@ -458,35 +458,37 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_migrat
 
 **Categories:** missing
 
-**Link:** [thag_rs.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_rs.rs)
+**Link:** [thag_rs.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_rs.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_rs.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_rs.rs
 ```
 
 ---
 
 ### Script: thag_show_themes.rs
 
-**Description:**  AI-generated prototype tool to demonstrate themes and help implement their background
- colouring on terminal emulators.
+**Description:**  Display built-in themes and their styling with terminal setup instructions
 
-**Purpose:** Help get best use out of styling with popular themes.
+ This tool helps you explore the available built-in themes and provides
+ terminal setup instructions for optimal display.
 
-**Crates:** `thag_rs`
+**Purpose:** Help get best use out of styling with built-in themes.
+
+**Crates:** `inquire`, `thag_rs`
 
 **Type:** Program
 
 **Categories:** reference, technique, tools
 
-**Link:** [thag_show_themes.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_show_themes.rs)
+**Link:** [thag_show_themes.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_show_themes.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_show_themes.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_show_themes.rs
 ```
 
 ---
@@ -503,12 +505,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_show_t
 
 **Categories:** crates, tools
 
-**Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_to_rust_script.rs)
+**Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_to_rust_script.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_to_rust_script.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_to_rust_script.rs
 ```
 
 ---
@@ -531,12 +533,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_to_rus
 
 **Categories:** technique, thag_front_ends, tools
 
-**Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_url.rs)
+**Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_url.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/src/bin/thag_url.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_url.rs
 ```
 
 ---

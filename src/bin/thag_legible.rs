@@ -1,7 +1,7 @@
 /*[toml]
 [profile.dev]
 opt-level = 2
-thag_rs = { path = "../..", default-features = false
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.

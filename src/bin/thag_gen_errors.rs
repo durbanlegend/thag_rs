@@ -2,7 +2,7 @@
 [dependencies]
 heck = "0.5.0"
 inquire = "0.7.5"
-thag_rs = { path = "../..", default-features = false
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// Quick and easy prompted generator for new custom error types and new variants required

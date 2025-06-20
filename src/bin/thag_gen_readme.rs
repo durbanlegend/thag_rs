@@ -264,7 +264,7 @@ fn generate_readme(metadata_list: &[ScriptMetadata], output_path: &Path, boilerp
         writeln!(file, "**Categories:** {}\n", metadata.categories.join(", ")).unwrap(); // Include categories
         writeln!(
             file,
-            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/master/{}/{})",
+            "**Link:** [{}](https://github.com/durbanlegend/thag_rs/blob/main/{}/{})",
             metadata.script,
             metadata.relative_dir.display(),
             metadata.script
@@ -293,7 +293,7 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
     md.push_str("\n**Run this example:**\n\n");
     md.push_str("```bash\n");
 
-    let base_url = "https://github.com/durbanlegend/thag_rs/blob/master";
+    let base_url = "https://github.com/durbanlegend/thag_rs/blob/main";
     let relative_dir = metadata.relative_dir.display();
     let command = metadata.sample_args.as_ref().map_or_else(
         || format!("thag_url {}/{}/{}", base_url, relative_dir, metadata.script),

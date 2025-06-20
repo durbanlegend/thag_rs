@@ -33,7 +33,7 @@ strip = false
 /// # Test with smol + dhat
 /// thag --features 'dhat-heap,smol-runtime' tools/thag_async_benchmark.rs -tfm
 //# Purpose: Validate async memory profiling accuracy across different runtimes
-//# Categories: profiling, async, benchmark, validation
+//# Categories: async, benchmark, profiling
 use std::time::Duration;
 use thag_profiler::{enable_profiling, mem_tracking, profiled};
 

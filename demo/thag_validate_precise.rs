@@ -12,7 +12,7 @@ default = []
 /// Precise validation test with exactly known allocation sizes to verify
 /// thag_profiler accuracy and understand differences with dhat-rs.
 //# Purpose: Validate profiler accuracy with precisely measurable allocations
-//# Categories: profiling, validation, testing
+//# Categories: profiling, testing
 use std::mem;
 use thag_profiler::{enable_profiling, profiled};
 

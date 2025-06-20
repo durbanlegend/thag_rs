@@ -229,8 +229,9 @@ fn transform_tool_content(
                 // Add thag_rs import in the dependencies section
                 if let Some(toml_end) = find_toml_block_end(&lines) {
                     // Insert thag_rs dependency
-                    let deps_line =
-                        format!(r#"thag_rs = {{ path = "../..", default-features = false"#);
+                    let deps_line = format!(
+                        r#"thag_rs = {{ path = "../..", default-features = falsee, features = ["core"] }}"#
+                    );
                     // This is a simplified approach - in practice you'd want more sophisticated TOML parsing
                     transformed.insert(toml_end, deps_line);
                 }

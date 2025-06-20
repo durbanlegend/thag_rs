@@ -14,7 +14,6 @@ thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, fea
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.7"
-thag_rs = { path = "../..", default-features = false
 */
 
 /// Select demo scripts and generate and serve HTML report.
@@ -31,8 +30,8 @@ use std::{
 };
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{ast, code_utils::to_ast, lazy_static_var, regex};
-use warp::Filter;
 use thag_rs::{auto_help, help_system::check_help_and_exit};
+use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
 

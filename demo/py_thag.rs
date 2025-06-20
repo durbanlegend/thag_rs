@@ -69,5 +69,5 @@ loop {
 
     println!("Triple {t:?} has child triples {t1:?}, {t2:?} and {t3:?}");
     println!();
-    println!("Would you like to try another triple? You can enter any valid triple that won't break the limits of Rust's usize");
+    println!("Would you like to try another triple? You can enter any valid triple that won't break the limits of Rust's usize.");
 }

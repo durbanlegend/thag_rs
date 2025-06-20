@@ -1,20 +1,17 @@
 /*
 Usage:
 
-Either compile the tool with `thag tools/theme_converter.rs -x` and run it as `theme_converter ...`
-(recommended) or run it as `thag tools/theme_converter.rs -- ...`.
-
 # Convert a single theme
-thag tools/theme_converter.rs -- -i themes/base24/dracula.yaml -o themes/converted
+thag_convert_themes -- -i themes/base24/dracula.yaml -o themes/converted
 
 # Convert a directory of themes
-thag tools/theme_converter.rs -- -i themes/base24 -o themes/converted -v
+thag_convert_themes -- -i themes/base24 -o themes/converted -v
 
 # Convert and generate 256-color versions
-thag tools/theme_converter.rs -- -i themes/base24 -o themes/converted -c -v
+thag_convert_themes -- -i themes/base24 -o themes/converted -c -v
 
 # Force overwrite existing themes
-thag tools/theme_converter.rs -- -i themes/base24 -o themes/converted -f
+thag_convert_themes -- -i themes/base24 -o themes/converted -f
 */
 
 /*[toml]

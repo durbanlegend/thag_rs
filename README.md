@@ -98,7 +98,9 @@ ___
 
 - Automated inclusion of `derive` or other dependency features
 
-- **New in 0.2.0:** The `thag_profiler` sub-crate is cross-platform profiling library for execution timeline and/or memory usage, as described above.
+- **New in 0.2.0:** The `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, as described above.
+
+- **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, displaying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
 
 - **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
 
@@ -111,7 +113,7 @@ ___
 
 💡 **Getting Started:**
 
-Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
+Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
 ## Installation
 
@@ -142,7 +144,7 @@ As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlege
 
 Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
 
-As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/download_demo_dir.rs) can download the whole demo directory from Github.
+As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/main/download_demo_dir.rs) can download the whole demo directory from Github.
 Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose `Ctrl-d` to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 
 ## Quick start: ways to run the `thag` command

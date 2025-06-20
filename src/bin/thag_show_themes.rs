@@ -20,7 +20,8 @@ fn print_usage() {
 }
 
 fn list_themes() -> ThagResult<()> {
-    let themes = Theme::list_builtin();
+    let mut themes = Theme::list_builtin();
+    themes.sort();
 
     println!("\nAvailable built-in themes:");
     println!("{}", "=".repeat(25));

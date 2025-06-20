@@ -1,4 +1,5 @@
-use std::env;
+use inquire::{Select, Text};
+use std::{env, io};
 use thag_rs::{
     auto_help,
     styling::{display_theme_details, display_theme_roles, TermAttributes, Theme},
@@ -14,9 +15,11 @@ use thag_rs::{
 
 fn print_usage() {
     println!("Usage:");
-    println!("  thag_show_themes <theme-name>  Show details for a specific theme");
-    println!("  thag_show_themes list          List all available themes");
-    println!("  thag_show_themes help          Show this help message");
+    println!("  thag_show_themes                Interactive theme browser (default)");
+    println!("  thag_show_themes <theme-name>   Show details for a specific theme");
+    println!("  thag_show_themes list           List all available themes");
+    println!("  thag_show_themes interactive    Interactive theme browser");
+    println!("  thag_show_themes help           Show this help message");
 }
 
 fn list_themes() -> ThagResult<()> {
@@ -32,6 +35,155 @@ fn list_themes() -> ThagResult<()> {
     }
 
     println!("\nTotal: {} themes available", themes.len());
+    Ok(())
+}
+
+fn interactive_theme_browser() -> ThagResult<()> {
+    // Initialize terminal attributes to ensure styling works
+    let _term_attrs = TermAttributes::get_or_init();
+
+    let mut themes = Theme::list_builtin();
+    themes.sort();
+
+    // Create theme options with descriptions
+    let theme_options: Vec<String> = themes
+        .iter()
+        .map(|theme_name| {
+            let theme = Theme::get_builtin(theme_name).unwrap_or_else(|_| {
+                // Fallback in case theme can't be loaded
+                Theme::get_builtin("none").expect("Failed to load fallback theme")
+            });
+            format!("{} - {}", theme_name, theme.description)
+        })
+        .collect();
+
+    // Clear screen initially
+    print!("\x1b[2J\x1b[H");
+
+    // Track the current filter to restore it when returning to the list
+    let mut current_filter = String::new();
+
+    loop {
+        println!("\n🎨 Interactive Theme Browser");
+        println!("{}", "=".repeat(80));
+        println!("📚 {} themes available", themes.len());
+        println!("{}", "=".repeat(80));
+
+        // Step 1: Get filter from user
+        let filter_prompt = if current_filter.is_empty() {
+            "🔍 Enter filter to search themes (or press Enter for all themes):"
+        } else {
+            let current_count = theme_options
+                .iter()
+                .filter(|opt| opt.to_lowercase().contains(&current_filter.to_lowercase()))
+                .count();
+            &format!(
+                "🔍 Filter [current: '{}' → {} themes]: ",
+                current_filter, current_count
+            )
+        };
+
+        let filter_result = Text::new(filter_prompt)
+            .with_default(&current_filter)
+            .with_help_message("↑↓ edit filter • Enter to apply • Ctrl+C to exit")
+            .prompt();
+
+        let filter = match filter_result {
+            Ok(f) => f.trim().to_string(),
+            Err(inquire::InquireError::OperationCanceled) => {
+                print!("\x1b[2J\x1b[H");
+                println!("👋 Thanks for using the theme browser!");
+                break;
+            }
+            Err(e) => {
+                println!("❌ Error: {}", e);
+                break;
+            }
+        };
+
+        // Update current filter
+        current_filter = filter.clone();
+
+        // Step 2: Filter and display themes
+        let filtered_options: Vec<String> = if filter.is_empty() {
+            theme_options.clone()
+        } else {
+            theme_options
+                .iter()
+                .filter(|option| option.to_lowercase().contains(&filter.to_lowercase()))
+                .cloned()
+                .collect()
+        };
+
+        if filtered_options.is_empty() {
+            println!("\n❌ No themes match filter '{}'", filter);
+            println!("Press Enter to try a different filter...");
+            let _ = io::stdin().read_line(&mut String::new());
+            print!("\x1b[2J\x1b[H");
+            continue;
+        }
+
+        // Show filtered results count
+        print!("\x1b[2J\x1b[H"); // Clear screen for cleaner display
+        if !filter.is_empty() {
+            println!(
+                "\n📋 Found {} theme(s) matching '{}'\n",
+                filtered_options.len(),
+                filter
+            );
+        } else {
+            println!("\n📋 Showing all {} themes\n", filtered_options.len());
+        }
+
+        let selection = Select::new("🔍 Select a theme to preview:", filtered_options)
+            .with_page_size(24)
+            .with_help_message("↑↓ navigate • Enter to select • Esc to change filter")
+            .prompt();
+
+        match selection {
+            Ok(selected) => {
+                // Extract theme name from selection (before the " - " separator)
+                let theme_name = selected.split(" - ").next().unwrap_or(&selected);
+
+                // Clear screen for better presentation
+                print!("\x1b[2J\x1b[H");
+
+                match show_theme(theme_name) {
+                    Ok(()) => {
+                        println!("\n{}", "=".repeat(80));
+                        if current_filter.is_empty() {
+                            println!("🔙 Press Enter to return to theme browser...");
+                        } else {
+                            println!(
+                                "🔙 Press Enter to return (filter '{}' will be kept)...",
+                                current_filter
+                            );
+                        }
+                        let _ = io::stdin().read_line(&mut String::new());
+
+                        // Clear screen before returning to menu
+                        print!("\x1b[2J\x1b[H");
+                    }
+                    Err(e) => {
+                        println!("❌ Error displaying theme '{}': {}", theme_name, e);
+                        println!("Press Enter to continue...");
+                        let _ = io::stdin().read_line(&mut String::new());
+                        print!("\x1b[2J\x1b[H");
+                    }
+                }
+            }
+            Err(inquire::InquireError::OperationCanceled) => {
+                print!("\x1b[2J\x1b[H");
+                println!("👋 Thanks for using the theme browser!");
+                break;
+            }
+            Err(e) => {
+                println!("❌ Error: {}", e);
+                break;
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -159,13 +311,19 @@ fn main() -> ThagResult<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        print_usage();
+        // Default to interactive mode when no arguments provided
+        println!("🎨 Welcome to thag theme browser!");
+        println!("Starting interactive mode...\n");
+        interactive_theme_browser()?;
         return Ok(());
     }
 
     match args[1].to_lowercase().as_str() {
         "list" => {
             list_themes()?;
+        }
+        "interactive" | "i" => {
+            interactive_theme_browser()?;
         }
         "help" | "--help" | "-h" => {
             print_usage();

@@ -13,7 +13,6 @@ thag_rs = { path = "../..", default-features = false, features = ["core"] }
 /// script's generated project, and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, thag_front_ends, tools
-// use inquire::Confirm;
 use std::{error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::{file_navigator, tool_errors};
 use thag_rs::{auto_help, help_system::check_help_and_exit};

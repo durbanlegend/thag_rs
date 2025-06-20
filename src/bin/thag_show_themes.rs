@@ -60,6 +60,10 @@ fn interactive_theme_browser() -> ThagResult<()> {
     // Clear screen initially
     print!("\x1b[2J\x1b[H");
 
+    let mut cursor = 0_usize;
+    use inquire::error::InquireResult;
+    use inquire::list_option::ListOption;
+
     loop {
         println!("\n🎨 Interactive Theme Browser");
         println!("{}", "=".repeat(80));
@@ -67,15 +71,24 @@ fn interactive_theme_browser() -> ThagResult<()> {
         println!("💡 Start typing to filter themes by name");
         println!("{}", "=".repeat(80));
 
-        let selection = Select::new("🔍 Select a theme to preview:", theme_options.clone())
-            .with_page_size(24)
-            .with_help_message("↑↓ navigate • type to filter • Enter to select • Esc to quit")
-            .prompt();
+        let selection: InquireResult<ListOption<String>> =
+            Select::new("🔍 Select a theme to preview:", theme_options.clone())
+                .with_page_size(24)
+                .with_help_message("↑↓ navigate • type to filter • Enter to select • Esc to quit")
+                .with_reset_cursor(false)
+                .with_starting_cursor(cursor)
+                .raw_prompt();
 
         match selection {
             Ok(selected) => {
+                cursor = selected.index;
+
                 // Extract theme name from selection (before the " - " separator)
-                let theme_name = selected.split(" - ").next().unwrap_or(&selected);
+                let theme_name = selected
+                    .value
+                    .split(" - ")
+                    .next()
+                    .unwrap_or(&selected.value);
 
                 // Clear screen for better presentation
                 print!("\x1b[2J\x1b[H");

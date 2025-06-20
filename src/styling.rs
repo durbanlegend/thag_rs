@@ -2692,8 +2692,12 @@ pub fn display_theme_details(theme: &Theme) {
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{styled_name}{padding}");
+
+        // Get style for this role
+        let style = theme.style_for(Heading1);
+
         let description = if *attr == "Theme" {
-            paint_for_role(Heading1, description)
+            style.paint(description)
         } else {
             (*description).to_string()
         };

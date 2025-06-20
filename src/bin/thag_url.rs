@@ -4,6 +4,7 @@ syn = { version = "2", default-features = false, features = ["derive", "parsing"
 tempfile = "3.14.0"
 tinyget = { version = "1.0.2", features = ["https"] }
 url = "2.5.4"
+thag_rs = { path = "../..", default-features = false
 */
 /// `thag` front-end command to run scripts from URLs.
 ///
@@ -12,6 +13,7 @@ url = "2.5.4"
 use std::{error::Error, process::Command, string::ToString};
 use syn::{parse_file, Expr};
 use url::Url;
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 enum SourceType {
     GitHub,
@@ -214,6 +216,10 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_url");
+    check_help_and_exit(&help);
+
     let args: Vec<String> = std::env::args().collect();
 
     // Need at least URL and optionally additional flags

@@ -129,7 +129,7 @@ fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadat
 
     let file_path_str = &file_path.to_string_lossy();
 
-    if !doc || !purpose {
+    if (!doc || !purpose) && file_path_str != "src/bin/thag_rs.rs" {
         if !doc {
             println!("{file_path_str} has no docs");
         }

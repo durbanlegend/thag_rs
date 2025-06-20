@@ -11,12 +11,12 @@ rm -f dhat-heap.json
 
 echo "1. Running precise validation with thag_profiler only..."
 echo "--------------------------------------------------------"
-THAG_PROFILER=memory,,announce,true thag --features full_profiling tools/thag_validate_precise.rs -f
+THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_validate_precise.rs -f
 echo
 
 echo "2. Running precise validation with dhat-rs..."
 echo "---------------------------------------------"
-thag --features dhat-heap tools/thag_validate_precise.rs -f
+thag --features dhat-heap demo/thag_validate_precise.rs -f
 echo
 
 if [ -f "dhat-heap.json" ]; then

@@ -468,9 +468,9 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 /// # Panics
 ///
 /// This function panics if profiling cannot be enabled.
-#[cfg(feature = "full_profiling")]
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
+    #[cfg(feature = "full_profiling")]
     safe_alloc! {
         eprintln!("root_module={root_module}, profile_config={profile_config:#?}, tls_allocator={:#?}", cfg!(feature = "tls_allocator"));
 
@@ -506,11 +506,10 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
         }
     };
     // eprintln!("Exiting init_profiling");
-}
 
-// Provide no-op versions when profiling is disabled
-#[cfg(not(feature = "time_profiling"))]
-pub fn init_profiling(_root_module: &str, _profile_config: ProfileConfiguration) {}
+    #[cfg(not(feature = "time_profiling"))]
+    {}
+}
 
 #[cfg(feature = "time_profiling")]
 fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {

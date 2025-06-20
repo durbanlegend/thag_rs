@@ -1097,15 +1097,15 @@ pub(crate) fn enable_profiling(
 /// This function disables profiling and resets the profiling state.
 /// Use this to explicitly stop profiling that was enabled via the
 /// `#[enable_profiling]` attribute macro.
-#[cfg(feature = "time_profiling")]
 pub fn disable_profiling() {
-    // Call the internal enable_profiling function with false
-    let _ = crate::profiling::enable_profiling(false, None);
-}
+    #[cfg(feature = "time_profiling")]
+    {
+        // Call the internal enable_profiling function with false
+        let _ = crate::profiling::enable_profiling(false, None);
+    }
 
-#[cfg(not(feature = "time_profiling"))]
-pub const fn disable_profiling() {
-    // No-op implementation
+    #[cfg(not(feature = "time_profiling"))]
+    {}
 }
 
 /// Creates and initializes a single profile file with header information.
@@ -1153,31 +1153,32 @@ fn initialize_profile_file(path: &str) -> ProfileResult<()> {
 /// `true` if profiling is enabled, `false` otherwise
 // #[inline(always)]
 // #[allow(clippy::inline_always)]
-#[cfg(feature = "time_profiling")]
 pub fn is_profiling_enabled() -> bool {
-    // debug_log!(
-    //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
-    //     cfg!(test),
-    //     cfg!(feature = "time_profiling")
-    // );
-    // In test mode, only use the runtime state to allow enable/disable testing.
-    // Note that cfg(test) only applies to internal tests, not to external dirs like test/.
-    // eprintln!("cfg!(test)={}", cfg!(test));
+    #[cfg(feature = "time_profiling")]
+    {
+        // debug_log!(
+        //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
+        //     cfg!(test),
+        //     cfg!(feature = "time_profiling")
+        // );
+        // In test mode, only use the runtime state to allow enable/disable testing.
+        // Note that cfg(test) only applies to internal tests, not to external dirs like test/.
+        // eprintln!("cfg!(test)={}", cfg!(test));
 
-    #[cfg(test)]
-    let enabled = PROFILING_STATE.load(Ordering::SeqCst);
+        #[cfg(test)]
+        let enabled = PROFILING_STATE.load(Ordering::SeqCst);
 
-    // In normal operation, use both feature flag and runtime state
-    #[cfg(not(test))]
-    let enabled = PROFILING_FEATURE && PROFILING_STATE.load(Ordering::SeqCst);
+        // In normal operation, use both feature flag and runtime state
+        #[cfg(not(test))]
+        let enabled = PROFILING_FEATURE && PROFILING_STATE.load(Ordering::SeqCst);
 
-    enabled
-}
+        enabled
+    }
 
-#[cfg(not(feature = "time_profiling"))]
-#[must_use]
-pub const fn is_profiling_enabled() -> bool {
-    false
+    #[cfg(not(feature = "time_profiling"))]
+    {
+        false
+    }
 }
 
 /// Checks if profiling state is currently enabled.
@@ -1191,20 +1192,21 @@ pub const fn is_profiling_enabled() -> bool {
 /// `true` if profiling state is enabled, `false` otherwise
 // #[inline(always)]
 // #[allow(clippy::inline_always)]
-#[cfg(feature = "time_profiling")]
 pub fn is_profiling_state_enabled() -> bool {
-    // debug_log!(
-    //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
-    //     cfg!(test),
-    //     cfg!(feature = "time_profiling")
-    // );
-    PROFILING_STATE.load(Ordering::SeqCst)
-}
+    #[cfg(feature = "time_profiling")]
+    {
+        // debug_log!(
+        //     r#"cfg!(test)={}, cfg(feature = "time_profiling")={}"#,
+        //     cfg!(test),
+        //     cfg!(feature = "time_profiling")
+        // );
+        PROFILING_STATE.load(Ordering::SeqCst)
+    }
 
-#[cfg(not(feature = "time_profiling"))]
-#[must_use]
-pub const fn is_profiling_state_enabled() -> bool {
-    false
+    #[cfg(not(feature = "time_profiling"))]
+    {
+        false
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -2019,6 +2021,7 @@ pub fn build_stack(
 ///
 /// # Returns
 /// A vector of strings representing the call path of profiled functions
+#[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
     #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]

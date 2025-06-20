@@ -12,7 +12,7 @@ use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
 use thag_rs::{execute, get_args, ThagResult};
 
-#[enable_profiling(runtime)]
+#[enable_profiling(no)]
 pub fn main() -> ThagResult<()> {
     #[cfg(debug_assertions)]
     let start = Instant::now();

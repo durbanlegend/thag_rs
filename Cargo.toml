@@ -51,7 +51,7 @@ log = "0.4.27"
 mockall = { version = "0.13.1", optional = true }
 nu-ansi-term = { version = "0.50.1", optional = true }
 pathdiff = { version = "0.2.3", optional = true }
-phf = { version = "0.11", features = ["macros"] }
+phf = { version = "0.12", features = ["macros"] }
 prettyplease = { version = "0.2", optional = true }
 proc-macro2 = "1.0.95"
 quote = { version = "1.0.40", optional = true }
@@ -100,7 +100,7 @@ warp = { version = "0.3", optional = true }
 dhat = { version = "0.3", optional = true }
 
 [build-dependencies]
-phf = { version = "0.11", features = ["macros"] }
+phf = { version = "0.12", features = ["macros"] }
 tempfile = "3.20"
 toml = "0.8.19"
 
@@ -133,87 +133,97 @@ path = "src/bin/thag_rs.rs"
 # Add these [[bin]] sections after your existing thag binary
 [[bin]]
 name = "thag_ast"
-path = "tools/thag_ast.rs"
+path = "src/bin/thag_ast.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_cargo"
-path = "tools/thag_cargo.rs"
+path = "src/bin/thag_cargo.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_clippy"
-path = "tools/thag_clippy.rs"
+path = "src/bin/thag_clippy.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "thag_demo_help"
+path = "src/bin/thag_demo_help.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "thag_migrate_tool"
+path = "src/bin/thag_migrate_tool.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_convert_themes"
-path = "tools/thag_convert_themes.rs"
+path = "src/bin/thag_convert_themes.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_detect_term"
-path = "tools/thag_detect_term.rs"
+path = "src/bin/thag_detect_term.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_expand"
-path = "tools/thag_expand.rs"
+path = "src/bin/thag_expand.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_find_demos"
-path = "tools/thag_find_demos.rs"
+path = "src/bin/thag_find_demos.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_gen_config"
-path = "tools/thag_gen_config.rs"
+path = "src/bin/thag_gen_config.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_gen_errors"
-path = "tools/thag_gen_errors.rs"
+path = "src/bin/thag_gen_errors.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_gen_readme"
-path = "tools/thag_gen_readme.rs"
+path = "src/bin/thag_gen_readme.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_get_demo"
-path = "tools/thag_get_demo.rs"
+path = "src/bin/thag_get_demo.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_legible"
-path = "tools/thag_legible.rs"
+path = "src/bin/thag_legible.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_markdown"
-path = "tools/thag_markdown.rs"
+path = "src/bin/thag_markdown.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_show_themes"
-path = "tools/thag_show_themes.rs"
+path = "src/bin/thag_show_themes.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_to_rust_script"
-path = "tools/thag_to_rust_script.rs"
+path = "src/bin/thag_to_rust_script.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_url"
-path = "tools/thag_url.rs"
+path = "src/bin/thag_url.rs"
 required-features = ["tools"]
 
 # [[bin]]
 # name = "thag_profile_benchmark"
-# path = "tools/thag_profile_benchmark.rs"
+# path = "src/bin/thag_profile_benchmark.rs"
 # required-features = ["tools"]
 
 [features]

@@ -1113,12 +1113,42 @@ impl TermAttributes {
 }
 
 #[must_use]
+/// Applies styling to text based on the specified role
+///
+/// This is a convenience function that gets the appropriate style for a role
+/// from the currently loaded theme and applies it to the given string.
+///
+/// # Arguments
+/// * `role` - The role that determines the styling to apply
+/// * `string` - The text to be styled
+///
+/// # Returns
+/// A new string with ANSI escape codes applied for the role's styling
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::{paint_for_role, Role};
+///
+/// let styled_error = paint_for_role(Role::Error, "This is an error message");
+/// println!("{}", styled_error); // Prints in error styling
+/// ```
 #[profiled]
 pub fn paint_for_role(role: Role, string: &str) -> String {
     Style::for_role(role).paint(string)
 }
 
 #[must_use]
+/// Returns the appropriate style for the given theme and role
+///
+/// This is a utility function that extracts the style for a specific role
+/// from the provided theme instance.
+///
+/// # Arguments
+/// * `theme` - The theme to get the style from
+/// * `role` - The role that determines which style to retrieve
+///
+/// # Returns
+/// A `Style` instance configured for the specified role in the given theme
 #[profiled]
 pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
     theme.style_for_role(role)
@@ -1226,6 +1256,16 @@ pub struct Palette {
 }
 
 impl Palette {
+    /// Returns the appropriate style for the given role
+    ///
+    /// This method looks up the style configuration for a specific role
+    /// in the palette and returns a clone of that style.
+    ///
+    /// # Arguments
+    /// * `role` - The role to get the style for
+    ///
+    /// # Returns
+    /// A `Style` instance configured for the specified role
     #[must_use]
     #[profiled]
     pub fn style_for_role(&self, role: Role) -> Style {
@@ -1620,7 +1660,29 @@ impl Theme {
         Self::from_toml(theme_name, theme_index.content)
     }
 
-    // New method to get theme with specific color support
+    /// Loads a built-in theme with the specified color support level.
+    ///
+    /// This method loads a built-in theme and converts its colors to match
+    /// the specified color support level. Colors are automatically downgraded
+    /// if necessary (e.g., from TrueColor to Color256 or Basic).
+    ///
+    /// # Arguments
+    /// * `theme_name` - The name of the built-in theme to load
+    /// * `color_support` - The target color support level
+    ///
+    /// # Returns
+    /// A new `Theme` instance with colors adjusted for the specified support level
+    ///
+    /// # Errors
+    /// Returns `ThagError` if the specified theme name is not recognized
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::ThagError;
+    /// use thag_rs::styling::{Theme, ColorSupport};
+    /// let theme = Theme::get_theme_with_color_support("dracula", ColorSupport::Color256)?;
+    /// # Ok::<(), ThagError>(())
+    /// ```
     #[profiled]
     fn get_theme_with_color_support(
         theme_name: &str,
@@ -1635,6 +1697,22 @@ impl Theme {
         Ok(theme)
     }
 
+    /// Creates a theme from a theme definition.
+    ///
+    /// This method converts a `ThemeDefinition` parsed from TOML into a complete
+    /// `Theme` instance, including color support validation and background color processing.
+    ///
+    /// # Arguments
+    /// * `def` - The theme definition to convert
+    ///
+    /// # Returns
+    /// A new `Theme` instance based on the definition
+    ///
+    /// # Errors
+    /// Returns `ThagError` if:
+    /// - Color support string cannot be parsed
+    /// - Background luminance string cannot be parsed
+    /// - Palette configuration is invalid
     #[profiled]
     fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
         // vlog!(V::VV, "def.min_color_support={:?}", def.min_color_support);
@@ -1927,6 +2005,14 @@ impl Theme {
             .unwrap_or_else(|_| panic!("Failed to convert color index {closest} to u8"))
     }
 
+    /// Converts all colors in the theme's palette to match the specified color support level.
+    ///
+    /// This method modifies the theme in place, converting colors from higher color support
+    /// levels to lower ones as needed. For example, TrueColor RGB values will be converted
+    /// to the closest 256-color or basic ANSI color equivalents.
+    ///
+    /// # Arguments
+    /// * `target` - The target color support level to convert to
     #[profiled]
     pub fn convert_to_color_support(&mut self, target: ColorSupport) {
         match target {
@@ -2261,7 +2347,37 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
     base_distance
 }
 
+/// Finds the closest color in the 256-color palette to the given RGB value.
+///
+/// This function maps an RGB color to the closest match in the standard 256-color
+/// terminal palette, which consists of:
+/// - 16 basic ANSI colors (0-15)
+/// - 216 colors in a 6×6×6 RGB cube (16-231)
+/// - 24 grayscale colors (232-255)
+///
+/// The function prioritizes grayscale colors when all RGB components are equal,
+/// then falls back to finding the closest match in the 6×6×6 color cube.
+///
+/// # Arguments
+/// * `rgb` - A tuple of (red, green, blue) values, each in the range 0-255
+///
+/// # Returns
+/// The index (0-255) of the closest color in the 256-color palette
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::find_closest_color;
+///
+/// // Pure red should map to a red in the color cube
+/// let red_index = find_closest_color((255, 0, 0));
+/// assert!(red_index >= 16); // Not a basic ANSI color
+///
+/// // Gray should map to the grayscale range
+/// let gray_index = find_closest_color((128, 128, 128));
+/// assert!(gray_index >= 232 && gray_index <= 255);
+/// ```
 #[must_use]
+#[profiled]
 pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
@@ -2327,8 +2443,36 @@ fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
         .map_or(0, |(i, _)| i as u8)
 }
 
-// Helper function to get RGB values for a color number (for verification)
 #[must_use]
+/// Returns the RGB color values for a given color index in the 256-color palette.
+///
+/// This function maps color indices (0-255) to their corresponding RGB values:
+/// - 0-15: Basic ANSI colors (black, red, green, etc.)
+/// - 16-231: 6×6×6 RGB color cube
+/// - 232-255: Grayscale colors from dark to light
+///
+/// # Arguments
+/// * `color` - The color index (0-255) to convert to RGB
+///
+/// # Returns
+/// A tuple of (red, green, blue) values, each in the range 0-255
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::get_rgb;
+///
+/// // Basic colors
+/// assert_eq!(get_rgb(0), (0, 0, 0));     // Black
+/// assert_eq!(get_rgb(15), (255, 255, 255)); // White
+///
+/// // Color cube
+/// let rgb = get_rgb(196); // Bright red in 256-color palette
+/// assert_eq!(rgb, (255, 0, 0));
+///
+/// // Grayscale
+/// let gray = get_rgb(244); // Mid-gray
+/// assert_eq!(gray, (128, 128, 128));
+/// ```
 #[profiled]
 pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
@@ -2380,6 +2524,24 @@ const BASIC_COLORS: [(u8, u8, u8); 16] = [
     (255, 255, 255), // white
 ];
 
+/// Displays all available roles and their corresponding styles in the given theme.
+///
+/// This function prints a formatted table showing each role name styled according
+/// to its theme configuration, along with a description of what that role represents.
+/// This is useful for visualizing how different message types will appear when
+/// using the current theme.
+///
+/// # Arguments
+/// * `theme` - The theme to display role styles for
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::{Theme, display_theme_roles};
+///
+/// let theme = Theme::get_builtin("dracula")?;
+/// display_theme_roles(&theme);
+/// # Ok::<(), thag_rs::ThagError>(())
+/// ```
 #[profiled]
 pub fn display_theme_roles(theme: &Theme) {
     // Role descriptions
@@ -2447,6 +2609,23 @@ pub fn display_theme_roles(theme: &Theme) {
 }
 
 #[allow(clippy::too_many_lines)]
+/// Displays detailed theme information including theme attributes and terminal attributes.
+///
+/// This function outputs comprehensive information about the current theme and terminal
+/// configuration, including:
+/// - Theme metadata (name, type, file path, description)
+/// - Background color information
+/// - Color palette support level
+/// - Terminal attributes (how determined, color support, background properties)
+///
+/// The output is formatted with appropriate styling and presented in a structured
+/// table format with clear visual separators.
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::display_theme_details;
+/// display_theme_details();
+/// ```
 #[profiled]
 pub fn display_theme_details() {
     let term_attrs = TermAttributes::get_or_init();

@@ -13,12 +13,14 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 # thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "simplelog"] }
 toml = "0.8"
+thag_rs = { path = "../..", default-features = false
 */
 
 /// Prompted config file builder for `thag`.
 ///
-/// Makes a modified copy of a user-selected `config.toml` file. Some fields such as
-/// RGB values in decimal and hex are not prompted for as they are more easily entered
+/// Makes a modified copy of a user-selected `config.toml` file.
+///
+/// Some fields, such as RGB values in decimal and hex, are not prompted for as they are more easily entered
 /// using a text editor.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
@@ -36,8 +38,8 @@ use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTr
 use thag_proc_macros::file_navigator;
 use thag_rs::config::{DependencyInference, RealContext};
 use thag_rs::{
-    maybe_config, ColorSupport, Config, Context, Dependencies, FeatureOverride, Logging, Misc,
-    ProcMacros, Styling, TermBgLuma, Verbosity,
+    auto_help, help_system::check_help_and_exit, maybe_config, ColorSupport, Config, Context,
+    Dependencies, FeatureOverride, Logging, Misc, ProcMacros, Styling, TermBgLuma, Verbosity,
 };
 type Error = CustomUserError;
 
@@ -168,7 +170,7 @@ fn select_base_config() -> Result<ConfigSource, Box<dyn std::error::Error>> {
         //     Ok(ConfigSource::Default(default_config))
         // }
         s if s.starts_with("Default configuration") => {
-            let default_config_str = include_str!("../assets/default_config.toml");
+            let default_config_str = include_str!("../../assets/default_config.toml");
             let default_config: Config = toml::from_str(default_config_str)?;
             Ok(ConfigSource::Default(default_config))
         }
@@ -996,6 +998,10 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_gen_config");
+    check_help_and_exit(&help);
+
     println!("{}", "Welcome to thag config builder!".bold());
 
     let config_path = dirs::config_dir()

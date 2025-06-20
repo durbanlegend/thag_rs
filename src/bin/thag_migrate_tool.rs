@@ -12,7 +12,7 @@ thag_rs = { path = "../..", default-features = false, features = ["core"] }
 /// - Updating Cargo.toml entries if needed
 /// - Preserving all existing functionality
 //# Purpose: Migrate tools from tools/ directory to src/bin/ with auto-help integration
-//# Categories: migration, tools
+//# Categories: tools
 //# Usage: thag_migrate_tool [--help|-h]
 use inquire::{Confirm, Select};
 use std::fs;
@@ -207,9 +207,9 @@ fn transform_tool_content(
     content: &str,
     tool_name: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let mut lines: Vec<&str> = content.lines().collect();
+    let lines: Vec<&str> = content.lines().collect();
     let mut transformed = Vec::new();
-    let mut in_main = false;
+    // let mut in_main = false;
     let mut help_added = false;
     let tool_name_without_ext = tool_name.trim_end_matches(".rs");
 
@@ -219,18 +219,20 @@ fn transform_tool_content(
 
         // Look for patterns to add help system integration
         if line.contains("fn main(") && !help_added {
-            in_main = true;
-
+            // in_main = true;
             // Check if thag_rs is already imported
-            let has_thag_import = lines.iter().any(|l| l.contains("use thag_rs"));
+            let has_thag_import = lines
+                .iter()
+                .any(|l| l.contains(r#"use thag_rs::{{auto_help"#));
 
             if !has_thag_import {
                 // Add thag_rs import in the dependencies section
                 if let Some(toml_end) = find_toml_block_end(&lines) {
                     // Insert thag_rs dependency
-                    let deps_line = format!("thag_rs = {{ path = \"../..\", default-features = false, features = [\"core\"] }}");
+                    let deps_line =
+                        format!(r#"thag_rs = {{ path = "../..", default-features = false"#);
                     // This is a simplified approach - in practice you'd want more sophisticated TOML parsing
-                    transformed.insert(toml_end + 1, deps_line);
+                    transformed.insert(toml_end, deps_line);
                 }
 
                 // Add the import after the last use statement
@@ -249,7 +251,7 @@ fn transform_tool_content(
                         .to_string(),
                 );
                 transformed.push(format!(
-                    "    let help = auto_help!(\"{}\");",
+                    r#"    let help = auto_help!("{}");"#,
                     tool_name_without_ext
                 ));
                 transformed.push("    check_help_and_exit(&help);".to_string());
@@ -278,6 +280,9 @@ fn find_toml_block_end(lines: &[&str]) -> Option<usize> {
 fn find_last_use_statement(lines: &[&str]) -> Option<usize> {
     let mut last_use = None;
     for (i, line) in lines.iter().enumerate() {
+        if line.trim().starts_with("fn ") {
+            break;
+        }
         if line.trim().starts_with("use ") {
             last_use = Some(i);
         }
@@ -306,7 +311,7 @@ fn update_cargo_toml(tool_name: &str) -> Result<bool, Box<dyn std::error::Error>
     let tool_name_without_ext = tool_name.trim_end_matches(".rs");
 
     // Check if this bin entry already exists
-    let bin_entry = format!("name = \"{}\"", tool_name_without_ext);
+    let bin_entry = format!(r#"name = "{}""#, tool_name_without_ext);
     if content.contains(&bin_entry) {
         println!(
             "ℹ️  Cargo.toml already contains entry for {}",
@@ -340,9 +345,11 @@ fn update_cargo_toml(tool_name: &str) -> Result<bool, Box<dyn std::error::Error>
         // Add the new bin entry
         new_lines.push("");
         new_lines.push("[[bin]]");
-        new_lines.push(&format!("name = \"{}\"", tool_name_without_ext));
-        new_lines.push(&format!("path = \"src/bin/{}\"", tool_name));
-        new_lines.push("required-features = [\"tools\"]");
+        let var_name = format!(r#"name = "{}""#, tool_name_without_ext);
+        new_lines.push(&var_name);
+        let var_name = format!(r#"path = "src/bin/{}""#, tool_name);
+        new_lines.push(&var_name);
+        new_lines.push(r#"required-features = ["tools"]"#);
 
         // Add remaining lines
         new_lines.extend(&lines[index..]);

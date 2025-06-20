@@ -9,6 +9,7 @@ side-by-side-diff = "0.1.2"
 tempfile = "3.17.1"
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
@@ -29,6 +30,7 @@ use std::{
 };
 use tempfile::tempdir;
 use thag_proc_macros::{file_navigator, tool_errors};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 tool_errors! {}
 file_navigator! {}
@@ -76,6 +78,10 @@ fn get_script_mode() -> ScriptMode {
 }
 
 fn main() -> Result<()> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_expand");
+    check_help_and_exit(&help);
+
     // Directly call expand_script
     expand_script()
 }

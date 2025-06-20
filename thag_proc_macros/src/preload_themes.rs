@@ -123,14 +123,26 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         /// A static HashMap mapping background color hex values to theme names
         #[derive(Debug)]
         pub struct ThemeIndex {
+            /// The name of the theme
             pub name: &'static str,
+            /// Array of RGB color values that represent the theme's background colors
             pub bg_rgbs: &'static [(u8, u8, u8)],
+            /// The background luminance requirement (light or dark) for this theme
             pub term_bg_luma: TermBgLuma,
+            /// The minimum color support level required by this theme
             pub min_color_support: ColorSupport,
+            /// The raw TOML content of the theme definition
             pub content: &'static str,
         }
 
         impl ThemeIndex {
+            /// Checks if the given background color matches any of this theme's background colors
+            ///
+            /// # Arguments
+            /// * `bg` - RGB color tuple to check against theme backgrounds
+            ///
+            /// # Returns
+            /// `true` if the color matches any theme background, `false` otherwise
             fn matches_background(&self, bg: (u8, u8, u8)) -> bool {
                 // eprintln!("bg={bg:?}, self.bg_rgbs={:?}", self.bg_rgbs);
                 self.bg_rgbs.iter().any(|&theme_bg| {
@@ -138,7 +150,19 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
                 })
             }
 
-            // New method to get theme with specific color support
+            /// Gets a theme instance with the specified color support level
+            ///
+            /// Loads the theme and converts its colors to match the specified color support level.
+            /// Colors are automatically downgraded if necessary (e.g., from TrueColor to Color256 or Basic).
+            ///
+            /// # Arguments
+            /// * `color_support` - The target color support level
+            ///
+            /// # Returns
+            /// A `Theme` instance with colors adjusted for the specified support level
+            ///
+            /// # Panics
+            /// Panics if the theme cannot be loaded (should not happen for valid theme index entries)
             fn get_theme_with_color_support(&self, color_support: ColorSupport) -> Theme {
                 let mut theme = Theme::get_builtin(self.name).expect("Could not get theme");
                 if color_support != ColorSupport::TrueColor {
@@ -156,11 +180,39 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
             #(#bg_lookup_entries),*
         };
 
+        /// Converts RGB color values to a hexadecimal color string with '#' prefix
+        ///
+        /// # Arguments
+        /// * `(r, g, b)` - A tuple reference containing RGB values (0-255)
+        ///
+        /// # Returns
+        /// A string in the format "#rrggbb" where each component is represented as two lowercase hexadecimal digits
+        ///
+        /// # Examples
+        /// ```
+        /// # use thag_rs::styling::ThemeIndex1;
+        /// let hex = ThemeIndex1::rgb_to_hex(&(255, 128, 0));
+        /// assert_eq!(hex, "#ff8000");
+        /// ```
         #[must_use]
         pub fn rgb_to_hex((r, g, b): &(u8, u8, u8)) -> String {
             format!("#{r:02x}{g:02x}{b:02x}")
         }
 
+        /// Converts RGB color values to a hexadecimal color string without '#' prefix
+        ///
+        /// # Arguments
+        /// * `(r, g, b)` - A tuple reference containing RGB values (0-255)
+        ///
+        /// # Returns
+        /// A string in the format "rrggbb" where each component is represented as two lowercase hexadecimal digits
+        ///
+        /// # Examples
+        /// ```
+        /// # use thag_rs::styling::ThemeIndex1;
+        /// let hex = ThemeIndex1::rgb_to_bare_hex(&(255, 128, 0));
+        /// assert_eq!(hex, "ff8000");
+        /// ```
         #[must_use]
         pub fn rgb_to_bare_hex((r, g, b): &(u8, u8, u8)) -> String {
             format!("{r:02x}{g:02x}{b:02x}")

@@ -1,4 +1,5 @@
 use std::env;
+use thag_rs::auto_help;
 
 /// AI-generated prototype tool to demonstrate themes and help implement their background
 /// colouring on terminal emulators.
@@ -266,11 +267,17 @@ fn print_theme_info(theme: &Theme) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_show_themes");
+    // check_help_and_exit(&help);
+    let _ = &help.check_help();
+
+    let mut args: Vec<String> = env::args().collect();
 
     println!("Terminal Theme Helper");
     println!("====================");
 
+    let _ = args.remove(0);
     if args.len() > 1 {
         // Handle specific theme request
         match args[1].to_lowercase().as_str() {
@@ -287,7 +294,7 @@ fn main() {
         }
     } else {
         println!("\nUsage:");
-        println!("  theme-helper <theme-name>");
-        println!("  theme-helper list");
+        println!("  thag_show_themes <theme-name>");
+        println!("  thag_show_themes list");
     }
 }

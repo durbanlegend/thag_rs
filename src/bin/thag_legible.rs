@@ -1,6 +1,7 @@
 /*[toml]
 [profile.dev]
 opt-level = 2
+thag_rs = { path = "../..", default-features = false
 */
 
 /// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
@@ -14,6 +15,7 @@ opt-level = 2
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 //# Categories: crates, technique, tools
 use std::io::{self, Read};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
@@ -35,6 +37,10 @@ fn dethagomize(text_wall: &str) -> String {
 }
 
 fn main() {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_legible");
+    check_help_and_exit(&help);
+
     println!("Type text wall at the prompt and hit Ctrl-D on a new line when done");
 
     // Remove backslash escapes from double quotes.

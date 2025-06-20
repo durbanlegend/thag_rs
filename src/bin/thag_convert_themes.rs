@@ -347,6 +347,10 @@ fn detect_background_luma(hex: &str) -> Result<TermBgLuma, Box<dyn std::error::E
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_convert_themes");
+    check_help_and_exit(&help);
+
     let cli = Cli::parse();
 
     // Create output directory if it doesn't exist

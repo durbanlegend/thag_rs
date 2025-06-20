@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 use quote::quote;
@@ -8,6 +9,7 @@ use quote::quote;
 //# Purpose: Debugging
 //# Categories: AST, crates, technique, tools
 use std::io::{self, Read};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
@@ -16,6 +18,10 @@ fn read_stdin() -> Result<String, io::Error> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_ast");
+    check_help_and_exit(&help);
+
     let content = read_stdin().expect("Problem reading input");
     eprintln!("[{content:#?}]");
     match syn::parse_str::<syn::File>(&content) {

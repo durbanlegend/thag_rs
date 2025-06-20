@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 log = "0.4.27"
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal
@@ -15,8 +16,13 @@ use simplelog::{
 };
 use std::fs::File;
 use supports_color::Stream;
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 fn main() {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_detect_term");
+    check_help_and_exit(&help);
+
     CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Info,

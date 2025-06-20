@@ -29,7 +29,9 @@ use std::{
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
-    code_utils, cvprtln, find_crates, find_metadata, lazy_static_var, regex, Role, V,
+    auto_help, code_utils, cvprtln, find_crates, find_metadata,
+    help_system::check_help_and_exit,
+    lazy_static_var, regex, Role, V,
 };
 
 file_navigator! {}
@@ -322,6 +324,10 @@ fn determine_boilerplate_path(scripts_dir: &Path) -> PathBuf {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_gen_readme");
+    check_help_and_exit(&help);
+
     let mut navigator = FileNavigator::new();
     // ... use the navigator to select a directory
     let scripts_dir = select_directory(&mut navigator, false)?;

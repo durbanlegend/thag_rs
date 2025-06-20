@@ -6,6 +6,7 @@ reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 rfd = "0.14.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+thag_rs = { path = "../..", default-features = false
 */
 
 /// Downloader for the `demo` directory. Basics courtesy of GPT.
@@ -16,6 +17,7 @@ use rfd::FileDialog;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::copy;
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 #[derive(Deserialize)]
 struct GitHubFile {
@@ -89,6 +91,10 @@ Are you sure you want to proceed? Y/n",
 }
 
 fn main() {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_get_demo");
+    check_help_and_exit(&help);
+
     let repo = "durbanlegend/thag_rs";
     let path = "demo";
 

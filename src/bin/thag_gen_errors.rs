@@ -2,6 +2,7 @@
 [dependencies]
 heck = "0.5.0"
 inquire = "0.7.5"
+thag_rs = { path = "../..", default-features = false
 */
 
 /// Quick and easy prompted generator for new custom error types and new variants required
@@ -17,6 +18,7 @@ inquire = "0.7.5"
 use heck::ToSnakeCase;
 use inquire::{Confirm, MultiSelect, Select, Text};
 use std::{error::Error, fs, path::PathBuf};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 #[derive(Debug)]
 struct ErrorVariant {
@@ -351,6 +353,10 @@ fn generate_tests(module: &ErrorModule) -> String {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_gen_errors");
+    check_help_and_exit(&help);
+
     let module_name = Text::new("Error module name:")
         .with_default("MyError")
         .prompt()?;

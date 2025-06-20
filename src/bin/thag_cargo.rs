@@ -4,6 +4,7 @@ atty = "0.2.14"
 inquire = "0.7.5"
 thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
 # thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
+thag_rs = { path = "../..", default-features = false, features = ["core"] }
 */
 
 /// `thag` prompted front-end command to run Cargo commands on scripts.
@@ -15,6 +16,7 @@ thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "
 // use inquire::Confirm;
 use std::{error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::{file_navigator, tool_errors};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 tool_errors! {}
 file_navigator! {}
@@ -163,6 +165,10 @@ enum ScriptMode {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_cargo");
+    check_help_and_exit(&help);
+
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
             eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");

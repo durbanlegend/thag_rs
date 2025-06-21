@@ -22,20 +22,23 @@ strip = false
 /// Tests async runtime overhead and task spawning memory usage.
 ///
 /// # Test with tokio + thag_profiler
-/// thag --features 'full_profiling,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+/// THAG_PROFILER=memory,,announce,true thag --features 'full_profiling,tokio-runtime' demo/thag_async_benchmark.rs -tfm
 ///
 /// # Test with tokio + dhat
-/// thag --features 'dhat-heap,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+/// thag --features 'dhat-heap,tokio-runtime' demo/thag_async_benchmark.rs -tfm
 ///
 /// # Test with smol + thag_profiler
-/// thag --features 'full_profiling,smol-runtime' tools/thag_async_benchmark.rs -tfm
+/// THAG_PROFILER=memory,,announce,true thag --features 'full_profiling,smol-runtime' demo/thag_async_benchmark.rs -tfm
 ///
 /// # Test with smol + dhat
-/// thag --features 'dhat-heap,smol-runtime' tools/thag_async_benchmark.rs -tfm
+/// thag --features 'dhat-heap,smol-runtime' demo/thag_async_benchmark.rs -tfm
 //# Purpose: Validate async memory profiling accuracy across different runtimes
 //# Categories: async, benchmark, profiling
 use std::time::Duration;
-use thag_profiler::{enable_profiling, mem_tracking, profiled};
+use thag_profiler::{enable_profiling, profiled};
+
+// #[cfg(feature = "full_profiling")]
+// use thag_profiler::mem_tracking;
 
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
@@ -141,9 +144,9 @@ fn main() {
 fn main() {
     println!("Please run with either --features tokio-runtime or --features smol-runtime");
     println!("Examples:");
-    println!("  thag --features 'full_profiling,tokio-runtime' tools/thag_async_benchmark.rs");
-    println!("  thag --features 'full_profiling,smol-runtime' tools/thag_async_benchmark.rs");
-    println!("  thag --features 'dhat-heap,tokio-runtime' tools/thag_async_benchmark.rs");
+    println!("  thag --features 'full_profiling,tokio-runtime' demo/thag_async_benchmark.rs");
+    println!("  thag --features 'full_profiling,smol-runtime' demo/thag_async_benchmark.rs");
+    println!("  thag --features 'dhat-heap,tokio-runtime' demo/thag_async_benchmark.rs");
 }
 
 async fn run_benchmark() {

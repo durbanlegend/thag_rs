@@ -78,19 +78,19 @@ fn nested_allocations() -> Vec<Vec<Vec<String>>> {
 fn main() {
     run_profiling();
 
-    println!("=== Profiling Results ===");
+    // println!("=== Profiling Results ===");
 
-    println!("\nthag_profiler results should be displayed above.");
-    println!("dhat results will be in dhat-heap.json (if dhat feature enabled)");
-    println!("\nTo compare:");
-    println!("1. Run with: cargo run --features dhat-heap");
-    println!("2. Check dhat-heap.json for dhat results");
-    println!("3. Compare peak memory usage, total allocations, etc.");
-    println!("\nExpected approximate allocations:");
-    println!("- Test 1: ~1MB (1000 * 1024 bytes)");
-    println!("- Test 2: ~400KB (500 * 800 bytes)");
-    println!("- Test 3: Variable (temporary allocations)");
-    println!("- Test 4: Variable (nested strings and vectors)");
+    // println!("\nthag_profiler results should be displayed above.");
+    // println!("dhat results will be in dhat-heap.json (if dhat feature enabled)");
+    // println!("\nTo compare:");
+    // println!("1. Run with: cargo run --features dhat-heap");
+    // println!("2. Check dhat-heap.json for dhat results");
+    // println!("3. Compare peak memory usage, total allocations, etc.");
+    // println!("\nExpected approximate allocations:");
+    // println!("- Test 1: ~1MB (1000 * 1024 bytes)");
+    // println!("- Test 2: ~400KB (500 * 800 bytes)");
+    // println!("- Test 3: Variable (temporary allocations)");
+    // println!("- Test 4: Variable (nested strings and vectors)");
 }
 
 #[enable_profiling(memory)]

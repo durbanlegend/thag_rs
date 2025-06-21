@@ -493,7 +493,7 @@ fn record_alloc(address: usize, size: usize) {
         let Some(frames) =
             extract_callstack_with_recursion_check(&file_names)
         else {
-            eprintln!("*** Recursion detected ***");
+            debug_log!("Recursion detected");
             return;
         };
 
@@ -517,7 +517,7 @@ fn record_alloc(address: usize, size: usize) {
             let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
 
             // if size == 40 {
-                debug_log!("frames: {frames:#?} for size {size}");
+            //     debug_log!("frames: {frames:#?} for size {size}");
             // }
             debug_log!("Found filename (file_name)={filename}, lineno={lineno}, fn_name: {fn_name:?}, frame: {frame:?} for size {size}");
 
@@ -648,7 +648,6 @@ pub fn record_allocation(file_name: &str, fn_name: &str, line: u32, size: usize)
         // Print list of registered modules to help diagnose issues
         {
             let modules = ProfileReg::get()
-                // .lock()
                 .get_file_names();
             debug_log!("Available modules in registry: {modules:?}");
             flush_debug_log();

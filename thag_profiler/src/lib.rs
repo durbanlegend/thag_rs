@@ -163,8 +163,28 @@ pub fn get_root_module() -> Option<&'static str> {
 ///
 /// Panics if the input path does not contain at least a slash and a dot.
 #[must_use]
+#[cfg(not(target_os = "windows"))]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
     let fname_start = file_name.rfind('/').map_or_else(|| 0, |pos| pos + 1);
+    let fname_dot = file_name.rfind('.').unwrap_or_else(|| file_name.len());
+    file_name[fname_start..fname_dot].to_string()
+}
+
+/// Extract the file stem from a path string (Windows version).
+///
+/// # Panics
+///
+/// Panics if the input path does not contain at least a backslash and a dot.
+#[must_use]
+#[cfg(target_os = "windows")]
+pub fn file_stem_from_path_str(file_name: &'static str) -> String {
+    // On Windows, paths use backslashes and may be escaped (double backslashes)
+    // Look for both single and double backslashes
+    let fname_start = file_name
+        .rfind("\\\\")
+        .map(|pos| pos + 2)
+        .or_else(|| file_name.rfind('\\').map(|pos| pos + 1))
+        .unwrap_or(0);
     let fname_dot = file_name.rfind('.').unwrap_or_else(|| file_name.len());
     file_name[fname_start..fname_dot].to_string()
 }
@@ -784,23 +804,54 @@ mod lib_tests {
 
     #[test]
     fn test_file_stem_functions() {
-        // Test file_stem_from_path_str
-        let file_name = "path/to/my_file.rs";
-        assert_eq!(file_stem_from_path_str(file_name), "my_file");
+        // Test file_stem_from_path_str with Unix paths
+        #[cfg(not(target_os = "windows"))]
+        {
+            let file_name = "path/to/my_file.rs";
+            assert_eq!(file_stem_from_path_str(file_name), "my_file");
+        }
 
-        // Test file_stem_from_path
+        // Test file_stem_from_path_str with Windows paths
+        #[cfg(target_os = "windows")]
+        {
+            // Test with double backslashes (escaped)
+            let win_file = "C:\\\\Users\\\\donforbes\\\\Documents\\\\GitHub\\\\thag_rs\\\\demo\\\\document_pipeline_profile_minimal.rs";
+            assert_eq!(
+                file_stem_from_path_str(win_file),
+                "document_pipeline_profile_minimal"
+            );
+
+            // Test with single backslashes
+            let win_file_single = "C:\\Users\\Documents\\test_file.rs";
+            assert_eq!(file_stem_from_path_str(win_file_single), "test_file");
+
+            // Test with just filename (no directory)
+            let simple_file = "simple.rs";
+            assert_eq!(file_stem_from_path_str(simple_file), "simple");
+        }
+
+        // Test file_stem_from_path (should work on all platforms)
         let path = std::path::Path::new("path/to/another_file.rs");
         assert_eq!(file_stem_from_path(path), "another_file");
 
-        // Test with just filename (no directory)
+        // Test with just filename (no directory) - cross-platform
         let simple_file = "simple.rs";
         assert_eq!(file_stem_from_path_str(simple_file), "simple");
 
-        // Test with file having multiple extensions
-        let multi_ext = "test.data.rs";
-        assert_eq!(file_stem_from_path_str(multi_ext), "test.data");
+        // Test with file having multiple extensions - cross-platform
+        #[cfg(not(target_os = "windows"))]
+        {
+            let multi_ext = "test.data.rs";
+            assert_eq!(file_stem_from_path_str(multi_ext), "test.data");
+        }
 
-        // Test with just stem (no directory or extension)
+        #[cfg(target_os = "windows")]
+        {
+            let multi_ext = "C:\\\\temp\\\\test.data.rs";
+            assert_eq!(file_stem_from_path_str(multi_ext), "test.data");
+        }
+
+        // Test with just stem (no directory or extension) - cross-platform
         let bare_stem = "bare";
         assert_eq!(file_stem_from_path_str(bare_stem), "bare");
     }

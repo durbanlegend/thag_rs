@@ -4,7 +4,7 @@ backtrace = "0.3"
 # thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling", "tls_allocator"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling"] }
 # thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling", "tls_allocator"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling", "tls_allocator"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling", "tls_allocator", "debug_logging"] }
 tokio = { version = "1", features = ["full"] }
 
 [profile.dev]

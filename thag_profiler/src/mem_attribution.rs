@@ -96,53 +96,7 @@ impl ProfileRegistry {
         // This might need more sophisticated logic for "max_by_key" equivalent
         self.active_tasks.iter().map(|entry| *entry.key()).max()
     }
-}
 
-/// Reference to a Profile for the registry
-/// We use a simple wrapper to avoid ownership issues
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct ProfileRef {
-    /// Function name or custom name if provided
-    name: String,
-    /// Whether this profile does detailed memory tracking
-    detailed_memory: bool,
-    /// Unique identifier for the Profile instance
-    instance_id: u64,
-    /// Reference to the Profile using Arc for thread safety
-    profile: Option<Arc<Profile>>,
-    /// Flag to track if this `ProfileRef` is being dropped
-    /// This helps prevent recursive drops
-    dropping: bool,
-}
-
-impl ProfileRef {
-    /// Returns the name of the profile
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    /// Returns whether this profile does detailed memory tracking
-    #[must_use]
-    pub const fn detailed_memory(&self) -> bool {
-        self.detailed_memory
-    }
-
-    /// Returns the unique identifier for this profile instance
-    #[must_use]
-    pub const fn instance_id(&self) -> u64 {
-        self.instance_id
-    }
-
-    /// Returns a reference to the contained Profile, if any
-    #[must_use]
-    pub fn profile(&self) -> Option<&Profile> {
-        self.profile.as_ref().map(AsRef::as_ref)
-    }
-}
-
-impl ProfileRegistry {
     /// Register a profile with the registry
     ///
     /// # Errors
@@ -388,6 +342,50 @@ impl ProfileRegistry {
         }
 
         false
+    }
+}
+
+/// Reference to a Profile for the registry
+/// We use a simple wrapper to avoid ownership issues
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ProfileRef {
+    /// Function name or custom name if provided
+    name: String,
+    /// Whether this profile does detailed memory tracking
+    detailed_memory: bool,
+    /// Unique identifier for the Profile instance
+    instance_id: u64,
+    /// Reference to the Profile using Arc for thread safety
+    profile: Option<Arc<Profile>>,
+    /// Flag to track if this `ProfileRef` is being dropped
+    /// This helps prevent recursive drops
+    dropping: bool,
+}
+
+impl ProfileRef {
+    /// Returns the name of the profile
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns whether this profile does detailed memory tracking
+    #[must_use]
+    pub const fn detailed_memory(&self) -> bool {
+        self.detailed_memory
+    }
+
+    /// Returns the unique identifier for this profile instance
+    #[must_use]
+    pub const fn instance_id(&self) -> u64 {
+        self.instance_id
+    }
+
+    /// Returns a reference to the contained Profile, if any
+    #[must_use]
+    pub fn profile(&self) -> Option<&Profile> {
+        self.profile.as_ref().map(AsRef::as_ref)
     }
 }
 

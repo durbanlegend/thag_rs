@@ -625,27 +625,6 @@ impl Default for TermBgLuma {
     }
 }
 
-// // For backward compatibility
-// /// Deprecated alias for `Role` - use `Role` directly instead
-// #[deprecated = "Use `Role` directly instead of `Level`"]
-// pub type Level = Role;
-
-// impl Level {
-//     /// Deprecated alias for `Role::Heading1`
-//     pub const HEAD: Self = Self::Heading1;
-//     /// Deprecated alias for `Role::Heading2`
-//     pub const SUBH: Self = Self::Heading2;
-//     // pub const ERR: Self = Self::Error;
-//     // pub const WARN: Self = Self::Warning;
-//     /// Deprecated alias for `Role::Info`
-//     pub const BRI: Self = Self::Info;
-//     // pub const EMPH: Self = Self::Emphasis;
-//     // pub const NORM: Self = Self::Normal;
-//     /// Deprecated alias for `Role::Hint`
-//     pub const GHOS: Self = Self::Hint;
-//     // pub const DBUG: Self = Self::Debug;
-// }
-
 /// Type alias for `Role` - provides shorter naming for role constants
 pub type Lvl = Role;
 
@@ -1056,27 +1035,27 @@ impl TermAttributes {
         INSTANCE.get().unwrap()
     }
 
-    /// Returns the appropriate style for the given message level
-    ///
-    /// The style is determined by the current color support level and theme.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// #![allow(deprecated)]
-    /// use thag_rs::styling::{AnsiCode, TermAttributes, Level};
-    ///
-    /// let attrs = TermAttributes::get_or_init();
-    /// let error_style = attrs.style_for_level(Level::Error);
-    /// println!("{}", error_style.paint("This is an error message"));
-    /// ```
-    #[must_use]
-    #[deprecated = "Use `Style::for_role`"]
-    #[allow(unused_variables)]
-    #[profiled]
-    pub fn style_for_level(&self, level: Role) -> Style {
-        Style::for_role(level)
-    }
+    // /// Returns the appropriate style for the given message role
+    // ///
+    // /// The style is determined by the current color support level and theme.
+    // ///
+    // /// # Examples
+    // ///
+    // /// ```
+    // /// #![allow(deprecated)]
+    // /// use thag_rs::styling::{AnsiCode, Role, TermAttributes};
+    // ///
+    // /// let attrs = TermAttributes::get_or_init();
+    // /// let error_style = attrs.style_for_level(Role::Error);
+    // /// println!("{}", error_style.paint("This is an error message"));
+    // /// ```
+    // #[must_use]
+    // #[deprecated = "Use `Style::for_role`"]
+    // #[allow(unused_variables)]
+    // #[profiled]
+    // pub fn style_for_role(&self, role: Role) -> Style {
+    //     Style::for_role(role)
+    // }
 
     /// Updates the current theme to the specified built-in theme.
     ///
@@ -1371,7 +1350,7 @@ pub struct Theme {
     pub min_color_support: ColorSupport,
     /// The complete color palette containing styles for all message roles
     pub palette: Palette,
-    /// Background color values as hex strings (e.g., ["#282a36", "#44475a"])
+    /// Background color values as hex strings (e.g., `["#282a36", "#44475a"]`)
     pub backgrounds: Vec<String>,
     /// Background color values as RGB tuples, with the primary/official color first
     pub bg_rgbs: Vec<(u8, u8, u8)>,

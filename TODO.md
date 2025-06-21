@@ -1,8 +1,6 @@
 # TODO List
 
 ## High Priority
-- [ ]  Sort and flesh out keywords (u16 etc) in shared::is_valid_crate_name. (make HashSet? phf?)
-
 ## On the go
 - [ ]  Theme config: for Windows:
         1. Check supports_color detection failing.
@@ -15,20 +13,8 @@
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.
-- [ ]  Claude re REPL alternative editor to `reedline`
-- [ ]  Control logging level of -x compiled code?
-- [ ]  Profiling instrumentation to add toml block for thag profiling?
-- [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
-- [ ]  Re-check for profiler code not ring-fenced
-- [ ]  Consider option for deallocation in detail.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  Compiled code gets out of scope detailed memory at global level. Test at detailed level.
-- [ ]  Consider converting thag_profiler debug_log to a proc macro and using a profile_logging feature to control it with zero-cost abstraction.
-- [ ]  Use addresses instead of strings to check for recursion
-- [ ]  Consider using addresses of profiler code to look up whether it's Ok to use system allocator.
-- [ ]  Consider ways to invert the default and use backtrace to record alloc for user code.
-- [ ]  ChatGPT suggestions for enhancing Drop and DashMap
-- [ ]  Replace with_sys_alloc with a proc macro to mark issuing address as safe?
+- [ ]  Invert allocator feature: replace tls_allocator by global_allocator, defaulting to TLS allocator? As a possible stepping stone to removing the global one completely.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs
@@ -219,7 +205,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
        - Document thag_cargo and thag_clippy in the Readme.
 - [ ]  Add profiling to capabilities for scripts.
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
-- [ ]  Migrate Level to Role and decommission.
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
 
 - [ ]  Upgrade all cargo.tomls
@@ -228,9 +213,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Update Readme for new features.
 - [ ]  Offer thag updates as a menu option.
 - [ ]  Other front-ends: thag_test: call thag with dethag of bad output - rather fix bad output at source - done?
-- [ ]  Use cargo-dist to build and distribute thag front-end commands.
-- [ ]  Next: thag_expand, thag_prompt, proc macro to expose docs at runtime.
-- [ ]  Documentation (cargo doc), e.g. for macros.
+- [ ]  Use cargo-dist to build and distribute thag front-end commands.- [ ]  Documentation (cargo doc), e.g. for macros.
 - [ ]  Incorporate const_gen_proc_macro into thag_rs and try to enhance?
 - [ ]  ?Adapt keys display to environment: Cmd only for target macos. Or just leave it because informative?
 - [ ]  Try going back to derive macro with declarative macro to expand the attributes. Problem with attrib macro is the AST isn't
@@ -241,6 +224,9 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Look for code smells
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
+- [ ]  Sort and flesh out keywords (u16 etc) in shared::is_valid_crate_name. (make HashSet? phf?)
+
+
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 stem=macro_lazy_static_var_advanced
 stem=macro_lazy_static_var_errs
@@ -264,6 +250,10 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ]  Clap aliases not working in REPL.
 - [ ]  Simple demo https server
 - [ ]  Conversion of Gogh themes
+- [ ]  Claude re REPL alternative editor to `reedline`
+- [ ]  Control logging level of -x compiled code?
+- [ ]  Profiling instrumentation to add toml block for thag profiling?
+- [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 
 ## Ideas / Future Enhancements
 - [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.
@@ -273,9 +263,8 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] Tip: disable ci.yml for Readme & similar tweaks that won't affect compilation.
 - [ ] NB NB. Remember to update Cargo.toml version to the required release before tagging.
 - [ ] Do a trial release build locally to check for anomalies: cargo build --release --workspace
-- [ ] Don't upgrade thag versions in demo scripts to new release, because you get a
-    catch-22 until it's on crates.io. If you absolutely need to, wait until you've
-    released to crates.io a first time, then release all over again.
+- [ ] Don't upgrade thag versions in demo scripts to new release, because you get a catch-22 until it's on crates.io. If you absolutely need to, wait until you've released to crates.io a first time, then release all over again.
+- [ ] cargo doc --features document-features (thag_rs, thag_profiler)
 - [ ] Optional: reinstall thag_rs from path. (cargo install --path .)
 - [ ] Make sure Readme images are up to date.
 - [ ] Run clippy_feature_tests.sh

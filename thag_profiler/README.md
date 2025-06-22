@@ -1459,9 +1459,9 @@ Notes:
 
 1. `thag_profiler` does not offer a `PowerShell` version of `scripts/compare_profilers.sh`. Short of rolling your own or getting AI to convert it, you may instead find the following useful:
 
- Install Git for Windows and run the `Git Bash` app.
+   Install Git for Windows and run the `Git Bash` app.
 
- Running `scripts/compare_profilers.sh` within the `Git Bash`  window will still run the Windows version of  `thag`, as opposed to using `WSL`.
+   Running `scripts/compare_profilers.sh` within the `Git Bash`  window will still run the Windows version of  `thag`, as opposed to using `WSL`.
 
 2. `dhat` itself provides no guarantees. See the warning on its [docs.rs page](https://docs.rs/dhat/latest/dhat/).
 

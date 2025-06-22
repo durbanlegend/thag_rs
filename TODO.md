@@ -12,19 +12,15 @@
          reads, while COLORTERM seems to be more specific to color support, as the name also implies."
          https://github.com/microsoft/terminal/issues/11057
 - [ ]  Demo proc macro to load collection into enum at build time?
-- [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
-        pre-processing to toml block with support for variables.
+- [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  DONE: Invert allocator feature: replace tls_allocator by no_tls, defaulting to TLS allocator? As a possible stepping stone to removing the global one completely.
-- [ ]  Consider restoring a thag_profiler vs dhat benchmark to src/bin
-- [ ]  Ensure compare_profilers.sh is added to thag project artifacts.
 
-# Alternative ways to run thag-instrument without installing:
-cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs
-cargo run --features=instrument-tool --bin thag-instrument --manifest-path thag_profiler/Cargo.toml -- 2021 < bank/main_with_attrs.rs
+# Alternative ways to run thag_instrument without installing:
+cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
+cargo run --features=instrument-tool --bin thag_instrument --manifest-path thag_profiler/Cargo.toml -- 2021 < bank/main_with_attrs.rs
 
-# Alternative ways to run thag-analyze without installing:
-cargo run -p thag_profiler --features=analyze-tool --bin thag-analyze -- .
+# Alternative ways to run thag_profile without installing:
+cargo run -p thag_profiler --features=analyze-tool --bin thag_profile -- .
 
 cd thag_profiler
 # cargo test --test profiling --features full_profiling
@@ -62,7 +58,7 @@ A lightweight, cross-platform Rust code profiling toolkit with zero overhead whe
 
 - Incorporate `thag_profiler` instrumentation into your code with no overhead until activated, thanks to zero-cost abstractions
 
-- Automatically prepare a Rust source file for profiling with a single `thag-instrument` command, which adds the necessary imports and annotates every function with an attribute macro. This may be all you need to get a good insight into your code, or you can further refine or extend it with profile type arguments and/or `profile!` - `end!` pairings for section profiling. The `thag-remove` command removes the instrumentation when done.
+- Automatically prepare a Rust source file for profiling with a single `thag_instrument` command, which adds the necessary imports and annotates every function with an attribute macro. This may be all you need to get a good insight into your code, or you can further refine or extend it with profile type arguments and/or `profile!` - `end!` pairings for section profiling. The `thag_uninstrument` command removes the instrumentation when done.
 
 - Selectively profile memory allocation in full detail for specific functions or code sections, or profile allocation and deallocation in full detail at program level.
 
@@ -85,7 +81,7 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
 2. cd /home/donf/Documents/GitHub/serde
 3. find . -name "*.rs"
 4. d=./serde/src/de
-4. find $d -name '*.rs' -exec sh -c 'temp=$(mktemp) && thag-instrument 2021 < "$1" > "$temp" && mv "$temp" "$1"' sh {} \;
+4. find $d -name '*.rs' -exec sh -c 'temp=$(mktemp) && thag_instrument 2021 < "$1" > "$temp" && mv "$temp" "$1"' sh {} \;
 5. Repeat for /serde/src/ser (& could do ./serde_derive/src if change serde_derive dep to here in ./serde/Cargo.toml and add thag_profiler as dep in serde_derive's local Cargo.toml )
 5a. Undo for lib.rs
 6. Add to ./serde/Cargo.toml [TODO update when published to crates.io ] thag_profiler = { path = "/home/donf/Documents/GitHub/thag_rs/thag_profiler", features = ["full_profiling"] }
@@ -109,7 +105,7 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
   This approach works for simple use cases but might need atomic operations or a mutex for complete thread safety in a high-concurrency environment. For your specific use case, it's likely
   sufficient since allocator code runs with minimal thread contention, and recursion detection is primarily about preventing infinite recursion within the same thread.
 
-At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag-profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILER=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag-analyze .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
+At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag_profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILER=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag_profile .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
 
 
 Tools classification suggestions from Claude

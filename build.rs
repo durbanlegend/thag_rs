@@ -28,7 +28,7 @@ fn main() {
 
     // 2. Test generation
     // NB: Tell cargo to rerun if any tool file changes
-    println!("cargo:rerun-if-changed=tools");
+    // println!("cargo:rerun-if-changed=tools");
 
     // Check for mutually exclusive features
     let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();

@@ -1268,7 +1268,7 @@ Input is from `stdin` and output is to `stdout`.
 
 ***NB:*** always direct output to a different file.
 
-Replace `2021` with your project's Rust edition (2015, 2018, 2021, 2024) as required by the `rust_analyzer` crates:
+Replace `2021` with your project's Rust edition (2015, 2018, 2021, 2024) as required by the `rust-analyzer` crates:
 
 ***thag_instrument:*** Add profiling attributes to code
 ```bash

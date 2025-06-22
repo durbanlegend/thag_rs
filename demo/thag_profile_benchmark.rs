@@ -1,11 +1,11 @@
 /*[toml]
 [dependencies]
 dhat = { version = "0.3", optional = true }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", default-features = false }
 
 [features]
 dhat-heap = ["dep:dhat"]
-full_profiling = ["thag_profiler/full_profiling"]
+full_profiling = ["thag_profiler/full_profiling", "thag_profiler/tls_allocator", "thag_profiler/debug_logging"]
 default = []
 */
 

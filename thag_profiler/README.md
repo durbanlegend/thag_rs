@@ -1312,7 +1312,7 @@ Interactive analysis of profiling results:
 ```bash
 thag_profile <dirname>
 ```
-![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_main.png)
+![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag-analyze_main.png)
 
 ## Profile Analysis Features
 

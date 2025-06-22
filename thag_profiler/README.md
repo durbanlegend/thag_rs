@@ -1312,7 +1312,7 @@ Interactive analysis of profiling results:
 ```bash
 thag_profile <dirname>
 ```
-![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag-analyze_main.png)
+![Main menu](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_main.png)
 
 ## Profile Analysis Features
 
@@ -1459,11 +1459,9 @@ Notes:
 
 1. `thag_profiler` does not offer a `PowerShell` version of `scripts/compare_profilers.sh`. Short of rolling your own or getting AI to convert it, you may instead find the following useful:
 
-  a. Install Git for Windows and run the `Git Bash` app.
+ Install Git for Windows and run the `Git Bash` app.
 
-  b. Install the `nu` shell (aka `nushell`) via `cargo install nu` and start it by running `nu` from a Windows command line.
-
- Running `scripts/compare_profilers.sh` within either the `Git Bash`  window or the `nu` environment will still run the Windows version of  `thag`, as opposed to using `WSL`.
+ Running `scripts/compare_profilers.sh` within the `Git Bash`  window will still run the Windows version of  `thag`, as opposed to using `WSL`.
 
 2. `dhat` itself provides no guarantees. See the warning on its [docs.rs page](https://docs.rs/dhat/latest/dhat/).
 

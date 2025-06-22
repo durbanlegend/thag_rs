@@ -8,7 +8,7 @@ use std::path::Path;
 
 #[allow(clippy::doc_markdown, clippy::too_many_lines)]
 /// 1. Compile all built-in themes into the binary.
-/// 2. Create a separate test for each individual script in demo/ and tools/, to ensure that it builds
+/// 2. Create a separate test for each individual script in demo/ and src/bin/, to ensure that it builds
 ///    successfully. We don't try to run them for logistical reasons, but at least we
 ///    identify undocumented and abandoned scripts. Given that there are so many of these scripts,
 ///    avoid Cargo's default behaviour of running all tests in parallel. --test-threads=3 to 5 seems
@@ -28,7 +28,7 @@ fn main() {
 
     // 2. Test generation
     // NB: Tell cargo to rerun if any tool file changes
-    // println!("cargo:rerun-if-changed=tools");
+    println!("cargo:rerun-if-changed=src/bin");
 
     // Check for mutually exclusive features
     let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();
@@ -60,7 +60,7 @@ fn main() {
     let dest_path = out_dir_path.join("generated_tests.rs");
     let mut file = fs::File::create(dest_path).expect("Failed to create generated_tests.rs");
 
-    let subdir_names = vec!["demo", "tools"];
+    let subdir_names = vec!["demo"];
 
     for subdir_name in &subdir_names {
         let source_dir = Path::new(subdir_name);

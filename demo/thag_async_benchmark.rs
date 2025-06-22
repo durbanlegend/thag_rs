@@ -7,7 +7,7 @@ smol = { version = "2.0", optional = true }
 
 [features]
 dhat-heap = ["dep:dhat"]
-full_profiling = ["thag_profiler/full_profiling", "thag_profiler/tls_allocator"]
+full_profiling = ["thag_profiler/full_profiling"]
 tokio-runtime = ["dep:tokio"]
 smol-runtime = ["dep:smol"]
 default = []
@@ -18,7 +18,7 @@ debug = true
 strip = false
 */
 
-/// Focused async benchmark comparing tokio vs smol memory profiling with thag_profiler vs dhat-rs.
+/// Focused async benchmark comparing tokio vs smol memory profiling with `thag_profiler` vs `dhat-rs`.
 /// Tests async runtime overhead and task spawning memory usage.
 ///
 /// # Test with tokio + thag_profiler

@@ -36,7 +36,7 @@ if [ -f "$folded_file" ]; then
     echo
     echo "For graph run 'thag_profile .'"
     echo "For detailed profiling, first rerun with:"
-    echo "THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_profile_benchmark.rs -ft"
+    echo "THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_profile_benchmark.rs -f"
 else
     echo "No thag_profiler folded file found"
 fi

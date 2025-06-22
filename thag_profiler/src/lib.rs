@@ -464,7 +464,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
     #[cfg(feature = "full_profiling")]
     safe_alloc! {
-        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}, tls_allocator={:#?}", cfg!(feature = "tls_allocator"));
+        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}, TLS allocation tracking={:#?}", cfg!(not(feature = "no_tls")));
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling

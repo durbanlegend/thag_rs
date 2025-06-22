@@ -38,10 +38,10 @@ use std::{
     time::Instant,
 };
 
-#[cfg(feature = "tls_allocator")]
+#[cfg(not(feature = "no_tls"))]
 use std::{cell::Cell, thread_local};
 
-#[cfg(not(feature = "tls_allocator"))]
+#[cfg(feature = "no_tls")]
 use std::sync::atomic::AtomicBool;
 
 /// Regular expression pattern to identify allocation start points in backtraces
@@ -49,12 +49,12 @@ pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
 // Global static atomic for minimal state tracking without allocations
-#[cfg(not(feature = "tls_allocator"))]
+#[cfg(feature = "no_tls")]
 static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
 
 // Thread-local alternative for better async/threading isolation
 // Each thread maintains its own flag, preventing cross-thread interference
-#[cfg(feature = "tls_allocator")]
+#[cfg(not(feature = "no_tls"))]
 thread_local! {
     static USING_SYSTEM_ALLOCATOR: Cell<bool> = const { Cell::new(false) };
 }
@@ -66,12 +66,12 @@ thread_local! {
 /// Returns `true` if the system allocator is currently being used,
 /// `false` if the tracking allocator is being used.
 pub fn get_using_system() -> bool {
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     {
         USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst)
     }
 
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     {
         USING_SYSTEM_ALLOCATOR.with(Cell::get)
     }
@@ -84,12 +84,12 @@ pub fn get_using_system() -> bool {
 /// * `value` - `true` to use the system allocator, `false` to use the tracking allocator
 #[inline]
 pub fn set_using_system(value: bool) {
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     {
         USING_SYSTEM_ALLOCATOR.store(value, Ordering::SeqCst);
     }
 
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     {
         USING_SYSTEM_ALLOCATOR.with(|cell| cell.set(value));
     }
@@ -101,7 +101,7 @@ pub fn set_using_system(value: bool) {
 ///
 /// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
 /// We expect to handle this error in normal operation.
-#[cfg(not(feature = "tls_allocator"))]
+#[cfg(feature = "no_tls")]
 #[inline]
 pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
     USING_SYSTEM_ALLOCATOR.compare_exchange(current, new, Ordering::SeqCst, Ordering::SeqCst)
@@ -113,7 +113,7 @@ pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, b
 ///
 /// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
 /// We expect to handle this error in normal operation.
-#[cfg(feature = "tls_allocator")]
+#[cfg(not(feature = "no_tls"))]
 #[inline]
 pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
     USING_SYSTEM_ALLOCATOR.with(|cell| {
@@ -129,11 +129,11 @@ pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, b
 
 /// Reset allocator state using the unified approach
 pub fn reset_allocator_state() {
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     {
         USING_SYSTEM_ALLOCATOR.with(|flag| flag.set(false));
     }
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     {
         USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
     }
@@ -167,7 +167,7 @@ impl fmt::Display for Allocator {
 /// Get the current allocator based on the configured approach
 #[must_use]
 pub fn current_allocator() -> Allocator {
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     {
         let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
         if using_system {
@@ -177,7 +177,7 @@ pub fn current_allocator() -> Allocator {
         }
     }
 
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     {
         if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
             Allocator::System

@@ -47,7 +47,7 @@ fn test_nested_global_behavior() {
 }
 
 #[test]
-#[cfg(all(feature = "full_profiling", feature = "tls_allocator"))]
+#[cfg(all(feature = "full_profiling", not(feature = "no_tls")))]
 #[serial]
 fn test_thread_isolation() {
     reset_allocator_states();

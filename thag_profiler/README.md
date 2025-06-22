@@ -1445,15 +1445,40 @@ The folded stack files are human-readable:
 head your_executable-<yyyymmdd>-<hhmmss>.folded
 ```
 
-### Terminology
+## Comparison with `dhat` crate
 
-#### Ancestor and descendant functions
+The `bash` script `scripts/compare_profilers.sh` can be used to verify the accuracy of `thag_profiler` memory profiling against the established `dhat` crate.
+
+```bash
+scripts/compare_profilers.sh
+```
+
+You will need to have `jq` installed to summarize the `dhat` results.
+
+Notes:
+
+1. `dhat` itself provides no guarantees. See the warning on its [docs.rs page](https://docs.rs/dhat/latest/dhat/).
+
+2. `dhat` and `thag_profiler` both use the `backtrace` crate to identify memory allocation sites, so to this extent they are not giving completely mutually independent assessments of memory usage.
+
+3. To dig deeper than the summary results and investigate the extra allocation reported (at time of writing) by `thag_profiler` for the `allocate_hashmap` function, you can run a detailed `thag_profiler` analysis thus:
+
+```bash
+THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_profile_benchmark.rs -f
+```
+
+Then run `thag_profile .` and choose `Memory Profile - Single` and the most recent `thag_profile_benchmark-<yyyymmdd>-<hhmmss>-memory_detail.folded`. Drill down to the affected functions by clicking on each one in turn and compare it to the various occurrences of the same function in the `DHAT` viewer. This currently shows that `thag_profiler` is correctly reflecting 103kB for the inserts (`std::collections::hash::map::HashMap<K,V,S>::insert
+`) which `dhat` is not. There are some other minor discrepancies, but these are due to the DHAT viewer suppressing them as insignificant, and they can be tracked down in the `dhat-heap.json` file.
+
+## Terminology
+
+### Ancestor and descendant functions
 
 An **ancestor function** of a function `f` means any function that may directly or indirectly call function `f` during execution.
 
 A **descendant function** of a function `f` means any function that may be called directly or indirectly by function `f` during execution.
 
-#### Manifest
+### Manifest
 
 In a normal project, the manifest is the Cargo.toml file. In a Rust script to be run with `thag(_rs)`, the manifest is a "toml block" consisting of a `/**[toml!] ... */` comment embedded at the top of the script and containing entries in Cargo.toml format. `thag` will use the toml block contents in conjunction with any additional dependencies inferred from the Rust code to generate a Cargo.toml for the script.
 

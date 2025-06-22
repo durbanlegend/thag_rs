@@ -54,9 +54,9 @@ tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
 async-std = { version = "1.12.0", features = ["attributes"] }
 
 [features]
-default = ["tls_allocator"]
-# default = ["full_profiling", "tls_allocator", "debug_logging"]
-# default = ["time_profiling", "tls_allocator"]
+default = []
+# default = ["full_profiling", "debug_logging"]
+# default = ["time_profiling"]
 
 ## Enable time-based performance profiling.
 time_profiling = ["thag_proc_macros/time_profiling"]
@@ -67,8 +67,8 @@ full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
 ## Enable debug logging of profiling code.
 debug_logging = ["thag_proc_macros/debug_logging"]
 
-## Use thread-local storage for allocator switching.
-tls_allocator = ["thag_proc_macros/tls_allocator"]
+## Use atomic rather than the default thread-local storage for allocator switching.
+no_tls = ["thag_proc_macros/no_tls"]
 
 ## Include dependencies required only for `thag_profile` binary.
 analyze_tool = [

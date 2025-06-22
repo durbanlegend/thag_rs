@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "tls_allocator"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
 tokio = { version = "1.36.0", features = ["rt-multi-thread", "macros", "time"] }
 */
 

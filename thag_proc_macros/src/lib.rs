@@ -9,7 +9,7 @@
 //! - `time_profiling`:     Enable time-based performance profiling (default)
 //! - `full_profiling`:     Enable comprehensive profiling including time and memory usage
 //! - `debug_logging`:      Enable debug logging of profiling functions
-//! - `tls_allocator`:      Use thread-local storage for allocator tracking
+//! - `no_tls`:             Use atomic rather than the default thread-local storage for allocator tracking
 //! - `analyze_tool`:       Include dependencies required only for `thag_profile` binary.
 //! - `instrument_tool`:    Include dependencies required only for `thag_instrument` and `thag_uninstrument` binaries.
 //!

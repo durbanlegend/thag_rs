@@ -15,7 +15,7 @@
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding
         pre-processing to toml block with support for variables.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  Invert allocator feature: replace tls_allocator by global_allocator, defaulting to TLS allocator? As a possible stepping stone to removing the global one completely.
+- [ ]  DONE: Invert allocator feature: replace tls_allocator by no_tls, defaulting to TLS allocator? As a possible stepping stone to removing the global one completely.
 - [ ]  Consider restoring a thag_profiler vs dhat benchmark to src/bin
 - [ ]  Ensure compare_profilers.sh is added to thag project artifacts.
 

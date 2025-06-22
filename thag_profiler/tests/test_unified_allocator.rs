@@ -3,7 +3,7 @@ use std::sync::{Arc, Barrier};
 use std::thread;
 /// Test demonstrating the unified allocator approach
 /// The same code works with either global or thread-local implementation
-/// based on the tls_allocator feature flag.
+/// based on the `no_tls` feature flag.
 use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
 
 #[cfg(feature = "full_profiling")]
@@ -98,17 +98,17 @@ fn test_unified_allocator_threading() {
         thread::sleep(std::time::Duration::from_millis(5));
 
         // Behavior depends on feature flag:
-        // - With tls_allocator: this thread should be unaffected (Tracking)
-        // - Without tls_allocator: this thread might see System due to global flag
+        // - With no_tls: this thread might see System due to global flag
+        // - Without no_tls: this thread should be unaffected (Tracking)
         let current = current_allocator();
 
-        #[cfg(feature = "tls_allocator")]
+        #[cfg(not(feature = "no_tls"))]
         {
             // TLS approach: should be isolated from other threads
             assert_eq!(current, Allocator::Tracking);
         }
 
-        #[cfg(not(feature = "tls_allocator"))]
+        #[cfg(feature = "no_tls")]
         {
             // Global approach: might see System if other threads are active
             // We can't make strict assertions here due to timing
@@ -132,10 +132,10 @@ fn test_unified_approach_selection() {
     // This test demonstrates that the same API works regardless of implementation
     println!("Testing unified allocator approach");
 
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     println!("  Using thread-local storage implementation");
 
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     println!("  Using global atomic implementation");
 
     // The API is identical regardless of implementation
@@ -170,10 +170,10 @@ fn test_performance_characteristics() {
     }
     let duration = start.elapsed();
 
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     println!("TLS approach: {} iterations in {:?}", ITERATIONS, duration);
 
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     println!(
         "Global approach: {} iterations in {:?}",
         ITERATIONS, duration
@@ -187,15 +187,15 @@ fn test_performance_characteristics() {
 fn test_feature_flag_behavior() {
     // This test verifies the feature flag behavior at compile time
 
-    #[cfg(feature = "tls_allocator")]
+    #[cfg(not(feature = "no_tls"))]
     {
-        println!("Compiled with tls_allocator feature - using thread-local approach");
+        println!("Compiled without no_tls feature - using thread-local approach");
         // Additional TLS-specific functionality would be available here
     }
 
-    #[cfg(not(feature = "tls_allocator"))]
+    #[cfg(feature = "no_tls")]
     {
-        println!("Compiled without tls_allocator feature - using global atomic approach");
+        println!("Compiled with no_tls feature - using global atomic approach");
         // Global approach is the default
     }
 

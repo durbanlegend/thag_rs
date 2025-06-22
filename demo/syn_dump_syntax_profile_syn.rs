@@ -7,7 +7,7 @@ syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 proc-macro2 = { version = "1", features = ["span-locations"] }
 # thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling", "debug_logging"] }
 # thag_profiler = { version = "0.1", features = ["full_profiling", "debug_logging"  ] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "debug_logging", "tls_allocator"] }
+thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "debug_logging"] }
 */
 
 /// A version of the published example from the `syn` crate used to demonstrate profiling a dependency with `thag_profiler`.

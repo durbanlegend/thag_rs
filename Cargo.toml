@@ -249,7 +249,7 @@ ast = [
 config = ["core", "edit", "mockall", "toml_edit"]
 
 ## Terminal color support
-color_detect = ["config", "crossterm", "scopeguard", "supports-color", "termbg"]
+color_detect = ["config", "crossterm", "ratatui", "scopeguard", "supports-color", "termbg"]
 
 ## Build and Analysis
 build = [
@@ -261,6 +261,7 @@ build = [
     "config",            # For terminal support
     "crossterm",
     "prettyplease",
+    "ratatui",
     "serde_merge",
     "side-by-side-diff",
 ]
@@ -268,7 +269,6 @@ build = [
 ## TUI editing
 tui = [
     "build",                # Full build capabilities
-    "ratatui",
     "scopeguard",
     "serde_json",
     "tui-textarea",

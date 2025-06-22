@@ -54,8 +54,9 @@ tokio = { version = "1.36.0", features = ["rt", "macros", "time"] }
 async-std = { version = "1.12.0", features = ["attributes"] }
 
 [features]
+default = []
 # default = ["full_profiling", "tls_allocator", "debug_logging"]
-default = ["tls_allocator"]
+# default = ["time_profiling", "tls_allocator"]
 
 ## Enable time-based performance profiling.
 time_profiling = ["thag_proc_macros/time_profiling"]

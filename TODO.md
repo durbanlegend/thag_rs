@@ -17,6 +17,7 @@
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
 - [ ]  Invert allocator feature: replace tls_allocator by global_allocator, defaulting to TLS allocator? As a possible stepping stone to removing the global one completely.
 - [ ]  Consider restoring a thag_profiler vs dhat benchmark to src/bin
+- [ ]  Ensure compare_profilers.sh is added to thag project artifacts.
 
 # Alternative ways to run thag-instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag-instrument -- 2021 < bank/main_with_attrs.rs

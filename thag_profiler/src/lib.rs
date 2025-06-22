@@ -460,39 +460,11 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// # Panics
 ///
 /// This function panics if profiling cannot be enabled.
-#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
-#[fn_name]
-pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
-    // Only set PROFILEE if it hasn't been set already
-    // This allows multiple test functions to call init_profiling
-    if PROFILEE.get().is_none() {
-        PROFILEE.set(Profilee::new(root_module)).unwrap();
-    } else if PROFILEE.get().unwrap().root_module != root_module {
-        // If already set but with a different root_module, just log it and continue
-        eprintln!(
-            "Warning: PROFILEE already set with root_module={}, not changing to {}",
-            PROFILEE.get().unwrap().root_module,
-            root_module
-        );
-    }
-
-    set_base_location(file!(), fn_name, line!());
-    profiling::enable_profiling(true, profile_config.profile_type())
-        .expect("Failed to enable profiling");
-    eprintln!("Exiting init_profiling");
-}
-
-/// Initialize the profiling system.
-/// This should be called at the start of your program to set up profiling.
-///
-/// # Panics
-///
-/// This function panics if profiling cannot be enabled.
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
     #[cfg(feature = "full_profiling")]
     safe_alloc! {
-        eprintln!("root_module={root_module}, profile_config={profile_config:#?}, tls_allocator={:#?}", cfg!(feature = "tls_allocator"));
+        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}, tls_allocator={:#?}", cfg!(feature = "tls_allocator"));
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling
@@ -501,9 +473,8 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
         } else if PROFILEE.get().unwrap().root_module != root_module {
             // If already set but with a different root_module, just log it and continue
             eprintln!(
-                "Warning: PROFILEE already set with root_module={}, not changing to {}",
+                "Warning: PROFILEE already set with root_module={}, not changing to {root_module}",
                 PROFILEE.get().unwrap().root_module,
-                root_module
             );
         }
 
@@ -526,6 +497,27 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
         }
     };
     // eprintln!("Exiting init_profiling");
+
+    #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
+    {
+        // Only set PROFILEE if it hasn't been set already
+        // This allows multiple test functions to call init_profiling
+        if PROFILEE.get().is_none() {
+            PROFILEE.set(Profilee::new(root_module)).unwrap();
+        } else if PROFILEE.get().unwrap().root_module != root_module {
+            // If already set but with a different root_module, just log it and continue
+            eprintln!(
+                "Warning: PROFILEE already set with root_module={}, not changing to {}",
+                PROFILEE.get().unwrap().root_module,
+                root_module
+            );
+        }
+
+        set_base_location(file!(), fn_name, line!());
+        profiling::enable_profiling(true, profile_config.profile_type())
+            .expect("Failed to enable profiling");
+        eprintln!("Exiting init_profiling");
+    }
 
     #[cfg(not(feature = "time_profiling"))]
     {}

@@ -139,6 +139,14 @@ cargo install thag_rs --features tools
 cargo install thag_rs
 ```
 
+On *nix systems you may need to install `OpenSSL` and/or `pkg-conf` for the `openssl-sys` transitive dependency. Refer to the [openssl crate](https://docs.rs/openssl/latest/openssl/) documentation.
+
+E.g. for Debian and Ubuntu:
+
+```bash
+$ sudo apt-get install pkg-config libssl-dev
+```
+
 #### Downloading the starter kit (demo directory)
 As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
 

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crossterm::terminal::disable_raw_mode;
-    use crossterm::terminal::is_raw_mode_enabled;
+    use ratatui::crossterm::terminal::disable_raw_mode;
+    use ratatui::crossterm::terminal::is_raw_mode_enabled;
     use std::env;
     use std::env::set_var;
     use std::sync::Once;

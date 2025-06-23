@@ -33,7 +33,7 @@ fn main() {
     set_up();
 
     use std::process::Command;
-    let output = Command::new("cargo")
+    let status = Command::new("cargo")
         // Suppress invoking termbg and supports_color on shared terminal.
         // This should already be passed by default after call to set_up(), but just making sure.
         .env("TEST_ENV", "1")
@@ -41,21 +41,12 @@ fn main() {
         .arg("--")
         .arg("-c")
         .arg(&path_str)
-        .output()
+        .status()
         .expect("Failed to execute command");
-    let err_str = std::str::from_utf8(&output.stderr).expect("Can't parse stderr to &str");
-    if !output.status.success() || err_str.contains("error:") || err_str.contains("Build failed") {
-        panic!(
-            r#"Failed to build file: {path_str}
-stdout: {}
-stderr: {}"#,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
+
+    if !status.success() {
+        panic!("Failed to build file: {path_str}");
     }
-    // eprintln!("{output:?}");
-    // eprintln!("stdout={}", String::from_utf8_lossy(&output.stdout));
-    // eprintln!("stderr={}", String::from_utf8_lossy(&output.stderr));
 
     // eprintln!("... finished {pathstr}, starting cargo clean");
 

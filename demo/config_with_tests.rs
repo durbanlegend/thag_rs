@@ -2,7 +2,8 @@
 [dependencies]
 # thag_rs = "0.2"
 # thag_rs = { version = "0.2", git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "core", "simplelog"] }
-thag_rs = { version = "0.2", path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+# thag_rs = { version = "0.2", path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.

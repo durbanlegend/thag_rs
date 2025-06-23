@@ -12,7 +12,7 @@ use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
-use std::{collections::BTreeMap, path::PathBuf, str::FromStr, time::Instant};
+use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
 use thag_profiler::{end, profile, profiled};
 
@@ -308,6 +308,128 @@ pub fn extract(
     #[cfg(debug_assertions)]
     debug_timings(&start_parsing_rs, "extract_manifest parsed source");
     Ok(rs_manifest)
+}
+
+/// Processes thag-auto dependencies in the manifest, replacing them with appropriate
+/// dependency sources based on environment variables and context.
+///
+/// # Arguments
+/// * `build_state` - Mutable reference to the build state containing the manifest
+///
+/// # Returns
+/// * `ThagResult<()>` - Success or error result
+///
+/// # Environment Variables
+/// * `THAG_DEV_PATH` - Path to local thag_rs development directory
+/// * `THAG_GIT_REF` - Git reference (branch/tag/commit) for git dependencies
+/// * `THAG_GIT_REPO` - Git repository URL (defaults to standard thag_rs repo)
+/// * `CI` - Indicates CI environment
+#[profiled]
+pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
+    if let Some(ref mut rs_manifest) = build_state.rs_manifest {
+        let thag_crates = ["thag_rs", "thag_proc_macros", "thag_profiler"];
+
+        for crate_name in &thag_crates {
+            if let Some(dependency) = rs_manifest.dependencies.get(*crate_name) {
+                if should_process_thag_auto(dependency) {
+                    let new_dependency = resolve_thag_dependency(crate_name, dependency)?;
+                    rs_manifest
+                        .dependencies
+                        .insert(crate_name.to_string(), new_dependency);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Checks if a dependency has thag-auto enabled by looking for a version string
+/// that contains "thag-auto" as a marker
+fn should_process_thag_auto(dependency: &Dependency) -> bool {
+    match dependency {
+        Dependency::Detailed(detail) => {
+            // Check if version contains our marker
+            detail
+                .version
+                .as_ref()
+                .map(|v| v.contains("thag-auto"))
+                .unwrap_or(false)
+        }
+        Dependency::Simple(version) => version.contains("thag-auto"),
+        _ => false,
+    }
+}
+
+/// Resolves a thag dependency based on environment variables and context
+fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagResult<Dependency> {
+    // Extract base dependency details, preserving features and other settings
+    let (base_version, features, default_features) = match original_dep {
+        Dependency::Detailed(detail) => {
+            let version = detail.version.as_ref().and_then(|v| {
+                // Extract real version from "version,thag-auto" format
+                if v.contains("thag-auto") {
+                    v.split(',').next().map(|s| s.trim().to_string())
+                } else {
+                    Some(v.clone())
+                }
+            });
+            (version, detail.features.clone(), detail.default_features)
+        }
+        Dependency::Simple(version) => {
+            let version = if version.contains("thag-auto") {
+                version.split(',').next().map(|s| s.trim().to_string())
+            } else {
+                Some(version.clone())
+            };
+            (version, Vec::new(), true)
+        }
+        _ => return Ok(original_dep.clone()),
+    };
+
+    // Create new dependency detail with preserved settings
+    let mut new_detail = Box::new(DependencyDetail {
+        features,
+        default_features,
+        ..Default::default()
+    });
+
+    // Determine dependency source based on environment
+    if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
+        // Development: use local path
+        let crate_path = match crate_name {
+            "thag_rs" => dev_path,
+            "thag_proc_macros" => format!("{}/thag_proc_macros", dev_path),
+            "thag_profiler" => format!("{}/thag_profiler", dev_path),
+            _ => dev_path,
+        };
+
+        new_detail.path = Some(crate_path);
+        debug_log!("Using local path for {}: {:?}", crate_name, new_detail.path);
+    } else if env::var("CI").is_ok() || env::var("THAG_GIT_REF").is_ok() {
+        // CI or explicit git reference: use git dependency
+        let git_repo = env::var("THAG_GIT_REPO")
+            .unwrap_or_else(|_| "https://github.com/durbanlegend/thag_rs".to_string());
+        let git_ref = env::var("THAG_GIT_REF").unwrap_or_else(|_| "main".to_string());
+
+        new_detail.git = Some(git_repo);
+        new_detail.branch = Some(git_ref);
+        debug_log!(
+            "Using git dependency for {}: {:?} @ {:?}",
+            crate_name,
+            new_detail.git,
+            new_detail.branch
+        );
+    } else {
+        // Default: use crates.io version
+        new_detail.version = base_version;
+        debug_log!(
+            "Using crates.io version for {}: {:?}",
+            crate_name,
+            new_detail.version
+        );
+    }
+
+    Ok(Dependency::Detailed(new_detail))
 }
 
 #[profiled]

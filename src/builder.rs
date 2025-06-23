@@ -870,18 +870,19 @@ pub fn gen_build_run(
             build_state.build_from_orig_source
         );
 
-        let rs_manifest: Manifest = { extract(&rs_source, start_parsing_rs) }?;
-
-        // debug_log!("rs_manifest={rs_manifest:#?}");
-
         debug_log!("rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
+        let rs_manifest: Manifest = { extract(&rs_source, start_parsing_rs) }?;
+        // debug_log!("rs_manifest={rs_manifest:#?}");
+
             build_state.rs_manifest = Some(rs_manifest);
         }
 
         // debug_log!("syntax_tree={syntax_tree:#?}");
 
         if build_state.rs_manifest.is_some() {
+            // Process thag-auto dependencies before merge
+            manifest::process_thag_auto_dependencies(build_state)?;
             manifest::merge(build_state, &rs_source)?;
         }
 

@@ -1,19 +1,13 @@
-/*[toml]
-[dependencies]
-crokey = "1.1.0"
-crossterm = "0.28.0"
-*/
-
 /// Published example of KeyCombination from `crokey` crate.
 //# Purpose: Demo key combination without Combiner.
 //# Categories: crates, technique
-use {
-    crokey::*,
+use crokey::{
     crossterm::{
         event::{read, Event, KeyEventKind},
         style::Stylize,
         terminal,
     },
+    {key, KeyCombinationFormat},
 };
 
 pub fn main() {

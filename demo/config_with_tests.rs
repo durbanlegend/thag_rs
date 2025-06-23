@@ -40,7 +40,7 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    clog, clog_error, cprtln, cvprtln, lazy_static_var, logging, Color, ColorSupport, Level, Lvl,
+    clog, clog_error, cprtln, cvprtln, lazy_static_var, logging, Color, ColorSupport, Role,
     TermBgLuma, ThagError, ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
@@ -335,14 +335,14 @@ impl Dependencies {
                         config_features.push(feature.clone());
                     } else {
                         cvprtln!(
-                            Lvl::WARN,
+                            Role::WARN,
                             V::QQ,
                             "Configured feature `{}` does not exist in crate {}. Available features are:",
                             feature,
                             crate_name
                         );
                         for available in all_features {
-                            cvprtln!(Lvl::BRI, V::QQ, "{}", available);
+                            cvprtln!(Role::SUCC, V::QQ, "{}", available);
                         }
                     }
                 }
@@ -662,7 +662,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 
     if !config_path.exists() {
         clog!(
-            Level::Warning,
+            Role::Warning,
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
         );
@@ -803,7 +803,7 @@ mod tests {
     };
     use tempfile::TempDir;
     use thag_rs::{
-        cvprtln, debug_log, logging::Verbosity, ColorSupport, Lvl, TermBgLuma, ThagResult, V,
+        cvprtln, debug_log, logging::Verbosity, ColorSupport, Role, TermBgLuma, ThagResult, V,
     };
 
     static LOGGER: OnceLock<()> = OnceLock::new();
@@ -851,7 +851,7 @@ mod tests {
             Ok(config_path) => config_path,
             Err(err) => {
                 cvprtln!(
-                    Lvl::ERR,
+                    Role::ERR,
                     V::QQ,
                     "Environment variable {test_cfg_path} must be set to location of test config.toml"
                 );

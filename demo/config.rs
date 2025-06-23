@@ -7,9 +7,15 @@ log = "0.4.22"
 mockall = "0.13.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "3"
+simplelog = { version = "0.12.2", optional = true }
 toml = "0.8.19"
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
 # thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+
+[features]
+default = ["simplelog"]
+debug-logs = []
+simplelog = ["dep:simplelog"]
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
@@ -30,7 +36,7 @@ use std::{
     path::PathBuf,
 };
 use thag_rs::{
-    cvprtln, debug_log, lazy_static_var, ColorSupport, Lvl, TermBgLuma, ThagResult, Verbosity, V,
+    cvprtln, debug_log, lazy_static_var, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V,
 };
 
 /// Initializes and returns the configuration.
@@ -366,10 +372,10 @@ fn main() -> ThagResult<()> {
     match maybe_ok_config {
         Ok(maybe_config) => {
             if let Some(config) = maybe_config {
-                cvprtln!(Lvl::EMPH, V::QQ, "Loaded config:");
+                cvprtln!(Role::EMPH, V::QQ, "Loaded config:");
                 let toml = &toml::to_string_pretty(&config)?;
                 for line in toml.lines() {
-                    cvprtln!(Lvl::BRI, V::QQ, "{line}");
+                    cvprtln!(Role::SUCC, V::QQ, "{line}");
                 }
                 eprintln!();
                 eprintln!(

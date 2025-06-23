@@ -147,7 +147,8 @@ fn main() {
 
                 let test_name = source_name.replace('.', "_");
 
-                #[allow(clippy::literal_string_with_formatting_args)]                writeln!(
+                #[allow(clippy::literal_string_with_formatting_args)]
+                writeln!(
                 file,
                 r#"
 #[test]

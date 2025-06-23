@@ -192,6 +192,7 @@ pub use config::{
 #[cfg(feature = "tui")]
 pub use {
     keys::KeyCombination,
+    ratatui::crossterm,
     tui_editor::{CrosstermEventReader, EventReader, KeyDisplayLine, MockEventReader},
 };
 

@@ -46,6 +46,7 @@ use crate::code_utils::{
     write_source,
 };
 use crate::config::{self, DependencyInference, RealContext};
+use crate::crossterm::terminal;
 use crate::manifest::extract;
 use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
@@ -1238,7 +1239,7 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
     let unexpanded_path = get_source_path(build_state);
     let unexpanded_source = std::fs::read_to_string(unexpanded_path)?;
 
-    let max_width = if let Ok((width, _height)) = crossterm::terminal::size() {
+    let max_width = if let Ok((width, _height)) = terminal::size() {
         (width - 26) / 2
     } else {
         80

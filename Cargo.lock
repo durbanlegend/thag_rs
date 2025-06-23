@@ -891,7 +891,6 @@ dependencies = [
  "crossterm_winapi",
  "derive_more",
  "document-features",
- "filedescriptor",
  "mio 1.0.3",
  "parking_lot",
  "rustix 1.0.1",
@@ -1278,17 +1277,6 @@ dependencies = [
  "cfg-if",
  "rustix 0.38.42",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "filedescriptor"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7199d965852c3bac31f779ef99cbb4537f80e952e2d6aa0ffeb30cce00f4f46e"
-dependencies = [
- "libc",
- "thiserror 1.0.69",
- "winapi",
 ]
 
 [[package]]
@@ -3893,7 +3881,6 @@ dependencies = [
  "colored",
  "convert_case 0.6.0",
  "criterion",
- "crossterm 0.29.0",
  "dhat",
  "dirs",
  "document-features",

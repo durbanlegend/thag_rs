@@ -268,7 +268,6 @@ build = [
 ## TUI editing
 tui = [
     "build",                # Full build capabilities
-    "ratatui",
     "scopeguard",
     "serde_json",
     "tui-textarea",

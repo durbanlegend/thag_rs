@@ -312,7 +312,7 @@ default = ["full", "simplelog"] # Full features with simplelog
 ## Optional/Debug Features
 debug-logs = []
 nightly = []
-format_snippet = []
+no_format_snippet = []
 profiling = ["thag_profiler/full_profiling", "thag_proc_macros/full_profiling"]
 # dhat-heap = ["dep:dhat"]
 pathdiff = ["dep:pathdiff"]
@@ -361,7 +361,7 @@ terminal-light = ["dep:terminal-light"]
 # - profiling     # Enables profiling via thag_profiler (for internal use)
 # - debug-logs
 # - nightly
-# - format_snippet
+# - no_format_snippet
 #
 # Common Usage Patterns:
 # 1. Just core functionality:
@@ -379,7 +379,7 @@ terminal-light = ["dep:terminal-light"]
 # Optional features can be added at any level:
 # - debug-logs
 # - nightly
-# - format_snippet
+# - no_format_snippet
 # - profiling
 #
 # Note: When using without default features, must specify a logging implementation:

@@ -2549,7 +2549,11 @@ pub fn display_theme_roles(theme: &Theme) {
         + 2; // Base width on raw text length
 
     // println!("\n\tRole Styles:");
-    println!("\n\t{}", paint_for_role(Normal, "Role styles:"));
+    println!(
+        "\n\t{} {}",
+        paint_for_role(Normal, "Role styles:"),
+        theme.style_for(Heading1).paint(&theme.name)
+    );
     // println!("\t{}", "═".repeat(80));
     println!("\t{}", "─".repeat(80));
 

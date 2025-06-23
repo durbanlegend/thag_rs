@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Err(e) => match e {
                 rustyline::error::ReadlineError::Eof
                 | rustyline::error::ReadlineError::Interrupted => break,
-                rustyline::error::ReadlineError::WindowResized => continue,
+                rustyline::error::ReadlineError::Signal(_) => continue,
                 _ => panic!("Error in read line: {e:?}"),
             },
         };

@@ -14,7 +14,8 @@
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  Noew tool to run demo test on a given file.
+- [ ]  New tool to run demo test on a given file - add progress logging to terminal.
+- [ ]  DONE: Restore formatting option for snippets as default (feature no_format_snippet to override).
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

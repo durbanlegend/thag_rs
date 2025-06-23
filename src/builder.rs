@@ -1026,12 +1026,12 @@ pub fn generate(
     if !build_state.build_from_orig_source {
         // TODO make this configurable
         let rs_source: &str = {
-            #[cfg(feature = "format_snippet")]
+            #[cfg(not(feature = "no_format_snippet"))]
             {
                 let syntax_tree = syn_parse_file(rs_source)?;
                 &prettyplease_unparse(&syntax_tree)
             }
-            #[cfg(not(feature = "format_snippet"))]
+            #[cfg(feature = "no_format_snippet")]
             {
                 // Code needs to be human readable for clippy, test etc.
                 if proc_flags.contains(ProcFlags::CARGO)

@@ -39,7 +39,7 @@ fn main() {
         .env("TEST_ENV", "1")
         .arg("run")
         .arg("--")
-        .arg("-cq")
+        .arg("-c")
         .arg(&path_str)
         .output()
         .expect("Failed to execute command");

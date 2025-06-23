@@ -131,7 +131,7 @@ fn show_theme(theme_name: &str) -> ThagResult<()> {
     let _term_attrs = TermAttributes::get_or_init();
 
     println!("\n{} Theme", theme.name);
-    println!("{}", "=".repeat(theme.name.len() + 6));
+    println!("{}", "═".repeat(theme.name.len() + 6));
     println!("{}\n", theme.description);
 
     // Display the theme's role styles

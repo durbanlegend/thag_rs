@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 crossterm = "0.29"
 inline_colorization = "0.1.6"
-prettyplease = "0.2.34"
+prettyplease = "0.2.35"
 proc-macro2 = "1.0"
 quote = "1.0"
 strict = "0.2"

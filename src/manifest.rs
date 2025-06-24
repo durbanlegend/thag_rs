@@ -394,6 +394,8 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagR
     });
 
     // Determine dependency source based on environment
+    let is_ci = env::var("CI").is_ok();
+    let git_ref_env_var = if is_ci { "GITHUB_REF" } else { "THAG_GIT_REF" };
     if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
         // Development: use local path
         let crate_path = match crate_name {
@@ -405,11 +407,11 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagR
 
         new_detail.path = Some(crate_path);
         debug_log!("Using local path for {}: {:?}", crate_name, new_detail.path);
-    } else if env::var("CI").is_ok() || env::var("THAG_GIT_REF").is_ok() {
+    } else if is_ci || env::var(git_ref_env_var).is_ok() {
         // CI or explicit git reference: use git dependency
         let git_repo = env::var("THAG_GIT_REPO")
             .unwrap_or_else(|_| "https://github.com/durbanlegend/thag_rs".to_string());
-        let git_ref = env::var("THAG_GIT_REF").unwrap_or_else(|_| "main".to_string());
+        let git_ref = env::var(git_ref_env_var).unwrap_or_else(|_| "main".to_string());
 
         new_detail.git = Some(git_repo);
         new_detail.branch = Some(git_ref);

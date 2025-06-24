@@ -411,7 +411,13 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagR
         // CI or explicit git reference: use git dependency
         let git_repo = env::var("THAG_GIT_REPO")
             .unwrap_or_else(|_| "https://github.com/durbanlegend/thag_rs".to_string());
-        let git_ref = env::var(git_ref_env_var).unwrap_or_else(|_| "main".to_string());
+        let git_ref = env::var(git_ref_env_var).map_or_else(
+            |_| "main".to_string(),
+            |s| {
+                let var_start = s.rfind('/').map_or_else(|| 0, |pos| pos + 1);
+                s[var_start..].to_string()
+            },
+        );
 
         new_detail.git = Some(git_repo);
         new_detail.branch = Some(git_ref);

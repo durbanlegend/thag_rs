@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 dhat = { version = "0.3", optional = true }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", default-features = false }
+thag_profiler = { version = "0.1, thag-auto", default-features = false }
 
 [features]
 dhat-heap = ["dep:dhat"]

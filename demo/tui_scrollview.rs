@@ -1,11 +1,10 @@
-/*[toml]
-[dependencies]
-color-eyre = "0.6.3"
-lipsum = "0.9.1"
-ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
-tui-scrollview = "0.4"
-*/
-
+// /*[toml]
+// [dependencies]
+// color-eyre = "0.6.3"
+// lipsum = "0.9.1"
+// ratatui = { version = "0.28", default-features = false, features = ["crossterm"] }
+// tui-scrollview = "0.4"
+// */
 /// Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
 ///
 /// Not suitable for running from a URL.

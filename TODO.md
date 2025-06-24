@@ -14,8 +14,7 @@
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  New tool to run demo test on a given file - add progress logging to terminal.
-- [ ]  DONE: Restore formatting option for snippets as default (feature no_format_snippet to override).
+- [ ]  DONE: New tool to run demo test on a given file - add progress logging to terminal.
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
@@ -93,19 +92,6 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
 
 > Great explanation. What are the implications of replacing the thread_local IN_TRACKING with a simple static mutable bool variable in your point 3?
 
-⏺ Replacing the thread-local IN_TRACKING with a static mutable bool has important implications:
-
-  1. Thread safety: Static mutable variables aren't thread-safe. Multiple threads could access/modify it simultaneously, potentially causing race conditions. This works in your case because:
-    - The recursion prevention is per-thread in the allocator
-    - Each thread's allocation path is independent
-  2. Global state vs thread-local state:
-    - Before: Each thread had its own independent tracking flag
-    - Now: All threads share one tracking flag
-  3. Potential false positives: If two threads allocate memory simultaneously, one might set the flag and block the other thread's tracking incorrectly
-  4. Performance: No more TLS lookup overhead, but potential contention between threads
-
-  This approach works for simple use cases but might need atomic operations or a mutex for complete thread safety in a high-concurrency environment. For your specific use case, it's likely
-  sufficient since allocator code runs with minimal thread contention, and recursion detection is primarily about preventing infinite recursion within the same thread.
 
 At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag_profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILER=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag_profile .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
 

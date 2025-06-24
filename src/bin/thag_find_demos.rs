@@ -6,11 +6,9 @@ inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive", "phf"] }
 syn = "2"
-# thag_proc_macros = { version = "0.1.1", path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
+thag_proc_macros = { version = "0.1, thag-auto" }
 # thag_rs = "0.1.9"
-# thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "config", "simplelog"] }
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "config", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "config", "simplelog"] }
 # tokio = "1.41.1"
 tokio = { version = "1", features = ["full"] }
 warp = "0.3.7"

@@ -4,7 +4,7 @@ syn = { version = "2", default-features = false, features = ["derive", "parsing"
 tempfile = "3.14.0"
 tinyget = { version = "1.0.2", features = ["https"] }
 url = "2.5.4"
-thag_rs = { path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
 */
 /// `thag` front-end command to run scripts from URLs.
 ///

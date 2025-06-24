@@ -1,9 +1,7 @@
 /*[toml]
 [dependencies]
 ratatui = "0.27.0"
-thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["time_profiling"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling"] }
-# thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
 # tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
 */

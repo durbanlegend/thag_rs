@@ -2,14 +2,12 @@
 [dependencies]
 anyhow = "1.0.96"
 atty = "0.2.14"
-crossterm = "0.29"
 inquire = "0.7.5"
 # quote = "1.0.38"
 side-by-side-diff = "0.1.2"
 tempfile = "3.17.1"
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
-# thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
-thag_rs = { path = "../..", default-features = false, features = ["core"] }
+thag_proc_macros = { version = "0.1, thag-auto" }
+thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
@@ -19,7 +17,6 @@ thag_rs = { path = "../..", default-features = false, features = ["core"] }
 //# Purpose: Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 //# Categories: diagnosis, technique, thag_front_ends, tools
 use anyhow::{anyhow, Context, Result};
-use crossterm::terminal;
 use side_by_side_diff::create_side_by_side_diff;
 use std::{
     env::args,
@@ -30,7 +27,7 @@ use std::{
 };
 use tempfile::tempdir;
 use thag_proc_macros::{file_navigator, tool_errors};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_rs::{auto_help, crossterm::terminal, help_system::check_help_and_exit};
 
 tool_errors! {}
 file_navigator! {}

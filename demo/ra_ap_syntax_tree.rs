@@ -5,7 +5,7 @@
 //# Purpose: examine a `ra_ap_syntax` syntax tree.
 //# Categories: AST, crates, technique
 use ra_ap_syntax::ast::{HasModuleItem, Item};
-use ra_ap_syntax::{AstNode, Edition, SourceFile};
+use ra_ap_syntax::{Edition, SourceFile};
 use std::io::Read;
 
 fn read_stdin() -> std::io::Result<String> {
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("file={file:#?}");
 
-    let item = file
+    let _item = file
         .items()
         .filter(|item| !matches!(item, Item::Use(_)))
         .take(1)

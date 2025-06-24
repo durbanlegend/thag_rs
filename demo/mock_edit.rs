@@ -2,8 +2,7 @@
 [dependencies]
 crossterm = "0.28"
 mockall = "0.13.0"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["tui", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 
 /// Used to debug a doctest.

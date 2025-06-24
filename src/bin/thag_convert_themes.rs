@@ -19,8 +19,7 @@ thag_convert_themes -- -i themes/base24 -o themes/converted -f
 clap = { version = "4.5.26", features = ["cargo", "derive"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml_ok = "0.9.36"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["ast", "color_detect", "config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["ast", "color_detect", "config", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "color_detect", "config", "simplelog"] }
 toml = "0.8.19"
 */
 

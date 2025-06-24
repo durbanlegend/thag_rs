@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 smol = "1.3.0"
 async-channel = "1.9.0"
 async-dup = "1.2.2"

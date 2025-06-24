@@ -98,6 +98,7 @@ fn main() {
             "flume_async.rs",
             "flume_async_profile.rs",
             "flume_select.rs",
+            "thag_async_benchmark.rs",
         ];
 
         let stable_only = [

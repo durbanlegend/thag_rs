@@ -9,8 +9,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_with = "3"
 simplelog = { version = "0.12.2", optional = true }
 toml = "0.8.19"
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["config", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 
 [features]
 default = ["simplelog"]

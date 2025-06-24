@@ -3,7 +3,7 @@
 atty = "0.2.14"
 colored = "2.1.0"
 inquire = "0.7.5"
-thag_rs = { path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
 */
 /// `thag` prompted front-end command to run `clippy` on scripts.
 ///

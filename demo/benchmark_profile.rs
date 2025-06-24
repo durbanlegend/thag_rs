@@ -1,8 +1,6 @@
 /*[toml]
 [dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["time_profiling"] }
-# thag_profiler = { version = "0.1", features = ["time_profiling"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["time_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
 
 [profile.release]
 # debug-assertions = true

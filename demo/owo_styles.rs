@@ -5,9 +5,7 @@ owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 strum = { version = "0.26.3", features = ["derive"] }
 termbg = "0.6.2"
 
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features=["full_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features=["full_profiling"] }
 */
 
 use owo_colors::colors::css::{Black, DarkOrange, Orange};

@@ -2,9 +2,8 @@
 [dependencies]
 atty = "0.2.14"
 inquire = "0.7.5"
-thag_proc_macros = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop" }
-# thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
-thag_rs = { path = "../..", default-features = false, features = ["core"] }
+thag_proc_macros = { version = "0.1, thag-auto" }
+thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
 */
 
 /// `thag` prompted front-end command to run Cargo commands on scripts.

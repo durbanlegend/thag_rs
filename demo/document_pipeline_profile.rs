@@ -1,8 +1,6 @@
 /*[toml]
 [dependencies]
-# thag_profiler = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", features = ["full_profiling", "debug_logging"] }
-# thag_profiler = { version = "0.1", features = ["full_profiling", "debug_logging"] }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler", features = ["full_profiling", "debug_logging"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "debug_logging"] }
 */
 
 /// Test async program (instrumented version) for `thag_profiler` testing.

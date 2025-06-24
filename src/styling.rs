@@ -12,9 +12,6 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, PaletteMethods};
 use thag_profiler::{enable_profiling, end, profile, profiled};
 
-#[cfg(feature = "profiling")]
-use thag_profiler::mem_tracking;
-
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg_rgb, is_light_color};
 

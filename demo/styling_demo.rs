@@ -1,9 +1,6 @@
 /*[toml]
 [dependencies]
-nu-ansi-term = { version = "0.50.1", features = ["derive_serde_style"] }
-strum = { version = "0.27.1", features = ["derive"] }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.
@@ -110,7 +107,7 @@ pub fn main() -> ThagResult<()> {
     // let current = user_config.clone().unwrap_or_default();
     print_header("Color palette in use on this terminal:\n");
     display_theme_roles(theme);
-    display_theme_details();
+    display_theme_details(theme);
     println!();
 
     // Section 5: Current terminal attributes

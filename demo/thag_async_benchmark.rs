@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 dhat = { version = "0.3", optional = true }
-thag_profiler = { path = "/Users/donf/projects/thag_rs/thag_profiler" }
+thag_profiler = { version = "0.1, thag-auto" }
 tokio = { version = "1.36.0", features = ["rt-multi-thread", "macros", "time"], optional = true }
 smol = { version = "2.0", optional = true }
 

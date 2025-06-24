@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["config", "core", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
 /// Demonstrate embellishing an enum of the 16 basic colours, to allow renaming, generating a descriptive

@@ -165,7 +165,6 @@ edition = "2021"
 [[bin]]
 name = "{}"
 path = "{}"
-edition = "2021"
 "#,
         source_stem, source_stem, gen_src_path
     );

@@ -195,7 +195,7 @@ impl FileDialog<'_> {
 
     /// Closes the file dialog.
     #[profiled]
-    pub fn close(&mut self) {
+    pub const fn close(&mut self) {
         self.open = false;
     }
 
@@ -316,7 +316,7 @@ impl FileDialog<'_> {
                     max_desc_len,
                     f,
                 );
-            };
+            }
         }
     }
 

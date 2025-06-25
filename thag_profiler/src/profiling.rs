@@ -1,7 +1,6 @@
 #![allow(unused_variables)]
 use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use std::{
     collections::{BTreeSet, HashMap},
@@ -348,7 +347,7 @@ impl ProfileConfiguration {
     }
 
     /// Sets the profile type for this configuration.
-    pub fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
+    pub const fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
         self.profile_type = profile_type;
     }
 
@@ -461,6 +460,7 @@ impl Display for ProfileConfiguration {
 /// # Returns
 ///
 /// The configured `DebugLevel`, or `DebugLevel::None` if not set.
+#[must_use]
 pub fn get_debug_level() -> DebugLevel {
     get_profile_config().debug_level.unwrap_or_default()
 }
@@ -495,8 +495,8 @@ pub fn get_config_profile_type() -> ProfileType {
 }
 
 // Global registry of profiled functions
-static PROFILED_FUNCTIONS: Lazy<RwLock<HashMap<String, String>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static PROFILED_FUNCTIONS: std::sync::LazyLock<RwLock<HashMap<String, String>>> =
+    std::sync::LazyLock::new(|| RwLock::new(HashMap::new()));
 
 static_lazy! {
     ProfilePaths: ProfileFilePaths = {
@@ -1097,7 +1097,7 @@ pub(crate) fn enable_profiling(
 /// This function disables profiling and resets the profiling state.
 /// Use this to explicitly stop profiling that was enabled via the
 /// `#[enable_profiling]` attribute macro.
-pub fn disable_profiling() {
+pub const fn disable_profiling() {
     #[cfg(feature = "time_profiling")]
     {
         // Call the internal enable_profiling function with false
@@ -1153,7 +1153,8 @@ fn initialize_profile_file(path: &str) -> ProfileResult<()> {
 /// `true` if profiling is enabled, `false` otherwise
 // #[inline(always)]
 // #[allow(clippy::inline_always)]
-pub fn is_profiling_enabled() -> bool {
+#[must_use]
+pub const fn is_profiling_enabled() -> bool {
     #[cfg(feature = "time_profiling")]
     {
         // debug_log!(
@@ -1192,7 +1193,8 @@ pub fn is_profiling_enabled() -> bool {
 /// `true` if profiling state is enabled, `false` otherwise
 // #[inline(always)]
 // #[allow(clippy::inline_always)]
-pub fn is_profiling_state_enabled() -> bool {
+#[must_use]
+pub const fn is_profiling_state_enabled() -> bool {
     #[cfg(feature = "time_profiling")]
     {
         // debug_log!(
@@ -1281,7 +1283,7 @@ impl FromStr for ProfileType {
 #[derive(Clone, Debug)]
 pub struct Profile {
     start: Option<Instant>,
-    profile_type: ProfileType,
+    r#type: ProfileType,
     path: Vec<String>,
     section_name: Option<String>, // Custom section name when provided via profile!(name) macro
     registered_name: String,
@@ -1310,7 +1312,7 @@ impl Profile {
 
     /// Get the `fn_name` of this profile
     #[must_use]
-    pub fn fn_name(&self) -> &str {
+    pub const fn fn_name(&self) -> &str {
         self.fn_name.as_str()
     }
 
@@ -1970,7 +1972,7 @@ impl Profile {
     /// Returns the profile type for this profile
     #[must_use]
     pub const fn get_profile_type(&self) -> ProfileType {
-        self.profile_type
+        self.r#type
     }
 
     /// Returns whether this profile uses detailed memory tracking
@@ -2535,8 +2537,8 @@ pub fn extract_detailed_alloc_callstack(start_pattern: &Regex) -> Vec<String> {
 }
 
 // Global thread-safe BTreeSet
-static GLOBAL_CALL_STACK_ENTRIES: Lazy<Mutex<BTreeSet<String>>> =
-    Lazy::new(|| Mutex::new(BTreeSet::new()));
+static GLOBAL_CALL_STACK_ENTRIES: std::sync::LazyLock<Mutex<BTreeSet<String>>> =
+    std::sync::LazyLock::new(|| Mutex::new(BTreeSet::new()));
 
 /// Prints all entries in the global `BTreeSet`.
 /// Entries are printed in sorted order (alphabetically).
@@ -2992,7 +2994,7 @@ pub enum MemoryError {
 #[derive(Default)]
 /// Statistics for profiled functions, tracking performance metrics.
 ///
-/// This struct maintains both per-function statistics (calls and total_time)
+/// This struct maintains both per-function statistics (`calls` and `total_time`)
 /// and legacy aggregate statistics for backwards compatibility.
 pub struct ProfileStats {
     /// Number of calls made to each profiled function

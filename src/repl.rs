@@ -33,7 +33,7 @@ use regex::Regex;
 use std::{
     borrow::Cow,
     collections::HashMap,
-    fmt::Debug,
+    fmt::{Debug, Write as _},
     fs::{self, read_to_string, OpenOptions},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
@@ -613,7 +613,7 @@ pub fn process_source(
             get_verbosity(),
             "Error parsing code: {maybe_ast:#?}"
         );
-    };
+    }
     Ok(())
 }
 
@@ -716,7 +716,7 @@ fn review_history(
     if confirm {
         let history_mut = line_editor.history_mut();
         let saved_history = fs::read_to_string(staging_path)?;
-        eprintln!("staging_path={staging_path:?}");
+        eprintln!("staging_path={}", staging_path.display());
         eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
@@ -840,7 +840,7 @@ pub fn history_key_handler(
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
             status_message.clear();
-            status_message.push_str(&format!("Saved to {save_file}"));
+            let _ = write!(status_message, "Saved to {save_file}");
             Ok(KeyAction::Save)
         }
         key!(ctrl - l) => {
@@ -976,7 +976,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     println!();
 }
 
-/// Helper function to convert KeyModifiers to string
+/// Helper function to convert `KeyModifiers` to string
 #[must_use]
 #[profiled]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
@@ -998,7 +998,7 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
     }
 }
 
-/// Helper function to convert KeyCode to string
+/// Helper function to convert `KeyCode` to string
 #[must_use]
 #[profiled]
 pub fn format_key_code(key_code: KeyCode) -> String {
@@ -1033,7 +1033,7 @@ pub fn format_key_code(key_code: KeyCode) -> String {
     }
 }
 
-/// Helper function to format ReedlineEvents other than Edit, and their doc comments
+/// Helper function to format `ReedlineEvents` other than `Edit`, and their doc comments
 /// # Panics
 /// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]

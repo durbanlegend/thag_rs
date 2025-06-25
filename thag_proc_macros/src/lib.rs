@@ -576,10 +576,12 @@ pub fn profile(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Internal proc macro for use by `thag_profiler` code to ring-fence profiler code by
-/// ensuring as far as possible that any memory allocations in the included code will
-/// be handled by the system allocator, and not by the tracking allocator intended for
-/// profiling user code.
+/// Internal proc macro for use by `thag_profiler` code to ring-fence profiler code.
+///
+/// If the `full_profiling` feature is enabled, sets TLS / atomic allocator control variable
+/// to system allocator in order to ensure as far as possible that any memory allocations
+/// in the included code will be handled by the system allocator, and not by the tracking
+/// allocator intended for user code profiling.
 ///
 /// Zero-cost abstraction: no change to code unless `full_profiling` is enabled.
 ///
@@ -592,7 +594,7 @@ pub fn profile(input: TokenStream) -> TokenStream {
 /// ```
 ///
 #[proc_macro]
-pub fn safe_alloc(input: TokenStream) -> TokenStream {
+pub const fn safe_alloc(input: TokenStream) -> TokenStream {
     #[cfg(feature = "full_profiling")]
     {
         maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)

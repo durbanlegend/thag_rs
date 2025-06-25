@@ -77,7 +77,7 @@ fn main() -> ThagResult<()> {
 /// ```no_run
 /// use thag_rs::stdin::edit;
 /// use thag_rs::CrosstermEventReader;
-/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+/// use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 /// use thag_rs::MockEventReader;
 ///
 /// let mut event_reader = MockEventReader::new();
@@ -214,7 +214,7 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 pub fn edit_history() -> ThagResult<Option<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
-    println!("history_path={history_path:#?}");
+    println!("history_path={}", history_path.display());
     OpenOptions::new()
         .write(true)
         .create(true)

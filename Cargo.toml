@@ -324,25 +324,28 @@ terminal-light = ["dep:terminal-light"]
 # └── full
 #     ├── repl
 #     │   └── tui
-#     │       ├── build
-#     │       │   ├── ast
-#     │       │   │   ├── core  ★                # Fundamental feature set
-#     │       │   │   │   ├── error_handling     # Error types and handling
-#     │       │   │   │   ├── log_impl           # Basic logging infrastructure
-#     │       │   │   │   │   └── (simplelog | env_logger)
-#     │       │   │   │   └── styling            # Basic terminal styling
-#     │       │   │   ├── quote
-#     │       │   │   └── syn
-#     │       │   ├── config
-#     │       │   │   ├── core  ★ (shared)       # Core features required here too
-#     │       │   │   ├── mockall
-#     │       │   │   ├── serde_with
-#     │       │   │   └── toml_edit
-#     │       │   └── ratatui                    # TUI framework (shared with color_detect)
-#     │       │
-#     │       ├── tui-textarea                   # Text editing widget
-#     │       ├── serde_json                     # JSON support
-#     │       └── scopeguard                     # Resource cleanup (shared with color_detect)
+#     │    |  ├── build
+#     │    |  │   ├── ast
+#     │    |  │   │   ├── core  ★                # Fundamental feature set
+#     │    |  │   │   │   ├── error_handling     # Error types and handling
+#     │    |  │   │   │   ├── log_impl           # Basic logging infrastructure
+#     │    |  │   │   │   │   └── (simplelog | env_logger)
+#     │    |  │   │   │   └── styling            # Basic terminal styling
+#     │    |  │   │   ├── quote
+#     │    |  │   │   └── syn
+#     │    |  │   ├── config
+#     │    |  │   │   ├── core  ★ (shared)       # Core features required here too
+#     │    |  │   │   ├── mockall
+#     │    |  │   │   ├── serde_with
+#     │    |  │   │   └── toml_edit
+#     │    |  │   └── ratatui                    # TUI framework (shared with color_detect)
+#     │    |  │
+#     │    |  ├── tui-textarea                   # Text editing widget
+#     │    |  ├── serde_json                     # JSON support
+#     │    |  └── scopeguard                     # Resource cleanup (shared with color_detect)
+#     │    |
+#     │    └── nu-ansi-term
+#     │    └── reedline
 #     │
 #     └── color_detect     # Optional terminal detection, only included in full
 #         ├── config

@@ -190,8 +190,8 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         ///
         /// # Examples
         /// ```
-        /// # use thag_rs::styling::ThemeIndex1;
-        /// let hex = ThemeIndex1::rgb_to_hex(&(255, 128, 0));
+        /// # use thag_rs::styling::ThemeIndex;
+        /// let hex = ThemeIndex::rgb_to_hex(&(255, 128, 0));
         /// assert_eq!(hex, "#ff8000");
         /// ```
         #[must_use]
@@ -209,8 +209,8 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         ///
         /// # Examples
         /// ```
-        /// # use thag_rs::styling::ThemeIndex1;
-        /// let hex = ThemeIndex1::rgb_to_bare_hex(&(255, 128, 0));
+        /// # use thag_rs::styling::ThemeIndex;
+        /// let hex = ThemeIndex::rgb_to_bare_hex(&(255, 128, 0));
         /// assert_eq!(hex, "ff8000");
         /// ```
         #[must_use]

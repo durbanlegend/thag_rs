@@ -146,7 +146,7 @@ macro_rules! debug_log {
 
 /// Zero-cost debug logging gated behind feature `debug_logging`.
 ///
-/// Compiles to unit expression when debug_logging feature is disabled
+/// Compiles to unit expression when `debug_logging` feature is disabled
 #[cfg(not(feature = "debug_logging"))]
 #[macro_export]
 macro_rules! debug_log {

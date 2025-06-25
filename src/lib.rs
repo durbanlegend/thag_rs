@@ -29,7 +29,7 @@
 //!
 //! - Beyond shebangs: build instant commands from your snippets and programs
 //!
-//! - Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground)
+//! - Execute scripts directly from URLs (`GitHub`, `GitLab`, `BitBucket`, `Rust Playground`)
 //!
 //! - Paste-and-run with built-in TUI editor
 //!
@@ -40,7 +40,7 @@
 //! - Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.)
 //!
 //! - Run any Cargo command (clippy, tree, test) against your scripts.
-//! (Yes, you can even include unit tests in your scripts)
+//!   (Yes, you can even include unit tests in your scripts)
 //!
 //! - View macro expansions side-by-side with your base script
 //!
@@ -178,6 +178,7 @@ pub use {
     cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags},
     code_utils::modified_since_compiled,
     manifest::extract,
+    ratatui::crossterm,
 };
 
 #[cfg(feature = "color_detect")]
@@ -192,7 +193,6 @@ pub use config::{
 #[cfg(feature = "tui")]
 pub use {
     keys::KeyCombination,
-    ratatui::crossterm,
     tui_editor::{CrosstermEventReader, EventReader, KeyDisplayLine, MockEventReader},
 };
 

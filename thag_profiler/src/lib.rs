@@ -166,7 +166,7 @@ pub fn get_root_module() -> Option<&'static str> {
 #[cfg(not(target_os = "windows"))]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
     let fname_start = file_name.rfind('/').map_or_else(|| 0, |pos| pos + 1);
-    let fname_dot = file_name.rfind('.').unwrap_or_else(|| file_name.len());
+    let fname_dot = file_name.rfind('.').unwrap_or(file_name.len());
     file_name[fname_start..fname_dot].to_string()
 }
 
@@ -550,7 +550,7 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
 /// # Panics
 ///
 /// This function panics if profiling cannot be disabled.
-pub fn finalize_profiling() {
+pub const fn finalize_profiling() {
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
     {
         // Ensure debug log is flushed before we disable profiling

@@ -77,7 +77,8 @@ impl Config {
 
         if !config_path.exists() {
             let path = config_path.parent().ok_or(ThagError::NoneOption(format!(
-                "No parent for {config_path:#?}"
+                "No parent for {}",
+                config_path.display()
             )))?;
             fs::create_dir_all(path)?;
 
@@ -225,7 +226,7 @@ impl Default for Dependencies {
 }
 
 impl Dependencies {
-    /// Filter features based on configuration rules and return filtered features with default_features flag
+    /// Filter features based on configuration rules and return filtered features with `default_features` flag
     #[must_use]
     #[profiled]
     pub fn filter_maximal_features(
@@ -800,7 +801,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
         fs::write(&config_path, DEFAULT_CONFIG)?;
     }
 
-    eprintln!("About to edit {config_path:#?}");
+    eprintln!("About to edit {}", config_path.display());
     if context.is_real() {
         edit_file(&config_path)?;
     }

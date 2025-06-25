@@ -1142,7 +1142,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key
 
 **Purpose:** Demo key combination without Combiner.
 
-**Crates:** `crokey`, `crossterm`
+**Crates:** `KeyCombinationFormat`, `crokey`, `key`
 
 **Type:** Program
 
@@ -1478,6 +1478,25 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_struct.rs
+```
+
+---
+
+### Script: demo_tester.rs
+
+**Description:** 
+**Purpose:** 
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [demo_tester.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/demo_tester.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/demo_tester.rs
 ```
 
 ---
@@ -3773,30 +3792,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs
-```
-
----
-
-### Script: multi_allocator.rs
-
-**Description:**  Claude-generated multi-allocator prototype for use in thag_profiler.
- This uses the tagging technique demonstrated by the unlicensed (as at time of writing)
- `okaoka` crate at `https://github.com/emi0x7d1/okaoka` and found via
- `https://www.reddit.com/r/rust/comments/12di5bo/custom_allocators_in_rust/`.
-
-
-**Purpose:** Prototype using separate memory allocators for user and profiler code for use by `thag_profiler` for memory profiling.
-
-**Type:** Program
-
-**Categories:** prototype, technique
-
-**Link:** [multi_allocator.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_allocator.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_allocator.rs
 ```
 
 ---
@@ -6124,20 +6119,20 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.r
 
 ### Script: thag_async_benchmark.rs
 
-**Description:**  Focused async benchmark comparing tokio vs smol memory profiling with thag_profiler vs dhat-rs.
+**Description:**  Focused async benchmark comparing tokio vs smol memory profiling with `thag_profiler` vs `dhat-rs`.
  Tests async runtime overhead and task spawning memory usage.
 
  # Test with tokio + thag_profiler
- thag --features 'full_profiling,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+ THAG_PROFILER=memory,,announce,true thag --features 'full_profiling,tokio-runtime' demo/thag_async_benchmark.rs -tfm
 
  # Test with tokio + dhat
- thag --features 'dhat-heap,tokio-runtime' tools/thag_async_benchmark.rs -tfm
+ thag --features 'dhat-heap,tokio-runtime' demo/thag_async_benchmark.rs -tfm
 
  # Test with smol + thag_profiler
- thag --features 'full_profiling,smol-runtime' tools/thag_async_benchmark.rs -tfm
+ THAG_PROFILER=memory,,announce,true thag --features 'full_profiling,smol-runtime' demo/thag_async_benchmark.rs -tfm
 
  # Test with smol + dhat
- thag --features 'dhat-heap,smol-runtime' tools/thag_async_benchmark.rs -tfm
+ thag --features 'dhat-heap,smol-runtime' demo/thag_async_benchmark.rs -tfm
 
 **Purpose:** Validate async memory profiling accuracy across different runtimes
 
@@ -6153,41 +6148,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.r
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark.rs
-```
-
----
-
-### Script: thag_async_benchmark_gpt.rs
-
-**Description:**  Focused async benchmark comparing tokio vs smol memory profiling with thag_profiler vs dhat-rs.
- Tests async runtime overhead and task spawning memory usage.
-
- # Test with tokio + thag_profiler
- thag --features 'full_profiling,tokio-runtime' tools/thag_async_benchmark.rs -tfm
-
- # Test with tokio + dhat
- thag --features 'dhat-heap,tokio-runtime' tools/thag_async_benchmark.rs -tfm
-
- # Test with smol + thag_profiler
- thag --features 'full_profiling,smol-runtime' tools/thag_async_benchmark.rs -tfm
-
- # Test with smol + dhat
- thag --features 'dhat-heap,smol-runtime' tools/thag_async_benchmark.rs -tfm
-
-**Purpose:** Validate async memory profiling accuracy across different runtimes
-
-**Crates:** `dhat`, `futures`, `rand`, `smol`, `thag_profiler`, `tokio`
-
-**Type:** Program
-
-**Categories:** async, benchmark, profiling
-
-**Link:** [thag_async_benchmark_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark_gpt.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark_gpt.rs
 ```
 
 ---

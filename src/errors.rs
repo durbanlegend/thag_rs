@@ -63,7 +63,7 @@ pub enum ThagError {
     Logic(&'static str), // For logic errors
     /// Error unwrapping None from Option
     NoneOption(String), // For unwrapping Options
-    /// Error converting OsString to valid UTF-8
+    /// Error converting `OsString` to valid UTF-8
     OsString(std::ffi::OsString), // For unconvertible OsStrings
     /// Generic parsing error
     Parse,
@@ -293,7 +293,7 @@ impl std::fmt::Display for ThagError {
             Self::FromUtf8(e) => write!(f, "{e}"),
             Self::Io(e) => write!(f, "{e}"),
             Self::LockMutexGuard(e) => write!(f, "{e}"),
-            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
+            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {}>", o.display()),
             Self::Parse => write!(f, "Error parsing source data"),
             Self::ParseInt(e) => write!(f, "{e}"),
             Self::Profiling(e) => write!(f, "{e}"),

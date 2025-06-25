@@ -35,7 +35,7 @@ impl HelpSystem {
         }
     }
 
-    /// Create help system from current source file (for use with auto_help! macro)
+    /// Create help system from current source file (for use with `auto_help!` macro)
     pub fn from_current_source(tool_name: impl Into<String>, file_path: &str) -> Self {
         // Try to read the source file from the most likely locations
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
@@ -52,43 +52,49 @@ impl HelpSystem {
     }
 
     /// Set the purpose
+    #[must_use]
     pub fn with_purpose(mut self, purpose: impl Into<String>) -> Self {
         self.purpose = Some(purpose.into());
         self
     }
 
     /// Set the description
+    #[must_use]
     pub fn with_description(mut self, description: impl Into<String>) -> Self {
         self.description = Some(description.into());
         self
     }
 
     /// Set usage examples
+    #[must_use]
     pub fn with_usage(mut self, usage: impl Into<String>) -> Self {
         self.usage = Some(usage.into());
         self
     }
 
     /// Set categories
+    #[must_use]
     pub fn with_categories(mut self, categories: Vec<String>) -> Self {
         self.categories = categories;
         self
     }
 
     /// Set version
+    #[must_use]
     pub fn with_version(mut self, version: impl Into<String>) -> Self {
         self.version = Some(version.into());
         self
     }
 
     /// Check if help was requested and display it if so
+    #[must_use]
     pub fn check_help(&self) -> bool {
         let args: Vec<String> = env::args().collect();
 
         if args.len() > 1 {
             let help_args = ["--help", "-h", "help"];
             if help_args.contains(&args[1].as_str()) {
-                println!("{}", self);
+                println!("{self}");
                 return true;
             }
         }
@@ -145,6 +151,10 @@ impl HelpSystem {
     }
 
     /// Create help from a file path (reads and parses the file)
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered trying to read the file.
     pub fn from_file(
         tool_name: impl Into<String>,
         file_path: &str,
@@ -164,16 +174,16 @@ impl fmt::Display for HelpSystem {
         )?;
 
         if let Some(purpose) = &self.purpose {
-            writeln!(f, "{}", purpose)?;
+            writeln!(f, "{purpose}")?;
         }
 
         if let Some(description) = &self.description {
-            writeln!(f, "\n{}", description)?;
+            writeln!(f, "\n{description}")?;
         }
 
         writeln!(f, "\nUSAGE:")?;
         if let Some(usage) = &self.usage {
-            writeln!(f, "    {}", usage)?;
+            writeln!(f, "    {usage}")?;
         } else {
             writeln!(f, "    {} [OPTIONS]", self.tool_name)?;
         }

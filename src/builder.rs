@@ -295,7 +295,8 @@ impl BuildState {
         let source_path = script_path.canonicalize()?;
         if !source_path.exists() {
             return Err(format!(
-                "No script named {source_stem} or {source_name} in path {source_path:?}"
+                "No script named {source_stem} or {source_name} in path {}",
+                source_path.display()
             )
             .into());
         }
@@ -872,8 +873,8 @@ pub fn gen_build_run(
 
         debug_log!("rs_source={rs_source}");
         if build_state.rs_manifest.is_none() {
-        let rs_manifest: Manifest = { extract(&rs_source, start_parsing_rs) }?;
-        // debug_log!("rs_manifest={rs_manifest:#?}");
+            let rs_manifest: Manifest = { extract(&rs_source, start_parsing_rs) }?;
+            // debug_log!("rs_manifest={rs_manifest:#?}");
 
             build_state.rs_manifest = Some(rs_manifest);
         }
@@ -882,7 +883,7 @@ pub fn gen_build_run(
 
         if build_state.rs_manifest.is_some() {
             // Process thag-auto dependencies before merge
-            manifest::process_thag_auto_dependencies(build_state)?;
+            manifest::process_thag_auto_dependencies(build_state);
             manifest::merge(build_state, &rs_source)?;
         }
 

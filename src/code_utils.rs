@@ -58,7 +58,7 @@ impl VisitMut for RemoveInnerAttributes {
             expr_block
                 .attrs
                 .retain(|attr| attr.style != AttrStyle::Inner(syn::token::Not::default()));
-        };
+        }
 
         // Delegate to the default impl to visit nested expressions.
         visit_mut::visit_expr_block_mut(self, expr_block);

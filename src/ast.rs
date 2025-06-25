@@ -694,7 +694,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
                 // debug_log!("%%%%%%%% Some(last_stmt) = expr_if.then_branch.stmts.last()");
                 if !is_stmt_unit_type(last_stmt_in_then_branch, function_map) {
                     return false;
-                };
+                }
                 expr_if.else_branch.as_ref().is_none_or(|stmt| {
                     let expr_else = &*stmt.1;
                     // The else branch expression may only be an If or Block expression,

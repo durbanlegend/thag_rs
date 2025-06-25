@@ -61,7 +61,7 @@ struct StyleConfig {
 /// Contains color information including the color value, ANSI escape sequence, and palette index
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ColorInfo {
-    /// The color value in one of the supported formats (Basic, Color256, or TrueColor)
+    /// The color value in one of the supported formats (`Basic`, `Color256`, or `TrueColor`)
     pub value: ColorValue,
     /// The ANSI escape sequence string for this color
     pub ansi: &'static str,
@@ -70,7 +70,7 @@ pub struct ColorInfo {
 }
 
 impl ColorInfo {
-    /// Creates a new ColorInfo with basic ANSI color format
+    /// Creates a new `ColorInfo` with basic ANSI color format
     ///
     /// # Arguments
     /// * `ansi` - The ANSI escape sequence for this color
@@ -87,7 +87,7 @@ impl ColorInfo {
         }
     }
 
-    /// Creates a new ColorInfo with 256-color palette format
+    /// Creates a new `ColorInfo` with 256-color palette format
     ///
     /// # Arguments
     /// * `index` - The color index in the 256-color palette (0-255)
@@ -101,7 +101,7 @@ impl ColorInfo {
         }
     }
 
-    /// Creates a new ColorInfo with true color RGB format
+    /// Creates a new `ColorInfo` with true color RGB format
     ///
     /// # Arguments
     /// * `r` - Red component (0-255)
@@ -117,7 +117,7 @@ impl ColorInfo {
         }
     }
 
-    /// Creates appropriate ColorInfo based on terminal color support level
+    /// Creates appropriate `ColorInfo` based on terminal color support level
     ///
     /// # Arguments
     /// * `rgb` - RGB color values as a tuple (r, g, b)
@@ -274,7 +274,7 @@ impl Style {
 
     /// Resets all text formatting flags to their default (false) state
     #[profiled]
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         self.bold = false;
         self.italic = false;
         self.dim = false;
@@ -1273,7 +1273,7 @@ preload_themes! {}
 pub struct ThemeDefinition {
     name: String,
     #[serde(skip)]
-    /// Path to the theme file (e.g., "themes/built_in/dracula.toml")
+    /// Path to the theme file (e.g., "`themes/built_in/dracula.toml`")
     pub filename: PathBuf, // e.g., "themes/built_in/dracula.toml"
     #[serde(skip)]
     /// Whether this is a built-in theme or a custom theme
@@ -1324,7 +1324,7 @@ impl ThemeDefinition {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::styling::{Theme, ColorSupport};
+/// use thag_rs::styling::{Role, Theme, ColorSupport};
 ///
 /// // Load a built-in theme
 /// let theme = Theme::get_builtin("dracula")?;
@@ -1337,7 +1337,7 @@ impl ThemeDefinition {
 pub struct Theme {
     /// The human-readable name of the theme (e.g., "Dracula", "GitHub Light")
     pub name: String,
-    /// Path to the theme definition file (e.g., "themes/built_in/dracula.toml")
+    /// Path to the theme definition file (e.g., "`themes/built_in/dracula.toml`")
     pub filename: PathBuf,
     /// Whether this is a built-in theme (true) or a custom user theme (false)
     pub is_builtin: bool,
@@ -1640,7 +1640,7 @@ impl Theme {
     ///
     /// This method loads a built-in theme and converts its colors to match
     /// the specified color support level. Colors are automatically downgraded
-    /// if necessary (e.g., from TrueColor to Color256 or Basic).
+    /// if necessary (e.g., from `TrueColor` to `Color256` or `Basic`).
     ///
     /// # Arguments
     /// * `theme_name` - The name of the built-in theme to load
@@ -1984,7 +1984,7 @@ impl Theme {
     /// Converts all colors in the theme's palette to match the specified color support level.
     ///
     /// This method modifies the theme in place, converting colors from higher color support
-    /// levels to lower ones as needed. For example, TrueColor RGB values will be converted
+    /// levels to lower ones as needed. For example, `TrueColor` RGB values will be converted
     /// to the closest 256-color or basic ANSI color equivalents.
     ///
     /// # Arguments
@@ -2123,6 +2123,7 @@ fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
     )
 }
 
+#[allow(clippy::missing_const_for_fn)]
 #[cfg(feature = "config")]
 #[profiled]
 fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
@@ -2139,6 +2140,7 @@ fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &V
     }
 }
 
+#[allow(clippy::missing_const_for_fn)]
 #[cfg(feature = "config")]
 #[profiled]
 fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
@@ -2626,16 +2628,14 @@ pub fn display_theme_details(theme: &Theme) {
         "None".to_string()
     } else {
         // Display all background colors for the theme
-        if theme_bgs.len() == 1 {
-            dual_format_rgb(theme_bgs[0])
-        } else if theme_bgs.len() > 1 {
-            theme_bgs
+        match theme_bgs.len().cmp(&1) {
+            std::cmp::Ordering::Less => "None".to_string(),
+            std::cmp::Ordering::Equal => dual_format_rgb(theme_bgs[0]),
+            std::cmp::Ordering::Greater => theme_bgs
                 .iter()
                 .map(|rgb| dual_format_rgb(*rgb))
                 .collect::<Vec<_>>()
-                .join(", ")
-        } else {
-            "None".to_string()
+                .join(", "),
         }
     };
 
@@ -2754,8 +2754,11 @@ fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog;
 /// use thag_rs::styling::Role;
+/// let error_msg = "Bad thing happened";
 /// clog!(Role::Error, "Something went wrong: {}", error_msg);
+/// let filename = "my_precious.doc"
 /// clog!(Role::Info, "Processing file: {}", filename);
 /// ```
 macro_rules! clog {
@@ -2774,6 +2777,7 @@ macro_rules! clog {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_error;
 /// clog_error!("Failed to process file: {}", filename);
 /// clog_error!("Invalid input: {}", error_details);
 /// ```
@@ -2790,6 +2794,7 @@ macro_rules! clog_error {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_warning;
 /// clog_warning!("This operation might be slow: {}", operation_name);
 /// clog_warning!("Deprecated feature used: {}", feature_name);
 /// ```
@@ -2804,6 +2809,7 @@ macro_rules! clog_warning {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_heading1;
 /// clog_heading1!("Main Section: {}", section_name);
 /// clog_heading1!("Processing started");
 /// ```
@@ -2819,6 +2825,7 @@ macro_rules! clog_heading1 {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_heading2;
 /// clog_heading2!("Subsection: {}", subsection_name);
 /// clog_heading2!("Configuration loaded");
 /// ```
@@ -2834,6 +2841,7 @@ macro_rules! clog_heading2 {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_heading3;
 /// clog_heading3!("Details: {}", detail_name);
 /// clog_heading3!("Step completed");
 /// ```
@@ -2849,6 +2857,7 @@ macro_rules! clog_heading3 {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_emphasis;
 /// clog_emphasis!("Important note: {}", note);
 /// clog_emphasis!("This requires attention");
 /// ```
@@ -2863,6 +2872,7 @@ macro_rules! clog_emphasis {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_success;
 /// clog_success!("Operation completed successfully: {}", operation_name);
 /// clog_success!("File saved");
 /// ```
@@ -2878,6 +2888,7 @@ macro_rules! clog_success {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_info;
 /// clog_info!("Processing file: {}", filename);
 /// clog_info!("Configuration loaded");
 /// ```
@@ -2893,6 +2904,7 @@ macro_rules! clog_info {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_normal;
 /// clog_normal!("Standard message: {}", content);
 /// clog_normal!("Regular output");
 /// ```
@@ -2908,6 +2920,7 @@ macro_rules! clog_normal {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_debug;
 /// clog_debug!("Debug info: {}", debug_data);
 /// clog_debug!("Variable value: {:?}", variable);
 /// ```
@@ -2923,6 +2936,7 @@ macro_rules! clog_debug {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::clog_subtle;
 /// clog_subtle!("Background process: {}", process_name);
 /// clog_subtle!("Minor detail");
 /// ```
@@ -2943,6 +2957,7 @@ macro_rules! clog_subtle {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog;
 /// use thag_rs::logging::Verbosity;
 /// use thag_rs::styling::Role;
 /// cvlog!(Verbosity::VV, Role::Info, "Detailed info: {}", details);
@@ -2980,6 +2995,7 @@ macro_rules! cvlog {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_error;
 /// use thag_rs::logging::Verbosity;
 /// cvlog_error!(Verbosity::V, "Critical error: {}", error_msg);
 /// ```
@@ -2995,6 +3011,7 @@ macro_rules! cvlog_error {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_warning;
 /// use thag_rs::logging::Verbosity;
 /// cvlog_warning!(Verbosity::V, "Potential issue: {}", warning_msg);
 /// ```
@@ -3010,11 +3027,12 @@ macro_rules! cvlog_warning {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_heading1;
 /// use thag_rs::logging::Verbosity;
-/// cvlog_heading!(Verbosity::V, "Main Section: {}", section_name);
+/// cvlog_heading1!(Verbosity::V, "Main Section: {}", section_name);
 /// ```
 #[macro_export]
-macro_rules! cvlog_heading {
+macro_rules! cvlog_heading1 {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Heading1, $verbosity, $($arg)*) };
 }
 
@@ -3025,11 +3043,12 @@ macro_rules! cvlog_heading {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_heading2;
 /// use thag_rs::logging::Verbosity;
-/// cvlog_subheading!(Verbosity::V, "Subsection: {}", subsection_name);
+/// cvlog_heading2!(Verbosity::V, "Subsection: {}", subsection_name);
 /// ```
 #[macro_export]
-macro_rules! cvlog_subheading {
+macro_rules! cvlog_heading2 {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Heading2, $verbosity, $($arg)*) };
 }
 
@@ -3040,6 +3059,7 @@ macro_rules! cvlog_subheading {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_emphasis;
 /// use thag_rs::logging::Verbosity;
 /// cvlog_emphasis!(Verbosity::V, "Important: {}", important_msg);
 /// ```
@@ -3055,11 +3075,12 @@ macro_rules! cvlog_emphasis {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_info;
 /// use thag_rs::logging::Verbosity;
-/// cvlog_bright!(Verbosity::V, "Highlighted info: {}", info_msg);
+/// cvlog_info!(Verbosity::V, "Highlighted info: {}", info_msg);
 /// ```
 #[macro_export]
-macro_rules! cvlog_bright {
+macro_rules! cvlog_info {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Info, $verbosity, $($arg)*) };
 }
 
@@ -3070,6 +3091,7 @@ macro_rules! cvlog_bright {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_normal;
 /// use thag_rs::logging::Verbosity;
 /// cvlog_normal!(Verbosity::V, "Standard message: {}", msg);
 /// ```
@@ -3085,6 +3107,7 @@ macro_rules! cvlog_normal {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_debug;
 /// use thag_rs::logging::Verbosity;
 /// cvlog_debug!(Verbosity::VV, "Debug info: {}", debug_data);
 /// ```
@@ -3100,11 +3123,12 @@ macro_rules! cvlog_debug {
 ///
 /// # Examples
 /// ```
+/// use thag_rs::cvlog_hint;
 /// use thag_rs::logging::Verbosity;
-/// cvlog_ghost!(Verbosity::VVV, "Subtle hint: {}", hint_msg);
+/// cvlog_hint!(Verbosity::VVV, "Subtle hint: {}", hint_msg);
 /// ```
 #[macro_export]
-macro_rules! cvlog_ghost {
+macro_rules! cvlog_hint {
     ($verbosity:expr, $($arg:tt)*) => { $crate::cvprtln!($crate::styling::Role::Hint, $verbosity, $($arg)*) };
 }
 

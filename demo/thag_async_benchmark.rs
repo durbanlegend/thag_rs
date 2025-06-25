@@ -2,7 +2,7 @@
 [dependencies]
 dhat = { version = "0.3", optional = true }
 thag_profiler = { version = "0.1, thag-auto" }
-tokio = { version = "1.36.0", features = ["rt-multi-thread", "macros", "time"], optional = true }
+tokio = { version = "1.45", features = ["rt-multi-thread", "macros", "time"], optional = true }
 smol = { version = "2.0", optional = true }
 
 [features]
@@ -18,6 +18,7 @@ debug = true
 strip = false
 */
 
+#![allow(unused_imports)]
 /// Focused async benchmark comparing tokio vs smol memory profiling with `thag_profiler` vs `dhat-rs`.
 /// Tests async runtime overhead and task spawning memory usage.
 ///
@@ -37,13 +38,11 @@ strip = false
 use std::time::Duration;
 use thag_profiler::{enable_profiling, profiled};
 
-// #[cfg(feature = "full_profiling")]
-// use thag_profiler::mem_tracking;
-
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
+#[cfg(any(feature = "tokio-runtime", feature = "smol-runtime"))]
 #[profiled]
 async fn simple_async_work(id: usize) -> String {
     // Small allocation inside async function
@@ -58,6 +57,7 @@ async fn simple_async_work(id: usize) -> String {
     format!("Task {} completed with {} items", id, data.len())
 }
 
+#[cfg(any(feature = "tokio-runtime", feature = "smol-runtime"))]
 #[profiled]
 async fn spawn_many_tasks(count: usize) -> Vec<String> {
     println!("spawn_many_tasks called with {} tasks", count);
@@ -69,7 +69,11 @@ async fn spawn_many_tasks(count: usize) -> Vec<String> {
     #[cfg(feature = "smol-runtime")]
     println!("Plus smol overhead per task");
 
-    let mut handles = Vec::new();
+    #[cfg(feature = "tokio-runtime")]
+    let mut handles: Vec<tokio::task::JoinHandle> = Vec::new();
+
+    #[cfg(feature = "smol-runtime")]
+    let mut handles: Vec<smol::Task> = Vec::new();
 
     // Spawn multiple tasks to test async overhead
     for i in 0..count {
@@ -103,6 +107,7 @@ async fn spawn_many_tasks(count: usize) -> Vec<String> {
     results
 }
 
+#[cfg(any(feature = "tokio-runtime", feature = "smol-runtime"))]
 #[profiled]
 async fn async_data_processing() -> Vec<Vec<u8>> {
     let mut data_sets = Vec::new();
@@ -149,6 +154,7 @@ fn main() {
     println!("  thag --features 'dhat-heap,tokio-runtime' demo/thag_async_benchmark.rs");
 }
 
+#[cfg(any(feature = "tokio-runtime", feature = "smol-runtime"))]
 async fn run_benchmark() {
     #[cfg(feature = "dhat-heap")]
     let _dhat = dhat::Profiler::new_heap();

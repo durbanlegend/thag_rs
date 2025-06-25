@@ -34,12 +34,13 @@ use std::{
     collections::VecDeque,
     convert::Into,
     env::var,
-    fmt::{Debug, Display},
+    fmt::{Debug, Display, Write as _},
     fs::{self, OpenOptions},
     io::Write,
     path::PathBuf,
     time::Duration,
 };
+// import without risk of name clashing
 use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, TextArea};
 
@@ -697,10 +698,10 @@ where
 
     let mut maybe_term = resolve_term()?;
 
-    // Create the TextArea from initial content
+    // Create the `TextArea` from initial content
     let mut textarea = TextArea::from(edit_data.initial_content.lines());
 
-    // Set up the display parameters for the textarea
+    // Set up the display parameters for the `TextArea`
     textarea.set_block(
         Block::default()
             .borders(Borders::ALL)
@@ -755,7 +756,7 @@ where
                         // Get the size of the available terminal area
                         let area = f.area();
 
-                        // Ensure there's enough height for both the textarea and the status line
+                        // Ensure there's enough height for both the `TextArea` and the status line
                         if area.height > 1 {
                             let chunks = Layout::default()
                                 .direction(Direction::Vertical)
@@ -768,7 +769,7 @@ where
                                 )
                                 .split(area);
 
-                            // Render the textarea in the first chunk
+                            // Render the `TextArea` in the first chunk
                             f.render_widget(&textarea, chunks[0]);
 
                             // Render the status line in the second chunk
@@ -793,7 +794,7 @@ where
                                     max_desc_len,
                                     f,
                                 );
-                            };
+                            }
                             highlight_selection(&mut textarea, tui_highlight_fg);
                             // status_message = String::new();
                         }
@@ -999,7 +1000,7 @@ where
                         KeyAction::Continue
                         | KeyAction::Save
                         | KeyAction::ToggleHighlight
-                        | KeyAction::TogglePopup => continue,
+                        | KeyAction::TogglePopup => (),
                         KeyAction::ShowHelp => todo!(),
                     }
                 }
@@ -1012,14 +1013,14 @@ where
     }
 }
 
-/// Highlight the selected text in the textarea with the specified color role.
+/// Highlight the selected text in the `TextArea` with the specified color role.
 ///
-/// This function applies styling to the selected text in the textarea, setting
+/// This function applies styling to the selected text in the `TextArea`, setting
 /// the foreground color based on the provided Role and making it bold.
 ///
 /// # Arguments
 ///
-/// * `textarea` - A mutable reference to the TextArea to apply highlighting to
+/// * `textarea` - A mutable reference to the `TextArea` to apply highlighting to
 /// * `tui_highlight_fg` - The Role that determines the foreground color for highlighting
 #[profiled]
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
@@ -1113,7 +1114,7 @@ pub fn script_key_handler(
             Ok(KeyAction::Continue)
         }
         _ => {
-            // Update the textarea with the input from the key event
+            // Update the `TextArea` with the input from the key event
             textarea.input(Input::from(key_event)); // Input derived from Event
             Ok(KeyAction::Continue)
         }
@@ -1202,8 +1203,7 @@ fn save_as(
         if let Some(ref to_rs_path) = save_dialog.selected_file {
             save_source_file(to_rs_path, textarea, saved)?;
             status_message.clear();
-            status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
-
+            let _ = write!(status_message, "Saved to {}", to_rs_path.display());
             Ok(KeyAction::Save)
         } else {
             Ok(KeyAction::Continue)
@@ -1226,12 +1226,12 @@ fn save(
             let history = &mut edit_data.history;
             if let Some(hist) = history {
                 preserve(textarea, hist, hist_path)?;
-            };
+            }
             let result = save_source_file(save_path, textarea, saved);
             match result {
                 Ok(()) => {
                     status_message.clear();
-                    status_message.push_str(&format!("Saved to {}", save_path.display()));
+                    let _ = write!(status_message, "Saved to {}", save_path.display());
                 }
                 Err(e) => return Err(e),
             }
@@ -1250,7 +1250,7 @@ fn save_and_submit(
         let history = &mut edit_data.history;
         if let Some(hist) = history {
             preserve(textarea, hist, hist_path)?;
-        };
+        }
     }
     Ok(KeyAction::Submit)
 }
@@ -1318,10 +1318,10 @@ pub fn display_popup(
     #[allow(clippy::cast_possible_truncation)]
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            std::iter::repeat(Constraint::Ratio(1, num_filtered_rows as u32))
-                .take(num_filtered_rows),
-        );
+        .constraints(std::iter::repeat_n(
+            Constraint::Ratio(1, num_filtered_rows as u32),
+            num_filtered_rows,
+        ));
     let rows = row_layout.split(inner);
 
     for (i, row) in rows.iter().enumerate() {
@@ -1492,12 +1492,12 @@ pub fn save_if_changed(
 
 /// Paste the contents of a history entry into a text area.
 ///
-/// This function clears the current content of the textarea by selecting all
+/// This function clears the current content of the `TextArea` by selecting all
 /// and cutting it, then inserts the content from the provided history entry.
 ///
 /// # Arguments
 ///
-/// * `textarea` - A mutable reference to the TextArea to paste into
+/// * `textarea` - A mutable reference to the `TextArea` to paste into
 /// * `entry` - The history entry containing the content to paste
 #[profiled]
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
@@ -1526,12 +1526,12 @@ pub fn preserve(
 
 /// Save content from textarea to history if it's not empty.
 ///
-/// This function copies the text content from the textarea and adds it to the history
+/// This function copies the text content from the `TextArea` and adds it to the history
 /// collection if the content is not empty (after trimming whitespace).
 ///
 /// # Arguments
 ///
-/// * `textarea` - A mutable reference to the TextArea to copy from
+/// * `textarea` - A mutable reference to the `TextArea` to copy from
 /// * `hist` - A mutable reference to the History to add the entry to
 #[profiled]
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
@@ -1546,16 +1546,16 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
 
 /// Copy the entire text content from a `TextArea`.
 ///
-/// This function selects all text in the textarea, copies it, and returns
+/// This function selects all text in the `TextArea`, copies it, and returns
 /// the content as a single string with newlines preserved.
 ///
 /// # Arguments
 ///
-/// * `textarea` - A mutable reference to the TextArea to copy from
+/// * `textarea` - A mutable reference to the `TextArea` to copy from
 ///
 /// # Returns
 ///
-/// A String containing the entire text content of the textarea
+/// A String containing the entire text content of the `TextArea`
 #[profiled]
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
     textarea.select_all();

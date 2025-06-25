@@ -92,7 +92,6 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
             }
             Err(e) => {
                 debug_log!("Failed to look up crate {}: {}", crate_name, e);
-                continue;
             }
         }
     }
@@ -319,31 +318,30 @@ pub fn extract(
 /// * `ThagResult<()>` - Success or error result
 ///
 /// # Environment Variables
-/// * `THAG_DEV_PATH` - Path to local thag_rs development directory
+/// * `THAG_DEV_PATH` - Path to local `thag_rs` development directory
 /// * `THAG_GIT_REF` - Git reference (branch/tag/commit) for git dependencies
-/// * `THAG_GIT_REPO` - Git repository URL (defaults to standard thag_rs repo)
+/// * `THAG_GIT_REPO` - Git repository URL (defaults to standard `thag_rs` repo)
 /// * `CI` - Indicates CI environment
 #[profiled]
-pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
+pub fn process_thag_auto_dependencies(build_state: &mut BuildState) {
     if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         let thag_crates = ["thag_rs", "thag_proc_macros", "thag_profiler"];
 
         for crate_name in &thag_crates {
             if let Some(dependency) = rs_manifest.dependencies.get(*crate_name) {
                 if should_process_thag_auto(dependency) {
-                    let new_dependency = resolve_thag_dependency(crate_name, dependency)?;
+                    let new_dependency = resolve_thag_dependency(crate_name, dependency);
                     rs_manifest
                         .dependencies
-                        .insert(crate_name.to_string(), new_dependency);
+                        .insert((*crate_name).to_string(), new_dependency);
                 }
             }
         }
     }
-    Ok(())
 }
 
-/// Checks if a dependency has thag-auto enabled by looking for a version string
-/// that contains "thag-auto" as a marker
+/// Checks if a dependency has `thag-auto` enabled by looking for a version string
+/// that contains "`thag-auto`" as a marker
 fn should_process_thag_auto(dependency: &Dependency) -> bool {
     match dependency {
         Dependency::Detailed(detail) => {
@@ -351,16 +349,15 @@ fn should_process_thag_auto(dependency: &Dependency) -> bool {
             detail
                 .version
                 .as_ref()
-                .map(|v| v.contains("thag-auto"))
-                .unwrap_or(false)
+                .is_some_and(|v| v.contains("thag-auto"))
         }
         Dependency::Simple(version) => version.contains("thag-auto"),
-        _ => false,
+        Dependency::Inherited(_) => false,
     }
 }
 
 /// Resolves a thag dependency based on environment variables and context
-fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagResult<Dependency> {
+fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> cargo_toml::Dependency {
     // Extract base dependency details, preserving features and other settings
     let (base_version, features, default_features) = match original_dep {
         Dependency::Detailed(detail) => {
@@ -382,7 +379,7 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagR
             };
             (version, Vec::new(), true)
         }
-        _ => return Ok(original_dep.clone()),
+        Dependency::Inherited(_) => return original_dep.clone(),
     };
 
     // Create new dependency detail with preserved settings
@@ -398,7 +395,6 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagR
     if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
         // Development: use local path
         let crate_path = match crate_name {
-            "thag_rs" => dev_path,
             "thag_proc_macros" => format!("{}/thag_proc_macros", dev_path),
             "thag_profiler" => format!("{}/thag_profiler", dev_path),
             _ => dev_path,
@@ -436,7 +432,7 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> ThagR
         );
     }
 
-    Ok(Dependency::Detailed(new_detail))
+    Dependency::Detailed(new_detail)
 }
 
 #[profiled]
@@ -586,7 +582,6 @@ pub fn lookup_deps(
             match inference_level {
                 DependencyInference::None => {
                     // Skip dependency entirely
-                    continue;
                 }
                 DependencyInference::Min => {
                     // Just add basic dependency

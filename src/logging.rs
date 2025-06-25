@@ -133,7 +133,7 @@ impl Logger {
 
     /// Return the verbosity level
     #[profiled]
-    pub fn verbosity(&mut self) -> Verbosity {
+    pub const fn verbosity(&mut self) -> Verbosity {
         self.verbosity
     }
 }

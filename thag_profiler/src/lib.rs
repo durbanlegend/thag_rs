@@ -28,10 +28,11 @@
 //! // To disable it while keeping the instrumentation, you can either
 //! // disable the profiling features in the `thag_profiler` dependency
 //! // or simply specify `#[enable_profiling(no)]`.
+//! use thag_profiler::{enable_profiling, profiled};
 //! #[enable_profiling]
-//! fn main() -> u64 {
+//! fn main() {
 //!     // Function code...
-//!     42
+//!     println!("some_calculation()={}", some_calculation());
 //! }
 //!
 //! // Instrument a function
@@ -318,7 +319,7 @@ macro_rules! static_lazy {
 ///
 /// # Example
 /// ```
-/// use thag_profiler::{debug_log, mem_tracking, warn_once};
+/// use thag_profiler::{debug_log, warn_once};
 /// let is_disabled = true;
 /// warn_once!(is_disabled, || {
 ///     debug_log!("This feature is disabled");
@@ -550,7 +551,8 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
 /// # Panics
 ///
 /// This function panics if profiling cannot be disabled.
-pub const fn finalize_profiling() {
+#[allow(clippy::missing_const_for_fn)]
+pub fn finalize_profiling() {
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
     {
         // Ensure debug log is flushed before we disable profiling
@@ -711,8 +713,13 @@ mod config_tests {
     /// Tests that resetting profile config picks up environment variable changes
     /// This test is isolated to avoid interfering with other tests
     #[test]
+    #[cfg(feature = "time_profiling")]
     fn test_profile_config_picks_up_env_changes() {
-        // Save original env var if it exists
+        // Wait for exclusive use
+        let lock = PROFILING_MUTEX.lock();
+        let _guard = lock;
+
+        // Save originaål env var if it exists
         let original = env::var("THAG_PROFILER").ok();
 
         let orig_global_profile_type = profiling::get_global_profile_type();

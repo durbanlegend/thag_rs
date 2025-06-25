@@ -593,8 +593,9 @@ pub fn profile(input: TokenStream) -> TokenStream {
 ///     }
 /// ```
 ///
+#[allow(clippy::missing_const_for_fn)]
 #[proc_macro]
-pub const fn safe_alloc(input: TokenStream) -> TokenStream {
+pub fn safe_alloc(input: TokenStream) -> TokenStream {
     #[cfg(feature = "full_profiling")]
     {
         maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)

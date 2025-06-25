@@ -1,9 +1,14 @@
 /// This file contains examples of how to use the warn_once abstraction
 /// to replace the custom warning pattern in record_dealloc.
-use thag_profiler::{debug_log, profiling::ProfileType, warn_once, warn_once_with_id};
+use thag_profiler::debug_log;
 
 #[cfg(feature = "full_profiling")]
-use thag_profiler::{mem_tracking, safe_alloc};
+use thag_profiler::{
+    mem_tracking,
+    profiling::ProfileType,
+    safe_alloc,
+    warn_once, warn_once_with_id,
+};
 
 /// Example of using the warn_once! macro in a function similar to record_dealloc
 #[test]
@@ -29,6 +34,7 @@ fn test_example_function_with_warn_once() {
     }
 
 /// Example of how record_dealloc could be refactored to use warn_once!
+#[cfg(feature = "full_profiling")]
 fn example_function_with_warn_once() {
     debug_log!("Entering example function");
 
@@ -52,29 +58,30 @@ fn example_function_with_warn_once() {
     debug_log!("Example: Running actual processing code");
 }
 
-    /// Example of how record_dealloc could be refactored using warn_once_with_id
-    #[test]
-    #[cfg(feature = "full_profiling")]
-    fn test_example_function_with_warn_once_id() {
-        // Use the system allocator
-        safe_alloc! {
-            // Set profile type to trigger warning
-            thag_profiler::profiling::set_global_profile_type(ProfileType::Time);
+/// Example of how record_dealloc could be refactored using warn_once_with_id
+#[test]
+#[cfg(feature = "full_profiling")]
+fn test_example_function_with_warn_once_id() {
+    // Use the system allocator
+    safe_alloc! {
+        // Set profile type to trigger warning
+        thag_profiler::profiling::set_global_profile_type(ProfileType::Time);
 
-        // Call example function multiple times
-        example_function_with_warn_once_id();
-        example_function_with_warn_once_id();
-        example_function_with_warn_once_id();
+    // Call example function multiple times
+    example_function_with_warn_once_id();
+    example_function_with_warn_once_id();
+    example_function_with_warn_once_id();
 
-        // Set profile type to allow processing
-        thag_profiler::profiling::set_global_profile_type(ProfileType::Memory);
+    // Set profile type to allow processing
+    thag_profiler::profiling::set_global_profile_type(ProfileType::Memory);
 
-            // Call example function again - this time it should execute fully
-            example_function_with_warn_once_id();
-        };
-    }
+        // Call example function again - this time it should execute fully
+        example_function_with_warn_once_id();
+    };
+}
 
 /// Example using the warn_once_with_id function
+#[cfg(feature = "full_profiling")]
 fn example_function_with_warn_once_id() {
     debug_log!("Entering example function with ID");
 

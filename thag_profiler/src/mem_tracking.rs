@@ -406,15 +406,13 @@ unsafe impl GlobalAlloc for TrackingAllocator {
     }
 }
 
-#[allow(clippy::too_many_lines, unreachable_code, unused_variables)]
+#[allow(
+    clippy::cognitive_complexity,
+    clippy::too_many_lines,
+    unreachable_code,
+    unused_variables
+)]
 fn record_alloc(address: usize, size: usize) {
-    // static TOTAL_BYTES: AtomicUsize = AtomicUsize::new(0);
-    // TOTAL_BYTES.fetch_add(size, Ordering::Relaxed);
-
-    // return;
-
-    // unreachable!();
-
     // Simple recursion prevention without using TLS with destructors
     static mut IN_TRACKING: bool = false;
     struct Guard;
@@ -426,15 +424,14 @@ fn record_alloc(address: usize, size: usize) {
         }
     }
 
-    // assert_eq!(current_allocator(), Allocator::System);
-
     safe_alloc! {
         if size == 0 {
             debug_log!("Zero-sized allocation found");
             return;
         }
 
-        let profile_type = get_global_profile_type();
+        let profile_type = lazy_static_var!(ProfileType, deref, get_global_profile_type());
+
         if profile_type != ProfileType::Memory && profile_type != ProfileType::Both {
             // debug_log!(
             //     "Skipping allocation recording because profile_type={:?}",
@@ -464,21 +461,6 @@ fn record_alloc(address: usize, size: usize) {
         // Get backtrace without recursion
         // debug_log!("Attempting backtrace");
         let start_ident = Instant::now();
-        // Now we can safely use backtrace without recursion!
-        // debug_log!("Calling extract_callstack");
-        // let mut current_backtrace = safe_alloc! { Backtrace::new_unresolved() };
-
-        // TODO phase out - useful for debugging though
-        // let cleaned_stack = extract_alloc_callstack(&ALLOC_START_PATTERN, &mut current_backtrace);
-        // debug_log!("Cleaned_stack for size={size}: {cleaned_stack:?}");
-        // let in_profile_code = cleaned_stack
-        //     .iter()
-        //     .any(|frame| frame.contains("Backtrace::new") || frame.contains("Profile::new"));
-
-        // if in_profile_code {
-        //     debug_log!("Ignoring allocation request of size {size} for profiler code");
-        //     return;
-        // }
 
         let file_names = {
             safe_alloc! {
@@ -1056,6 +1038,7 @@ impl Drop for TaskGuard {
 // ========== TASK PATH MANAGEMENT ==========
 
 /// Registry mapping task IDs to their execution paths for flamegraph generation.
+///
 /// Each task ID maps to a vector of strings representing the call stack path.
 /// This ensures all paths are written to the .folded file, even with zero allocations,
 /// to provide complete call hierarchy information for flamegraph construction.

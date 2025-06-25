@@ -1,9 +1,16 @@
-use serial_test::serial;
-use std::sync::{Arc, Barrier};
-use std::thread;
 /// Test demonstrating the unified allocator approach
 /// The same code works with either global or thread-local implementation
 /// based on the `no_tls` feature flag.
+#[cfg(feature = "full_profiling")]
+use serial_test::serial;
+
+#[cfg(feature = "full_profiling")]
+use std::sync::{Arc, Barrier};
+
+#[cfg(feature = "full_profiling")]
+use std::thread;
+
+#[cfg(feature = "full_profiling")]
 use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
 
 #[cfg(feature = "full_profiling")]

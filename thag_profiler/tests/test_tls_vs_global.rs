@@ -1,7 +1,17 @@
+#[cfg(feature = "full_profiling")]
 use std::sync::{Arc, Barrier};
+
+#[cfg(feature = "full_profiling")]
 use std::thread;
+
 /// Test comparing global atomic vs thread-local allocator switching behavior
-use thag_profiler::{current_allocator, debug_log, mem_tracking, safe_alloc, Allocator};
+#[cfg(feature = "full_profiling")]
+use thag_profiler::{safe_alloc};
+
+use thag_profiler::{debug_log};
+
+#[cfg(feature = "full_profiling")]
+use thag_profiler::{current_allocator, mem_tracking, Allocator};
 
 #[test]
 #[cfg(feature = "full_profiling")]

@@ -1,5 +1,6 @@
 /// Simple test for thread-local storage allocator functions
 /// Uses function calls only to avoid macro expansion issues
+#[cfg(feature = "full_profiling")]
 use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
 
 // Import debug_log based on feature availability
@@ -11,8 +12,14 @@ use thag_profiler::debug_log;
 macro_rules! debug_log {
     ($($arg:tt)*) => {};
 }
+
+#[cfg(feature = "full_profiling")]
 use serial_test::serial;
+
+#[cfg(feature = "full_profiling")]
 use std::sync::{Arc, Barrier};
+
+#[cfg(feature = "full_profiling")]
 use std::thread;
 
 // Test utility to reset state

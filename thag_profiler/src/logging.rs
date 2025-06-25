@@ -77,6 +77,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
 }
 
 /// Retrieve the debug log path
+#[allow(clippy::missing_const_for_fn)]
 #[must_use]
 pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
@@ -102,6 +103,7 @@ pub fn get_debug_log_path() -> Option<String> {
 }
 
 /// A function to flush the log buffer - can be called at strategic points
+#[allow(clippy::missing_const_for_fn)]
 pub fn flush_debug_log() {
     #[cfg(not(feature = "full_profiling"))]
     {
@@ -126,7 +128,7 @@ pub fn flush_debug_log() {
 
 /// Zero-cost debug logging gated behind feature `debug_logging`.
 ///
-/// Compiles to unit expression when debug_logging feature is disabled
+/// Compiles to unit expression when `debug_logging` feature is disabled
 #[cfg(feature = "debug_logging")]
 #[macro_export]
 macro_rules! debug_log {

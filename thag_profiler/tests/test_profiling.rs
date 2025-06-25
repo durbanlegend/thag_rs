@@ -24,12 +24,15 @@
 /// runs them all in sequence with appropriate initialization and cleanup.
 ///
 // Common imports for all test configurations
+#[cfg(feature = "time_profiling")]
 use std::env;
-use std::str::FromStr;
-// use std::sync::{LazyLock, Mutex};
-use std::time::{Duration, Instant};
 
-// Feature-specific imports
+#[cfg(feature = "time_profiling")]
+use std::{
+    str::FromStr,
+    time::Duration,
+};
+
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
     clear_profile_config_cache, debug_log, disable_profiling, profiled,
@@ -532,14 +535,15 @@ fn test_profiled_function() {
         debug_log!("Inside profiled function");
 
         // Do some work to ensure we register something
-        let start = Instant::now();
+        #[cfg(feature = "debug_logging")]
+        let start = std::time::Instant::now();
+
         #[allow(unused_variables)]
         let mut sum = 0;
         for i in 0..1000 {
             sum += i;
         }
-        let elapsed = start.elapsed();
-        debug_log!("Work took {} micros", elapsed.as_micros());
+        debug_log!("Work took {} micros", start.elapsed().as_micros());
 
         // In a real test, we'd verify this function was registered
         // For now, we're just verifying the attribute doesn't cause errors

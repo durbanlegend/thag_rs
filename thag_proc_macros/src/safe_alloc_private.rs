@@ -16,17 +16,17 @@ impl Parse for SafeAllocInput {
     }
 }
 
-pub fn safe_alloc_impl(input: TokenStream) -> TokenStream {
+pub fn safe_alloc_private_impl(input: TokenStream) -> TokenStream {
     let SafeAllocInput { content } = parse_macro_input!(input as SafeAllocInput);
 
     let expanded = quote! {
         {
-            let was_already_using_sys = mem_tracking::compare_exchange_using_system(false, true).is_err();
+            let was_already_using_sys = compare_exchange_using_system(false, true).is_err();
 
             let result = { #content };
 
             if !was_already_using_sys {
-                mem_tracking::set_using_system(false);
+                set_using_system(false);
             }
 
             result

@@ -163,7 +163,7 @@ pub fn profiled_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     #[cfg(feature = "full_profiling")]
     let import_mem_tracking = quote! {
-        use thag_profiler::mem_tracking;
+        use thag_profiler::mem_tracking::{self, compare_exchange_using_system, set_using_system};
     };
 
     let ctx = FunctionContext {

@@ -7,13 +7,15 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 #[cfg(feature = "full_profiling")]
-use crate::{mem_tracking, safe_alloc};
+use crate::safe_alloc;
+// use crate::{mem_tracking, safe_alloc};
 
 static_lazy! {
     DebugLogger: Option<Mutex<BufWriter<File>>> = {
         #[cfg(feature = "full_profiling")]
         {
             // For memory profiling, we must use the system allocator
+            use crate::mem_tracking;
             safe_alloc! {
                 create_debug_logger()
             }
@@ -83,6 +85,7 @@ pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for getting log path
+        use crate::mem_tracking;
         safe_alloc! {
             if get_debug_level() == DebugLevel::None {
                 None
@@ -133,6 +136,9 @@ pub fn flush_debug_log() {
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
+        // #[cfg(feature = "full_profiling")]
+        // use $crate::mem_tracking;
+
         $crate::safe_alloc! {
             if let Some(logger) = $crate::DebugLogger::get() {
                 use std::io::Write;

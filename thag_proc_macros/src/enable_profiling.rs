@@ -341,7 +341,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     let profile_init = match args.mode {
         ProfilingMode::Runtime => {
             quote! {
-                use ::thag_profiler::{finalize_profiling, init_profiling, mem_tracking, parse_env_profile_config,Allocator, PROFILING_MUTEX};
+                use ::thag_profiler::{compare_exchange_using_system, finalize_profiling, init_profiling, mem_tracking, parse_env_profile_config, set_using_system, Allocator, PROFILING_MUTEX};
 
                 let should_profile = ::thag_profiler::safe_alloc! {
                     std::env::var("THAG_PROFILER").ok().is_some()
@@ -354,7 +354,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         }
         ProfilingMode::Enabled => {
             quote! {
-                use ::thag_profiler::{disable_profiling, finalize_profiling, init_profiling, mem_tracking, profiled, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
+                use ::thag_profiler::{compare_exchange_using_system, disable_profiling, finalize_profiling, init_profiling, mem_tracking, profiled, set_using_system, Allocator, ProfileConfiguration, ProfileType, PROFILING_MUTEX};
             }
         }
         ProfilingMode::Disabled => {
@@ -436,8 +436,10 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             } else {None};
 
             if should_profile {
-                // eprintln!("Calling init_profiling({}, Some({:?}))", module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));
-                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));
+                let profile_config = parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER");
+                // eprintln!("Calling init_profiling({}, {:?})", module_path!(), profile_config.profile_type));
+                // let profile_type = profile_config.profile_type.expect("Error parsing profile type from environment variable THAG_PROFILER");
+                init_profiling(module_path!(), profile_config.profile_type());
             }
 
             let maybe_profile = if should_profile {
@@ -456,7 +458,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 // Initialize profiling
                 let mut profile_config = ProfileConfiguration::default();
                 profile_config.set_profile_type(#profile_type);
-                init_profiling(module_path!(), profile_config);
+                init_profiling(module_path!(), #profile_type);
 
                 let profile = #profile_new;
 
@@ -477,7 +479,9 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             };
 
             if should_profile {
-                init_profiling(module_path!(), parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER"));   // Already uses safe_alloc!(... internally
+                let profile_config = parse_env_profile_config().expect("Error parsing environment variable THAG_PROFILER");
+                // let profile_type = profile_config.profile_type.expect("Error parsing profile type from environment variable THAG_PROFILER");
+                init_profiling(module_path!(), profile_config.profile_type());
             }
 
             let maybe_profile = ::thag_profiler::safe_alloc! {
@@ -503,7 +507,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 profile_config.set_profile_type(#profile_type);
                 profile_config
             };
-            init_profiling(module_path!(), profile_config);  // Already uses ::thag_profiler::safe_alloc!(... internally
+            init_profiling(module_path!(), #profile_type);  // Already uses ::thag_profiler::safe_alloc!(... internally
 
             let profile = ::thag_profiler::safe_alloc! {
                 #profile_new

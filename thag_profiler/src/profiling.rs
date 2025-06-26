@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{debug_log, lazy_static_var, static_lazy, ProfileError, ProfileResult};
+use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use parking_lot::{Mutex, RwLock};
 use std::{
@@ -912,44 +912,47 @@ fn initialize_file(
 /// `ProfileType`. If no global type is set, it first sets the atomic value from
 /// the profile configuration.
 pub fn get_global_profile_type() -> ProfileType {
+    // Removed lazy_static_var! to enable thorough unit testing.
+    // Instead ensure frequent callers of this function implement it themselves if needed.
+    // lazy_static_var!(ProfileType, deref, {
     // Map the stored value to a ProfileType using the bitflags pattern
-    lazy_static_var!(ProfileType, deref, {
-        let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
+    let global_value = GLOBAL_PROFILE_TYPE.load(Ordering::SeqCst);
 
-        // eprintln!(
-        //     "get_global_profile_type: global_value={global_value}",
-        //     // backtrace::Backtrace::new()
-        // );
+    // eprintln!(
+    //     "get_global_profile_type: global_value={global_value}",
+    //     // backtrace::Backtrace::new()
+    // );
 
-        // if global_value == 0 {
-        //     eprintln!(
-        //         "...setting to {:?}",
-        //         get_profile_config()
-        //             .profile_type
-        //             .unwrap_or(ProfileType::None)
-        //     );
-        // }
+    // if global_value == 0 {
+    //     eprintln!(
+    //         "...setting to {:?}",
+    //         get_profile_config()
+    //             .profile_type
+    //             .unwrap_or(ProfileType::None)
+    //     );
+    // }
 
-        match global_value {
-            0 => {
-                let profile_type = get_profile_config()
-                    .profile_type
-                    .unwrap_or(ProfileType::None);
-                set_global_profile_type(profile_type);
-                profile_type
-            }
-            1 => ProfileType::Time,
-            2 => ProfileType::Memory,
-            3 => ProfileType::Both,
-            _ => {
-                // Should never happen, but handle gracefully if it does
-                debug_log!("Unexpected GLOBAL_PROFILE_TYPE value: {}", global_value);
-                get_profile_config()
-                    .profile_type
-                    .unwrap_or(ProfileType::None)
-            }
+    match global_value {
+        0 => {
+            // eprintln!("*** get_global_profile_type found value 0 ***");
+            let profile_type = get_profile_config()
+                .profile_type
+                .unwrap_or(ProfileType::None);
+            set_global_profile_type(profile_type);
+            profile_type
         }
-    })
+        1 => ProfileType::Time,
+        2 => ProfileType::Memory,
+        3 => ProfileType::Both,
+        _ => {
+            // Should never happen, but handle gracefully if it does
+            debug_log!("Unexpected GLOBAL_PROFILE_TYPE value: {}", global_value);
+            get_profile_config()
+                .profile_type
+                .unwrap_or(ProfileType::None)
+        }
+    }
+    // })
 }
 
 #[allow(clippy::missing_panics_doc)]
@@ -988,7 +991,7 @@ pub fn set_global_profile_type(profile_type: ProfileType) {
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
 
     // debug_log causes this to hang if called from get_global_profile_type during initialisation.
-    // eprintln!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
+    eprintln!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -3289,26 +3292,27 @@ pub(crate) mod test_utils {
     //! This module contains utilities for testing profiling functionality.
     //! These are not part of the public API and are only used for internal tests.
 
-    // use crate::profiling::{ProfileType, TEST_MODE_ACTIVE};
-    // use std::sync::atomic::Ordering;
+    #[cfg(feature = "full_profiling")]
+    use crate::ProfileType;
 
-    // #[cfg(feature = "time_profiling")]
-    // use crate::profiling::enable_profiling;
+    /// Initializes profiling for tests
+    ///
+    /// This is an internal function provided for tests to initialize profiling
+    /// without exposing the implementation details of how profiling is enabled.
+    ///
+    /// # Arguments
+    /// * `profile_type` - The type of profiling to enable
+    #[cfg(feature = "full_profiling")]
+    pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
+        use crate::profiling::{enable_profiling, TEST_MODE_ACTIVE};
+        use std::sync::atomic::Ordering;
 
-    // /// Initializes profiling for tests
-    // ///
-    // /// This is an internal function provided for tests to initialize profiling
-    // /// without exposing the implementation details of how profiling is enabled.
-    // ///
-    // /// # Arguments
-    // /// * `profile_type` - The type of profiling to enable
-    // pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
-    //     // Set test mode active to prevent #[profiled] from creating duplicate entries
-    //     TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
+        // Set test mode active to prevent #[profiled] from creating duplicate entries
+        TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
 
-    //     // Then enable profiling using the internal function
-    //     enable_profiling(true, Some(profile_type))
-    // }
+        // Then enable profiling using the internal function
+        enable_profiling(true, Some(profile_type))
+    }
 
     // /// Safely cleans up profiling after a test
     // pub fn cleanup_profiling_after_test() -> crate::ProfileResult<()> {

@@ -75,9 +75,18 @@ pub use {
         Profile, /* ProfileSection,*/
         ProfileConfiguration, ProfileType,
     },
-    thag_proc_macros::{fn_name, safe_alloc},
+    thag_proc_macros::fn_name,
     // Only re-export what users need from mem_tracking
 };
+
+/// Private module for internal macro implementations.
+///
+/// This module contains re-exports of procedural macros that are used internally
+/// by the public macros in this crate. Users should not directly use items from
+/// this module as they are implementation details and may change without notice.
+pub mod __private {
+    pub use thag_proc_macros::safe_alloc_private;
+}
 
 pub use paste; // Re-export paste crate
 
@@ -262,6 +271,26 @@ macro_rules! regex {
         static RE: OnceLock<Regex> = OnceLock::new();
         RE.get_or_init(|| Regex::new($re).unwrap())
     }};
+}
+
+// Declarative macro wrapper for safe_alloc that handles imports
+#[cfg(feature = "full_profiling")]
+#[macro_export]
+macro_rules! safe_alloc {
+    ($($tt:tt)*) => {
+        {
+            use $crate::mem_tracking::{compare_exchange_using_system, set_using_system};
+            $crate::__private::safe_alloc_private!($($tt)*)
+        }
+    };
+}
+
+#[cfg(not(feature = "full_profiling"))]
+#[macro_export]
+macro_rules! safe_alloc {
+    ($($tt:tt)*) => {
+        { $($tt)* }
+    };
 }
 
 #[macro_export]
@@ -462,10 +491,10 @@ pub fn thousands<T: Display>(n: T) -> String {
 ///
 /// This function panics if profiling cannot be enabled.
 #[fn_name]
-pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfiguration) {
+pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileType>) {
     #[cfg(feature = "full_profiling")]
     safe_alloc! {
-        // eprintln!("root_module={root_module}, profile_config={profile_config:#?}, TLS allocation tracking={:#?}", cfg!(not(feature = "no_tls")));
+        // eprintln!("root_module={root_module}, profile_type={profile_type:#?}, TLS allocation tracking={:#?}", cfg!(not(feature = "no_tls")));
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling
@@ -481,7 +510,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
 
         set_base_location(file!(), fn_name, line!());
 
-        profiling::enable_profiling(true, profile_config.profile_type())
+        profiling::enable_profiling(true, profile_type)
             .expect("Failed to enable profiling");
 
         let global_profile_type = get_global_profile_type();
@@ -515,8 +544,7 @@ pub fn init_profiling(root_module: &'static str, profile_config: ProfileConfigur
         }
 
         set_base_location(file!(), fn_name, line!());
-        profiling::enable_profiling(true, profile_config.profile_type())
-            .expect("Failed to enable profiling");
+        profiling::enable_profiling(true, profile_type).expect("Failed to enable profiling");
         eprintln!("Exiting init_profiling");
     }
 
@@ -707,7 +735,9 @@ mod feature_tests {
 
 #[cfg(test)]
 mod config_tests {
+    #[cfg(feature = "time_profiling")]
     use super::*;
+    #[cfg(feature = "time_profiling")]
     use std::env;
 
     /// Tests that resetting profile config picks up environment variable changes
@@ -719,7 +749,7 @@ mod config_tests {
         let lock = PROFILING_MUTEX.lock();
         let _guard = lock;
 
-        // Save originaål env var if it exists
+        // Save original env var if it exists
         let original = env::var("THAG_PROFILER").ok();
 
         let orig_global_profile_type = profiling::get_global_profile_type();
@@ -1017,7 +1047,7 @@ mod lib_tests {
         let config = ProfileConfiguration::try_from(vec!["time", "", "none"].as_slice()).unwrap();
 
         // Initialize profiling
-        init_profiling("test_module", config);
+        init_profiling("test_module", config.profile_type());
 
         // Verify profiling is enabled
         assert!(is_profiling_enabled());

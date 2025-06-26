@@ -16,12 +16,6 @@ macro_rules! debug_log {
 #[cfg(feature = "full_profiling")]
 use serial_test::serial;
 
-#[cfg(feature = "full_profiling")]
-use std::sync::{Arc, Barrier};
-
-#[cfg(feature = "full_profiling")]
-use std::thread;
-
 // Test utility to reset state
 #[cfg(feature = "full_profiling")]
 fn reset_allocator_states() {
@@ -57,6 +51,11 @@ fn test_nested_global_behavior() {
 #[cfg(all(feature = "full_profiling", not(feature = "no_tls")))]
 #[serial]
 fn test_thread_isolation() {
+    use std::{
+        sync::{Arc, Barrier},
+        thread,
+    };
+
     reset_allocator_states();
     // Test that TLS version provides thread isolation
     let barrier = Arc::new(Barrier::new(3));

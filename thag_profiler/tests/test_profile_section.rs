@@ -183,7 +183,8 @@ fn test_both_detailed_section() {
 
 /// Test global profile type setting
 #[cfg(feature = "time_profiling")]
-#[thag_profiler::enable_profiling(memory)]
+#[cfg_attr(feature = "full_profiling", thag_profiler::enable_profiling(memory))]
+#[cfg_attr(not(feature = "full_profiling"), thag_profiler::enable_profiling(time))]
 fn test_global_profile_section() {
     profile!(test_global, global);
 
@@ -293,6 +294,10 @@ fn test_profile_section_behavior() {
 
     // Run all the test functions
     test_time_section();
+
+    use thag_profiler::{profiling::set_global_profile_type, ProfileType};
+
+    set_global_profile_type(ProfileType::None);
     test_global_profile_section();
 
     #[cfg(feature = "full_profiling")]

@@ -101,6 +101,9 @@ fn yes_enabled_function() {
 #[cfg(feature = "time_profiling")]
 #[thag_profiler::enable_profiling(no)]
 fn no_disabled_function() {
+    #[cfg(feature = "full_profiling")]
+    use thag_profiler::mem_tracking;
+
     // Profiling should be disabled when using 'no'
     assert!(
         !is_profiling_enabled(),
@@ -267,7 +270,7 @@ fn runtime_controlled_function() {
 #[test]
 #[cfg(feature = "time_profiling")]
 fn test_enable_profiling_full_sequence() {
-    use thag_profiler::profiling::clear_profile_config_cache;
+    use thag_profiler::profiling::{clear_profile_config_cache, set_global_profile_type};
 
     let max_profile_type = if cfg!(feature = "full_profiling") {
         ProfileType::Both
@@ -330,6 +333,7 @@ fn test_enable_profiling_full_sequence() {
 
     eprintln!("Testing time enabled function...");
     disable_profiling();
+    set_global_profile_type(ProfileType::None);
     time_enabled_function();
     assert!(
         !is_profiling_state_enabled(),

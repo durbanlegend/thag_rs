@@ -95,36 +95,31 @@ pub fn set_using_system(value: bool) {
     }
 }
 
-/// Try swapping the boolean TLS `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
+/// Try swapping the boolean TLS or global `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
 ///
 /// # Errors
 ///
 /// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
 /// We expect to handle this error in normal operation.
-#[cfg(feature = "no_tls")]
 #[inline]
 pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
-    USING_SYSTEM_ALLOCATOR.compare_exchange(current, new, Ordering::SeqCst, Ordering::SeqCst)
-}
+    #[cfg(feature = "no_tls")]
+    {
+        USING_SYSTEM_ALLOCATOR.compare_exchange(current, new, Ordering::SeqCst, Ordering::SeqCst)
+    }
 
-/// Try swapping the boolean global `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
-///
-/// # Errors
-///
-/// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
-/// We expect to handle this error in normal operation.
-#[cfg(not(feature = "no_tls"))]
-#[inline]
-pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
-    USING_SYSTEM_ALLOCATOR.with(|cell| {
-        let actual = cell.get();
-        if actual == current {
-            cell.set(new);
-            Ok(actual)
-        } else {
-            Err(actual)
-        }
-    })
+    #[cfg(not(feature = "no_tls"))]
+    {
+        USING_SYSTEM_ALLOCATOR.with(|cell| {
+            let actual = cell.get();
+            if actual == current {
+                cell.set(new);
+                Ok(actual)
+            } else {
+                Err(actual)
+            }
+        })
+    }
 }
 
 /// Reset allocator state using the unified approach

@@ -24,7 +24,7 @@ mod repeat_dash;
 mod tool_errors;
 
 #[cfg(feature = "full_profiling")]
-mod safe_alloc;
+mod safe_alloc_private;
 
 #[cfg(feature = "tui")]
 mod tui_keys;
@@ -56,7 +56,7 @@ use quote::quote;
 use syn::{parse_file, parse_str, Expr};
 
 #[cfg(feature = "full_profiling")]
-use crate::safe_alloc::safe_alloc_impl;
+use crate::safe_alloc_private::safe_alloc_private_impl;
 
 #[cfg(feature = "time_profiling")]
 use crate::enable_profiling::enable_profiling_impl;
@@ -588,17 +588,17 @@ pub fn profile(input: TokenStream) -> TokenStream {
 /// Syntax:
 ///
 /// ```Rust
-///     safe_alloc! {
+///     safe_alloc_private! {
 ///       // Profiler code
 ///     }
 /// ```
 ///
 #[allow(clippy::missing_const_for_fn)]
 #[proc_macro]
-pub fn safe_alloc(input: TokenStream) -> TokenStream {
+pub fn safe_alloc_private(input: TokenStream) -> TokenStream {
     #[cfg(feature = "full_profiling")]
     {
-        maybe_expand_proc_macro(false, "safe_alloc", &input, safe_alloc_impl)
+        maybe_expand_proc_macro(false, "safe_alloc_private", &input, safe_alloc_private_impl)
     }
 
     #[cfg(not(feature = "full_profiling"))]

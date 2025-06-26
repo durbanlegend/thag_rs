@@ -64,7 +64,13 @@ async fn profiled_function_time_test() {
     );
 
     let stack_str = format!("test_profiled_behavior::test_profiled_behavior;{fn_name}");
+
+    #[cfg(not(feature = "full_profiling"))]
+    assert_eq!(profile.registered_name(), fn_name.to_string());
+
+    #[cfg(feature = "full_profiling")]
     assert_eq!(profile.registered_name(), stack_str);
+
     assert_eq!(profile.start_line(), None);
     assert_eq!(file_name, "test_profiled_behavior");
     assert_eq!(file_name, file_stem_from_path_str(file!()));
@@ -90,7 +96,14 @@ async fn profiled_function_with_test_flag() {
         "test_profiled_behavior::profiled_function_with_test_flag"
     );
     let stack_str = format!("test_profiled_behavior::test_profiled_behavior;{fn_name}");
+
+    #[cfg(not(feature = "full_profiling"))]
+    assert_eq!(profile.registered_name(), fn_name.to_string());
+
+    #[cfg(feature = "full_profiling")]
     assert_eq!(profile.registered_name(), stack_str);
+
+    assert!(is_profiled_function(&stack_str));
 }
 
 // Test memory profiling with detailed memory flag

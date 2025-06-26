@@ -3,12 +3,7 @@
 use thag_profiler::debug_log;
 
 #[cfg(feature = "full_profiling")]
-use thag_profiler::{
-    mem_tracking,
-    profiling::ProfileType,
-    safe_alloc,
-    warn_once, warn_once_with_id,
-};
+use thag_profiler::{profiling::ProfileType, safe_alloc, warn_once, warn_once_with_id};
 
 /// Example of using the warn_once! macro in a function similar to record_dealloc
 #[test]
@@ -31,7 +26,7 @@ fn test_example_function_with_warn_once() {
             // Call example function again - this time it should execute fully
             example_function_with_warn_once();
         };
-    }
+}
 
 /// Example of how record_dealloc could be refactored to use warn_once!
 #[cfg(feature = "full_profiling")]

@@ -1,6 +1,6 @@
 use crate::{
     debug_log, flush_debug_log,
-    mem_tracking::{self, write_detailed_stack_alloc},
+    mem_tracking::write_detailed_stack_alloc,
     profiling::{clean_function_name, strip_hex_suffix_slice, Profile},
     regex, safe_alloc, static_lazy, ProfileError, ProfileResult,
 };

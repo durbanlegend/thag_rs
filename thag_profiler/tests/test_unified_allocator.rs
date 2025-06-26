@@ -11,7 +11,7 @@ use std::sync::{Arc, Barrier};
 use std::thread;
 
 #[cfg(feature = "full_profiling")]
-use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
+use thag_profiler::{current_allocator, safe_alloc, Allocator};
 
 #[cfg(feature = "full_profiling")]
 use thag_profiler::reset_allocator_state;

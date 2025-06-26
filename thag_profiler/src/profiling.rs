@@ -21,7 +21,7 @@ use crate::{
     fn_name,
     mem_attribution::{deregister_profile, get_next_profile_id, register_profile},
     mem_tracking::{
-        self, activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
+        activate_task, create_memory_task, TaskGuard, TaskMemoryContext, TASK_PATH_REGISTRY,
     },
 };
 

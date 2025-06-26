@@ -28,10 +28,7 @@
 use std::env;
 
 #[cfg(feature = "time_profiling")]
-use std::{
-    str::FromStr,
-    time::Duration,
-};
+use std::{str::FromStr, time::Duration};
 
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
@@ -48,7 +45,6 @@ use thag_profiler::profiling::{get_profile_config, get_time_path, set_profile_co
 
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
-    mem_tracking,
     profiling::{get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path},
     safe_alloc,
 };

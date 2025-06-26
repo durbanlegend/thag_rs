@@ -1,7 +1,7 @@
 /// Simple test for thread-local storage allocator functions
 /// Uses function calls only to avoid macro expansion issues
 #[cfg(feature = "full_profiling")]
-use thag_profiler::{current_allocator, mem_tracking, safe_alloc, Allocator};
+use thag_profiler::{current_allocator, safe_alloc, Allocator};
 
 // Import debug_log based on feature availability
 #[cfg(feature = "debug_logging")]

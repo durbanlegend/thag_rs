@@ -273,7 +273,17 @@ macro_rules! regex {
     }};
 }
 
-// Declarative macro wrapper for safe_alloc that handles imports
+/// Safe allocation macro that passes through expressions when full profiling is disabled.
+///
+/// When the `full_profiling` feature is not enabled, this macro simply evaluates
+/// the provided expression without any memory tracking overhead.
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_profiler::safe_alloc;
+/// let result = safe_alloc!(vec![1, 2, 3]);
+/// ```
 #[cfg(feature = "full_profiling")]
 #[macro_export]
 macro_rules! safe_alloc {
@@ -285,6 +295,17 @@ macro_rules! safe_alloc {
     };
 }
 
+/// Safe allocation macro that passes through expressions when full profiling is disabled.
+///
+/// When the `full_profiling` feature is not enabled, this macro simply evaluates
+/// the provided expression without any memory tracking overhead.
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_profiler::safe_alloc;
+/// let result = safe_alloc!(vec![1, 2, 3]);
+/// ```
 #[cfg(not(feature = "full_profiling"))]
 #[macro_export]
 macro_rules! safe_alloc {
@@ -1113,7 +1134,7 @@ mod lib_tests {
     fn test_mem_tracking_integration() {
         // Test basic allocator operations
 
-        use thag_proc_macros::safe_alloc;
+        use crate::safe_alloc;
         let current = mem_tracking::current_allocator();
         assert!(matches!(current, Allocator::Tracking) || matches!(current, Allocator::System));
 

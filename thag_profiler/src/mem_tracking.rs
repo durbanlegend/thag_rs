@@ -15,7 +15,6 @@ use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, fn_name,
     get_global_profile_type, get_root_module, is_detailed_memory, lazy_static_var,
     mem_attribution::{DetailedAddressRegistry, ProfileReg},
-    mem_tracking,
     profiling::{
         build_stack, clean_function_name, extract_detailed_alloc_callstack,
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,

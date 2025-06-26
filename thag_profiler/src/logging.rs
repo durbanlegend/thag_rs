@@ -15,7 +15,7 @@ static_lazy! {
         #[cfg(feature = "full_profiling")]
         {
             // For memory profiling, we must use the system allocator
-            use crate::mem_tracking;
+            // use crate::mem_tracking;
             safe_alloc! {
                 create_debug_logger()
             }
@@ -85,7 +85,7 @@ pub fn get_debug_log_path() -> Option<String> {
     #[cfg(feature = "full_profiling")]
     {
         // Always use system allocator for getting log path
-        use crate::mem_tracking;
+        // use crate::mem_tracking;
         safe_alloc! {
             if get_debug_level() == DebugLevel::None {
                 None

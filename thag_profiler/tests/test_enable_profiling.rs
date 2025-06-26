@@ -101,9 +101,6 @@ fn yes_enabled_function() {
 #[cfg(feature = "time_profiling")]
 #[thag_profiler::enable_profiling(no)]
 fn no_disabled_function() {
-    #[cfg(feature = "full_profiling")]
-    use thag_profiler::mem_tracking;
-
     // Profiling should be disabled when using 'no'
     assert!(
         !is_profiling_enabled(),

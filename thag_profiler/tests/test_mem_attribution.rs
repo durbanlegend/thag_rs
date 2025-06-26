@@ -27,7 +27,7 @@
 use thag_profiler::{
     enable_profiling, end, file_stem_from_path_str,
     mem_attribution::{find_profile, ProfileReg},
-    mem_tracking, profile, profiled,
+    profile, profiled,
     profiling::{set_profile_config, Profile, ProfileType},
     safe_alloc,
 };

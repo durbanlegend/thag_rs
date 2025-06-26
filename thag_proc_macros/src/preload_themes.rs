@@ -195,7 +195,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         /// assert_eq!(hex, "#ff8000");
         /// ```
         #[must_use]
-        pub fn rgb_to_hex((r, g, b): &(u8, u8, u8)) -> String {
+        pub fn rgb_to_hex(&(r, g, b): &(u8, u8, u8)) -> String {
             format!("#{r:02x}{g:02x}{b:02x}")
         }
 
@@ -214,7 +214,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         /// assert_eq!(hex, "ff8000");
         /// ```
         #[must_use]
-        pub fn rgb_to_bare_hex((r, g, b): &(u8, u8, u8)) -> String {
+        pub fn rgb_to_bare_hex(&(r, g, b): &(u8, u8, u8)) -> String {
             format!("{r:02x}{g:02x}{b:02x}")
         }
 

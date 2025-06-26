@@ -1652,13 +1652,6 @@ impl Theme {
     /// # Errors
     /// Returns `ThagError` if the specified theme name is not recognized
     ///
-    /// # Examples
-    /// ```
-    /// use thag_rs::ThagError;
-    /// use thag_rs::styling::{Theme, ColorSupport};
-    /// let theme = Theme::get_theme_with_color_support("dracula", ColorSupport::Color256)?;
-    /// # Ok::<(), ThagError>(())
-    /// ```
     #[profiled]
     fn get_theme_with_color_support(
         theme_name: &str,
@@ -2778,6 +2771,8 @@ macro_rules! clog {
 /// # Examples
 /// ```
 /// use thag_rs::clog_error;
+/// let filename = "Single File";
+/// let error_details = "erroneous";
 /// clog_error!("Failed to process file: {}", filename);
 /// clog_error!("Invalid input: {}", error_details);
 /// ```
@@ -2795,6 +2790,8 @@ macro_rules! clog_error {
 /// # Examples
 /// ```
 /// use thag_rs::clog_warning;
+/// let operation_name = "Covert ops";
+/// let feature_name = "obsolete";
 /// clog_warning!("This operation might be slow: {}", operation_name);
 /// clog_warning!("Deprecated feature used: {}", feature_name);
 /// ```
@@ -2810,6 +2807,7 @@ macro_rules! clog_warning {
 /// # Examples
 /// ```
 /// use thag_rs::clog_heading1;
+/// let section_name = "The Horne Section";
 /// clog_heading1!("Main Section: {}", section_name);
 /// clog_heading1!("Processing started");
 /// ```
@@ -2826,6 +2824,7 @@ macro_rules! clog_heading1 {
 /// # Examples
 /// ```
 /// use thag_rs::clog_heading2;
+/// let subsection_name = "Part 1";
 /// clog_heading2!("Subsection: {}", subsection_name);
 /// clog_heading2!("Configuration loaded");
 /// ```
@@ -2842,6 +2841,7 @@ macro_rules! clog_heading2 {
 /// # Examples
 /// ```
 /// use thag_rs::clog_heading3;
+/// let detail_name = "Detalle";
 /// clog_heading3!("Details: {}", detail_name);
 /// clog_heading3!("Step completed");
 /// ```
@@ -2858,6 +2858,7 @@ macro_rules! clog_heading3 {
 /// # Examples
 /// ```
 /// use thag_rs::clog_emphasis;
+/// let note = "A flat";
 /// clog_emphasis!("Important note: {}", note);
 /// clog_emphasis!("This requires attention");
 /// ```
@@ -2873,6 +2874,7 @@ macro_rules! clog_emphasis {
 /// # Examples
 /// ```
 /// use thag_rs::clog_success;
+/// let operation_name = "Appendectomy";
 /// clog_success!("Operation completed successfully: {}", operation_name);
 /// clog_success!("File saved");
 /// ```
@@ -2889,6 +2891,7 @@ macro_rules! clog_success {
 /// # Examples
 /// ```
 /// use thag_rs::clog_info;
+/// let filename = "The Ipcress File";
 /// clog_info!("Processing file: {}", filename);
 /// clog_info!("Configuration loaded");
 /// ```
@@ -2905,6 +2908,7 @@ macro_rules! clog_info {
 /// # Examples
 /// ```
 /// use thag_rs::clog_normal;
+/// let content = "innehålle";
 /// clog_normal!("Standard message: {}", content);
 /// clog_normal!("Regular output");
 /// ```
@@ -2921,6 +2925,8 @@ macro_rules! clog_normal {
 /// # Examples
 /// ```
 /// use thag_rs::clog_debug;
+/// let debug_data = "debug_data";
+/// let variable = 1.23f;
 /// clog_debug!("Debug info: {}", debug_data);
 /// clog_debug!("Variable value: {:?}", variable);
 /// ```
@@ -2937,6 +2943,7 @@ macro_rules! clog_debug {
 /// # Examples
 /// ```
 /// use thag_rs::clog_subtle;
+/// let process_name = "Poke with stick";
 /// clog_subtle!("Background process: {}", process_name);
 /// clog_subtle!("Minor detail");
 /// ```
@@ -2960,6 +2967,7 @@ macro_rules! clog_subtle {
 /// use thag_rs::cvlog;
 /// use thag_rs::logging::Verbosity;
 /// use thag_rs::styling::Role;
+/// let details = "todos los detalles";
 /// cvlog!(Verbosity::VV, Role::Info, "Detailed info: {}", details);
 /// ```
 #[macro_export]
@@ -2997,6 +3005,7 @@ macro_rules! cvlog {
 /// ```
 /// use thag_rs::cvlog_error;
 /// use thag_rs::logging::Verbosity;
+/// let error_msg = "You done messed up";
 /// cvlog_error!(Verbosity::V, "Critical error: {}", error_msg);
 /// ```
 #[macro_export]
@@ -3013,6 +3022,7 @@ macro_rules! cvlog_error {
 /// ```
 /// use thag_rs::cvlog_warning;
 /// use thag_rs::logging::Verbosity;
+/// let warning_msg = "Oi!";
 /// cvlog_warning!(Verbosity::V, "Potential issue: {}", warning_msg);
 /// ```
 #[macro_export]
@@ -3029,6 +3039,7 @@ macro_rules! cvlog_warning {
 /// ```
 /// use thag_rs::cvlog_heading1;
 /// use thag_rs::logging::Verbosity;
+/// let section_name = "midsection";
 /// cvlog_heading1!(Verbosity::V, "Main Section: {}", section_name);
 /// ```
 #[macro_export]
@@ -3045,6 +3056,7 @@ macro_rules! cvlog_heading1 {
 /// ```
 /// use thag_rs::cvlog_heading2;
 /// use thag_rs::logging::Verbosity;
+/// let subsection_name = "subsection_name";
 /// cvlog_heading2!(Verbosity::V, "Subsection: {}", subsection_name);
 /// ```
 #[macro_export]
@@ -3061,6 +3073,7 @@ macro_rules! cvlog_heading2 {
 /// ```
 /// use thag_rs::cvlog_emphasis;
 /// use thag_rs::logging::Verbosity;
+/// let important_msg = "spam";
 /// cvlog_emphasis!(Verbosity::V, "Important: {}", important_msg);
 /// ```
 #[macro_export]
@@ -3077,6 +3090,7 @@ macro_rules! cvlog_emphasis {
 /// ```
 /// use thag_rs::cvlog_info;
 /// use thag_rs::logging::Verbosity;
+/// let info_msg = "Random info";
 /// cvlog_info!(Verbosity::V, "Highlighted info: {}", info_msg);
 /// ```
 #[macro_export]
@@ -3093,6 +3107,7 @@ macro_rules! cvlog_info {
 /// ```
 /// use thag_rs::cvlog_normal;
 /// use thag_rs::logging::Verbosity;
+/// let msg = "Pleease call back";
 /// cvlog_normal!(Verbosity::V, "Standard message: {}", msg);
 /// ```
 #[macro_export]
@@ -3109,6 +3124,7 @@ macro_rules! cvlog_normal {
 /// ```
 /// use thag_rs::cvlog_debug;
 /// use thag_rs::logging::Verbosity;
+/// let debug_data = "Bug begone";
 /// cvlog_debug!(Verbosity::VV, "Debug info: {}", debug_data);
 /// ```
 #[macro_export]
@@ -3125,6 +3141,7 @@ macro_rules! cvlog_debug {
 /// ```
 /// use thag_rs::cvlog_hint;
 /// use thag_rs::logging::Verbosity;
+/// let hint_msg = "Ahem";
 /// cvlog_hint!(Verbosity::VVV, "Subtle hint: {}", hint_msg);
 /// ```
 #[macro_export]

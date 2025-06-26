@@ -2277,12 +2277,26 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 // }
 
 // Convenience macros
-/// A line print macro that conditionally prints a message using `cprtln` if the current global verbosity
-/// is at least as verbose as the `Verbosity` (alias `V`) level passed in.
+/// Conditionally logs a message with verbosity control and styling.
 ///
-/// The message will be styled and coloured according to the `MessageLevel` (alias `Lvl`) passed in.
+/// This macro checks if logging is enabled and the verbosity level meets the threshold,
+/// then applies appropriate styling based on the role and logs the message.
 ///
-/// Format: `cvprtln!(role: &Role, verbosity: Verbosity, "Lorem ipsum dolor {} amet", content: &str);`
+/// The naming is a shorthand reminder of the parameter order: Color (role), Verbosity, println!-style arguments.
+///
+/// # Arguments
+/// * `$role` - The role that determines the styling to apply
+/// * `$verbosity` - The verbosity level required for this message
+/// * `$($arg:tt)*` - Format string and arguments, same as `println!` macro
+///
+/// # Examples
+/// ```
+/// use thag_rs::cvprtln;
+/// use thag_rs::logging::Verbosity;
+/// use thag_rs::styling::Role;
+/// let details = "todos los detalles";
+/// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
+/// ```
 #[macro_export]
 macro_rules! cvprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
@@ -2598,8 +2612,10 @@ pub fn display_theme_roles(theme: &Theme) {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::display_theme_details;
-/// display_theme_details(theme);
+/// use thag_rs::styling::{display_theme_details, Theme};
+/// let theme = Theme::get_builtin("black-metal-bathory_base16")?;
+/// display_theme_details(&theme);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 #[profiled]
 pub fn display_theme_details(theme: &Theme) {
@@ -2751,7 +2767,7 @@ fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
 /// use thag_rs::styling::Role;
 /// let error_msg = "Bad thing happened";
 /// clog!(Role::Error, "Something went wrong: {}", error_msg);
-/// let filename = "my_precious.doc"
+/// let filename = "my_precious.doc";
 /// clog!(Role::Info, "Processing file: {}", filename);
 /// ```
 macro_rules! clog {
@@ -2926,7 +2942,7 @@ macro_rules! clog_normal {
 /// ```
 /// use thag_rs::clog_debug;
 /// let debug_data = "debug_data";
-/// let variable = 1.23f;
+/// let variable = 1.23_f32;
 /// clog_debug!("Debug info: {}", debug_data);
 /// clog_debug!("Variable value: {:?}", variable);
 /// ```
@@ -2950,50 +2966,6 @@ macro_rules! clog_debug {
 #[macro_export]
 macro_rules! clog_subtle {
     ($($arg:tt)*) => { $crate::clog!($crate::styling::Role::Subtle, $($arg)*) };
-}
-
-/// Conditionally logs a message with verbosity control and styling.
-///
-/// This macro checks if logging is enabled and the verbosity level meets the threshold,
-/// then applies appropriate styling based on the role and logs the message.
-///
-/// # Arguments
-/// * `$verbosity` - The verbosity level required for this message
-/// * `$level` - The role that determines the styling to apply
-/// * `$($arg:tt)*` - Format string and arguments, same as `println!` macro
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog;
-/// use thag_rs::logging::Verbosity;
-/// use thag_rs::styling::Role;
-/// let details = "todos los detalles";
-/// cvlog!(Verbosity::VV, Role::Info, "Detailed info: {}", details);
-/// ```
-#[macro_export]
-macro_rules! cvlog {
-    ($verbosity:expr, $level:expr, $($arg:tt)*) => {{
-        if $crate::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let logger = $crate::logging::LOGGER.lock().expect("Failed to lock logger");
-            let message = format!($($arg)*);
-
-            #[cfg(feature = "color_support")]
-            {
-                let color_logger = $crate::styling::TermAttributes::get();
-                let style = $crate::styling::Style::for_role($role);
-                logger.log($verbosity, &style.paint(message));
-            }
-
-            #[cfg(not(feature = "color_support"))]
-            {
-                if verbosity as u8 <= self.verbosity as u8 {
-                    println!("{}", message);
-                }
-
-                logger.log($verbosity, &message);
-            }
-        }
-    }};
 }
 
 /// Logs an error message with verbosity control and error styling.
@@ -3142,7 +3114,7 @@ macro_rules! cvlog_debug {
 /// use thag_rs::cvlog_hint;
 /// use thag_rs::logging::Verbosity;
 /// let hint_msg = "Ahem";
-/// cvlog_hint!(Verbosity::VVV, "Subtle hint: {}", hint_msg);
+/// cvlog_hint!(Verbosity::VV, "Subtle hint: {}", hint_msg);
 /// ```
 #[macro_export]
 macro_rules! cvlog_hint {

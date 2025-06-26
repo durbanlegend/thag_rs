@@ -154,6 +154,8 @@ pub use {
     styling::{Color, ColorSupport, Lvl, Role, Style, TermBgLuma},
 };
 
+pub use cvprtln as cvlog;
+
 pub use thag_profiler::*; // Re-export everything from profiler
 
 // // Re-exports for convenience

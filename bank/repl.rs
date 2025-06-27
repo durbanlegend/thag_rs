@@ -43,8 +43,7 @@ use thag_rs::{
     builder::process_expr,
     cmd_args::set_verbosity,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
-    config::{self, RealContext},
-    cvprtln, debug_log, debug_timings, get_args, get_verbosity, key, lazy_static_var,
+    cvprtln, debug_log, debug_timings, get_verbosity, key, lazy_static_var,
     logging::configure_log,
     manifest::extract,
     regex,
@@ -69,6 +68,49 @@ use tui_textarea::{Input, TextArea};
 //         Self::Fixed(color_info.index)
 //     }
 // }
+
+/// Custom get_args function that automatically sets repl=true for the bank REPL
+fn get_args() -> Cli {
+    // Try to parse normally first
+    match Cli::try_parse() {
+        Ok(mut cli) => {
+            cli.repl = true; // Always enable REPL mode for the bank
+            cli
+        }
+        Err(_) => {
+            // If parsing fails (e.g., no arguments provided), create a default CLI with repl=true
+            Cli {
+                script: None,
+                features: None,
+                args: Vec::new(),
+                force: false,
+                expression: None,
+                repl: true, // This is the key - enable REPL mode by default
+                stdin: false,
+                edit: false,
+                filter: None,
+                toml: None,
+                begin: None,
+                end: None,
+                multimain: false,
+                timings: false,
+                verbose: 0,
+                normal_verbosity: false,
+                quiet: 0,
+                generate: false,
+                build: false,
+                executable: false,
+                check: false,
+                expand: false,
+                unquote: None,
+                config: false,
+                infer: None,
+                cargo: false,
+                test_only: false,
+            }
+        }
+    }
+}
 
 /// The filename for the REPL history file.
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";

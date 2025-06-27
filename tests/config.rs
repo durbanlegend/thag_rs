@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{env::current_dir, sync::Once, path::PathBuf, sync::Arc};
+    use std::{env::current_dir, path::PathBuf, sync::Arc, sync::Once};
     use tempfile::TempDir;
     use thag_rs::{
         config::{
@@ -198,8 +198,7 @@ required_features = [
     "parsing",
     "visit",
     "visit-mut",
-]
-default_features = false"#
+]"#
             ),
             "Config file should contain the expected `syn` crate overrides"
         );

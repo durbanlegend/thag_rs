@@ -1271,11 +1271,13 @@ Input is from `stdin` and output is to `stdout`.
 Replace `2021` with your project's Rust edition (2015, 2018, 2021, 2024) as required by the `rust-analyzer` crates:
 
 ***thag_instrument:*** Add profiling attributes to code
+
 ```bash
 thag_instrument 2021 < path/to/your/file.rs > path/to/your/instrumented_file.rs
 ```
 
 ***thag_uninstrument:*** Remove profiling attributes from code
+
 ```bash
 thag_uninstrument 2021 < path/to/your/instrumented_file.rs > path/to/your/de-instrumented_file.rs
 ```

@@ -1,14 +1,6 @@
 /*[toml]
 [dependencies]
-edit = "0.1.5"
-firestorm = "0.5.1"
-home = "0.5.9"
-log = "0.4.22"
-mockall = "0.13.1"
-serde = { version = "1.0", features = ["derive"] }
-serde_with = "3"
-simplelog = { version = "0.12.2", optional = true }
-toml = "0.8.19"
+simplelog = { version = "0.12", optional = true }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 
 [features]

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-syn = { version = "2", features = ["full", "visit"] }
-*/
-
 use syn::visit::Visit;
 use syn::Expr;
 

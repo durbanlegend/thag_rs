@@ -1397,8 +1397,6 @@ In general, choose flamegraphs for a high-level view of resource usage and flame
 
 **7. Section profiling in async functions**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
 
-**8. Expect comprehensive memory results**: `thag_profiler` includes allocator overhead and intermediate allocations, providing a complete view of memory usage.
-
 ```rust
 async fn fetch_data() {
     // Tell the profiler this section is within an async function
@@ -1431,13 +1429,13 @@ Ensure that unbounded section profiles do not go out of scope before the end of 
 
 Ensure that bounded section profiles do not go out of scope before the `end!` macro.
 
-**2. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections.
+**2. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections. A high degree of contention between threads could also lead to memory allocations not being reported or reported against an ancestor function (i.e. one higher up the callstack).
 
-**3. Test failures**: Profiled tests must use serialization
+**3. Test failures**: Profiled tests must use serialization.
 
 **4. Performance impact**: Memory profiling adds significant overhead. Consider using SIZE_TRACKING_THRESHOLD=n as discussed above to ignore small allocations of integer `n` bytes or smaller.
 
-**5. File redirect issues**: Never redirect output from the instrumentation tools back to the input file
+**5. File redirect issues**: Never redirect output from the instrumentation tools back to the input file.
 
 ### Inspecting Profile Files
 

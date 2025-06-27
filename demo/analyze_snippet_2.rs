@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 syn = { version = "2", features = ["extra-traits", "full", "visit"] }
-quote = "1.0.37"
 */
 
 use quote::ToTokens;

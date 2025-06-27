@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-env_logger = "0.11.3"
-log = "0.4.21"
-*/
-
 /// Run a command (in this case an integration test case to be debugged),
 /// and capture and print its stdout and stderr concurrently in a
 /// separate thread.

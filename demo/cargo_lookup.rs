@@ -1,7 +1,3 @@
-/*[toml]
-[dependencies]
-cargo-lookup = "0.1.0"
-*/
 use cargo_lookup::{Query, Result};
 use std::collections::BTreeMap;
 use std::env;

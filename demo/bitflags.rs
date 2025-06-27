@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-bitflags = "2.5.0"
-*/
-
 /// Try out the `bitflags` crate.
 //# Purpose: Explore use of `bitflags` to control processing.
 //# Categories: crates, exploration, technique

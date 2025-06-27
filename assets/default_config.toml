@@ -115,7 +115,7 @@ global_excluded_features = [
 required_features = ["attributes"]
 
 [dependencies.feature_overrides.clap]
-required_features = ["cargo"]
+required_features = ["cargo", "derive"]
 
 [dependencies.feature_overrides.hyper]
 required_features = ["full"]
@@ -165,7 +165,6 @@ required_features = [
     "visit",
     "visit-mut",
 ]
-default_features = false
 
 [dependencies.feature_overrides.thag_rs]
 required_features = ["core", "simplelog"]

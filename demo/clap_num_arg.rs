@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-clap = "4.5.9"
-*/
-
 use clap::{Arg, Command};
 
 /// `clap` with a numeric option.

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-bpaf = { version = "0.9.11", features = ["derive"] }
+bpaf = { version = "0.9", features = ["derive"] }
 bpaf_derive = "0.5.10"
 */
 

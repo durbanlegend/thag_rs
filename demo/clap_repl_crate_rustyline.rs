@@ -1,11 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-clap-repl = "0.1.1"
-console = "0.15.8"
-rustyline = "14.0.0"
-quote = "1.0.37"
-syn = { version = "2", features = ["full"] }
+clap-repl = "0.1.1" # Old `rustyline`-compatible version
 */
 
 /// Older version of published clap_repl crate example, modified to prototype a

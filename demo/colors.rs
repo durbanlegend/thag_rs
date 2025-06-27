@@ -2,7 +2,6 @@
 [dependencies]
 nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
 strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
-termbg = "0.6.1"
 # NB: Use git tag `config_quoted_or_unquoted_booleans` if using misc.unquote without quotes (ironically).
 thag_rs = { git = "https://github.com/durbanlegend/thag_rs", tag = "config_quoted_or_unquoted_booleans" }
 */

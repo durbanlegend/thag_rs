@@ -1,11 +1,5 @@
 /*[toml]
 [dependencies]
-lazy_static = "1.5.0"
-log = "0.4.22"
-nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
-supports-color= "3.0.0"
-termbg = "0.6"
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
 */
 /// An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["cargo"] }
-*/
-
 /// Published example from `clap` tutorial (builder)
 ///
 /// E.g.  `thag demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`

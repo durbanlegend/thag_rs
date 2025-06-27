@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-shlex = "0.1.1"
-*/
-
 /// Example from the clap cookbook, not using the `clap-repl` crate.
 /// Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 //# Purpose: Demo building a repl using `clap` directly.

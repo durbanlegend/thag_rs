@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-*/
-
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
 /// E.g. `thag demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`

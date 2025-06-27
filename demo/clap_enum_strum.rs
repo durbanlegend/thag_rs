@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-serde = { version = "1.0.219", features = ["derive"] }
-strum = { version = "0.26.3", features = ["derive"] }
+clap = { version = "4", features = ["cargo", "derive"] }
+serde = { version = "1", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 */
 
 use clap::{Parser, ValueEnum};

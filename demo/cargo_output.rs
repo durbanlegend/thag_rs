@@ -1,16 +1,9 @@
-/*[toml]
-[dependencies]
-env_logger = "0.11.3"
-log = "0.4.21"
-*/
-
 /// Run a command (in this case a cargo search for the `log` crate),
 /// and capture and print its stdout and stderr concurrently in a
 /// separate thread.
 //# Purpose: Demo process::Command with output capture.
 //# Categories: technique
 use env_logger::Builder;
-use log::debug;
 use std::env;
 use std::ffi::OsStr;
 use std::io::Read;

@@ -702,7 +702,7 @@ fn display_toml_info(
     };
     vlog!(
         V::N,
-        "\n{wording} the top of your script for faster execution in future:\n{styled_toml_block}\n"
+        "\n{wording} the top of your script, to lock it down or maybe compile a little faster in future:\n{styled_toml_block}\n"
     );
 }
 

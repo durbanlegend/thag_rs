@@ -1,7 +1,5 @@
 /*[toml]
 [dependencies]
-nu-ansi-term = "0.50"
-# reedline = "0.39.0"
 regex = "1.11"
 thag_profiler = { version = "0.2, thag-auto", default-features = false }
 thag_rs = { version = "0.2, thag-auto", features = ["repl", "simplelog"] }
@@ -13,6 +11,11 @@ reedline = ["thag_rs/reedline"]
 simplelog = ["thag_rs/simplelog"]
 */
 #![allow(clippy::uninlined_format_args)]
+/// A demo of a roll-your-own REPL. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
+/// as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
+/// plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
+//# Purpose: Demonstrate building a `thag`-style REPL.
+//# Categories: demo, REPL, technique
 use clap::{CommandFactory, Parser};
 use edit::edit_file;
 use nu_ansi_term::Color as NuColor;
@@ -69,7 +72,7 @@ use tui_textarea::{Input, TextArea};
 //     }
 // }
 
-/// Custom get_args function that automatically sets repl=true for the bank REPL
+// Custom get_args function that automatically sets repl=true for the bank REPL
 fn get_args() -> Cli {
     // Try to parse normally first
     match Cli::try_parse() {
@@ -112,10 +115,10 @@ fn get_args() -> Cli {
     }
 }
 
-/// The filename for the REPL history file.
+// The filename for the REPL history file.
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
 
-/// The default multiline indicator string used in the REPL prompt.
+// The default multiline indicator string used in the REPL prompt.
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 const EVENT_DESCS: &[[&str; 2]; 33] = &[
@@ -249,26 +252,26 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["Paste", "Paste content from local buffer at the current cursor position"],
 ];
 
-/// REPL mode lets you type or paste a Rust expression to be evaluated.
-///
-/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
-/// brackets, parens or quotes may span multiple lines.
-/// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-/// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-/// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-/// comment block of the form
-/// ``` rustdoc
-/// /*[toml]
-/// [dependencies]
-/// ...
-/// */
-/// ```
-/// From here they will be extracted to a dedicated Cargo.toml file.
-/// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-/// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-/// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-/// editor or directly from their temporary disk locations.
-/// The tab key will show command selections and complete partial matching selections."
+// REPL mode lets you type or paste a Rust expression to be evaluated.
+//
+// Start by choosing the eval option and entering your expression. Expressions between matching braces,
+// brackets, parens or quotes may span multiple lines.
+// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+// comment block of the form
+// ``` rustdoc
+// /*[toml]
+// [dependencies]
+// ...
+// */
+// ```
+// From here they will be extracted to a dedicated Cargo.toml file.
+// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
+// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
+// editor or directly from their temporary disk locations.
+// The tab key will show command selections and complete partial matching selections."
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
     name = "",
@@ -279,29 +282,29 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 #[strum(serialize_all = "snake_case")]
 #[allow(clippy::module_name_repetitions)]
 pub enum ReplCommand {
-    /// Show the REPL banner
+    // Show the REPL banner
     Banner,
-    /// Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
+    // Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
     Tui,
-    /// Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
+    // Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
     Edit,
-    /// Edit the generated Cargo.toml
+    // Edit the generated Cargo.toml
     Toml,
-    /// Attempt to build and run the Rust expression
+    // Attempt to build and run the Rust expression
     Run,
-    /// Delete all temporary files for this eval (see list)
+    // Delete all temporary files for this eval (see list)
     Delete,
-    /// List temporary files for this eval
+    // List temporary files for this eval
     List,
-    /// Edit history
+    // Edit history
     History,
-    /// Show help information
+    // Show help information
     Help,
-    /// Show key bindings
+    // Show key bindings
     Keys,
-    /// Show theme and terminal attributes (change via `thag -C`)
+    // Show theme and terminal attributes (change via `thag -C`)
     Theme,
-    /// Exit the REPL
+    // Exit the REPL
     Quit,
 }
 
@@ -316,7 +319,7 @@ impl ReplCommand {
     }
 }
 
-/// A struct to implement the Prompt trait.
+// A struct to implement the Prompt trait.
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
@@ -377,7 +380,7 @@ fn get_subhead_style() -> &'static Style {
     lazy_static_var!(Style, Style::for_role(Role::HD2))
 }
 
-/// Add menu keybindings to the provided keybindings configuration.
+// Add menu keybindings to the provided keybindings configuration.
 #[profiled]
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     keybindings.add_binding(
@@ -405,11 +408,11 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     );
 }
 
-/// Run the REPL.
-/// # Errors
-/// Will return `Err` if there is any error in running the REPL.
-/// # Panics
-/// Will panic if there is a problem configuring the `reedline` history file.
+// Run the REPL.
+// # Errors
+// Will return `Err` if there is any error in running the REPL.
+// # Panics
+// Will panic if there is a problem configuring the `reedline` history file.
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
 pub fn run_repl(
@@ -649,11 +652,11 @@ pub fn run_repl(
     Ok(())
 }
 
-/// Process a source string through to completion according to the arguments passed in.
-///
-/// # Errors
-///
-/// This function will bubble up any error encountered in processing.
+// Process a source string through to completion according to the arguments passed in.
+//
+// # Errors
+//
+// This function will bubble up any error encountered in processing.
 #[profiled]
 pub fn process_source(
     rs_source: &str,
@@ -790,7 +793,7 @@ fn review_history(
     Ok(())
 }
 
-/// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
+// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
 #[profiled]
@@ -800,11 +803,11 @@ pub fn decode(input: &str) -> String {
     re.replace_all(input, lf).to_string()
 }
 
-/// Edit the history.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+// Edit the history.
+//
+// # Errors
+//
+// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[profiled]
 pub fn edit_history<R: EventReader + Debug>(
     initial_content: &str,
@@ -863,11 +866,11 @@ pub fn edit_history<R: EventReader + Debug>(
     })
 }
 
-/// Key handler function to be passed into `tui_edit` for editing REPL history.
-///
-/// # Errors
-///
-/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+// Key handler function to be passed into `tui_edit` for editing REPL history.
+//
+// # Errors
+//
+// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[profiled]
 pub fn history_key_handler(
     key_event: KeyEvent,
@@ -941,8 +944,8 @@ fn save_file(
     Ok(staging_path.display().to_string())
 }
 
-/// Return the maximum length of the key descriptor for a set of styled and
-/// formatted key / description bindings to be displayed on screen.
+// Return the maximum length of the key descriptor for a set of styled and
+// formatted key / description bindings to be displayed on screen.
 #[profiled]
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
     let style = get_heading_style();
@@ -1018,7 +1021,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     })
 }
 
-/// Display key bindings with their descriptions.
+// Display key bindings with their descriptions.
 #[profiled]
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
@@ -1037,7 +1040,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     println!();
 }
 
-/// Helper function to convert `KeyModifiers` to string
+// Helper function to convert `KeyModifiers` to string
 #[must_use]
 #[profiled]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
@@ -1059,7 +1062,7 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
     }
 }
 
-/// Helper function to convert `KeyCode` to string
+// Helper function to convert `KeyCode` to string
 #[must_use]
 #[profiled]
 pub fn format_key_code(key_code: KeyCode) -> String {
@@ -1094,9 +1097,9 @@ pub fn format_key_code(key_code: KeyCode) -> String {
     }
 }
 
-/// Helper function to format `ReedlineEvents` other than `Edit`, and their doc comments
-/// # Panics
-/// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
+// Helper function to format `ReedlineEvents` other than `Edit`, and their doc comments
+// # Panics
+// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]
 #[must_use]
 #[profiled]
@@ -1117,9 +1120,9 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     event_desc
 }
 
-/// Helper function to format `EditCommand` and include its doc comments
-/// # Panics
-/// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
+// Helper function to format `EditCommand` and include its doc comments
+// # Panics
+// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[must_use]
 #[profiled]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
@@ -1252,9 +1255,9 @@ fn format_cmd_desc(
     }
 }
 
-/// Delete the temporary files used by the current REPL instance.
-/// # Errors
-/// Currently will not return any errors.
+// Delete the temporary files used by the current REPL instance.
+// # Errors
+// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
@@ -1273,9 +1276,9 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of delete")))
 }
 
-/// Open the generated destination Rust source code file in an editor.
-/// # Errors
-/// Will return `Err` if there is an error editing the file.
+// Open the generated destination Rust source code file in an editor.
+// # Errors
+// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
@@ -1284,9 +1287,9 @@ pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of source edit")))
 }
 
-/// Open the generated Cargo.toml file in an editor.
-/// # Errors
-/// Will return `Err` if there is an error editing the file.
+// Open the generated Cargo.toml file in an editor.
+// # Errors
+// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
@@ -1299,7 +1302,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
-/// Parse the current line. Borrowed from clap-repl crate.
+// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
 #[profiled]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
@@ -1313,7 +1316,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
-/// Display the REPL banner.
+// Display the REPL banner.
 #[profiled]
 pub fn disp_repl_banner(cmd_list: &str) {
     cvprtln!(
@@ -1337,12 +1340,12 @@ pub fn disp_repl_banner(cmd_list: &str) {
     );
 }
 
-/// Display a list of the temporary files used by the current REPL instance.
-/// # Errors
-/// This function will return an error in the following situations, but is not limited to just these cases:
-/// The provided path doesn't exist.
-/// The process lacks permissions to view the contents.
-/// The path points at a non-directory file.
+// Display a list of the temporary files used by the current REPL instance.
+// # Errors
+// This function will return an error in the following situations, but is not limited to just these cases:
+// The provided path doesn't exist.
+// The process lacks permissions to view the contents.
+// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
@@ -1425,14 +1428,14 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     process(&proc_flags, args, &script_state, start)
 }
 
-/// Set up the processing flags from the command line arguments and pass them back.
-/// # Errors
-///
-/// Will return `Err` if there is an error parsing the flags to set up and internal
-/// correctness chack.
-/// # Panics
-///
-/// Will panic if the internal correctness check fails.
+// Set up the processing flags from the command line arguments and pass them back.
+// # Errors
+//
+// Will return `Err` if there is an error parsing the flags to set up and internal
+// correctness chack.
+// # Panics
+//
+// Will panic if the internal correctness check fails.
 #[profiled]
 pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
     // eprintln!("args={args:#?}");

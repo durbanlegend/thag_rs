@@ -783,7 +783,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_
 
 **Description:**  A prototype of the `cmd_args` module of thag_rs itself.
 
- E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+ E.g. `thag -tv demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world`
 
 **Purpose:** Prototype CLI.
 
@@ -798,7 +798,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world
 ```
 
 ---
@@ -5097,6 +5097,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs
+```
+
+---
+
+### Script: repl_ryo.rs
+
+**Description:**  A demo of a roll-your-own REPL. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
+ as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
+ plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
+
+**Purpose:** Demonstrate building a `thag`-style REPL.
+
+**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `strum`, `thag_profiler`, `thag_rs`, `tui_textarea`
+
+**Type:** Program
+
+**Categories:** demo, REPL, technique
+
+**Link:** [repl_ryo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs
 ```
 
 ---

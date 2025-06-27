@@ -12,7 +12,6 @@ strum = { version = "0.26.3", features = ["derive", "phf"] }
 use clap::{CommandFactory, Parser};
 use lazy_static::lazy_static;
 use regex::Regex;
-// use repl_block::prelude::ReplBlockError;
 use repl_block::prelude::{ReplBlockResult, ReplBuilder, Utf8PathBuf};
 use std::env;
 use std::str::FromStr;

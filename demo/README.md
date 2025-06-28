@@ -1482,25 +1482,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_struct.r
 
 ---
 
-### Script: demo_tester.rs
-
-**Description:** 
-**Purpose:** 
-
-**Type:** Program
-
-**Categories:** missing
-
-**Link:** [demo_tester.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/demo_tester.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/demo_tester.rs
-```
-
----
-
 ### Script: derive_deftly.rs
 
 **Description:**  Introductory example from the `derive-deftly` user guide.

@@ -3,19 +3,7 @@
 ## High Priority
 
 ## On the go
-- [ ]  Theme config: for Windows:
-        1. Check supports_color detection failing.
-        2. Need to detect term_bg_rgb rather than or in addition to term_bg_luma.
-        "Still, the crux of this bug: if COLORTERM is meant to detect color support - though what the value is set to
-         doesn't seem well-defined - perhaps the more oft-supported TERM=xterm-256color is appropriate here for WT
-         while COLORTERM=xterm-truecolor is appropriate in addition. TERM seems to be more general-purpose from various
-         reads, while COLORTERM seems to be more specific to color support, as the name also implies."
-         https://github.com/microsoft/terminal/issues/11057
-- [ ]  Demo proc macro to load collection into enum at build time?
-- [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
-- [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
-- [ ]  Promote demo/demo_tester.rs to src/bin.
-- [ ]  DONE: Update cvlog_* names in styling.rs to match Roles, or get rid of them.
+
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
@@ -35,48 +23,6 @@ THAG_PROFILER=both,,announce cargo test --package thag_profiler --test test_prof
 
 cargo test --features=analyze-tool,time_profiling errors::tests  -- --nocapture
 
-# thag_profiler
-
-A lightweight, cross-platform Rust code profiling toolkit with zero overhead when disabled.
-
-## Overview
-
-`thag_profiler` provides a simple way to instrument Rust code for performance profiling with minimal boilerplate. While originally developed as part of the `thag_rs` project, it functions as a completely independent utility with no dependencies on `thag_rs`.
-
-## Key Features
-
-- Cross-platform profiling that works consistently across operating systems
-- Simple `#[profiled]` function attribute for instrumenting code
-- Command-line tools for automatic instrumentation and analysis
-- Zero-cost abstraction when profiling is disabled
-- Flexible output formats including flamegraphs
-
-
-- Profile async code
-
-- Target specific sections of code
-
-- Control profiling at runtime
-
-- Incorporate `thag_profiler` instrumentation into your code with no overhead until activated, thanks to zero-cost abstractions
-
-- Automatically prepare a Rust source file for profiling with a single `thag_instrument` command, which adds the necessary imports and annotates every function with an attribute macro. This may be all you need to get a good insight into your code, or you can further refine or extend it with profile type arguments and/or `profile!` - `end!` pairings for section profiling. The `thag_uninstrument` command removes the instrumentation when done.
-
-- Selectively profile memory allocation in full detail for specific functions or code sections, or profile allocation and deallocation in full detail at program level.
-
-`thag_profiler` includes a comprehensive analysis tool based on `inquire` and `inferno` that allows you to easily:
-
-- Select profiling output for analysis
-
-- Create and display interactive flamegraphs and flamecharts of all profiling output
-
-- Use `inferno`'s differential flamegraphs for before-and-after comparisons
-
-- Display simple execution time and memory usage reports.
-
-- Filter profiling output to customise flamegraphs so as to focus on relevant functions or code sections
-
-
 Worked example: TODO replace: serde
 Don't use a crate that is called by other dependencies, otherwise there may be conflicts.
 1. Clone repo
@@ -95,41 +41,6 @@ Don't use a crate that is called by other dependencies, otherwise there may be c
 
 
 At its very simplest, a single attribute on your `fn main` will generate a flamegraph of all the memory allocations, by function, made by your running project and its dependencies. Add `thag_profiler` to your project with the `full_profiling` feature, add `use thag_profiler::*;` to your imports, and the `#[enable_profiling(runtime)]` attribute to your main method. Then run your project with the environment variable `THAG_PROFILER=both,,announce,true`. This will default to generating .folded files to your current directory. On conclusion, run `thag_profile .`, select `analysis type: Memory Profile - Single`, choose your project and then the timestamped `-memory_detail.folded`, and finally `Show Aggregated Memory Profile (Flamegraph)` to generate the detailed `inferno` flamegraph and show it in your default browser.
-
-
-Tools classification suggestions from Claude
-
-### Format & Conversion
-- `format_dethagomize.rs` (from dethagomizer.rs) - Converts escaped text to readable format
-- `convert_rust_script_to_thag.rs` (from thag_from_rust_script.rs)
-- `convert_thag_to_rust_script.rs` (from thag_to_rust_script.rs)
-- `convert_theme.rs` (from theme_converter.rs)
-
-### Config & Setup
-- `config_build.rs` (from thag_config_builder.rs)
-- `setup_download_demos.rs` (from download_demo_dir.rs)
-
-### Profiling
-- `profile_instrument.rs` (from profile_instr.rs)
-- `profile_remove.rs` (stays the same)
-- `profile_analyze.rs` (from thag_profile.rs)
-
-### Documentation & Generation
-- `gen_readme.rs` (stays the same)
-- `gen_error.rs` (from error_builder.rs)
-- `filter_demos.rs` (stays the same)
-
-### Frontend & UI
-- `ui_cargo.rs` (from thag_cargo.rs)
-- `ui_clippy.rs` (from thag_clippy.rs)
-- `ui_url.rs` (from thag_url.rs)
-- `ui_theme.rs` (from theme_helper.rs)
-
-### Debugging & Analysis
-- `debug_expr_to_ast.rs` (from input_expr_to_ast.rs)
-- `debug_file_to_ast.rs` (from input_file_to_ast.rs)
-- `analyze_terminal.rs` (from term_detection_pack.rs)
-
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
@@ -189,8 +100,6 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Consider a disable option?
 - [ ]  Add details of --cargo (-A) option to Readme and `thag_cargo`
-       - Make --expand (-X) option a helper command thag_expand.
-       - Document thag_cargo and thag_clippy in the Readme.
 - [ ]  Add profiling to capabilities for scripts.
 - [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
@@ -228,6 +137,18 @@ cargo expand --bin $stem --manifest-path=$f --theme=gruvbox-dark | sdiff $p - | 
 ### Testing without ColorSupport::None
 thag -C -> change
 env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
+
+- [ ]  Theme config: for Windows:
+        1. Check supports_color detection failing.
+        2. Need to detect term_bg_rgb rather than or in addition to term_bg_luma.
+        "Still, the crux of this bug: if COLORTERM is meant to detect color support - though what the value is set to
+         doesn't seem well-defined - perhaps the more oft-supported TERM=xterm-256color is appropriate here for WT
+         while COLORTERM=xterm-truecolor is appropriate in addition. TERM seems to be more general-purpose from various
+         reads, while COLORTERM seems to be more specific to color support, as the name also implies."
+         https://github.com/microsoft/terminal/issues/11057
+- [ ]  Demo proc macro to load collection into enum at build time?
+- [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
+- [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
 
 
 ## Low Priority

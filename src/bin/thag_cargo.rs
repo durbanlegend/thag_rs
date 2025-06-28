@@ -108,7 +108,7 @@ impl CargoSubcommand {
             },
             Self {
                 name: "clippy".to_string(),
-                description: "Run clippy lints",
+                description: "Run clippy lints (Hint: rather run the `thag_clippy` command for better prompts)",
                 common_args: vec![
                     ("--all-targets", "Check all targets"),
                     ("--fix", "Automatically apply lint suggestions"),

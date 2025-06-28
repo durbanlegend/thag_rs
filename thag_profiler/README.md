@@ -1457,9 +1457,9 @@ You will need to have `jq` installed to summarize the `dhat` results.
 
 Notes:
 
-1. `thag_profiler` does not offer a `PowerShell` version of `scripts/compare_profilers.sh`. Short of rolling your own or getting AI to convert it, you may instead find the following useful:
+1. `thag_profiler` does not offer a `PowerShell` version of `scripts/compare_profilers.sh`. Short of rolling your own or getting AI to convert it, you may instead find the following suggestion useful:
 
-   Install Git for Windows and run the `Git Bash` app.
+   Install `Git for Windows` and run the `Git Bash` app.
 
    Running `scripts/compare_profilers.sh` within the `Git Bash`  window will still run the Windows version of  `thag`, as opposed to using `WSL`.
 
@@ -1467,7 +1467,7 @@ Notes:
 
 3. `dhat` and `thag_profiler` both use the `backtrace` crate to identify memory allocation sites, so to this extent they are not giving completely mutually independent assessments of memory usage.
 
-4. To dig deeper than the summary results and investigate the extra allocation reported (at time of writing) by `thag_profiler` for the `allocate_hashmap` function, you can run a detailed `thag_profiler` analysis thus:
+4. To dig deeper than the summary results and investigate the extra allocation reported (at time of writing) by `thag_profiler` for the `allocate_hashmap` function, you can run a detailed `thag_profiler` analysis like this:
 
 ```bash
 THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_profile_benchmark.rs -f

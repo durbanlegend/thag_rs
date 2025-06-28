@@ -1,6 +1,4 @@
-use std::env;
-use std::fs;
-use std::sync::Once;
+use std::{env, fs, sync::Once};
 
 fn file_stem_from_path_str(file_name: &str) -> String {
     let fname_start = file_name.rfind('/').map_or_else(|| 0, |pos| pos + 1);
@@ -18,6 +16,7 @@ fn set_up() {
     });
 }
 
+// This is just a glorified wrapper around `thag -c`, so demote to bank/.
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -26,9 +25,6 @@ fn main() {
     }
 
     let path_str = args[1].clone();
-
-    // Reset terminal state at start
-    print!("\x1B[0m\x1B[?1049l"); // Reset all attributes and exit alternate screen
 
     set_up();
 
@@ -69,7 +65,4 @@ fn main() {
             target_dir.display()
         );
     }
-
-    // Reset terminal state after
-    print!("\x1B[0m\x1B[?1049l");
 }

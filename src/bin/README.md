@@ -135,6 +135,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_clippy.r
 
 **Description:**  Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
 
+ ## Usage examples:
+
+ ### Convert a single theme
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm/atelier_seaside_light.yaml -o themes/converted
+ ```
+
+ ### Convert a directory of themes (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -v
+ ```
+
+ ### Convert and also generate 256-color versions (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -c -v
+ ```
+
+ ### Force overwrite existing themes
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -f
+ ```
+
+
 **Purpose:** Theme generation.
 
 **Crates:** `clap`, `serde`, `serde_yaml_ok`, `thag_rs`, `toml`
@@ -213,7 +240,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_hel
 
 **Purpose:** Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 
-**Crates:** `anyhow`, `atty`, `crossterm`, `side_by_side_diff`, `tempfile`, `thag_proc_macros`, `thag_rs`
+**Crates:** `anyhow`, `atty`, `side_by_side_diff`, `tempfile`, `thag_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -394,11 +421,15 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_legible.
  Uses the GitHub REST API endpoint `/markdown` to convert Markdown to HTML and serves the HTML using the `warp` web framework. Make sure your Markdown file is less than 400 KB, as per the API's limitations.
 
  ### Instructions:
+
  1. Set the `GITHUB_TOKEN` environment variable with your GitHub token (classic or fine-grained).
+
  2. Run the script:
+
     ```bash
-    thag -q tools/github_markdown_viewer.rs -- <path_to_markdown_file>
+    thag_markdown <path_to_markdown_file>
     ```
+
  3. Open `http://localhost:8080` in your browser to view the rendered HTML.
 
 **Purpose:** Useful tool and demo.

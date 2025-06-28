@@ -130,9 +130,9 @@ impl HelpSystem {
                 }
             }
             // Handle doc comments
-            else if let Some(content) = line.strip_prefix("///") {
-                let content = content.trim();
-                if !content.is_empty() {
+            else if line.starts_with("///") {
+                if let Some(content) = line.strip_prefix("///") {
+                    let content = content.trim();
                     doc_lines.push(content);
                     in_doc_comment = true;
                 }
@@ -144,7 +144,8 @@ impl HelpSystem {
         }
 
         if !doc_lines.is_empty() {
-            help.description = Some(doc_lines.join(" "));
+            help.description = Some(doc_lines.join("\n"));
+            // eprintln!("help.description={:#?}", help.description);
         }
 
         help

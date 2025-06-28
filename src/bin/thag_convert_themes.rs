@@ -1,19 +1,3 @@
-/*
-Usage:
-
-# Convert a single theme
-thag_convert_themes -- -i themes/base24/dracula.yaml -o themes/converted
-
-# Convert a directory of themes
-thag_convert_themes -- -i themes/base24 -o themes/converted -v
-
-# Convert and generate 256-color versions
-thag_convert_themes -- -i themes/base24 -o themes/converted -c -v
-
-# Force overwrite existing themes
-thag_convert_themes -- -i themes/base24 -o themes/converted -f
-*/
-
 /*[toml]
 [dependencies]
 clap = { version = "4.5.26", features = ["cargo", "derive"] }
@@ -24,6 +8,33 @@ toml = "0.8.19"
 */
 
 /// Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
+///
+/// ## Usage examples:
+///
+/// ### Convert a single theme
+///
+/// ```Rust
+/// thag_convert_themes -i themes/wezterm/atelier_seaside_light.yaml -o themes/converted
+/// ```
+///
+/// ### Convert a directory of themes (verbosely)
+///
+/// ```Rust
+/// thag_convert_themes -i themes/wezterm -o themes/converted -v
+/// ```
+///
+/// ### Convert and also generate 256-color versions (verbosely)
+///
+/// ```Rust
+/// thag_convert_themes -i themes/wezterm -o themes/converted -c -v
+/// ```
+///
+/// ### Force overwrite existing themes
+///
+/// ```Rust
+/// thag_convert_themes -i themes/wezterm -o themes/converted -f
+/// ```
+///
 //# Purpose: Theme generation.
 //# Categories: tools
 use clap::Parser;
@@ -32,7 +43,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use thag_rs::{
     auto_help,
-    help_system::check_help_and_exit,
     styling::{find_closest_color, ColorValue, Palette, Style, Theme},
     ColorSupport, TermBgLuma,
 };
@@ -349,8 +359,10 @@ fn detect_background_luma(hex: &str) -> Result<TermBgLuma, Box<dyn std::error::E
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!("thag_convert_themes");
-    check_help_and_exit(&help);
 
+    let _ = help.check_help();
+
+    // This will add `clap` options and exit if missing
     let cli = Cli::parse();
 
     // Create output directory if it doesn't exist

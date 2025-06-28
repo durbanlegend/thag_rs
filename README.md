@@ -14,7 +14,7 @@ The core purpose of `thag` is straightforward: eliminate the setup barriers that
 
 One standout feature is dependency inference, which automatically detects and configures the crates your code needs. This means you can often start writing actual code immediately, without manually specifying dependencies. When needed, verbose mode shows you the `toml` generated for the inferred dependencies, ready to copy into your scripts for future use if you so choose.
 
-As of version 0.2, `thag` offers an easy-to use profiler that works consistently across different operating systems to avoid platform-specific setup headaches. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
+As of version 0.2, the ~~House~~ Cave of Thag offers an independent easy-to use profiler that works consistently across different operating systems to avoid platform-specific setup headaches. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
 
 - Async code compatibility
 
@@ -327,7 +327,7 @@ Putting it to use:
 ![XBuild](assets/xuset.png)
 
 ### * Run `cargo test` in place:
-The --test-only (-T) is for scripts (not snippets) with embedded unit tests. (For snippets there's the --cargo (-A) option that accepts cargo subcommands including`test`).
+The --test-only (-T) is for scripts (not snippets) with embedded unit tests. (For snippets there's the --cargo (-A) option that accepts cargo subcommands including `test`).
 This option leaves the source script untouched but generates a temporary Cargo.toml for it in the usual way and invokes `cargo test` on this to run the internal unit tests.
 
 As usual, `thag` must rely on dependency inference and/or a toml block in the script for the manifest information.

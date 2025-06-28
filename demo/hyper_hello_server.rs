@@ -1,12 +1,3 @@
-/*[toml]
-[dependencies]
-bytes = "1.9.0"
-http-body-util = "0.1.2"
-hyper = { version = "1.5.2", features = ["full"] }
-pin-project-lite = "0.2.15"
-pretty_env_logger = "0.5.0"
-tokio = { version = "1.42.0", features = ["full"] }
-*/
 #![deny(warnings)]
 
 /// Published simple hello HTTP server example from the `hyper` crate,

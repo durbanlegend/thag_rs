@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-dashu = "0.4.2"
-*/
-
 /// Fast non-recursive Fibonacci sequence calculation with big integers.
 /// Should work with default Windows.
 ///

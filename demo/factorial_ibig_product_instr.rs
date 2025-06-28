@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-ibig = "0.3.6"
 thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 */
 

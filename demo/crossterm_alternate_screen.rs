@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ratatui = "0.29"
-*/
-
 /// Published example from crossterm crate. Macro version of the example:
 /// "Print a rectangle colored with magenta and use both direct execution and lazy execution."
 /// Direct execution with `execute` and lazy execution with `queue`.

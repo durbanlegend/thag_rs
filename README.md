@@ -73,32 +73,34 @@ ___
 
 🎯 **Smart Features:**
 
-- Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`)
+- Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
 
-- You're in control: dependency inference (max/min/config/none) and/or toml block
+  **New in 0.2.0:** Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (i.e. most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
 
-- Beyond shebangs: build instant commands from your snippets and programs
+- You're still in control: dependency inference (max/min/config/none) and/or toml block.
 
-- Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground)
+- Beyond shebangs: build instant commands from your snippets and programs.
+
+- Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground).
 
 - Paste-and-run with built-in TUI editor or your preferred editor.
 
-- An evolution path for your code from REPL to edit-submit loop to saved scripts
+- An evolution path for your code from REPL to edit-submit loop to saved scripts.
 
-- Edit-submit standard input
+- Edit-submit standard input.
 
-- Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.)
+- Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.).
 
 - Run any Cargo command (clippy, tree, test) against your scripts.
-(Yes, you can include unit tests in your scripts)
+(Yes, you can include unit tests in your scripts).
 
 - View macro expansions side-by-side with your base script.
 
 - Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro at compile time.
 
-- Automated inclusion of `derive` or other dependency features
+- Automated inclusion of `derive` or other dependency features.
 
-- **New in 0.2.0:** The `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, as described above.
+- **New in 0.2.0:** The independent `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, as described above.
 
 - **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
 
@@ -300,7 +302,7 @@ For an example of tolerating a broken pipe, see
 `demo/thag_from_rust_script.rs`.
 
 ### * As an executable:
-The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is recommended to be in your path.
+The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is highly recommended to be in your path as `thag` and its tools are installed there.
 
 ```bash
 thag -x my_script.rs                                            # Long form: --executable
@@ -404,14 +406,14 @@ You may provide optional valid (Cargo.toml) metadata in a toml block as describe
 
 All of this happens quite fast: the real bottleneck will be the familiar Cargo build process downloading and compiling your dependencies on the initial build. Cargo build output will be displayed in real time by default so that there are no mystery delays. If you rerun the compiled script it should be almost immediate.
 
-In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for speed and precision I recommend that you embed your own in a toml block:
+In this way `thag_rs` attempts to handle any valid (or invalid) Rust script, be it a program, snippet or expression. It will try to generate a dedicated Cargo.toml for your script from `use` statements in your code, although for precision and (marginally?) better speed you may need or wish to embed your own in a toml block:
 ```/*
 [toml]
 [dependencies]
 ...
 */
 ```
-at the start of the script, as you will see done in most of the demos. To help with this, after each successful Cargo lookup `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
+at the start of the script, as you will see done in some of the demos. To help with this, after each successful Cargo lookup `thag_rs `will generate and print a basic toml block with the crate name and version under a `[dependencies]` header, for you to copy and paste into your script if you want to. (As in the second `--expr` example above.) It does not print a combined block, so it's up to you to merge all the dependencies into a single toml block. All dependencies can typically go under the single `[dependencies]` header in the toml block, but thanks to `cargo_toml` there is no specific limit on what valid Cargo code you can place in the toml block.
 
 `thag_rs` aims to be as comprehensive as possible without sacrificing speed and transparency. It uses timestamps to rerun compiled scripts without unnecessary rebuilding, although you can override this behaviour. For example, a precompiled script will calculate the 35,661-digit factorial of 10,000 in under half a second on my M1 MacBook Air.
 

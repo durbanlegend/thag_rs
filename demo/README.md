@@ -1238,7 +1238,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channe
  This is the published example from the `crossbeam-epoch` crate. For a more intuitive
  example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
  and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/.
- (Not included here due to implicit copyright).
+ (Not included here due to implicit copyright). This will need at least a change from
+ `rng.gen_range(0, bc_size)` to `rng.gen_range(0..bc_size)`, and optional updates to function naming.
 
 
 **Purpose:** Demo featured crate.
@@ -1459,29 +1460,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_
 
 ---
 
-### Script: darling_struct.rs
-
-**Description:**  Published example from `darling` crate showing parsing for derive input.
- Extended to show formatted version of emitted code.
-
-**Purpose:** Explore `darling` crate.
-
-**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
-
-**Type:** Program
-
-**Categories:** crates, exploration, technique
-
-**Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_struct.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_struct.rs
-```
-
----
-
 ### Script: derive_deftly.rs
 
 **Description:**  Introductory example from the `derive-deftly` user guide.
@@ -1507,9 +1485,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/derive_deftly.rs
 ### Script: dethag_re.rs
 
 **Description:**  Unescape `\n` and `\\` markers in a string to convert the wall of text to readable lines.
+ This is an alternative approach to the original script that ended up as `src/bin/thag_legible.rs`.
  This version using regex may be more reliable than the classic approach using .lines().
  However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
- module more than 5 time larger than that of `thagomizer`.
+ module almost 7 times larger than that of `thag_legible` for debug builds and 4 times
+ larger for release builds.
 
  Tip: Regex tested using https://rustexp.lpil.uk/.
 
@@ -1848,7 +1828,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs
 
 **Purpose:** Prototype a native-mode editor using the `egui` crate.
 
-**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`, `thag_profiler`
+**Crates:** `eframe`, `egui`, `egui_extras`, `env_logger`
 
 **Type:** Program
 
@@ -2031,35 +2011,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_p
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_instr.rs -- 50
-```
-
----
-
-### Script: factorial_ibig_product_profile.rs
-
-**Description:**  Fast factorial algorithm with arbitrary precision and avoiding recursion.
- Closures and functions are effectively interchangeable here.
-
- Using the `std::iter::Product` trait - if implemented - is the most concise factorial
- implementation. Unfortunately, but unlike the `dashu` and `rug` crates, `ibig` does
- not implement the Product trait, so we have to wrap the `UBig`. Which of course
- is pretty verbose in the context of a snippet, but could be useful in an app.
- The implementation is thanks to GPT-4.
-
-**Purpose:** Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
-
-**Crates:** `ibig`, `thag_profiler`
-
-**Type:** Snippet
-
-**Categories:** big_numbers, learning, math, recreational, technique
-
-**Link:** [factorial_ibig_product_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_profile.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_profile.rs -- 50
 ```
 
 ---
@@ -2961,7 +2912,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_select.rs
 ### Script: gen_names.rs
 
 **Description:**  A very simple published example from the random name generator
- `names`.
+ `names`. See also `demo/hyper_name_server.rs`.
 
 **Purpose:** Demo a simple snippet and featured crate.
 
@@ -3089,7 +3040,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_minimal.rs
 ### Script: history_debug.rs
 
 **Description:**  Debug the history handling logic of the `stdin` module and display the effects.
- Using this abstraction because displays don't work nicely in a TUI editor.
+ Using this abstraction because stdout/stderr displays don't work nicely in a TUI editor.
 
 **Purpose:** Debug and demo history ordering.
 
@@ -3114,11 +3065,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/history_debug.rs
 **Description:**  Published echo-server HTTP client example from the `hyper` crate,
  with the referenced modules `support` and `tokiort` refactored
  into the script, while respecting their original structure and
- redundancies.
- You can run the `hyper_echo_server.rs` demo as the HTTP server on
- another command line and connect to it on port 3000:
- `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
+ redundancies. I've also synchronised the printing of the response,
+ which was displaying out of sequence.
+ You can run one of the hyper demo servers as the HTTP server on
+ another command line and connect to it on port 3000.
+ I prefer `hyper_name_server.rs` for variety, but `hyper_hello_server.rs`
+ or `hyper_echo_server.rs` will work.
  Or use any other available HTTP server.
+
+ ```bash
+ thag demo/hyper_client.rs -- http://127.0.0.1:3000
+ ```
+
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
@@ -3187,6 +3145,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_echo_serve
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_hello_server.rs
+```
+
+---
+
+### Script: hyper_name_server.rs
+
+**Description:**  An adaptation of `demo/hyper_hello_server.rs` that uses a thread-local name generator
+ to show that each call to the server legitimately generates a new response.
+
+**Purpose:** Demo `hyper` HTTP hello server, and incorporating separate modules into the script.
+
+**Crates:** `bytes`, `http_body_util`, `hyper`, `names`, `pin_project_lite`, `pretty_env_logger`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, crates, technique
+
+**Link:** [hyper_name_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_name_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_name_server.rs
 ```
 
 ---

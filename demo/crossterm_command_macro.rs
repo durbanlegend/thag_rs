@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.29"
-*/
-
 use crossterm::{
     cursor, execute, queue,
     style::{self, Stylize},

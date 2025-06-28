@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// A curiosity: In this version I tried doubling up the doubling technique by
 /// deriving formulae for F4n and F4n+1 in terms of Fn and Fn+1, but it didn't
 /// pay off in terms of speed. It's good to test the limits, but for practical

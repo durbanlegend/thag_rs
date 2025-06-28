@@ -1,7 +1,5 @@
 /*[toml]
 [dependencies]
-#edit = { version = "0.1.5", features = ["better-path"] }
-edit = "0.1.5"
 thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 */
 

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Fast factorial algorithms with arbitrary precision and avoiding recursion.
 /// A version using `std::Iterator::fold` and one using `std::iter::Successors:successors`
 /// are executed and compared to ensure they agree before printing out the value.

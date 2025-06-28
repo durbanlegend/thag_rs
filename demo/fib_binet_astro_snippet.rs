@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-astro-float = "0.9.4"
-*/
-
 /// Academic / recreational example of a closed-form (direct) calculation of a
 /// given number in the Fibonacci sequence using Binet's formula. This is imprecise
 /// above about F70, and the `dashu` crate can't help us because it does not support

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Fast non-recursive classic Fibonacci individual calculation with big integers.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.

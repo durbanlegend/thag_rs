@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Try a version based on reverse engineering the `fibo_new / fibo_new_work` functions of `demo/fib_4784969_cpp_ibig.rs`
 /// This approach passes the pair `Fn, Fn+1` `(a, b)` and applies some funky calculations. I'll pay my dues here by doing
 /// the derivation.

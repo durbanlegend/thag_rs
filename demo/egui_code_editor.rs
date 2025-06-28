@@ -7,15 +7,10 @@ eframe = { version = "0.27.0", default-features = false, features = [
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
-log = "0.4"
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
 egui_extras = "0.27.2"
-
-env_logger = "0.10"
-
-thag_profiler = { version = "0.1, thag-auto", features=["full_profiling"] }
 
 [features]
 default = ["syntect"]
@@ -143,7 +138,6 @@ impl eframe::App for CodeEditor {
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
-#[thag_profiler::enable_profiling(runtime)]
 fn main() -> eframe::Result<()> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.29"
-*/
-
 /// Published example from crossterm crate.
 ///
 /// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs

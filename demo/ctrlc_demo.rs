@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ctrlc = { version = "3.4.4" }
-*/
-
 use ctrlc;
 use std::sync::mpsc::channel;
 

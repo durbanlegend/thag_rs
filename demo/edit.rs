@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-#edit = { version = "0.1.5", features = ["better-path"] }
-edit = "0.1.5"
-*/
-
 #[allow(unused_doc_comments)]
 /// Published example from edit crate readme.
 ///

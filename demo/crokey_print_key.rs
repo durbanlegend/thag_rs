@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-crokey = "1.1.0"
-crossterm = "0.29"
-*/
-
 /// Published example of combiner from `crokey` crate.
 //# Purpose: Demo key combiner.
 //# Categories: crates, technique

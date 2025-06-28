@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Very fast recursive calculation of an individual Fibonacci number
 /// using the matrix squaring technique.
 /// This example is by courtesy of Gemini AI. For F100,000 this is the

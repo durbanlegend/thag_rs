@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-rug = { version = "1.24.0", features = ["integer"] }
-*/
-
 /// Rust port of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
 /// F(4784969) is the first number in the Fibonacci sequence that has one million decimal
 /// digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`

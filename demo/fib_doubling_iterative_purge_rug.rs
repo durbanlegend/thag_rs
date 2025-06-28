@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-rug = "1.24.1"
-*/
-
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.ibig.rs` for the
 /// original recursive implementation and the back story.

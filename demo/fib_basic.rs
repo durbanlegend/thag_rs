@@ -1,8 +1,4 @@
 #! /usr/bin/env thag
-/*[toml]
-[dependencies]
-itertools = "0.12.1"
-*/
 /// Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
 /// I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 /// for a variety of alternative approaches. The various Fibonacci scripts here in the demo

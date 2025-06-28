@@ -1,7 +1,3 @@
-/*[toml]
-[dependencies]
-curl = "0.4.46"
-*/
 /// Simple HTTPS GET
 ///
 /// This example is a Rust adaptation of the [C example of the same

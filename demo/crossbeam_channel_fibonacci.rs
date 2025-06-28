@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-crossbeam-channel = "0.5.13"
-*/
-
 /// `crossbeam-channel` published example.
 ///
 /// An asynchronous fibonacci sequence generator.

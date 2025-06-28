@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-dashu = "0.4.2"
-*/
-
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
 /// Closures and functions are effectively interchangeable here.
 ///

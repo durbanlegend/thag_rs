@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.29"
-lazy_static = "1.4.0"
-termbg = "0.5.2"
-*/
-
 /// Prototype of detecting the light or dark theme in use, and registering it
 /// as a static enum value for use in message style selection. Example of using
 /// an LLM to generate a prototype to a simple spec. The `clear_screen` function

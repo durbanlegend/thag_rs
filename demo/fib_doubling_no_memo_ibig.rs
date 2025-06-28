@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
 /// This serves to prove that the memoization is significantly faster, although
 /// not dramatically so.

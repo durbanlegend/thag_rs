@@ -1,18 +1,3 @@
-/*[toml]
-[dependencies]
-hyper = { version = "1", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
-pretty_env_logger = "0.5"
-http-body-util = "0.1"
-bytes = "1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-form_urlencoded = "1"
-http = "1"
-futures-util = { version = "0.3", default-features = false }
-pin-project-lite = "0.2.14"
-*/
-
 #![deny(warnings)]
 
 use bytes::Bytes;
@@ -41,7 +26,7 @@ async fn echo(
     match (req.method(), req.uri().path()) {
         // Serve some instructions at /
         (&Method::GET, "/") => Ok(Response::new(full(
-            "Try POSTing data to /echo such as: `curl localhost:3000/echo -XPOST -d \"hello world\"`",
+            r#"Try POSTing data to /echo such as: `curl localhost:3000/echo -XPOST -d "hello world"`"#,
         ))),
 
         // Simply echo the body back to the client.

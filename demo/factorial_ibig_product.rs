@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
 /// Closures and functions are effectively interchangeable here.
 ///

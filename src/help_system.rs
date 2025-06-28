@@ -253,7 +253,7 @@ fn main() {
         assert_eq!(help.categories, vec!["test", "utility"]);
         assert_eq!(
             help.description,
-            Some("This is a test tool that does amazing things".to_string())
+            Some("This is a test tool\nthat does amazing things".to_string())
         );
     }
 

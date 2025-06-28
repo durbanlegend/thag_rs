@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Same script as `demo/fib_basic_ibig.rs` with basic instrumentation added for benchmarking
 /// against other fibonacci scripts.
 /// Scripts can then be selected and run sequentially.

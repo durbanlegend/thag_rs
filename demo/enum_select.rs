@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-owo-colors = "4.0.0"
-*/
-
 /// Prototype of selecting message colours by matching against different enums
 /// according to the terminal's detected colour support and light or dark theme.
 /// (Detection itself is not part of the demo).

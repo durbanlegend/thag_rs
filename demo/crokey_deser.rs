@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-crokey = "1.0.1"
-serde = { version = "1.0.219", features = ["derive"] }
-toml = "0.8.19"
-*/
-
 /// Published example of serde deserialisation from `crokey` crate.
 //# Purpose: Demo loading keybindings from a file.
 //# Categories: crates, technique

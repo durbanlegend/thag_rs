@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-rug = "1.24.1"
-*/
-
 /// Very fast recursive calculation of an individual Fibonacci number
 /// using the matrix squaring technique.
 ///

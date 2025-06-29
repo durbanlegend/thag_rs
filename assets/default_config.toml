@@ -185,6 +185,3 @@ required_features = ["consoleapi", "processenv", "winbase"]
 
 # Miscellaneous configuration parameters
 [misc]
-
-# Strip double quotes from around string literals returned by snippets
-unquote = true

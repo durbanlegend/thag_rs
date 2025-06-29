@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-pomprt = "0.5.3"
-*/
-
 /// Published example from `pomprt` crate.
 ///
 /// Not suitable for running from a URL. Run locally and enter simple shell commands like `ls -l` at the prompt.

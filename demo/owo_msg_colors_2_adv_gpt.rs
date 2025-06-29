@@ -1,12 +1,6 @@
 /*[toml]
-[dependencies]
-crossterm = "0.29"
-enum-assoc = "1.1.0"
-log = "0.4.22"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
-supports-color= "3.0.0"
-termbg = "0.5.2"
+[features]
+default = ["strum/phf"]     # Because `strum` omits to publish "phf" feature for discovery by cargo-lookup.
 */
 
 /// More fully worked-out prototype of colouring and styling messages based on the level of
@@ -27,7 +21,7 @@ use owo_xterm::{
     LightCaribbeanGreen, LochmaraBlue, Silver,
 };
 use std::str::FromStr;
-use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
+use strum::*;
 use supports_color::Stream;
 use termbg::Theme;
 
@@ -72,8 +66,7 @@ enum MessageType {
 }
 
 #[derive(Assoc, Clone, Debug, Display, EnumIter, EnumString, PartialEq)]
-#[strum(serialize_all = "snake_case")]
-#[strum(use_phf)]
+#[strum(use_phf, serialize_all = "snake_case")]
 #[func(pub fn value(&self) -> Style)]
 enum MessageStyle {
     // Use Assoc to associate owo-colors::Style with each variant
@@ -136,15 +129,6 @@ enum MessageStyle {
     Xterm256DarkNormal,
     #[assoc(value = Style::new().fg::<BondiBlue>())]
     Xterm256DarkDebug,
-}
-
-// termbg sends an operating system command (OSC) to interrogate the screen
-// but with side effects which we undo here.
-fn clear_screen() {
-    //     let mut out = stdout();
-    //     out.execute(MoveToColumn(0)).unwrap();
-    //     out.execute(Show).unwrap();
-    //     out.flush().unwrap();
 }
 
 fn get_theme() -> Result<Theme, termbg::Error> {

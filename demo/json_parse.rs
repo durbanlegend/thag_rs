@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-serde = "1.0.219"
-serde_json = "1.0.132"
-*/
-
 /// Demo of deserialising JSON with the featured crates.
 /// This version prompts for JSON input.
 //# Purpose: Demo featured crates.

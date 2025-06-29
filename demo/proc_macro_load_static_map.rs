@@ -1,19 +1,10 @@
-/*[toml]
-[dependencies]
-#once_cell = "1.20.2"
-phf = { version = "0.11.3", features = ["macros"] }
-toml = "0.8.19"
-*/
-
 /// Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
 /// `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
 //# Purpose: Sample model of a basic function-like proc macro.
 //# Categories: proc_macros, technique
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-// use phf;
-// use once_cell;
-// use std::collections::HashMap;
+use phf;
 use thag_demo_proc_macros::load_static_map;
 
 #[derive(Debug, Clone)]

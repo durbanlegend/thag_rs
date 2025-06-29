@@ -14,7 +14,7 @@ The core purpose of `thag` is straightforward: eliminate the setup barriers that
 
 One standout feature is dependency inference, which automatically detects and configures the crates your code needs. This means you can often start writing actual code immediately, without manually specifying dependencies. When needed, verbose mode shows you the `toml` generated for the inferred dependencies, ready to copy into your scripts for future use if you so choose.
 
-As of version 0.2, the ~~House~~ Cave of Thag offers an independent easy-to use profiler that works consistently across different operating systems to avoid platform-specific setup headaches. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
+As of version 0.2, the ~~Cave~~ House of Thag offers an independent easy-to use profiler that works consistently across different operating systems to avoid platform-specific setup headaches. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
 
 - Async code compatibility
 
@@ -63,9 +63,9 @@ ___
 
 - Interactive REPL mode for rapid prototyping
 
-- Uses AST analysis to understand your code
+  - Uses AST analysis to understand your code
 
-- Optionally embed custom Cargo manifest settings in "toml block" comments
+- "toml block" comments use `cargo_toml` to support not only dependencies but other valid manifest entries such as features, profiles and lints.
 
 - Shebang support for true scripting (but you can do better: read on...)
 
@@ -74,6 +74,8 @@ ___
 🎯 **Smart Features:**
 
 - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
+
+  `thag(_rs)` can run many crate examples without needing TOML information. There is even a tool to run them directly from a GitHub or other repo / source URL.
 
   **New in 0.2.0:** Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (i.e. most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
 

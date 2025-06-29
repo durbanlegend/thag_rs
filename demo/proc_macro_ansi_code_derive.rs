@@ -50,12 +50,6 @@ impl AnsiCode {
     }
 }
 
-let bright_yellow = AnsiCode::from_str("bright_yellow")?;
-println!(
-    "bright_yellow: variant={bright_yellow}, code={}, name={}",
-    bright_yellow.code(),
-    bright_yellow.name()
-);
 let bright_black = AnsiCode::from_str("bright_black")?;
 println!(
     "bright_black: variant={bright_black}, code={}, name={}",

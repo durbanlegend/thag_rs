@@ -1,12 +1,9 @@
 /*[toml]
 [dependencies]
-profiling = { version = "1.0.15", features = ["profile-with-puffin"] }
 puffin = "=0.19.0"
 puffin_egui = "0.26.0"
 egui = "0.26.2"
 eframe = { version = "0.26.2", default-features = false, features = ["glow"] }
-log = "0.4"
-env_logger = "0.11"
 
 [features]
 default = ["profile-with-puffin"]

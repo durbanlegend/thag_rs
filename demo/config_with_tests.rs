@@ -5,6 +5,8 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
 ///
+/// In this case this demo file is the one we're testing.
+///
 /// The unit tests must be in mod `tests` in the file.
 ///
 /// `thag` will leave the file as is, but generate a temporary Cargo.toml for it in the usual way as a prerequisite for running `cargo test`.
@@ -15,7 +17,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 ///
 /// E.g.:
 ///
-/// `TEST_CONFIG_PATH=/absolute/path/to/test/config.toml cargo run demo/config_with_tests.rs -Tv -- --nocapture --show-output`
+/// `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
 ///
 //# Purpose: Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
 //# Categories: technique, testing
@@ -824,7 +826,7 @@ mod tests {
                 ),
             ])
             .unwrap();
-            debug!("Initialized simplelog");
+            log::debug!("Initialized simplelog");
         });
 
         // #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active

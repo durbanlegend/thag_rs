@@ -1,35 +1,25 @@
 /*[toml]
 [dependencies]
-eframe = "0.27.2"
-puffin = "=0.19.0"
-puffin_egui = "0.27.0"
+eframe = "0.28.1"
 */
 
-/// Published demo from the `puffin` crate.
-//# Purpose: Demo featured crate.
-//# Categories: crates
 use eframe::egui;
 
+/// Published demo from the `puffin` profiling crate. The only change is to add a toml block
+/// entry to prevent a more recent `eframe` version from clashing with `puffin`.
+//# Purpose: Demo featured crate.
+//# Categories: crates
 fn main() -> eframe::Result<()> {
-    let native_options = eframe::NativeOptions {
+    let mut frame_counter = 0;
+    let mut keep_repainting = true;
+
+    puffin::set_scopes_on(true);
+
+    let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
         ..Default::default()
     };
-    eframe::run_native(
-        "puffin egui eframe",
-        native_options,
-        Box::new(|_cc| Box::<ExampleApp>::default()),
-    )
-}
-
-#[derive(Default)]
-pub struct ExampleApp {
-    frame_counter: u64,
-    keep_repainting: bool,
-}
-
-impl eframe::App for ExampleApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    eframe::run_simple_native("puffin egui eframe", options, move |ctx, _frame| {
         puffin::profile_function!();
         puffin::GlobalProfiler::lock().new_frame(); // If you use the `puffin` feature of `eframe` you don't need to call this
 
@@ -39,8 +29,8 @@ impl eframe::App for ExampleApp {
             puffin::set_scopes_on(profile); // controls both the profile capturing, and the displaying of it
 
             ui.horizontal(|ui| {
-                ui.checkbox(&mut self.keep_repainting, "Keep repainting this window");
-                if self.keep_repainting {
+                ui.checkbox(&mut keep_repainting, "Keep repainting this window");
+                if keep_repainting {
                     ui.spinner();
                     ui.ctx().request_repaint();
                 }
@@ -64,16 +54,16 @@ impl eframe::App for ExampleApp {
             })
             .unwrap();
 
-        sleep_ms(14);
-        if self.frame_counter % 49 == 0 {
+        sleep_ms(9);
+        if frame_counter % 49 == 0 {
             puffin::profile_scope!("Spike");
             std::thread::sleep(std::time::Duration::from_millis(20))
         }
-        if self.frame_counter % 343 == 0 {
+        if frame_counter % 343 == 0 {
             puffin::profile_scope!("Big spike");
             std::thread::sleep(std::time::Duration::from_millis(50))
         }
-        if self.frame_counter % 55 == 0 {
+        if frame_counter % 55 == 0 {
             // test to verify these spikes timers are not merged together as they have different data
             for (name, ms) in [("First".to_string(), 20), ("Second".to_string(), 15)] {
                 puffin::profile_scope!("Spike", name);
@@ -90,12 +80,12 @@ impl eframe::App for ExampleApp {
             puffin::profile_scope!("very thin");
         }
 
-        self.frame_counter += 1;
-    }
+        frame_counter += 1;
+    })
 }
 
 fn sleep_ms(ms: usize) {
-    puffin::profile_function!();
+    puffin::profile_function_if!(ms > 1);
     match ms {
         0 => {}
         1 => std::thread::sleep(std::time::Duration::from_millis(1)),

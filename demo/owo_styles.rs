@@ -1,13 +1,3 @@
-/*[toml]
-[dependencies]
-# crossterm = "0.29"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.3", features = ["derive"] }
-termbg = "0.6.2"
-
-thag_profiler = { version = "0.1, thag-auto", features=["full_profiling"] }
-*/
-
 use owo_colors::colors::css::{Black, DarkOrange, Orange};
 use owo_colors::colors::{Blue, Cyan, Green, Red, White};
 use owo_colors::{OwoColorize, Style};
@@ -79,7 +69,6 @@ pub fn clear_screen() {
     // out.flush().unwrap();
 }
 
-#[thag_profiler::enable_profiling(runtime)]
 fn main() {
     let timeout = std::time::Duration::from_millis(1000);
 
@@ -87,7 +76,7 @@ fn main() {
     let term = termbg::terminal();
     let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
 
-    println!("  Term : {:?}", term);
+    println!("\n  Term : {:?}", term);
 
     let supports_color: bool = match theme {
         Ok(_theme) => true,
@@ -99,14 +88,14 @@ fn main() {
         match theme.unwrap() {
             Theme::Light => {
                 for variant in LightStyle::iter() {
-                    let msg = &format!("My light theme {variant} message");
+                    let msg = &format!("My light-themed {variant} message");
                     println!("{}", msg.style(variant.get_style()));
                 }
             }
 
             Theme::Dark => {
                 for variant in DarkStyle::iter() {
-                    let msg = &format!("My dark theme {variant} message");
+                    let msg = &format!("My dark-themed {variant} message");
                     println!("{}", msg.style(variant.get_style()));
                 }
             }

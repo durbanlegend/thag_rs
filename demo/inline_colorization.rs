@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-inline_colorization = "0.1.6"
-*/
-
 /// Published simple example from `inline_colorization` crate. Simple effective inline
 /// styling option for text messages.
 //# Purpose: Demo featured crate, also how we can often run an incomplete snippet "as is".

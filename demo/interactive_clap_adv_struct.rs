@@ -1,14 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-color-eyre = "0.6.3"
-inquire = "0.7.5"
-interactive-clap = "0.3.1"
-shell-words = "1.1.0"
-strum = { version = "0.26.3", features = ["derive"] }
-strum_macros = "0.24"
-*/
-
 /// Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
 ///
 /// This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.

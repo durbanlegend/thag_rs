@@ -132,6 +132,9 @@ required_features = ["derive_serde_style"]
 [dependencies.feature_overrides.owo-colors]
 required_features = ["supports-colors"]
 
+[dependencies.feature_overrides.phf]
+required_features = ["macros"]
+
 [dependencies.feature_overrides.proc-macro2]
 required_features = ["span-locations"]
 

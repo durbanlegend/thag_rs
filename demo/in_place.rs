@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-in-place = "0.2.0"
-*/
-
 use in_place::InPlace;
 use std::io::{BufRead, BufReader, Write};
 

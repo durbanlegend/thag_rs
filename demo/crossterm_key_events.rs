@@ -1,4 +1,4 @@
-/// Published example from crossterm crate.
+/// Published example from the `crossterm` crate.
 ///
 /// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
 /// "Demonstrates the display format of key events.

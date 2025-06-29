@@ -1,8 +1,18 @@
-/// `crossbeam-channel` published example.
+/// Published example from the `crossbeam-channel` crate.
 ///
-/// An asynchronous fibonacci sequence generator.
+/// The latest version of this example is available in the [examples] folder
+///  in the `crossbeam-channel` repository. At time of writing you can run it successfully simply
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/crossbeam-rs/crossbeam/blob/master/crossbeam-channel/examples/fibonacci.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Demo featured crate.
 //# Categories: crates
+// An asynchronous fibonacci sequence generator.
 use std::thread;
 
 use crossbeam_channel::{bounded, Sender};

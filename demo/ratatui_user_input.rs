@@ -1,7 +1,8 @@
 /// Published example from the `ratatui` crate.
+///
 /// The latest version of this example is available in the [examples] folder in the "latest"
 /// branch of the `ratatui` repository. At time of writing you can run it successfully simply
-/// by invoking its URL with the `thag_url` tool, thus:
+/// by invoking its URL with the `thag_url` tool, like this:
 ///
 /// ```bash
 /// thag_url https://github.com/ratatui/ratatui/blob/latest/examples/user_input.rs
@@ -11,6 +12,8 @@
 ///
 //# Purpose: Demo the featured crate.
 //# Categories: crates
+//
+// Original `ratatui` crate comments:
 // # [Ratatui] User Input example
 //
 // The latest version of this example is available in the [examples] folder in the repository.

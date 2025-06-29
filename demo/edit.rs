@@ -1,5 +1,5 @@
 #[allow(unused_doc_comments)]
-/// Published example from edit crate readme.
+/// Published example from the `edit` crate readme.
 ///
 /// Will use the editor specified in VISUAL or EDITOR environment variable.
 ///

@@ -1,4 +1,4 @@
-/// Published example from crossterm crate.
+/// Published example from the `crossterm` crate.
 ///
 /// Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
 //# Purpose: Demo crossterm terminal manipulation.

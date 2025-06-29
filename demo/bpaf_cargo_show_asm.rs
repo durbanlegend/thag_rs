@@ -3,7 +3,7 @@
 default = ["bpaf/derive", "bpaf/autocomplete"]
 */
 
-/// Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
+/// Published example from the `bpaf` crate.
 ///
 /// E.g. `thag demo/bpaf_cargo_show_asm.rs -- -h`
 //# Purpose: Demo CLI alternative to clap crate

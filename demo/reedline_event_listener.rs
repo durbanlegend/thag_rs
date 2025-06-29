@@ -1,10 +1,15 @@
-/*[toml]
-[dependencies]
-crossterm = "0.29"
-reedline = "0.36.0"
-*/
-
 /// Published example from `reedline` crate.
+///
+/// The latest version of this example is available in the [examples] folder in the `reedline`
+/// repository. At time of writing you can run it successfully simply
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/nushell/reedline/blob/main/examples/event_listener.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: demo featured crates.
 //# Categories: crates, REPL, technique
 use {

@@ -1,4 +1,4 @@
-/// `crossbeam-channel` published example.
+/// Published example from the `crossbeam-channel` crate.
 ///
 /// Prints the elapsed time every 1 second and quits on `Ctrl+C`. You can reinstate the separate main method for
 /// Windows provided you run the script with the `--multimain (-m)` option.

@@ -1,4 +1,4 @@
-/// Published example from crossterm crate. Macro version of the example:
+/// Published example from the `crossterm` crate. Macro version of the example:
 /// "Print a rectangle colored with magenta and use both direct execution and lazy execution."
 /// Direct execution with `execute` and lazy execution with `queue`.
 ///

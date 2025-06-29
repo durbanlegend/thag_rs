@@ -4,7 +4,7 @@ thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 */
 
 #[allow(unused_doc_comments)]
-/// Profiled version of published example from edit crate readme.
+/// Profiled version of published example from the `edit` crate readme.
 ///
 /// Will use the editor specified in VISUAL or EDITOR environment variable.
 ///

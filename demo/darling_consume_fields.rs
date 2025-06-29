@@ -4,7 +4,7 @@
 
 // This example shows how to do struct and field parsing using darling.
 
-/// Published example from `darling` crate showing parsing for derive input.
+/// Published example from the `darling` crate showing parsing for derive input.
 /// Extended to show formatted version of emitted code.
 //# Purpose: Explore `darling` crate.
 //# Categories: crates, exploration, technique

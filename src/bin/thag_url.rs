@@ -8,6 +8,18 @@ thag_rs = { version = "0.2", path = "../..", default-features = false, features 
 */
 /// `thag` front-end command to run scripts from URLs.
 ///
+/// Usage:
+///
+/// ```bash
+/// thag_url <url> [additional_thag_args] [-- <script_args>]
+/// ```
+///
+/// Example:
+///
+/// ```bash
+/// thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+/// ```
+///
 //# Purpose: A front-end to allow `thag` to run scripts from URLs while offloading network dependencies from `thag` itself.
 //# Categories: technique, thag_front_ends, tools
 use std::{error::Error, process::Command, string::ToString};
@@ -279,8 +291,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // Run thag with the temporary file instead of using stdin
             let mut child = Command::new("thag")
-                .args(&additional_args)
                 .arg(&temp_file_path)
+                .args(&additional_args)
                 .spawn()?;
 
             // Wait for thag to complete

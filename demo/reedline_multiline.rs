@@ -1,12 +1,16 @@
-/*[toml]
-[dependencies]
-#crossterm = "0.29"
-nu-ansi-term = "0.50.0"
-reedline = "0.36.0"
-*/
-
-/// Exploratory prototype of REPL support for multi-line expressions. Based on published example
-/// `custom_prompt.rs` in `reedline` crate.
+/// Exploratory prototype of REPL support for multi-line expressions. Loosely based on the
+/// published example `custom_prompt.rs` in `reedline` crate.
+///
+/// The latest version of the original `custom_prompt.rs` is available in the [examples] folder
+/// in the `reedline` repository. At time of writing you can run it successfully simply
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/nushell/reedline/blob/main/examples/custom_prompt.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Explore options for handling multi-line expressions in a REPL.
 //# Categories: crates, REPL, technique
 use nu_ansi_term::{Color, Style};
@@ -15,22 +19,19 @@ use reedline::{
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,
 };
 use std::borrow::Cow;
-use std::cell::Cell;
 use std::io;
 
-pub struct CustomPrompt(Cell<u32>, &'static str);
+pub struct CustomPrompt(&'static str);
 pub static DEFAULT_MULTILINE_INDICATOR: &str = " :::: ";
 impl Prompt for CustomPrompt {
     fn render_prompt_left(&self) -> Cow<str> {
         {
-            Cow::Owned(self.1.to_string())
+            Cow::Owned(self.0.to_string())
         }
     }
 
     fn render_prompt_right(&self) -> Cow<str> {
         {
-            let old = self.0.get();
-            self.0.set(old + 1);
             Cow::Owned(String::from("q: quit"))
         }
     }
@@ -74,7 +75,7 @@ fn main() -> io::Result<()> {
         .with_history(history);
 
     println!("Enter a dummy expression to evaluate. Expressions in matching braces, brackets or quotes may span multiple lines.\nAbort with Ctrl-C or Ctrl-D");
-    let prompt = CustomPrompt(Cell::new(0), "expr");
+    let prompt = CustomPrompt("expr");
 
     loop {
         let sig = line_editor.read_line(&prompt)?;

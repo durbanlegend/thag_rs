@@ -1,4 +1,15 @@
-/// Published example of KeyCombination from `crokey` crate.
+/// Published example of KeyCombination from the `crokey` crate.
+///
+/// The latest version of this example is available in the [examples] folder
+///  in the `crokey` repository. At time of writing you can run it successfully simply
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/Canop/crokey/blob/main/examples/print_key_no_combiner/src/main.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Demo key combination without Combiner.
 //# Categories: crates, technique
 use crokey::{

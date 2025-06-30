@@ -74,3 +74,4 @@ themes/built_in/none_basic.toml
 themes/converted
 web_safe_colors.txt
 .zed/debug.json
+demo/proc_macros/target

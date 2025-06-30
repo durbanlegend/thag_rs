@@ -606,6 +606,24 @@ Or when using `thag_rs`:
 use thag_demo_proc_macros::{YourMacro};
 ```
 
+## Running Examples
+
+Each proc macro has a corresponding example file in the `demo/` directory. To run the examples:
+
+```bash
+# Set the development path for thag-auto resolution
+export THAG_DEV_PATH=/path/to/thag_rs
+
+# Run an example
+cargo run --bin thag -- demo/proc_macro_ansi_code_derive.rs
+```
+
+Or use the URL runner for published examples:
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs
+```
+
 ## Development
 
 ### Building
@@ -614,14 +632,28 @@ cd demo/proc_macros
 cargo build
 ```
 
+### Documentation
+Generate and view the documentation:
+```bash
+cargo doc --no-deps --open
+```
+
 ### Testing
 ```bash
 cargo test
 ```
 
 ### Macro Expansion
-Many macros support the `expand` feature to show generated code:
+Many macros support the `expand` feature to show generated code during compilation:
 ```bash
 cargo build --features expand
+```
+
+### Example Testing
+Test individual examples (requires setting `THAG_DEV_PATH`):
+```bash
+export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory
+cargo run --bin thag -- demo/proc_macro_const_demo.rs
+cargo run --bin thag -- demo/proc_macro_derive_basic.rs
 ```
 

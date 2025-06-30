@@ -281,12 +281,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         Ok(content) => {
             // Create a temporary file to save the script
             let temp_dir = std::env::temp_dir();
-            let temp_file_path = temp_dir.join(format!("web_script_{}.rs", std::process::id()));
+            let pid = std::process::id();
+            let temp_file_path = temp_dir.join(format!("web_script_{pid}.rs"));
+            let temp_ws_dir = temp_dir.join(format!("thag_rs/web_script_{pid}"));
 
             // Write content to temporary file
             std::fs::write(&temp_file_path, &content)?;
 
-            eprintln!("Created temporary script at: {temp_file_path:?}");
+            eprintln!("Created temporary script at: {}", temp_file_path.display());
             eprintln!("additional_args={additional_args:#?}");
 
             // Run thag with the temporary file instead of using stdin
@@ -299,8 +301,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             let status = child.wait()?;
 
             // Clean up the temporary file
+            eprintln!("Removing temporary script at: {}", temp_file_path.display());
             if let Err(e) = std::fs::remove_file(&temp_file_path) {
-                eprintln!("Warning: Could not remove temporary file: {e}");
+                eprintln!("Warning: Could not remove temporary directory: {e}");
+            }
+
+            // Clean up the temporary target directory
+            eprintln!(
+                "Removing temporary target directory at: {}",
+                temp_ws_dir.display()
+            );
+            if let Err(e) = std::fs::remove_dir_all(&temp_ws_dir) {
+                panic!("Warning: Could not remove temporary target directory: {e}");
             }
 
             if !status.success() {

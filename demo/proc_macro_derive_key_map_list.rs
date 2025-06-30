@@ -1,4 +1,4 @@
-/// Use a derive proc macro to implement a table. from a base with additions and deletions.
+/// Use a derive proc macro to implement a table from a base with additions and deletions.
 /// Not very useful currently: the dream is to generate a constant and get mappings as a variable.
 //# Purpose: explore derive proc macros
 //# Categories: proc_macros, technique

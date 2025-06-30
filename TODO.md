@@ -5,6 +5,8 @@
 ## On the go
 - [ ]  Think of ways to run thag remotely or with minimal effort.
 - [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
+- [ ]  Sort out grail demp proc macro.
+
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

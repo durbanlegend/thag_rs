@@ -1,5 +1,91 @@
 #![allow(clippy::missing_panics_doc, dead_code, unused_imports)]
-//! Procedural macros for generating enums and utilities for managing script categories.
+//! # Procedural Macros Demo Collection
+//!
+//! This crate provides a comprehensive collection of procedural macros demonstrating
+//! various techniques and patterns for writing proc macros in Rust. It serves as
+//! both educational material and practical examples for developers learning to
+//! create their own procedural macros.
+//!
+//! ## Overview
+//!
+//! The crate includes three main types of procedural macros:
+//!
+//! ### Derive Macros
+//! Automatically generate trait implementations and associated methods:
+//! - [`AnsiCodeDerive`] - Generate name methods and `FromStr` for enums
+//! - [`DeriveBasic`] - Generate constructor methods for structs
+//! - [`DeriveCustomModel`] - Advanced custom model functionality
+//! - [`IntoStringHashMap`] - Convert structs to string HashMaps
+//! - [`HostPortConst`] - Generate compile-time network constants
+//! - And more...
+//!
+//! ### Attribute Macros
+//! Transform or augment code with custom attributes:
+//! - [`attribute_basic`] - Basic attribute macro demonstration
+//! - [`use_mappings`] - Configure field mappings
+//! - [`baz`] - Expander crate integration example
+//!
+//! ### Function-like Macros
+//! Generate code using function-like syntax:
+//! - [`const_demo`] - Compile-time constant generation
+//! - [`string_concat`] - Compile-time string concatenation
+//! - [`embed_file`] - Embed file contents at compile time
+//! - [`load_static_map`] - Embed directory structures as static maps
+//! - And more...
+//!
+//! ## Usage
+//!
+//! Add this crate to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! thag_demo_proc_macros = { path = "demo/proc_macros" }
+//! ```
+//!
+//! Or when using with `thag_rs`:
+//!
+//! ```rust
+//! // The "thag_demo_proc_macros" import is automatically resolved
+//! use thag_demo_proc_macros::{AnsiCodeDerive, DeriveBasic};
+//! ```
+//!
+//! ## Features
+//!
+//! - `expand` (default): Enable macro expansion output for debugging
+//!
+//! ## Examples
+//!
+//! Each macro has corresponding example files in the `demo/` directory:
+//! - `demo/proc_macro_ansi_code_derive.rs`
+//! - `demo/proc_macro_derive_basic.rs`
+//! - `demo/proc_macro_const_demo.rs`
+//! - And many more...
+//!
+//! Run examples with:
+//! ```bash
+//! THAG_DEV_PATH=/path/to/thag_rs cargo run --bin thag -- demo/proc_macro_example.rs
+//! ```
+//!
+//! ## Educational Value
+//!
+//! This collection demonstrates:
+//! - Basic proc macro structure and organization
+//! - Working with `syn` for parsing Rust syntax
+//! - Using `quote` for code generation
+//! - Advanced attribute parsing with `deluxe` and `darling`
+//! - Compile-time code generation techniques
+//! - Error handling in proc macros
+//! - Testing and debugging proc macros
+//!
+//! ## External Dependencies
+//!
+//! The macros showcase integration with popular proc macro crates:
+//! - [`syn`](https://docs.rs/syn/) - Parsing Rust syntax trees
+//! - [`quote`](https://docs.rs/quote/) - Code generation
+//! - [`deluxe`](https://docs.rs/deluxe/) - Advanced attribute parsing
+//! - [`darling`](https://docs.rs/darling/) - Attribute parsing framework
+//! - [`expander`](https://docs.rs/expander/) - Macro expansion utilities
+//!
 //!
 mod ansi_code_derive;
 mod attrib_key_map_list;
@@ -275,7 +361,7 @@ pub fn derive_key_map_list(input: TokenStream) -> TokenStream {
 
 /// A function-like macro demonstrating code organization patterns.
 ///
-/// This macro is based on examples from https://github.com/tdimitrov/rust-proc-macro-post
+/// This macro is based on examples from <https://github.com/tdimitrov/rust-proc-macro-post>
 /// and shows how to organize complex macro logic. See `demo/proc_macro_organizing_code.rs`
 /// for usage examples.
 ///
@@ -294,7 +380,7 @@ pub fn organizing_code(input: TokenStream) -> TokenStream {
 /// A function-like macro demonstrating TokenStream manipulation.
 ///
 /// This macro shows advanced TokenStream processing techniques, also based on examples
-/// from https://github.com/tdimitrov/rust-proc-macro-post.
+/// from <https://github.com/tdimitrov/rust-proc-macro-post>.
 /// See `demo/proc_macro_organizing_code_tokenstream.rs` for usage.
 ///
 /// # Example

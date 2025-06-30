@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-reedline = "0.36.0"
-*/
-
 /// Prototype of key binding display function for `reedline` REPL. This was developed
 /// by giving ChatGPT a simple spec which it flubbed, then repeatedly feeding back errors,
 /// manually corrected code and requests for changes until a nice simple display was

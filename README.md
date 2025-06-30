@@ -24,7 +24,7 @@
 
 - tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
 
-- a demo proc macro library with support for displaying individual macro expansions at compile time to debug your proc macros, and sample test scripts for the demo proc macros
+- a demo proc macro library with support for displaying individual macro expansions at compile time to debug your proc macros, and sample test scripts for the demo proc macros. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 - concurrently with version 0.2, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library `thag_profiler`. Check it out here: [thag_profiler](thag_profiler/README.md).
 

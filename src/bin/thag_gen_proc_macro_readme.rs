@@ -1,16 +1,3 @@
-/*[toml]
-[dependencies]
-convert_case = "0.6.0"
-heck = "0.5.0"
-inquire = "0.7.5"
-regex = "1.10.5"
-strum = { version = "0.26.3", features = ["derive", "phf"] }
-thag_proc_macros = { version = "0.1, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "config", "simplelog", "tui"] }
-syn = { version = "2.0", default-features = false, features = ["full", "parsing"] }
-quote = "1.0"
-*/
-
 /// This script generates documentation for proc macros defined in demo/proc_macros/lib.rs
 /// and creates a comprehensive README.md file for the proc macros directory.
 ///
@@ -29,6 +16,7 @@ use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
 use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, V};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct ProcMacroInfo {
     name: String,
     macro_type: ProcMacroType,
@@ -45,15 +33,15 @@ enum ProcMacroType {
     FunctionLike,
 }
 
-impl ProcMacroType {
-    fn as_str(&self) -> &'static str {
-        match self {
-            ProcMacroType::Derive => "Derive Macro",
-            ProcMacroType::Attribute => "Attribute Macro",
-            ProcMacroType::FunctionLike => "Function-like Macro",
-        }
-    }
-}
+// impl ProcMacroType {
+//     fn as_str(&self) -> &'static str {
+//         match self {
+//             ProcMacroType::Derive => "Derive Macro",
+//             ProcMacroType::Attribute => "Attribute Macro",
+//             ProcMacroType::FunctionLike => "Function-like Macro",
+//         }
+//     }
+// }
 
 fn extract_doc_comments(attrs: &[Attribute]) -> String {
     let mut doc_lines = Vec::new();

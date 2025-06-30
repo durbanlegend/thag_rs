@@ -279,12 +279,39 @@ fn generate_readme(
     writeln!(file, "use thag_demo_proc_macros::{{YourMacro}};")?;
     writeln!(file, "```\n")?;
 
+    writeln!(file, "## Running Examples\n")?;
+
+    writeln!(file, "Each proc macro has a corresponding example file in the `demo/` directory. To run the examples:\n")?;
+
+    writeln!(file, "```bash")?;
+    writeln!(file, "# Set the development path for thag-auto resolution")?;
+    writeln!(file, "export THAG_DEV_PATH=/path/to/thag_rs\n")?;
+
+    writeln!(file, "# Run an example")?;
+    writeln!(
+        file,
+        "cargo run --bin thag -- demo/proc_macro_ansi_code_derive.rs"
+    )?;
+    writeln!(file, "```\n")?;
+
+    writeln!(file, "Or use the URL runner for published examples:\n")?;
+
+    writeln!(file, "```bash")?;
+    writeln!(file, "thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs")?;
+    writeln!(file, "```\n")?;
+
     // Write development section
     writeln!(file, "## Development\n")?;
     writeln!(file, "### Building")?;
     writeln!(file, "```bash")?;
     writeln!(file, "cd demo/proc_macros")?;
     writeln!(file, "cargo build")?;
+    writeln!(file, "```\n")?;
+
+    writeln!(file, "### Documentation")?;
+    writeln!(file, "Generate and view the documentation:\n")?;
+    writeln!(file, "```bash")?;
+    writeln!(file, "cargo doc --no-deps --open")?;
     writeln!(file, "```\n")?;
 
     writeln!(file, "### Testing")?;
@@ -295,10 +322,30 @@ fn generate_readme(
     writeln!(file, "### Macro Expansion")?;
     writeln!(
         file,
-        "Many macros support the `expand` feature to show generated code:"
+        "Many macros support the `expand` feature to show generated code during compilation:"
     )?;
     writeln!(file, "```bash")?;
     writeln!(file, "cargo build --features expand")?;
+    writeln!(file, "```\n")?;
+
+    writeln!(file, "### Example Testing")?;
+    writeln!(
+        file,
+        "Test individual examples (requires setting `THAG_DEV_PATH`):\n"
+    )?;
+    writeln!(file, "```bash")?;
+    writeln!(
+        file,
+        "export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory"
+    )?;
+    writeln!(
+        file,
+        "cargo run --bin thag -- demo/proc_macro_const_demo.rs"
+    )?;
+    writeln!(
+        file,
+        "cargo run --bin thag -- demo/proc_macro_derive_constructor.rs"
+    )?;
     writeln!(file, "```\n")?;
 
     Ok(())

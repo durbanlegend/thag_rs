@@ -6,6 +6,7 @@
 - [ ]  Think of ways to run thag remotely or with minimal effort.
 - [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
 - [ ]  Sort out grail demp proc macro.
+- [ ]  Remove hard-coding from src/bin/thag_gen_proc_macro_readme.rs.
 
 
 # Alternative ways to run thag_instrument without installing:

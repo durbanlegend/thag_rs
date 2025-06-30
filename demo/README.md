@@ -424,7 +424,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/borrow_wrapped.r
 
 ### Script: bpaf_cargo_show_asm.rs
 
-**Description:**  Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
+**Description:**  Published example from the `bpaf` crate.
 
  E.g. `thag demo/bpaf_cargo_show_asm.rs -- -h`
 
@@ -472,7 +472,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.r
 
 ### Script: bpaf_derive.rs
 
-**Description:**  Example from bpaf crate docs2/src/command/derive.rs.
+**Description:**  Example from the `bpaf` crate docs2/src/command/derive.rs.
 
  E.g. `thag demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
 
@@ -590,6 +590,43 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs
 
 ---
 
+### Script: clap_demo.rs
+
+**Description:**  Published example from the `clap` crate.
+
+ The latest version of this example is available in the [examples] folder in the `clap` repository.
+ At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+ and passing the required arguments as normal, like this:
+
+ ```bash
+ thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+ Original `clap` crate comments:
+
+ Simple program to greet a person
+ Simple program to greet a person
+
+**Purpose:** Demo building a repl using `clap` directly.
+
+**Crates:** `clap`
+
+**Type:** Program
+
+**Categories:** REPL, technique
+
+**Link:** [clap_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs
+```
+
+---
+
 ### Script: clap_enum_strum.rs
 
 **Description:**  Exploring using clap with an enum, in conjunction with strum.
@@ -663,6 +700,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_
 ### Script: clap_repl_diy.rs
 
 **Description:**  Example from the clap cookbook, not using the `clap-repl` crate.
+
+ The latest version of this example is `repl-derive.rs` in the [examples] folder
+  in the `clap` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/clap-rs/clap/blob/master/examples/repl-derive.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
  Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 
 **Purpose:** Demo building a repl using `clap` directly.
@@ -980,6 +1028,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
 
 **Description:**  Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
 
+ In this case this demo file is the one we're testing.
+
  The unit tests must be in mod `tests` in the file.
 
  `thag` will leave the file as is, but generate a temporary Cargo.toml for it in the usual way as a prerequisite for running `cargo test`.
@@ -990,7 +1040,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
 
  E.g.:
 
- `TEST_CONFIG_PATH=/absolute/path/to/test/config.toml cargo run demo/config_with_tests.rs -Tv -- --nocapture --show-output`
+ `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
 
  Configuration categories
  Dependency handling
@@ -1094,7 +1144,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/create_next_file
 
 ### Script: crokey_deser.rs
 
-**Description:**  Published example of serde deserialisation from `crokey` crate.
+**Description:**  Published example of serde deserialisation from the `crokey` crate.
+
+ The latest version of this example is available in the [examples] folder
+  in the `crokey` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/Canop/crokey/blob/main/examples/deser_keybindings/src/main.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo loading keybindings from a file.
 
@@ -1116,7 +1177,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_deser.rs
 
 ### Script: crokey_print_key.rs
 
-**Description:**  Published example of combiner from `crokey` crate.
+**Description:**  Published example of combiner from the `crokey` crate.
+
+ The latest version of this example is available in the [examples] folder
+  in the `crokey` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/Canop/crokey/blob/main/examples/print_key/src/main.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 
 **Purpose:** Demo key combiner.
 
@@ -1138,7 +1209,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key
 
 ### Script: crokey_print_key_no_combiner.rs
 
-**Description:**  Published example of KeyCombination from `crokey` crate.
+**Description:**  Published example of KeyCombination from the `crokey` crate.
+
+ The latest version of this example is available in the [examples] folder
+  in the `crokey` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/Canop/crokey/blob/main/examples/print_key_no_combiner/src/main.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo key combination without Combiner.
 
@@ -1160,9 +1242,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key
 
 ### Script: crossbeam_channel_fibonacci.rs
 
-**Description:**  `crossbeam-channel` published example.
+**Description:**  Published example from the `crossbeam-channel` crate.
 
- An asynchronous fibonacci sequence generator.
+ The latest version of this example is available in the [examples] folder
+  in the `crossbeam-channel` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/crossbeam-rs/crossbeam/blob/master/crossbeam-channel/examples/fibonacci.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo featured crate.
 
@@ -1207,7 +1298,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channe
 
 ### Script: crossbeam_channel_stopwatch.rs
 
-**Description:**  `crossbeam-channel` published example.
+**Description:**  Published example from the `crossbeam-channel` crate.
 
  Prints the elapsed time every 1 second and quits on `Ctrl+C`. You can reinstate the separate main method for
  Windows provided you run the script with the `--multimain (-m)` option.
@@ -1262,7 +1353,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_epoch_
 
 ### Script: crossterm.rs
 
-**Description:**  Published example from crossterm crate.
+**Description:**  Published example from the `crossterm` crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
 
@@ -1286,7 +1377,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs
 
 ### Script: crossterm_alternate_screen.rs
 
-**Description:**  Published example from crossterm crate. Macro version of the example:
+**Description:**  Published example from the `crossterm` crate. Macro version of the example:
  "Print a rectangle colored with magenta and use both direct execution and lazy execution."
  Direct execution with `execute` and lazy execution with `queue`.
 
@@ -1312,7 +1403,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_altern
 
 ### Script: crossterm_command_macro.rs
 
-**Description:**  Published example from crossterm crate. Macro version of the example:
+**Description:**  Published example from the `crossterm` crate. Macro version of the example:
  "Print a rectangle colored with magenta and use both direct execution and lazy execution."
  Direct execution with `execute` and lazy execution with `queue`.
 
@@ -1338,7 +1429,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_comman
 
 ### Script: crossterm_event_read.rs
 
-**Description:**  Published example from crossterm crate.
+**Description:**  Published example from the `crossterm` crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
  "Demonstrates how to block read events."
@@ -1363,7 +1454,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_
 
 ### Script: crossterm_key_events.rs
 
-**Description:**  Published example from crossterm crate.
+**Description:**  Published example from the `crossterm` crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
  "Demonstrates the display format of key events.
@@ -1391,7 +1482,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_key_ev
 
 ### Script: ctrlc_demo.rs
 
-**Description:**  Published example from `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
+**Description:**  Published example from the `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
 
 **Purpose:** Demo one option for intercepting Ctrl-C.
 
@@ -1439,7 +1530,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/curl.rs
 
 ### Script: darling_consume_fields.rs
 
-**Description:**  Published example from `darling` crate showing parsing for derive input.
+**Description:**  Published example from the `darling` crate showing parsing for derive input.
  Extended to show formatted version of emitted code.
 
 **Purpose:** Explore `darling` crate.
@@ -1772,7 +1863,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/duration_snippet
 
 ### Script: edit.rs
 
-**Description:**  Published example from edit crate readme.
+**Description:**  Published example from the `edit` crate readme.
 
  Will use the editor specified in VISUAL or EDITOR environment variable.
 
@@ -1798,7 +1889,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit.rs
 
 ### Script: edit_profile.rs
 
-**Description:**  Profiled version of published example from edit crate readme.
+**Description:**  Profiled version of published example from the `edit` crate readme.
 
  Will use the editor specified in VISUAL or EDITOR environment variable.
 
@@ -3462,7 +3553,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/list_files.rs
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_expr.rs`.
- P.S.: This was since implemented as `--loop`.
+
+ P.S.: The `--loop` option has since been implemented in `thag(_rs)`, without closure logic.
 
 **Purpose:** Evaluate closure logic for line processing.
 
@@ -3486,7 +3578,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_closure.rs
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_closure.rs`.
- P.S.: This was since implemented as `--loop`.
+
+ P.S.: This has since been implemented in `thag(_rs)` as `--loop`.
 
 **Purpose:** Evaluate expression logic for line processing.
 
@@ -3510,7 +3603,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_expr.rs
  to `rust-script`'s `--loop` or `runner`'s `--lines`, but with pre-
  and post-loop logic analogous to `awk`. I got GPT to do me this
  mock-up.
- P.S.: This was since implemented as `--loop`.
+ P.S.: This has since been implemented in `thag(_rs)` as `--loop`.
 
 **Purpose:** Evaluate expression logic for line processing.
 
@@ -3780,13 +3873,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs
 
 ### Script: owo_cli_color_support.rs
 
-**Description:**  Published example from `clap` tutorial (derive), with added displays.
+**Description:**  Demo the use of a command-line interface to override the colour support to be provided.
+ The owo-colors "supports-colors" feature must be enabled.
 
- E.g. thag demo/owo_cli_color_support.rs -- add spongebob
+**Purpose:** Demo setting colour support via a very simple CLI.
 
-**Purpose:** Demonstrate `clap` CLI using the derive option
-
-**Crates:** `clap`
+**Crates:** `clap`, `owo_colors`
 
 **Type:** Program
 
@@ -3797,7 +3889,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs -- add patrick
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs
 ```
 
 ---
@@ -3854,7 +3946,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_su
 
 **Purpose:** Demo a simple example of adaptive message colouring, and the featured crates.
 
-**Crates:** `owo_colors`, `strum`, `termbg`, `thag_profiler`
+**Crates:** `owo_colors`, `strum`, `termbg`
 
 **Type:** Program
 
@@ -3961,6 +4053,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/prettyplease.rs
 **Description:**  Demonstrate embellishing an enum of the 16 basic colours, to allow renaming, generating a descriptive
  name, and instantiating a variant from its name string.
 
+ The `ansi_name` attribute is used to override the default name of "Bright Black" to the alternative name
+ "Dark Gray".
+
  This proc macro was originally used by the `thag` `styling` module.
 
 **Purpose:** Sample model of a basic attribute proc macro.
@@ -3985,6 +4080,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_
 
 **Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
  `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+
+ In this example we use an attribute macro to annotate one function with "#[warn(unused_variables)]",
+ so we DO expect to get a compiler warning about its unused variable `warn_not_in_use`.
+
+ We use the same attribute macro to annotate another function with "#[allow(unused_variables)]",
+ so we DON'T expect to get a compiler warning about its unused variable `allow_not_in_use`.
+
 
 **Purpose:** Sample model of a basic attribute proc macro.
 
@@ -4094,9 +4196,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const
 
 ---
 
-### Script: proc_macro_derive_basic.rs
+### Script: proc_macro_derive_constructor.rs
 
-**Description:**  Exploring expansion
+**Description:**  Basic "derive" macro generates a constructor (`new()`) for the struct it annotates.
+
+ It also demonstrates how we can configure an attribute to expand the macro from the
+ caller.
 
 **Purpose:** explore proc macros
 
@@ -4106,12 +4211,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_derive_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_basic.rs)
+**Link:** [proc_macro_derive_constructor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_constructor.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_constructor.rs
 ```
 
 ---
@@ -4163,7 +4268,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_deriv
 
 ### Script: proc_macro_derive_key_map_list.rs
 
-**Description:**  Use a derive proc macro to implement a table. from a base with additions and deletions.
+**Description:**  Use a derive proc macro to implement a table from a base with additions and deletions.
  Not very useful currently: the dream is to generate a constant and get mappings as a variable.
 
 **Purpose:** explore derive proc macros
@@ -4294,7 +4399,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_host_
 
 **Purpose:** Sample model of a basic function-like proc macro.
 
-**Crates:** `thag_demo_proc_macros`
+**Crates:** `phf`, `thag_demo_proc_macros`
 
 **Type:** Program
 
@@ -4495,9 +4600,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin
 
 ---
 
-### Script: puffin_profiler_egui.rs
+### Script: puffin_egui.rs
 
-**Description:**  Published demo from the `puffin` crate.
+**Description:**  Published demo from the `puffin` crate. See `demo/puffin_egui_29.rs` for a newer version.
 
 **Purpose:** Demo featured crate.
 
@@ -4507,12 +4612,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin
 
 **Categories:** crates
 
-**Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_profiler_egui.rs)
+**Link:** [puffin_egui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_profiler_egui.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
+```
+
+---
+
+### Script: puffin_egui_29.rs
+
+**Description:**  Published demo from the `puffin` profiling crate. The only change is to add a toml block
+ entry to prevent a more recent `eframe` version from clashing with `puffin`.
+
+**Purpose:** Demo featured crate.
+
+**Crates:** `eframe`, `puffin`, `puffin_egui`
+
+**Type:** Program
+
+**Categories:** crates
+
+**Link:** [puffin_egui_29.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_29.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_29.rs
 ```
 
 ---
@@ -4589,6 +4717,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tre
 
 **Description:**  Published example from the `ratatui` crate.
 
+ The latest version of this example is available in the [examples] folder in the "latest"
+ branch of the `ratatui` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/ratatui/ratatui/blob/latest/examples/user_input.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Demo the featured crate.
 
 **Crates:** `ratatui`
@@ -4609,7 +4748,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_inp
 
 ### Script: ratatui_user_input_profile.rs
 
-**Description:**  Published example from the `ratatui` crate.
+**Description:**  Profiling the published example from the `ratatui` crate (`demo/ratatui_user_input.rs`)
+ with `thag_profiler`.
+
 
 **Purpose:** Demo the featured crate.
 
@@ -4617,7 +4758,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_inp
 
 **Type:** Program
 
-**Categories:** crates
+**Categories:** crates, profiling
 
 **Link:** [ratatui_user_input_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs)
 
@@ -4631,7 +4772,20 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_inp
 
 ### Script: readline_crossterm.rs
 
-**Description:**  Published crossterm example.
+**Description:**  Published example from `crossterm` crate.
+
+ The latest version of this example is available in the [examples] folder in the `crossterm`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read-char-line.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+ Original `crossterm` crate comments:
+
  Demonstrates how to block read characters or a full line.
  Just note that crossterm is not required to do this and can be done with `io::stdin()`.
 
@@ -4657,6 +4811,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crosste
 
 **Description:**  Published example `basic.rs` from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/basic.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** demo featured crates.
 
 **Crates:** `reedline`
@@ -4678,6 +4843,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_k
 ### Script: reedline_completions.rs
 
 **Description:**  Published example from `reedline` crate.
+
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/completions.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** demo featured crates.
 
@@ -4701,6 +4877,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_complet
 
 **Description:**  Published example from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/event_listener.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** demo featured crates.
 
 **Crates:** `crossterm`
@@ -4722,6 +4909,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_l
 ### Script: reedline_highlighter.rs
 
 **Description:**  Published example from `reedline` crate.
+
+ Try typing - among others - the known commands "test", "hello world", "hello world reedline", "this is the reedline crate".
+
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/highlighter.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Explore featured crate.
 
@@ -4745,6 +4945,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlig
 
 **Description:**  Published example from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/hinter.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Explore featured crate.
 
 **Crates:** `nu_ansi_term`, `reedline`
@@ -4766,6 +4977,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.
 ### Script: reedline_history.rs
 
 **Description:**  Published example from `reedline` crate.
+
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/history.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo `reedline` file-backed history.
 
@@ -4792,6 +5014,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history
  with that letter will be displayed for selection with a tab, up and down arrows or Enter. Or you can
  enter subsequent letters to narrow the search. Noice.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/ide_completions.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Demo `reedline` tab completions.
 
 **Crates:** `reedline`
@@ -4813,6 +5046,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_com
 ### Script: reedline_list_bindings.rs
 
 **Description:**  Published example from `reedline` crate.
+
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/list_bindings.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
  List all keybinding information
 
 **Purpose:** Explore featured crate.
@@ -4835,8 +5079,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bi
 
 ### Script: reedline_multiline.rs
 
-**Description:**  Exploratory prototype of REPL support for multi-line expressions. Based on published example
- `custom_prompt.rs` in `reedline` crate.
+**Description:**  Exploratory prototype of REPL support for multi-line expressions. Loosely based on the
+ published example `custom_prompt.rs` in `reedline` crate.
+
+ The latest version of the original `custom_prompt.rs` is available in the [examples] folder
+ in the `reedline` repository. At time of writing you can run it successfully simply
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/custom_prompt.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Explore options for handling multi-line expressions in a REPL.
 
@@ -4882,6 +5137,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_st
 
 **Description:**  Published example from `reedline-repl-rs` crate.
 
+ Sample invocation and dialogue:
+
+ ```bash
+ thag demo/reedline_repl.rs
+ Welcome to MyApp
+ MyApp〉say hello World!
+ Hello, World!
+ MyApp〉say goodbye --spanish                                                                                                                                06/30/2025 02:13:40 PM
+ Adiós!
+ MyApp〉[Ctrl-D]
+ $
+ ```
+
+ The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
+ At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+ and passing the required arguments as normal, like this:
+
+ ```bash
+ thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/subcommands.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
 
 **Crates:** `reedline_repl_rs`
@@ -4904,6 +5183,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs
 
 **Description:**  Published example from `reedline-repl-rs` crate. This one uses the
  `clap` builder pattern; there is also one using the`clap` derive pattern.
+
+ The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
+ At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+ and passing the required arguments as normal, like this:
+
+ ```bash
+ thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/with_context.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Evaluation of featured crate and of using clap to structure command input.
 

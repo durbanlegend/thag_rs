@@ -6,6 +6,9 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 /// Demonstrate embellishing an enum of the 16 basic colours, to allow renaming, generating a descriptive
 /// name, and instantiating a variant from its name string.
 ///
+/// The `ansi_name` attribute is used to override the default name of "Bright Black" to the alternative name
+/// "Dark Gray".
+///
 /// This proc macro was originally used by the `thag` `styling` module.
 //# Purpose: Sample model of a basic attribute proc macro.
 //# Categories: proc_macros, technique
@@ -50,6 +53,17 @@ impl AnsiCode {
     }
 }
 
+
+println!("Bright Yellow description should stay as is:");
+let bright_yellow = AnsiCode::from_str("bright_yellow")?;
+println!(
+    "bright_yellow: variant={bright_yellow}, code={}, name={}",
+    bright_yellow.code(),
+    bright_yellow.name()
+);
+
+println!();
+println!("Bright Black description should be overridden by Dark Gray:");
 let bright_black = AnsiCode::from_str("bright_black")?;
 println!(
     "bright_black: variant={bright_black}, code={}, name={}",

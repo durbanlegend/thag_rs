@@ -51,7 +51,7 @@ demo/proc_macros/
 ### Derive Macros (10 total)
 Generate trait implementations and associated methods:
 - `AnsiCodeDerive` - ANSI color enum helpers
-- `DeriveBasic` - Constructor generation
+- `DeriveConstructor` - Constructor generation
 - `DeriveCustomModel` - Advanced model functionality
 - `IntoStringHashMap` - Struct to HashMap conversion
 - `HostPortConst` - Network configuration constants

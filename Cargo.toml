@@ -187,6 +187,11 @@ path = "src/bin/thag_gen_errors.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_gen_proc_macro_readme"
+path = "src/bin/thag_gen_proc_macro_readme.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_gen_readme"
 path = "src/bin/thag_gen_readme.rs"
 required-features = ["tools"]

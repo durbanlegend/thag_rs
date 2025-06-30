@@ -8,13 +8,120 @@
 
 ## Intro
 
-`thag_rs` is a toolkit designed to make your Rust development experience smoother and more rewarding. With the simple `thag` command, you get a script runner, expression evaluator, and REPL all in one place—along with several thoughtful features that address common development pain points.
+`thag(_rs)` is a robust toolkit designed to make your Rust development experience smoother and more rewarding. `thag` includes:
 
-The core purpose of `thag` is straightforward: eliminate the setup barriers that slow you down when you're trying to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
+- a script runner
 
-One standout feature is dependency inference, which automatically detects and configures the crates your code needs. This means you can often start writing actual code immediately, without manually specifying dependencies. When needed, verbose mode shows you the `toml` generated for the inferred dependencies, ready to copy into your scripts for future use if you so choose.
+- an expression evaluator
 
-As of version 0.2, the ~~Cave~~ House of Thag offers an independent easy-to use profiler that works consistently across different operating systems to avoid platform-specific setup headaches. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
+- a REPL that also lets you save your code as a script
+
+- an edit-submit TUI playground
+
+- an option to build fast commands from your scripts
+
+- as of v0.2, a command `thag_url` to intelligently run example scripts directly from popular repo, playground or other URLs
+
+- tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
+
+- a demo proc macro library with support for displaying individual macro expansions at compile time to debug your proc macros, and sample test scripts for the demo proc macros
+
+- concurrently with version 0.2, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library `thag_profiler`. Check it out here: [thag_profiler](thag_profiler/README.md).
+
+- as of v0.2, a wide range of themes - atelier, brogrammer, catppuccin etc. - to match your preferred dark or light terminal theme
+
+The core purpose of `thag` is straightforward: to make it easy and fun to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
+
+`thag` is largely TOML-free thanks to its dependency inference, which automatically detects and configures the crates your code needs.
+
+When you do need TOML, `thag` supports it all - dependencies, features, profiles and lints - as well as intelligently generating TOML for you to embed if you choose.
+
+Whether you're:
+
+- Prototyping a concept
+
+- Examining a crate
+
+- Debugging proc macros
+
+- Running quick calculations
+
+- Profiling performance of your project
+
+- Converting your scripts into lightning-fast commands
+
+`thag_rs` helps you get answers faster—from simple one-liners to complex multi-file programs.
+
+___
+
+🚀 **The basics:**
+
+- Run Rust code straight from the command line or a URL
+
+- Evaluate expressions on the fly
+
+- Interactive REPL mode for rapid prototyping
+
+- Uses AST analysis to understand your code
+
+- "toml block" comments use `cargo_toml` to support not only dependencies but other valid manifest entries such as features, profiles and lints.
+
+- Shebang support for true scripting (but `thag` command building is much better still!)
+
+- Loop-filter mode for data processing
+
+🎯 **Smart Features:**
+
+- Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
+
+  `thag(_rs)` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly URLs including GitHub, GitLab, BitBucket and Rust Playground.
+
+  ```bash
+  thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+  ```
+
+  **New in 0.2.0:** Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (i.e. most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
+
+- You're still in control: dependency inference (max/min/config/none) and/or toml block.
+
+- Beyond shebangs: build instant commands from your snippets and programs.
+
+- Paste-and-run with built-in TUI editor or your preferred editor.
+
+- An evolution path for your code from REPL to edit-submit loop to saved scripts.
+
+- Edit-submit standard input.
+
+- Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.).
+
+- Run any Cargo command (clippy, tree, test) against your scripts.
+(Yes, you can include unit tests in your scripts).
+
+- View macro expansions side-by-side with your base script.
+
+- Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro at compile time.
+
+- Configurable automated inclusion of `derive` or other features in named dependencies.
+
+- **New in 0.2.0:** The independent `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage.
+
+- **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
+
+- **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
+
+    Modify the default configuration to specify your preferred themes.
+
+    A new `theme` REPL command displays the current theme:
+
+![Catppuccin Mocha](assets/theme_catp_mocha.png)
+![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
+
+💡 **Getting Started:**
+
+Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
+
+### New offshoot: `thag_profiler`
+Concurrently with version 0.2, the ~~Cave~~ House of Thag offers an independent cross-platform profiler. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
 
 - Async code compatibility
 
@@ -35,89 +142,6 @@ As of version 0.2, the ~~Cave~~ House of Thag offers an independent easy-to use 
 - Filtering of unwanted output from flamegraphs.
 
 Read about it here: [thag_profiler](thag_profiler/README.md)
-
-
-Whether you're:
-
-- Prototyping a concept
-
-- Learning how a crate works
-
-- Debugging proc macros
-
-- Running quick calculations
-
-- Profiling performance of your project
-
-- Converting your scripts into lightning-fast commands
-
-`thag_rs` helps you get answers faster—from simple one-liners to complex multi-file programs.
-
-___
-
-🚀 **The basics:**
-
-- Run Rust code straight from the command line
-
-- Evaluate expressions on the fly
-
-- Interactive REPL mode for rapid prototyping
-
-  - Uses AST analysis to understand your code
-
-- "toml block" comments use `cargo_toml` to support not only dependencies but other valid manifest entries such as features, profiles and lints.
-
-- Shebang support for true scripting (but you can do better: read on...)
-
-- Loop-filter mode for data processing
-
-🎯 **Smart Features:**
-
-- Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
-
-  `thag(_rs)` can run many crate examples without needing TOML information. There is even a tool to run them directly from a GitHub or other repo / source URL.
-
-  **New in 0.2.0:** Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (i.e. most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
-
-- You're still in control: dependency inference (max/min/config/none) and/or toml block.
-
-- Beyond shebangs: build instant commands from your snippets and programs.
-
-- Execute scripts directly from URLs (GitHub, GitLab, BitBucket, Rust Playground).
-
-- Paste-and-run with built-in TUI editor or your preferred editor.
-
-- An evolution path for your code from REPL to edit-submit loop to saved scripts.
-
-- Edit-submit standard input.
-
-- Integrate your favourite editor (VS Code, Helix, Zed, vim, nano etc.).
-
-- Run any Cargo command (clippy, tree, test) against your scripts.
-(Yes, you can include unit tests in your scripts).
-
-- View macro expansions side-by-side with your base script.
-
-- Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro at compile time.
-
-- Automated inclusion of `derive` or other dependency features.
-
-- **New in 0.2.0:** The independent `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, as described above.
-
-- **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
-
-- **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
-
-    Modify the default configuration to specify your preferred themes.
-
-    A new `theme` REPL command displays the current theme:
-
-![Catppuccin Mocha](assets/theme_catp_mocha.png)
-![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
-
-💡 **Getting Started:**
-
-Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
 ## Installation
 

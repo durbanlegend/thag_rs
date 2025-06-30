@@ -52,7 +52,7 @@ use syn::{
     Token,
 };
 
-/// For an enum of ANDI colors, generates a `name` method to generate a human-readable name for each color, and
+/// For an enum of ANSI colors, generates a `name` method to generate a human-readable name for each color, and
 /// a `from_str` trait implementation method to parse a variant from a `snake_case` name.
 ///
 /// Used by `demo/proc_macro_ansi_code_derive.rs`

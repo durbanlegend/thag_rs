@@ -320,7 +320,7 @@ fn my_function() {
 
 An attribute macro for configuring field mappings.
 
-This macro processes mapping configurations and applies them to the decorated item.
+This macro processes mapping configurations and applies them to the annotated item.
 Often used in conjunction with other derive macros for customization.
 
 #### Example
@@ -660,4 +660,3 @@ export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory
 cargo run --bin thag -- demo/proc_macro_const_demo.rs
 cargo run --bin thag -- demo/proc_macro_derive_constructor.rs
 ```
-

@@ -47,7 +47,7 @@ pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
     intercept_and_debug(
         cfg!(feature = "expand"),
         "attribute_basic",
-        input,
+        &input,
         attribute_basic_impl,
     )
 }
@@ -57,7 +57,7 @@ pub fn derive_basic(input: TokenStream) -> TokenStream {
     intercept_and_debug(
         cfg!(feature = "expand"),
         "derive_basic",
-        input,
+        &input,
         derive_basic_impl,
     )
 }
@@ -126,7 +126,7 @@ pub fn repeat_dash(input: TokenStream) -> TokenStream {
     intercept_and_debug(
         cfg!(feature = "expand"),
         "repeat_dash",
-        input,
+        &input,
         repeat_dash_impl,
     )
 }
@@ -237,7 +237,7 @@ where
 
 #[proc_macro]
 pub fn my_macro(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), "my_macro", input, |_tokens| {
+    intercept_and_debug(cfg!(feature = "expand"), "my_macro", &input, |_tokens| {
         // let tokens: proc_macro2::TokenStream = tokens.clone().into();
 
         // Original macro logic

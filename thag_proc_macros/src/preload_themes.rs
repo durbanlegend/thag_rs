@@ -31,16 +31,6 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
             .unwrap_or_else(|_| panic!("Bad toml at path {}", path.display()));
         let name = path.file_stem().unwrap().to_str().unwrap().to_string();
 
-        // // Only process true_color themes
-        // let min_color_support = value
-        //     .get("min_color_support")
-        //     .and_then(|v| v.as_str())
-        //     .unwrap_or("basic");
-
-        // if min_color_support != "true_color" {
-        //     continue; // Skip non-true_color themes
-        // }
-
         if let Some(bg_array) = value.get("backgrounds").and_then(|v| v.as_array()) {
             let backgrounds: Vec<_> = bg_array
                 .iter()
@@ -58,13 +48,6 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
                     .and_then(|v| v.as_str())
                     .unwrap_or("dark"),
             );
-
-            // let min_color_support = to_upper_camel_case(
-            //     value
-            //         .get("min_color_support")
-            //         .and_then(|v| v.as_str())
-            //         .unwrap_or("basic"),
-            // );
 
             let term_bg_luma_ident = Ident::new(&term_bg_luma, Span::call_site());
             // let min_color_support_ident = Ident::new(&min_color_support, Span::call_site());

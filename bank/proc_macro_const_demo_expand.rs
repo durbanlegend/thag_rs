@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 /// Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
-//# Purpose: Second working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_expand.rs`.
+/// Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
+//# Purpose: First working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_debug.rs`.
 //# Categories: proc_macros, technique
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::const_demo_debug;
+use thag_bank_proc_macros::const_demo_expand;
 
 const TEST: &str = "Blah";
 const ANSWER: i32 = 42;
@@ -18,7 +19,7 @@ struct Test {
     value2: fn() -> i32,
 }
 
-const_demo_debug! {
+const_demo_expand! {
     #[allow(clippy::approx_constant)]
     const F64_WITH_ATTRIB: f64 = 1.570796327;
     const MINUS_FLOAT: f64 = -1.0;

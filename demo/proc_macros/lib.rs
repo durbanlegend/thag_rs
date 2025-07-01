@@ -1,37 +1,35 @@
 #![allow(clippy::missing_panics_doc, dead_code, unused_imports)]
 //! # Procedural Macros Demo Collection
 //!
-//! This crate provides a comprehensive collection of procedural macros demonstrating
+//! This crate provides a curated collection of high-quality procedural macros demonstrating
 //! various techniques and patterns for writing proc macros in Rust. It serves as
-//! both educational material and practical examples for developers learning to
-//! create their own procedural macros.
+//! educational material for developers learning to create their own procedural macros.
 //!
 //! ## Overview
 //!
-//! The crate includes three main types of procedural macros:
+//! The collection focuses on quality over quantity, featuring 7 carefully selected macros
+//! that demonstrate progressive complexity and real-world utility:
 //!
-//! ### Derive Macros
-//! Automatically generate trait implementations and associated methods:
-//! - [`AnsiCodeDerive`] - Generate name methods and `FromStr` for enums
-//! - [`DeriveConstructor`] - Generate constructor methods for structs
-//! - [`DeriveCustomModel`] - Advanced custom model functionality
-//! - [`IntoStringHashMap`] - Convert structs to string HashMaps
-//! - [`HostPortConst`] - Generate compile-time network constants
-//! - And more...
+//! ### Core Macros
 //!
-//! ### Attribute Macros
-//! Transform or augment code with custom attributes:
-//! - [`attribute_basic`] - Basic attribute macro demonstration
-//! - [`use_mappings`] - Configure field mappings
-//! - [`baz`] - Expander crate integration example
+//! 1. **[`DeriveConstructor`]** - Basic derive macro for generating constructor methods
+//! 2. **[`DeriveGetters`]** - Intermediate derive macro for generating getter methods
+//! 3. **[`DeriveBuilder`]** - Advanced derive macro implementing the builder pattern
+//! 4. **[`DeriveDisplay`]** - Trait implementation macro for Display formatting
+//! 5. **[`DeriveDocComment`]** - Advanced derive macro demonstrating attribute parsing
+//! 6. **[`file_navigator`]** - Function-like macro for file system navigation
+//! 7. **[`const_demo`]** - Complex macro using external crates for const generation
 //!
-//! ### Function-like Macros
-//! Generate code using function-like syntax:
-//! - [`const_demo`] - Compile-time constant generation
-//! - [`string_concat`] - Compile-time string concatenation
-//! - [`embed_file`] - Embed file contents at compile time
-//! - [`load_static_map`] - Embed directory structures as static maps
-//! - And more...
+//! ## Progressive Learning Path
+//!
+//! The macros are designed to provide a progressive learning experience:
+//!
+//! - **Basic**: Start with `DeriveConstructor` to understand derive macro fundamentals
+//! - **Intermediate**: Progress to `DeriveGetters` for method generation patterns
+//! - **Advanced**: Learn builder patterns with `DeriveBuilder` and trait implementation with `DeriveDisplay`
+//! - **Expert**: Master attribute parsing with `DeriveDocComment`
+//! - **Practical**: Explore function-like macros with `file_navigator`
+//! - **Complex**: Study advanced techniques with `const_demo`
 //!
 //! ## Usage
 //!
@@ -45,89 +43,51 @@
 //! Or when using with `thag_rs`:
 //!
 //! ```rust
-//! // The "thag_demo_proc_macros" import is automatically resolved
-//! use thag_demo_proc_macros::{AnsiCodeDerive, DeriveConstructor};
+//! use thag_demo_proc_macros::{DeriveConstructor, DeriveGetters, DeriveBuilder, DeriveDisplay};
 //! ```
-//!
-//! ## Features
-//!
-//! - `expand` (default): Enable macro expansion output for debugging
 //!
 //! ## Examples
 //!
-//! Each macro has corresponding example files in the `demo/` directory:
-//! - `demo/proc_macro_ansi_code_derive.rs`
-//! - `demo/proc_macro_derive_constructor.rs`
-//! - `demo/proc_macro_const_demo.rs`
-//! - And many more...
-//!
-//! Run examples with:
-//! ```bash
-//! THAG_DEV_PATH=/path/to/thag_rs cargo run --bin thag -- demo/proc_macro_example.rs
-//! ```
+//! Each macro has a comprehensive example file:
+//! - `demo/proc_macro_derive_constructor.rs` - Basic derive macro usage
+//! - `demo/proc_macro_derive_getters.rs` - Getter generation example
+//! - `demo/proc_macro_derive_builder.rs` - Builder pattern implementation
+//! - `demo/proc_macro_derive_display.rs` - Display trait generation
+//! - `demo/proc_macro_derive_doc_comment.rs` - Attribute parsing demo
+//! - `demo/proc_macro_file_navigator.rs` - Interactive file operations
+//! - `demo/proc_macro_const_demo.rs` - Advanced const generation
 //!
 //! ## Educational Value
 //!
 //! This collection demonstrates:
-//! - Basic proc macro structure and organization
+//! - Clean proc macro structure and organization
 //! - Working with `syn` for parsing Rust syntax
 //! - Using `quote` for code generation
-//! - Advanced attribute parsing with `deluxe` and `darling`
-//! - Compile-time code generation techniques
+//! - Field iteration and type analysis
+//! - Method generation with documentation
+//! - Builder pattern implementation
+//! - Trait implementation generation (Display)
+//! - Complex struct and enum handling
+//! - Attribute parsing techniques
 //! - Error handling in proc macros
-//! - Testing and debugging proc macros
-//!
-//! ## External Dependencies
-//!
-//! The macros showcase integration with popular proc macro crates:
-//! - [`syn`](https://docs.rs/syn/) - Parsing Rust syntax trees
-//! - [`quote`](https://docs.rs/quote/) - Code generation
-//! - [`deluxe`](https://docs.rs/deluxe/) - Advanced attribute parsing
-//! - [`darling`](https://docs.rs/darling/) - Attribute parsing framework
-//! - [`expander`](https://docs.rs/expander/) - Macro expansion utilities
-//!
-//!
-mod ansi_code_derive;
-mod attrib_key_map_list;
-mod attribute_basic;
-mod const_demo;
-mod const_demo_grail;
-mod const_gen_str_demo;
-mod custom_model;
-mod derive_constructor;
-mod derive_deserialize_vec;
-mod derive_doc_comment;
-mod derive_key_map_list;
-mod expander_demo;
-mod host_port_const;
-mod into_string_hash_map;
-mod load_static_map;
-mod my_description;
-mod organizing_code;
-mod organizing_code_const;
-mod organizing_code_tokenstream;
-mod repeat_dash;
+//! - Function-like macro patterns
+//! - Integration with external crates
 
-use crate::ansi_code_derive::ansi_code_derive_impl;
-use crate::attrib_key_map_list::use_mappings_impl;
-use crate::attribute_basic::attribute_basic_impl;
+mod const_demo;
+mod derive_builder;
+mod derive_constructor;
+mod derive_display;
+mod derive_doc_comment;
+mod derive_getters;
+mod file_navigator;
+
 use crate::const_demo::const_demo_impl;
-use crate::const_demo_grail::const_demo_grail_impl;
-use crate::const_gen_str_demo::string_concat_impl;
-use crate::custom_model::derive_custom_model_impl;
+use crate::derive_builder::derive_builder_impl;
 use crate::derive_constructor::derive_constructor_impl;
-use crate::derive_deserialize_vec::derive_deserialize_vec_impl;
+use crate::derive_display::derive_display_impl;
 use crate::derive_doc_comment::derive_doc_comment_impl;
-use crate::derive_key_map_list::derive_key_map_list_impl;
-use crate::expander_demo::baz2;
-use crate::host_port_const::host_port_const_impl;
-use crate::into_string_hash_map::into_hash_map_impl;
-use crate::load_static_map::load_static_map_impl;
-use crate::my_description::my_derive;
-use crate::organizing_code::organizing_code_impl;
-use crate::organizing_code_const::organizing_code_const_impl;
-use crate::organizing_code_tokenstream::organizing_code_tokenstream_impl;
-use crate::repeat_dash::repeat_dash_impl;
+use crate::derive_getters::derive_getters_impl;
+use crate::file_navigator::file_navigator_impl;
 use proc_macro::TokenStream;
 use quote::quote;
 use std::fs;
@@ -138,65 +98,26 @@ use syn::{
     Token,
 };
 
-/// A derive macro that generates helpful methods for ANSI color enums.
-///
-/// This macro generates:
-/// - A `name()` method that returns a human-readable name for each color variant
-/// - A `FromStr` trait implementation to parse variants from `snake_case` strings
-///
-/// #### Attributes
-/// - `#[ansi_name("Custom Name")]`: Override the default name for a variant
-///
-/// #### Example Usage
-/// See `demo/proc_macro_ansi_code_derive.rs` for a complete example.
-///
-/// ```rust
-/// #[derive(AnsiCodeDerive)]
-/// enum Color {
-///     Red,
-///     #[ansi_name("Dark Gray")]
-///     BrightBlack,
-/// }
-/// ```
-#[proc_macro_derive(AnsiCodeDerive, attributes(ansi_name))]
-pub fn ansi_code_derive(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "ansi_code_derive", &input, ansi_code_derive_impl)
-}
-
-/// A basic attribute macro that demonstrates attribute macro functionality.
-///
-/// This is a simple example of an attribute macro that can be applied to items.
-/// See `demo/proc_macro_attribute_basic.rs` for usage examples.
-///
-/// #### Example
-/// ```rust
-/// // Annotate function `my_function` with "#[allow(unused_variables)]"
-/// #[attribute_basic(allow(unused_variables))]
-/// fn my_function() { }
-/// ```
-#[proc_macro_attribute]
-pub fn attribute_basic(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "attribute_basic", &attr, &item, attribute_basic_impl)
-}
-
 /// A basic derive macro that generates a `new` constructor method.
 ///
-/// This macro demonstrates derive macro functionality by generating a `new` method
+/// This macro demonstrates derive macro fundamentals by generating a `new` method
 /// for structs. The method takes parameters for all fields and returns a new instance.
+/// Perfect for learning basic derive macro concepts.
 ///
-/// #### Attributes
-/// - `#[expand_macro]`: When present, the macro expansion will be displayed during compilation
+/// #### Features
+/// - Generates constructor methods for structs with named fields
+/// - Proper error handling for unsupported types
+/// - Clean, readable generated code
+/// - Comprehensive documentation
 ///
 /// #### Example
-/// See `demo/proc_macro_derive_constructor.rs` for usage.
-///
 /// ```rust
 /// #[derive(DeriveConstructor)]
-/// struct MyStruct {
+/// struct Person {
 ///     name: String,
-///     count: usize,
+///     age: u32,
 /// }
-/// // Generates: impl MyStruct { fn new(name: String, count: usize) -> Self { ... } }
+/// // Generates: impl Person { pub fn new(name: String, age: u32) -> Person { ... } }
 /// ```
 #[proc_macro_derive(DeriveConstructor, attributes(expand_macro))]
 pub fn derive_constructor(input: TokenStream) -> TokenStream {
@@ -221,394 +142,221 @@ pub fn derive_constructor(input: TokenStream) -> TokenStream {
     )
 }
 
-/// A basic function-like macro that generates a constant value.
+/// Derives a builder pattern for struct construction.
 ///
-/// This demonstrates function-like macro syntax and generates a constant `VALUE` set to 42.
-/// See `demo/proc_macro_functionlike_basic.rs` for usage.
+/// This macro generates a builder struct and methods that allow for step-by-step
+/// construction of the target struct. It demonstrates advanced derive macro concepts
+/// including struct generation, method chaining, and error handling.
 ///
-/// #### Example
-/// ```rust
-/// function_like_basic!();
-/// // Generates: pub const VALUE: usize = 42;
-/// ```
-#[proc_macro]
-pub fn function_like_basic(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(
-        cfg!(feature = "expand"),
-        "function_like_basic",
-        &input,
-        |_tokens| {
-            // Original macro logic
-            let expanded = quote! {
-                pub const VALUE: usize = 42;
-            };
-            TokenStream::from(expanded)
-        },
-    )
-}
-
-/// Derives a custom model with additional functionality.
-///
-/// This macro demonstrates more advanced derive macro capabilities with custom attributes.
-/// See `demo/proc_macro_derive_custom_model.rs` for detailed usage.
-///
-/// #### Attributes
-/// - `#[custom_model]`: Configures the custom model generation
+/// #### Features
+/// - Generates a separate builder struct with optional fields
+/// - Fluent API with method chaining
+/// - Build-time validation ensuring all fields are set
+/// - Comprehensive error messages for missing fields
+/// - Default trait implementation for builder
 ///
 /// #### Example
 /// ```rust
-/// #[derive(DeriveCustomModel)]
-/// #[custom_model]
-/// struct MyModel {
-///     id: u32,
-///     name: String,
+/// #[derive(DeriveBuilder)]
+/// struct Config {
+///     host: String,
+///     port: u16,
+///     timeout: u64,
 /// }
+/// // Generates: ConfigBuilder with fluent API
+/// // let config = Config::builder().host("localhost").port(8080).timeout(5000).build()?;
 /// ```
-#[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
-pub fn derive_custom_model(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(DeriveBuilder, attributes(expand_macro))]
+pub fn derive_builder(input: TokenStream) -> TokenStream {
+    let input_clone = input.clone();
+    let check_input = parse_macro_input!(input as DeriveInput);
+
+    #[cfg(feature = "expand")]
+    let should_expand = check_input
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("expand_macro"));
+    #[cfg(not(feature = "expand"))]
+    let should_expand = false;
+
     maybe_expand_proc_macro(
-        true,
-        "derive_custom_model",
-        &input,
-        derive_custom_model_impl,
+        should_expand,
+        "derive_builder",
+        &input_clone,
+        derive_builder_impl,
     )
 }
 
-/// Derives conversion functionality to convert structs into `HashMap<String, String>`.
+/// Derives a Display trait implementation for structs and enums.
 ///
-/// This macro generates an implementation that converts struct fields into a string-based HashMap.
-/// Useful for serialization scenarios or when you need a dynamic key-value representation.
+/// This macro automatically generates Display implementations that provide
+/// readable string representations. It demonstrates trait implementation generation,
+/// pattern matching for enums, and field formatting techniques.
+///
+/// #### Features
+/// - Supports structs with named fields, tuple structs, and unit structs
+/// - Handles enums with all variant types (unit, tuple, struct)
+/// - Automatic field formatting with proper separators
+/// - Type-aware formatting for different structures
+/// - Clean, readable output format
 ///
 /// #### Example
 /// ```rust
-/// #[derive(IntoStringHashMap)]
+/// #[derive(DeriveDisplay)]
 /// struct Person {
 ///     name: String,
 ///     age: u32,
 /// }
-/// // Generates methods to convert Person into HashMap<String, String>
+/// // Generates: impl Display for Person { ... }
+/// // Output: "Person { name: Alice, age: 30 }"
 /// ```
-#[proc_macro_derive(IntoStringHashMap)]
-pub fn into_hash_map(input: TokenStream) -> TokenStream {
-    into_hash_map_impl(input)
-}
+#[proc_macro_derive(DeriveDisplay, attributes(expand_macro))]
+pub fn derive_display(input: TokenStream) -> TokenStream {
+    let input_clone = input.clone();
+    let check_input = parse_macro_input!(input as DeriveInput);
 
-/// Derives description functionality with custom attributes.
-///
-/// This macro demonstrates using the `deluxe` crate for advanced attribute parsing.
-/// See the implementation for details on how custom descriptions are generated.
-///
-/// #### Attributes
-/// - `#[my_desc]`: Specifies custom description attributes
-///
-/// #### Example
-/// ```rust
-/// #[derive(MyDescription)]
-/// #[my_desc(description = "A sample struct")]
-/// struct Sample {
-///     value: i32,
-/// }
-/// ```
-#[proc_macro_derive(MyDescription, attributes(my_desc))]
-pub fn derive_my_description(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    my_derive(input.into()).unwrap().into()
-}
+    #[cfg(feature = "expand")]
+    let should_expand = check_input
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("expand_macro"));
+    #[cfg(not(feature = "expand"))]
+    let should_expand = false;
 
-/// Derives vector deserialization functionality using the `deluxe` crate.
-///
-/// This macro demonstrates advanced attribute parsing and generates deserialization
-/// methods for vector types with custom mappings.
-///
-/// #### Attributes
-/// - `#[deluxe]`: Configures deluxe attribute parsing
-/// - `#[use_mappings]`: Specifies field mappings for deserialization
-///
-/// #### Example
-/// ```rust
-/// #[derive(DeserializeVec)]
-/// #[use_mappings(field1 = "alias1")]
-/// struct Data {
-///     field1: String,
-///     items: Vec<String>,
-/// }
-/// ```
-#[proc_macro_derive(DeserializeVec, attributes(deluxe, use_mappings))]
-pub fn derive_deserialize_vec(input: TokenStream) -> TokenStream {
-    derive_deserialize_vec_impl(input.into()).unwrap().into()
-}
-
-/// Derives key-map list functionality with advanced attribute support.
-///
-/// This macro generates methods for working with key-mapped lists, demonstrating
-/// complex derive macro patterns with the `deluxe` crate.
-/// See `demo/proc_macro_derive_key_map_list.rs` for usage examples.
-///
-/// #### Attributes
-/// - `#[deluxe]`: Enables deluxe attribute parsing
-/// - `#[use_mappings]`: Configures key mappings
-///
-/// #### Example
-/// ```rust
-/// #[derive(DeriveKeyMapList)]
-/// #[use_mappings(key1 = "mapped_key1")]
-/// struct KeyMap {
-///     key1: String,
-///     values: Vec<String>,
-/// }
-/// ```
-#[proc_macro_derive(DeriveKeyMapList, attributes(deluxe, use_mappings))]
-pub fn derive_key_map_list(input: TokenStream) -> TokenStream {
-    derive_key_map_list_impl(input.into()).unwrap().into()
-}
-
-/// A function-like macro demonstrating code organization patterns.
-///
-/// This macro is based on examples from <https://github.com/tdimitrov/rust-proc-macro-post>
-/// and shows how to organize complex macro logic. See `demo/proc_macro_organizing_code.rs`
-/// for usage examples.
-///
-/// #### Example
-/// ```rust
-/// organizing_code!{
-///     // Your code here
-/// }
-/// ```
-#[proc_macro]
-pub fn organizing_code(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input);
-    organizing_code_impl(input).into()
-}
-
-/// A function-like macro demonstrating TokenStream manipulation.
-///
-/// This macro shows advanced TokenStream processing techniques, also based on examples
-/// from <https://github.com/tdimitrov/rust-proc-macro-post>.
-/// See `demo/proc_macro_organizing_code_tokenstream.rs` for usage.
-///
-/// #### Example
-/// ```rust
-/// organizing_code_tokenstream!{
-///     // TokenStream content
-/// }
-/// ```
-#[proc_macro]
-pub fn organizing_code_tokenstream(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input);
-    organizing_code_tokenstream_impl(input).into()
-}
-
-/// Derives constant generation functionality with adjustment capabilities.
-///
-/// This macro demonstrates compile-time constant generation with configurable
-/// adjustments. See `demo/proc_macro_organizing_code_const.rs` for examples.
-///
-/// #### Attributes
-/// - `#[adjust]`: Configures value adjustments
-/// - `#[use_mappings]`: Specifies mapping configurations
-///
-/// #### Example
-/// ```rust
-/// #[derive(DeriveConst)]
-/// #[adjust(factor = 2)]
-/// struct Config {
-///     base_value: u32,
-/// }
-/// ```
-#[proc_macro_derive(DeriveConst, attributes(adjust, use_mappings))]
-pub fn organizing_code_const(input: TokenStream) -> TokenStream {
-    // organizing_code_const_impl(input.into()).unwrap().into()
-    maybe_expand_proc_macro(true, "organizing_code_const", &input, |tokens| {
-        organizing_code_const_impl(tokens.into()).unwrap().into()
-    })
-}
-
-/// An attribute macro demonstrating the `expander` crate functionality.
-///
-/// This macro showcases macro expansion capabilities using the expander crate.
-/// See `demo/proc_macro_expander_demo.rs` for usage examples.
-///
-/// #### Example
-/// ```rust
-/// #[baz]
-/// fn my_function() {
-///     // function body
-/// }
-/// ```
-#[proc_macro_attribute]
-pub fn baz(
-    _attr: proc_macro::TokenStream,
-    input: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    // wrap as per usual for `proc-macro2::TokenStream`, here dropping `attr` for simplicity
-    baz2(input.into()).into()
-}
-
-/// An attribute macro for configuring field mappings.
-///
-/// This macro processes mapping configurations and applies them to the decorated item.
-/// Often used in conjunction with other derive macros for customization.
-///
-/// #### Example
-/// ```rust
-/// #[use_mappings(field1 = "alias1", field2 = "alias2")]
-/// struct MappedStruct {
-///     field1: String,
-///     field2: i32,
-/// }
-/// ```
-#[proc_macro_attribute]
-pub fn use_mappings(attr: TokenStream, input: TokenStream) -> TokenStream {
-    use_mappings_impl(attr, input)
-}
-
-/// A function-like macro that generates repeated dash characters.
-///
-/// This macro demonstrates simple text generation and can be used to create
-/// visual separators or formatting elements. See `demo/proc_macro_repeat_dash.rs`
-/// for usage examples.
-///
-/// #### Example
-/// ```rust
-/// repeat_dash!(10); // Generates 10 dash characters
-/// ```
-#[proc_macro]
-pub fn repeat_dash(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(
-        cfg!(feature = "expand"),
-        "repeat_dash",
-        &input,
-        repeat_dash_impl,
+        should_expand,
+        "derive_display",
+        &input_clone,
+        derive_display_impl,
     )
 }
 
-/// A function-like macro for compile-time string concatenation.
+/// Derives getter methods for all fields in a struct.
 ///
-/// This macro demonstrates compile-time string manipulation and concatenation.
-/// See `demo/proc_macro_string_concat.rs` for usage examples.
+/// This macro automatically generates getter methods that return references to each field,
+/// avoiding unnecessary moves. It demonstrates intermediate derive macro concepts including
+/// field iteration, type analysis, and method generation with documentation.
 ///
-/// #### Example
-/// ```rust
-/// string_concat!("Hello", " ", "World"); // Generates "Hello World"
-/// ```
-#[proc_macro]
-pub fn string_concat(tokens: TokenStream) -> TokenStream {
-    string_concat_impl(tokens)
-}
-
-/// A function-like macro demonstrating compile-time constant generation.
-///
-/// This macro shows how to generate constants at compile time based on input parameters.
-/// See `demo/proc_macro_const_demo.rs` for basic usage.
+/// #### Features
+/// - Automatic getter generation for all struct fields
+/// - Returns references to avoid unnecessary moves
+/// - Generated documentation for each getter method
+/// - Proper error handling for unsupported types
+/// - Type-aware return types
 ///
 /// #### Example
 /// ```rust
-/// const_demo!(MyConst = 42);
+/// #[derive(DeriveGetters)]
+/// struct Person {
+///     name: String,
+///     age: u32,
+/// }
+/// // Generates: impl Person { pub fn name(&self) -> &String { &self.name } ... }
 /// ```
-#[proc_macro]
-pub fn const_demo(tokens: TokenStream) -> TokenStream {
-    const_demo_impl(tokens)
-}
+#[proc_macro_derive(DeriveGetters, attributes(expand_macro))]
+pub fn derive_getters(input: TokenStream) -> TokenStream {
+    let input_clone = input.clone();
+    let check_input = parse_macro_input!(input as DeriveInput);
 
-/// A variant of `const_demo` that shows macro expansion during compilation.
-///
-/// This version of the const demo macro displays the generated code during compilation,
-/// useful for debugging and understanding macro output. See `demo/proc_macro_const_demo_expand.rs`.
-///
-/// #### Example
-/// ```rust
-/// const_demo_expand!(MyConst = 42);
-/// ```
-#[proc_macro]
-pub fn const_demo_expand(tokens: TokenStream) -> TokenStream {
-    let output = const_demo_impl(tokens.clone());
-    let token_str = output.to_string();
+    // If the `expand` feature is enabled, check if the `expand_macro` attribute
+    // is present
+    #[cfg(feature = "expand")]
+    let should_expand = check_input
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("expand_macro"));
+    #[cfg(not(feature = "expand"))]
+    let should_expand = false;
 
-    // Parse and prettify
-    let _pretty_output = match syn::parse_file(&token_str) {
-        Err(e) => {
-            eprintln!("failed to prettify token_str: {e:?}");
-            token_str
-        }
-        Ok(syn_file) => {
-            let token_str = prettyplease::unparse(&syn_file);
-            eprintln!("Expanded macro:\n{}", token_str);
-            token_str
-        }
-    };
-    output
-}
-
-/// A debug variant of `const_demo` with detailed expansion information.
-///
-/// This macro provides debugging capabilities for const generation, showing
-/// detailed expansion information. See `demo/proc_macro_const_demo_debug.rs`.
-///
-/// #### Example
-/// ```rust
-/// const_demo_debug!(MyConst = 42);
-/// ```
-#[proc_macro]
-pub fn const_demo_debug(tokens: TokenStream) -> TokenStream {
-    expand_macro_with(
-        tokens.clone().into(),
-        |_arg0: TokenStream| const_demo(tokens.clone()).into(),
-        true,
+    maybe_expand_proc_macro(
+        should_expand,
+        "derive_getters",
+        &input_clone,
+        derive_getters_impl,
     )
-    .into()
 }
 
-fn expand_macro_with<F>(tokens: TokenStream, proc_macro: F, expand: bool) -> TokenStream
-where
-    F: Fn(TokenStream) -> TokenStream,
-{
-    let output = proc_macro(tokens.clone());
-    if expand {
-        let token_str = output.clone().to_string();
-        match syn::parse_file(&token_str) {
-            Err(e) => eprintln!("failed to prettify token_str: {e:?}"),
-            Ok(syn_file) => {
-                let pretty_output = prettyplease::unparse(&syn_file);
-                eprintln!("Expanded macro:\n{}", pretty_output);
-            }
-        }
-    }
-    output.into()
-}
-
-/// An advanced constant generation macro using the `const_gen` crate.
+/// Derives documentation methods for enum variants.
 ///
-/// This macro demonstrates advanced compile-time constant generation techniques
-/// using external crates. See the implementation for technical details.
+/// This macro demonstrates advanced derive macro techniques including attribute parsing
+/// and documentation extraction. It generates a `doc_comment` method that returns
+/// the documentation string for each enum variant.
+///
+/// #### Features
+/// - Extracts documentation from enum variant attributes
+/// - Generates match expressions for documentation access
+/// - Demonstrates attribute parsing techniques
+/// - Error handling for missing documentation
 ///
 /// #### Example
 /// ```rust
-/// const_demo_grail!(AdvancedConst = complex_computation());
+/// #[derive(DeriveDocComment)]
+/// enum Status {
+///     /// The operation completed successfully
+///     Success,
+///     /// An error occurred during processing
+///     Error,
+/// }
+/// // Generates: impl Status { fn doc_comment(&self) -> &'static str { ... } }
+/// ```
+#[proc_macro_derive(DeriveDocComment)]
+pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
+    derive_doc_comment_impl(input)
+    // maybe_expand_proc_macro(true, "derive_doc_comment", &input, derive_doc_comment_impl)
+}
+
+/// Generates a `FileNavigator` for interactive file system navigation.
+///
+/// This function-like macro demonstrates practical proc macro applications by generating
+/// code for file system navigation with a command-line interface. It creates structures
+/// and functions for selecting files and directories interactively.
+///
+/// #### Features
+/// - Interactive file selection with filtering
+/// - Directory navigation capabilities
+/// - File saving functionality
+/// - Cross-platform compatibility
+///
+/// #### Example
+/// ```rust
+/// file_navigator! {}
+/// // Generates: FileNavigator struct, select_file function, save_to_file function, etc.
 /// ```
 #[proc_macro]
-pub fn const_demo_grail(tokens: TokenStream) -> TokenStream {
-    const_demo_grail_impl(tokens)
+pub fn file_navigator(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(true, "file_navigator", &input, file_navigator_impl)
 }
 
-/// Derives compile-time constants for host and port configurations.
+/// Advanced constant generation using external crates.
 ///
-/// This macro generates compile-time constants for network configuration,
-/// demonstrating practical applications of const generation.
-/// See `demo/proc_macro_host_port_const.rs` for usage.
+/// This macro demonstrates complex proc macro techniques by using the `const_gen_proc_macro`
+/// crate for compile-time constant generation. It showcases integration with external
+/// dependencies and advanced code generation patterns.
 ///
-/// #### Attributes
-/// - `#[const_value]`: Specifies the constant value configuration
+/// #### Features
+/// - Compile-time constant generation
+/// - Integration with external proc macro crates
+/// - Complex object manipulation
+/// - Advanced expression handling
 ///
 /// #### Example
 /// ```rust
-/// #[derive(HostPortConst)]
-/// #[const_value(host = "localhost", port = 8080)]
-/// struct ServerConfig;
+/// const_demo!(
+///     let math = math::new(10);
+///     math.add(5);
+///     let result = math.get();
+/// );
 /// ```
-#[proc_macro_derive(HostPortConst, attributes(const_value))]
-pub fn host_port_const(tokens: TokenStream) -> TokenStream {
-    host_port_const_impl(tokens.into()).into()
+#[proc_macro]
+pub fn const_demo(input: TokenStream) -> TokenStream {
+    // const_demo_impl(input)
+    maybe_expand_proc_macro(true, "const_demo", &input, const_demo_impl)
 }
 
+/// A helper function for conditional macro expansion.
+///
+/// This utility function demonstrates how to conditionally expand proc macros
+/// for debugging purposes, which is useful during development.
 fn maybe_expand_proc_macro<F>(
     expand: bool,
     name: &str,
@@ -628,6 +376,10 @@ where
     output
 }
 
+/// A helper function for conditional attribute macro expansion.
+///
+/// Similar to `maybe_expand_proc_macro` but specifically for attribute macros
+/// that take both attribute and item token streams.
 fn maybe_expand_attr_macro<F>(
     expand: bool,
     name: &str,
@@ -688,110 +440,4 @@ fn expand_output(name: &str, output: &TokenStream) {
             }
         },
     }
-}
-
-/// Derives automatic documentation comment generation.
-///
-/// This macro demonstrates automatic generation of documentation comments
-/// based on struct or enum definitions. See `demo/proc_macro_derive_doc_comment.rs`
-/// for examples.
-///
-/// #### Example
-/// ```rust
-/// #[derive(DocComment)]
-/// struct Example {
-///     field: String,
-/// }
-/// // Generates documentation comments automatically
-/// ```
-#[proc_macro_derive(DocComment)]
-pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "derive_doc_comment", &input, |tokens| {
-        derive_doc_comment_impl(tokens)
-    })
-}
-
-/// A function-like macro for embedding file contents at compile time.
-///
-/// This macro reads a file at compile time and embeds its contents as a string literal.
-/// Useful for including configuration files, templates, or other static content.
-///
-/// #### Example
-/// ```rust
-/// let content = embed_file!("config.txt");
-/// ```
-#[proc_macro]
-pub fn embed_file(input: TokenStream) -> TokenStream {
-    println!("The current directory is {:#?}", std::env::current_dir());
-
-    println!("vars={:#?}", std::env::vars());
-
-    #[cfg(target_os = "windows")]
-    let pwd = std::env::var("pwd").expect("Could not resolve $pwd");
-
-    #[cfg(not(target_os = "windows"))]
-    let pwd = std::env::var("PWD").expect("Could not resolve $PWD");
-
-    println!("PWD={pwd}");
-    let embed = parse_macro_input!(input as LitStr).value();
-    let path = std::path::PathBuf::from(pwd).join(&embed);
-    println!("path={path:#?}");
-    let content = fs::read_to_string(Path::new(&path)).expect("Failed to read file");
-
-    quote! {
-        #content
-    }
-    .into()
-}
-
-/// An advanced macro for loading directory contents into static maps.
-///
-/// This macro can embed entire directory structures as static HashMap data,
-/// useful for embedding web assets, templates, or configuration directories.
-/// See `demo/proc_macro_load_static_map.rs` for usage examples.
-///
-/// #### Example
-/// ```rust
-/// load_static_map!("assets/");
-/// // Generates a static HashMap with file paths as keys and contents as values
-/// ```
-#[proc_macro]
-pub fn load_static_map(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "load_static_map", &input, load_static_map_impl)
-}
-
-/// Creates a function that returns the line number where it's called.
-///
-/// This macro generates a function with a name based on the input string that
-/// returns the current line number using the `line!()` macro. Useful for debugging
-/// and testing scenarios. See `demo/proc_macro_end.rs` for usage.
-///
-/// #### Example
-/// ```rust
-/// end!("my_function");
-/// // Generates: fn end_my_function() -> u32 { line!() }
-///
-/// fn main() {
-///     println!("Current line: {}", end_my_function());
-/// }
-/// ```
-#[proc_macro]
-pub fn end(input: TokenStream) -> TokenStream {
-    use quote::format_ident;
-    // Parse the input as a string literal
-    let func_name_lit = parse_macro_input!(input as LitStr);
-    let func_name_str = func_name_lit.value();
-
-    // Convert the string to an identifier
-    let func_name = format_ident!("end_{}", func_name_str);
-
-    // Generate the function that returns line!()
-    let expanded = quote! {
-        fn #func_name() -> u32 {
-            line!()
-        }
-    };
-
-    // Return the generated code
-    expanded.into()
 }

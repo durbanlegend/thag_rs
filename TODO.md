@@ -5,9 +5,10 @@
 ## On the go
 - [ ]  Think of ways to run thag remotely or with minimal effort.
 - [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
-- [ ]  Sort out grail demp proc macro.
-- [ ]  Remove hard-coding from src/bin/thag_gen_proc_macro_readme.rs.
-
+- [ ]  OBSOLETE. Remove hard-coding from src/bin/thag_gen_proc_macro_readme.rs.
+- [ ]  Tool for comparing / ?merging? line ranges of different files.
+- [ ]  Sort out whether demo/thag_proc_macros is reachable from a TOML block - don't think so, so probably stick with "magic".
+- [ ]  Replace src/bin/thag_get_demos by demo/download_demo_select_collapse.rs
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

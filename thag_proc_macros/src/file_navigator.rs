@@ -27,7 +27,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             }
 
             fn list_items(&self, include_ext: Option<&str>, hidden: bool) -> Vec<String> {
-                let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "..".to_string()];
+                let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "*TYPE PATH TO NAVIGATE*".to_string(), "..".to_string()];
 
                 // Add directories
                 let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
@@ -67,6 +67,8 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     NavigationResult::NoSelection
                 } else if selection == "*SELECT CURRENT DIRECTORY*" && select_dir {
                     NavigationResult::SelectionComplete(self.current_dir.clone())
+                } else if selection == "*TYPE PATH TO NAVIGATE*" {
+                    NavigationResult::NoSelection
                 } else {
                     let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
                     let new_path = self.current_dir.join(clean_name);
@@ -90,6 +92,77 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             const fn current_path(&self) -> &std::path::PathBuf {
                 &self.current_dir
             }
+
+            fn expand_path(path: &str) -> std::path::PathBuf {
+                let expanded = if path.starts_with('~') {
+                    if let Some(home) = std::env::var_os("HOME") {
+                        std::path::PathBuf::from(home).join(path.strip_prefix("~/").unwrap_or(""))
+                    } else {
+                        std::path::PathBuf::from(path)
+                    }
+                } else {
+                    std::path::PathBuf::from(path)
+                };
+
+                // Expand environment variables
+                let path_str = expanded.to_string_lossy();
+                let mut result = String::new();
+                let mut chars = path_str.chars().peekable();
+
+                while let Some(ch) = chars.next() {
+                    if ch == '$' {
+                        if chars.peek() == Some(&'{') {
+                            chars.next(); // consume '{'
+                            let mut var_name = String::new();
+                            while let Some(ch) = chars.next() {
+                                if ch == '}' {
+                                    break;
+                                }
+                                var_name.push(ch);
+                            }
+                            if let Ok(var_value) = std::env::var(&var_name) {
+                                result.push_str(&var_value);
+                            } else {
+                                result.push_str(&format!("${{{var_name}}}"));
+                            }
+                        } else {
+                            let mut var_name = String::new();
+                            while let Some(&ch) = chars.peek() {
+                                if ch.is_alphanumeric() || ch == '_' {
+                                    var_name.push(chars.next().unwrap());
+                                } else {
+                                    break;
+                                }
+                            }
+                            if !var_name.is_empty() {
+                                if let Ok(var_value) = std::env::var(&var_name) {
+                                    result.push_str(&var_value);
+                                } else {
+                                    result.push_str(&format!("${var_name}"));
+                                }
+                            } else {
+                                result.push('$');
+                            }
+                        }
+                    } else {
+                        result.push(ch);
+                    }
+                }
+
+                std::path::PathBuf::from(result)
+            }
+
+            fn navigate_to_path(&mut self, path: &str) -> Result<(), String> {
+                let expanded_path = Self::expand_path(path);
+
+                if expanded_path.is_dir() {
+                    self.history.push(self.current_dir.clone());
+                    self.current_dir = expanded_path;
+                    Ok(())
+                } else {
+                    Err(format!("Path '{}' is not a valid directory", expanded_path.display()))
+                }
+            }
         }
 
         fn select_directory(navigator: &mut FileNavigator, hidden: bool) -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -103,6 +176,20 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 )
                 .with_help_message("Press Enter to navigate, select '*SELECT CURRENT DIRECTORY*' to choose current directory")
                 .prompt()?;
+
+                if selection == "*TYPE PATH TO NAVIGATE*" {
+                    let path_input = Text::new("Enter path to navigate to (supports ~ and $VAR):")
+                        .with_help_message("Examples: /tmp, ~/Documents, $HOME/projects")
+                        .prompt()?;
+
+                    match navigator.navigate_to_path(&path_input) {
+                        Ok(()) => continue,
+                        Err(err) => {
+                            println!("Error: {err}");
+                            continue;
+                        }
+                    }
+                }
 
                 match navigator.navigate(&selection, true) {
                     NavigationResult::SelectionComplete(path) => if inquire::Confirm::new(&format!("Use {}?", path.display()))
@@ -129,6 +216,20 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 )
                 .with_help_message("Press Enter to navigate, select a file to load")
                 .prompt()?;
+
+                if selection == "*TYPE PATH TO NAVIGATE*" {
+                    let path_input = Text::new("Enter path to navigate to (supports ~ and $VAR):")
+                        .with_help_message("Examples: /tmp, ~/Documents, $HOME/projects")
+                        .prompt()?;
+
+                    match navigator.navigate_to_path(&path_input) {
+                        Ok(()) => continue,
+                        Err(err) => {
+                            println!("Error: {err}");
+                            continue;
+                        }
+                    }
+                }
 
                 match navigator.navigate(&selection, false) {
                     NavigationResult::SelectionComplete(path) => if inquire::Confirm::new(&format!("Use {}?", path.display()))
@@ -162,6 +263,19 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     Ok(sel) => {
                         if sel == "." || sel == "*SELECT CURRENT DIRECTORY*" {
                             break Some(navigator.current_path().clone());
+                        } else if sel == "*TYPE PATH TO NAVIGATE*" {
+                            let path_input = Text::new("Enter path to navigate to (supports ~ and $VAR):")
+                                .with_help_message("Examples: /tmp, ~/Documents, $HOME/projects")
+                                .prompt()
+                                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+
+                            match navigator.navigate_to_path(&path_input) {
+                                Ok(()) => continue,
+                                Err(err) => {
+                                    println!("Error: {err}");
+                                    continue;
+                                }
+                            }
                         } else if let NavigationResult::NavigatedTo(_path) = navigator.navigate(&sel, hidden) {
                             continue;
                         }

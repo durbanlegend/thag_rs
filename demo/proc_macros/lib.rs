@@ -7,18 +7,28 @@
 //!
 //! ## Overview
 //!
-//! The collection focuses on quality over quantity, featuring 7 carefully selected macros
+//! The collection focuses on quality over quantity, featuring 11 carefully selected macros
 //! that demonstrate progressive complexity and real-world utility:
 //!
-//! ### Core Macros
+//! ### Derive Macros (5)
 //!
 //! 1. **[`DeriveConstructor`]** - Basic derive macro for generating constructor methods
 //! 2. **[`DeriveGetters`]** - Intermediate derive macro for generating getter methods
 //! 3. **[`DeriveBuilder`]** - Advanced derive macro implementing the builder pattern
 //! 4. **[`DeriveDisplay`]** - Trait implementation macro for Display formatting
 //! 5. **[`DeriveDocComment`]** - Advanced derive macro demonstrating attribute parsing
-//! 6. **[`file_navigator`]** - Function-like macro for file system navigation
-//! 7. **[`const_demo`]** - Complex macro using external crates for const generation
+//!
+//! ### Attribute Macros (3)
+//!
+//! 6. **[`cached`]** - Attribute macro for automatic function memoization
+//! 7. **[`timing`]** - Attribute macro for execution time measurement
+//! 8. **[`retry`]** - Attribute macro for automatic retry logic
+//!
+//! ### Function-like Macros (3)
+//!
+//! 9. **[`file_navigator`]** - Function-like macro for file system navigation
+//! 10. **[`const_demo`]** - Complex macro using external crates for const generation
+//! 11. **[`compile_time_assert`]** - Function-like macro for compile-time validation
 //!
 //! ## Progressive Learning Path
 //!
@@ -28,11 +38,14 @@
 //! - **Intermediate**: Progress to `DeriveGetters` for method generation patterns
 //! - **Advanced**: Learn builder patterns with `DeriveBuilder` and trait implementation with `DeriveDisplay`
 //! - **Expert**: Master attribute parsing with `DeriveDocComment`
-//! - **Practical**: Explore function-like macros with `file_navigator`
-//! - **Complex**: Study advanced techniques with `const_demo`
+//! - **Function-like**: Explore `file_navigator` and `compile_time_assert` for utility macros
+//! - **Attribute Wrapping**: Learn function transformation with `cached`, `timing`, and `retry`
+//! - **Complex**: Study advanced external integration with `const_demo`
 //!
 //! ## Usage
 //!
+//! The `demo/proc_macros` library is packaged for use in development. You may copy the macros for reuse as
+//! you see fit, but to use them in place, you will need the `demo/proc_macros` library in your path.
 //! Add this crate to your `Cargo.toml`:
 //!
 //! ```toml
@@ -43,19 +56,29 @@
 //! Or when using with `thag_rs`:
 //!
 //! ```rust
-//! use thag_demo_proc_macros::{DeriveConstructor, DeriveGetters, DeriveBuilder, DeriveDisplay};
+//! use thag_demo_proc_macros::{DeriveBuilder, DeriveConstructor, DeriveDisplay, DeriveDocComment, DeriveGetters, cached, compile_time_assert, const_demo, file_navigator, retry, timing};
 //! ```
 //!
 //! ## Examples
 //!
 //! Each macro has a comprehensive example file:
+//!
+//! **Derive Macros:**
 //! - `demo/proc_macro_derive_constructor.rs` - Basic derive macro usage
 //! - `demo/proc_macro_derive_getters.rs` - Getter generation example
 //! - `demo/proc_macro_derive_builder.rs` - Builder pattern implementation
 //! - `demo/proc_macro_derive_display.rs` - Display trait generation
-//! - `demo/proc_macro_derive_doc_comment.rs` - Attribute parsing demo
+//! - `demo/proc_macro_derive_doc_comment.rs` - Enhanced attribute parsing demo
+//!
+//! **Attribute Macros:**
+//! - `demo/proc_macro_cached.rs` - Automatic function memoization
+//! - `demo/proc_macro_timing.rs` - Execution time measurement
+//! - `demo/proc_macro_retry.rs` - Automatic retry logic
+//!
+//! **Function-like Macros:**
 //! - `demo/proc_macro_file_navigator.rs` - Interactive file operations
 //! - `demo/proc_macro_const_demo.rs` - Advanced const generation
+//! - `demo/proc_macro_compile_time_assert.rs` - Compile-time validation
 //!
 //! ## Educational Value
 //!
@@ -68,11 +91,17 @@
 //! - Builder pattern implementation
 //! - Trait implementation generation (Display)
 //! - Complex struct and enum handling
-//! - Attribute parsing techniques
+//! - Attribute parsing techniques across multiple item types
+//! - Function wrapping and transformation
+//! - Caching and memoization patterns
+//! - Performance measurement and retry logic
+//! - Compile-time validation and assertions
 //! - Error handling in proc macros
 //! - Function-like macro patterns
 //! - Integration with external crates
 
+mod cached;
+mod compile_time_assert;
 mod const_demo;
 mod derive_builder;
 mod derive_constructor;
@@ -80,7 +109,11 @@ mod derive_display;
 mod derive_doc_comment;
 mod derive_getters;
 mod file_navigator;
+mod retry;
+mod timing;
 
+use crate::cached::cached_impl;
+use crate::compile_time_assert::compile_time_assert_impl;
 use crate::const_demo::const_demo_impl;
 use crate::derive_builder::derive_builder_impl;
 use crate::derive_constructor::derive_constructor_impl;
@@ -88,6 +121,8 @@ use crate::derive_display::derive_display_impl;
 use crate::derive_doc_comment::derive_doc_comment_impl;
 use crate::derive_getters::derive_getters_impl;
 use crate::file_navigator::file_navigator_impl;
+use crate::retry::retry_impl;
+use crate::timing::timing_impl;
 use proc_macro::TokenStream;
 use quote::quote;
 use std::fs;
@@ -301,8 +336,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_derive(DeriveDocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    derive_doc_comment_impl(input)
-    // maybe_expand_proc_macro(true, "derive_doc_comment", &input, derive_doc_comment_impl)
+    maybe_expand_proc_macro(true, "derive_doc_comment", &input, derive_doc_comment_impl)
 }
 
 /// Generates a `FileNavigator` for interactive file system navigation.
@@ -348,9 +382,118 @@ pub fn file_navigator(input: TokenStream) -> TokenStream {
 /// );
 /// ```
 #[proc_macro]
-pub fn const_demo(input: TokenStream) -> TokenStream {
-    // const_demo_impl(input)
-    maybe_expand_proc_macro(true, "const_demo", &input, const_demo_impl)
+pub fn const_demo(tokens: TokenStream) -> TokenStream {
+    const_demo_impl(tokens)
+}
+
+/// Attribute macro that adds automatic memoization/caching to functions.
+///
+/// This macro demonstrates advanced attribute macro techniques by wrapping functions
+/// with caching logic. It automatically stores function results and returns cached
+/// values for repeated calls with the same parameters.
+///
+/// #### Features
+/// - Automatic result caching using HashMap
+/// - Thread-safe cache with Mutex
+/// - Supports functions with multiple parameters
+/// - Compile-time cache key generation
+/// - Clone trait bounds for parameters and return types
+///
+/// #### Example
+/// ```rust
+/// #[cached]
+/// fn expensive_computation(n: u32) -> u32 {
+///     // Expensive operation here
+///     std::thread::sleep(std::time::Duration::from_secs(1));
+///     n * n
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn cached(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(true, "cached", &attr, &item, cached_impl)
+}
+
+/// Attribute macro that adds automatic timing measurement to functions.
+///
+/// This macro wraps functions to measure and display their execution time.
+/// It demonstrates simple attribute macro patterns and is useful for performance
+/// analysis and debugging.
+///
+/// #### Features
+/// - Automatic execution time measurement
+/// - Console output with function name and duration
+/// - Zero runtime overhead when not applied
+/// - Works with any function signature
+///
+/// #### Example
+/// ```rust
+/// #[timing]
+/// fn slow_function() -> i32 {
+///     std::thread::sleep(std::time::Duration::from_millis(100));
+///     42
+/// }
+/// // Output: ⏱️  Function 'slow_function' took: 100.234ms
+/// ```
+#[proc_macro_attribute]
+pub fn timing(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(true, "timing", &attr, &item, timing_impl)
+}
+
+/// Attribute macro that adds automatic retry logic to functions.
+///
+/// This macro wraps functions with retry logic that will automatically retry
+/// failed function calls. It demonstrates attribute macro parameter parsing
+/// and error handling patterns.
+///
+/// #### Features
+/// - Configurable retry count with `times` parameter
+/// - Automatic backoff delay between retries
+/// - Panic catching and retry logic
+/// - Progress reporting for retry attempts
+/// - Graceful failure after max retries
+///
+/// #### Example
+/// ```rust
+/// #[retry(times = 5)]
+/// fn unreliable_network_call() -> Result<String, std::io::Error> {
+///     // Simulated unreliable operation
+///     if rand::random::<f32>() < 0.7 {
+///         Err(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Failed"))
+///     } else {
+///         Ok("Success".to_string())
+///     }
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn retry(attr: TokenStream, item: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(true, "retry", &attr, &item, retry_impl)
+}
+
+/// Function-like macro for compile-time assertions.
+///
+/// This macro generates compile-time checks that will cause compilation to fail
+/// if the specified condition is not true. It demonstrates function-like macro
+/// parsing with multiple parameters and compile-time validation techniques.
+///
+/// #### Features
+/// - Compile-time condition evaluation
+/// - Custom error messages for failed assertions
+/// - Zero runtime overhead (assertions are checked at compile time)
+/// - Supports any boolean expression that can be evaluated at compile time
+///
+/// #### Example
+/// ```rust
+/// compile_time_assert!(std::mem::size_of::<usize>() == 8, "This code requires 64-bit systems");
+/// compile_time_assert!(1 + 1 == 2, "Basic math must work");
+/// ```
+#[proc_macro]
+pub fn compile_time_assert(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(
+        true,
+        "compile_time_assert",
+        &input,
+        compile_time_assert_impl,
+    )
 }
 
 /// A helper function for conditional macro expansion.

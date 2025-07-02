@@ -7,7 +7,7 @@
 //!
 //! ## Overview
 //!
-//! The collection focuses on quality over quantity, featuring 11 carefully selected macros
+//! The collection focuses on quality over quantity, featuring 12 carefully selected macros
 //! that demonstrate progressive complexity and real-world utility:
 //!
 //! ### Derive Macros (5)
@@ -24,10 +24,12 @@
 //! 7. **[`timing`]** - Attribute macro for execution time measurement
 //! 8. **[`retry`]** - Attribute macro for automatic retry logic
 //!
-//! ### Function-like Macros (2)
+//! ### Function-like Macros (4)
 //!
 //! 9. **[`file_navigator`]** - Function-like macro for file system navigation
 //! 10. **[`compile_time_assert`]** - Function-like macro for compile-time validation
+//! 11. **[`env_or_default`]** - Environment variable access with default fallback
+//! 12. **[`generate_tests`]** - Automatic test case generation from data
 //!
 //! ## Progressive Learning Path
 //!
@@ -93,9 +95,10 @@
 //! - Caching and memoization patterns
 //! - Performance measurement and retry logic
 //! - Compile-time validation and assertions
+//! - Environment variable processing
+//! - Test automation and generation
 //! - Error handling in proc macros
 //! - Function-like macro patterns
-//! - Integration with external crates
 
 mod cached;
 mod compile_time_assert;
@@ -104,7 +107,9 @@ mod derive_constructor;
 mod derive_display;
 mod derive_doc_comment;
 mod derive_getters;
+mod env_or_default;
 mod file_navigator;
+mod generate_tests;
 mod retry;
 mod timing;
 
@@ -115,7 +120,9 @@ use crate::derive_constructor::derive_constructor_impl;
 use crate::derive_display::derive_display_impl;
 use crate::derive_doc_comment::derive_doc_comment_impl;
 use crate::derive_getters::derive_getters_impl;
+use crate::env_or_default::env_or_default_impl;
 use crate::file_navigator::file_navigator_impl;
+use crate::generate_tests::generate_tests_impl;
 use crate::retry::retry_impl;
 use crate::timing::timing_impl;
 use proc_macro::TokenStream;
@@ -475,6 +482,57 @@ pub fn compile_time_assert(input: TokenStream) -> TokenStream {
         &input,
         compile_time_assert_impl,
     )
+}
+
+/// Function-like macro for environment variable access with default fallback.
+///
+/// This macro reads environment variables at compile time and provides fallback
+/// values when variables are not set. It demonstrates compile-time environment
+/// variable processing and conditional value generation.
+///
+/// #### Features
+/// - Compile-time environment variable resolution
+/// - Automatic fallback to default values
+/// - Zero runtime overhead
+/// - Configuration management patterns
+///
+/// #### Example
+/// ```rust
+/// const DATABASE_URL: &str = env_or_default!("DATABASE_URL", "localhost:5432");
+/// const DEBUG_MODE: &str = env_or_default!("DEBUG", "false");
+/// ```
+#[proc_macro]
+pub fn env_or_default(input: TokenStream) -> TokenStream {
+    // env_or_default_impl(input)
+    maybe_expand_proc_macro(true, "env_or_default", &input, env_or_default_impl)
+}
+
+/// Function-like macro for generating repetitive test cases.
+///
+/// This macro generates multiple test functions from a list of test data,
+/// reducing boilerplate code in test suites. It demonstrates repetitive
+/// code generation and test automation patterns.
+///
+/// #### Features
+/// - Automatic test function generation
+/// - Support for multiple test cases
+/// - Parameter unpacking from tuples
+/// - Reduces test code duplication
+///
+/// #### Example
+/// ```rust
+/// generate_tests! {
+///     test_addition: [
+///         (1, 2, 3),
+///         (5, 7, 12),
+///         (0, 0, 0),
+///     ] => |a, b, expected| assert_eq!(a + b, expected)
+/// }
+/// ```
+#[proc_macro]
+pub fn generate_tests(input: TokenStream) -> TokenStream {
+    // generate_tests_impl(input)
+    maybe_expand_proc_macro(true, "generate_tests", &input, generate_tests_impl)
 }
 
 /// A helper function for conditional macro expansion.

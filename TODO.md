@@ -8,7 +8,9 @@
 - [ ]  OBSOLETE. Remove hard-coding from src/bin/thag_gen_proc_macro_readme.rs.
 - [ ]  Tool for comparing / ?merging? line ranges of different files.
 - [ ]  Sort out whether demo/thag_proc_macros is reachable from a TOML block - don't think so, so probably stick with "magic".
-- [ ]  Replace src/bin/thag_get_demos by demo/download_demo_select_collapse.rs
+- [ ]  DONE: Replace src/bin/thag_get_demos by demo/download_demo_select_collapse.rs
+- [ ]  Complete fixing warnings on cargo doc for demo/proc_macros.
+- [ ]  Add the 2 new function-like proc macros to README.md.
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

@@ -24,11 +24,10 @@
 //! 7. **[`timing`]** - Attribute macro for execution time measurement
 //! 8. **[`retry`]** - Attribute macro for automatic retry logic
 //!
-//! ### Function-like Macros (3)
+//! ### Function-like Macros (2)
 //!
 //! 9. **[`file_navigator`]** - Function-like macro for file system navigation
-//! 10. **[`const_demo`]** - Complex macro using external crates for const generation
-//! 11. **[`compile_time_assert`]** - Function-like macro for compile-time validation
+//! 10. **[`compile_time_assert`]** - Function-like macro for compile-time validation
 //!
 //! ## Progressive Learning Path
 //!
@@ -40,7 +39,6 @@
 //! - **Expert**: Master attribute parsing with `DeriveDocComment`
 //! - **Function-like**: Explore `file_navigator` and `compile_time_assert` for utility macros
 //! - **Attribute Wrapping**: Learn function transformation with `cached`, `timing`, and `retry`
-//! - **Complex**: Study advanced external integration with `const_demo`
 //!
 //! ## Usage
 //!
@@ -56,7 +54,7 @@
 //! Or when using with `thag_rs`:
 //!
 //! ```rust
-//! use thag_demo_proc_macros::{DeriveBuilder, DeriveConstructor, DeriveDisplay, DeriveDocComment, DeriveGetters, cached, compile_time_assert, const_demo, file_navigator, retry, timing};
+//! use thag_demo_proc_macros::{DeriveBuilder, DeriveConstructor, DeriveDisplay, DeriveDocComment, DeriveGetters, cached, compile_time_assert, file_navigator, retry, timing};
 //! ```
 //!
 //! ## Examples
@@ -77,7 +75,6 @@
 //!
 //! **Function-like Macros:**
 //! - `demo/proc_macro_file_navigator.rs` - Interactive file operations
-//! - `demo/proc_macro_const_demo.rs` - Advanced const generation
 //! - `demo/proc_macro_compile_time_assert.rs` - Compile-time validation
 //!
 //! ## Educational Value
@@ -102,7 +99,6 @@
 
 mod cached;
 mod compile_time_assert;
-mod const_demo;
 mod derive_builder;
 mod derive_constructor;
 mod derive_display;
@@ -114,7 +110,6 @@ mod timing;
 
 use crate::cached::cached_impl;
 use crate::compile_time_assert::compile_time_assert_impl;
-use crate::const_demo::const_demo_impl;
 use crate::derive_builder::derive_builder_impl;
 use crate::derive_constructor::derive_constructor_impl;
 use crate::derive_display::derive_display_impl;
@@ -147,6 +142,7 @@ use syn::{
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::DeriveConstructor;
 /// #[derive(DeriveConstructor)]
 /// struct Person {
 ///     name: String,
@@ -192,6 +188,7 @@ pub fn derive_constructor(input: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::DeriveBuilder;
 /// #[derive(DeriveBuilder)]
 /// struct Config {
 ///     host: String,
@@ -237,6 +234,7 @@ pub fn derive_builder(input: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::DeriveDisplay;
 /// #[derive(DeriveDisplay)]
 /// struct Person {
 ///     name: String,
@@ -281,6 +279,7 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::DeriveGetters;
 /// #[derive(DeriveGetters)]
 /// struct Person {
 ///     name: String,
@@ -325,6 +324,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::DeriveDocComment;
 /// #[derive(DeriveDocComment)]
 /// enum Status {
 ///     /// The operation completed successfully
@@ -352,7 +352,9 @@ pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
 /// - Cross-platform compatibility
 ///
 /// #### Example
-/// ```rust
+/// ```ignore
+/// use std::path::PathBuf;
+/// use thag_demo_proc_macros::file_navigator;
 /// file_navigator! {}
 /// // Generates: FileNavigator struct, select_file function, save_to_file function, etc.
 /// ```
@@ -361,32 +363,7 @@ pub fn file_navigator(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(true, "file_navigator", &input, file_navigator_impl)
 }
 
-/// Advanced constant generation using external crates.
-///
-/// This macro demonstrates complex proc macro techniques by using the `const_gen_proc_macro`
-/// crate for compile-time constant generation. It showcases integration with external
-/// dependencies and advanced code generation patterns.
-///
-/// #### Features
-/// - Compile-time constant generation
-/// - Integration with external proc macro crates
-/// - Complex object manipulation
-/// - Advanced expression handling
-///
-/// #### Example
-/// ```rust
-/// const_demo!(
-///     let math = math::new(10);
-///     math.add(5);
-///     let result = math.get();
-/// );
-/// ```
-#[proc_macro]
-pub fn const_demo(tokens: TokenStream) -> TokenStream {
-    const_demo_impl(tokens)
-}
-
-/// Attribute macro that adds automatic memoization/caching to functions.
+//// Attribute macro that adds automatic memoization/caching to functions.
 ///
 /// This macro demonstrates advanced attribute macro techniques by wrapping functions
 /// with caching logic. It automatically stores function results and returns cached
@@ -401,6 +378,7 @@ pub fn const_demo(tokens: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::cached;
 /// #[cached]
 /// fn expensive_computation(n: u32) -> u32 {
 ///     // Expensive operation here
@@ -427,6 +405,7 @@ pub fn cached(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::timing;
 /// #[timing]
 /// fn slow_function() -> i32 {
 ///     std::thread::sleep(std::time::Duration::from_millis(100));
@@ -453,7 +432,8 @@ pub fn timing(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// - Graceful failure after max retries
 ///
 /// #### Example
-/// ```rust
+/// ```ignore
+/// use thag_demo_proc_macros::retry;
 /// #[retry(times = 5)]
 /// fn unreliable_network_call() -> Result<String, std::io::Error> {
 ///     // Simulated unreliable operation
@@ -483,6 +463,7 @@ pub fn retry(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// #### Example
 /// ```rust
+/// use thag_demo_proc_macros::compile_time_assert;
 /// compile_time_assert!(std::mem::size_of::<usize>() == 8, "This code requires 64-bit systems");
 /// compile_time_assert!(1 + 1 == 2, "Basic math must work");
 /// ```

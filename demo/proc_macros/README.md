@@ -1,662 +1,359 @@
-# Procedural Macros Documentation
+# Procedural Macros Demo Collection
 
-This directory contains a collection of procedural macros demonstrating various techniques and patterns for writing proc macros in Rust.
+A collection of 10 procedural macros designed with two goals in mind:
 
-## Overview
+ 1. To be generally useful.
 
-The procedural macros in this crate showcase:
+ 2. To help teach proc macro development in Rust.
 
-- **Derive macros**: Generate implementations for traits automatically
+The original collection was based on my own prototypes and experiments and was itself something of a prototype. The revised collection is focused on sharing knowledge and useful code.
+I used Claude (Sonnet 4) to help select and enhance a core of the best original proc macros, to suggest additional macros of the 3 types to flesh out the collection, to implement them and to draft the documentation (as you may be able to tell from the style 🙂).
 
-- **Attribute macros**: Transform or augment code with custom attributes
+This Readme file describes each of the proc macros in the collection, in order from simpler to more complex examples, followed by general information about the collection, such as how to running the demos.
 
-- **Function-like macros**: Generate code using function-like syntax
+The collection is organized into three categories: **Derive Macros** (5), **Attribute Macros** (3), and **Function-like Macros** (2), providing coverage of all proc macro types.
 
-## Derive Macros
+By default the output of each macro is automatically displayed in Rust source form to `stderr` at compile time, formatted if possible by `prettyplease`. The purpose is to help understand what the macros are doing and help debug any compiler errors that point to the macro invocation.
 
-### `AnsiCodeDerive`
+This "expansion" is carried out by the functions `maybe_expand_attr_macro` and `maybe_expand_proc_macro` at the end of `lib.rs`. As the naming "maybe_" implies, this may be turned on or off by the first argument to the function, `expand: boolean`. `lib.rs` demonstrates 2 methods of doing so, most simply by hard-coding the argument; alternatively, most of the derive macros are designed to enable the expansion on receiving the attribute `#[expand_macro]` from the caller. Other possibilities not demonstrated are to accept the boolean value from an environment variable or configuration option.
 
-A derive macro that generates helpful methods for ANSI color enums.
+## The Collection
 
-This macro generates:
-- A `name()` method that returns a human-readable name for each color variant
-- A `FromStr` trait implementation to parse variants from `snake_case` strings
+### 1. DeriveConstructor - Basic Derive Macro
 
-#### Attributes
-- `#[ansi_name("Custom Name")]`: Override the default name for a variant
+**File**: `derive_constructor.rs` | **Demo**: `../proc_macro_derive_constructor.rs`
 
-#### Example Usage
-See `demo/proc_macro_ansi_code_derive.rs` for a complete example.
+A fundamental derive macro that generates constructor methods for structs.
 
-```rust
-#[derive(AnsiCodeDerive)]
-enum Color {
-    Red,
-    #[ansi_name("Dark Gray")]
-    BrightBlack,
-}
-```
+**What it teaches:**
 
-**Example Usage:** [proc_macro_ansi_code_derive.rs](../proc_macro_ansi_code_derive.rs)
+- Basic derive macro structure
+- Field iteration and processing
+- Simple code generation with `quote!`
+- Error handling for unsupported types
 
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs
-```
-
----
-
-### `DeriveConst`
-
-Derives constant generation functionality with adjustment capabilities.
-
-This macro demonstrates compile-time constant generation with configurable
-adjustments. See `demo/proc_macro_organizing_code_const.rs` for examples.
-
-#### Attributes
-- `#[adjust]`: Configures value adjustments
-- `#[use_mappings]`: Specifies mapping configurations
-
-#### Example
-```rust
-#[derive(DeriveConst)]
-#[adjust(factor = 2)]
-struct Config {
-    base_value: u32,
-}
-```
-
----
-
-### `DeriveConstructor`
-
-A basic derive macro that generates a `new` constructor method.
-
-This macro demonstrates derive macro functionality by generating a `new` method
-for structs. The method takes parameters for all fields and returns a new instance.
-
-#### Attributes
-- `#[expand_macro]`: When present, the macro expansion will be displayed during compilation
-
-#### Example
-See `demo/proc_macro_derive_constructor.rs` for usage.
+**Example:**
 
 ```rust
 #[derive(DeriveConstructor)]
-struct MyStruct {
-    name: String,
-    count: usize,
-}
-// Generates: impl MyStruct { fn new(name: String, count: usize) -> Self { ... } }
-```
-
-**Example Usage:** [proc_macro_derive_constructor.rs](../proc_macro_derive_constructor.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_constructor.rs
-```
-
----
-
-### `DeriveCustomModel`
-
-Derives a custom model with additional functionality.
-
-This macro demonstrates more advanced derive macro capabilities with custom attributes.
-See `demo/proc_macro_derive_custom_model.rs` for detailed usage.
-
-#### Attributes
-- `#[custom_model]`: Configures the custom model generation
-
-#### Example
-```rust
-#[derive(DeriveCustomModel)]
-#[custom_model]
-struct MyModel {
-    id: u32,
-    name: String,
-}
-```
-
-**Example Usage:** [proc_macro_derive_custom_model.rs](../proc_macro_derive_custom_model.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_custom_model.rs
-```
-
----
-
-### `DeriveKeyMapList`
-
-Derives key-map list functionality with advanced attribute support.
-
-This macro generates methods for working with key-mapped lists, demonstrating
-complex derive macro patterns with the `deluxe` crate.
-See `demo/proc_macro_derive_key_map_list.rs` for usage examples.
-
-#### Attributes
-- `#[deluxe]`: Enables deluxe attribute parsing
-- `#[use_mappings]`: Configures key mappings
-
-#### Example
-```rust
-#[derive(DeriveKeyMapList)]
-#[use_mappings(key1 = "mapped_key1")]
-struct KeyMap {
-    key1: String,
-    values: Vec<String>,
-}
-```
-
-**Example Usage:** [proc_macro_derive_key_map_list.rs](../proc_macro_derive_key_map_list.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_key_map_list.rs
-```
-
----
-
-### `DeserializeVec`
-
-Derives vector deserialization functionality using the `deluxe` crate.
-
-This macro demonstrates advanced attribute parsing and generates deserialization
-methods for vector types with custom mappings.
-
-#### Attributes
-- `#[deluxe]`: Configures deluxe attribute parsing
-- `#[use_mappings]`: Specifies field mappings for deserialization
-
-#### Example
-```rust
-#[derive(DeserializeVec)]
-#[use_mappings(field1 = "alias1")]
-struct Data {
-    field1: String,
-    items: Vec<String>,
-}
-```
-
----
-
-### `DocComment`
-
-Derives automatic documentation comment generation.
-
-This macro demonstrates automatic generation of documentation comments
-based on struct or enum definitions. See `demo/proc_macro_derive_doc_comment.rs`
-for examples.
-
-#### Example
-```rust
-#[derive(DocComment)]
-struct Example {
-    field: String,
-}
-// Generates documentation comments automatically
-```
-
----
-
-### `HostPortConst`
-
-Derives compile-time constants for host and port configurations.
-
-This macro generates compile-time constants for network configuration,
-demonstrating practical applications of const generation.
-See `demo/proc_macro_host_port_const.rs` for usage.
-
-#### Attributes
-- `#[const_value]`: Specifies the constant value configuration
-
-#### Example
-```rust
-#[derive(HostPortConst)]
-#[const_value(host = "localhost", port = 8080)]
-struct ServerConfig;
-```
-
-**Example Usage:** [proc_macro_host_port_const.rs](../proc_macro_host_port_const.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_host_port_const.rs
-```
-
----
-
-### `IntoStringHashMap`
-
-Derives conversion functionality to convert structs into `HashMap<String, String>`.
-
-This macro generates an implementation that converts struct fields into a string-based HashMap.
-Useful for serialization scenarios or when you need a dynamic key-value representation.
-
-#### Example
-```rust
-#[derive(IntoStringHashMap)]
 struct Person {
     name: String,
     age: u32,
 }
-// Generates methods to convert Person into HashMap<String, String>
+// Generates: impl Person { pub fn new(name: String, age: u32) -> Person { ... } }
 ```
 
----
+### 2. DeriveGetters - Intermediate Derive Macro
 
-### `MyDescription`
+**File**: `derive_getters.rs` | **Demo**: `../proc_macro_derive_getters.rs`
 
-Derives description functionality with custom attributes.
+Automatically generates getter methods that return references to struct fields.
 
-This macro demonstrates using the `deluxe` crate for advanced attribute parsing.
-See the implementation for details on how custom descriptions are generated.
+**What it teaches:**
 
-#### Attributes
-- `#[my_desc]`: Specifies custom description attributes
+- Method generation patterns
+- Type analysis (references vs owned types)
+- Documentation generation in macros
+- Field naming and identifier handling
 
-#### Example
+**Example:**
+
 ```rust
-#[derive(MyDescription)]
-#[my_desc(description = "A sample struct")]
-struct Sample {
-    value: i32,
+#[derive(DeriveGetters)]
+struct Config {
+    host: String,
+    port: u16,
+}
+// Generates getter methods: host(), port(), etc.
+```
+
+### 3. DeriveBuilder - Advanced Derive Macro
+
+**File**: `derive_builder.rs` | **Demo**: `../proc_macro_derive_builder.rs`
+
+Generates a complete builder pattern implementation for structs.
+
+**What it teaches:**
+
+- Builder pattern generation
+- Fluent API design with method chaining
+- Separate struct generation
+- Build-time validation and error handling
+- Default trait implementation
+
+**Example:**
+
+```rust
+#[derive(DeriveBuilder)]
+struct Config {
+    host: String,
+    port: u16,
+}
+// Generates: ConfigBuilder with fluent API
+// let config = Config::builder().host("localhost").port(8080).build()?;
+```
+
+### 4. DeriveDisplay - Trait Implementation Macro
+
+**File**: `derive_display.rs` | **Demo**: `../proc_macro_derive_display.rs`
+
+Automatically generates Display trait implementations for structs and enums.
+
+**What it teaches:**
+
+- Trait implementation generation
+- Pattern matching for enums
+- Field formatting with proper separators
+- Handling different struct types (named, tuple, unit)
+- Type-aware formatting
+
+**Example:**
+
+```rust
+#[derive(DeriveDisplay)]
+struct Person {
+    name: String,
+    age: u32,
+}
+// Generates: impl Display for Person { ... }
+// Output: "Person { name: Alice, age: 30 }"
+```
+
+### 5. DeriveDocComment - Enhanced Derive Macro
+
+**File**: `derive_doc_comment.rs` | **Demo**: `../proc_macro_derive_doc_comment.rs`
+
+Extracts documentation from structs, enums, and all variant types, making compile-time documentation available at runtime.
+
+**What it teaches:**
+
+- Advanced attribute parsing across multiple item types
+- Working with structs, enums, tuple structs, and unit structs
+- Documentation extraction from fields and variants
+- Runtime access to compile-time documentation
+- Complex pattern matching generation
+
+**Example:**
+
+```rust
+#[derive(DeriveDocComment)]
+enum Status {
+    /// Operation completed successfully
+    Success,
+    /// An error occurred
+    Error,
+}
+// Generates: impl Status { fn doc_comment(&self) -> &'static str { ... } }
+```
+
+**Example - Struct:**
+
+```rust
+/// A user configuration
+#[derive(DeriveDocComment)]
+struct Config {
+    /// The server hostname
+    host: String,
+    /// The server port number
+    port: u16,
+}
+// Generates: impl Config { pub fn field_doc(name: &str) -> Option<&'static str> { ... } }
+```
+
+### 6. cached - Attribute Macro
+
+**File**: `cached.rs` | **Demo**: `../proc_macro_cached.rs`
+
+Adds automatic memoization/caching to functions for significant performance improvements.
+
+**What it teaches:**
+
+- Advanced attribute macro techniques
+- Function wrapping and transformation
+- Thread-safe caching with HashMap and Mutex
+- Compile-time cache key generation
+- Performance optimization patterns
+
+**Example:**
+
+```rust
+#[cached]
+fn expensive_fibonacci(n: u32) -> u64 {
+    if n <= 1 { n as u64 } else { expensive_fibonacci(n-1) + expensive_fibonacci(n-2) }
 }
 ```
 
----
+### 7. timing - Attribute Macro
 
-## Attribute Macros
+**File**: `timing.rs` | **Demo**: `../proc_macro_timing.rs`
 
-### `attribute_basic`
+Automatically measures and displays function execution time for performance analysis.
 
-A basic attribute macro that demonstrates attribute macro functionality.
+**What it teaches:**
 
-This is a simple example of an attribute macro that can be applied to items.
-See `demo/proc_macro_attribute_basic.rs` for usage examples.
+- Simple but effective attribute macro patterns
+- Function signature preservation
+- Performance measurement techniques
+- Console output integration
 
-#### Example
+**Example:**
+
 ```rust
-// Annotate function `my_function` with "#[allow(unused_variables)]"
-#[attribute_basic(allow(unused_variables))]
-fn my_function() { }
+#[timing]
+fn slow_operation() -> String {
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    "completed".to_string()
+}
+// Output: ⏱️ Function 'slow_operation' took: 100.234ms
 ```
 
-**Example Usage:** [proc_macro_attribute_basic.rs](../proc_macro_attribute_basic.rs)
+### 8. retry - Attribute Macro
 
-**Run Example:**
+**File**: `retry.rs` | **Demo**: `../proc_macro_retry.rs`
 
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_attribute_basic.rs
-```
+Adds automatic retry logic to functions with configurable attempts and backoff delays.
 
----
+**What it teaches:**
 
-### `baz`
+- Attribute macro parameter parsing
+- Error handling and resilience patterns
+- Panic catching and retry logic
+- Progress reporting and user feedback
 
-An attribute macro demonstrating the `expander` crate functionality.
+**Example:**
 
-This macro showcases macro expansion capabilities using the expander crate.
-See `demo/proc_macro_expander_demo.rs` for usage examples.
-
-#### Example
 ```rust
-#[baz]
-fn my_function() {
-    // function body
+#[retry(times = 5)]
+fn unreliable_network_call() -> Result<String, std::io::Error> {
+    // Network operation that might fail
+    Ok("success".to_string())
 }
 ```
 
----
+### 9. file_navigator - Function-like Macro
 
-### `use_mappings`
+**File**: `file_navigator.rs` | **Demo**: `../proc_macro_file_navigator.rs`
 
-An attribute macro for configuring field mappings.
+Generates interactive file system navigation from the command line using `inquire`, with comprehensive file operations workflow.
 
-This macro processes mapping configurations and applies them to the annotated item.
-Often used in conjunction with other derive macros for customization.
+**What it teaches:**
 
-#### Example
+- Function-like macro patterns
+- Complex code generation
+- Real-world utility creation
+- Interactive user interface generation
+
+**Example:**
+
 ```rust
-#[use_mappings(field1 = "alias1", field2 = "alias2")]
-struct MappedStruct {
-    field1: String,
-    field2: i32,
-}
+file_navigator! {}
+// Generates: FileNavigator struct, select_file function, save_to_file function, etc.
 ```
 
----
+### 10. compile_time_assert - Function-like Macro
 
-## Function-like Macros
+**File**: `compile_time_assert.rs` | **Demo**: `../proc_macro_compile_time_assert.rs`
 
-### `const_demo`
+Generates compile-time assertions that prevent compilation if conditions are not met.
 
-A function-like macro demonstrating compile-time constant generation.
+**What it teaches:**
 
-This macro shows how to generate constants at compile time based on input parameters.
-See `demo/proc_macro_const_demo.rs` for basic usage.
+- Function-like macro parsing with multiple parameters
+- Compile-time validation techniques
+- Zero-runtime-cost assertions
+- Custom error message generation
 
-#### Example
+**Example:**
+
 ```rust
-const_demo!(MyConst = 42);
+compile_time_assert!(std::mem::size_of::<usize>() == 8, "Requires 64-bit platform");
+compile_time_assert!(1 + 1 == 2, "Basic math must work");
 ```
 
-**Example Usage:** [proc_macro_const_demo.rs](../proc_macro_const_demo.rs)
+## Learning Path
 
-**Run Example:**
+Follow this progression for the best learning experience:
+
+1. **Start with DeriveConstructor** - Learn the fundamentals
+2. **Progress to DeriveGetters** - Understand method generation
+3. **Study DeriveBuilder** - Master builder pattern generation
+4. **Learn DeriveDisplay** - Understand trait implementation
+5. **Explore DeriveDocComment** - Master attribute parsing across types
+6. **Try cached** - Learn function transformation and caching
+7. **Use timing** - Understand performance measurement
+8. **Apply retry** - Master error handling and resilience
+9. **Practice file_navigator** - See practical applications
+10. **Test compile_time_assert** - Learn compile-time validation
+
+## Running the Examples
+
+Each macro has a comprehensive demo file. Run them with:
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo.rs
-```
-
----
-
-### `const_demo_debug`
-
-A debug variant of `const_demo` with detailed expansion information.
-
-This macro provides debugging capabilities for const generation, showing
-detailed expansion information. See `demo/proc_macro_const_demo_debug.rs`.
-
-#### Example
-```rust
-const_demo_debug!(MyConst = 42);
-```
-
-**Example Usage:** [proc_macro_const_demo_debug.rs](../proc_macro_const_demo_debug.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_debug.rs
-```
-
----
-
-### `const_demo_expand`
-
-A variant of `const_demo` that shows macro expansion during compilation.
-
-This version of the const demo macro displays the generated code during compilation,
-useful for debugging and understanding macro output. See `demo/proc_macro_const_demo_expand.rs`.
-
-#### Example
-```rust
-const_demo_expand!(MyConst = 42);
-```
-
-**Example Usage:** [proc_macro_const_demo_expand.rs](../proc_macro_const_demo_expand.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_expand.rs
-```
-
----
-
-### `const_demo_grail`
-
-An advanced constant generation macro using the `const_gen` crate.
-
-This macro demonstrates advanced compile-time constant generation techniques
-using external crates. See the implementation for technical details.
-
-#### Example
-```rust
-const_demo_grail!(AdvancedConst = complex_computation());
-```
-
----
-
-### `embed_file`
-
-A function-like macro for embedding file contents at compile time.
-
-This macro reads a file at compile time and embeds its contents as a string literal.
-Useful for including configuration files, templates, or other static content.
-
-#### Example
-```rust
-let content = embed_file!("config.txt");
-```
-
----
-
-### `end`
-
-Creates a function that returns the line number where it's called.
-
-This macro generates a function with a name based on the input string that
-returns the current line number using the `line!()` macro. Useful for debugging
-and testing scenarios. See `demo/proc_macro_end.rs` for usage.
-
-#### Example
-```rust
-end!("my_function");
-// Generates: fn end_my_function() -> u32 { line!() }
-
-fn main() {
-    println!("Current line: {}", end_my_function());
-}
-```
-
-**Example Usage:** [proc_macro_end.rs](../proc_macro_end.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_end.rs
-```
-
----
-
-### `function_like_basic`
-
-A basic function-like macro that generates a constant value.
-
-This demonstrates function-like macro syntax and generates a constant `VALUE` set to 42.
-See `demo/proc_macro_functionlike_basic.rs` for usage.
-
-#### Example
-```rust
-function_like_basic!();
-// Generates: pub const VALUE: usize = 42;
-```
-
----
-
-### `load_static_map`
-
-An advanced macro for loading directory contents into static maps.
-
-This macro can embed entire directory structures as static HashMap data,
-useful for embedding web assets, templates, or configuration directories.
-See `demo/proc_macro_load_static_map.rs` for usage examples.
-
-#### Example
-```rust
-load_static_map!("assets/");
-// Generates a static HashMap with file paths as keys and contents as values
-```
-
-**Example Usage:** [proc_macro_load_static_map.rs](../proc_macro_load_static_map.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_load_static_map.rs
-```
-
----
-
-### `organizing_code`
-
-A function-like macro demonstrating code organization patterns.
-
-This macro is based on examples from <https://github.com/tdimitrov/rust-proc-macro-post>
-and shows how to organize complex macro logic. See `demo/proc_macro_organizing_code.rs`
-for usage examples.
-
-#### Example
-```rust
-organizing_code!{
-    // Your code here
-}
-```
-
-**Example Usage:** [proc_macro_organizing_code.rs](../proc_macro_organizing_code.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code.rs
-```
-
----
-
-### `organizing_code_tokenstream`
-
-A function-like macro demonstrating TokenStream manipulation.
-
-This macro shows advanced TokenStream processing techniques, also based on examples
-from <https://github.com/tdimitrov/rust-proc-macro-post>.
-See `demo/proc_macro_organizing_code_tokenstream.rs` for usage.
-
-#### Example
-```rust
-organizing_code_tokenstream!{
-    // TokenStream content
-}
-```
-
-**Example Usage:** [proc_macro_organizing_code_tokenstream.rs](../proc_macro_organizing_code_tokenstream.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_tokenstream.rs
-```
-
----
-
-### `repeat_dash`
-
-A function-like macro that generates repeated dash characters.
-
-This macro demonstrates simple text generation and can be used to create
-visual separators or formatting elements. See `demo/proc_macro_repeat_dash.rs`
-for usage examples.
-
-#### Example
-```rust
-repeat_dash!(10); // Generates 10 dash characters
-```
-
-**Example Usage:** [proc_macro_repeat_dash.rs](../proc_macro_repeat_dash.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_repeat_dash.rs
-```
-
----
-
-### `string_concat`
-
-A function-like macro for compile-time string concatenation.
-
-This macro demonstrates compile-time string manipulation and concatenation.
-See `demo/proc_macro_string_concat.rs` for usage examples.
-
-#### Example
-```rust
-string_concat!("Hello", " ", "World"); // Generates "Hello World"
-```
-
-**Example Usage:** [proc_macro_string_concat.rs](../proc_macro_string_concat.rs)
-
-**Run Example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_string_concat.rs
-```
-
----
-
-## Usage
-
-To use these macros in your project:
-
-```toml
-[dependencies]
-thag_demo_proc_macros = { path = "demo/proc_macros" }
-```
-
-Or when using `thag_rs`:
-
-```rust
-// "thag_demo_proc_macros" is automatically resolved
-use thag_demo_proc_macros::{YourMacro};
-```
-
-## Running Examples
-
-Each proc macro has a corresponding example file in the `demo/` directory. To run the examples:
-
-```bash
-# Set the development path for thag-auto resolution
+# Set up the development environment
 export THAG_DEV_PATH=/path/to/thag_rs
 
-# Run an example
-cargo run --bin thag -- demo/proc_macro_ansi_code_derive.rs
+# Derive Macros
+cargo run -- demo/proc_macro_derive_constructor.rs
+cargo run -- demo/proc_macro_derive_getters.rs
+cargo run -- demo/proc_macro_derive_builder.rs
+cargo run -- demo/proc_macro_derive_display.rs
+cargo run -- demo/proc_macro_derive_doc_comment.rs
+
+# Attribute Macros
+cargo run -- demo/proc_macro_cached.rs
+cargo run -- demo/proc_macro_timing.rs
+cargo run -- demo/proc_macro_retry.rs
+
+# Function-like Macros
+cargo run -- demo/proc_macro_file_navigator.rs
+cargo run -- demo/proc_macro_compile_time_assert.rs
 ```
 
-Or use the URL runner for published examples:
+## Key Concepts Demonstrated
+
+- **Syntax Parsing**: Using `syn` to parse Rust syntax trees
+- **Code Generation**: Using `quote!` to generate clean, readable code
+- **Error Handling**: Proper error reporting in proc macros
+- **Type Analysis**: Working with different Rust types and patterns
+- **Attribute Processing**: Extracting and using custom attributes
+- **Function Transformation**: Wrapping and modifying function behavior
+- **Performance Optimization**: Caching, timing, and retry patterns
+- **Compile-time Validation**: Zero-runtime-cost assertions
+- **Documentation Generation**: Runtime access to compile-time docs
+- **External Integration**: Using proc macro ecosystem crates
+
+## Why These 10?
+
+Each macro was chosen for specific pedagogical value:
+
+- **Progressive Complexity**: From simple field processing to advanced external integration
+- **Complete Coverage**: All three proc macro types represented
+- **Real-world Utility**: All solve actual problems developers face
+- **Clean Implementation**: No experimental code or incomplete features
+- **Teaching Value**: Each demonstrates distinct proc macro concepts
+- **Ecosystem Integration**: Shows how to work with existing crate ecosystems
+
+## Building and Testing
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs
-```
-
-## Development
-
-### Building
-```bash
+# Check the library builds correctly
 cd demo/proc_macros
-cargo build
-```
+cargo check
 
-### Documentation
-Generate and view the documentation:
-
-```bash
-cargo doc --no-deps --open
-```
-
-### Testing
-```bash
+# Run tests (if any are added)
 cargo test
+
+# Build documentation
+cargo doc --open
 ```
 
-### Macro Expansion
-Many macros support the `expand` feature to show generated code during compilation:
-```bash
-cargo build --features expand
-```
+## Contributing
 
-### Example Testing
-Test individual examples (requires setting `THAG_DEV_PATH`):
+When adding new macros to this collection, ensure they:
 
-```bash
-export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory
-cargo run --bin thag -- demo/proc_macro_const_demo.rs
-cargo run --bin thag -- demo/proc_macro_derive_constructor.rs
-```
+1. **Solve a real problem** - Have practical utility
+2. **Teach something new** - Demonstrate unique concepts
+3. **Are well documented** - Include comprehensive examples
+4. **Are thoroughly tested** - Work reliably
+5. **Fit the progression** - Add educational value to the sequence

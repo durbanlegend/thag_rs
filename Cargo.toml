@@ -197,8 +197,8 @@ path = "src/bin/thag_gen_readme.rs"
 required-features = ["tools"]
 
 [[bin]]
-name = "thag_get_demo"
-path = "src/bin/thag_get_demo.rs"
+name = "thag_get_demo_dir"
+path = "src/bin/thag_get_demo_dir.rs"
 required-features = ["tools"]
 
 [[bin]]

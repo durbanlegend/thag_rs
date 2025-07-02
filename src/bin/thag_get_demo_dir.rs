@@ -104,6 +104,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let demo_src = temp_clone.join("demo");
     fs::rename(&demo_src, &demo_dest)?;
 
+    // 8) Remove the temporary clone directory
+    fs::remove_dir_all(&temp_clone)?;
+
     println!("✅ demo/ downloaded to: {}", demo_dest.display());
     Ok(())
 }

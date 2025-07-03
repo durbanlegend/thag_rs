@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 #![allow(dead_code)]
 /// Demo of the enhanced DeriveDocComment proc macro that extracts documentation from multiple types.
 ///
@@ -14,6 +9,9 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 /// - Different struct types (named fields, tuple, unit)
 //# Purpose: Demonstrate comprehensive documentation extraction across item types
 //# Categories: technique, proc_macros, derive_macros, documentation, attribute_parsing
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::DeriveDocComment;
 
 /// Represents the current status of a task or operation

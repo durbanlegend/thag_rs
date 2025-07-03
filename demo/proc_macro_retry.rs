@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
 rand = "0.8"
 */
 
@@ -11,7 +10,9 @@ rand = "0.8"
 /// failed function calls with configurable attempts and backoff delays.
 //# Purpose: Demonstrate automatic retry logic with configurable parameters
 //# Categories: technique, proc_macros, attribute_macros, error_handling, resilience
-// use std::time::Duration;
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::retry;
 
 /// Unreliable network operation that fails randomly

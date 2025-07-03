@@ -19,6 +19,9 @@ edit = "0.1"
 use inquire::Confirm;
 use std::fs;
 use std::path::PathBuf;
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::file_navigator;
 
 file_navigator! {}

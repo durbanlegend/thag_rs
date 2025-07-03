@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 /// Demo of the DeriveDisplay proc macro that generates Display trait implementations.
 ///
 /// This macro demonstrates advanced trait implementation generation by automatically
@@ -14,6 +9,9 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 /// - Proper formatting with separators and type-aware output
 //# Purpose: Demonstrate automatic Display trait implementation generation
 //# Categories: technique, proc_macros, derive_macros, trait_implementation
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::DeriveDisplay;
 
 #[derive(Debug, DeriveDisplay)]

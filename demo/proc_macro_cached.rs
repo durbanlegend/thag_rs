@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 /// Demo of the cached attribute macro that adds automatic memoization to functions.
 ///
 /// This macro demonstrates advanced attribute macro techniques by wrapping functions
@@ -12,6 +7,8 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 //# Purpose: Demonstrate automatic function memoization with caching
 //# Categories: technique, proc_macros, attribute_macros, performance, caching
 use std::time::Instant;
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::cached;
 
 /// Expensive computation that benefits from caching

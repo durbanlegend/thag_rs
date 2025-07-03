@@ -2,17 +2,6 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
-
-[![Hot flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)<br>
-*Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
-
----
-
-[![Memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.svg)<br>
-*Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail. Click on image for interactive version with clickable bars and search.*
-
----
-
 An independent offshoot of the `thag(_rs)` script runner and REPL.
 
 Why choose `thag_profiling`?:
@@ -27,7 +16,14 @@ Why choose `thag_profiling`?:
 
  - any mix of synchronous and asynchronous code
 
- - pure Rust with no plattform dependencies
+ - pure Rust with no platform dependencies
+
+---
+
+[![Hot flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250703-210923.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250703-210923.svg)<br>
+*Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
+
+---
 
 Instrumentation:
 
@@ -54,6 +50,13 @@ Output analysis:
   - function statistics for time profiles
 
   - allocation statistics and size distribution for memory profiles
+
+---
+
+[![Memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.svg)<br>
+*Filtered memory profile in <code>inferno</code> "memory" color scheme with `count_words` function profiled in detail. Click on image for interactive version with clickable bars and search.*
+
+---
 
 ## Features
 

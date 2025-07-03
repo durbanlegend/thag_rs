@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 /// Demo of the DeriveBuilder proc macro that generates builder pattern implementations.
 ///
 /// This macro demonstrates advanced derive macro techniques by generating a complete
@@ -14,6 +9,9 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 /// - Documentation generation
 //# Purpose: Demonstrate builder pattern generation with validation
 //# Categories: technique, proc_macros, derive_macros, builder_pattern
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::DeriveBuilder;
 
 #[derive(Debug, DeriveBuilder)]

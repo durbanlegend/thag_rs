@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 /// Demo of the env_or_default function-like macro for compile-time environment variable access.
 ///
 /// This macro demonstrates compile-time environment variable processing with fallback
@@ -10,6 +5,9 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 /// literals, providing a zero-overhead configuration management pattern.
 //# Purpose: Demonstrate compile-time environment variable access with defaults
 //# Categories: technique, proc_macros, function_like_macros, configuration, environment
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::env_or_default;
 
 // Example 1: Database configuration with defaults

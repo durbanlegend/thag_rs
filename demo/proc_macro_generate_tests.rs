@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 /// Demo of the generate_tests function-like macro for automatic test generation.
 ///
 /// This macro demonstrates repetitive code generation patterns by creating multiple
@@ -10,6 +5,9 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 /// and shows how macros can automate common development tasks.
 //# Purpose: Demonstrate automatic test case generation from data
 //# Categories: technique, proc_macros, function_like_macros, testing, automation
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::generate_tests;
 
 // Example 1: Basic arithmetic tests

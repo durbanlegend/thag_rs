@@ -1818,6 +1818,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_depen
 
 ---
 
+### Script: download_demos.rs
+
+**Description:**  Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`
+ with subdirectory support. Git `sparse-checkout` approach suggested and written
+ by ChatGPT, local directory handling assisted by Claude.
+
+**Purpose:** Prototype for `thag_get_demo_dir`.
+
+**Crates:** `inquire`, `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** crates, prototype, technique
+
+**Link:** [download_demos.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/download_demos.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/download_demos.rs
+```
+
+---
+
 ### Script: duration_snippet.rs
 
 **Description:**  Minimal snippet showing how to add nice additional constructors such as `from_weeks` (and days, hours and
@@ -4048,60 +4072,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/prettyplease.rs
 
 ---
 
-### Script: proc_macro_ansi_code_derive.rs
+### Script: proc_macro_cached.rs
 
-**Description:**  Demonstrate embellishing an enum of the 16 basic colours, to allow renaming, generating a descriptive
- name, and instantiating a variant from its name string.
+**Description:**  Demo of the cached attribute macro that adds automatic memoization to functions.
 
- The `ansi_name` attribute is used to override the default name of "Bright Black" to the alternative name
- "Dark Gray".
+ This macro demonstrates advanced attribute macro techniques by wrapping functions
+ with caching logic. It automatically stores function results and returns cached
+ values for repeated calls with the same parameters, providing significant
+ performance improvements for expensive computations.
+ Expensive computation that benefits from caching
+ Expensive string processing that benefits from caching
+ Mathematical computation with multiple parameters
+ Prime number checking (expensive operation)
 
- This proc macro was originally used by the `thag` `styling` module.
-
-**Purpose:** Sample model of a basic attribute proc macro.
-
-**Crates:** `serde`, `strum`, `thag_demo_proc_macros`, `thag_rs`
-
-**Type:** Snippet
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_ansi_code_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_ansi_code_derive.rs
-```
-
----
-
-### Script: proc_macro_attribute_basic.rs
-
-**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
- `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
-
- In this example we use an attribute macro to annotate one function with "#[warn(unused_variables)]",
- so we DO expect to get a compiler warning about its unused variable `warn_not_in_use`.
-
- We use the same attribute macro to annotate another function with "#[allow(unused_variables)]",
- so we DON'T expect to get a compiler warning about its unused variable `allow_not_in_use`.
-
-
-**Purpose:** Sample model of a basic attribute proc macro.
+**Purpose:** Demonstrate automatic function memoization with caching
 
 **Crates:** `thag_demo_proc_macros`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, attribute_macros, performance, caching
 
-**Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_attribute_basic.rs)
+**Link:** [proc_macro_cached.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_cached.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_attribute_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_cached.rs
 ```
 
 ---
@@ -4129,69 +4126,58 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_categ
 
 ---
 
-### Script: proc_macro_const_demo.rs
+### Script: proc_macro_compile_time_assert.rs
 
-**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
+**Description:**  Demo of the compile_time_assert function-like macro for compile-time validation.
 
-**Purpose:** Demo the use of proc macros to generate constants at compile time
+ This macro demonstrates function-like macro parsing with multiple parameters
+ and compile-time validation techniques. It generates assertions that are
+ checked at compile time, causing compilation to fail if conditions are not met.
+
+**Purpose:** Demonstrate compile-time assertions and validation
 
 **Crates:** `thag_demo_proc_macros`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, function_like_macros, compile_time, validation
 
-**Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo.rs)
+**Link:** [proc_macro_compile_time_assert.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_compile_time_assert.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_compile_time_assert.rs
 ```
 
 ---
 
-### Script: proc_macro_const_demo_debug.rs
+### Script: proc_macro_derive_builder.rs
 
-**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
+**Description:**  Demo of the DeriveBuilder proc macro that generates builder pattern implementations.
 
-**Purpose:** Second working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_expand.rs`.
+ This macro demonstrates advanced derive macro techniques by generating a complete
+ builder pattern implementation including:
+ - A separate builder struct with optional fields
+ - Fluent API with method chaining
+ - Build-time validation with comprehensive error handling
+ - Default trait implementation
+ - Documentation generation
+
+**Purpose:** Demonstrate builder pattern generation with validation
 
 **Crates:** `thag_demo_proc_macros`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros, builder_pattern
 
-**Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_debug.rs)
+**Link:** [proc_macro_derive_builder.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_builder.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_debug.rs
-```
-
----
-
-### Script: proc_macro_const_demo_expand.rs
-
-**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
- Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
-
-**Purpose:** First working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_debug.rs`.
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Snippet
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_expand.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_const_demo_expand.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_builder.rs
 ```
 
 ---
@@ -4221,40 +4207,62 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_deriv
 
 ---
 
-### Script: proc_macro_derive_custom_model.rs
+### Script: proc_macro_derive_display.rs
 
-**Description:**  Published example from `https://github.com/anshulsanghi-blog/macros-handbook`
+**Description:**  Demo of the DeriveDisplay proc macro that generates Display trait implementations.
 
-**Purpose:** explore derive proc macros
+ This macro demonstrates advanced trait implementation generation by automatically
+ creating Display implementations for various types:
+ - Structs with named fields
+ - Tuple structs
+ - Unit structs
+ - Enums with all variant types
+ - Proper formatting with separators and type-aware output
+
+**Purpose:** Demonstrate automatic Display trait implementation generation
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros, trait_implementation
 
-**Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_custom_model.rs)
+**Link:** [proc_macro_derive_display.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_display.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_custom_model.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_display.rs
 ```
 
 ---
 
 ### Script: proc_macro_derive_doc_comment.rs
 
-**Description:**  Exploring exposing doc comments at runtime.
- Example from https://www.reddit.com/r/rust/comments/pv5v3x/looking_for_a_minimal_example_on_how_to_parse_doc/
+**Description:**  Demo of the enhanced DeriveDocComment proc macro that extracts documentation from multiple types.
 
-**Purpose:** explore proc macros
+ This macro demonstrates advanced derive macro techniques by extracting documentation
+ comments from various Rust items and making them available at runtime:
+ - Enum variants with their documentation
+ - Struct fields with their documentation
+ - The items themselves (struct/enum level docs)
+ - Different struct types (named fields, tuple, unit)
+ Represents the current status of a task or operation
+ A comprehensive user configuration structure
+
+ This struct holds all the necessary configuration
+ for connecting to and managing a server.
+ A simple point in 3D space
+ A marker struct indicating successful initialization
+ Different types of network protocols
+
+**Purpose:** Demonstrate comprehensive documentation extraction across item types
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros, documentation, attribute_parsing
 
 **Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_doc_comment.rs)
 
@@ -4266,83 +4274,87 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_deriv
 
 ---
 
-### Script: proc_macro_derive_key_map_list.rs
+### Script: proc_macro_derive_getters.rs
 
-**Description:**  Use a derive proc macro to implement a table from a base with additions and deletions.
- Not very useful currently: the dream is to generate a constant and get mappings as a variable.
+**Description:**  Demo of the DeriveGetters proc macro that automatically generates getter methods.
 
-**Purpose:** explore derive proc macros
+ This macro generates getter methods for all fields in a struct, returning references
+ to avoid unnecessary moves. It's a simpler but still useful teaching example that
+ demonstrates:
+ - Derive macro syntax and parsing
+ - Field iteration and type analysis
+ - Method generation with documentation
+ - Error handling for unsupported types
+
+**Purpose:** Demonstrate automatic getter generation
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros
 
-**Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_key_map_list.rs)
+**Link:** [proc_macro_derive_getters.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_getters.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_key_map_list.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_getters.rs
 ```
 
 ---
 
-### Script: proc_macro_end.rs
+### Script: proc_macro_env_or_default.rs
 
-**Description:**  Proof of concept of a function-like proc macro to provide its line number to
- a caller higher up in the same function. The `end!("x")` proc macro replaces itself
- in the calling source code by a tiny function `end_x() -> u32` that evaluates the
- Rust standard `line!()` macro to determine its line number and returns this value
- to callers. This is to allow the `thag_profiler` `profile!` declarative macro, which
- profiles a section, to determine the end line number of the section in addition to
- the starting line which it determines itself, so that memory allocations made within
- the section can be correctly attributed to the section by the tracking allocator
- doing a backtrace and matching up the module, function and line number from
- the backtrace with the registered profiles.
+**Description:**  Demo of the env_or_default function-like macro for compile-time environment variable access.
 
- For the final implementation of section profiling, which accepts either a string literal
- as in this example or an unquoted identifier, see `lib.rs`, `end.rs` and `profile.rs` in
- the `thag_proc_macros` crate.
+ This macro demonstrates compile-time environment variable processing with fallback
+ defaults. It reads environment variables during compilation and generates string
+ literals, providing a zero-overhead configuration management pattern.
 
-
-**Purpose:** Prototype a technique to facilitate section profiling.
+**Purpose:** Demonstrate compile-time environment variable access with defaults
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, profiling, prototype, technique
+**Categories:** technique, proc_macros, function_like_macros, configuration, environment
 
-**Link:** [proc_macro_end.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_end.rs)
+**Link:** [proc_macro_env_or_default.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_env_or_default.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_end.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_env_or_default.rs
 ```
 
 ---
 
-### Script: proc_macro_expander_demo.rs
+### Script: proc_macro_file_navigator.rs
 
-**Description:**  Published example from crate `expander`
+**Description:**  Enhanced file navigator demo with editing and saving capabilities.
 
-**Purpose:** debug proc macros
+ This demo showcases the file_navigator proc macro by:
+ 1. Selecting a file using an interactive file browser
+ 2. Reading and displaying the file content
+ 3. Opening the file in an external editor for modification
+ 4. Saving the modified content to a new file
+ 5. Demonstrating all generated methods from the file_navigator macro
 
-**Crates:** `thag_demo_proc_macros`
+**Purpose:** Comprehensive demo of file_navigator macro with full workflow
+
+**Crates:** `edit`, `inquire`, `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, file_handling, interactive
 
-**Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_expander_demo.rs)
+**Link:** [proc_macro_file_navigator.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_navigator.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_expander_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_navigator.rs
 ```
 
 ---
@@ -4370,157 +4382,94 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_funct
 
 ---
 
-### Script: proc_macro_host_port_const.rs
+### Script: proc_macro_generate_tests.rs
 
-**Description:**  Demo example generated by ChatGPT, followed by intensive debugging of the `syn` logic in the proc macro.
+**Description:**  Demo of the generate_tests function-like macro for automatic test generation.
 
-**Purpose:** Demo the use of proc macros to generate constants at compile time
+ This macro demonstrates repetitive code generation patterns by creating multiple
+ test functions from a list of test data. It reduces boilerplate in test suites
+ and shows how macros can automate common development tasks.
 
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Program
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_host_port_const.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_host_port_const.rs
-```
-
----
-
-### Script: proc_macro_load_static_map.rs
-
-**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
- `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
-
-**Purpose:** Sample model of a basic function-like proc macro.
-
-**Crates:** `phf`, `thag_demo_proc_macros`
-
-**Type:** Program
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_load_static_map.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_load_static_map.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_load_static_map.rs
-```
-
----
-
-### Script: proc_macro_organizing_code.rs
-
-**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
-
-**Purpose:** explore proc macros
+**Purpose:** Demonstrate automatic test case generation from data
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, function_like_macros, testing, automation
 
-**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code.rs)
+**Link:** [proc_macro_generate_tests.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_generate_tests.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_generate_tests.rs
 ```
 
 ---
 
-### Script: proc_macro_organizing_code_const.rs
+### Script: proc_macro_retry.rs
 
-**Description:**  Experimental - work in progress
+**Description:**  Demo of the retry attribute macro that adds automatic retry logic to functions.
 
-**Purpose:** investigate the possibility of generating a useful constant.
+ This macro demonstrates attribute macro parameter parsing and error handling
+ patterns by wrapping functions with retry logic. It automatically retries
+ failed function calls with configurable attempts and backoff delays.
+ Unreliable network operation that fails randomly
+ Custom retry count - try 5 times
+ File operation that might fail due to permissions
+ API call with authentication that might fail
+ Resource allocation that might fail under load
+ Service health check with retry
+
+**Purpose:** Demonstrate automatic retry logic with configurable parameters
+
+**Crates:** `rand`, `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** technique, proc_macros, attribute_macros, error_handling, resilience
+
+**Link:** [proc_macro_retry.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry.rs
+```
+
+---
+
+### Script: proc_macro_timing.rs
+
+**Description:**  Demo of the timing attribute macro that adds automatic execution time measurement.
+
+ This macro demonstrates simple but effective attribute macro patterns by wrapping
+ functions with timing logic. It automatically measures and displays execution time
+ for any function, making it invaluable for performance analysis and optimization.
+ Fast computation - should show minimal timing
+ Medium-speed computation with visible timing
+ Slow computation with artificial delay
+ Recursive function with timing at each level
+ Function that might fail, showing timing regardless
+ Complex data processing with multiple steps
+ Function with generic parameters
+ Async-like simulation (using blocking operations)
+
+**Purpose:** Demonstrate automatic function timing and performance measurement
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, attribute_macros, performance, timing
 
-**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_const.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_const.rs
-```
-
----
-
-### Script: proc_macro_organizing_code_tokenstream.rs
-
-**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
-
-**Purpose:** explore proc macros
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Program
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_tokenstream.rs)
+**Link:** [proc_macro_timing.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_organizing_code_tokenstream.rs
-```
-
----
-
-### Script: proc_macro_repeat_dash.rs
-
-**Description:**  Exploring expansion: function-like proc macro.
-
-**Purpose:** explore proc macros
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Program
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_repeat_dash.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_repeat_dash.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_repeat_dash.rs
-```
-
----
-
-### Script: proc_macro_string_concat.rs
-
-**Description:**  Published example from `https://github.com/redmcg/const_gen_proc_macro`
-
-**Purpose:** Use proc macros to generate constants at compile time
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Snippet
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_string_concat.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_string_concat.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs
 ```
 
 ---

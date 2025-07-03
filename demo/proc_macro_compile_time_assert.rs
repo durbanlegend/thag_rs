@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 #![allow(dead_code)]
 /// Demo of the compile_time_assert function-like macro for compile-time validation.
 ///
@@ -11,6 +6,9 @@ thag_demo_proc_macros = { version = "0.1, thag-auto" }
 /// checked at compile time, causing compilation to fail if conditions are not met.
 //# Purpose: Demonstrate compile-time assertions and validation
 //# Categories: technique, proc_macros, function_like_macros, compile_time, validation
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::compile_time_assert;
 
 // Example 1: Basic compile-time assertions that should pass

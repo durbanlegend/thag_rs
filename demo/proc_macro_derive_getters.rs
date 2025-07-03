@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_proc_macros = { version = "0.1, thag-auto" }
-*/
-
 /// Demo of the DeriveGetters proc macro that automatically generates getter methods.
 ///
 /// This macro generates getter methods for all fields in a struct, returning references
@@ -14,6 +9,9 @@ thag_proc_macros = { version = "0.1, thag-auto" }
 /// - Error handling for unsupported types
 //# Purpose: Demonstrate automatic getter generation
 //# Categories: technique, proc_macros, derive_macros
+
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::DeriveGetters;
 
 #[derive(Debug, DeriveGetters)]

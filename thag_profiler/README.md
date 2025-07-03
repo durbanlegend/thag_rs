@@ -2,29 +2,34 @@
 
 An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
 
+
 [![Hot flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)<br>
 *Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 
-[![Memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250518-220050.svg)<br>
+[![Memory flamegraph](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamegraph_mem_20250624-141421.svg)<br>
 *Filtered memory profile in <code>inferno</code> "memory" color scheme with two selected functions broken out in detail. Click on image for interactive version with clickable bars and search.*
 
 ---
 
 An independent offshoot of the `thag(_rs)` script runner and REPL.
 
-Lowers the barriers to profiling:
+Why choose `thag_profiling`?:
 
  - quick and easy to set up and run
 
- - clear and accurate interactive   flamegraphs
+ - clear and accurate interactive flamegraphs
 
  - time and memory profiling
 
- - synchronous or asynchronous code.
+ - detailed profiling option for memory hotspots
 
-Basic profiling in a nutshell:
+ - any mix of synchronous and asynchronous code
+
+ - pure Rust with no plattform dependencies
+
+Instrumentation:
 
 - `#[enable_profiling]` attribute for your main function
 
@@ -34,13 +39,7 @@ Basic profiling in a nutshell:
 
   Each of these items offers a range of options for any combination of time, memory summary and memory detail profiling.
 
-Practical memory troubleshooting support:
-
- - Detect memory hotspots with summary profiling
-
- - Then break out hotspots in detail. ("Enhance!")
-
-Instant instrumentation:
+Instrumentation tools:
 
 - `thag_instrument` command to add the attributes to every function and method of a .rs file
 
@@ -50,7 +49,7 @@ Output analysis:
 
 - `thag_profile` to select, filter and display:
 
-  - flamegraphs, flamecharts, comparisons
+  - interactive flamegraphs, flamecharts, comparisons
 
   - function statistics for time profiles
 
@@ -63,8 +62,6 @@ Output analysis:
 - **Execution time profiling**: Low-overhead profiling to highlight hotspots.
 
 - **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code so that the latter can't distort the measurements. Allocations may be summarized by function or section, or broken out in detail where desired.
-
-- **One-line full detailed transitive memory profiling**: Track all memory allocations and deallocations for your project and dependencies with a single `#[enable_profiling(runtime)]` and the `THAG_PROFILER` environment variable.
 
 - **Function and section profiling**: Profiling can be applied to any number of specific non-overlapping code sections, down to single instructions.
 
@@ -80,6 +77,8 @@ Output analysis:
 
 - **Development or release build profiling**: Although `thag_profiler` is focused on the development cycle, it supports profiling release builds, subject to enabling debug information and to any limitations imposed by the `backtrace` crate.
 
+- **One-line full detailed transitive memory profiling option**: Track all memory allocations and deallocations for your project and dependencies with a single `#[enable_profiling(runtime)]` and the `THAG_PROFILER` environment variable.
+
 - **Intelligent output naming**: Output files are named with the source program, timestamp and profile type for quick and easy selection.
 
 - **Cross-platform**: Works on macOs, Linux and Windows.
@@ -88,7 +87,7 @@ Output analysis:
 
 Add `thag_profiler` to your `Cargo.toml`:
 
-For instrumentation only, no features are needed:
+For inactive instrumentation, no features are needed:
 
 ```toml
 [dependencies]
@@ -111,15 +110,15 @@ Install the profiling tools:
 
 ```bash
 # Install all tools
-cargo install thag_profiler --no-default-features --features=tools
+cargo install thag_profiler --features=tools
 
 # Or install tools individually
-cargo install thag_profiler --no-default-features --features=instrument_tool --bin thag_instrument
-cargo install thag_profiler --no-default-features --features=instrument_tool --bin thag_uninstrument
-cargo install thag_profiler --no-default-features --features=analyze_tool --bin thag_profile
+cargo install thag_profiler --features=instrument_tool --bin thag_instrument
+cargo install thag_profiler --features=instrument_tool --bin thag_uninstrument
+cargo install thag_profiler --features=analyze_tool --bin thag_profile
 ```
 
-## Quick Start
+## Getting Started
 
 ### 1. Instrument Your Code for Profiling
 
@@ -309,9 +308,9 @@ cargo run --features thag_profiler/time_profiling
 ```
 
 
-#### In scripts run with the `thag` script runner
+#### In scripts run with the `thag(_rs)` script runner
 
-  This section applies only to the `thag_rs` script runner, aka [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not already a prothagonist.
+  This section applies only to the `thag(_rs)` script runner, aka [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not using `thag(_rs)`.
 
   Profiled scripts must have a `main` function to be annotated with `#[enable_profiling]`, in other words snippets are not supported.
 

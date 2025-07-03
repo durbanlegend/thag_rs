@@ -1,6 +1,10 @@
 # thag_profiler
 
-A comprehensive profiling library for Rust applications that combines time and memory profiling with interactive visualization and cross-platform async support.
+A profiling library for Rust applications that combines time and memory profiling with interactive visualization and cross-platform async support.
+
+thag_profiler is an independent offshoot of the thag(_rs) script runner and REPL.
+
+It aims to lower the barriers to profiling by providing a comprehensive solution that is easy to use and interpret.
 
 [![Hot flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250519-155436.svg)<br>
 *Time profile flamechart with interactive visualization. Click image for full interactive version with clickable bars and search functionality.*
@@ -12,13 +16,13 @@ A comprehensive profiling library for Rust applications that combines time and m
 
 ---
 
-## What Makes thag_profiler Different
+## thag_profiler Design Goals
 
 `thag_profiler` addresses common profiling challenges with a unified approach:
 
 - **Unified time and memory profiling** - Profile both execution time and memory allocations in a single tool
 - **Async-first design** - Full support for async/await code without instrumentation complexity
-- **Line-level memory precision** - Track allocations with exact source location accuracy
+- **Memory profiling precision** - Allocations are internally tracked by source line number and ring-fenced from profiler code.
 - **Interactive visualization** - Intuitive flamegraphs and flamecharts that reveal performance patterns at a glance
 - **Cross-platform consistency** - Reliable profiling across macOS, Linux, and Windows
 - **Minimal instrumentation overhead** - Simple attributes that don't obscure your code
@@ -35,7 +39,7 @@ A comprehensive profiling library for Rust applications that combines time and m
 ### Ease of Use
 - **Zero-overhead when disabled**: No runtime cost when profiling features are disabled
 - **Attribute-based instrumentation**: Simple `#[profiled]` annotations
-- **Automatic instrumentation tools**: Bulk add/remove profiling with `thag_instrument`
+- **Automatic instrumentation tools**: Bulk add/remove profiling with `thag_instrument` and `thag_uninstrument`
 - **Runtime configuration**: Enable/disable profiling without recompilation
 
 ### Analysis and Visualization
@@ -67,12 +71,14 @@ thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
 Install analysis tools:
 
 ```bash
-cargo install thag_profiler --no-default-features --features=tools
+cargo install thag_profiler --features=tools
 ```
 
 ## Quick Start
 
 ### Basic Function Profiling
+
+Sync and async functions are annotated exactly the same way:
 
 ```rust
 use thag_profiler::{enable_profiling, profiled};
@@ -93,11 +99,7 @@ fn expensive_calculation() -> u64 {
     // CPU-intensive work
     42
 }
-```
 
-### Async Function Profiling
-
-```rust
 #[profiled]
 async fn fetch_and_process() -> Result<String, Error> {
     let data = fetch_data().await?;
@@ -108,6 +110,24 @@ async fn fetch_and_process() -> Result<String, Error> {
 async fn fetch_data() -> Result<Vec<u8>, Error> {
     // Async I/O operations
     Ok(vec![])
+}
+```
+
+### Memory Profiling
+
+```rust
+// Track memory allocations
+#[profiled(mem_summary)]
+fn allocating_function() {
+    let data = vec![0; 1000];
+    let more_data = HashMap::new();
+    // Memory usage is tracked
+}
+
+// Detailed memory tracking
+#[profiled(mem_detail)]
+fn detailed_memory_analysis() {
+    // Individual allocations and deallocations tracked
 }
 ```
 
@@ -127,24 +147,6 @@ fn complex_operation() {
     profile!(data_processing);
     process_results(results);
     end!(data_processing);
-}
-```
-
-### Memory Profiling
-
-```rust
-// Track memory allocations
-#[profiled(mem_summary)]
-fn allocating_function() {
-    let data = vec![0; 1000];
-    let more_data = HashMap::new();
-    // Memory usage is tracked
-}
-
-// Detailed memory tracking
-#[profiled(mem_detail)]
-fn detailed_memory_analysis() {
-    // Individual allocations and deallocations tracked
 }
 ```
 

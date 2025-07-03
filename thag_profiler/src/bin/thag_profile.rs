@@ -1250,7 +1250,6 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
             let mut current_memory = 0u64;
 
             for memory_event in &processed.memory_events {
-                current_memory += memory_event.delta as u64;
                 memory_data.bytes_allocated += memory_event.delta as u64;
                 memory_data.allocation_count += 1;
                 // Track allocation size distribution
@@ -1258,8 +1257,7 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
                     .allocation_sizes
                     .entry(memory_event.delta)
                     .or_default() += 1;
-                // } else if memory_event.operation == '-' {
-                // }
+                current_memory += memory_event.delta as u64;
                 memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
                 // Since each allocation comes from Profile::drop, as a first-order approximation
                 // we can assume they were deallocated, unless we're misattributing due to duplicate
@@ -1804,11 +1802,14 @@ fn filter_memory_patterns(profile: &ProcessedProfile) -> ProfileResult<Option<Pr
     );
 
     let mut memory_data = MemoryData::default();
+    let mut current_memory = 0u64;
     for line in &filtered_stacks {
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() >= 2 {
             let delta = parts[parts.len() - 1].parse::<u64>().unwrap_or(0_u64);
             memory_data.bytes_allocated += delta;
+            current_memory += delta as u64;
+            memory_data.peak_memory = memory_data.peak_memory.max(current_memory);
         }
     }
 

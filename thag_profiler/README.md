@@ -1445,7 +1445,7 @@ The folded stack files are human-readable:
 head your_executable-<yyyymmdd>-<hhmmss>.folded
 ```
 
-## Comparison with `dhat` crate
+## Verification against `dhat` crate
 
 The `bash` script `scripts/compare_profilers.sh` can be used to verify the accuracy of `thag_profiler` memory profiling against the established `dhat` crate.
 

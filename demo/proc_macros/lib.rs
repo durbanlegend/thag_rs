@@ -531,7 +531,6 @@ pub fn env_or_default(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn generate_tests(input: TokenStream) -> TokenStream {
-    // generate_tests_impl(input)
     maybe_expand_proc_macro(true, "generate_tests", &input, generate_tests_impl)
 }
 

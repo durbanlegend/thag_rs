@@ -145,6 +145,7 @@ pub mod repl;
 
 #[cfg(feature = "core")]
 pub use {
+    cvprtln as cvlog,
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     logging::{get_verbosity, Verbosity, V},
@@ -153,8 +154,6 @@ pub use {
     },
     styling::{Color, ColorSupport, Lvl, Role, Style, TermBgLuma},
 };
-
-pub use cvprtln as cvlog;
 
 pub use thag_profiler::*; // Re-export everything from profiler
 

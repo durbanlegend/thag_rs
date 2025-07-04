@@ -2,9 +2,11 @@
 
 A collection of 12 procedural macros for learning proc macro development in Rust. Each macro aims to demonstrate specific techniques while solving practical problems.
 
+The macros are presented here in the recommended order for learning.
+
 The collection covers all three proc macro types: **Derive Macros** (5), **Attribute Macros** (3), and **Function-like Macros** (4).
 
-By default, each macro displays its generated code to `stderr` during compilation, formatted by `prettyplease` when possible. This helps understand macro behavior and debug compilation errors. The expansion feature is controlled by the `maybe_expand_attr_macro` and `maybe_expand_proc_macro` functions in `lib.rs`.
+By default, each macro displays its generated code to `stderr` at compile time, formatted by `prettyplease` when possible. This helps understand macro behavior and debug compilation errors. The expansion feature is controlled by the `maybe_expand_attr_macro` and `maybe_expand_proc_macro` functions in `lib.rs`.
 
 ## The Collection
 

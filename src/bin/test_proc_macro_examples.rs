@@ -82,7 +82,7 @@ fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, Stri
     );
 
     let mut cmd = Command::new("cargo");
-    cmd.args(&["run", "--bin", "thag", "--", test_case.file])
+    cmd.args(["run", "--bin", "thag", "--", test_case.file])
         .env("THAG_DEV_PATH", thag_dev_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -183,13 +183,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    cvprtln!(
-        Role::INFO,
-        V::N,
-        "Total: {} ({:.1}% success rate)",
-        TEST_CASES.len(),
-        (passed as f64 / TEST_CASES.len() as f64) * 100.0
-    );
+    #[allow(clippy::cast_precision_loss)]
+    {
+        cvprtln!(
+            Role::INFO,
+            V::N,
+            "Total: {} ({:.1}% success rate)",
+            TEST_CASES.len(),
+            (f64::from(passed) / TEST_CASES.len() as f64) * 100.0
+        );
+    }
 
     if failed > 0 {
         cvprtln!(

@@ -222,66 +222,82 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
         the pull request.
 
 
-1. **Phase 1: Parallel Structure**
-   ```rust
-   pub mod styling {
-       // Existing code
-       pub enum Level { ... }
-       pub fn basic_light_style(level: Level) -> TermAttributes { ... }
+feature_sets=(
+    ""
+    "no_tls"
+    "debug_logging"
+    "debug_logging,no_tls"
+    "time_profiling"
+    "time_profiling,no_tls"
+    "time_profiling,debug_logging"
+    "time_profiling,debug_logging,no_tls"
+    "full_profiling"
+    "full_profiling,no_tls"
+    "full_profiling,debug_logging"
+    "full_profiling,debug_logging,no_tls"
+)
 
-       // New code (maybe in submodule?)
-       pub enum MessageType { ... }
-       pub enum Theme { ... }
-       // ... new theme structure
-   }
-   ```
-   - Keep existing functionality intact
-   - Introduce new types without breaking changes
-   - Map between old Levels and new MessageTypes
+failures=()
 
-2. **Phase 2: Theme Implementation**
-   - Implement the new theme system
-   - Create BasicLight/Dark themes that mirror current behavior
-   - Add conversion/compatibility layer:
-   ```rust
-   impl From<Level> for MessageType {
-       fn from(level: Level) -> Self {
-           match level {
-               Level::Error => MessageType::Error,
-               // ...
-           }
-       }
-   }
-   ```
+for f in "${feature_sets[@]}"; do
+    echo
+    echo "===> Running: $cmd --features=${f:-<none>} ..."
+    if ! $cmd --features="$f" -- -W clippy::pedantic -W clippy::nursery; then
+        echo "ERROR: $cmd failed for feature set '${f:-<none>}'"
+        failures+=("$f")
+    fi
+done
 
-3. **Phase 3: Gradual Migration**
-   ```rust
-   pub fn basic_light_style(level: Level) -> TermAttributes {
-       // Use new theme system internally
-       let theme = Theme::BasicLight(default_config());
-       let msg_type: MessageType = level.into();
-       theme.style_for(msg_type).into()
-   }
-   ```
-   - Keep old API but use new implementation
-   - Add deprecation notices
-   - Document migration path for users
+feature_sets=(
+    ""
+    "core"
+    "build"
+    "ast"
+    "tui"
+    "repl"
+    "full"
+    "default"
+)
 
-4. **Phase 4: New API**
-   - Introduce new public API
-   - Mark old API as deprecated
-   - Provide migration guide
+for f in "${feature_sets[@]}"; do
+    echo
+    echo "===> Running: cargo test --lib --features=${f:-<none>} ..."
+    if ! cargo test --lib --features="$f"; then
+        echo "ERROR: cargo test --lib failed for feature set '${f:-<none>}'"
+        failures+=("$f")
+    fi
+done
 
-5. **Phase 5: Cleanup**
-   - Remove old API in next major version
-   - Complete documentation
-   - Finalize theme implementations
+no_default_feature_sets=(
+    "env_logger,core"
+    "env_logger,build"
+    "env_logger,ast"
+    "env_logger,tui"
+    "env_logger,repl"
+    "env_logger,full"
+)
 
-Key Considerations:
-- How to handle TermAttributes conversion
-- Maintaining color support detection
-- Terminal background detection
-- Configuration options
+for f in "${no_default_feature_sets[@]}"; do
+    echo
+    echo "===> Running: cargo test --lib --features=${f:-<none>} ..."
+    if ! cargo test --lib --no-default-features --features="$f"; then
+        echo "ERROR: cargo test --lib failed for feature set '${f:-<none>}'"
+        failures+=("$f")
+    fi
+done
+
+echo
+if [ ${#failures[@]} -eq 0 ]; then
+    echo "All feature sets passed successfully"
+    # exit 0
+else
+    echo "The following feature sets FAILED:"
+    for f in "${failures[@]}"; do
+        echo "  - ${f:-<none>}"
+    done
+    # exit 1
+fi
+
 
 Chat: Git Latest Commit Cargo Dependencies resume thag_core
 

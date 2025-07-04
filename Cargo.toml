@@ -326,6 +326,7 @@ terminal-light = ["dep:terminal-light"]
 # Feature dependency tree:
 #
 # default
+# ├── simplelog
 # └── full
 #     ├── repl
 #     │   └── tui

@@ -5,7 +5,7 @@ heck = "0.5.0"
 inquire = "0.7.5"
 regex = "1.10.5"
 strum = { version = "0.26.3", features = ["derive", "phf"] }
-thag_proc_macros = { version = "0.1, thag-auto" }
+thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "config", "simplelog", "tui"] }
 */
 

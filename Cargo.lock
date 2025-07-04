@@ -3810,7 +3810,7 @@ checksum = "f18aa187839b2bdb1ad2fa35ead8c4c2976b64e4363c386d45ac0f7ee85c9233"
 
 [[package]]
 name = "thag_proc_macros"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "crossterm 0.29.0",
  "inline_colorization",

@@ -1,6 +1,6 @@
 [package]
 name = "thag_proc_macros"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "Procedural macros for the thag_rs and thag_profiler crates"
 repository = "https://github.com/durbanlegend/thag_rs"
@@ -26,11 +26,11 @@ syn = { version = "2.0", default-features = false, features = [
 toml = { version = "0.8" }
 
 [features]
-time_profiling = [] # New feature for conditional compilation
+time_profiling = []                 # New feature for conditional compilation
 full_profiling = ["time_profiling"]
-debug_logging = [] # Zero-cost debug logging
-no_tls = [
-] # Use atomic rather than the default thread-local storage for allocator switching
+debug_logging = []                  # Zero-cost debug logging
+# Fall back to global allocator management. Only use this if issues with TLS. May fail to record all data in async environments
+no_tls = []
 tui = ["crossterm"]
 default = []
 

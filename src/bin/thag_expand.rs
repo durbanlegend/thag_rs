@@ -6,7 +6,7 @@ inquire = "0.7.5"
 # quote = "1.0.38"
 side-by-side-diff = "0.1.2"
 tempfile = "3.17.1"
-thag_proc_macros = { version = "0.1, thag-auto" }
+thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
 */
 

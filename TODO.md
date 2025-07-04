@@ -7,9 +7,8 @@
 - [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
 - [ ]  OBSOLETE. Remove hard-coding from src/bin/thag_gen_proc_macro_readme.rs.
 - [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
-- [ ]  DONE Sort out whether demo/thag_proc_macros is reachable from a TOML block - Yes, as long as absolute path is used.
-- [ ]  DONE Complete fixing warnings on cargo doc for demo/proc_macros.
-- [ ]  DONE Add the 2 new function-like proc macros to README.md.
+- [ ]  Tool for running tests for all feature sets?
+- [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
@@ -179,7 +178,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] NB NB. Remember to update Cargo.toml version to the required release before tagging.
 - [ ] Do a trial release build locally to check for anomalies: cargo build --release --workspace
 - [ ] Don't upgrade thag versions in demo scripts to new release, because you get a catch-22 until it's on crates.io. If you absolutely need to, wait until you've released to crates.io a first time, then release all over again.
-- [ ] cargo doc --features document-features (thag_rs, thag_profiler)
+- [ ] cargo doc --features document-features --no-deps (thag_rs, thag_profiler)
 - [ ] Optional: reinstall thag_rs from path. (cargo install --path .)
 - [ ] Make sure Readme images are up to date.
 - [ ] Run clippy_feature_tests.sh
@@ -241,9 +240,9 @@ failures=()
 
 for f in "${feature_sets[@]}"; do
     echo
-    echo "===> Running: $cmd --features=${f:-<none>} ..."
-    if ! $cmd --features="$f" -- -W clippy::pedantic -W clippy::nursery; then
-        echo "ERROR: $cmd failed for feature set '${f:-<none>}'"
+    echo "===> Running: cargo clippy --features=${f:-<none>} ..."
+    if ! cargo clippy --features="$f" -- -W clippy::pedantic -W clippy::nursery; then
+        echo "ERROR: cargo clippy failed for feature set '${f:-<none>}'"
         failures+=("$f")
     fi
 done

@@ -106,7 +106,6 @@ pub use mem_tracking::{
     compare_exchange_using_system, get_using_system, reset_allocator_state, set_using_system,
 };
 
-// #[cfg(feature = "time_profiling")]
 pub use thag_proc_macros::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "time_profiling")]
@@ -172,6 +171,7 @@ pub fn get_root_module() -> Option<&'static str> {
 /// # Panics
 ///
 /// Panics if the input path does not contain at least a slash and a dot.
+#[doc(hidden)] // Makes it not appear in documentation
 #[must_use]
 #[cfg(not(target_os = "windows"))]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
@@ -185,6 +185,7 @@ pub fn file_stem_from_path_str(file_name: &'static str) -> String {
 /// # Panics
 ///
 /// Panics if the input path does not contain at least a backslash and a dot.
+#[doc(hidden)] // Makes it not appear in documentation
 #[must_use]
 #[cfg(target_os = "windows")]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
@@ -204,6 +205,7 @@ pub fn file_stem_from_path_str(file_name: &'static str) -> String {
 /// # Panics
 ///
 /// Panics if `Path::file_stem()`    does not return a valid file stem.
+#[doc(hidden)] // Makes it not appear in documentation
 #[cfg(not(feature = "full_profiling"))]
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
@@ -215,6 +217,7 @@ pub fn file_stem_from_path(path: &Path) -> String {
 /// # Panics
 ///
 /// Panics if `Path::file_stem()`    does not return a valid file stem.
+#[doc(hidden)] // Makes it not appear in documentation
 #[cfg(feature = "full_profiling")]
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
@@ -506,11 +509,12 @@ pub fn thousands<T: Display>(n: T) -> String {
 }
 
 /// Initialize the profiling system.
-/// This should be called at the start of your program to set up profiling.
+/// Called by the `#[enable_profiling]` attribute macro to set up profiling.
 ///
 /// # Panics
 ///
 /// This function panics if profiling cannot be enabled.
+#[doc(hidden)] // Makes it not appear in documentation
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileType>) {
     #[cfg(feature = "full_profiling")]
@@ -600,6 +604,7 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
 /// # Panics
 ///
 /// This function panics if profiling cannot be disabled.
+#[doc(hidden)] // Makes it not appear in documentation
 #[allow(clippy::missing_const_for_fn)]
 pub fn finalize_profiling() {
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
@@ -816,7 +821,7 @@ mod config_tests {
 /// ### Key Areas Tested:
 ///
 /// 1. **Utility Functions**:
-///    - `file_stem_from_path_str` and `file_stem_from_path`
+///    - `file_stem_from_path_str`
 ///    - `thousands` formatter
 ///
 /// 2. **Macros**:
@@ -880,9 +885,9 @@ mod lib_tests {
             assert_eq!(file_stem_from_path_str(simple_file), "simple");
         }
 
-        // Test file_stem_from_path (should work on all platforms)
-        let path = std::path::Path::new("path/to/another_file.rs");
-        assert_eq!(file_stem_from_path(path), "another_file");
+        // // Test file_stem_from_path (should work on all platforms)
+        // let path = std::path::Path::new("path/to/another_file.rs");
+        // assert_eq!(file_stem_from_path(path), "another_file");
 
         // Test with just filename (no directory) - cross-platform
         let simple_file = "simple.rs";

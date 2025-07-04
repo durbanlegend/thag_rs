@@ -1,9 +1,14 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.1, thag-auto" }
+thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
+/// Very fast replacement for `thag_get_demo` with subdirectory support so as to include the
+/// `demo/proc_macros` directory. Git `sparse-checkout` approach suggested and written b
+/// ChatGPT, local directory handling assisted by Claude.
+//# Purpose: Prototype for `thag_get_demo_dir`.
+//# Categories: crates, prototype, technique
 use inquire;
 use std::error::Error;
 use std::fs;
@@ -57,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "--depth",
             "1",
             "--branch",
-            "develop",
+            "main",
             "--filter=blob:none",
             "--sparse",
             "https://github.com/durbanlegend/thag_rs.git",

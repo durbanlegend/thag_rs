@@ -8,7 +8,7 @@ inquire = "0.7.5"
 semver = "1.0.23"
 serde = { version = "1.0.219", features = ["derive"] }
 syn = { version = "2", features = ["full"] }
-thag_proc_macros = { version = "0.1, thag-auto" }
+thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "simplelog"] }
 toml = "0.8"
 */

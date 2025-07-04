@@ -663,7 +663,7 @@ syn = { version = "2", features = [
     "visit-mut",
 ], optional = true }
 termbg = { version = "0.6.1", optional = true }
-thag_proc_macros = { version = "0.1.2", path = "thag_proc_macros" }
+thag_proc_macros = { version = "0.2", path = "thag_proc_macros" }
 thag_profiler = { path = "thag_profiler", version = "0.1" }
 toml = { version = "0.8.22" }
 toml_edit = { version = "0.22.24", optional = true }
@@ -5499,7 +5499,7 @@ syn = { version = "2", features = [
     "visit-mut",
 ], optional = true }
 termbg = { version = "0.6.1", optional = true }
-thag_proc_macros = { version = "0.1.2", path = "thag_proc_macros" }
+thag_proc_macros = { version = "0.2", path = "thag_proc_macros" }
 thag_profiler = { path = "thag_profiler", version = "0.1" }
 toml = { version = "0.8.22" }
 toml_edit = { version = "0.22.24", optional = true }

@@ -190,9 +190,12 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
 ///
-/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
-/// brackets, parens or quotes may span multiple lines.
+/// Enter the expression to be evaluated.
+///
+/// Expressions between matching braces, brackets, parens or quotes may span multiple lines.
+///
 /// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+///
 /// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
 /// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
 /// comment block of the form
@@ -203,11 +206,14 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 /// */
 /// ```
 /// From here they will be extracted to a dedicated Cargo.toml file.
+///
 /// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+///
 /// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
 /// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 /// editor or directly from their temporary disk locations.
-/// The tab key will show command selections and complete partial matching selections."
+///
+/// The tab key will show command selections and complete partial matching selections.
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
     name = "",
@@ -220,17 +226,19 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 pub enum ReplCommand {
     /// Show the REPL banner
     Banner,
-    /// Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
+    /// Promote the Rust expression to the TUI REPL, which can handle any script.
+    /// This is a one-way process, but the original expression will be saved in history.
     Tui,
-    /// Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
+    /// Edit the Rust expression in the configured or default editor.
+    /// Edit+run is an alternative to prompt-line evaluation or TUI for longer snippets and programs.
     Edit,
     /// Edit the generated Cargo.toml
     Toml,
     /// Attempt to build and run the Rust expression
     Run,
-    /// Delete all temporary files for this eval (see list)
+    /// Delete all temporary files for the current evaluation (see `list` command)
     Delete,
-    /// List temporary files for this eval
+    /// List temporary files for this the current evaluation
     List,
     /// Edit history
     History,
@@ -238,7 +246,7 @@ pub enum ReplCommand {
     Help,
     /// Show key bindings
     Keys,
-    /// Show theme and terminal attributes (change via `thag -C`)
+    /// Show theme and terminal attributes (change via `thag -C` and rerun)
     Theme,
     /// Exit the REPL
     Quit,

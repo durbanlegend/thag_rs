@@ -3837,7 +3837,6 @@ dependencies = [
  "inquire",
  "once_cell",
  "parking_lot",
- "paste",
  "ra_ap_syntax",
  "regex",
  "serde",

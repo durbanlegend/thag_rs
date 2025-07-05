@@ -355,7 +355,7 @@ pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Attribute macro for marking items as internal documentation.
 ///
-/// This is a convenience macro that applies the `#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]`
+/// This is a convenience macro that applies the `#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]`
 /// attribute to items, making them hidden from public API documentation but visible in internal docs.
 ///
 /// # Examples
@@ -366,18 +366,19 @@ pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// #[internal_doc]
 /// pub fn internal_utility_function() {
 ///     // This function will be hidden from public API docs
-///     // but visible when the `internal-docs` feature is enabled
+///     // but visible when the `internal_docs` feature is enabled
 /// }
 /// ```
 ///
 /// This is equivalent to:
 ///
 /// ```rust
-/// #[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+/// #[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 /// pub fn internal_utility_function() {
 ///     // Implementation...
 /// }
 /// ```
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 #[proc_macro_attribute]
 pub fn internal_doc(attr: TokenStream, item: TokenStream) -> TokenStream {
     internal_doc_impl(attr, item)

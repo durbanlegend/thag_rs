@@ -1492,7 +1492,7 @@ cargo doc --package thag_profiler --features document-features,full_profiling,de
 
 This shows only the essential public API that most users need:
 - Core profiling attributes (`#[profiled]`, `#[enable_profiling]`)
-- Main configuration types (`Profile`, `ProfileType`, `ProfileConfiguration`)
+- Main configuration types (``ProfileType`)
 - Essential functions (`disable_profiling`, `is_profiling_enabled`)
 - Memory profiling utilities (when `full_profiling` feature is enabled)
 
@@ -1501,13 +1501,13 @@ This shows only the essential public API that most users need:
 Generate comprehensive documentation including implementation details:
 
 ```bash
-cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps
 ```
 
 For the most comprehensive documentation including private items:
 
 ```bash
-cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items
 ```
 
 This includes everything from the public API plus:
@@ -1525,7 +1525,7 @@ The library provides two convenient ways to mark internal items:
 1. **Using the `#[internal_doc]` macro** (recommended):
    ```rust
    use thag_profiler::internal_doc;
-   
+
    #[internal_doc]
    pub fn internal_utility() {
        // Hidden from public API docs
@@ -1534,7 +1534,7 @@ The library provides two convenient ways to mark internal items:
 
 2. **Using the manual attribute**:
    ```rust
-   #[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+   #[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
    pub fn internal_utility() {
        // Hidden from public API docs
    }
@@ -1542,7 +1542,7 @@ The library provides two convenient ways to mark internal items:
 
 ### Rationale
 
-Many internal functions need to be `pub` for use across modules and by generated macros, but they're not intended for direct use by library consumers. The `internal-docs` feature flag allows:
+Many internal functions need to be `pub` for use across modules and by generated macros, but they're not intended for direct use by library consumers. The `internal_docs` feature flag allows:
 
 - **Library users** get clean, focused documentation showing only what they need
 - **Contributors/maintainers** can generate complete documentation for development

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to verify that the internal-docs feature correctly shows/hides documentation
+# Script to verify that the internal_docs feature correctly shows/hides documentation
 
 set -e
 
@@ -56,7 +56,7 @@ echo
 
 # Build internal docs
 echo "2. Building internal documentation..."
-cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --quiet
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --quiet
 
 # Check that internal functions are visible in internal docs
 INTERNAL_DOC_DIR="target/doc/thag_profiler"
@@ -106,7 +106,7 @@ if [ $TOTAL_ERRORS -eq 0 ]; then
     echo "   - Internal docs properly show implementation details"
 else
     echo "❌ Documentation feature tests failed with $TOTAL_ERRORS errors"
-    echo "   - Check that #[cfg_attr(not(feature = \"internal-docs\"), doc(hidden))] is applied correctly"
+    echo "   - Check that #[cfg_attr(not(feature = \"internal_docs\"), doc(hidden))] is applied correctly"
     exit 1
 fi
 

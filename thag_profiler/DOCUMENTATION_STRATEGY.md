@@ -13,13 +13,13 @@ However, most of these functions are implementation details that shouldn't clutt
 
 ## Solution: Feature-Gated Documentation
 
-We implemented a feature-based approach using the `internal-docs` feature flag to control documentation visibility.
+We implemented a feature-based approach using the `internal_docs` feature flag to control documentation visibility.
 
 ### Key Components
 
-1. **Feature Flag**: `internal-docs` in `Cargo.toml`
+1. **Feature Flag**: `internal_docs` in `Cargo.toml`
 2. **Convenience Macro**: `#[internal_doc]` attribute macro for easy marking
-3. **Manual Attribute**: `#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]` for edge cases
+3. **Manual Attribute**: `#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]` for edge cases
 4. **Private Items**: `--document-private-items` flag for comprehensive internal docs
 5. **Organized Re-exports**: Grouped public API items with clear documentation
 6. **Build Scripts**: Automated documentation generation for different audiences
@@ -31,16 +31,16 @@ We implemented a feature-based approach using the `internal-docs` feature flag t
 ```toml
 [features]
 ## Enable documentation of internal APIs and implementation details.
-internal-docs = []
+internal_docs = []
 
 [package.metadata.docs.rs]
 all-features = true
 default-features = false
 features = [
     "document-features",
-    "full_profiling", 
+    "full_profiling",
     "debug_logging",
-    "internal-docs",
+    "internal_docs",
 ]
 ```
 
@@ -68,7 +68,7 @@ For contexts where the macro isn't available (e.g., binary crates):
 /// Internal utility function for formatting numbers.
 ///
 /// This is used internally by the profiling system for output formatting.
-#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 pub fn thousands<T: Display>(n: T) -> String {
     // Implementation...
 }
@@ -130,7 +130,7 @@ cargo doc --package thag_profiler --features document-features,full_profiling,de
 Generate comprehensive documentation:
 
 ```bash
-cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps
 ```
 
 **Shows:**
@@ -145,7 +145,7 @@ cargo doc --package thag_profiler --features document-features,full_profiling,de
 Generate documentation including private items:
 
 ```bash
-cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items
 ```
 
 **Shows:**
@@ -199,7 +199,7 @@ We provide several tools to make this easy:
 - Advanced configuration functions
 - Functions required to be `pub` for technical reasons
 
-#### Use `#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]` for:
+#### Use `#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]` for:
 - Binary crates (where the macro isn't available)
 - Macro exports that have import issues
 - Legacy code being migrated

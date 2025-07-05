@@ -9,6 +9,7 @@
 - [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
 - [ ]  Tool for running tests for all feature sets?
 - [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
+- [ ]  get rid of no_tls thag_profiler option.
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
@@ -181,7 +182,9 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] cargo doc --features document-features --no-deps (thag_rs)
 - [ ] cargo doc --features document-features,full_profiling,debug_logging --no-deps
  (thag_profiler public)
- [Internal docs: cargo doc --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+ [Internal API: cargo doc --features document-features,full_profiling,debug_logging,internal_docs --no-deps
+]
+[Comprehensive: cargo doc --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items
 ]
 - [ ] Optional: reinstall thag_rs from path. (cargo install --path .)
 - [ ] Make sure Readme images are up to date.

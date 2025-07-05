@@ -1,5 +1,5 @@
 use crate::{
-    debug_log, flush_debug_log,
+    debug_log, flush_debug_log, internal_doc,
     mem_tracking::write_detailed_stack_alloc,
     profiling::{clean_function_name, strip_hex_suffix_slice, Profile},
     regex, safe_alloc, static_lazy, ProfileError, ProfileResult,
@@ -200,6 +200,7 @@ impl ProfileRegistry {
     /// # Panics
     ///
     /// Panics if it can't unwrap after get on a filename that is supposed to have been pre-checked.
+    #[internal_doc]
     #[allow(clippy::branches_sharing_code)]
     pub fn record_allocation(
         &self,
@@ -397,7 +398,6 @@ static_lazy! {
     ProfileReg: ProfileRegistry = ProfileRegistry::new()
 }
 
-#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 static_lazy! {
 DetailedAddressRegistry: AddressAllocMap = DashMap::new()
 }
@@ -415,6 +415,7 @@ pub fn get_next_profile_id() -> u64 {
 /// # Panics
 ///
 /// Panics if the profile registration fails.
+#[internal_doc]
 pub fn register_profile(profile: &Profile) {
     safe_alloc! {
         // First log the information (acquires debug log mutex)
@@ -504,6 +505,7 @@ pub fn deregister_profile(profile: &Profile) {
 }
 
 /// Find a profile for a specific module path and line number
+#[internal_doc]
 #[must_use]
 pub fn find_profile(file_name: &str, fn_name: &str, line: u32) -> Option<ProfileRef> {
     safe_alloc! {

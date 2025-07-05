@@ -33,6 +33,7 @@ debug_logging = []                  # Zero-cost debug logging
 no_tls = []
 tui = ["crossterm"]
 default = []
+internal_docs = []
 
 [lib]
 proc-macro = true

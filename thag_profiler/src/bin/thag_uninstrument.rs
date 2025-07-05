@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // Uninstrument or deinstrument? Discuss.
-#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 fn deinstrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
@@ -191,7 +191,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
     tree.syntax().to_string()
 }
 
-#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 fn read_stdin() -> std::io::Result<String> {
     let mut buffer = String::new();
     std::io::stdin().read_to_string(&mut buffer)?;

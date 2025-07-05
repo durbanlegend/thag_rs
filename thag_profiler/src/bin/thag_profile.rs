@@ -104,9 +104,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Directory for .folded files
     let dir_path = PathBuf::from(args[1].clone());
 
-    // Ensure profiling is disabled for the analyzer
-    // Only takes effect if this tool is compiled (`thag tools/thag_profile.rs -x`).
-    // profiling::disable_profiling();
     loop {
         let analysis_types = vec![
             "Time Profile - Single",

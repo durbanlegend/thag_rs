@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{debug_log, static_lazy, ProfileError, ProfileResult};
+use crate::{debug_log, internal_doc, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use parking_lot::{Mutex, RwLock};
 use std::{
@@ -58,6 +58,7 @@ use std::sync::{atomic::AtomicUsize, Arc};
 static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 
 /// Mutex to prevent concurrent access to profiling by different executions.
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 pub static PROFILING_MUTEX: ReentrantMutex<()> = ReentrantMutex::new(());
 
@@ -180,6 +181,7 @@ pub fn get_profile_config() -> ProfileConfiguration {
 
 /// Clears the cached profile configuration, forcing a fresh read from environment
 /// on the next call to `get_profile_config()`
+#[internal_doc]
 pub fn clear_profile_config_cache() {
     let mut cache = PROFILE_CONFIG_CACHE.lock();
     *cache = None;
@@ -188,6 +190,7 @@ pub fn clear_profile_config_cache() {
 /// Sets the profile configuration
 ///
 /// This function updates the profile configuration with a new value.
+#[internal_doc]
 pub fn set_profile_config(config: ProfileConfiguration) {
     let mut cache = PROFILE_CONFIG_CACHE.lock();
     *cache = Some(config);
@@ -238,6 +241,7 @@ impl FromStr for DebugLevel {
 /// This struct contains all the settings needed to configure profiling behavior,
 /// including the type of profiling to perform, output directory, debug level,
 /// and whether to enable detailed memory profiling.
+#[internal_doc]
 pub struct ProfileConfiguration {
     enabled: bool,
     profile_type: Option<ProfileType>,
@@ -402,6 +406,7 @@ impl Default for ProfileConfiguration {
 /// # Errors
 ///
 /// This function will return an error if it encounters an invalid `THAG_PROFILER` environment variable.
+#[internal_doc]
 pub fn parse_env_profile_config() -> ProfileResult<ProfileConfiguration> {
     let Ok(env_var) = env::var("THAG_PROFILER") else {
         // eprintln!("THAG_PROFILER environment variable not found, returning disabled config");
@@ -966,6 +971,7 @@ pub fn get_global_profile_type() -> ProfileType {
 ///
 /// # Panics
 /// In debug builds, panics if the profile type is not valid for the current feature set.
+#[internal_doc]
 pub fn set_global_profile_type(profile_type: ProfileType) {
     #[cfg(all(debug_assertions, feature = "full_profiling"))]
     assert!(
@@ -1144,6 +1150,7 @@ pub fn disable_profiling() {
 ///
 /// # Errors
 /// Returns a `ProfileError` if file creation or writing fails
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 fn initialize_profile_file(path: &str) -> ProfileResult<()> {
     OpenOptions::new()
@@ -1215,6 +1222,7 @@ pub fn is_profiling_enabled() -> bool {
 /// `true` if profiling state is enabled, `false` otherwise
 // #[inline(always)]
 // #[allow(clippy::inline_always)]
+#[internal_doc]
 #[allow(clippy::missing_const_for_fn)]
 #[must_use]
 pub fn is_profiling_state_enabled() -> bool {
@@ -1302,6 +1310,7 @@ impl FromStr for ProfileType {
 /// Its logical key is the same call hierarchy that will be reflected in the flamegraph, namely
 /// the callstack from the (main) function to the current function, but with all unprofiled
 /// functions removed.
+#[internal_doc]
 #[allow(clippy::struct_field_names, dead_code)]
 #[derive(Clone, Debug)]
 pub struct Profile {
@@ -1384,6 +1393,7 @@ impl Profile {
     /// # Returns
     ///
     /// `true` if the allocation was recorded, `false` otherwise
+    #[internal_doc]
     #[cfg(feature = "full_profiling")]
     #[must_use]
     pub fn record_allocation(&self, size: usize) -> bool {
@@ -1944,27 +1954,10 @@ impl Profile {
     }
 
     /// Converts function names in the stack into their descriptive names.
+    #[internal_doc]
     #[cfg(feature = "time_profiling")]
     #[must_use]
     pub fn build_stack(&self, path: &[String]) -> std::string::String {
-        // let mut vanilla_stack = String::new();
-
-        // path.iter()
-        //     .map(|fn_name_str| {
-        //         let stack_str = if vanilla_stack.is_empty() {
-        //             fn_name_str.to_string()
-        //         } else {
-        //             format!("{vanilla_stack};{fn_name_str}")
-        //         };
-        //         vanilla_stack.clone_from(&stack_str);
-        //         (stack_str, fn_name_str)
-        //     })
-        //     .map(|(stack_str, fn_name_str)| {
-        //         get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
-        //     })
-        //     .chain(self.section_name.clone())
-        //     .collect::<Vec<String>>()
-        //     .join(";")
         build_stack(path, self.section_name.as_ref(), ";")
     }
 
@@ -2006,6 +1999,7 @@ impl Profile {
 }
 
 /// Converts function names in the stack into their descriptive names.
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn build_stack(
@@ -2046,6 +2040,7 @@ pub fn build_stack(
 ///
 /// # Returns
 /// A vector of strings representing the call path of profiled functions
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> Vec<String> {
@@ -2109,6 +2104,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
 }
 
 /// Filter out backtrace lines identified as scaffolding.
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn filter_scaffolding(name: &str) -> bool {
@@ -2120,6 +2116,7 @@ pub fn filter_scaffolding(name: &str) -> bool {
 /// # Panics
 ///
 /// Panics if the arbitrary limit of 20 frames is exceeded.
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn extract_profile_callstack(
@@ -2266,6 +2263,7 @@ pub fn extract_profile_callstack(
 ///
 /// # Panics
 /// Panics if the arbitrary limit of 20 frames is exceeded during stack traversal
+#[internal_doc]
 #[cfg(feature = "full_profiling")]
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
@@ -2399,6 +2397,7 @@ pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
 /// # Panics
 ///
 /// Panics if arbitrary preset limit of 100 frames exceeded.
+#[internal_doc]
 #[cfg(feature = "full_profiling")]
 #[must_use]
 #[fn_name]
@@ -2657,6 +2656,7 @@ impl Drop for Profile {
 /// # Errors
 ///
 /// This function will bubble up any i/o errors that occur trying to convert the file.
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[allow(clippy::branches_sharing_code, unused_assignments)]
 pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> ProfileResult<()> {
@@ -2773,12 +2773,14 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 }
 
 /// Enable or disable exclusive time conversion
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 pub fn set_convert_to_exclusive_time(enable: bool) {
     CONVERT_TO_EXCLUSIVE_TIME.store(enable, Ordering::SeqCst);
 }
 
 /// Check if exclusive time conversion is enabled
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 pub fn is_convert_to_exclusive_time_enabled() -> bool {
     CONVERT_TO_EXCLUSIVE_TIME.load(Ordering::SeqCst)
@@ -2788,6 +2790,7 @@ pub fn is_convert_to_exclusive_time_enabled() -> bool {
 /// # Errors
 ///
 /// This function will bubble up any i/o errors that occur trying to convert the file.
+#[internal_doc]
 #[cfg(feature = "time_profiling")]
 pub fn process_time_profile() -> ProfileResult<()> {
     if is_convert_to_exclusive_time_enabled() {
@@ -2811,6 +2814,7 @@ pub fn process_time_profile() -> ProfileResult<()> {
 }
 
 // Helper function to check if a backtrace contains any of the specified patterns
+#[internal_doc]
 #[cfg(feature = "full_profiling")]
 #[allow(dead_code)]
 fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
@@ -2836,6 +2840,7 @@ fn backtrace_contains_any(backtrace: &str, patterns: &[&str]) -> bool {
 ///
 /// Panics if it finds the name "new", which shows that the inclusion of the
 /// type in the method name is not working.
+#[internal_doc]
 pub fn register_profiled_function(name: &str, desc_name: &str) {
     // let start = safe_alloc!(Instant::now());
     #[cfg(all(debug_assertions, not(test)))]
@@ -2931,6 +2936,7 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 ];
 
 /// Normalises function names by removing closure references and hash suffixes.
+#[internal_doc]
 pub fn clean_function_name(clean_name: &mut str) -> String {
     // Remove any closure markers
     let mut clean_name: &mut str = if let Some(closure_pos) = clean_name.find("::{{closure}}") {
@@ -3235,6 +3241,7 @@ static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
 /// let name = "no_suffix";
 /// assert_eq!(strip_hex_suffix_slice(name), "no_suffix");
 /// ```
+#[internal_doc]
 #[must_use]
 pub fn strip_hex_suffix_slice(name: &str) -> String {
     name.rfind("::h").map_or_else(

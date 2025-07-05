@@ -1,8 +1,9 @@
+#![allow(dead_code)]
 //! Example showing different approaches to internal documentation attributes.
 //!
 //! This example demonstrates the two ways to mark items as internal documentation:
 //! 1. Using the `#[internal_doc]` macro (recommended)
-//! 2. Using the manual `#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]` attribute
+//! 2. Using the manual `#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]` attribute
 //!
 //! Run with different features to see the difference:
 //!
@@ -11,10 +12,10 @@
 //! cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging --no-deps
 //!
 //! # Internal docs (internal items visible)
-//! cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps
+//! cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps
 //!
 //! # Internal docs with private items (comprehensive)
-//! cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+//! cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items
 //! ```
 
 use thag_profiler::internal_doc;
@@ -39,7 +40,7 @@ pub fn internal_utility_with_macro() {
 ///
 /// This function is hidden from public API docs but visible in internal docs.
 /// The manual attribute is more verbose but works in contexts where the macro isn't available.
-#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 pub fn internal_utility_with_manual_attribute() {
     println!("This function is internal and uses the manual attribute");
 }
@@ -77,7 +78,7 @@ impl ExampleStruct {
     }
 
     /// Internal method using manual attribute - hidden from public API
-    #[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+    #[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
     pub fn another_internal_method(&self) {
         println!("Another internal method: {}", self.private_field);
     }
@@ -98,7 +99,7 @@ pub mod internal_utilities {
 }
 
 /// Internal module using manual attribute
-#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+#[cfg_attr(not(feature = "internal_docs"), doc(hidden))]
 pub mod more_internal_utilities {
     /// Another function inside an internal module
     pub fn another_helper_function() {

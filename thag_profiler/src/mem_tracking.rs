@@ -13,7 +13,7 @@
 
 use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, fn_name,
-    get_global_profile_type, get_root_module, is_detailed_memory, lazy_static_var,
+    get_global_profile_type, get_root_module, internal_doc, is_detailed_memory, lazy_static_var,
     mem_attribution::{DetailedAddressRegistry, ProfileReg},
     profiling::{
         build_stack, clean_function_name, extract_detailed_alloc_callstack,
@@ -58,12 +58,13 @@ thread_local! {
     static USING_SYSTEM_ALLOCATOR: Cell<bool> = const { Cell::new(false) };
 }
 
-#[inline]
-#[must_use]
 /// Get the current state of the system allocator flag
 ///
 /// Returns `true` if the system allocator is currently being used,
 /// `false` if the tracking allocator is being used.
+#[internal_doc]
+#[inline]
+#[must_use]
 pub fn get_using_system() -> bool {
     #[cfg(feature = "no_tls")]
     {
@@ -81,6 +82,7 @@ pub fn get_using_system() -> bool {
 /// # Arguments
 ///
 /// * `value` - `true` to use the system allocator, `false` to use the tracking allocator
+#[internal_doc]
 #[inline]
 pub fn set_using_system(value: bool) {
     #[cfg(feature = "no_tls")]
@@ -100,6 +102,7 @@ pub fn set_using_system(value: bool) {
 ///
 /// This function will return an error if `USING_SYSTEM_ALLOCATOR` was already set to the desired value.
 /// We expect to handle this error in normal operation.
+#[internal_doc]
 #[inline]
 pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
     #[cfg(feature = "no_tls")]
@@ -122,6 +125,7 @@ pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, b
 }
 
 /// Reset allocator state using the unified approach
+#[internal_doc]
 pub fn reset_allocator_state() {
     #[cfg(not(feature = "no_tls"))]
     {
@@ -159,6 +163,7 @@ impl fmt::Display for Allocator {
 }
 
 /// Get the current allocator based on the configured approach
+#[internal_doc]
 #[must_use]
 pub fn current_allocator() -> Allocator {
     #[cfg(not(feature = "no_tls"))]
@@ -610,6 +615,7 @@ fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<F
 }
 
 /// Record an allocation with the profile registry based on module path and line number
+#[internal_doc]
 #[must_use]
 pub fn record_allocation(file_name: &str, fn_name: &str, line: u32, size: usize) -> bool {
     safe_alloc! {
@@ -925,6 +931,7 @@ pub fn deactivate_task(task_id: usize) {
 // }
 
 /// Get the last active task
+#[internal_doc]
 #[must_use]
 pub fn get_last_active_task() -> Option<usize> {
     safe_alloc! { ProfileReg::get().get_last_active_task() }
@@ -953,6 +960,7 @@ impl TaskMemoryContext {
 pub struct TaskMemoryContext;
 
 /// Creates a new task context for memory tracking.
+#[internal_doc]
 #[must_use]
 pub fn create_memory_task() -> TaskMemoryContext {
     let allocator = get_allocator();

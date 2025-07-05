@@ -23,7 +23,7 @@ doc-public:
 
 doc-internal:
 	@echo "Building internal documentation (includes implementation details and private items)..."
-	cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+	cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items
 
 doc-open:
 	@echo "Building and opening public API documentation..."
@@ -31,7 +31,7 @@ doc-open:
 
 doc-internal-open:
 	@echo "Building and opening internal documentation..."
-	cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items --open
+	cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items --open
 
 doc: doc-public doc-internal
 	@echo "Both documentation modes built successfully!"

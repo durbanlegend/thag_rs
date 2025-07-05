@@ -18,17 +18,17 @@ cargo doc --package thag_profiler --features document-features,full_profiling,de
 
 echo
 echo "2. Building INTERNAL documentation (includes implementation details and private items):"
-echo "   cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items"
+echo "   cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items"
 echo
-cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items
 
 echo
 echo "Documentation built successfully!"
 echo
 echo "To view the documentation:"
 echo "  Public API:  cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging --no-deps --open"
-echo "  Internal:    cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items --open"
+echo "  Internal:    cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal_docs --no-deps --document-private-items --open"
 echo
 echo "The key difference:"
-echo "  - Without 'internal-docs' feature: Clean API focused on end users"
-echo "  - With 'internal-docs' feature: Includes implementation details, internal utilities, debugging tools, and private functions"
+echo "  - Without 'internal_docs' feature: Clean API focused on end users"
+echo "  - With 'internal_docs' feature: Includes implementation details, internal utilities, debugging tools, and private functions"

@@ -68,6 +68,9 @@ full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
 ## Enable debug logging of profiling code.
 debug_logging = ["thag_proc_macros/debug_logging"]
 
+## Enable documentation of internal APIs and implementation details.
+internal-docs = []
+
 ## Fall back to global allocator management. Only use this if issues with TLS. May fail to record all data in async environments.
 no_tls = ["thag_proc_macros/no_tls"]
 
@@ -105,3 +108,11 @@ required-features = ["instrument_tool"]
 [package.metadata.docs.rs]
 # features = ["document-features"]
 all-features = true
+# For docs.rs, we want to show all features including internal docs
+default-features = false
+features = [
+    "document-features",
+    "full_profiling",
+    "debug_logging",
+    "internal-docs",
+]

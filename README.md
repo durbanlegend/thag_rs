@@ -66,7 +66,7 @@ ___
 
 - "toml block" comments use `cargo_toml` to support not only dependencies but other valid manifest entries such as features, profiles and lints.
 
-- Shebang support for true scripting (but `thag` command building is much better still!)
+- Shebang support for true scripting (but `thag`'s command building is much better still!)
 
 - Loop-filter mode for data processing
 

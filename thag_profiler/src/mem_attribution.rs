@@ -84,11 +84,11 @@ impl ProfileRegistry {
         self.active_tasks.remove(&task_id);
     }
 
-    /// Returns a vector of all currently active task IDs
-    #[must_use]
-    pub fn get_active_tasks(&self) -> Vec<usize> {
-        self.active_tasks.iter().map(|entry| *entry.key()).collect()
-    }
+    // /// Returns a vector of all currently active task IDs
+    // #[must_use]
+    // pub fn get_active_tasks(&self) -> Vec<usize> {
+    //     self.active_tasks.iter().map(|entry| *entry.key()).collect()
+    // }
 
     /// Returns the highest active task ID, if any tasks are active
     #[must_use]
@@ -397,8 +397,9 @@ static_lazy! {
     ProfileReg: ProfileRegistry = ProfileRegistry::new()
 }
 
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 static_lazy! {
-    DetailedAddressRegistry: AddressAllocMap = DashMap::new()
+DetailedAddressRegistry: AddressAllocMap = DashMap::new()
 }
 
 /// Thread-safe counter for generating unique profile IDs

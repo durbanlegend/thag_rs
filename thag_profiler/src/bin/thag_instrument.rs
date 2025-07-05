@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[doc(hidden)]
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
     let parse: Parse<ast::SourceFile> = SourceFile::parse(attr, Edition::Edition2021);
     parse
@@ -68,7 +68,7 @@ fn parse_attr(attr: &str) -> Option<ra_ap_syntax::SyntaxNode> {
         .map(|node| node.clone_for_update())
 }
 
-#[doc(hidden)]
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
     // Look for the first non-USE node
     let item = tree
@@ -88,7 +88,7 @@ fn find_best_import_position(tree: &ast::SourceFile) -> (Position, bool) {
     )
 }
 
-#[doc(hidden)]
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 fn instrument_code(edition: Edition, source: &str) -> String {
     let parse = SourceFile::parse(source, edition);
     let tree = parse.tree().clone_for_update();
@@ -207,7 +207,7 @@ fn instrument_code(edition: Edition, source: &str) -> String {
     tree.syntax().to_string()
 }
 
-#[doc(hidden)]
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 fn read_stdin() -> std::io::Result<String> {
     let mut buffer = String::new();
     std::io::stdin().read_to_string(&mut buffer)?;

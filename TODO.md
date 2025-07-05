@@ -178,7 +178,11 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] NB NB. Remember to update Cargo.toml version to the required release before tagging.
 - [ ] Do a trial release build locally to check for anomalies: cargo build --release --workspace
 - [ ] Don't upgrade thag versions in demo scripts to new release, because you get a catch-22 until it's on crates.io. If you absolutely need to, wait until you've released to crates.io a first time, then release all over again.
-- [ ] cargo doc --features document-features --no-deps (thag_rs, thag_profiler)
+- [ ] cargo doc --features document-features --no-deps (thag_rs)
+- [ ] cargo doc --features document-features,full_profiling,debug_logging --no-deps
+ (thag_profiler public)
+ [Internal docs: cargo doc --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+]
 - [ ] Optional: reinstall thag_rs from path. (cargo install --path .)
 - [ ] Make sure Readme images are up to date.
 - [ ] Run clippy_feature_tests.sh

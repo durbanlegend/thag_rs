@@ -1478,6 +1478,78 @@ THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_pro
 Then run `thag_profile .` and choose `Memory Profile - Single` and the most recent `thag_profile_benchmark-<yyyymmdd>-<hhmmss>-memory_detail.folded`. Drill down to the affected functions by clicking on each one in turn and compare it to the various occurrences of the same function in the `DHAT` viewer. This currently shows that `thag_profiler` is correctly reflecting 103kB for the inserts (`std::collections::hash::map::HashMap<K,V,S>::insert
 `) which `dhat` is not. There are some other minor discrepancies, but these are due to the DHAT viewer suppressing them as insignificant, and they can be tracked down in the `dhat-heap.json` file.
 
+## Documentation
+
+This library provides two levels of documentation to serve different audiences:
+
+### Public API Documentation (Default)
+
+Generate clean, user-focused documentation that hides implementation details:
+
+```bash
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging --no-deps
+```
+
+This shows only the essential public API that most users need:
+- Core profiling attributes (`#[profiled]`, `#[enable_profiling]`)
+- Main configuration types (`Profile`, `ProfileType`, `ProfileConfiguration`)
+- Essential functions (`disable_profiling`, `is_profiling_enabled`)
+- Memory profiling utilities (when `full_profiling` feature is enabled)
+
+### Internal Documentation (Development)
+
+Generate comprehensive documentation including implementation details:
+
+```bash
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps
+```
+
+For the most comprehensive documentation including private items:
+
+```bash
+cargo doc --package thag_profiler --features document-features,full_profiling,debug_logging,internal-docs --no-deps --document-private-items
+```
+
+This includes everything from the public API plus:
+- Internal utility functions
+- Debug logging infrastructure
+- Advanced configuration functions
+- Implementation macros and helpers
+- Development and debugging tools
+- Private functions and modules (when using `--document-private-items`)
+
+### Implementation
+
+The library provides two convenient ways to mark internal items:
+
+1. **Using the `#[internal_doc]` macro** (recommended):
+   ```rust
+   use thag_profiler::internal_doc;
+   
+   #[internal_doc]
+   pub fn internal_utility() {
+       // Hidden from public API docs
+   }
+   ```
+
+2. **Using the manual attribute**:
+   ```rust
+   #[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+   pub fn internal_utility() {
+       // Hidden from public API docs
+   }
+   ```
+
+### Rationale
+
+Many internal functions need to be `pub` for use across modules and by generated macros, but they're not intended for direct use by library consumers. The `internal-docs` feature flag allows:
+
+- **Library users** get clean, focused documentation showing only what they need
+- **Contributors/maintainers** can generate complete documentation for development
+- **docs.rs** can show comprehensive documentation with all features enabled
+
+Use the provided `doc_examples.sh` script to see all documentation modes in action.
+
 ## Terminology
 
 ### Ancestor and descendant functions

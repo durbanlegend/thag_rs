@@ -18,6 +18,7 @@ mod category_enum;
 mod file_navigator;
 mod fn_name;
 mod generate_theme_types;
+mod internal_doc;
 mod palette_methods;
 mod preload_themes;
 mod repeat_dash;
@@ -47,6 +48,7 @@ use crate::category_enum::category_enum_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
 use crate::generate_theme_types::generate_theme_types_impl;
+use crate::internal_doc::internal_doc_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
 use crate::repeat_dash::repeat_dash_impl;
@@ -349,6 +351,36 @@ pub fn tool_errors(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn fn_name(attr: TokenStream, item: TokenStream) -> TokenStream {
     maybe_expand_attr_macro(false, "fn_name", &attr, &item, fn_name_impl)
+}
+
+/// Attribute macro for marking items as internal documentation.
+///
+/// This is a convenience macro that applies the `#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]`
+/// attribute to items, making them hidden from public API documentation but visible in internal docs.
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_proc_macros::internal_doc;
+///
+/// #[internal_doc]
+/// pub fn internal_utility_function() {
+///     // This function will be hidden from public API docs
+///     // but visible when the `internal-docs` feature is enabled
+/// }
+/// ```
+///
+/// This is equivalent to:
+///
+/// ```rust
+/// #[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
+/// pub fn internal_utility_function() {
+///     // Implementation...
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn internal_doc(attr: TokenStream, item: TokenStream) -> TokenStream {
+    internal_doc_impl(attr, item)
 }
 
 /// Attribute macro for use with `thag_profiler`. This macro is intended to annotate the user `main`

@@ -2115,43 +2115,6 @@ pub fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
-// #[cfg(all(not(feature = "full_profiling"), feature = "time_profiling"))]
-// pub fn extract_profile_callstack(
-//     start_pattern: &str,
-//     current_backtrace: &mut Backtrace,
-// ) -> Vec<String> {
-//     // First, collect all relevant frames
-//     let callstack: Vec<String> = Backtrace::frames(current_backtrace)
-//         .iter()
-//         .flat_map(BacktraceFrame::symbols)
-//         .filter_map(|symbol| symbol.name().map(|name| name.to_string()))
-//         .skip_while(|name| !name.contains(start_pattern) || name.contains("{{closure}}"))
-//         // Be careful, this is very sensitive to changes in the function signatures of this module.
-//         .skip(1)
-//         .take_while(|name| !name.contains(end_point))
-//         .filter(|name| filter_scaffolding(name))
-//         .map(strip_hex_suffix)
-//         .map(|mut name| {
-//             // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-//             clean_function_name(&mut name)
-//         })
-//         // TODO May be problematic? - this will collapse legitimate nesting, but protects against recursion
-//         .filter(|name| {
-//             // Skip duplicate function calls (helps with the {{closure}} pattern)
-//             if already_seen.contains(name.as_str()) {
-//                 false
-//             } else {
-//                 already_seen.insert(name.clone());
-//                 true
-//             }
-//         })
-//         // .map(|(_, name)| name.clone())
-//         .collect();
-//     // debug_log!("Callstack: {:#?}", callstack);
-//     // debug_log!("already_seen: {:#?}", already_seen);
-//     callstack
-// }
-
 /// Extracts the callstack for a `Profile`.
 ///
 /// # Panics
@@ -2564,7 +2527,7 @@ static GLOBAL_CALL_STACK_ENTRIES: std::sync::LazyLock<Mutex<BTreeSet<String>>> =
     std::sync::LazyLock::new(|| Mutex::new(BTreeSet::new()));
 
 /// Prints all entries in the global `BTreeSet`.
-/// Entries are printed in sorted order (alphabetically).
+/// Entries are printed in alphabetical order.
 pub fn print_all_call_stack_entries() {
     let parts = { GLOBAL_CALL_STACK_ENTRIES.lock().clone() };
     debug_log!("All entries in the global set (sorted):");
@@ -3219,38 +3182,38 @@ pub fn safely_cleanup_profiling_after_test() {
 #[cfg(feature = "time_profiling")]
 static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
 
-/// Strips hexadecimal suffixes from Rust function names.
-///
-/// This function removes hash suffixes (like `::h1234abcd`) that are added
-/// by the Rust compiler for symbol disambiguation.
-///
-/// # Arguments
-/// * `name` - The function name that may contain a hex suffix
-///
-/// # Returns
-/// A `String` with the hex suffix removed, or the original name if no suffix was found
-///
-/// # Examples
-/// ```
-/// # use thag_profiler::strip_hex_suffix;
-/// let name = "my_function::h1234abcd".to_string();
-/// assert_eq!(strip_hex_suffix(name), "my_function");
-///
-/// let name = "no_suffix".to_string();
-/// assert_eq!(strip_hex_suffix(name), "no_suffix");
-/// ```
-#[must_use]
-pub fn strip_hex_suffix(name: String) -> String {
-    if let Some(hash_pos) = name.rfind("::h") {
-        if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-            name[..hash_pos].to_string()
-        } else {
-            name
-        }
-    } else {
-        name
-    }
-}
+// /// Strips hexadecimal suffixes from Rust function names.
+// ///
+// /// This function removes hash suffixes (like `::h1234abcd`) that are added
+// /// by the Rust compiler for symbol disambiguation.
+// ///
+// /// # Arguments
+// /// * `name` - The function name that may contain a hex suffix
+// ///
+// /// # Returns
+// /// A `String` with the hex suffix removed, or the original name if no suffix was found
+// ///
+// /// # Examples
+// /// ```
+// /// # use thag_profiler::strip_hex_suffix;
+// /// let name = "my_function::h1234abcd".to_string();
+// /// assert_eq!(strip_hex_suffix(name), "my_function");
+// ///
+// /// let name = "no_suffix".to_string();
+// /// assert_eq!(strip_hex_suffix(name), "no_suffix");
+// /// ```
+// #[must_use]
+// pub fn strip_hex_suffix(name: String) -> String {
+//     if let Some(hash_pos) = name.rfind("::h") {
+//         if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
+//             name[..hash_pos].to_string()
+//         } else {
+//             name
+//         }
+//     } else {
+//         name
+//     }
+// }
 
 /// Strips hexadecimal suffixes from Rust function names.
 ///

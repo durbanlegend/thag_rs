@@ -918,11 +918,11 @@ pub fn deactivate_task(task_id: usize) {
     };
 }
 
-/// Get active tasks
-#[must_use]
-pub fn get_active_tasks() -> Vec<usize> {
-    safe_alloc! { ProfileReg::get().get_active_tasks() }
-}
+// /// Get active tasks
+// #[must_use]
+// pub fn get_active_tasks() -> Vec<usize> {
+//     safe_alloc! { ProfileReg::get().get_active_tasks() }
+// }
 
 /// Get the last active task
 #[must_use]

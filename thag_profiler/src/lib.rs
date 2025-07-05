@@ -43,6 +43,16 @@
 //! }
 //! ```
 //!
+//! ## Documentation Levels
+//!
+//! This crate provides two levels of documentation:
+//!
+//! - **Public API** (default): Clean, user-focused documentation
+//! - **Internal API** (with `internal-docs` feature): Includes implementation details
+//!
+//! Enable the `internal-docs` feature when building documentation to see internal
+//! utilities, debug functions, and implementation details that are normally hidden.
+//!
 //! For details including attribute arguments see the main `thag_profiler` README.md.
 
 mod errors;
@@ -52,53 +62,78 @@ mod logging;
 pub mod profiling;
 
 /// Memory tracking module for use with the `full_profiling` feature.
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 #[cfg(feature = "full_profiling")]
 pub mod mem_tracking;
 
 /// Memory attribution module manages a profile registry for use with the `full_profiling` feature.
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 #[cfg(feature = "full_profiling")]
-pub mod mem_attribution;
+mod mem_attribution;
 
 use std::{fmt::Display, path::Path};
 
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
 
-// Re-exports
+// ============================================================================
+// Public API Re-exports
+// ============================================================================
+
+/// Core profiling functionality and configuration.
 pub use {
     errors::{ProfileError, ProfileResult},
-    logging::{flush_debug_log, get_debug_log_path, DebugLogger},
     profiling::{
-        clear_profile_config_cache, disable_profiling, get_config_profile_type,
-        get_global_profile_type, is_detailed_memory, is_profiling_enabled,
-        parse_env_profile_config, strip_hex_suffix, strip_hex_suffix_slice,
-        Profile, /* ProfileSection,*/
-        ProfileConfiguration, ProfileType,
+        disable_profiling, is_profiling_enabled, Profile, ProfileConfiguration, ProfileType,
     },
-    thag_proc_macros::fn_name,
-    // Only re-export what users need from mem_tracking
+    thag_proc_macros::{fn_name, internal_doc},
 };
+
+/// Advanced profiling configuration and utilities.
+///
+/// These are typically used by advanced users or the profiling macros themselves.
+#[internal_doc]
+pub use profiling::{
+    clear_profile_config_cache, get_config_profile_type, get_global_profile_type,
+    is_detailed_memory, parse_env_profile_config, strip_hex_suffix_slice,
+};
+
+/// Debug logging utilities.
+///
+/// These are primarily for internal debugging and development.
+#[internal_doc]
+pub use logging::{flush_debug_log, get_debug_log_path, DebugLogger};
 
 /// Private module for internal macro implementations.
 ///
 /// This module contains re-exports of procedural macros that are used internally
 /// by the public macros in this crate. Users should not directly use items from
 /// this module as they are implementation details and may change without notice.
+#[internal_doc]
 pub mod __private {
     pub use thag_proc_macros::safe_alloc_private;
 }
 
 pub use paste; // Re-export paste crate
 
+/// Memory profiling functionality (available with `full_profiling` feature).
 #[cfg(feature = "full_profiling")]
 pub use {
-    mem_attribution::{find_profile, register_profile, ProfileRef /*, PROFILE_REGISTRY */},
+    mem_attribution::{find_profile, register_profile, ProfileRef},
     mem_tracking::{
         create_memory_task, current_allocator, get_last_active_task, record_allocation, Allocator,
         Dispatcher, TaskGuard, TaskMemoryContext, TrackingAllocator,
     },
-    profiling::extract_path,
 };
+
+/// Advanced memory profiling utilities.
+#[cfg(feature = "full_profiling")]
+#[internal_doc]
+pub use profiling::extract_path;
+
+// ============================================================================
+// Internal Utilities (hidden from public API docs unless internal-docs feature is enabled)
+// ============================================================================
 
 // Export individual TLS/global variants for advanced usage
 #[cfg(feature = "full_profiling")]
@@ -134,6 +169,10 @@ impl Profiler {
 
 /// Retrieve preset base location for profile backtrace cutoff (typically `lib.rs::init_profiling`)
 #[cfg(feature = "time_profiling")]
+/// Get the base location set during profiling initialization.
+///
+/// This is primarily used internally by the profiling macros.
+#[internal_doc]
 pub fn get_base_location() -> Option<&'static str> {
     PROFILER.get().map(|profiler| profiler.base_location)
 }
@@ -162,6 +201,10 @@ impl Profilee {
 
 /// Retrieve profiled root module
 #[cfg(feature = "time_profiling")]
+/// Get the root module name set during profiling initialization.
+///
+/// This is primarily used internally by the profiling macros.
+#[internal_doc]
 pub fn get_root_module() -> Option<&'static str> {
     PROFILEE.get().map(|profilee| profilee.root_module)
 }
@@ -171,7 +214,7 @@ pub fn get_root_module() -> Option<&'static str> {
 /// # Panics
 ///
 /// Panics if the input path does not contain at least a slash and a dot.
-#[doc(hidden)] // Makes it not appear in documentation
+#[internal_doc]
 #[must_use]
 #[cfg(not(target_os = "windows"))]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
@@ -185,7 +228,7 @@ pub fn file_stem_from_path_str(file_name: &'static str) -> String {
 /// # Panics
 ///
 /// Panics if the input path does not contain at least a backslash and a dot.
-#[doc(hidden)] // Makes it not appear in documentation
+#[internal_doc]
 #[must_use]
 #[cfg(target_os = "windows")]
 pub fn file_stem_from_path_str(file_name: &'static str) -> String {
@@ -205,7 +248,7 @@ pub fn file_stem_from_path_str(file_name: &'static str) -> String {
 /// # Panics
 ///
 /// Panics if `Path::file_stem()`    does not return a valid file stem.
-#[doc(hidden)] // Makes it not appear in documentation
+#[internal_doc]
 #[cfg(not(feature = "full_profiling"))]
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
@@ -217,7 +260,7 @@ pub fn file_stem_from_path(path: &Path) -> String {
 /// # Panics
 ///
 /// Panics if `Path::file_stem()`    does not return a valid file stem.
-#[doc(hidden)] // Makes it not appear in documentation
+#[internal_doc]
 #[cfg(feature = "full_profiling")]
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
@@ -317,8 +360,23 @@ macro_rules! safe_alloc {
     };
 }
 
+/// Creates a lazily-initialized static variable.
+///
+/// This macro generates a wrapper type that provides thread-safe lazy initialization
+/// of static variables. It's used internally by the profiling system for managing
+/// global state.
+///
+/// # Examples
+///
+/// ```
+/// use thag_profiler::static_lazy;
+///
+/// static_lazy! {
+///     GLOBAL_CONFIG: Option<String> = Some("default".to_string())
+/// }
+/// ```
 #[macro_export]
-#[doc(hidden)] // Makes it not appear in documentation
+#[cfg_attr(not(feature = "internal-docs"), doc(hidden))]
 macro_rules! static_lazy {
     ($name:ident: Option<$inner_type:ty> = $init:expr) => {
         #[doc = stringify!($name)]
@@ -497,6 +555,11 @@ where
 ///
 /// If you need to format signed integers, you'll need a modified version
 /// that correctly handles negative numbers.
+/// Format a number with thousands separators.
+///
+/// This utility function formats numbers with comma separators for better readability
+/// in profiling output.
+#[internal_doc]
 pub fn thousands<T: Display>(n: T) -> String {
     n.to_string()
         .as_bytes()
@@ -514,7 +577,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 /// # Panics
 ///
 /// This function panics if profiling cannot be enabled.
-#[doc(hidden)] // Makes it not appear in documentation
+#[internal_doc]
 #[fn_name]
 pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileType>) {
     #[cfg(feature = "full_profiling")]
@@ -604,7 +667,7 @@ fn set_base_location(file_name: &'static str, fn_name: &str, _line_no: u32) {
 /// # Panics
 ///
 /// This function panics if profiling cannot be disabled.
-#[doc(hidden)] // Makes it not appear in documentation
+#[internal_doc]
 #[allow(clippy::missing_const_for_fn)]
 pub fn finalize_profiling() {
     #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]

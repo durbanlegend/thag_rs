@@ -1,11 +1,11 @@
 //! Introducing `thag_rs` (command `thag`) - a set of creative solutions to enhance your Rust development experience.
-//! `thag` combines a script runner, expression evaluator, and REPL into one tool,
-//! with an array of smart features.
+//!
+//! `thag` combines a script runner, expression evaluator, and REPL into a single command, with an array of smart features.
 //!
 //! `thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
-//! and examples to make it as quick and easy as possible to figure stuff out without tedious setup.
+//! and examples to make it as quick and easy as possible to explore coding solutions without tedious setup.
 //!
-//! 🚀 **Core Powers:**
+//! 🚀 **Core Features:**
 //!
 //! - Run Rust code straight from the command line
 //!
@@ -17,7 +17,7 @@
 //!
 //! - Optionally embed custom Cargo manifest settings in "toml block" comments
 //!
-//! - Shebang support for true scripting (but you can do better: read on...)
+//! - Shebang support for true scripting (but `thag`'s command building is much better still!)
 //!
 //! - Loop-filter mode for data processing
 //!
@@ -44,9 +44,9 @@
 //!
 //! - View macro expansions side-by-side with your base script
 //!
-//! - Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro
+//! - Proc macro development support, including proc macro starter kit and a "maybe_expand" option to show an expanded view of your proc macro
 //!
-//! - Automated inclusion of `derive` or other dependency features
+//! - Automated, configurable inclusion of `derive` or other features of specific dependencies
 //!
 //! 💡 **Getting Started:**
 //!
@@ -155,7 +155,7 @@ pub use {
     styling::{Color, ColorSupport, Lvl, Role, Style, TermBgLuma},
 };
 
-pub use thag_profiler::*; // Re-export everything from profiler
+// pub use thag_profiler::*; // Re-export everything from profiler
 
 // // Re-exports for convenience
 // // These are minimal and don't force users to go through thag_rs
@@ -237,6 +237,7 @@ pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
 /// Copied from `crokey` under MIT licence.
 /// Copyright (c) 2022 Canop
 ///
+#[doc(hidden)] // Makes it not appear in documentation
 #[cfg(feature = "tui")]
 pub mod __private {
     pub use ratatui::crossterm;

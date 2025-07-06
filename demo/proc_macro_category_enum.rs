@@ -1,6 +1,12 @@
 /*[toml]
 [dependencies]
-strum = { version = "0.26.3", features = ["derive", "phf"] }
+strum = { version = "0.27", features = ["derive", "phf"] }
+# The 'thag-auto' keyword automatically resolves dependencies based on your environment:
+# - Default: Uses crates.io (no environment variables needed)
+# - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
+# - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
+# Note: Run with 'thag script.rs' not 'cargo build' to enable thag-auto processing
+thag_proc_macros = { version = "0.2, thag-auto" }
 */
 
 /// Try generating category enum.

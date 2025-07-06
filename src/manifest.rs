@@ -318,7 +318,7 @@ pub fn extract(
 /// * `ThagResult<()>` - Success or error result
 ///
 /// # Environment Variables
-/// * `THAG_DEV_PATH` - Path to local `thag_rs` development directory
+/// * `THAG_DEV_PATH` - Absolute path to local `thag_rs` development directory
 /// * `THAG_GIT_REF` - Git reference (branch/tag/commit) for git dependencies
 /// * `THAG_GIT_REPO` - Git repository URL (defaults to standard `thag_rs` repo)
 /// * `CI` - Indicates CI environment
@@ -334,6 +334,7 @@ pub fn process_thag_auto_dependencies(build_state: &mut BuildState) {
                     rs_manifest
                         .dependencies
                         .insert((*crate_name).to_string(), new_dependency);
+                    build_state.thag_auto_processed = true;
                 }
             }
         }
@@ -426,8 +427,7 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> cargo
         // Default: use crates.io version
         new_detail.version = base_version;
         debug_log!(
-            "Using crates.io version for {}: {:?}",
-            crate_name,
+            "Using crates.io version for {crate_name}: {:?}",
             new_detail.version
         );
     }

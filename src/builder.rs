@@ -155,6 +155,8 @@ pub struct BuildState {
     pub must_build: bool,
     /// Flag indicating whether to build from original source without wrapping
     pub build_from_orig_source: bool,
+    /// Flag indicating whether thag-auto dependencies were processed
+    pub thag_auto_processed: bool,
     /// The parsed abstract syntax tree of the source code
     pub ast: Option<Ast>,
     /// Finder for extracting crate dependencies from the AST
@@ -377,6 +379,7 @@ impl BuildState {
             ast: None,
             crates_finder: None,
             metadata_finder: None,
+            thag_auto_processed: false,
             infer: cli.infer.as_ref().map_or_else(
                 || {
                     let config = maybe_config();
@@ -1225,7 +1228,7 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
     let status = cargo_command.spawn()?.wait()?;
 
     if !status.success() {
-        display_build_failure();
+        display_build_failure(build_state);
         return Err("Build failed".into());
     }
 
@@ -1253,8 +1256,19 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
 }
 
 #[profiled]
-fn display_build_failure() {
+fn display_build_failure(build_state: &BuildState) {
     cvprtln!(Role::ERR, V::N, "Build failed");
+
+    // Check for thag-auto related issues
+    if build_state.thag_auto_processed {
+        if let Some(ref manifest) = build_state.cargo_manifest {
+            if has_thag_crate_dependencies(manifest) {
+                display_thag_auto_help();
+                return;
+            }
+        }
+    }
+
     let config = maybe_config();
     let binding = Dependencies::default();
     let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
@@ -1283,6 +1297,51 @@ If the problem is a dependency error, consider the following advice:"
         } else {
             "Consider running with dependency inference_level configured as `config` or else an embedded `toml` block."
         }
+    );
+}
+
+fn has_thag_crate_dependencies(manifest: &Manifest) -> bool {
+    let thag_crates = ["thag_rs", "thag_proc_macros", "thag_profiler"];
+
+    for crate_name in &thag_crates {
+        if manifest.dependencies.contains_key(*crate_name) {
+            return true;
+        }
+    }
+    false
+}
+
+fn display_thag_auto_help() {
+    cvprtln!(
+        Role::ERR,
+        V::N,
+        "Build failed - thag dependency issue detected"
+    );
+    cvprtln!(
+        Role::EMPH,
+        V::N,
+        r"
+This script uses thag dependencies (thag_rs, thag_proc_macros, or thag_profiler)
+with the 'thag-auto' keyword, which automatically resolves to the appropriate
+dependency source based on your environment.
+
+The most likely issue is that the version specified in the script doesn't exist
+on crates.io yet. To fix this, you have several options:
+
+1. DEVELOPMENT (recommended): Set environment variable to use local path
+   export THAG_DEV_PATH=/absolute/path/to/thag_rs
+
+2. GIT DEPENDENCY: Use git reference to get the latest version
+   export THAG_GIT_REF=main
+
+3. ALWAYS RUN THROUGH THAG: Use 'thag script.rs' instead of 'cargo build'
+   (This allows thag-auto processing to work properly)
+
+The thag-auto system is designed to work with crates.io by default, falling back
+to git or local paths when environment variables are set. This allows the same
+script to work in different environments without modification.
+
+For more details, see the comments in demo scripts or the thag documentation."
     );
 }
 

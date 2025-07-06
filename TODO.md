@@ -5,11 +5,9 @@
 ## On the go
 - [ ]  Think of ways to run thag remotely or with minimal effort.
 - [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
-- [ ]  OBSOLETE. Remove hard-coding from src/bin/thag_gen_proc_macro_readme.rs.
 - [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
 - [ ]  Tool for running tests for all feature sets?
 - [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
-
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

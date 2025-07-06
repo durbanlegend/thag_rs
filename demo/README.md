@@ -6377,6 +6377,38 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_bench
 
 ---
 
+### Script: thag_auto_example.rs
+
+**Description:**  Example script demonstrating proper thag-auto usage.
+ This shows how to use the thag-auto keyword for automatic dependency resolution.
+
+ The thag-auto system allows scripts to work in different environments:
+ - Development: Uses local path when THAG_DEV_PATH is set
+ - Git: Uses git repository when THAG_GIT_REF is set
+ - Default: Uses crates.io versions (may require published versions)
+
+ If you get a "version not found" error, it means the specified version
+ doesn't exist on crates.io yet. Set THAG_DEV_PATH or THAG_GIT_REF to use
+ local or git versions instead.
+
+**Purpose:** Demonstrate thag-auto dependency resolution system
+
+**Crates:** `thag_rs`
+
+**Type:** Program
+
+**Categories:** demo, documentation
+
+**Link:** [thag_auto_example.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_auto_example.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_auto_example.rs
+```
+
+---
+
 ### Script: thag_profile_benchmark.rs
 
 **Description:**  Benchmark comparison between thag_profiler and dhat-rs for memory profiling accuracy.
@@ -6880,12 +6912,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs
  The dependency is `thag_profiler` because that's the only place it's used at time of writing, even though this is
  not in any way a profiling-specific function.
 
- Disclosure: the `thag_profiler` `warn_once` macro and `warn_once_with_id` function use unsafe code.
+ Disclosure: the `thag_profiler` `warn_once` macro uses unsafe code.
 
  Credit to `Claude 3.7 Sonnet`.
  Simple example that shows a warning only once despite multiple calls
  Example with early return pattern
- Example using the ID-based version for multiple independent warnings
+ Example using multiple warn_once! calls for different conditions
  Performance comparison between naive approach and warn_once
  Real-world example based on the record_dealloc function
  Main entry point
@@ -6904,6 +6936,72 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once.rs
+```
+
+---
+
+### Script: warn_once_with_id_standalone.rs
+
+**Description:**  This script demonstrates the usage of the `warn_once_with_id` function for suppressing repeated
+ log messages with minimal runtime overhead using unique IDs.
+
+ This is a standalone implementation that doesn't require any external dependencies.
+ The function uses unsafe code for maximum performance with a fast path after the first warning.
+
+ Credit to `Claude Sonnet 4` for the implementation and comprehensive demo.
+ Standalone implementation of warn_once_with_id function
+
+ This function provides a high-performance way to suppress repeated warnings
+ using unique IDs to track different warning sites independently.
+
+ # Safety
+
+ This function is unsafe because:
+ - It uses static mutable data with UnsafeCell
+ - Caller must ensure each ID is unique per call site
+ - The ID should be < 128 for optimal performance (higher IDs use modulo)
+
+ # Arguments
+
+ * `id` - Unique identifier for this warning site (0-127 for best performance)
+ * `condition` - Whether the warning condition is met
+ * `warning_fn` - Closure to execute for the warning (called only once)
+
+ # Returns
+
+ * `true` if the condition was met (regardless of whether warning was shown)
+ * `false` if the condition was not met
+
+ # Example
+
+ ```rust
+ const MY_WARNING_ID: usize = 1;
+
+ unsafe {
+     warn_once_with_id(MY_WARNING_ID, some_error_condition, || {
+         eprintln!("This warning will only appear once!");
+     });
+ }
+ ```
+ Demo showing multiple independent warnings with different IDs
+ Demo showing performance characteristics
+ Demo showing thread safety
+ Demo showing real-world usage patterns
+ Demo showing ID collision handling
+ Demo showing early return pattern
+
+**Purpose:** Standalone demo of warn_once_with_id function with embedded implementation
+
+**Type:** Program
+
+**Categories:** demo, macros, technique, unsafe, performance
+
+**Link:** [warn_once_with_id_standalone.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once_with_id_standalone.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once_with_id_standalone.rs
 ```
 
 ---

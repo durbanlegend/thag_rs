@@ -17,12 +17,14 @@ By default, each macro displays its generated code to `stderr` at compile time, 
 Generates constructor methods for structs.
 
 **What it teaches:**
+
 - Basic derive macro structure
 - Field iteration and processing
 - Simple code generation with `quote!`
 - Error handling for unsupported types
 
 **Example:**
+
 ```rust
 #[derive(DeriveConstructor)]
 struct Person {
@@ -39,12 +41,14 @@ struct Person {
 Generates getter methods that return references to struct fields.
 
 **What it teaches:**
+
 - Method generation patterns
 - Type analysis (references vs owned types)
 - Documentation generation in macros
 - Field naming and identifier handling
 
 **Example:**
+
 ```rust
 #[derive(DeriveGetters)]
 struct Config {
@@ -61,6 +65,7 @@ struct Config {
 Generates builder pattern implementation for structs.
 
 **What it teaches:**
+
 - Builder pattern generation
 - Fluent API design with method chaining
 - Separate struct generation
@@ -68,6 +73,7 @@ Generates builder pattern implementation for structs.
 - Default trait implementation
 
 **Example:**
+
 ```rust
 #[derive(DeriveBuilder)]
 struct Config {
@@ -85,6 +91,7 @@ struct Config {
 Generates Display trait implementations for structs and enums.
 
 **What it teaches:**
+
 - Trait implementation generation
 - Pattern matching for enums
 - Field formatting with proper separators
@@ -92,6 +99,7 @@ Generates Display trait implementations for structs and enums.
 - Type-aware formatting
 
 **Example:**
+
 ```rust
 #[derive(DeriveDisplay)]
 struct Person {
@@ -109,6 +117,7 @@ struct Person {
 Extracts compile-time documentation and makes it available at runtime.
 
 **What it teaches:**
+
 - Advanced attribute parsing across multiple item types
 - Working with structs, enums, tuple structs, and unit structs
 - Documentation extraction from fields and variants
@@ -116,6 +125,7 @@ Extracts compile-time documentation and makes it available at runtime.
 - Complex pattern matching generation
 
 **Example:**
+
 ```rust
 #[derive(DeriveDocComment)]
 enum Status {
@@ -134,12 +144,14 @@ enum Status {
 Adds automatic memoization to functions.
 
 **What it teaches:**
+
 - Function wrapping and transformation
 - Thread-safe caching with HashMap and Mutex
 - Compile-time cache key generation
 - Performance optimization patterns
 
 **Example:**
+
 ```rust
 #[cached]
 fn fibonacci(n: u32) -> u64 {
@@ -154,11 +166,13 @@ fn fibonacci(n: u32) -> u64 {
 Measures and displays function execution time.
 
 **What it teaches:**
+
 - Function signature preservation
 - Performance measurement techniques
 - Console output integration
 
 **Example:**
+
 ```rust
 #[timing]
 fn slow_operation() -> String {
@@ -175,12 +189,14 @@ fn slow_operation() -> String {
 Adds automatic retry logic to functions with configurable attempts and backoff.
 
 **What it teaches:**
+
 - Attribute macro parameter parsing
 - Error handling and resilience patterns
 - Panic catching and retry logic
 - Progress reporting
 
 **Example:**
+
 ```rust
 #[retry(times = 5)]
 fn unreliable_network_call() -> Result<String, std::io::Error> {
@@ -196,12 +212,14 @@ fn unreliable_network_call() -> Result<String, std::io::Error> {
 Generates interactive file system navigation functionality.
 
 **What it teaches:**
+
 - Function-like macro patterns
 - Complex code generation
 - Interactive user interface generation
 - External crate integration
 
 **Example:**
+
 ```rust
 file_navigator! {}
 // Generates: FileNavigator struct, select_file function, save_to_file function, etc.
@@ -214,12 +232,14 @@ file_navigator! {}
 Generates compile-time assertions that prevent compilation if conditions are not met.
 
 **What it teaches:**
+
 - Function-like macro parsing with multiple parameters
 - Compile-time validation techniques
 - Zero-runtime-cost assertions
 - Custom error message generation
 
 **Example:**
+
 ```rust
 compile_time_assert!(std::mem::size_of::<usize>() == 8, "Requires 64-bit platform");
 compile_time_assert!(1 + 1 == 2, "Basic math must work");
@@ -232,12 +252,14 @@ compile_time_assert!(1 + 1 == 2, "Basic math must work");
 Resolves environment variables at compile time with fallback defaults.
 
 **What it teaches:**
+
 - Compile-time environment variable processing
 - String literal generation
 - Configuration management patterns
 - Zero-overhead environment access
 
 **Example:**
+
 ```rust
 const DATABASE_URL: &str = env_or_default!("DATABASE_URL", "postgresql://localhost:5432/myapp");
 const SERVER_PORT: &str = env_or_default!("PORT", "8080");
@@ -250,12 +272,14 @@ const SERVER_PORT: &str = env_or_default!("PORT", "8080");
 Generates multiple test functions from test data to reduce boilerplate.
 
 **What it teaches:**
+
 - Test automation patterns
 - Parameter unpacking from tuples
 - Repetitive code generation
 - Test function generation
 
 **Example:**
+
 ```rust
 generate_tests! {
     test_addition: [

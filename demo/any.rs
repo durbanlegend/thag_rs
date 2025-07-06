@@ -2,8 +2,8 @@
 /// so that it can be handled appropriately.
 ///
 /// `thag` needs to know whether an expression returns a unit type or a value
-/// that we should display. When using a code template this using `Any` is
-/// short and sweet, but it has to be included in the template and thus the
+/// that we should display. When using a code template this approach using `Any`
+/// is short and sweet, but it has to be included in the template and thus the
 /// generated code, whereas the alternative of using an AST is quite a mission
 /// but works with any arbitrary snippet and doesn't pollute the generated
 /// source code, so `thag` went with the latter.

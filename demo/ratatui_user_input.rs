@@ -1,7 +1,7 @@
 /// Published example from the `ratatui` crate.
 ///
 /// The latest version of this example is available in the [examples] folder in the "latest"
-/// branch of the `ratatui` repository. At time of writing you can run it successfully simply
+/// branch of the `ratatui` repository. At time of writing you can run it successfully just
 /// by invoking its URL with the `thag_url` tool, like this:
 ///
 /// ```bash
@@ -30,7 +30,7 @@
 // [examples readme]: https://github.com/ratatui-org/ratatui/blob/main/examples/README.md
 
 // A simple example demonstrating how to handle user input. This is a bit out of the scope of
-// the library as it does not provide any input handling out of the box. However, it may helps
+// the library as it does not provide any input handling out of the box. However, it may help
 // some to get started.
 //
 // This is a very simple example:

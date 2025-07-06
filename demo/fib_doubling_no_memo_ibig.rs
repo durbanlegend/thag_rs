@@ -1,5 +1,5 @@
 /// A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
-/// This serves to prove that the memoization is significantly faster, although
+/// This serves to prove that the memoization is faster, although
 /// not dramatically so.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.

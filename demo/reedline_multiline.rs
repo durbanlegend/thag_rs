@@ -2,7 +2,7 @@
 /// published example `custom_prompt.rs` in `reedline` crate.
 ///
 /// The latest version of the original `custom_prompt.rs` is available in the [examples] folder
-/// in the `reedline` repository. At time of writing you can run it successfully simply
+/// in the `reedline` repository. At time of writing you can run it successfully just
 /// by invoking its URL with the `thag_url` tool, like this:
 ///
 /// ```bash

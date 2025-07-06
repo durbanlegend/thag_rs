@@ -4,7 +4,7 @@
 /// enter subsequent letters to narrow the search. Noice.
 ///
 /// The latest version of this example is available in the [examples] folder in the `reedline`
-/// repository. At time of writing you can run it successfully simply
+/// repository. At time of writing you can run it successfully just
 /// by invoking its URL with the `thag_url` tool, like this:
 ///
 /// ```bash

@@ -73,7 +73,7 @@ fn data_processing(data: Vec<i32>) -> (i32, i32, f64) {
         sum as f64 / data.len() as f64
     };
 
-    // Simulate additional processing time
+    // Simulate extra processing time
     std::thread::sleep(Duration::from_millis(50));
 
     (sum, max, average)

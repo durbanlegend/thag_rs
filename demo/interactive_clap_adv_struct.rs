@@ -1,6 +1,6 @@
-/// Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
+/// Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`:
 ///
-/// This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
+/// This example shows further functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
 ///
 ///```
 /// thag demo/interactive_clap_adv_struct.rs (without parameters) => entered interactive mode

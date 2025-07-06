@@ -95,7 +95,8 @@ pub fn current_allocator() -> Allocator {
 #[global_allocator]
 static ALLOCATOR: Dispatcher = Dispatcher::new();
 
-/// Dispatcher allocator that routes allocation requests to the appropriate allocator
+/// Dispatcher that routes allocation requests to the active allocator
+/// according to the USING_SYSTEM_ALLOCATOR variable for the current thread.
 pub struct Dispatcher {
     pub task_aware: TaskAwareAllocator,
     pub system: std::alloc::System,

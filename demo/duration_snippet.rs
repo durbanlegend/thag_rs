@@ -1,7 +1,7 @@
 #! /usr/bin/env thag
 #![feature(duration_constructors)]
 
-//: Minimal snippet showing how to add nice additional constructors such as `from_weeks` (and days, hours and
+//: Minimal snippet showing how to add further nice constructors such as `from_weeks` (and days, hours and
 //: minutes) to `std::time::Duration`.
 //:
 //: These are enabled by adding the inner attribute `#![feature(duration_constructors)]` to the script.

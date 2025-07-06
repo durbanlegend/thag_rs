@@ -1,7 +1,7 @@
 /// Example from the clap cookbook, not using the `clap-repl` crate.
 ///
 /// The latest version of this example is `repl-derive.rs` in the [examples] folder
-///  in the `clap` repository. At time of writing you can run it successfully simply
+///  in the `clap` repository. At time of writing you can run it successfully just
 /// by invoking its URL with the `thag_url` tool, like this:
 ///
 /// ```bash

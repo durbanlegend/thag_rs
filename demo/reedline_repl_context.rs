@@ -7,7 +7,7 @@ reedline-repl-rs = "1.1.1"
 /// `clap` builder pattern; there is also one using the`clap` derive pattern.
 ///
 /// The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
-/// At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+/// At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
 /// and passing the required arguments as normal, like this:
 ///
 /// ```bash

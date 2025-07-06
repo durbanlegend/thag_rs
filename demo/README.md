@@ -106,7 +106,8 @@ which will give identical output to the above.
  after suspension.
  The ideal would seem to be a reentrant Mutex or RwLock with mutability - so far tried
  without success, but a subject for another prototype.
- Dispatcher allocator that routes allocation requests to the appropriate allocator
+ Dispatcher that routes allocation requests to the active allocator
+ according to the USING_SYSTEM_ALLOCATOR variable for the current thread.
  Task-aware allocator that tracks memory allocations
 
 **Purpose:** Prototype of a ring-fenced allocator for memory profiling.
@@ -264,8 +265,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_
  so that it can be handled appropriately.
 
  `thag` needs to know whether an expression returns a unit type or a value
- that we should display. When using a code template this using `Any` is
- short and sweet, but it has to be included in the template and thus the
+ that we should display. When using a code template this approach using `Any`
+ is short and sweet, but it has to be included in the template and thus the
  generated code, whereas the alternative of using an AST is quite a mission
  but works with any arbitrary snippet and doesn't pollute the generated
  source code, so `thag` went with the latter.
@@ -595,7 +596,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs
 **Description:**  Published example from the `clap` crate.
 
  The latest version of this example is available in the [examples] folder in the `clap` repository.
- At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+ At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
  and passing the required arguments as normal, like this:
 
  ```bash
@@ -702,7 +703,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_
 **Description:**  Example from the clap cookbook, not using the `clap-repl` crate.
 
  The latest version of this example is `repl-derive.rs` in the [examples] folder
-  in the `clap` repository. At time of writing you can run it successfully simply
+  in the `clap` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -1052,7 +1053,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
  Miscellaneous configuration parameters
  A struct for use in normal execution, as opposed to use in testing.
  Initializes and returns the configuration.
- Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` sstem variable.
+ Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` stem variable.
 
  # Panics
 
@@ -1147,7 +1148,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/create_next_file
 **Description:**  Published example of serde deserialisation from the `crokey` crate.
 
  The latest version of this example is available in the [examples] folder
-  in the `crokey` repository. At time of writing you can run it successfully simply
+  in the `crokey` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -1180,7 +1181,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_deser.rs
 **Description:**  Published example of combiner from the `crokey` crate.
 
  The latest version of this example is available in the [examples] folder
-  in the `crokey` repository. At time of writing you can run it successfully simply
+  in the `crokey` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -1212,7 +1213,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key
 **Description:**  Published example of KeyCombination from the `crokey` crate.
 
  The latest version of this example is available in the [examples] folder
-  in the `crokey` repository. At time of writing you can run it successfully simply
+  in the `crokey` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -1245,7 +1246,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key
 **Description:**  Published example from the `crossbeam-channel` crate.
 
  The latest version of this example is available in the [examples] folder
-  in the `crossbeam-channel` repository. At time of writing you can run it successfully simply
+  in the `crossbeam-channel` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -1844,7 +1845,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/download_demos.r
 
 ### Script: duration_snippet.rs
 
-**Description:**  Minimal snippet showing how to add nice additional constructors such as `from_weeks` (and days, hours and
+**Description:**  Minimal snippet showing how to add further nice constructors such as `from_weeks` (and days, hours and
  minutes) to `std::time::Duration`.
 
  These are enabled by adding the inner attribute `#![feature(duration_constructors)]` to the script.
@@ -3424,9 +3425,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorizat
 
 ### Script: interactive_clap_adv_struct.rs
 
-**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
+**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`:
 
- This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
+ This example shows further functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
 
 ```
  thag demo/interactive_clap_adv_struct.rs (without parameters) => entered interactive mode
@@ -4667,7 +4668,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tre
 **Description:**  Published example from the `ratatui` crate.
 
  The latest version of this example is available in the [examples] folder in the "latest"
- branch of the `ratatui` repository. At time of writing you can run it successfully simply
+ branch of the `ratatui` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4724,7 +4725,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_inp
 **Description:**  Published example from `crossterm` crate.
 
  The latest version of this example is available in the [examples] folder in the `crossterm`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4761,7 +4762,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crosste
 **Description:**  Published example `basic.rs` from `reedline` crate.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4794,7 +4795,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_k
 **Description:**  Published example from `reedline` crate.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4827,7 +4828,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_complet
 **Description:**  Published example from `reedline` crate.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4862,7 +4863,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_l
  Try typing - among others - the known commands "test", "hello world", "hello world reedline", "this is the reedline crate".
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4895,7 +4896,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlig
 **Description:**  Published example from `reedline` crate.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4928,7 +4929,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.
 **Description:**  Published example from `reedline` crate.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4964,7 +4965,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history
  enter subsequent letters to narrow the search. Noice.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -4997,7 +4998,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_com
 **Description:**  Published example from `reedline` crate.
 
  The latest version of this example is available in the [examples] folder in the `reedline`
- repository. At time of writing you can run it successfully simply
+ repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -5032,7 +5033,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bi
  published example `custom_prompt.rs` in `reedline` crate.
 
  The latest version of the original `custom_prompt.rs` is available in the [examples] folder
- in the `reedline` repository. At time of writing you can run it successfully simply
+ in the `reedline` repository. At time of writing you can run it successfully just
  by invoking its URL with the `thag_url` tool, like this:
 
  ```bash
@@ -5100,7 +5101,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_st
  ```
 
  The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
- At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+ At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
  and passing the required arguments as normal, like this:
 
  ```bash
@@ -5134,7 +5135,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs
  `clap` builder pattern; there is also one using the`clap` derive pattern.
 
  The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
- At time of writing you can run it successfully simply by invoking its URL with the `thag_url` tool
+ At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
  and passing the required arguments as normal, like this:
 
  ```bash
@@ -7149,3 +7150,4 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs
 ```
 
 ---
+

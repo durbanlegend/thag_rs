@@ -1,7 +1,7 @@
 /// Published example from `crossterm` crate.
 ///
 /// The latest version of this example is available in the [examples] folder in the `crossterm`
-/// repository. At time of writing you can run it successfully simply
+/// repository. At time of writing you can run it successfully just
 /// by invoking its URL with the `thag_url` tool, like this:
 ///
 /// ```bash

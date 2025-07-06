@@ -7,7 +7,7 @@
 //# Categories: technique, proc_macros, function_like_macros, testing, automation
 
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
+// in your config file or defaulted to "./demo/proc_macros".
 use thag_demo_proc_macros::generate_tests;
 
 // Example 1: Basic arithmetic tests

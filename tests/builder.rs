@@ -79,6 +79,7 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         infer: DependencyInference::None,
         args: vec![],
         features: None,
+        thag_auto_processed: false,
     }
 }
 
@@ -231,6 +232,7 @@ name = "bitflags_t"
         infer: DependencyInference::None,
         args: vec![],
         features: None,
+        thag_auto_processed: false,
     };
     dbg!(&build_state);
     let proc_flags = ProcFlags::empty();

@@ -12077,7 +12077,7 @@ Would you like me to:
 
 
 
-Currently the styling is based on styling::TermAtributes:
+Currently the styling is based on styling::TermAttributes:
 pub struct TermAttributes {
     pub color_support: ColorSupport,
     pub theme: TermTheme,
@@ -12495,7 +12495,7 @@ Would you like me to:
 
 
 
-I would like to have a GruvBox Lite Hard theme .toml please. I'm happy to say that the autodetect of Dracula is finall working for my dark terminals, although some tweaks are needed to legacy code.
+I would like to have a GruvBox Lite Hard theme .toml please. I'm happy to say that the autodetect of Dracula is finally working for my dark terminals, although some tweaks are needed to legacy code.
 
 I would also like to have a Style::for_role method similar to Style::style_for_level  (which I may rename to Style::for_level since I understand Rust (justifiable) considers it redundant to repeat the struct name in a method).
 
@@ -13370,7 +13370,7 @@ Would you like me to:
 
 The names in the TOML can then just be treated as comments/documentation rather than trying to parse them.
 
-Good morning! Can you please add to the Theme struct and initialisation 3 fields for the theme name (e.g. "Dracula") theme filename, and built-in vs custom. I'm customising the REPL with a Theme command to display theme info. Heck, I might even eventually let Repl do thngs like change the theme and edit the configuration. It might make a handy dashboard for `thag`.
+Good morning! Can you please add to the Theme struct and initialisation 3 fields for the theme name (e.g. "Dracula") theme filename, and built-in vs custom. I'm customising the REPL with a Theme command to display theme info. Heck, I might even eventually let Repl do things like change the theme and edit the configuration. It might make a handy dashboard for `thag`.
 
 Good morning! Yes, that's a great idea for the REPL! Here's the enhanced Theme structure:
 

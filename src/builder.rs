@@ -122,6 +122,7 @@ struct BuildPaths {
 
 /// A struct to encapsulate the attributes of the current build as needed by the various
 /// functions co-operating in the generation, build and execution of the code.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Default)]
 #[cfg(feature = "build")]
 pub struct BuildState {

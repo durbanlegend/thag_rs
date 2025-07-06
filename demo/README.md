@@ -157,7 +157,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atom
  after suspension.
  The ideal would seem to be a reentrant Mutext with mutability - so far tried
  without success, but a subject for another prototype.
- Dispatcher allocator that routes allocation requests to the appropriate allocator
+ Dispatcher that routes allocation requests to the desired allocator
  Task-aware allocator that tracks memory allocations
 
 **Purpose:** Prototype of a ring-fenced allocator for memory profiling.
@@ -2543,7 +2543,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_ite
 ### Script: fib_doubling_no_memo_ibig.rs
 
 **Description:**  A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
- This serves to prove that the memoization is significantly faster, although
+ This serves to prove that the memoization is faster, although
  not dramatically so.
 
 
@@ -4503,7 +4503,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.
  into its `syn` abstract syntax tree. The drawback is that this technique discards
  valuable information like comments and formatting.
 
- Note that the injected profiling code is no longer valid. this is a demonstration ony
+ Note that the injected profiling code is no longer valid. this is a demonstration only
 
  E.g.: `thag demo/profile_file.rs < demo/hello_main.rs > $TMPDIR/hello_main_profiled.rs`
 
@@ -6027,7 +6027,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_remove_attri
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `extern crate` statements and fn `visit_expr` to start the tree
  traversal. This version expects the script contents to consist of a Rust expression.
 
 **Purpose:** Prototype.
@@ -6585,7 +6585,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tlborm_callbacks
 
 **Description:**  ChatGPT 4.1-generated script expresses an absolute path relative to the current working directory.
 
-**Purpose:** Use `pathdiff` crate to compute a relative path releative to the CWD.
+**Purpose:** Use `pathdiff` crate to compute a relative path relative to the CWD.
 
 **Crates:** `pathdiff`
 
@@ -7149,4 +7149,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs
 ```
 
 ---
-

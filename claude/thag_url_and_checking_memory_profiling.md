@@ -7,7 +7,8 @@
 The following items were attached by the user. They are up-to-date and don't need to be re-read.
 
 <files>
-````rs thag_rs/src/stdin.rs
+````rs tha
+g_rs/src/stdin.rs
 #![allow(clippy::uninlined_format_args)]
 use crate::{
     debug_log,
@@ -5318,7 +5319,7 @@ required-features = ["instrument-tool"]
 </files>
 </context>
 
-They are the ones in lines 63 to 76 of the attached thag_profiler/Cargo.toml. Again, I think it might be better to rename the source files to be consistent with the compiled binary name, e.g. thag_analyze.rs instead of analyze.rs. What do you think? I'm also open to better naming that makes their profiling role clearer, e.g. neither thag_analyze nor thag_remove does intuitively suggests profiling to the user. Then again, I don't want the user to have to type in long cmmand names for them. Bit of a tough one?
+They are the ones in lines 63 to 76 of the attached thag_profiler/Cargo.toml. Again, I think it might be better to rename the source files to be consistent with the compiled binary name, e.g. thag_analyze.rs instead of analyze.rs. What do you think? I'm also open to better naming that makes their profiling role clearer, e.g. neither thag_analyze nor thag_remove does intuitively suggests profiling to the user. Then again, I don't want the user to have to type in long command names for them. Bit of a tough one?
 
 ## Agent
 
@@ -7158,7 +7159,7 @@ What's your timeline thinking for this kind of cleanup/migration?
 
 ## User
 
-Thanks, this fleshes out in detail the kind of issues at the back of my mind. Fortunately the tools/ dir iteself has been introduced since the last release, so we have the freedom to implement it without prior user expectations. Also the tools/README.md is generated from source by the thag_gen_readme tool, so it's easily portable, but I'd have to figure out what to do about thag_rs in the same directory - not a huge issue.
+Thanks, this fleshes out in detail the kind of issues at the back of my mind. Fortunately the tools/ dir itself has been introduced since the last release, so we have the freedom to implement it without prior user expectations. Also the tools/README.md is generated from source by the thag_gen_readme tool, so it's easily portable, but I'd have to figure out what to do about thag_rs in the same directory - not a huge issue.
 I'm already enjoying the feeling of using the tools as integrated binaries, the improvements to thag_url etc., so I feel we've made a good forward step, and provided src/bin is the best final destination, I'd want to migrate there before the next release, which I'm hoping to do in the next couple of weeks. I don't see any reason to expose the users to a tools directory if it's already obsolescent.
 Actually my first priority is to release the thag_profiler subcrate, which in turn requires a new release of the thag_proc_macros subcrate. I don't know if I'd be able to do so in isolation from the main thag_rs project, so I've been picking up the threads of the main project again to check for issues, and found this area for improvement.
 So I'm at the point where I need to work out a release plan for these 3 parts of the project. I also want to make sure that thag_profiler is rock solid. It an ambitious offering and I've already picked up and fixed too many fundamental issues too late for comfort, such as double counting of allocations. I don't want to release it with major errors or oversights, so am anxious to test or verify it any way I can. I have done a benchmark or two against `firestorm`, which gives similar results but unfortunately is limited to sync time profiling, but memory profiling is difficult and I haven't had much luck finding working alternative memory profiling solutions to compare with. What if I release it and people point out a better alternative or something that proves that thag_profiler has fundamental errors?

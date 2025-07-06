@@ -284,7 +284,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
 ///
 /// # Raw Mode Handling
 ///
-/// This function has no raw mode handling and shouldbe called from one that does.
+/// This function has no raw mode handling and should be called from one that does.
 /// Alternatively, use `get_term_bg_rgb` to implement raw mode handling.
 ///
 /// # Errors

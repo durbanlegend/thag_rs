@@ -5,7 +5,7 @@ syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit", "
 
 /// Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
 /// Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
-/// to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+/// to process the nodes representing `extern crate` statements and fn `visit_expr` to start the tree
 /// traversal. This version expects the script contents to consist of a Rust expression.
 //# Purpose: Prototype.
 //# Categories: AST, crates, prototype, technique

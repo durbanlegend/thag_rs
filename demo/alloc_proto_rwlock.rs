@@ -119,7 +119,7 @@ impl fmt::Display for Allocator {
 #[global_allocator]
 static ALLOCATOR: Dispatcher = Dispatcher::new();
 
-/// Dispatcher allocator that routes allocation requests to the appropriate allocator
+/// Dispatcher that routes allocation requests to the desired allocator
 pub struct Dispatcher {
     pub task_aware: TaskAwareAllocator,
     pub system: std::alloc::System,

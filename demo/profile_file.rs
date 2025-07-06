@@ -2,7 +2,7 @@
 /// into its `syn` abstract syntax tree. The drawback is that this technique discards
 /// valuable information like comments and formatting.
 ///
-/// Note that the injected profiling code is no longer valid. this is a demonstration ony
+/// Note that the injected profiling code is no longer valid. this is a demonstration only
 ///
 /// E.g.: `thag demo/profile_file.rs < demo/hello_main.rs > $TMPDIR/hello_main_profiled.rs`
 ///

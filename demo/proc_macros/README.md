@@ -1,8 +1,8 @@
 # Procedural Macros Demo Collection
 
-A collection of 12 procedural macros for learning proc macro development in Rust. Each macro aims to demonstrate specific techniques while solving practical problems.
+A collection of 12 procedural macros for learning proc macro development in Rust. Each macro aims to show specific techniques while solving practical problems.
 
-The macros are presented here in the recommended order for learning.
+The macros are listed here in the recommended order for learning.
 
 The collection covers all three proc macro types: **Derive Macros** (5), **Attribute Macros** (3), and **Function-like Macros** (4).
 
@@ -351,7 +351,7 @@ cargo run -- demo/proc_macro_generate_tests.rs
 
 ## Why These 12?
 
-Each macro was selected for specific educational value:
+Each macro has been selected for specific educational value:
 
 - **Progressive Complexity**: From simple field processing to advanced patterns
 - **Complete Coverage**: All three proc macro types represented
@@ -376,7 +376,7 @@ cargo doc --open
 
 ## Contributing
 
-When adding new macros to this collection, ensure they:
+When adding new macros to this collection, make sure they:
 
 1. **Solve real problems** - Have practical utility
 2. **Teach unique concepts** - Demonstrate distinct techniques

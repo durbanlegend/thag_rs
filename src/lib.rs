@@ -44,7 +44,7 @@
 //!
 //! - View macro expansions side-by-side with your base script
 //!
-//! - Proc macro development support, including proc macro starter kit and a "maybe_expand" option to show an expanded view of your proc macro
+//! - Proc macro development support, including proc macro starter kit and a `maybe_expand...` option to show an expanded view of your proc macro
 //!
 //! - Automated, configurable inclusion of `derive` or other features of specific dependencies
 //!
@@ -69,9 +69,6 @@
 // Core functionality (core feature):
 // Required for basic script operations
 //-----------------------------------------------------------------------------
-/// Core: Color palette
-// #[cfg(feature = "core")]
-// pub mod color256;
 /// Core: Error handling
 #[cfg(feature = "core")]
 pub mod errors;

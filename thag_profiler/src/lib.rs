@@ -476,13 +476,14 @@ macro_rules! warn_once {
     }};
 }
 
-/// Helper function for executing code only once per unique ID with an optimized fast path.
+/// Helper function for issuing warnings only once per unique ID with an optimized fast path.
+/// Avoids flooding output with repetetive warnings for the same issue.
 ///
 /// This function is useful when you need multiple independent warning suppressions,
 /// as it uses the provided ID to create unique static storage per call site.
 ///
 /// # Parameters
-/// * `id` - A unique identifier (ideally compile-time constant) for this warning
+/// * `id` - A unique identifier (ideally a compile-time constant) for this warning
 /// * `condition` - Condition that determines if warning logic should execute
 /// * `warning_fn` - Function to call on first occurrence of the condition
 ///
@@ -585,7 +586,7 @@ pub fn thousands<T: Display>(n: T) -> String {
 pub fn init_profiling(root_module: &'static str, profile_type: Option<ProfileType>) {
     #[cfg(feature = "full_profiling")]
     safe_alloc! {
-        // eprintln!("root_module={root_module}, profile_type={profile_type:#?}, TLS allocation tracking={:#?}", cfg!(not(feature = "no_tls")));
+        // eprintln!("root_module={root_module}, profile_type={profile_type:#?});
 
         // Only set PROFILEE if it hasn't been set already
         // This allows multiple test functions to call init_profiling

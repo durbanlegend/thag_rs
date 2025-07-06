@@ -48,7 +48,7 @@ fn test_nested_global_behavior() {
 }
 
 #[test]
-#[cfg(all(feature = "full_profiling", not(feature = "no_tls")))]
+#[cfg(feature = "full_profiling")]
 #[serial]
 fn test_thread_isolation() {
     use std::{

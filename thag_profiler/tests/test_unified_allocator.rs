@@ -1,6 +1,4 @@
-/// Test demonstrating the unified allocator approach
-/// The same code works with either global or thread-local implementation
-/// based on the `no_tls` feature flag.
+/// Test demonstrating the thread-local allocator approach
 #[cfg(feature = "full_profiling")]
 use serial_test::serial;
 
@@ -104,24 +102,9 @@ fn test_unified_allocator_threading() {
         // Small delay to let other threads switch allocators
         thread::sleep(std::time::Duration::from_millis(5));
 
-        // Behavior depends on feature flag:
-        // - With no_tls: this thread might see System due to global flag
-        // - Without no_tls: this thread should be unaffected (Tracking)
+        // Thread-local approach: should be isolated from other threads
         let current = current_allocator();
-
-        #[cfg(not(feature = "no_tls"))]
-        {
-            // TLS approach: should be isolated from other threads
-            assert_eq!(current, Allocator::Tracking);
-        }
-
-        #[cfg(feature = "no_tls")]
-        {
-            // Global approach: might see System if other threads are active
-            // We can't make strict assertions here due to timing
-            // Just verify it's one of the valid states
-            assert!(matches!(current, Allocator::System | Allocator::Tracking));
-        }
+        assert_eq!(current, Allocator::Tracking);
     }));
 
     // Wait for all threads to complete
@@ -136,16 +119,11 @@ fn test_unified_allocator_threading() {
 fn test_unified_approach_selection() {
     reset_allocator_state();
 
-    // This test demonstrates that the same API works regardless of implementation
-    println!("Testing unified allocator approach");
-
-    #[cfg(not(feature = "no_tls"))]
+    // This test demonstrates the thread-local allocator approach
+    println!("Testing thread-local allocator approach");
     println!("  Using thread-local storage implementation");
 
-    #[cfg(feature = "no_tls")]
-    println!("  Using global atomic implementation");
-
-    // The API is identical regardless of implementation
+    // The API provides thread-local isolation
     assert_eq!(current_allocator(), Allocator::Tracking);
 
     safe_alloc! {
@@ -167,7 +145,7 @@ fn test_performance_characteristics() {
     use std::time::Instant;
     const ITERATIONS: usize = 1000;
 
-    // Time the unified approach
+    // Time the thread-local approach
     let start = Instant::now();
     for _ in 0..ITERATIONS {
         safe_alloc! {
@@ -177,34 +155,16 @@ fn test_performance_characteristics() {
     }
     let duration = start.elapsed();
 
-    #[cfg(not(feature = "no_tls"))]
     println!("TLS approach: {} iterations in {:?}", ITERATIONS, duration);
-
-    #[cfg(feature = "no_tls")]
-    println!(
-        "Global approach: {} iterations in {:?}",
-        ITERATIONS, duration
-    );
 
     // The test passes regardless of performance - we just measure it
     assert!(duration.as_nanos() > 0);
 }
 
 #[test]
-fn test_feature_flag_behavior() {
-    // This test verifies the feature flag behavior at compile time
-
-    #[cfg(not(feature = "no_tls"))]
-    {
-        println!("Compiled without no_tls feature - using thread-local approach");
-        // Additional TLS-specific functionality would be available here
-    }
-
-    #[cfg(feature = "no_tls")]
-    {
-        println!("Compiled with no_tls feature - using global atomic approach");
-        // Global approach is the default
-    }
+fn test_thread_local_behavior() {
+    // This test verifies the thread-local behavior
+    println!("Using thread-local approach for better isolation");
 
     // Test always passes - it's about compile-time behavior
     assert!(true);

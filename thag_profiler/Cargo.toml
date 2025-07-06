@@ -70,8 +70,6 @@ debug_logging = ["thag_proc_macros/debug_logging"]
 ## Enable documentation of internal APIs and implementation details.
 internal_docs = ["thag_proc_macros/internal_docs"]
 
-## Fall back to global allocator management. Only use this if experiencing issues with TLS. May fail to record all data in async environments.
-no_tls = ["thag_proc_macros/no_tls"]
 
 ## Include dependencies required only for `thag_profile` binary.
 analyze_tool = [

@@ -9,7 +9,7 @@
 - [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
 - [ ]  Tool for running tests for all feature sets?
 - [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
-- [ ]  get rid of no_tls thag_profiler option.
+
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
@@ -230,17 +230,11 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 
 feature_sets=(
     ""
-    "no_tls"
     "debug_logging"
-    "debug_logging,no_tls"
     "time_profiling"
-    "time_profiling,no_tls"
     "time_profiling,debug_logging"
-    "time_profiling,debug_logging,no_tls"
     "full_profiling"
-    "full_profiling,no_tls"
     "full_profiling,debug_logging"
-    "full_profiling,debug_logging,no_tls"
 )
 
 failures=()

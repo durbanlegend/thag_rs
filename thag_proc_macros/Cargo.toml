@@ -29,8 +29,7 @@ toml = { version = "0.8" }
 time_profiling = []                 # New feature for conditional compilation
 full_profiling = ["time_profiling"]
 debug_logging = []                  # Zero-cost debug logging
-# Fall back to global allocator management. Only use this if issues with TLS. May fail to record all data in async environments
-no_tls = []
+
 tui = ["crossterm"]
 default = []
 internal_docs = []

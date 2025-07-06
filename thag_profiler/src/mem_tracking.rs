@@ -37,23 +37,14 @@ use std::{
     time::Instant,
 };
 
-#[cfg(not(feature = "no_tls"))]
 use std::{cell::Cell, thread_local};
-
-#[cfg(feature = "no_tls")]
-use std::sync::atomic::AtomicBool;
 
 /// Regular expression pattern to identify allocation start points in backtraces
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
     LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
 
-// Global static atomic for minimal state tracking without allocations
-#[cfg(feature = "no_tls")]
-static USING_SYSTEM_ALLOCATOR: AtomicBool = AtomicBool::new(false);
-
-// Thread-local alternative for better async/threading isolation
+// Thread-local storage for better async/threading isolation
 // Each thread maintains its own flag, preventing cross-thread interference
-#[cfg(not(feature = "no_tls"))]
 thread_local! {
     static USING_SYSTEM_ALLOCATOR: Cell<bool> = const { Cell::new(false) };
 }
@@ -66,15 +57,7 @@ thread_local! {
 #[inline]
 #[must_use]
 pub fn get_using_system() -> bool {
-    #[cfg(feature = "no_tls")]
-    {
-        USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst)
-    }
-
-    #[cfg(not(feature = "no_tls"))]
-    {
-        USING_SYSTEM_ALLOCATOR.with(Cell::get)
-    }
+    USING_SYSTEM_ALLOCATOR.with(Cell::get)
 }
 
 /// Set the current state of the system allocator flag
@@ -85,15 +68,7 @@ pub fn get_using_system() -> bool {
 #[internal_doc]
 #[inline]
 pub fn set_using_system(value: bool) {
-    #[cfg(feature = "no_tls")]
-    {
-        USING_SYSTEM_ALLOCATOR.store(value, Ordering::SeqCst);
-    }
-
-    #[cfg(not(feature = "no_tls"))]
-    {
-        USING_SYSTEM_ALLOCATOR.with(|cell| cell.set(value));
-    }
+    USING_SYSTEM_ALLOCATOR.with(|cell| cell.set(value));
 }
 
 /// Try swapping the boolean TLS or global `USING_SYSTEM_ALLOCATOR` value and return the outcome as a Result.
@@ -105,36 +80,21 @@ pub fn set_using_system(value: bool) {
 #[internal_doc]
 #[inline]
 pub fn compare_exchange_using_system(current: bool, new: bool) -> Result<bool, bool> {
-    #[cfg(feature = "no_tls")]
-    {
-        USING_SYSTEM_ALLOCATOR.compare_exchange(current, new, Ordering::SeqCst, Ordering::SeqCst)
-    }
-
-    #[cfg(not(feature = "no_tls"))]
-    {
-        USING_SYSTEM_ALLOCATOR.with(|cell| {
-            let actual = cell.get();
-            if actual == current {
-                cell.set(new);
-                Ok(actual)
-            } else {
-                Err(actual)
-            }
-        })
-    }
+    USING_SYSTEM_ALLOCATOR.with(|cell| {
+        let actual = cell.get();
+        if actual == current {
+            cell.set(new);
+            Ok(actual)
+        } else {
+            Err(actual)
+        }
+    })
 }
 
 /// Reset allocator state using the unified approach
 #[internal_doc]
 pub fn reset_allocator_state() {
-    #[cfg(not(feature = "no_tls"))]
-    {
-        USING_SYSTEM_ALLOCATOR.with(|flag| flag.set(false));
-    }
-    #[cfg(feature = "no_tls")]
-    {
-        USING_SYSTEM_ALLOCATOR.store(false, Ordering::SeqCst);
-    }
+    USING_SYSTEM_ALLOCATOR.with(|flag| flag.set(false));
 }
 
 // Maximum safe allocation size - 1 GB, anything larger is suspicious
@@ -166,23 +126,11 @@ impl fmt::Display for Allocator {
 #[internal_doc]
 #[must_use]
 pub fn current_allocator() -> Allocator {
-    #[cfg(not(feature = "no_tls"))]
-    {
-        let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
-        if using_system {
-            Allocator::System
-        } else {
-            Allocator::Tracking
-        }
-    }
-
-    #[cfg(feature = "no_tls")]
-    {
-        if USING_SYSTEM_ALLOCATOR.load(Ordering::SeqCst) {
-            Allocator::System
-        } else {
-            Allocator::Tracking
-        }
+    let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
+    if using_system {
+        Allocator::System
+    } else {
+        Allocator::Tracking
     }
 }
 

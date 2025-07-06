@@ -9,7 +9,7 @@
 //! - `time_profiling`:     Enable time-based performance profiling (default)
 //! - `full_profiling`:     Enable comprehensive profiling including time and memory usage
 //! - `debug_logging`:      Enable debug logging of profiling functions
-//! - `no_tls`:             Fall back to global allocator management. Only use this if issues with TLS. May fail to record all data in async environments
+
 //! - `analyze_tool`:       Include dependencies required only for `thag_profile` binary.
 //! - `instrument_tool`:    Include dependencies required only for `thag_instrument` and `thag_uninstrument` binaries.
 //!

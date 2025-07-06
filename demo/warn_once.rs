@@ -9,7 +9,7 @@ thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 /// The dependency is `thag_profiler` because that's the only place it's used at time of writing, even though this is
 /// not in any way a profiling-specific function.
 ///
-/// Disclosure: the `thag_profiler` `warn_once` macro and `warn_once_with_id` function use unsafe code.
+/// Disclosure: the `thag_profiler` `warn_once` macro uses unsafe code.
 ///
 /// Credit to `Claude 3.7 Sonnet`.
 //# Purpose: Demo a macro I found useful, explained and benchmarked here in great detail thanks to Claude.
@@ -100,9 +100,9 @@ fn function_with_early_return() -> &'static str {
     "Feature enabled"
 }
 
-/// Example using the ID-based version for multiple independent warnings
-fn demo_with_id() {
-    println!("\n=== Multiple Independent Warnings Using IDs ===\n");
+/// Example using multiple warn_once! calls for different conditions
+fn demo_multiple_conditions() {
+    println!("\n=== Multiple Independent Warnings ===\n");
 
     // Reset counter
     *WARNING_COUNTER.lock().unwrap() = 0;
@@ -110,29 +110,25 @@ fn demo_with_id() {
     // We'll track multiple different warnings
     let warning_counts = Arc::new(Mutex::new(vec![0, 0]));
 
-    println!("Calling two different warning functions 5 times each...");
+    println!("Calling two different warning conditions 5 times each...");
     for i in 1..=5 {
         println!("\nIteration #{}:", i);
 
-        // First warning - ID 1
+        // First warning - condition always true
         let counts = warning_counts.clone();
-        unsafe {
-            thag_profiler::warn_once_with_id(1, true, || {
-                println!("[LOG] First warning - should appear once");
-                let mut counters = counts.lock().unwrap();
-                counters[0] += 1;
-            });
-        }
+        warn_once!(true, || {
+            println!("[LOG] First warning - should appear once");
+            let mut counters = counts.lock().unwrap();
+            counters[0] += 1;
+        });
 
-        // Second warning - ID 2
+        // Second warning - condition true only for some iterations
         let counts = warning_counts.clone();
-        unsafe {
-            thag_profiler::warn_once_with_id(2, true, || {
-                println!("[LOG] Second warning - should also appear once");
-                let mut counters = counts.lock().unwrap();
-                counters[1] += 1;
-            });
-        }
+        warn_once!(i % 3 == 0, || {
+            println!("[LOG] Second warning - should appear once when condition is met");
+            let mut counters = counts.lock().unwrap();
+            counters[1] += 1;
+        });
     }
 
     let counts = warning_counts.lock().unwrap();
@@ -260,7 +256,7 @@ fn main() {
 
     demo_simple_warning();
     demo_early_return();
-    demo_with_id();
+    demo_multiple_conditions();
     demo_performance();
     demo_record_dealloc_conversion();
 

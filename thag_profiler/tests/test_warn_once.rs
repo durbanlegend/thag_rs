@@ -1,7 +1,7 @@
 #![cfg(test)]
 use thag_profiler::warn_once;
 
-/// Tests for the warn_once macro and warn_once_with_id function
+/// Tests for the warn_once macro
 ///
 /// These tests verify that the warning suppression mechanisms work correctly
 /// by ensuring warning functions are only called once.
@@ -92,46 +92,6 @@ mod tests {
             *counter.lock().unwrap(),
             0,
             "Warning function should not be called when condition is false"
-        );
-    }
-
-    #[test]
-    fn test_warn_once_with_id() {
-        // Counter for function calls
-        let counter1 = Arc::new(Mutex::new(0));
-        let counter2 = Arc::new(Mutex::new(0));
-
-        // Call warn_once_with_id with two different IDs
-        for _ in 0..5 {
-            let counter1_clone = counter1.clone();
-            let counter2_clone = counter2.clone();
-
-            // Safe to use in test context with controlled IDs
-            unsafe {
-                // First ID
-                thag_profiler::warn_once_with_id(1, true, || {
-                    let mut count = counter1_clone.lock().unwrap();
-                    *count += 1;
-                });
-
-                // Second ID - should be independent
-                thag_profiler::warn_once_with_id(2, true, || {
-                    let mut count = counter2_clone.lock().unwrap();
-                    *count += 1;
-                });
-            }
-        }
-
-        // Each warning function should only be called once
-        assert_eq!(
-            *counter1.lock().unwrap(),
-            1,
-            "First warning function should only be called once"
-        );
-        assert_eq!(
-            *counter2.lock().unwrap(),
-            1,
-            "Second warning function should only be called once"
         );
     }
 }

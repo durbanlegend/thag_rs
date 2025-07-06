@@ -476,61 +476,6 @@ macro_rules! warn_once {
     }};
 }
 
-/// Helper function for issuing warnings only once per unique ID with an optimized fast path.
-/// Avoids flooding output with repetetive warnings for the same issue.
-///
-/// This function is useful when you need multiple independent warning suppressions,
-/// as it uses the provided ID to create unique static storage per call site.
-///
-/// # Parameters
-/// * `id` - A unique identifier (ideally a compile-time constant) for this warning
-/// * `condition` - Condition that determines if warning logic should execute
-/// * `warning_fn` - Function to call on first occurrence of the condition
-///
-/// # Returns
-/// Returns true if the condition was true (regardless of whether the warning executed)
-///
-/// # Safety
-/// This function uses unsafe code to access static mutable state, but is safe
-/// when used as intended with unique IDs per call site.
-#[internal_doc]
-pub unsafe fn warn_once_with_id<F>(id: usize, condition: bool, warning_fn: F) -> bool
-where
-    F: FnOnce(),
-{
-    use std::cell::UnsafeCell;
-    use std::sync::atomic::{AtomicBool, Ordering};
-
-    // Static storage for up to 128 unique warning flags
-    // This approach avoids needing to create a new static for every call site
-    static mut WARNED_FLAGS: [UnsafeCell<bool>; 128] = [const { UnsafeCell::new(false) }; 128];
-    static ATOMIC_FLAGS: [AtomicBool; 128] = [const { AtomicBool::new(false) }; 128];
-
-    // Safety: Caller must ensure id is unique per call site
-    let idx = id % 128;
-
-    if !condition {
-        return false;
-    }
-
-    // Fast path check - no synchronization overhead after first warning
-    if unsafe { *WARNED_FLAGS[idx].get() } {
-        return true;
-    }
-
-    // Slow path with proper synchronization
-    if !ATOMIC_FLAGS[idx].swap(true, Ordering::Relaxed) {
-        // Execute the warning function
-        warning_fn();
-        // Update fast path flag
-        unsafe {
-            *WARNED_FLAGS[idx].get() = true;
-        }
-    }
-
-    true
-}
-
 /// Formats a given positive integer with thousands separators (commas).
 ///
 /// This function takes any unsigned integer type (`u8`, `u16`, `u32`, `u64`, `u128`, `usize`)

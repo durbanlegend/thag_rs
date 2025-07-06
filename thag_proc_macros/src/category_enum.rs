@@ -53,6 +53,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            Tools,
            TraitImplementation,
            TypeIdentification,
+           Unsafe,
            Validation,
        }
 

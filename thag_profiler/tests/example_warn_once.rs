@@ -3,7 +3,7 @@
 use thag_profiler::debug_log;
 
 #[cfg(feature = "full_profiling")]
-use thag_profiler::{profiling::ProfileType, safe_alloc, warn_once, warn_once_with_id};
+use thag_profiler::{profiling::ProfileType, safe_alloc, warn_once};
 
 /// Example of using the warn_once! macro in a function similar to record_dealloc
 #[test]
@@ -51,57 +51,6 @@ fn example_function_with_warn_once() {
 
     // Rest of the function logic that only runs when enabled
     debug_log!("Example: Running actual processing code");
-}
-
-/// Example of how record_dealloc could be refactored using warn_once_with_id
-#[test]
-#[cfg(feature = "full_profiling")]
-fn test_example_function_with_warn_once_id() {
-    // Use the system allocator
-    safe_alloc! {
-        // Set profile type to trigger warning
-        thag_profiler::profiling::set_global_profile_type(ProfileType::Time);
-
-    // Call example function multiple times
-    example_function_with_warn_once_id();
-    example_function_with_warn_once_id();
-    example_function_with_warn_once_id();
-
-    // Set profile type to allow processing
-    thag_profiler::profiling::set_global_profile_type(ProfileType::Memory);
-
-        // Call example function again - this time it should execute fully
-        example_function_with_warn_once_id();
-    };
-}
-
-/// Example using the warn_once_with_id function
-#[cfg(feature = "full_profiling")]
-fn example_function_with_warn_once_id() {
-    debug_log!("Entering example function with ID");
-
-    // Get profile type for condition check
-    let profile_type = thag_profiler::get_global_profile_type();
-    let is_mem_prof = profile_type == ProfileType::Memory || profile_type == ProfileType::Both;
-
-    // Unique ID for this function (could be based on line number or hand-assigned)
-    const WARNING_ID: usize = 42;
-
-    // Using warn_once_with_id for warning suppression
-    unsafe {
-        // Using a unique ID for this specific warning
-        if warn_once_with_id(WARNING_ID, !is_mem_prof, || {
-            debug_log!(
-                "Example with ID: Skipping processing because profile_type={:?}",
-                profile_type
-            );
-        }) {
-            return;
-        }
-    }
-
-    // Rest of the function logic that only runs when enabled
-    debug_log!("Example with ID: Running actual processing code");
 }
 
 /// Example of how to apply the pattern to record_dealloc

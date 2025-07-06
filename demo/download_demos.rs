@@ -1,10 +1,10 @@
 /*[toml]
 [dependencies]
-# The 'thag-auto' keyword automatically resolves dependencies based on your environment:
+# The `thag` command uses the `thag-auto` keyword here to resolve dependencies automatically based on your environment:
 # - Default: Uses crates.io (no environment variables needed)
 # - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
-# - Git: Set THAG_GIT_REF=main to use git repository instead of crates.io
-# Note: Run with 'thag script.rs' not 'cargo build' to enable thag-auto processing
+# - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
+# E.g. from `thag_rs` project dir: `THAG_DEV_PATH=$PWD thag demo/download_demos.rs`
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */

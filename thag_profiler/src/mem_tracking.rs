@@ -278,6 +278,7 @@ pub fn get_allocator() -> &'static TrackingAllocator {
 #[allow(clippy::unused_self)]
 impl TrackingAllocator {
     /// Creates a new task context for tracking memory
+    #[internal_doc]
     pub fn create_task_context(&'static self) -> TaskMemoryContext {
         let task_id = TASK_STATE.next_task_id.fetch_add(1, Ordering::SeqCst);
 
@@ -888,6 +889,7 @@ pub fn get_last_active_task() -> Option<usize> {
 // ========== TASK CONTEXT DEFINITIONS ==========
 
 /// Task context for tracking allocations
+#[internal_doc]
 #[derive(Debug, Clone)]
 pub struct TaskMemoryContext {
     /// Unique identifier for this task context
@@ -942,6 +944,7 @@ pub static TASK_STATE: LazyLock<TaskState> = LazyLock::new(|| TaskState {
 ///
 /// This guard ensures that tasks are properly cleaned up when they go out of scope,
 /// preventing memory leaks in the task tracking system.
+#[internal_doc]
 #[derive(Clone, Debug)]
 pub struct TaskGuard {
     task_id: usize,

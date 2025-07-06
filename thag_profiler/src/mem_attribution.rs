@@ -348,6 +348,7 @@ impl ProfileRegistry {
 
 /// Reference to a Profile for the registry
 /// We use a simple wrapper to avoid ownership issues
+#[internal_doc]
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ProfileRef {

@@ -331,7 +331,7 @@ For an example of tolerating a broken pipe, see
 The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is highly recommended to be in your path as `thag` and its tools are installed there.
 
 ```bash
-thag -x my_script.rs                                            # Long form: --executable
+thag demo/smol_chat_server.rs -x                                        # Long form: --executable
 ```
 ![XBuild](assets/xbuildt.png)
 
@@ -341,14 +341,16 @@ You can of course use an OS command to rename the executable if you so desire.
 
 However, it's probably best to rename your source in the first place so you don't lose track of where the command came from if you want to update it.
 
-I **recommend building an executable over using a shebang** because it will be faster on several counts:
+I **recommend building an executable over using a shebang** because it will perform much better on several counts:
 
 - It cuts out the middleman (`thag`)
-- You only incur the build overhead once up front
-- It will build in release mode, making it much faster to run
+- You only incur the overhead and latency of the build process once at build time, instead of every time you use the script.
+- It will build in release mode, making it execute faster as well
 - You can use a tool like `llvm-strip` to strip sections from the executable to make it smaller
 
-and more convenient on one count: it dispenses with the need for the `--` argument separator because `thag` is no longer being invoked first, so we don't need to separate two sets of arguments.
+An executable is also more convenient on one count: it dispenses with the need for the `--` argument separator because `thag` is no longer being invoked first, so we don't need to separate two sets of arguments.
+
+On the downside, the compiled executable may typically take up between 0.5MB and 10MB of disk space (somewhat less if stripping).
 
 Putting it to use:
 
@@ -590,57 +592,62 @@ by choosing only the features you need
 
 ```
 default
+├── simplelog
 └── full
     ├── repl
     │   └── tui
-    │       ├── build
-    │       │   ├── ast
-    │       │   │   ├── core  ★                # Fundamental feature set
-    │       │   │   │   ├── error_handling     # Error types and handling
-    │       │   │   │   ├── log_impl           # Basic logging infrastructure
-    │       │   │   │   │   └── (simplelog | env_logger)
-    │       │   │   │   └── styling            # Basic terminal styling
-    │       │   │   ├── quote
-    │       │   │   └── syn
-    │       │   ├── config
-    │       │   │   ├── core  ★ (shared)       # Core features required here too
-    │       │   │   ├── mockall
-    │       │   │   ├── serde_with
-    │       │   │   └── toml/toml_edit
-    │       │   └── crossterm                  # Terminal control
-    │       │
-    │       ├── ratatui                        # TUI framework
-    │       ├── tui-textarea                   # Text editing widget
-    │       ├── crokey                         # Keyboard handling
-    │       ├── serde_json                     # JSON support
-    │       └── scopeguard                     # Resource cleanup (shared with color_detect)
+    │    |  ├── build
+    │    |  │   ├── ast
+    │    |  │   │   ├── core  ★                # Fundamental feature set
+    │    |  │   │   │   ├── error_handling     # Error types and handling
+    │    |  │   │   │   ├── log_impl           # Basic logging infrastructure
+    │    |  │   │   │   │   └── (simplelog | env_logger)
+    │    |  │   │   │   └── styling            # Basic terminal styling
+    │    |  │   │   ├── quote
+    │    |  │   │   └── syn
+    │    |  │   ├── config
+    │    |  │   │   ├── core  ★ (shared)       # Core features required here too
+    │    |  │   │   ├── mockall
+    │    |  │   │   ├── serde_with
+    │    |  │   │   └── toml_edit
+    │    |  │   └── ratatui                    # TUI framework (shared with color_detect)
+    │    |  │
+    │    |  ├── tui-textarea                   # Text editing widget
+    │    |  ├── serde_json                     # JSON support
+    │    |  └── scopeguard                     # Resource cleanup (shared with color_detect)
+    │    |
+    │    └── nu-ansi-term
+    │    └── reedline
     │
     └── color_detect     # Optional terminal detection, only included in full
-        ├── crossterm    # (shared with build)
+        ├── config
+        ├── ratatui      # TUI framework (shared with build)
         ├── scopeguard   # (shared with tui)
         ├── supports-color
         └── termbg
 Core Feature Set (★):
 - Basic logging and error handling
 - Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex
-- Styling system and macros: cvprtln, style_for_level
+- Styling system and macros: cvprtln, style_for_role
 - Fundamental types and traits
 Optional features:
-- profiling     # Internal profiling via `thag_profiler` crate. `thag_profiler` can also be used separately to profile your scripts
+- profiling     # Enables profiling via thag_profiler (for internal use)
 - debug-logs
 - nightly
-- format_snippet
+- no_format_snippet
 Common Usage Patterns:
 1. Just core functionality:
    features = ["core", "simplelog"]
-2. Core with color detection:
+2. Core with profiling enabled:
+   features = ["core", "simplelog", "profiling"]
+3. Core with color detection:
    features = ["core", "color_detect", "simplelog"]
-3. Full functionality:
-   features = ["full", "simplelog"]
+4. Full functionality with profiling:
+   features = ["full", "simplelog", "profiling"]
 Optional features can be added at any level:
 - debug-logs
 - nightly
-- format_snippet
+- no_format_snippet
 - profiling
 Note: When using without default features, must specify a logging implementation:
 cargo add thag_rs --no-default-features --features="repl,simplelog"

@@ -396,18 +396,6 @@ terminal-light = ["dep:terminal-light"]
 # or
 # cargo add thag_rs --no-default-features --features="repl,env_logger"
 
-# # New feature for the profiling tools
-# profile_analyze = [
-#     "core",
-#     "dirs",
-#     "inferno",
-#     "inquire",
-#     "serde_json",
-#     "simplelog",
-# ]
-# profile_instrument = ["core", "ra_ap_syntax", "ra-ap-rustc_lexer", "simplelog"]
-# profile_tools = ["profile_instrument", "profile_analyze"]
-
 [package.metadata.cargo-features-validate]
 # Additional validation that logging feature is satisfied
 requires-any = [["simplelog", "env_logger"]]

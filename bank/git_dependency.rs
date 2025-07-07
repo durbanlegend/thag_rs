@@ -11,8 +11,24 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "develop",
 /// but obviously the path literal will be specific to your environment.
 //# Purpose: Demo `git` dependencies, explain `path` dependencies.
 //# Categories: technique
-use thag_rs::colors;
+use thag_rs::logging::V;
+use thag_rs::{cvprtln, Lvl};
 
 fn main() {
-    colors::main();
+    // The colors module was removed, so we'll demonstrate a simple color message
+    cvprtln!(
+        Lvl::EMPHASIS,
+        V::N,
+        "This demonstrates git dependency usage with thag_rs"
+    );
+    cvprtln!(
+        Lvl::NORMAL,
+        V::N,
+        "The colors module was removed after v0.1.9"
+    );
+    cvprtln!(
+        Lvl::DEBUG,
+        V::N,
+        "Use demo/colors.rs for color demonstrations"
+    );
 }

@@ -24,7 +24,7 @@
 
 - tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
 
-- a demo proc macro library with support for displaying individual macro expansions at compile time to debug your proc macros, and sample test scripts for the demo proc macros. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+- a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo scripts for each proc macros. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 - concurrently with version 0.2, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library `thag_profiler`. Check it out here: [thag_profiler](thag_profiler/README.md).
 
@@ -99,15 +99,17 @@ ___
 
 - View macro expansions side-by-side with your base script.
 
-- Proc macro development support, including proc macro starter kit and an "intercept-and-debug" option to show an expanded view of your proc macro at compile time.
+- Proc macro development support, including a documented starter kit and an option to show an expanded view of your proc macro at compile time.
+
+ **New in 0.2.0:** The proc macro starter kit has been developed into a carefully selected set of 12 high quality and useful macros with demo scripts, full documentation and a learning path. See [demo/proc_macros](demo/proc_macros/README.md).
 
 - Configurable automated inclusion of `derive` or other features in named dependencies.
 
-- **New in 0.2.0:** The independent `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage.
+- **New in 0.2.0:** The independent `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, with async support.
 
-- **New in 0.2.0:** An optional set of 18 lightweight tools is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
+- **New in 0.2.0:** An optional set of 18 lightweight commands is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error modules and types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, and more.
 
-- **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour.
+- **New in 0.2.0:** Support for popular terminal themes. `thag` will attempt to choose a theme based on your terminal's background colour and your preferred themes.
 
     Modify the default configuration to specify your preferred themes.
 
@@ -125,15 +127,15 @@ Concurrently with version 0.2, the ~~Cave~~ House of Thag offers an independent 
 
 - Async code compatibility
 
-- Section or single-statement profiling
+- Execution time and summary or detailed memory profiling.
 
 - Runtime control
 
 - Zero-cost abstraction
 
-- Automatic instrumentation and de-instrumentation.
+- Support for section or single-statement profiling
 
-- Execution time and summary or detailed memory profiling.
+- Automatic instrumentation and de-instrumentation.
 
 - `inferno` interactive flamegraphs and flamecharts including differential flamegraphs for before-and-after comparisons
 
@@ -146,7 +148,7 @@ Read about it here: [thag_profiler](thag_profiler/README.md)
 ## Installation
 
 ### Minimum Supported Rust Version
-The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.81.0.
+The minimum supported Rust version (MSRV) for the current version of `thag_rs` is 1.82.
 
 ### Installation options
 
@@ -375,7 +377,7 @@ Hopefully the help screen is self-explanatory:
 
 ![Help](assets/helpt.png)
 
-`thag_rs` uses a **standard `clap` CLI**. You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`). In other words, the common convention imposed by `clap`.
+`thag_rs` uses a standard `clap` CLI, so it follows the common `clap` conventions, in a very similar way to `cargo`. You can enter `thag` arguments and options in any order. If your script or dynamic run accepts arguments of its own, they must come after the `thag` arguments and separated from them by a double dash (`--`).
 
 ## Overview
 

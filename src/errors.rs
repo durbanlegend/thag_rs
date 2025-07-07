@@ -293,7 +293,7 @@ impl std::fmt::Display for ThagError {
             Self::FromUtf8(e) => write!(f, "{e}"),
             Self::Io(e) => write!(f, "{e}"),
             Self::LockMutexGuard(e) => write!(f, "{e}"),
-            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {}>", o.display()),
+            Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
             Self::Parse => write!(f, "Error parsing source data"),
             Self::ParseInt(e) => write!(f, "{e}"),
             Self::Profiling(e) => write!(f, "{e}"),

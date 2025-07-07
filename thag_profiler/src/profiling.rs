@@ -351,7 +351,8 @@ impl ProfileConfiguration {
     }
 
     /// Sets the profile type for this configuration.
-    pub const fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn set_profile_type(&mut self, profile_type: Option<ProfileType>) {
         self.profile_type = profile_type;
     }
 
@@ -1343,8 +1344,9 @@ impl Profile {
     }
 
     /// Get the `fn_name` of this profile
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    pub const fn fn_name(&self) -> &str {
+    pub fn fn_name(&self) -> &str {
         self.fn_name.as_str()
     }
 

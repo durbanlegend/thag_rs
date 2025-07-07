@@ -132,8 +132,9 @@ impl Logger {
     }
 
     /// Return the verbosity level
+    #[allow(clippy::missing_const_for_fn)]
     #[profiled]
-    pub const fn verbosity(&mut self) -> Verbosity {
+    pub fn verbosity(&mut self) -> Verbosity {
         self.verbosity
     }
 }

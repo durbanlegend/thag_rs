@@ -191,7 +191,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] Run `gen_readme`
 - [ ] Run `typos` command.
 - [ ] Run `vale README.md --no-wrap` and `vale demo/README.md --no-wrap`.
-- [ ] Run `cargo msrv find`, and update the MSRV in README.md.
+- [ ] Run `cargo msrv set/verify`, and update the MSRV in README.md.
 - [ ] Check on https://deps.rs/repo/github/durbanlegend/thag_rs that all dependencies are up to date
       (can link from badge at top of README.md).
 - [ ] Once you're happy that you've tested all your script changes successfully with CI.yml,

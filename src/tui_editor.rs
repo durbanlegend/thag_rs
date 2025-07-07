@@ -270,21 +270,24 @@ impl History {
     }
 
     /// Returns true if the current position is at the start of the history.
+    #[allow(clippy::unnecessary_map_or)]
     #[must_use]
     #[profiled]
     pub fn at_start(&self) -> bool {
         debug_log!("at_start ...");
         self.current_index
-            .is_none_or(|current_index| current_index == 0)
+            .map_or(true, |current_index| current_index == 0)
     }
 
     /// Returns true if the current position is at the end of the history.
+    #[allow(clippy::unnecessary_map_or)]
     #[must_use]
     #[profiled]
     pub fn at_end(&self) -> bool {
         debug_log!("at_end ...");
-        self.current_index
-            .is_none_or(|current_index| current_index == self.entries.len() - 1)
+        self.current_index.map_or(true, |current_index| {
+            current_index == self.entries.len() - 1
+        })
     }
 
     /// Adds a new entry to the history.

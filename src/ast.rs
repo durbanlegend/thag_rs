@@ -669,7 +669,7 @@ pub fn is_unit_return_type(expr: &Expr) -> bool {
 ///
 /// # Panics
 /// Will panic if an unexpected expression type is found in the elso branch of an if-statement.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::unnecessary_map_or)]
 #[must_use]
 #[inline]
 #[profiled]
@@ -695,7 +695,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
                 if !is_stmt_unit_type(last_stmt_in_then_branch, function_map) {
                     return false;
                 }
-                expr_if.else_branch.as_ref().is_none_or(|stmt| {
+                expr_if.else_branch.as_ref().map_or(true, |stmt| {
                     let expr_else = &*stmt.1;
                     // The else branch expression may only be an If or Block expression,
                     // not any of the other types of expression.

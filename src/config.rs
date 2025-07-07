@@ -227,6 +227,7 @@ impl Default for Dependencies {
 
 impl Dependencies {
     /// Filter features based on configuration rules and return filtered features with `default_features` flag
+    #[allow(clippy::unnecessary_map_or)]
     #[must_use]
     #[profiled]
     pub fn filter_maximal_features(
@@ -280,7 +281,7 @@ impl Dependencies {
                     override_config
                         .excluded_features
                         .as_ref()
-                        .is_none_or(|excluded_features| !excluded_features.contains(f))
+                        .map_or(true, |excluded_features| !excluded_features.contains(f))
                 };
                 if !keep {
                     debug_log!("Excluding feature '{}' due to crate-specific override", f);

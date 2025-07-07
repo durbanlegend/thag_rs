@@ -59,7 +59,7 @@ pub struct Cli {
     /// Simple TUI edit-submit with history. Editor will also capture any stdin input
     #[arg(short = 'd', long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub edit: bool,
-    /// Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -T, -B and -E.
+    /// Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -M, -B and -E.
     #[arg(short = 'l', long = "loop", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
     /// Optional manifest info for --loop in Cargo.toml format, such as a `[dependencies]` section
@@ -74,7 +74,7 @@ pub struct Cli {
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
     #[arg(short = 'E', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "POST-LOOP")]
     pub end: Option<String>,
-    /// Required if multiple main methods are valid for the current script
+    /// Allow multiple main methods for the current script
     #[arg(short, long, help_heading = Some("Processing Options"))]
     pub multimain: bool,
     /// Display timings
@@ -86,7 +86,7 @@ pub struct Cli {
     /// Set normal verbosity. Only needed in the case of overriding a different configured value
     #[arg(short = 'N', long = "normal", help_heading = Some("Output Options"))]
     pub normal_verbosity: bool,
-    /// Suppress unnecessary output. Double up to show only errors, or to pipe output to another command.
+    /// Suppress unnecessary output. Double up to show only errors, or when piping output to another command.
     #[arg(short, long, help_heading = Some("Output Options"), action = clap::ArgAction::Count)]
     pub quiet: u8,
     /// Just generate individual Cargo.toml and any required Rust scaffolding for script, unless script unchanged from a previous build.
@@ -113,7 +113,7 @@ pub struct Cli {
     pub check: bool,
     /// Just generate script, unless unchanged from a previous build, and show the version with expanded
     /// macros side by side with the original version.
-    /// Requires the `cargo-expand` crate to be installed.
+    /// Requires the `cargo-expand` binary to be installed.
     #[arg(short = 'X', long, help_heading = Some("No-run Options"))]
     pub expand: bool,
     /// Strip double quotes from string result of expression (true/false). Default: config value / false.
@@ -130,8 +130,8 @@ pub struct Cli {
     /// Edit the configuration file
     #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
-    /// Set the level of dependency inference: none, min, config (default, recommended), max.
-    /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), and specifies their features.
+    /// Dependency inference: none, min, config (default & recommended), max.
+    /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), with configurable default features.
     #[arg(short = 'i', long, help_heading = Some("Processing Options"))]
     pub infer: Option<DependencyInference>,
     /// Just generate script, unless unchanged from a previous build, and run the specified

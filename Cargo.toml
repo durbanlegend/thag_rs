@@ -21,6 +21,7 @@ readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
 keywords = ["REPL", "command-line", "eval", "runner", "script"]
+rust-version = "1.82"
 
 [package.metadata.wix]
 upgrade-guid = "FA5CCD40-AB09-488D-817D-867B69E10F7B"

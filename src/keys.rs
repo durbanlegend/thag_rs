@@ -17,7 +17,8 @@ pub struct KeyCombination {
 /// Change the char to uppercase when the modifier shift is present,
 /// otherwise if the char is uppercase, return true.
 /// If the key is the '\r' or '\n' char, change it to `KeyCode::Enter`.
-const fn normalize_key_code(code: &mut KeyCode, modifiers: KeyModifiers) -> bool {
+#[allow(clippy::missing_const_for_fn)]
+fn normalize_key_code(code: &mut KeyCode, modifiers: KeyModifiers) -> bool {
     // profile_fn!(normalize_key_code);
     if matches!(code, KeyCode::Char('\r' | '\n')) {
         *code = KeyCode::Enter;

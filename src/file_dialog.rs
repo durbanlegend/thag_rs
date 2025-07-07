@@ -194,14 +194,16 @@ impl FileDialog<'_> {
     }
 
     /// Closes the file dialog.
+    #[allow(clippy::missing_const_for_fn)]
     #[profiled]
-    pub const fn close(&mut self) {
+    pub fn close(&mut self) {
         self.open = false;
     }
 
     /// Returns whether the file dialog is currently open.
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    pub const fn is_open(&self) -> bool {
+    pub fn is_open(&self) -> bool {
         self.open
     }
 

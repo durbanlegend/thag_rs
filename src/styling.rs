@@ -273,8 +273,9 @@ impl Style {
     }
 
     /// Resets all text formatting flags to their default (false) state
+    #[allow(clippy::missing_const_for_fn)]
     #[profiled]
-    pub const fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.bold = false;
         self.italic = false;
         self.dim = false;

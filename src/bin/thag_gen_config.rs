@@ -209,7 +209,7 @@ fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
     let mut modules = HashMap::new();
 
     // Start with main modules
-    for entry in &["config.rs", "logging.rs", "colors.rs"] {
+    for entry in &["config.rs", "logging.rs"] {
         let path = project_root.join("src").join(entry);
         if path.exists() {
             if let Ok(source) = fs::read_to_string(&path) {

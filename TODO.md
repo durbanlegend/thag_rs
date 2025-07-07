@@ -8,6 +8,7 @@
 - [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
 - [ ]  Tool for running tests for all feature sets?
 - [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
+- [ ]  Still many toml blocks to remove or trim in demo/.
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs
@@ -196,9 +197,8 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
       (can link from badge at top of README.md).
 - [ ] Once you're happy that you've tested all your script changes successfully with CI.yml,
       update all bank and demo scripts using thag to use latest release instead of develop branch if appropriate.
-- [ ] NB NB: If there have been any changes to thag_proc_macros since its last published release, bump its version number
-      in src/proc_macros/Cargo.toml and also in its dependency entry in the main Cargo.toml. as this will be used in
-      the crates.io version
+- [ ] NB NB: If there have been any changes to thag_proc_macros or thag_profiler since their last published releases, bump their version numbers
+      in their respective Cargo.tomls and also in their dependency entries in the main Cargo.toml. as these will be used in the crates.io version
 - [ ] Use 'git changelog v0.1.<n-1>..HEAD' to generate raw release notes.
 - [ ] Leave it to cargo-dist to make the release.
 - [ ] To trigger cargo-dist:

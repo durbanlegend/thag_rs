@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.29"
-winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }
-*/
-
 /// Exploration of `Windows Terminal` virtual terminal processing with respect to the `termbg` crate.
 /// `termbg` comment states: "Windows Terminal is Xterm-compatible"
 /// https://github.com/microsoft/terminal/issues/3718.
@@ -21,7 +15,12 @@ winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"]
 /// Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
 /// "rightward march" of log output due to suppression of carriage returns in all environments. I've
 /// addressed the former by using non-blocking `crossterm` event polling instead of `stdin`, and also
-/// introduced a
+/// had a PR accepted into the `termbg` crate as v0.6.1. This should substantially address the issue
+/// although I have not yet managed to overcome an occasional outbreak rightward march in any given
+/// environment. The only fix I know for this is a completely new terminal session, but
+/// Ensure the following is present as a dependency in the toml block or defaulted in your configuration
+/// file (for the Windows builds this is intended for):
+/// (`thag - C`): `winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }`
 //# Purpose: Debug `termbg`
 //# Categories: testing
 use crossterm::{

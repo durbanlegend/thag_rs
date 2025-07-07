@@ -419,7 +419,7 @@ harness = false
 
 [workspace]
 members = ["thag_proc_macros", "thag_profiler"]
-exclude = ["bank/proc_macros", "demo/proc_macros"]
+exclude = ["bank/proc_macros"]
 
 [package.metadata.docs.rs]
 # features = ["document-features"]

@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28"
-once_cell = "1.19"
-*/
-
 /// Practical terminal state management for unit tests
 //# Purpose: Provide terminal corruption detection and fixes for unit test environments
 //# Categories: terminal, testing, corruption, fix

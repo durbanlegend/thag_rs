@@ -1,13 +1,8 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28"
-*/
-
 /// Demo script to detect terminal state corruption from OSC sequence interference
 //# Purpose: Detect when terminal line discipline is corrupted by concurrent OSC sequences
 //# Categories: terminal, debugging, OSC, detection
 use crossterm::{
-    cursor::{position, MoveTo, MoveToColumn},
+    cursor::{position, MoveTo},
     event::{poll, read, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode},

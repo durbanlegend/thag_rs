@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Implement trait std::iter::Product for `ibig::UBig`. Example provided by GPT.
 //# Purpose: Learning / reference.
 //# Categories: big_numbers, learning, reference, technique

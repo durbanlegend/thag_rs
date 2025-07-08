@@ -1,13 +1,10 @@
 /*[toml]
 [dependencies]
-ratatui = "0.27.0"
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
-# tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
 */
 
 /// A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate
-/// profiling.
+/// time profiling.
 ///
 /// Not suitable for running from a URL.
 //# Purpose: Demo `thag_profiler`.
@@ -26,7 +23,6 @@ use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::borrow::Cow;
@@ -307,7 +303,7 @@ impl<'a> Editor<'a> {
                 );
 
             self.term.draw(|f| {
-                let chunks = layout.split(f.size());
+                let chunks = layout.split(f.area());
 
                 if search_height > 0 {
                     f.render_widget(&self.search.textarea, chunks[0]);
@@ -543,18 +539,16 @@ impl<'a> Editor<'a> {
 
 #[profiled(detailed_memory = true)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from("Key bindings - subject to your terminal settings")
-                .alignment(ratatui::layout::Alignment::Center),
-        )
-        .title(Title::from("(^L to toggle)").alignment(Alignment::Center))
+        .title_alignment(Alignment::Center)
+        .title_top("Key bindings - subject to your terminal settings")
+        .title_bottom("(^L to toggle)")
         .add_modifier(Modifier::BOLD);
     f.render_widget(Clear, area);
     //this clears out the background

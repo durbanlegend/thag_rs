@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-ratatui = "0.29.0"
-scopeguard = "1.2.0"
-tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
-*/
-
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
 ///
 /// Not suitable for running from a URL.

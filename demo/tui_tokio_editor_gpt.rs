@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-ratatui = { version = "0.29.0", features = ["crossterm"] }
-tokio = { version = "1.42.0", features = ["full"] }
-tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
-*/
-
 /// GPT-provided demo of a very basic TUI (terminal user interface) editor using
 /// `tokio` and the `crossterm` / `ratatui` / `tui-textarea` stack. provides a blank editor
 /// screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply

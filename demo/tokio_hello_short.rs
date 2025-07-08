@@ -1,9 +1,3 @@
-{
-/*[toml]
-[dependencies]
-tokio = { version = "1.38.0", features = ["full"] }
-*/
-
 #![warn(rust_2018_idioms)]
 
 use tokio::io::AsyncWriteExt;
@@ -12,7 +6,7 @@ use tokio::net::TcpStream;
 use std::error::Error;
 
 /// Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
-/// Before running, start a server: `ncat -l 6142` in another terminal.
+/// Before running, start a background server: `ncat -l 6142 &`.
 //# Purpose: Demo running `tokio` from `thag_rs`.
 //# Categories: async, learning, technique
 #[tokio::main]
@@ -24,5 +18,4 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     println!("wrote to stream; success={:?}", result.is_ok());
 
     Ok(())
-}
 }

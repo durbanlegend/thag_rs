@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-tokio = { version = "1.38.0", features = ["full"] }
-*/
-
 // A simple client that opens a TCP stream, writes "hello world\n", and closes
 // the connection.
 //
@@ -21,7 +16,7 @@ use tokio::net::TcpStream;
 use std::error::Error;
 
 /// Published example from `tokio` crate. Before running, start a server: `ncat -l 6142`
-/// in another terminal.
+/// in another terminal, or simply `ncat -l 6142 &` in the same terminal.
 //# Purpose: Demo running `tokio` from `thag_rs`.
 //# Categories: async, learning, technique
 #[tokio::main]

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-terminal-light = "1.4.0"
-*/
-
 /// Demo of `terminal_light`, a crate that "answers the question "Is the terminal dark
 /// or light?".
 //# Purpose: Demo terminal-light interrogating the background color. Results will vary with OS and terminal type.

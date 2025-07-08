@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-# thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
 */
 

@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-quote = "1.0.37"
-syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
-*/
-
 /// Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
 /// for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
 /// Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`

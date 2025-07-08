@@ -1,11 +1,3 @@
-/*[toml]
-[dependencies]
-thag_proc_macros = { version = "0.1, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
-inquire = "0.7"
-edit = "0.1"
-*/
-
 /// Enhanced file navigator demo with editing and saving capabilities.
 ///
 /// This demo showcases the file_navigator proc macro by:

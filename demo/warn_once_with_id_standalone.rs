@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-# No external dependencies - this is a standalone demo
-*/
-
 use std::cell::UnsafeCell;
 use std::sync::atomic::{AtomicBool, Ordering};
 /// This script demonstrates the usage of the `warn_once_with_id` function for suppressing repeated

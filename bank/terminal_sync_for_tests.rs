@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28"
-once_cell = "1.19"
-*/
-
 /// Practical terminal synchronization solution for unit tests
 //# Purpose: Demonstrate synchronized terminal output to prevent OSC corruption in tests
 //# Categories: terminal, testing, synchronization, OSC

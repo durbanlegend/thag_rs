@@ -1,25 +1,9 @@
-/*[toml]
-[dependencies]
-coolor = "1.0.0"
-terminal-light = "1.4.0"
-crossterm = "0.29"
-*/
-
 /// A published example from the `terminal-light` crate. A simple example of
 /// choosing an appropriate skin based on the terminal theme.
 //# Purpose: Demo of the `terminal-light` crate.
 //# Categories: crates
 // This example selects a different skin for light or dark terminals
-use {
-    coolor::*,
-    crossterm::{
-        cursor::{MoveTo, Show},
-        style::{self, Color, ContentStyle, Stylize},
-        terminal::{Clear, ClearType},
-        ExecutableCommand,
-    },
-    std::io::{stdout, Write},
-};
+use crossterm::style::{Color, ContentStyle};
 
 struct Skin {
     high_contrast: ContentStyle,
@@ -27,19 +11,8 @@ struct Skin {
     code: ContentStyle,
 }
 
-// terminal-light sends an operating system command (OSC) to interrogate the screen
-// but with side effects which we undo here.
-pub fn clear_screen() {
-    // let mut out = stdout();
-    // out.execute(Clear(ClearType::All)).unwrap();
-    // out.execute(MoveTo(0, 0)).unwrap();
-    // out.execute(Show).unwrap();
-    // out.flush().unwrap();
-}
-
 fn main() {
     let maybe_luma = terminal_light::luma();
-    // clear_screen();
     let skin = match maybe_luma {
         Ok(luma) if luma > 0.6 => {
             // light theme

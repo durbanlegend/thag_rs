@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-quote = "1.0.37"
-syn = { version = "2", features = ["full"] }
-*/
-
 /// Typical basic (runtime) solution to expression type identification. See also `demo/determine_if_known_type_trait.rs`
 /// for what may be a better (compile-time) solution depending on your use case.
 //# Purpose: Demo of runtime type identification.

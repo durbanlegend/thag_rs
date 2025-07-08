@@ -1,11 +1,3 @@
-/*[toml]
-[dependencies]
-#crossterm = { version = "0.27.0", features = ["use-dev-tty"] }
-ratatui = "0.27.0"
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
-#tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
-*/
-
 /// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
 /// down to two files at a time, because it was developed to allow editing of generated code and
 /// cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
@@ -29,7 +21,6 @@ use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::borrow::Cow;
@@ -298,7 +289,7 @@ impl<'a> Editor<'a> {
                 );
 
             self.term.draw(|f| {
-                let chunks = layout.split(f.size());
+                let chunks = layout.split(f.area());
 
                 if search_height > 0 {
                     f.render_widget(&self.search.textarea, chunks[0]);
@@ -532,18 +523,17 @@ impl<'a> Editor<'a> {
 }
 
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from("Key bindings - subject to your terminal settings")
-                .alignment(ratatui::layout::Alignment::Center),
-        )
-        .title(Title::from("(^L to toggle)").alignment(Alignment::Center))
+        .title_alignment(Alignment::Center)
+        .title_top("Key bindings - subject to your terminal settings")
+        // title_bottom also looks good here:
+        .title_top("(^L to toggle)")
         .add_modifier(Modifier::BOLD);
     f.render_widget(Clear, area);
     //this clears out the background

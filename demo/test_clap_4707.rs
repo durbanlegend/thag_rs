@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-*/
-
 /// Minimal reproducible code posted by user `mkeeter` to demonstrate `clap` issue 4707
 /// which we are experiencing at time of creation of this script.
 /// https://github.com/clap-rs/clap/issues/4707

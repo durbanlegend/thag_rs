@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-prettyplease = "0.2.32"
-quote = "1.0.37"
-syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
-*/
-
 /// Demo of selectively modifying source code using `syn` and `quote`. This is from a solution posted by user Yandros on the Rust Playground
 /// in answer to a question asked on the Rust users forum. The discussion and Playground link are to be found here:
 /// https://users.rust-lang.org/t/writing-proc-macros-with-syn-is-there-a-way-to-visit-parts-of-the-ast-that-match-a-given-format/54733/4
@@ -12,6 +5,7 @@ syn = { version = "2", features = ["extra-traits", "full", "parsing", "visit", "
 /// I've embellished it to show how it can be formatted with `prettyplease` if parsed as a `syn::File`.
 //# Purpose: Demo programmatically modifying Rust source code using `syn` and `quote`.
 //# Categories: AST, crates, technique
+use prettyplease;
 
 const INPUT_CODE: &str = stringify! {
     fn foobar() {

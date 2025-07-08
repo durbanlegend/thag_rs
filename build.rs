@@ -1,10 +1,9 @@
 mod build_utils;
-// use crate::build_utils::validate_theme_file;
-// use build_utils::{BuildError, BuildResult};
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use thag_proc_macros::{safe_eprintln, safe_println};
 
 #[allow(clippy::doc_markdown, clippy::too_many_lines)]
 /// 1. Compile all built-in themes into the binary.
@@ -18,23 +17,23 @@ use std::path::Path;
 fn main() {
     // 1. Theme loading
     // NB: Tell cargo to rerun if any theme file changes
-    println!("cargo:rerun-if-changed=themes/built_in");
+    safe_println!("cargo:rerun-if-changed=themes/built_in");
 
     // if let Err(e) = generate_theme_data() {
     //     // Use cargo:warning to show build script errors
-    //     println!("cargo:warning=Theme generation failed: {e:?}"); // Fail the build if we can't generate themes
+    //     safe_println!("cargo:warning=Theme generation failed: {e:?}"); // Fail the build if we can't generate themes
     //     std::process::exit(1);
     // }
 
     // 2. Test generation
     // NB: Tell cargo to rerun if any tool file changes
-    println!("cargo:rerun-if-changed=src/bin");
+    safe_println!("cargo:rerun-if-changed=src/bin");
 
     // Check for mutually exclusive features
     let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();
     let env = std::env::var("CARGO_FEATURE_ENV_LOGGER").is_ok();
 
-    eprintln!("simple={simple}; env={env}");
+    safe_eprintln!("simple={simple}; env={env}");
     assert!(
         !(simple & env),
         "Features 'simplelog' and 'env_logger' are mutually exclusive.\n\
@@ -54,7 +53,7 @@ fn main() {
     // println! and a *stderr file for eprintln! afterwards. -vv is suggested but
     // doesn't seem to work. `find . -mtime 0 -name "*output" (or "*stderr") -ls`.
     // https://doc.rust-lang.org/cargo/reference/build-scripts.html#outputs-of-the-build-script
-    eprintln!("OUT_DIR={out_dir}");
+    safe_eprintln!("OUT_DIR={out_dir}");
     fs::create_dir_all(&out_dir).expect("Failed to create destination directory");
     let out_dir_path = &Path::new(&out_dir);
     let dest_path = out_dir_path.join("generated_tests.rs");
@@ -65,7 +64,7 @@ fn main() {
     for subdir_name in &subdir_names {
         let source_dir = Path::new(subdir_name);
 
-        eprintln!(
+        safe_eprintln!(
             "source_path = source_dir = {:#?}",
             source_dir.canonicalize()
         );
@@ -142,7 +141,7 @@ fn main() {
 
                 // Skip nightly-only scripts if on stable config
                 if cfg!(not(feature = "nightly")) && stable_only.contains(&source_name) {
-                    eprintln!("Skipping nightly-only test {source_name}");
+                    safe_eprintln!("Skipping nightly-only test {source_name}");
                     continue;
                 }
 
@@ -155,8 +154,9 @@ fn main() {
 #[test]
 fn check_{subdir_name}_{test_name}() {{
     {{
+        use thag_proc_macros::{{safe_eprintln, safe_osc}};
         // Reset terminal state at start
-        print!("\x1B[0m\x1B[?1049l"); // Reset all attributes and exit alternate screen
+        safe_osc!("\x1B[0m\x1B[?1049l"); // Reset all attributes and exit alternate screen
 
         set_up();
 
@@ -179,11 +179,11 @@ fn check_{subdir_name}_{test_name}() {{
                 String::from_utf8_lossy(&output.stderr)
             );
         }}
-        // eprintln!("{{output:?}}");
-        // eprintln!("stdout={{}}", String::from_utf8_lossy(&output.stdout));
-        // eprintln!("stderr={{}}", String::from_utf8_lossy(&output.stderr));
+        // safe_eprintln!("{{output:?}}");
+        // safe_eprintln!("stdout={{}}", String::from_utf8_lossy(&output.stdout));
+        // safe_eprintln!("stderr={{}}", String::from_utf8_lossy(&output.stderr));
 
-        // eprintln!("... finished {source_name}, starting cargo clean");
+        // safe_eprintln!("... finished {source_name}, starting cargo clean");
 
         // Get the file stem
         let file_stem = {source_name:?}.trim_end_matches(".rs");
@@ -199,11 +199,11 @@ fn check_{subdir_name}_{test_name}() {{
         let target_dir = &dest_dir.join("target/debug");
         // Delete the destination directory after building the file
         if let Err(e) = fs::remove_dir_all(&target_dir) {{
-            eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());
+            safe_eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());
         }}
 
         // Reset terminal state after
-        print!("\x1B[0m\x1B[?1049l");
+        safe_osc!("\x1B[0m\x1B[?1049l");
     }}
 }}
 "#,

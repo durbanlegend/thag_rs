@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::sync::Once;
+use thag_proc_macros::safe_eprintln;
 use thag_rs::{get_proc_flags, Cli, ProcFlags};
 
 // Set environment variables before running tests
@@ -18,7 +19,7 @@ fn test_cmd_args_get_args_script() {
     let args = vec!["thag", "demo_script", "--", "arg1", "arg2"];
     let cli = Cli::parse_from(args);
     assert!(Some("demo_script") == cli.script.as_deref());
-    // println!("cli.args={:#?}", cli.args);
+    // safe_println!("cli.args={:#?}", cli.args);
     assert!(vec!["arg1", "arg2"] == cli.args);
 }
 
@@ -27,7 +28,7 @@ fn test_cmd_args_get_args_expr() {
     set_up();
     let args = vec!["thag", "--expr", "'2 + 5'"];
     let cli = Cli::parse_from(args);
-    // println!("cli.script.as_deref()={}", cli.script.as_deref());
+    // safe_println!("cli.script.as_deref()={}", cli.script.as_deref());
     assert!(cli.script.as_deref().is_none());
     assert!(Some("'2 + 5'") == cli.expression.as_deref());
 }
@@ -37,7 +38,7 @@ fn test_cmd_args_get_args_stdin() {
     set_up();
     let args = vec!["thag", "-s"];
     let cli = Cli::parse_from(args);
-    // println!("cli.script.as_deref()={}", cli.script.as_deref());
+    // safe_println!("cli.script.as_deref()={}", cli.script.as_deref());
     assert!(cli.script.as_deref().is_none());
     assert!(cli.expression.as_deref().is_none());
 }
@@ -67,7 +68,7 @@ fn test_cmd_args_conflicts_with_all() {
     set_up();
     let args = vec!["thag", "--expr", "--edit"];
     let result = Cli::try_parse_from(args);
-    // println!("result={result:#?}");
+    // safe_println!("result={result:#?}");
     assert!(result.is_err()); // or check for specific error
 }
 
@@ -78,7 +79,7 @@ fn test_cmd_args_proc_flags_generate_build_force_run() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    eprintln!("proc_flags={proc_flags:#?}");
+    safe_eprintln!("proc_flags={proc_flags:#?}");
     assert!(proc_flags.contains(ProcFlags::FORCE | ProcFlags::RUN));
 }
 
@@ -119,7 +120,7 @@ fn test_cmd_args_proc_flags_expr() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    eprintln!("test_cmd_args_proc_flags_expr proc_flags={proc_flags:#?}");
+    safe_eprintln!("test_cmd_args_proc_flags_expr proc_flags={proc_flags:#?}");
     assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::EXPR));
 }
 
@@ -130,7 +131,7 @@ fn test_cmd_args_proc_flags_edit() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    eprintln!("test_cmd_args_proc_flags_edit proc_flags={proc_flags:#?}");
+    safe_eprintln!("test_cmd_args_proc_flags_edit proc_flags={proc_flags:#?}");
     assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::EDIT));
 }
 
@@ -141,7 +142,7 @@ fn test_cmd_args_proc_flags_stdin() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    eprintln!("test_cmd_args_proc_flags_stdin proc_flags={proc_flags:#?}");
+    safe_eprintln!("test_cmd_args_proc_flags_stdin proc_flags={proc_flags:#?}");
     assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::STDIN));
 }
 
@@ -152,7 +153,7 @@ fn test_cmd_args_proc_flags_loop() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    eprintln!("test_cmd_args_proc_flags_loop proc_flags={proc_flags:#?}");
+    safe_eprintln!("test_cmd_args_proc_flags_loop proc_flags={proc_flags:#?}");
     assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::LOOP));
 }
 
@@ -163,7 +164,7 @@ fn test_cmd_args_proc_flags_repl() {
     let cli = Cli::parse_from(args);
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
-    eprintln!("test_cmd_args_proc_flags_repl proc_flags={proc_flags:#?}");
+    safe_eprintln!("test_cmd_args_proc_flags_repl proc_flags={proc_flags:#?}");
     assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::REPL));
 }
 

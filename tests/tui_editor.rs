@@ -3,6 +3,7 @@ use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 use std::{env::set_var, fs, sync::Once};
+use thag_proc_macros::safe_eprintln;
 use thag_rs::tui_editor::{normalize_newlines, History};
 use thag_rs::{ThagResult, TMPDIR};
 
@@ -115,7 +116,7 @@ fn test_tui_editor_history_navigate() -> ThagResult<()> {
     history.add_entry("third");
     history.add_entry("fourth");
 
-    eprintln!("History={:#?}", history);
+    safe_eprintln!("History={:#?}", history);
 
     let current = history.get_current();
 
@@ -124,7 +125,7 @@ fn test_tui_editor_history_navigate() -> ThagResult<()> {
 
     let current = history.get_previous();
 
-    eprintln!("Expecting third, current={current:?}");
+    safe_eprintln!("Expecting third, current={current:?}");
 
     assert!(current.is_some());
     assert_eq!(&current.unwrap().contents(), "third");
@@ -155,11 +156,11 @@ fn test_tui_editor_history_navigate() -> ThagResult<()> {
     let current = history.get_next();
     assert_eq!(&current.unwrap().contents(), "fourth");
 
-    eprintln!("History={history:#?}");
+    safe_eprintln!("History={history:#?}");
 
     let dir_path = &TMPDIR.join("thag_rs_tests");
     let path = dir_path.join("rs_stdin_hist.json");
-    eprintln!("path={path:#?}");
+    safe_eprintln!("path={path:#?}");
 
     // Ensure REPL subdirectory exists
     fs::create_dir_all(&dir_path)?;
@@ -170,7 +171,7 @@ fn test_tui_editor_history_navigate() -> ThagResult<()> {
     let _ = history.save_to_file(&path)?;
 
     let history = History::load_from_file(&path);
-    eprintln!("History (reloaded)={:#?}", history);
+    safe_eprintln!("History (reloaded)={:#?}", history);
     Ok(())
 }
 
@@ -187,7 +188,7 @@ fn test_tui_editor_history_get_next_empty() {
 //     let mut history = History::new();
 //     history.add_entry("first");
 //     history.add_entry("second");
-//     eprintln!("History={:#?}", history);
+//     safe_eprintln!("History={:#?}", history);
 //     history.get_previous(); // Move to the previous entry
 //     let current = history.get_current();
 //     assert!(current.is_some());

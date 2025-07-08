@@ -22,6 +22,7 @@ mod internal_doc;
 mod palette_methods;
 mod preload_themes;
 mod repeat_dash;
+mod safe_print;
 mod tool_errors;
 
 #[cfg(feature = "full_profiling")]
@@ -52,6 +53,9 @@ use crate::internal_doc::internal_doc_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
 use crate::repeat_dash::repeat_dash_impl;
+use crate::safe_print::{
+    safe_eprint_impl, safe_eprintln_impl, safe_osc_impl, safe_print_impl, safe_println_impl,
+};
 use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
 use quote::quote;
@@ -638,4 +642,119 @@ pub fn safe_alloc_private(input: TokenStream) -> TokenStream {
     {
         input
     }
+}
+
+/// Synchronized `print!` macro that prevents terminal corruption from concurrent output.
+///
+/// This macro works exactly like `print!`, but synchronizes access to stdout
+/// to prevent OSC sequence corruption when multiple threads write to the terminal
+/// simultaneously.
+///
+/// # Usage
+///
+/// ```rust
+/// use thag_proc_macros::safe_print;
+///
+/// safe_print!("Hello, world!");
+/// safe_print!("Value: {}", 42);
+/// safe_print!("Multiple values: {} and {}", "foo", "bar");
+/// ```
+///
+/// This is particularly useful in unit tests where multiple test threads might
+/// output to the terminal concurrently.
+#[proc_macro]
+pub fn safe_print(input: TokenStream) -> TokenStream {
+    safe_print_impl(input)
+}
+
+/// Synchronized `println!` macro that prevents terminal corruption from concurrent output.
+///
+/// This macro works exactly like `println!`, but synchronizes access to stdout
+/// to prevent OSC sequence corruption when multiple threads write to the terminal
+/// simultaneously.
+///
+/// # Usage
+///
+/// ```rust
+/// use thag_proc_macros::safe_println;
+///
+/// safe_println!("Hello, world!");
+/// safe_println!("Value: {}", 42);
+/// safe_println!("Multiple values: {} and {}", "foo", "bar");
+/// ```
+///
+/// This is particularly useful in unit tests where multiple test threads might
+/// output to the terminal concurrently.
+#[proc_macro]
+pub fn safe_println(input: TokenStream) -> TokenStream {
+    safe_println_impl(input)
+}
+
+/// Synchronized `eprint!` macro that prevents terminal corruption from concurrent output.
+///
+/// This macro works exactly like `eprint!`, but synchronizes access to stderr
+/// to prevent OSC sequence corruption when multiple threads write to the terminal
+/// simultaneously.
+///
+/// # Usage
+///
+/// ```rust
+/// use thag_proc_macros::safe_eprint;
+///
+/// safe_eprint!("Error: ");
+/// safe_eprint!("Error code: {}", 404);
+/// ```
+///
+/// This is particularly useful in unit tests where multiple test threads might
+/// output error messages concurrently.
+#[proc_macro]
+pub fn safe_eprint(input: TokenStream) -> TokenStream {
+    safe_eprint_impl(input)
+}
+
+/// Synchronized `eprintln!` macro that prevents terminal corruption from concurrent output.
+///
+/// This macro works exactly like `eprintln!`, but synchronizes access to stderr
+/// to prevent OSC sequence corruption when multiple threads write to the terminal
+/// simultaneously.
+///
+/// # Usage
+///
+/// ```rust
+/// use thag_proc_macros::safe_eprintln;
+///
+/// safe_eprintln!("Error occurred!");
+/// safe_eprintln!("Error: {}", error_msg);
+/// ```
+///
+/// This is particularly useful in unit tests where multiple test threads might
+/// output error messages concurrently.
+#[proc_macro]
+pub fn safe_eprintln(input: TokenStream) -> TokenStream {
+    safe_eprintln_impl(input)
+}
+
+/// Synchronized OSC sequence output macro that prevents terminal corruption.
+///
+/// This macro is specifically designed for sending OSC (Operating System Command)
+/// sequences to the terminal in a synchronized manner, preventing corruption when
+/// multiple threads send OSC sequences simultaneously.
+///
+/// # Usage
+///
+/// ```rust
+/// use thag_proc_macros::safe_osc;
+///
+/// // Set terminal title
+/// safe_osc!("\x1b]0;My Title\x1b\\");
+///
+/// // Set hyperlink
+/// safe_osc!("\x1b]8;;{}\x1b\\{}\\x1b]8;;\x1b\\", url, text);
+/// ```
+///
+/// This is the key macro for preventing the specific OSC sequence corruption
+/// that occurs during concurrent terminal output.
+#[proc_macro]
+pub fn safe_osc(input: TokenStream) -> TokenStream {
+    safe_osc_impl(input)
 }

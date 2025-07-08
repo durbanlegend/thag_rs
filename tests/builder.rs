@@ -9,6 +9,7 @@ use std::{
     path::PathBuf,
     time::Instant,
 };
+use thag_proc_macros::{safe_eprintln, safe_println};
 use thag_rs::ast::Ast;
 use thag_rs::builder::{build, display_timings, generate, run, BuildState, ScriptState};
 use thag_rs::cmd_args::Cli;
@@ -206,7 +207,7 @@ name = "bitflags_t"
         code_utils::read_file_contents(&source_path).expect("Error reading script contents");
     let _source_file = code_utils::write_source(&target_rs_path, &rs_source)
         .expect("Problem writing source to target path");
-    // println!("source_file={source_file:#?}");
+    // safe_println!("source_file={source_file:#?}");
 
     let build_state = BuildState {
         working_dir_path: current_dir.clone(),
@@ -259,7 +260,7 @@ fn test_builder_run_script() {
 
     // Remove executable if it exists, and check
     let result = fs::remove_file(&target_path);
-    eprintln!("Result of fs::remove_file({target_path:?}): {result:?}");
+    safe_eprintln!("Result of fs::remove_file({target_path:?}): {result:?}");
     assert!(!target_path.exists());
 
     // Generate and build executable, and check it exists.
@@ -268,7 +269,7 @@ fn test_builder_run_script() {
     cli.build = true;
     let result = execute(&mut cli);
     assert!(result.is_ok());
-    println!("target_path={target_path:#?}");
+    safe_println!("target_path={target_path:#?}");
     assert!(target_path.exists());
 
     // Finally, run it
@@ -369,11 +370,11 @@ fn test_builder_ast_to_tokens() {
 
     let file: syn::File = parse_quote! {
         fn main() {
-            println!("Hello, world!");
+            safe_println!("Hello, world!");
         }
     };
     let expr: syn::Expr = parse_quote! {
-        println!("Hello, world!")
+        safe_println!("Hello, world!")
     };
 
     let ast_file = Ast::File(file);
@@ -383,7 +384,7 @@ fn test_builder_ast_to_tokens() {
     ast_file.to_tokens(&mut tokens_file);
     let expected_file: TokenStream = quote! {
         fn main() {
-            println!("Hello, world!");
+            safe_println!("Hello, world!");
         }
     };
     assert_eq!(tokens_file.to_string(), expected_file.to_string());
@@ -391,7 +392,7 @@ fn test_builder_ast_to_tokens() {
     let mut tokens_expr = TokenStream::new();
     ast_expr.to_tokens(&mut tokens_expr);
     let expected_expr: TokenStream = quote! {
-        println!("Hello, world!")
+        safe_println!("Hello, world!")
     };
     assert_eq!(tokens_expr.to_string(), expected_expr.to_string());
 }

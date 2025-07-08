@@ -2,6 +2,7 @@
 mod tests {
     use std::{env::current_dir, path::PathBuf, sync::Arc, sync::Once};
     use tempfile::TempDir;
+    use thag_proc_macros::safe_eprintln;
     use thag_rs::{
         config::{
             self, validate_config_format, Config, Dependencies, FeatureOverride, MockContext,
@@ -149,7 +150,7 @@ mod tests {
         let config = load(&get_context());
         // It's expected to fall back to a partial config now.
         assert!(config.is_ok());
-        eprintln!("config={config:#?}");
+        safe_eprintln!("config={config:#?}");
     }
 
     // #[ignore = "Opens file and expects human interaction"]
@@ -171,7 +172,7 @@ mod tests {
         assert!(config_path.exists(), "Config file should be created");
         let config_content =
             std::fs::read_to_string(&config_path).expect("Failed to read config file");
-        // eprintln!("config_content={config_content}");
+        // safe_eprintln!("config_content={config_content}");
         #[cfg(target_os = "windows")]
         assert!(
             config_content.contains("[dependencies.feature_overrides.syn]"),
@@ -241,7 +242,7 @@ required_features = [
         assert!(!filtered.contains(&"default".to_string()));
         assert!(filtered.contains(&"derive".to_string())); // Always included
         assert!(!filtered.contains(&"std".to_string()));
-        eprintln!("config={}", toml::to_string_pretty(&config).unwrap());
+        safe_eprintln!("config={}", toml::to_string_pretty(&config).unwrap());
     }
 
     #[test]

@@ -6,6 +6,7 @@ use std::{
     io::Write,
     sync::Once,
 };
+use thag_proc_macros::safe_println;
 use thag_rs::{execute, Cli, DYNAMIC_SUBDIR, TMPDIR};
 
 // Set environment variables before running tests
@@ -59,7 +60,7 @@ fn main() {{
     // Set up clap to use the test arguments
     let mut cli = Cli::parse_from(&args);
 
-    println!("cli={:#?}", cli);
+    safe_println!("cli={:#?}", cli);
     // thag_rs::Cli = cli;
 
     // Call the execute function directly

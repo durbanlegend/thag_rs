@@ -7,6 +7,7 @@ mod tests {
         process::{Command, Stdio},
         sync::Once,
     };
+    use thag_proc_macros::safe_eprintln;
     use thag_rs::{
         debug_log,
         logging::{set_global_verbosity, Logger, Verbosity, LOGGER},
@@ -169,7 +170,7 @@ fn main() {{
         debug_log!("input={input}");
 
         let output = run(input);
-        eprintln!("output={output:?}");
+        safe_eprintln!("output={output:?}");
 
         assert!(String::from_utf8_lossy(&output.stdout)
             .ends_with("Macro quieter message\nMacro quiet message\nMacro normal message\n"));
@@ -204,7 +205,7 @@ fn main() {{
         debug_log!("input={input}");
 
         let output = run(input);
-        eprintln!("output={output:?}");
+        safe_eprintln!("output={output:?}");
 
         assert!(String::from_utf8_lossy(&output.stdout)
             .ends_with("Macro quieter message\nMacro quiet message\nMacro normal message\n"));

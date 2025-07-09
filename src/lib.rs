@@ -74,7 +74,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub static TMPDIR: LazyLock<PathBuf> = LazyLock::new(env::temp_dir);
 
 pub mod __private {
-    pub use crossterm;
+    pub use ratatui::crossterm;
     pub use strict::OneToThree;
     pub use thag_proc_macros::key;
 

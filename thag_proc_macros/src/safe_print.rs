@@ -26,11 +26,11 @@ impl Parse for SafePrintInput {
             args.push(input.parse()?);
         }
 
-        Ok(SafePrintInput { format_str, args })
+        Ok(Self { format_str, args })
     }
 }
 
-/// Implementation for safe_print! macro
+/// Implementation for `safe_print!` macro
 pub fn safe_print_impl(input: TokenStream) -> TokenStream {
     let SafePrintInput { format_str, args } = parse_macro_input!(input as SafePrintInput);
 
@@ -67,7 +67,7 @@ pub fn safe_print_impl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-/// Implementation for safe_println! macro
+/// Implementation for `safe_println!` macro
 pub fn safe_println_impl(input: TokenStream) -> TokenStream {
     let SafePrintInput { format_str, args } = parse_macro_input!(input as SafePrintInput);
 
@@ -104,7 +104,7 @@ pub fn safe_println_impl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-/// Implementation for safe_eprint! macro
+/// Implementation for `safe_eprint!` macro
 pub fn safe_eprint_impl(input: TokenStream) -> TokenStream {
     let SafePrintInput { format_str, args } = parse_macro_input!(input as SafePrintInput);
 
@@ -141,7 +141,7 @@ pub fn safe_eprint_impl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-/// Implementation for safe_eprintln! macro
+/// Implementation for `safe_eprintln!` macro
 pub fn safe_eprintln_impl(input: TokenStream) -> TokenStream {
     let SafePrintInput { format_str, args } = parse_macro_input!(input as SafePrintInput);
 
@@ -178,7 +178,7 @@ pub fn safe_eprintln_impl(input: TokenStream) -> TokenStream {
     output.into()
 }
 
-/// Implementation for safe_osc! macro - for OSC sequences
+/// Implementation for `safe_osc!` macro - for OSC sequences
 pub fn safe_osc_impl(input: TokenStream) -> TokenStream {
     let SafePrintInput { format_str, args } = parse_macro_input!(input as SafePrintInput);
 

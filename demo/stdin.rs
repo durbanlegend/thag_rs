@@ -1,11 +1,3 @@
-/*[toml]
-[dependencies]
-lazy_static = "1.4.0"
-regex = "1.10.4"
-ratatui = "0.29.0"
-tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
-*/
-
 use anyhow::{anyhow, Context, Result};
 /// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
 /// module, `stdin` was originally developed here as a separate script and integrated as a module later.

@@ -1,10 +1,6 @@
 /*[toml]
 [dependencies]
 thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
-smol = "1.3.0"
-async-channel = "1.9.0"
-async-dup = "1.2.2"
-futures-lite = "1.13.0"
 */
 
 /// Published example from `smol crate`, instrumented for testing of `thag_profiler`, with clean shutdown

@@ -10,7 +10,10 @@ use std::{
     io::BufWriter,
     path::PathBuf,
     str::FromStr,
-    sync::atomic::{AtomicU8, Ordering},
+    sync::{
+        atomic::{AtomicU8, Ordering},
+        LazyLock,
+    },
     time::Instant,
 };
 
@@ -61,6 +64,20 @@ static PROFILING_STATE: AtomicBool = AtomicBool::new(false);
 #[internal_doc]
 #[cfg(feature = "time_profiling")]
 pub static PROFILING_MUTEX: ReentrantMutex<()> = ReentrantMutex::new(());
+
+/// Max stack depth to cater for (default 20).
+///
+/// This static value allows you to adjust the maximum stack depth that will be catered for.
+/// To reduce profiling overhead the profiler will reserve this fixed number of entries
+/// for building each profile call stack and will panic if it encounters a deeper stack.
+/// The value defaults to 20 but can be configured via the `MAX_STACK_DEPTH` environment variable.
+pub static MAX_STACK_DEPTH: LazyLock<usize> = LazyLock::new(|| {
+    env::var("MAX_STACK_DEPTH")
+        .or_else(|_| Ok::<String, &str>(String::from("20")))
+        .ok()
+        .and_then(|val| val.parse::<usize>().ok())
+        .expect("Value specified for MAX_STACK_DEPTH must be a valid integer")
+});
 
 /// Profiling capability flags (bitflags pattern) for determining which profiling types are supported
 #[allow(dead_code)]
@@ -998,7 +1015,7 @@ pub fn set_global_profile_type(profile_type: ProfileType) {
     GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
 
     // debug_log causes this to hang if called from get_global_profile_type during initialisation.
-    eprintln!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
+    // eprintln!("set_global_profile_type: profile_type={profile_type:?}, stored value={value}");
 }
 
 /// Enables or disables profiling with the specified profile type.
@@ -2176,8 +2193,8 @@ pub fn extract_profile_callstack(
     let mut already_seen = safe_alloc!(HashSet::new());
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
-        let capacity = 20;
-        let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
+        // let capacity = 40;
+        let mut callstack: Vec<String> = Vec::with_capacity(*MAX_STACK_DEPTH); // Fixed size, no growing
         // let mut found_recursion = false;
         let mut start = false;
         let mut fin = false;
@@ -2236,161 +2253,17 @@ pub fn extract_profile_callstack(
                     // Safe to unwrap now
                     callstack.push(name);
                     i += 1;
-                    if i >= capacity {
+                    if i >= *MAX_STACK_DEPTH {
                         safe_alloc! {
                              println!("frames={callstack:#?}");
                          };
-                         panic!("Max limit of {capacity} frames exceeded");
+                         panic!("Max limit of {} frames exceeded", *MAX_STACK_DEPTH);
                     }
                 }
             });
             !fin
         });
         callstack
-    }
-}
-
-/// Extracts the callstack for memory deallocation tracking.
-///
-/// This function captures the current call stack starting from a pattern match
-/// and builds a vector of function names with line numbers for detailed memory
-/// deallocation tracking.
-///
-/// # Arguments
-/// * `start_pattern` - A regex pattern to identify where to start capturing the stack
-///
-/// # Returns
-/// A vector of strings in the format "function_name:line_number" representing
-/// the call stack, or an empty vector if recursion is detected
-///
-/// # Panics
-/// Panics if the arbitrary limit of 20 frames is exceeded during stack traversal
-#[internal_doc]
-#[cfg(feature = "full_profiling")]
-#[must_use]
-#[allow(clippy::missing_panics_doc)]
-#[fn_name]
-pub fn extract_dealloc_callstack(start_pattern: &Regex) -> Vec<String> {
-    let mut already_seen = HashSet::new();
-
-    // let end_point = "__rust_begin_short_backtrace";
-    let end_point = get_base_location().unwrap_or("__rust_begin_short_backtrace");
-
-    // First, collect all relevant frames
-    /*
-    let callstack: Vec<String> = Backtrace::frames(current_backtrace)
-        .iter()
-        .flat_map(BacktraceFrame::symbols)
-        .map(|symbol| {
-            (
-                symbol.name().map(|name| name.to_string()),
-                symbol.lineno().unwrap_or(0),
-            )
-        })
-        .filter(|(maybe_frame, _)| maybe_frame.is_some())
-        .map(|(maybe_frame, lineno)| (maybe_frame.unwrap(), lineno))
-        .skip_while(|(frame, _)| !start_pattern.is_match(frame))
-        .take_while(|(frame, _)| !frame.contains(end_point))
-        .filter(|(frame, _)| filter_scaffolding(frame))
-        // .inspect(|frame| {
-        //     debug_log!("frame: {frame}");
-        // })
-        .map(|(frame, lineno)| (strip_hex_suffix(frame), lineno))
-        .map(|(mut name, lineno)| {
-            // Remove hash suffixes and closure markers to collapse tracking of closures into their calling function
-            (clean_function_name(&mut name), lineno)
-        })
-        .filter(|(name, _)| {
-            // Skip duplicate function calls (helps with the {{closure}} pattern)
-            if already_seen.contains(name.as_str()) {
-                false
-            } else {
-                already_seen.insert(name.clone());
-                true
-            }
-        })
-        .map(|(frame, lineno)| format!("{frame}:{lineno}"))
-        .collect();
-    */
-
-    safe_alloc! {
-        // Pre-allocate with fixed capacity to avoid reallocations
-        let capacity = 20;
-        let mut callstack: Vec<String> = Vec::with_capacity(capacity); // Fixed size, no growing
-        let mut found_recursion = false;
-        let mut start = false;
-        let mut fin = false;
-        let mut i = 0;
-
-        trace(|frame| {
-            let mut suppress = false;
-
-            resolve_frame(frame, |symbol| {
-
-                'process_symbol: {
-                    let Some(name) = symbol.name() else {
-                        suppress = true;
-                        break 'process_symbol;
-                    };
-                    let name = name.to_string();
-                    if name.contains("tokio") {
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-                    if !start {
-                        if start_pattern.is_match(&name) {
-                            start = true;
-                        }
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-                    if name.contains(end_point) {
-                        fin = true;
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-
-                    for &s in SCAFFOLDING_PATTERNS {
-                        if name.contains(s) {
-                            suppress = true;
-                            break 'process_symbol;
-                        }
-                    }
-
-                    let mut name = strip_hex_suffix_slice(&name);
-                    let name = clean_function_name(&mut name);
-                    if already_seen.contains(&name) {
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-                    already_seen.insert(name.clone());
-                    if suppress { break 'process_symbol; }
-
-                    // Check for our own functions (recursion detection)
-                    if i > 0 && name.contains(fn_name) {
-                        found_recursion = true;
-                        break 'process_symbol;
-                    }
-
-                    // Safe to unwrap now
-                    let entry = format!("{name}:{}", symbol.lineno().unwrap_or(0));
-                    callstack.push(entry);
-                    i += 1;
-                    if i >= capacity {
-                        safe_alloc! {
-                             println!("frames={callstack:#?}");
-                         };
-                         panic!("Max limit of {capacity} frames exceeded");
-                    }
-                }
-            });
-            !found_recursion && !fin
-        });
-        if found_recursion {
-            vec![]
-        } else {
-            callstack
-        }
     }
 }
 

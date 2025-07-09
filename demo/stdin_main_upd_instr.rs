@@ -1,9 +1,24 @@
 /*[toml]
 [dependencies]
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 
 #![allow(clippy::uninlined_format_args)]
+/**
+A version of `demo/stdin_main.rs` instrumented for profiling with `thag_profiler`.
+**Caution**: For memory profiling of the `Ctrl+L: keys` action, this particular example is painfully slow,
+even though the original is not. As detailed memory profiling shows, this is because a great deal of memory
+allocation is taking place in the `cassowary` solver algorithm that calculates the layout. All allocations
+are less than 4KB and almost half the profiled allocations are under 64B. No fingers are being pointed here
+since GUI layout is fiendishly difficult - but it is something out of our control without a radical redesign
+- which wouldn't be justified because the normal response is still sub-second. But it does illustrate how
+and why memory profiling can be slow in some cases.
+
+E.g. `THAG_PROFILER=both,,none,true thag demo/stdin_main_instr.rs`
+*/
+//# Purpose: Debugging.
+//# Categories: profiling, testing
 use edit::edit_file;
 use ratatui::style::{Color, Modifier, Style};
 use std::{
@@ -12,7 +27,7 @@ use std::{
     io::{self, BufRead, IsTerminal},
     path::PathBuf,
 };
-// use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, profiled};
 use thag_rs::{
     // debug_log,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
@@ -26,7 +41,7 @@ use thag_rs::{
 };
 
 #[allow(dead_code)]
-// #[enable_profiling]
+#[enable_profiling(runtime)]
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
@@ -63,7 +78,7 @@ fn main() -> ThagResult<()> {
 /// # Panics
 ///
 /// If the terminal cannot be reset.
-// #[profiled]
+#[profiled]
 pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -140,7 +155,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-// #[profiled]
+#[profiled]
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
@@ -165,7 +180,7 @@ pub fn read() -> Result<String, std::io::Error> {
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-// #[profiled]
+#[profiled]
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
@@ -176,7 +191,7 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-// #[profiled]
+#[profiled]
 pub fn edit_history() -> ThagResult<Option<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");

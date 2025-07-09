@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-quote = "1.0.37"
-syn = { version = "2", features = ["full"] }
-*/
-
 /// Prototype of a simple partial expression evaluator. It solicits a Rust expression and embeds
 /// it in a `println!` statement for use in generated code.
 ///

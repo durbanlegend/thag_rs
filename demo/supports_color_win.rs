@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-supports-color= "3.0.0"
-*/
-
 /// Windows-friendly logic extracted from crate `supports-color`.
 ///
 //# Purpose: Proof of concept for Windows environment

@@ -10,6 +10,8 @@
 - [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
 - [ ]  Still many toml blocks to remove or trim in demo/.
 - [ ]  Consider building thag prompt per demo/thag_promt.rs.
+- [ ]  Find best alternative to ugly panic in extract_profile_callstack called from Profile::new. Possibly disable profiling? Also high-water-mark reporting?
+- [ ]  Move MAX_STACK_DEPTH to be a parameter of THAG_PROFILER.
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

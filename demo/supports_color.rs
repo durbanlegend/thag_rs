@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-supports-color= "3.0.0"
-*/
-
 /// Demo of crate `supports-color` that `thag_rs` uses to detect the level of
 /// colour support of the terminal in use.
 /// Caution: from testing I suspect that `supports-color` may mess with the terminal

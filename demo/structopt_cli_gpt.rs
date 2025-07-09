@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-structopt = "0.3.26"
-*/
-
 /// Basic demo of GPT-generated CLI using the `structopt` crate. This
 /// crate is in maintenance mode, its features having been integrated
 /// into `clap`.

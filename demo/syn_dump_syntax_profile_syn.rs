@@ -1,9 +1,6 @@
 /*[toml]
 [dependencies]
-colored = "2.1.0"
-quote = "1.0.37"
-syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
-# syn = { path = "/Users/donf/projects/syn", features = ["extra-traits", "full", "parsing"] }
+# Alternatively can use `use proc_macro2;` with dependency inference and default config
 proc-macro2 = { version = "1", features = ["span-locations"] }
 thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "debug_logging"] }
 */
@@ -54,7 +51,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process;
-use thag_profiler::{self, enable_profiling, mem_tracking};
+use thag_profiler::{self, enable_profiling};
 
 enum Error {
     IncorrectUsage,

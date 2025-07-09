@@ -18,7 +18,7 @@ tui-textarea = { version = "0.7", features = ["search"] }
 use lazy_static::lazy_static;
 use mockall::{automock, predicate::str};
 /**
-A version of `demo/stdin_main.rs` instrumented for profiling with `thag_profiler`.
+A version of a previous version of `demo/stdin_main.rs` instrumented for profiling with `thag_profiler`.
 **Caution**: For memory profiling of the `Ctrl+L: keys` action, this particular example is painfully slow,
 even though the original is not. As detailed memory profiling shows, this is because a great deal of memory
 allocation is taking place in the `cassowary` solver algorithm that calculates the layout. All allocations

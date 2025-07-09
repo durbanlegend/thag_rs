@@ -71,7 +71,7 @@ mod tests {
     fn test_repl_edit_history() {
         use std::fs::read_to_string;
 
-        use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+        use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
         use mockall::Sequence;
         use thag_rs::MockEventReader;
 

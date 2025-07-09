@@ -10,13 +10,13 @@ use crate::{
 use crate::{Cli, ProcFlags};
 use crate::{ThagError, ThagResult};
 use cargo_toml::Manifest;
-use crossterm::event::Event;
 use firestorm::{profile_fn, profile_method};
 use home::home_dir;
 use mockall::automock;
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
+use ratatui::crossterm::event::Event;
 use std::clone::Clone;
 use std::{
     convert::Into,
@@ -865,12 +865,12 @@ pub struct CrosstermEventReader;
 impl EventReader for CrosstermEventReader {
     fn read_event(&self) -> ThagResult<Event> {
         profile_method!(read_event);
-        crossterm::event::read().map_err(Into::<ThagError>::into)
+        ratatui::crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
         profile_method!(poll);
-        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+        ratatui::crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 

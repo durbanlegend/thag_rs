@@ -10,7 +10,7 @@ use crate::{
     ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
-use crossterm::event::{KeyEvent, KeyEventKind};
+use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use nu_ansi_term::{Color, Style as NuStyle};

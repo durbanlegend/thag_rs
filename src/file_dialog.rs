@@ -1,12 +1,12 @@
 /// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
 /// Copyright (c) 2023 Philipp Krones
 /// Licence: MIT
-use crossterm::{
+use firestorm::{profile_fn, profile_method};
+use ratatui::crossterm::{
     cursor::{Hide, Show},
     event::{KeyCode, KeyEvent, KeyEventKind},
     execute,
 };
-use firestorm::{profile_fn, profile_method};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style, Stylize},

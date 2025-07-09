@@ -4,15 +4,15 @@ use crate::stdin::edit_history;
 use crate::{
     debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
 };
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
-    LeaveAlternateScreen,
-};
 use firestorm::{profile_fn, profile_method};
 use ratatui::crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
     KeyEvent, KeyEventKind,
+};
+use ratatui::crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
+    LeaveAlternateScreen,
 };
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
@@ -81,7 +81,7 @@ pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
     let mut stdout = std::io::stdout().lock();
     enable_raw_mode()?;
 
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
@@ -723,11 +723,11 @@ where
                     textarea.move_cursor(CursorMove::Head);
                 }
                 key!(f9) => {
-                    crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
+                    ratatui::crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
                     textarea.remove_line_number();
                 }
                 key!(f10) => {
-                    crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
+                    ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
                     textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
                 }
                 key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
@@ -1167,7 +1167,7 @@ pub fn normalize_newlines(input: &str) -> String {
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
     profile_fn!(reset_term);
     disable_raw_mode()?;
-    crossterm::execute!(
+    ratatui::crossterm::execute!(
         term.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture

@@ -4,16 +4,16 @@ use crate::stdin::edit_history;
 use crate::{
     debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
 };
-use crossterm::event::{
-    self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    Event::{self, Paste},
-    KeyEvent, KeyEventKind,
-};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
 use firestorm::{profile_fn, profile_method};
+use ratatui::crossterm::event::{
+    self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    Event::{self, Paste},
+    KeyEvent, KeyEventKind,
+};
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
 use ratatui::style::{Color, Modifier, Style, Styled, Stylize};

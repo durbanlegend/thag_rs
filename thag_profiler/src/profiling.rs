@@ -10,10 +10,7 @@ use std::{
     io::BufWriter,
     path::PathBuf,
     str::FromStr,
-    sync::{
-        atomic::{AtomicU8, Ordering},
-        LazyLock,
-    },
+    sync::atomic::{AtomicU8, Ordering},
     time::Instant,
 };
 
@@ -67,17 +64,9 @@ pub static PROFILING_MUTEX: ReentrantMutex<()> = ReentrantMutex::new(());
 
 /// Max stack depth to cater for (default 20).
 ///
-/// This static value allows you to adjust the maximum stack depth that will be catered for.
-/// To reduce profiling overhead the profiler will reserve this fixed number of entries
-/// for building each profile call stack and will panic if it encounters a deeper stack.
-/// The value defaults to 20 but can be configured via the `MAX_STACK_DEPTH` environment variable.
-pub static MAX_STACK_DEPTH: LazyLock<usize> = LazyLock::new(|| {
-    env::var("MAX_STACK_DEPTH")
-        .or_else(|_| Ok::<String, &str>(String::from("20")))
-        .ok()
-        .and_then(|val| val.parse::<usize>().ok())
-        .expect("Value specified for MAX_STACK_DEPTH must be a valid integer")
-});
+/// Stack depth handling for profile call stacks.
+/// The profiler uses a dynamic retry strategy starting at 20 frames and doubling on overflow,
+/// capped at 1000 frames to handle deep call stacks gracefully without panicking.
 
 /// Profiling capability flags (bitflags pattern) for determining which profiling types are supported
 #[allow(dead_code)]
@@ -2142,128 +2131,107 @@ pub fn extract_profile_callstack(
     start_pattern: &str,
     // current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
-    // safe_alloc!(current_backtrace.resolve());
-    /*
-    let mut already_seen = safe_alloc!(HashSet::new());
-
-    // let end_point = "__rust_begin_short_backtrace";
-    let end_point = safe_alloc!(get_base_location().unwrap_or("__rust_begin_short_backtrace"));
-    // debug_log!("end_point={end_point}");
-    let mut start = safe_alloc!(false);
-    let mut callstack = safe_alloc!(vec![]);
-
-    for frame in Backtrace::frames(current_backtrace) {
-        'inner: for symbol in frame.symbols() {
-            let maybe_symbol_name = safe_alloc!(symbol.name());
-            let Some(symbol_name) = maybe_symbol_name else {
-                continue;
-            };
-            let name = safe_alloc!(symbol_name.to_string());
-            if !start && (!name.contains(start_pattern) || name.contains("{{closure}}")) {
-                continue;
-            }
-            if !start && name.contains(start_pattern) && !name.contains("{{closure}}") {
-                start = true;
-                continue;
-            }
-            if name.contains(end_point) {
-                break;
-            }
-            if name.starts_with("tokio::") {
-                continue;
-            }
-            for &s in SCAFFOLDING_PATTERNS {
-                if name.contains(s) {
-                    continue 'inner;
-                }
-            }
-            let mut name = safe_alloc!(strip_hex_suffix(name));
-            let name = safe_alloc!(clean_function_name(&mut name));
-            if already_seen.contains(name.as_str()) {
-                continue;
-            }
-            let name_clone = safe_alloc!(name.clone());
-            safe_alloc!(already_seen.insert(name_clone));
-            safe_alloc!(callstack.push(name));
-        }
-    }
-    */
+    const MAX_STACK_DEPTH_CAP: usize = 1000;
+    const INITIAL_STACK_DEPTH: usize = 20;
 
     let end_point = safe_alloc!(get_base_location().unwrap_or("__rust_begin_short_backtrace"));
-    let mut already_seen = safe_alloc!(HashSet::new());
-    safe_alloc! {
-        // Pre-allocate with fixed capacity to avoid reallocations
-        // let capacity = 40;
-        let mut callstack: Vec<String> = Vec::with_capacity(*MAX_STACK_DEPTH); // Fixed size, no growing
-        // let mut found_recursion = false;
-        let mut start = false;
-        let mut fin = false;
-        let mut i = 0;
 
-        trace(|frame| {
-            let mut suppress = false;
+    // Dynamic retry loop with increasing stack depth
+    let mut current_depth = INITIAL_STACK_DEPTH;
 
-            resolve_frame(frame, |symbol| {
+    loop {
+        let mut already_seen = safe_alloc!(HashSet::new());
+        let mut overflow_occurred = false;
 
-                'process_symbol: {
-                    let Some(name) = symbol.name() else {
-                        suppress = true;
-                        break 'process_symbol;
-                    };
-                    let name = name.to_string();
-                    if name.contains("tokio") {
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-                    if !start {
-                        if name.contains(start_pattern) && !name.contains("{{closure}}") {
-                            start = true;
-                        }
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-                    if name.contains(end_point) {
-                        fin = true;
-                        suppress = true;
-                        break 'process_symbol;
-                    }
+        let callstack = safe_alloc! {
+            let mut callstack: Vec<String> = Vec::with_capacity(current_depth);
+            let mut start = false;
+            let mut fin = false;
+            let mut i = 0;
 
-                    for &s in SCAFFOLDING_PATTERNS {
-                        if name.contains(s) {
+            trace(|frame| {
+                let mut suppress = false;
+
+                resolve_frame(frame, |symbol| {
+                    'process_symbol: {
+                        let Some(name) = symbol.name() else {
+                            suppress = true;
+                            break 'process_symbol;
+                        };
+                        let name = name.to_string();
+                        if name.contains("tokio") {
                             suppress = true;
                             break 'process_symbol;
                         }
-                    }
+                        if !start {
+                            if name.contains(start_pattern) && !name.contains("{{closure}}") {
+                                start = true;
+                            }
+                            suppress = true;
+                            break 'process_symbol;
+                        }
+                        if name.contains(end_point) {
+                            fin = true;
+                            suppress = true;
+                            break 'process_symbol;
+                        }
 
-                    let mut name = strip_hex_suffix_slice(&name);
-                    let name = clean_function_name(&mut name);
-                    if already_seen.contains(&name) {
-                        suppress = true;
-                        break 'process_symbol;
-                    }
-                    already_seen.insert(name.clone());
-                    if suppress { break 'process_symbol; }
+                        for &s in SCAFFOLDING_PATTERNS {
+                            if name.contains(s) {
+                                suppress = true;
+                                break 'process_symbol;
+                            }
+                        }
 
-                    // // Check for our own functions (recursion detection)
-                    // if i > 0 && name.contains("extract_profile_callstack") {
-                    //     found_recursion = true;
-                    //     break 'process_symbol;
-                    // }
+                        let mut name = strip_hex_suffix_slice(&name);
+                        let name = clean_function_name(&mut name);
+                        if already_seen.contains(&name) {
+                            suppress = true;
+                            break 'process_symbol;
+                        }
+                        already_seen.insert(name.clone());
+                        if suppress { break 'process_symbol; }
 
-                    // Safe to unwrap now
-                    callstack.push(name);
-                    i += 1;
-                    if i >= *MAX_STACK_DEPTH {
-                        safe_alloc! {
-                             println!("frames={callstack:#?}");
-                         };
-                         panic!("Max limit of {} frames exceeded", *MAX_STACK_DEPTH);
+                        // Check for stack depth overflow
+                        if i >= current_depth {
+                            overflow_occurred = true;
+                            fin = true; // Stop tracing
+                            break 'process_symbol;
+                        }
+
+                        callstack.push(name);
+                        i += 1;
                     }
-                }
+                });
+                !fin
             });
-            !fin
-        });
-        callstack
+            callstack
+        };
+
+        // If no overflow occurred, we're done
+        if !overflow_occurred {
+            if current_depth > INITIAL_STACK_DEPTH {
+                debug_log!("Stack depth retry succeeded with depth: {}", current_depth);
+            }
+            return callstack;
+        }
+
+        // If we hit the cap, return what we have with a warning
+        if current_depth >= MAX_STACK_DEPTH_CAP {
+            debug_log!(
+                "Stack depth capped at {}, returning partial callstack with {} frames",
+                MAX_STACK_DEPTH_CAP,
+                callstack.len()
+            );
+            return callstack;
+        }
+
+        // Double the stack depth and retry
+        current_depth = (current_depth * 2).min(MAX_STACK_DEPTH_CAP);
+        debug_log!(
+            "Stack depth overflow, retrying with depth: {}",
+            current_depth
+        );
     }
 }
 

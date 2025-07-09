@@ -75,7 +75,7 @@ fn main() -> ThagResult<()> {
 /// ```no_run
 /// use thag_rs::stdin::edit;
 /// use thag_rs::CrosstermEventReader;
-/// use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+/// use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
 /// use thag_rs::MockEventReader;
 ///
 /// let mut event_reader = MockEventReader::new();

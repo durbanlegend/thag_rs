@@ -1,7 +1,7 @@
 /// Copied from `crokey` under MIT licence.
 /// Copyright (c) 2022 Canop
 ///
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use firestorm::{profile_fn, profile_method};
 use strict::OneToThree;
 

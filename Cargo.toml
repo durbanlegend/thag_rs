@@ -89,8 +89,8 @@ tokio = { version = "1.36.0", features = [
     "macros",
     "time",
 ], optional = true }
-toml = { version = "0.8" }
-toml_edit = { version = "0.22", optional = true }
+toml = { version = "0.9" }
+toml_edit = { version = "0.23", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
     "crossterm",
@@ -104,7 +104,7 @@ dhat = { version = "0.3", optional = true }
 phf = { version = "0.12", features = ["macros"] }
 tempfile = "3.20"
 thag_proc_macros = { version = "0.2", path = "thag_proc_macros" }
-toml = "0.8.19"
+toml = "0.9"
 
 [target.'cfg(windows)'.dependencies]
 win32console = "0.1.5"

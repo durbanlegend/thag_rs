@@ -82,7 +82,7 @@ pub type BuildResult<T> = Result<T, BuildError>;
 pub fn validate_theme_file(path: &Path) -> Result<(), BuildError> {
     let content = fs::read_to_string(path).map_err(|e| BuildError::Io { source: e })?;
 
-    let theme: Value = content.parse::<Value>().map_err(|e| BuildError::Io {
+    let theme: Value = toml::from_str(&content).map_err(|e| BuildError::Io {
         source: io::Error::new(io::ErrorKind::InvalidData, e),
     })?;
 

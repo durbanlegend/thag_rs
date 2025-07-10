@@ -75,3 +75,5 @@ themes/converted
 web_safe_colors.txt
 .zed/debug.json
 demo/proc_macros/target
+404.html
+hello.html

@@ -146,15 +146,6 @@ fn extract_clap_metadata() -> Vec<OptionGroup> {
     ]
 }
 
-fn needs_script(selected_options: &[String]) -> bool {
-    // Check if any dynamic options are selected that don't need a script
-    let no_script_options = ["expression", "repl", "stdin", "edit", "filter", "config"];
-
-    !selected_options
-        .iter()
-        .any(|opt| no_script_options.contains(&opt.as_str()))
-}
-
 fn format_option_display(option: &OptionInfo) -> String {
     let mut display = String::new();
 
@@ -180,12 +171,29 @@ fn format_option_display(option: &OptionInfo) -> String {
     display
 }
 
+fn is_interactive() -> bool {
+    use std::io::{self, IsTerminal};
+    io::stdin().is_terminal()
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "🚀 {} - Interactive Thag Builder",
         "Thag Prompt".bright_cyan()
     );
     println!("=========================================\n");
+
+    // Check for test mode environment variable
+    if let Ok(test_mode) = std::env::var("THAG_PROMPT_TEST") {
+        return run_test_mode(&test_mode);
+    }
+
+    if !is_interactive() {
+        eprintln!("Error: This tool requires an interactive terminal.");
+        eprintln!("Please run it directly from a terminal, not through pipes or redirects.");
+        eprintln!("Tip: Set THAG_PROMPT_TEST=repl to test REPL mode");
+        std::process::exit(1);
+    }
 
     let option_groups = extract_clap_metadata();
     let mut selected_options = Vec::new();
@@ -241,18 +249,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 selected_options.push(selected_option.name.clone());
 
                 // Handle options that take values
-                if selected_option.takes_value {
-                    match selected_option.name.as_str() {
-                        "expression" => {
-                            let expr = Text::new("Enter Rust expression:").prompt()?;
-                            selected_values.insert(selected_option.name.clone(), expr);
-                        }
-                        "filter" => {
-                            let filter = Text::new("Enter filter expression:").prompt()?;
-                            selected_values.insert(selected_option.name.clone(), filter);
-                        }
-                        _ => {}
+                match selected_option.name.as_str() {
+                    "expression" => {
+                        let expr = Text::new("Enter Rust expression:")
+                            .with_help_message("e.g. 2 + 2, println!(\"Hello\"), std::env::args().collect::<Vec<_>>()")
+                            .prompt()?;
+                        selected_values.insert(selected_option.name.clone(), expr);
                     }
+                    "filter" => {
+                        let filter = Text::new("Enter filter expression:")
+                            .with_help_message("e.g. line.contains(\"error\"), line.len() > 10")
+                            .prompt()?;
+                        selected_values.insert(selected_option.name.clone(), filter);
+                    }
+                    _ => {}
                 }
             }
         }
@@ -328,17 +338,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 4: Handle script arguments if script is selected
     let script_args = if script_path.is_some() {
-        let args_input = Text::new("Enter script arguments (optional):")
+        if let Ok(Some(args_input)) = Text::new("Enter script arguments (optional):")
             .with_help_message("Arguments to pass to the script")
-            .prompt_skippable()?;
-
-        args_input
-            .map(|s| {
-                s.split_whitespace()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default()
+            .prompt_skippable()
+        {
+            args_input
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        }
     } else {
         Vec::new()
     };
@@ -455,6 +465,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             status.code()
         );
     }
+
+    Ok(())
+}
+
+fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Running in test mode: {}", test_mode);
+
+    let mut cmd = Command::new("thag");
+
+    match test_mode {
+        "repl" => {
+            cmd.arg("--repl");
+        }
+        "expr" => {
+            cmd.arg("--expr").arg("2 + 2");
+        }
+        "stdin" => {
+            cmd.arg("--stdin");
+        }
+        _ => {
+            eprintln!("Unknown test mode: {}", test_mode);
+            eprintln!("Available modes: repl, expr, stdin");
+            std::process::exit(1);
+        }
+    }
+
+    println!("Test command: {:?}", cmd);
+    println!(
+        "Would execute: thag {}",
+        cmd.get_args()
+            .map(|a| a.to_string_lossy())
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
 
     Ok(())
 }

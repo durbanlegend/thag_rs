@@ -9,12 +9,12 @@ use crate::{
 };
 // use crokey::key;
 // use crokey::crossterm::event::KeyEvent;
-use mockall::automock;
-use ratatui::crossterm::event::{
+use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
     KeyEvent, KeyEventKind,
 };
+use mockall::automock;
 use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
@@ -81,12 +81,12 @@ pub struct CrosstermEventReader;
 impl EventReader for CrosstermEventReader {
     #[profiled]
     fn read_event(&self) -> ThagResult<Event> {
-        ratatui::crossterm::event::read().map_err(Into::<ThagError>::into)
+        crossterm::event::read().map_err(Into::<ThagError>::into)
     }
 
     #[profiled]
     fn poll(&self, timeout: Duration) -> ThagResult<bool> {
-        ratatui::crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
     }
 }
 
@@ -1269,8 +1269,13 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
     let test_env = &var("TEST_ENV");
     debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
-        debug_log!("Enabling raw mode");
-        enable_raw_mode()?;
+        // Check if stdout is a terminal before enabling raw mode
+        if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
+            debug_log!("Enabling raw mode");
+            enable_raw_mode()?;
+        } else {
+            debug_log!("Skipping raw mode - not a terminal");
+        }
     }
     Ok(())
 }

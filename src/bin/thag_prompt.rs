@@ -339,13 +339,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 4: Handle script arguments if script is selected
     let script_args = if script_path.is_some() {
         if let Ok(Some(args_input)) = Text::new("Enter script arguments (optional):")
-            .with_help_message("Arguments to pass to the script")
+            .with_help_message("Arguments to pass to the script (-- will be added automatically)")
             .prompt_skippable()
         {
-            args_input
-                .split_whitespace()
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>()
+            let mut args = vec!["--".to_string()];
+            args.extend(args_input.split_whitespace().map(|s| s.to_string()));
+            args
         } else {
             Vec::new()
         }
@@ -452,9 +451,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Display and execute the command
-    let mut cmd_str = format!("{:?}", cmd);
-    cmd_str.retain(|c| c != '"');
-    println!("\n{} {}", "Running:".bright_green(), cmd_str.bright_cyan());
+    let cmd_display = format_command_display(&cmd);
+    println!(
+        "\n{} {}",
+        "Running:".bright_green(),
+        cmd_display.bright_cyan()
+    );
 
     let status = cmd.status()?;
 
@@ -481,24 +483,54 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
         "expr" => {
             cmd.arg("--expr").arg("2 + 2");
         }
+        "expr_string" => {
+            cmd.arg("--expr").arg("\"Hello world\"");
+        }
+        "expr_complex" => {
+            cmd.arg("--expr")
+                .arg("std::env::args().collect::<Vec<_>>()");
+        }
         "stdin" => {
             cmd.arg("--stdin");
         }
+        "script_with_args" => {
+            cmd.arg("demo/hello.rs")
+                .arg("--")
+                .arg("--name")
+                .arg("World")
+                .arg("--verbose");
+        }
         _ => {
             eprintln!("Unknown test mode: {}", test_mode);
-            eprintln!("Available modes: repl, expr, stdin");
+            eprintln!(
+                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args"
+            );
             std::process::exit(1);
         }
     }
 
-    println!("Test command: {:?}", cmd);
-    println!(
-        "Would execute: thag {}",
-        cmd.get_args()
-            .map(|a| a.to_string_lossy())
-            .collect::<Vec<_>>()
-            .join(" ")
-    );
+    let cmd_display = format_command_display(&cmd);
+    println!("Would execute: {}", cmd_display);
 
     Ok(())
+}
+
+fn format_command_display(cmd: &Command) -> String {
+    let mut display = String::from("thag");
+
+    for arg in cmd.get_args() {
+        let arg_str = arg.to_string_lossy();
+        display.push(' ');
+
+        // Quote arguments that contain spaces or special characters
+        if arg_str.contains(' ') || arg_str.contains('"') || arg_str.contains('\'') {
+            display.push('\'');
+            display.push_str(&arg_str.replace('\'', "'\"'\"'"));
+            display.push('\'');
+        } else {
+            display.push_str(&arg_str);
+        }
+    }
+
+    display
 }

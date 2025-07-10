@@ -60,19 +60,20 @@ pub struct Cli {
     #[arg(short = 'd', long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub edit: bool,
     /// Run the given filter expression in a loop against every line of stdin, with optional pre- and/or post-loop logic via -M, -B and -E.
+    /// Expression may optionally print or return a value for line output.
     #[arg(short = 'l', long = "loop", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub filter: Option<String>,
     /// Optional manifest info for --loop in Cargo.toml format, such as a `[dependencies]` section
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'M', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "CARGO-TOML")]
+    #[arg(short = 'M', long, help_heading = Some("Filter Options"), requires = "filter", value_name = "CARGO-TOML")]
     pub toml: Option<String>,
     /// Optional pre-loop Rust statements for --loop, somewhat like awk BEGIN
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'B', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "PRE-LOOP")]
+    #[arg(short = 'B', long, help_heading = Some("Filter Options"), requires = "filter", value_name = "PRE-LOOP")]
     pub begin: Option<String>,
     /// Optional post-loop Rust statements for --loop, somewhat like awk END
     //  clap issue 4707 may prevent `requires` from working, as I've experienced.
-    #[arg(short = 'E', long, help_heading = Some("Dynamic Options (no script)"), requires = "filter", value_name = "POST-LOOP")]
+    #[arg(short = 'E', long, help_heading = Some("Filter Options"), requires = "filter", value_name = "POST-LOOP")]
     pub end: Option<String>,
     /// Allow multiple main methods for the current script
     #[arg(short, long, help_heading = Some("Processing Options"))]
@@ -128,7 +129,7 @@ pub struct Cli {
     )]
     pub unquote: Option<bool>,
     /// Edit the configuration file
-    #[arg(short = 'C', long, conflicts_with_all(["generate", "build", "executable"]))]
+    #[arg(short = 'C', long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build", "executable"]))]
     pub config: bool,
     /// Dependency inference: none, min, config (default & recommended), max.
     /// `thag` infers dependencies from imports and Rust paths (`x::y::z`), with configurable default features.

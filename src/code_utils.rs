@@ -365,13 +365,14 @@ pub fn build_loop(args: &Cli, filter: String) -> String {
     let filter = if returns_unit {
         filter
     } else {
-        format!(r#"println!("{{:?}}", {filter});"#)
+        format!(r#"let _ = writeln!(io::stdout(), "{{:?}}", {filter});"#)
     };
     // dbg!(&filter);
 
     format!(
         r"{}
-use std::io::{{self, BufRead}};
+#[allow(unused_imports)]
+use std::io::{{self, BufRead, Write as _}};
 fn main() -> Result<(), Box<dyn std::error::Error>> {{
     {}
     // Read from stdin and execute main loop for each line

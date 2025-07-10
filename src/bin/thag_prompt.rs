@@ -60,6 +60,7 @@ fn extract_clap_metadata() -> Vec<OptionGroup> {
     let mut output_options = Vec::new();
     let mut processing_options = Vec::new();
     let mut dynamic_options = Vec::new();
+    let mut filter_options = Vec::new();
     let mut norun_options = Vec::new();
     let mut verbosity_options = Vec::new();
 
@@ -76,43 +77,84 @@ fn extract_clap_metadata() -> Vec<OptionGroup> {
             group: arg.get_help_heading().map(|h| h.to_string()),
         };
 
-        // Check if this option belongs to a clap argument group
-        let mut in_group = false;
+        // First categorize by help heading, then override with clap groups for mutual exclusivity
+        let mut categorized = false;
+
+        // Categorize by help heading first
+        match option_info.group.as_deref() {
+            Some("Output Options") => {
+                output_options.push(option_info.clone());
+                categorized = true;
+            }
+            Some("Processing Options") => {
+                processing_options.push(option_info.clone());
+                categorized = true;
+            }
+            Some("Dynamic Options (no script)") => {
+                dynamic_options.push(option_info.clone());
+                categorized = true;
+            }
+            Some("Filter Options") => {
+                filter_options.push(option_info.clone());
+                categorized = true;
+            }
+            Some("No-run Options") => {
+                norun_options.push(option_info.clone());
+                categorized = true;
+            }
+            _ => {}
+        }
+
+        // Check if this option belongs to a clap argument group (for mutual exclusivity)
+        let mut in_clap_group = false;
         for (group_name, members) in &clap_groups {
             if members.contains(&option_info.name) {
-                in_group = true;
+                in_clap_group = true;
                 match group_name.as_str() {
-                    "commands" => dynamic_options.push(option_info.clone()),
-                    "verbosity" => verbosity_options.push(option_info.clone()),
-                    "norun_options" => norun_options.push(option_info.clone()),
-                    _ => processing_options.push(option_info.clone()),
+                    "commands" => {
+                        // Move to dynamic options if not already categorized properly
+                        if !categorized
+                            || !matches!(
+                                option_info.group.as_deref(),
+                                Some("Dynamic Options (no script)")
+                            )
+                        {
+                            dynamic_options.push(option_info.clone());
+                        }
+                    }
+                    "verbosity" => {
+                        verbosity_options.push(option_info.clone());
+                    }
+                    "norun_options" => {
+                        // Keep in no-run options
+                        if !categorized {
+                            norun_options.push(option_info.clone());
+                        }
+                    }
+                    _ => {
+                        if !categorized {
+                            processing_options.push(option_info.clone());
+                        }
+                    }
                 }
                 break;
             }
         }
 
-        // If not in a clap group, categorize by help heading
-        if !in_group {
-            match option_info.group.as_deref() {
-                Some("Output Options") => output_options.push(option_info),
-                Some("Processing Options") => processing_options.push(option_info),
-                Some("Dynamic Options (no script)") => dynamic_options.push(option_info),
-                Some("No-run Options") => norun_options.push(option_info),
-                _ => {
-                    // Handle verbosity options specially
-                    if matches!(
-                        option_info.name.as_str(),
-                        "verbose" | "quiet" | "normal_verbosity"
-                    ) {
-                        verbosity_options.push(option_info);
-                    } else if !matches!(
-                        option_info.name.as_str(),
-                        "script" | "args" | "help" | "version"
-                    ) {
-                        // Add other options to processing by default
-                        processing_options.push(option_info);
-                    }
-                }
+        // If not categorized yet, use fallback logic
+        if !categorized && !in_clap_group {
+            // Handle verbosity options specially
+            if matches!(
+                option_info.name.as_str(),
+                "verbose" | "quiet" | "normal_verbosity"
+            ) {
+                verbosity_options.push(option_info);
+            } else if !matches!(
+                option_info.name.as_str(),
+                "script" | "args" | "help" | "version"
+            ) {
+                // Add other options to processing by default
+                processing_options.push(option_info);
             }
         }
     }
@@ -126,6 +168,11 @@ fn extract_clap_metadata() -> Vec<OptionGroup> {
         OptionGroup {
             name: "Processing Options".to_string(),
             options: processing_options,
+            multiple: true,
+        },
+        OptionGroup {
+            name: "Filter Options".to_string(),
+            options: filter_options,
             multiple: true,
         },
         OptionGroup {
@@ -274,6 +321,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue; // Already handled
         }
 
+        // Skip Filter Options if filter is not selected
+        if group.name == "Filter Options" && !selected_options.contains(&"filter".to_string()) {
+            continue;
+        }
+
         if group.options.is_empty() {
             continue;
         }
@@ -316,6 +368,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         infer_choice.to_string(),
                                     );
                                 }
+                                "toml" => {
+                                    let toml_input =
+                                        Text::new("Enter manifest info (Cargo.toml format):")
+                                            .with_help_message(
+                                                "e.g. [dependencies]\nserde = \"1.0\"",
+                                            )
+                                            .prompt()?;
+                                    selected_values
+                                        .insert(selected_option.name.clone(), toml_input);
+                                }
+                                "begin" => {
+                                    let begin_input = Text::new("Enter pre-loop Rust statements:")
+                                        .with_help_message("e.g. let mut count = 0;")
+                                        .prompt()?;
+                                    selected_values
+                                        .insert(selected_option.name.clone(), begin_input);
+                                }
+                                "end" => {
+                                    let end_input = Text::new("Enter post-loop Rust statements:")
+                                        .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                        .prompt()?;
+                                    selected_values.insert(selected_option.name.clone(), end_input);
+                                }
                                 _ => {}
                             }
                         }
@@ -331,6 +406,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let idx = choices.iter().position(|c| c == &selection).unwrap();
                     let selected_option = &group.options[idx];
                     selected_options.push(selected_option.name.clone());
+
+                    // Handle options that take values
+                    if selected_option.takes_value {
+                        match selected_option.name.as_str() {
+                            "filter" => {
+                                let filter = Text::new("Enter filter expression:")
+                                    .with_help_message(
+                                        "e.g. line.contains(\"error\"), line.len() > 10",
+                                    )
+                                    .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), filter);
+                            }
+                            "toml" => {
+                                let toml_input =
+                                    Text::new("Enter manifest info (Cargo.toml format):")
+                                        .with_help_message("e.g. [dependencies]\nserde = \"1.0\"")
+                                        .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), toml_input);
+                            }
+                            "begin" => {
+                                let begin_input = Text::new("Enter pre-loop Rust statements:")
+                                    .with_help_message("e.g. let mut count = 0;")
+                                    .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), begin_input);
+                            }
+                            "end" => {
+                                let end_input = Text::new("Enter post-loop Rust statements:")
+                                    .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                    .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), end_input);
+                            }
+                            _ => {}
+                        }
+                    }
                 }
             }
         }
@@ -368,6 +477,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 cmd.arg("--loop");
                 if let Some(filter) = selected_values.get(option) {
                     cmd.arg(filter);
+                }
+            }
+            "toml" => {
+                cmd.arg("--toml");
+                if let Some(toml_val) = selected_values.get(option) {
+                    cmd.arg(toml_val);
+                }
+            }
+            "begin" => {
+                cmd.arg("--begin");
+                if let Some(begin_val) = selected_values.get(option) {
+                    cmd.arg(begin_val);
+                }
+            }
+            "end" => {
+                cmd.arg("--end");
+                if let Some(end_val) = selected_values.get(option) {
+                    cmd.arg(end_val);
                 }
             }
             "repl" => {
@@ -500,10 +627,39 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
                 .arg("World")
                 .arg("--verbose");
         }
+        "filter_simple" => {
+            cmd.arg("--loop").arg("line.len() > 3");
+        }
+        "filter_with_options" => {
+            cmd.arg("--loop")
+                .arg("if line.len() > 3 { count += 1; true } else { false }")
+                .arg("--begin")
+                .arg("let mut count = 0;")
+                .arg("--end")
+                .arg("println!(\"Total: {}\", count);")
+                .arg("--toml")
+                .arg("[dependencies]\nregex = \"1.0\"");
+        }
+        "debug_groups" => {
+            // Test the option grouping
+            let option_groups = extract_clap_metadata();
+            println!("=== DEBUG: Option Groups ===");
+            for group in &option_groups {
+                println!("Group: {} (multiple: {})", group.name, group.multiple);
+                for option in &group.options {
+                    println!(
+                        "  - {}: takes_value={}, help={}",
+                        option.name, option.takes_value, option.help
+                    );
+                }
+                println!();
+            }
+            return Ok(());
+        }
         _ => {
             eprintln!("Unknown test mode: {}", test_mode);
             eprintln!(
-                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args"
+                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups"
             );
             std::process::exit(1);
         }

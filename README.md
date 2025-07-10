@@ -301,33 +301,65 @@ key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
 
 ```bash
-cat demo/iter.rs | thag --loop 'format!("{i}.\t{line}")' -q    # Short form: -l
+thag --loop 'println!("{i:>3}.{line}")' < demo/hello.rs    # Short form: -l
 ```
 ![Loop](assets/loopt.png)
 
-Note the use of the `--quiet (-q)` option above to suppress messages from Cargo build.
-
-Alternatively:
+`thag` will print returned values automatically. Strings will now be quoted:
 
 ```bash
-thag -l 'format!("{i}.\t{line}")' < demo/hello.rs               # Long form: --loop
-```
-For a true filter that you can pipe to another process, use `-qq` (or `--quiet --quiet`) to suppress all non-error output.
+thag -ql 'format!("{i:>3}.{line}")' < demo/hello.rs            # Long form: --quiet --loop
 
+```
+For a true filter that you can safely pipe to another process, use `-qq` (or `--quiet --quiet`) to suppress all non-error output:
+
+```bash
+thag -qql 'println!("{i:>3}.{line}")' < demo/hello.rs | grep Categories          # Long form: --quiet --quiet --loop
+
+```
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
 ```bash
---cargo (-C)    for specifying dependencies etc. in Cargo.toml format.
+--cargo (-M)    for specifying dependencies etc. in Cargo.toml format. Seldom needed, thanks to dependency inference.
 --begin (-B)    for specifying any imports, functions/closures, declarations etc. to be run before the loop.
 --end   (-E)    for specifying any summary or final logic to run after the loop.
 ```
 
-Note: In general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout())`,
+#### Further examples:
+
+```bash
+thag --loop 'let gt = if line.len() > 3 { count += 1; true } else { false }; let _ = println!("{gt}");' --begin 'let mut count = 0;' --end 'println!("Total: {}", count);' --toml '[dependencies]
+regex = "1.0"' < demo/hello_main.rs
+```
+
+The following example shows short forms, multi-line input and debug mode:
+
+```zsh
+thag -vv -B 'let mut min = usize::MAX;
+    let mut shortest = String::new();' \
+-l '{
+            let l = line.len();
+            let is_shortest = if l < min {
+                min = l; shortest = line.to_string(); true
+            } else { false };
+            is_shortest
+        }' \
+-E '
+    println!("shortest line is: {shortest} of length {min}");' < demo/hello.rs
+```
+
+Note: In general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout(), "{...}")`,
 rather than `println!`, since (as at edition 2021) `println!` panics if it encounters an error, and this
 includes the broken pipe error from a head command. **This is a Rust issue not a `thag_rs` issue.**
 See `https://github.com/BurntSushi/advent-of-code/issues/17`.
 For an example of tolerating a broken pipe, see
 `demo/thag_from_rust_script.rs`.
+
+#### Using `writeln!` with a pipe:
+
+```bash
+thag -qql 'let _ = writeln!(io::stdout(), "{i:>3}.{line}");' < demo/hello.rs | grep Categories    # long form: --quiet --quiet --loop
+```
 
 ### * As an executable:
 The --executable (-x) option builds your script in **release mode** and moves it to ~/.cargo/bin/, which is highly recommended to be in your path as `thag` and its tools are installed there.

@@ -9,9 +9,17 @@
 - [ ]  Tool for running tests for all feature sets?
 - [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
 - [ ]  Still many toml blocks to remove or trim in demo/.
-- [ ]  Consider building thag prompt per demo/thag_promt.rs.
-- [ ]  DONE: Find best alternative to ugly panic in extract_profile_callstack called from Profile::new. Possibly disable profiling? Also high-water-mark reporting?
-- [ ]  DONE: dynamic retry instead of env var for MAX_STACK_DEPTH.
+- [ ]  src/bin/thag_prompt.rs testing and refinements. cater for input file for -d, -s and --loop options.
+
+
+thag --loop 'if line.len() > 3 { count += 1; true } else { false }' --begin 'let mut count = 0;' --end 'println!("Total: {}", count);' --toml '[dependencies]
+regex = "1.0"'
+
+thag -vv -B 'let mut max = 0; let mut longest = String::new();' -l '{let l = line.len(); if l > max { max = l; longest = line.to_string(); true } else { false }}' -E 'println!("Longest line is: {longest} of length {max}");' < demo/hello.rs
+
+thag -vv -B 'let mut min = usize::MAX; let mut shortest = String::new();' -l '{let l = line.len(); if l < min { min = l; shortest = line.to_string(); true } else { false }}' -E 'println!("shortest line is: {shortest} of length {min}");' < demo/hello.rs
+
+cargo run -- -vv --loop 'let gt = if line.len() > 3 { count += 1; true } else { false }; let _ = writeln!(io::stdout(), "{gt}");' --begin 'let mut count = 0;' --end 'println!("Total: {}", count);' < demo/hello.rs
 
 # Alternative ways to run thag_instrument without installing:
 cargo run -p thag_profiler --features=instrument-tool --bin thag_instrument -- 2021 < bank/main_with_attrs.rs

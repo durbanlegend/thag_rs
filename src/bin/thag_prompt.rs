@@ -191,28 +191,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut selected_options = Vec::new();
     let mut selected_values = HashMap::new();
 
-    // Step 1: Check if user wants dynamic mode (no script needed)
-    let dynamic_group = option_groups
-        .iter()
-        .find(|g| g.name == "Command Type")
-        .unwrap();
+    // Step 1: Ask user to choose between dynamic mode or script mode
+    let mode_choice = Select::new(
+        "Choose mode:",
+        vec![
+            "Dynamic mode (no script needed)",
+            "Script mode (run a script file)",
+        ],
+    )
+    .with_help_message("Dynamic mode: expressions, REPL, filters, etc. Script mode: run .rs files")
+    .prompt()?;
 
-    if !dynamic_group.options.is_empty() {
-        let dynamic_choices: Vec<String> = dynamic_group
-            .options
+    let (script_path, use_dynamic_mode) = if mode_choice == "Dynamic mode (no script needed)" {
+        (None, true)
+    } else {
+        // Script mode - select a file
+        let mut navigator = FileNavigator::new();
+        println!("\n{}", "Step: Select a script file".bright_green());
+
+        match select_file(&mut navigator, Some("rs"), false) {
+            Ok(path) => (Some(path), false),
+            Err(_) => {
+                println!("No file selected. Exiting.");
+                return Ok(());
+            }
+        }
+    };
+
+    // Step 2: If dynamic mode, select the dynamic option
+    if use_dynamic_mode {
+        let dynamic_group = option_groups
             .iter()
-            .map(|opt| format_option_display(opt))
-            .collect();
+            .find(|g| g.name == "Command Type")
+            .unwrap();
 
-        if let Ok(choice) = Select::new(
-            "Select command type (or skip for script mode):",
-            dynamic_choices.clone(),
-        )
-        .with_help_message("Dynamic options don't require a script file. Press ESC to skip.")
-        .prompt_skippable()
-        {
-            if let Some(selected) = choice {
-                let idx = dynamic_choices.iter().position(|c| c == &selected).unwrap();
+        if !dynamic_group.options.is_empty() {
+            let dynamic_choices: Vec<String> = dynamic_group
+                .options
+                .iter()
+                .map(|opt| format_option_display(opt))
+                .collect();
+
+            if let Ok(choice) = Select::new("Select dynamic option:", dynamic_choices.clone())
+                .with_help_message("Choose what type of dynamic execution you want")
+                .prompt()
+            {
+                let idx = dynamic_choices.iter().position(|c| c == &choice).unwrap();
                 let selected_option = &dynamic_group.options[idx];
                 selected_options.push(selected_option.name.clone());
 
@@ -233,22 +257,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-
-    // Step 2: Select script file if needed
-    let script_path = if needs_script(&selected_options) {
-        let mut navigator = FileNavigator::new();
-        println!("\n{}", "Step: Select a script file".bright_green());
-
-        match select_file(&mut navigator, Some("rs"), false) {
-            Ok(path) => Some(path),
-            Err(_) => {
-                println!("No file selected. Exiting.");
-                return Ok(());
-            }
-        }
-    } else {
-        None
-    };
 
     // Step 3: Select other options
     for group in &option_groups {

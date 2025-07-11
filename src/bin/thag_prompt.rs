@@ -6,6 +6,7 @@ thag_proc_macros = { version = "0.1, thag-auto" }
 use clap::CommandFactory;
 use colored::Colorize;
 use inquire::MultiSelect;
+use regex;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
@@ -326,6 +327,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        // Handle verbosity specially - it's a single choice with count options
+        if group.name == "Verbosity" {
+            let verbosity_choices = vec![
+                "Normal verbosity",
+                "Verbose (-v)",
+                "Debug (-vv)",
+                "Quiet (-q)",
+                "Very quiet (-qq)",
+            ];
+
+            if let Ok(selection) = Select::new("Select verbosity level:", verbosity_choices)
+                .with_help_message("Choose output verbosity level")
+                .prompt_skippable()
+            {
+                if let Some(selection) = selection {
+                    match selection.as_ref() {
+                        "Verbose (-v)" => {
+                            selected_options.push("verbose".to_string());
+                            selected_values.insert("verbose".to_string(), "1".to_string());
+                        }
+                        "Debug (-vv)" => {
+                            selected_options.push("verbose".to_string());
+                            selected_values.insert("verbose".to_string(), "2".to_string());
+                        }
+                        "Quiet (-q)" => {
+                            selected_options.push("quiet".to_string());
+                            selected_values.insert("quiet".to_string(), "1".to_string());
+                        }
+                        "Very quiet (-qq)" => {
+                            selected_options.push("quiet".to_string());
+                            selected_values.insert("quiet".to_string(), "2".to_string());
+                        }
+                        "Normal verbosity" => {
+                            selected_options.push("normal_verbosity".to_string());
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            continue;
+        }
+
         if group.options.is_empty() {
             continue;
         }
@@ -393,17 +436,19 @@ serde = "1.0""#,
                                     selected_values.insert(selected_option.name.clone(), end_input);
                                 }
                                 "input_file" => {
-                                    let input_file = Text::new("Enter input file path:")
-                                        .with_help_message("File to pipe to stdin (alternative to shell redirection)")
+                                    let input_file = Text::new("Input file to pipe to stdin:")
+                                        .with_help_message("File path (e.g. data.txt) - alternative to shell redirection")
                                         .prompt()?;
                                     selected_values
                                         .insert(selected_option.name.clone(), input_file);
                                 }
                                 "env_vars" => {
                                     let env_vars = Text::new(
-                                        "Enter environment variables (KEY=VALUE, comma-separated):",
+                                        "Environment variables (KEY=VALUE, comma-separated):",
                                     )
-                                    .with_help_message("e.g. DEBUG=1,PATH=/custom/path")
+                                    .with_help_message(
+                                        "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
+                                    )
                                     .prompt()?;
                                     selected_values.insert(selected_option.name.clone(), env_vars);
                                 }
@@ -472,18 +517,20 @@ serde = "1.0""#,
                                     .insert(selected_option.name.clone(), infer_choice.to_string());
                             }
                             "input_file" => {
-                                let input_file = Text::new("Enter input file path:")
+                                let input_file = Text::new("Input file to pipe to stdin:")
                                     .with_help_message(
-                                        "File to pipe to stdin (alternative to shell redirection)",
+                                        "File path (e.g. data.txt) - alternative to shell redirection",
                                     )
                                     .prompt()?;
                                 selected_values.insert(selected_option.name.clone(), input_file);
                             }
                             "env_vars" => {
                                 let env_input = Text::new(
-                                    "Enter environment variables (KEY=VALUE, comma-separated):",
+                                    "Environment variables (KEY=VALUE, comma-separated):",
                                 )
-                                .with_help_message("e.g. RUST_LOG=debug,MY_VAR=value")
+                                .with_help_message(
+                                    "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
+                                )
                                 .prompt()?;
                                 selected_values.insert(selected_option.name.clone(), env_input);
                             }
@@ -501,9 +548,13 @@ serde = "1.0""#,
             .with_help_message("Arguments to pass to the script (-- will be added automatically)")
             .prompt_skippable()
         {
-            let mut args = vec!["--".to_string()];
-            args.extend(args_input.split_whitespace().map(|s| s.to_string()));
-            args
+            if args_input.trim().is_empty() {
+                Vec::new()
+            } else {
+                let mut args = vec!["--".to_string()];
+                args.extend(args_input.split_whitespace().map(|s| s.to_string()));
+                args
+            }
         } else {
             Vec::new()
         }
@@ -560,10 +611,24 @@ serde = "1.0""#,
                 cmd.arg("--config");
             }
             "verbose" => {
-                cmd.arg("--verbose");
+                if let Some(count) = selected_values.get(option) {
+                    let count: u8 = count.parse().unwrap_or(1);
+                    for _ in 0..count {
+                        cmd.arg("--verbose");
+                    }
+                } else {
+                    cmd.arg("--verbose");
+                }
             }
             "quiet" => {
-                cmd.arg("--quiet");
+                if let Some(count) = selected_values.get(option) {
+                    let count: u8 = count.parse().unwrap_or(1);
+                    for _ in 0..count {
+                        cmd.arg("--quiet");
+                    }
+                } else {
+                    cmd.arg("--quiet");
+                }
             }
             "normal_verbosity" => {
                 cmd.arg("--normal");
@@ -628,30 +693,49 @@ serde = "1.0""#,
     }
 
     // Handle input file - set up stdin redirection
-    if let Some(input_file) = selected_values.get("input_file") {
+    let input_file_info = if let Some(input_file) = selected_values.get("input_file") {
         use std::fs::File;
         use std::process::Stdio;
 
         let file = File::open(input_file)
             .map_err(|e| format!("Failed to open input file '{}': {}", input_file, e))?;
         cmd.stdin(Stdio::from(file));
-    }
+        Some(format!(" < {}", input_file))
+    } else {
+        None
+    };
 
     // Handle environment variables
-    if let Some(env_input) = selected_values.get("env_vars") {
+    let env_vars_info = if let Some(env_input) = selected_values.get("env_vars") {
+        let mut env_vars = Vec::new();
         for env_pair in env_input.split(',') {
             let env_pair = env_pair.trim();
             if let Some((key, value)) = env_pair.split_once('=') {
-                cmd.env(key.trim(), value.trim());
+                let expanded_value = expand_env_vars(value.trim());
+                cmd.env(key.trim(), &expanded_value);
+                env_vars.push(format!("{}={}", key.trim(), expanded_value));
             } else {
                 eprintln!("Warning: Invalid environment variable format: {}", env_pair);
                 eprintln!("Expected format: KEY=VALUE");
             }
         }
-    }
+        if !env_vars.is_empty() {
+            Some(format!(" (env: {})", env_vars.join(", ")))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     // Display and execute the command
-    let cmd_display = format_command_display(&cmd);
+    let mut cmd_display = format_command_display(&cmd);
+    if let Some(input_info) = input_file_info {
+        cmd_display.push_str(&input_info);
+    }
+    if let Some(env_info) = env_vars_info {
+        cmd_display.push_str(&env_info);
+    }
     println!(
         "\n{} {}",
         "Running:".bright_green(),
@@ -733,12 +817,34 @@ regex = "1.0""#,
             return Ok(());
         }
         "test_input_file" => {
-            cmd.arg("--loop")
-                .arg("line.len() > 0")
-                .stdin(std::process::Stdio::from(std::fs::File::open(
-                    "demo/hello.rs",
-                )?))
-                .env("TEST_VAR", "test_value");
+            // Simulate selecting input file and env vars
+            let mut test_values = HashMap::new();
+            test_values.insert("input_file".to_string(), "demo/hello.rs".to_string());
+            test_values.insert(
+                "env_vars".to_string(),
+                "TEST_VAR=hello,DEBUG=$PWD".to_string(),
+            );
+
+            cmd.arg("--loop").arg("line.len() > 0");
+
+            // Apply input file
+            if let Some(input_file) = test_values.get("input_file") {
+                use std::fs::File;
+                use std::process::Stdio;
+                let file = File::open(input_file)?;
+                cmd.stdin(Stdio::from(file));
+            }
+
+            // Apply env vars with expansion
+            if let Some(env_input) = test_values.get("env_vars") {
+                for env_pair in env_input.split(',') {
+                    let env_pair = env_pair.trim();
+                    if let Some((key, value)) = env_pair.split_once('=') {
+                        let expanded_value = expand_env_vars(value.trim());
+                        cmd.env(key.trim(), expanded_value);
+                    }
+                }
+            }
         }
         "test_env_vars" => {
             cmd.arg("--expr")
@@ -746,10 +852,46 @@ regex = "1.0""#,
                 .env("CUSTOM_VAR", "hello_world")
                 .env("DEBUG", "1");
         }
+        "test_env_expansion" => {
+            // Test environment variable expansion like $PWD
+            std::env::set_var("TEST_EXPAND", "expanded_value");
+            cmd.arg("--expr")
+                .arg("println!(\"Environment variable resolved\")")
+                .env("SIMPLE_VAR", &expand_env_vars("$PWD"))
+                .env(
+                    "COMPLEX_VAR",
+                    &expand_env_vars("prefix_${TEST_EXPAND}_suffix"),
+                );
+        }
+        "test_display_enhanced" => {
+            // Test enhanced command display with input file and env vars
+            cmd.arg("--loop").arg("line.contains(\"hello\")");
+
+            // Simulate input file redirection
+            if let Ok(file) = std::fs::File::open("demo/hello.rs") {
+                cmd.stdin(std::process::Stdio::from(file));
+            }
+
+            // Add environment variables
+            cmd.env("RUST_LOG", "debug");
+            cmd.env("MY_PATH", "/custom/path");
+
+            // This would show: thag --loop 'line.contains("hello")' < demo/hello.rs (env: RUST_LOG=debug, MY_PATH=/custom/path)
+        }
+        "test_verbosity_double" => {
+            cmd.arg("--expr")
+                .arg("println!(\"Testing debug verbosity\")")
+                .arg("--verbose")
+                .arg("--verbose"); // Test -vv
+        }
+        "test_no_script_args" => {
+            cmd.arg("demo/hello.rs");
+            // Test that no -- is added when script_args is empty
+        }
         _ => {
             eprintln!("Unknown test mode: {}", test_mode);
             eprintln!(
-                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups, test_input_file, test_env_vars"
+                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups, test_input_file, test_env_vars, test_env_expansion, test_verbosity_double, test_no_script_args, test_display_enhanced"
             );
             std::process::exit(1);
         }
@@ -759,6 +901,43 @@ regex = "1.0""#,
     println!("Would execute: {}", cmd_display);
 
     Ok(())
+}
+
+/// Expand environment variables in a string (e.g., $PWD, ${HOME})
+fn expand_env_vars(input: &str) -> String {
+    let mut result = input.to_string();
+
+    // Handle ${VAR} format
+    while let Some(start) = result.find("${") {
+        if let Some(end) = result[start..].find('}') {
+            let var_name = &result[start + 2..start + end];
+            let replacement = std::env::var(var_name).unwrap_or_else(|_| {
+                eprintln!(
+                    "Warning: Environment variable '{}' not found, using empty string",
+                    var_name
+                );
+                String::new()
+            });
+            result.replace_range(start..start + end + 1, &replacement);
+        } else {
+            break; // Malformed ${...} - stop processing
+        }
+    }
+
+    // Handle $VAR format (stops at word boundaries)
+    let re = regex::Regex::new(r"\$([A-Za-z_][A-Za-z0-9_]*)").unwrap();
+    let result = re.replace_all(&result, |caps: &regex::Captures| {
+        let var_name = &caps[1];
+        std::env::var(var_name).unwrap_or_else(|_| {
+            eprintln!(
+                "Warning: Environment variable '{}' not found, using empty string",
+                var_name
+            );
+            String::new()
+        })
+    });
+
+    result.to_string()
 }
 
 fn format_command_display(cmd: &Command) -> String {

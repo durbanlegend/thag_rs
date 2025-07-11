@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28"
-mockall = "0.13.0"
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 
@@ -32,7 +31,8 @@ event_reader.expect_read_event().return_once(|| {
         KeyModifiers::CONTROL,
     )))
 });
-let actual = edit(&event_reader);
+let actual = edit(&event_reader).unwrap();
 let buf = vec![""];
-eprintln!("actual=[{actual:#?}]");
-assert!(matches!(actual, Ok(buf)));
+eprintln!("actual=[{}]", actual.join("\n"));
+assert!(matches!(&actual, buf));
+eprintln!("Fin");

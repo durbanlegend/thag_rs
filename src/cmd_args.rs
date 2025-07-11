@@ -143,12 +143,6 @@ pub struct Cli {
     /// wrapping or modifying the source code.
     #[arg(short = 'T', long, requires = "script", help_heading = Some("No-run Options"))]
     pub test_only: bool,
-    /// Input file to pipe to stdin (alternative to shell redirection)
-    #[arg(long = "input", help_heading = Some("Input Options"), value_name = "FILE")]
-    pub input_file: Option<String>,
-    /// Environment variables to set for execution (format: KEY=VALUE)
-    #[arg(long = "env", help_heading = Some("Input Options"), value_name = "KEY=VALUE", action = clap::ArgAction::Append)]
-    pub env_vars: Vec<String>,
 }
 
 /// Getter for clap command-line arguments
@@ -264,10 +258,6 @@ bitflags! {
         const TOOLS         = 33_554_432;
         /// Features flag
         const FEATURES      = 67_108_864;
-        /// Input file flag
-        const INPUT_FILE    = 134_217_728;
-        /// Environment variables flag
-        const ENV_VARS      = 268_435_456;
     }
 }
 
@@ -346,8 +336,6 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::INFER, is_infer);
         proc_flags.set(ProcFlags::FEATURES, is_features);
         proc_flags.set(ProcFlags::TEST_ONLY, args.test_only);
-        proc_flags.set(ProcFlags::INPUT_FILE, args.input_file.is_some());
-        proc_flags.set(ProcFlags::ENV_VARS, !args.env_vars.is_empty());
         proc_flags.set(
             ProcFlags::TOOLS,
             args.script.as_ref().is_some_and(|script| script == "tools"),

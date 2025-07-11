@@ -369,6 +369,80 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        // Handle input and environment setup (thag_prompt-specific features)
+        if group.name == "Processing Options" {
+            let choices: Vec<String> = group
+                .options
+                .iter()
+                .map(|opt| format_option_display(opt))
+                .collect();
+
+            // Add input file and environment variable options to the choices
+            let mut extended_choices = choices.clone();
+            extended_choices.push("📁 Input file (pipe from file)".to_string());
+            extended_choices.push("🌍 Environment variables".to_string());
+
+            if let Ok(selections) =
+                MultiSelect::new(&format!("Select {}:", group.name), extended_choices.clone())
+                    .with_help_message("Use space to select, enter to confirm, ESC to skip")
+                    .prompt_skippable()
+            {
+                if let Some(selections) = selections {
+                    for selection in selections {
+                        if selection == "📁 Input file (pipe from file)" {
+                            let input_file = Text::new("Input file to pipe to stdin:")
+                                .with_help_message(
+                                    "File path (e.g. data.txt) - alternative to shell redirection",
+                                )
+                                .prompt()?;
+                            selected_options.push("input_file".to_string());
+                            selected_values.insert("input_file".to_string(), input_file);
+                        } else if selection == "🌍 Environment variables" {
+                            let env_vars =
+                                Text::new("Environment variables (KEY=VALUE, comma-separated):")
+                                    .with_help_message(
+                                        "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
+                                    )
+                                    .prompt()?;
+                            selected_options.push("env_vars".to_string());
+                            selected_values.insert("env_vars".to_string(), env_vars);
+                        } else {
+                            let idx = choices.iter().position(|c| c == &selection).unwrap();
+                            let selected_option = &group.options[idx];
+                            selected_options.push(selected_option.name.clone());
+
+                            // Handle options that take values
+                            if selected_option.takes_value {
+                                match selected_option.name.as_str() {
+                                    "features" => {
+                                        let features =
+                                            Text::new("Enter features (comma-separated):")
+                                                .prompt()?;
+                                        selected_values
+                                            .insert(selected_option.name.clone(), features);
+                                    }
+                                    "infer" => {
+                                        let infer_options = ["none", "min", "config", "max"];
+                                        let infer_choice = Select::new(
+                                            "Dependency inference level:",
+                                            infer_options.to_vec(),
+                                        )
+                                        .prompt()?;
+                                        selected_values.insert(
+                                            selected_option.name.clone(),
+                                            infer_choice.to_string(),
+                                        );
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+
         if group.options.is_empty() {
             continue;
         }
@@ -431,110 +505,79 @@ serde = "1.0""#,
                                 }
                                 "end" => {
                                     let end_input = Text::new("Enter post-loop Rust statements:")
-                                        .with_help_message(r#"e.g. println!("Total: {}", count);"#)
+                                        .with_help_message("e.g. println!(\"Total: {}\", count);")
                                         .prompt()?;
                                     selected_values.insert(selected_option.name.clone(), end_input);
-                                }
-                                "input_file" => {
-                                    let input_file = Text::new("Input file to pipe to stdin:")
-                                        .with_help_message("File path (e.g. data.txt) - alternative to shell redirection")
-                                        .prompt()?;
-                                    selected_values
-                                        .insert(selected_option.name.clone(), input_file);
-                                }
-                                "env_vars" => {
-                                    let env_vars = Text::new(
-                                        "Environment variables (KEY=VALUE, comma-separated):",
-                                    )
-                                    .with_help_message(
-                                        "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
-                                    )
-                                    .prompt()?;
-                                    selected_values.insert(selected_option.name.clone(), env_vars);
                                 }
                                 _ => {}
                             }
                         }
                     }
                 }
-            }
-        } else {
-            if let Ok(selection) = Select::new(&format!("Select {}:", group.name), choices.clone())
-                .with_help_message("Press ESC to skip")
-                .prompt_skippable()
-            {
-                if let Some(selection) = selection {
-                    let idx = choices.iter().position(|c| c == &selection).unwrap();
-                    let selected_option = &group.options[idx];
-                    selected_options.push(selected_option.name.clone());
+            } else {
+                if let Ok(selection) =
+                    Select::new(&format!("Select {}:", group.name), choices.clone())
+                        .with_help_message("Press ESC to skip")
+                        .prompt_skippable()
+                {
+                    if let Some(selection) = selection {
+                        let idx = choices.iter().position(|c| c == &selection).unwrap();
+                        let selected_option = &group.options[idx];
+                        selected_options.push(selected_option.name.clone());
 
-                    // Handle options that take values
-                    if selected_option.takes_value {
-                        match selected_option.name.as_str() {
-                            "filter" => {
-                                let filter = Text::new("Enter filter expression:")
-                                    .with_help_message(
-                                        r#"e.g. line.contains("error"), line.len() > 10"#,
-                                    )
-                                    .prompt()?;
-                                selected_values.insert(selected_option.name.clone(), filter);
-                            }
-                            "toml" => {
-                                let toml_input =
-                                    Text::new("Enter manifest info (Cargo.toml format):")
+                        // Handle options that take values
+                        if selected_option.takes_value {
+                            match selected_option.name.as_str() {
+                                "filter" => {
+                                    let filter = Text::new("Enter filter expression:")
                                         .with_help_message(
-                                            r#"e.g. [dependencies]
-serde = "1.0""#,
+                                            "e.g. line.contains(\"error\"), line.len() > 10",
                                         )
                                         .prompt()?;
-                                selected_values.insert(selected_option.name.clone(), toml_input);
-                            }
-                            "begin" => {
-                                let begin_input = Text::new("Enter pre-loop Rust statements:")
-                                    .with_help_message("e.g. let mut count = 0;")
-                                    .prompt()?;
-                                selected_values.insert(selected_option.name.clone(), begin_input);
-                            }
-                            "end" => {
-                                let end_input = Text::new("Enter post-loop Rust statements:")
-                                    .with_help_message(r#"e.g. println!("Total: {}", count);"#)
-                                    .prompt()?;
-                                selected_values.insert(selected_option.name.clone(), end_input);
-                            }
-                            "features" => {
-                                let features =
-                                    Text::new("Enter features (comma-separated):").prompt()?;
-                                selected_values.insert(selected_option.name.clone(), features);
-                            }
-                            "infer" => {
-                                let infer_options = ["none", "min", "config", "max"];
-                                let infer_choice = Select::new(
-                                    "Dependency inference level:",
-                                    infer_options.to_vec(),
-                                )
-                                .prompt()?;
-                                selected_values
-                                    .insert(selected_option.name.clone(), infer_choice.to_string());
-                            }
-                            "input_file" => {
-                                let input_file = Text::new("Input file to pipe to stdin:")
-                                    .with_help_message(
-                                        "File path (e.g. data.txt) - alternative to shell redirection",
+                                    selected_values.insert(selected_option.name.clone(), filter);
+                                }
+                                "toml" => {
+                                    let toml_input =
+                                        Text::new("Enter manifest info (Cargo.toml format):")
+                                            .with_help_message(
+                                                "e.g. [dependencies]\nserde = \"1.0\"",
+                                            )
+                                            .prompt()?;
+                                    selected_values
+                                        .insert(selected_option.name.clone(), toml_input);
+                                }
+                                "begin" => {
+                                    let begin_input = Text::new("Enter pre-loop Rust statements:")
+                                        .with_help_message("e.g. let mut count = 0;")
+                                        .prompt()?;
+                                    selected_values
+                                        .insert(selected_option.name.clone(), begin_input);
+                                }
+                                "end" => {
+                                    let end_input = Text::new("Enter post-loop Rust statements:")
+                                        .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                        .prompt()?;
+                                    selected_values.insert(selected_option.name.clone(), end_input);
+                                }
+                                "features" => {
+                                    let features =
+                                        Text::new("Enter features (comma-separated):").prompt()?;
+                                    selected_values.insert(selected_option.name.clone(), features);
+                                }
+                                "infer" => {
+                                    let infer_options = ["none", "min", "config", "max"];
+                                    let infer_choice = Select::new(
+                                        "Dependency inference level:",
+                                        infer_options.to_vec(),
                                     )
                                     .prompt()?;
-                                selected_values.insert(selected_option.name.clone(), input_file);
+                                    selected_values.insert(
+                                        selected_option.name.clone(),
+                                        infer_choice.to_string(),
+                                    );
+                                }
+                                _ => {}
                             }
-                            "env_vars" => {
-                                let env_input = Text::new(
-                                    "Environment variables (KEY=VALUE, comma-separated):",
-                                )
-                                .with_help_message(
-                                    "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
-                                )
-                                .prompt()?;
-                                selected_values.insert(selected_option.name.clone(), env_input);
-                            }
-                            _ => {}
                         }
                     }
                 }
@@ -562,7 +605,46 @@ serde = "1.0""#,
         Vec::new()
     };
 
-    // Step 5: Build and execute the command
+    // Step 5: Handle additional input and environment options
+    let mut input_file_option = None;
+    let mut env_vars_option = None;
+
+    // Ask for input file if not already selected
+    if !selected_values.contains_key("input_file") {
+        if let Ok(Some(input_file)) = Text::new("Input file (optional):")
+            .with_help_message("File to pipe to stdin (leave empty to skip)")
+            .prompt_skippable()
+        {
+            if !input_file.trim().is_empty() {
+                input_file_option = Some(input_file);
+            }
+        }
+    }
+
+    // Ask for environment variables if not already selected
+    if !selected_values.contains_key("env_vars") {
+        if let Ok(Some(env_vars)) = Text::new("Environment variables (optional):")
+            .with_help_message("KEY=VALUE pairs, comma-separated (supports $VAR expansion)")
+            .prompt_skippable()
+        {
+            if !env_vars.trim().is_empty() {
+                env_vars_option = Some(env_vars);
+            }
+        }
+    }
+
+    // Step 6: Ask about output format
+    let output_choices = vec![
+        "Execute command",
+        "Copy command to clipboard",
+        "Print command to stdout",
+    ];
+
+    let output_choice = Select::new("How would you like to proceed?", output_choices)
+        .with_help_message("Choose execution method")
+        .prompt()?;
+
+    // Step 7: Build the command
     let mut cmd = Command::new("thag");
 
     // Add selected options as arguments
@@ -692,43 +774,41 @@ serde = "1.0""#,
         cmd.args(&script_args);
     }
 
-    // Handle input file - set up stdin redirection
-    let input_file_info = if let Some(input_file) = selected_values.get("input_file") {
-        use std::fs::File;
-        use std::process::Stdio;
-
-        let file = File::open(input_file)
-            .map_err(|e| format!("Failed to open input file '{}': {}", input_file, e))?;
-        cmd.stdin(Stdio::from(file));
+    // Handle input file - either from selection or prompt
+    let input_file_path = selected_values
+        .get("input_file")
+        .cloned()
+        .or(input_file_option);
+    let input_file_info = if let Some(input_file) = &input_file_path {
         Some(format!(" < {}", input_file))
     } else {
         None
     };
 
-    // Handle environment variables
-    let env_vars_info = if let Some(env_input) = selected_values.get("env_vars") {
-        let mut env_vars = Vec::new();
+    // Handle environment variables - either from selection or prompt
+    let env_input = selected_values.get("env_vars").cloned().or(env_vars_option);
+    let mut env_vars_display = Vec::new();
+
+    if let Some(env_input) = &env_input {
         for env_pair in env_input.split(',') {
             let env_pair = env_pair.trim();
             if let Some((key, value)) = env_pair.split_once('=') {
                 let expanded_value = expand_env_vars(value.trim());
-                cmd.env(key.trim(), &expanded_value);
-                env_vars.push(format!("{}={}", key.trim(), expanded_value));
+                env_vars_display.push(format!("{}={}", key.trim(), expanded_value));
             } else {
                 eprintln!("Warning: Invalid environment variable format: {}", env_pair);
                 eprintln!("Expected format: KEY=VALUE");
             }
         }
-        if !env_vars.is_empty() {
-            Some(format!(" (env: {})", env_vars.join(", ")))
-        } else {
-            None
-        }
+    }
+
+    let env_vars_info = if !env_vars_display.is_empty() {
+        Some(format!(" (env: {})", env_vars_display.join(", ")))
     } else {
         None
     };
 
-    // Display and execute the command
+    // Build command display string
     let mut cmd_display = format_command_display(&cmd);
     if let Some(input_info) = input_file_info {
         cmd_display.push_str(&input_info);
@@ -736,20 +816,73 @@ serde = "1.0""#,
     if let Some(env_info) = env_vars_info {
         cmd_display.push_str(&env_info);
     }
-    println!(
-        "\n{} {}",
-        "Running:".bright_green(),
-        cmd_display.bright_cyan()
-    );
 
-    let status = cmd.status()?;
+    // Handle environment variables prefix for shell execution
+    let env_prefix = if !env_vars_display.is_empty() {
+        format!("{} ", env_vars_display.join(" "))
+    } else {
+        String::new()
+    };
 
-    if !status.success() {
-        println!(
-            "\n{} Command failed with exit code: {:?}",
-            "Error:".bright_red(),
-            status.code()
-        );
+    match output_choice.as_ref() {
+        "Execute command" => {
+            // Set up stdin redirection if specified
+            if let Some(input_file) = input_file_path {
+                use std::fs::File;
+                use std::process::Stdio;
+
+                let file = File::open(&input_file)
+                    .map_err(|e| format!("Failed to open input file '{}': {}", input_file, e))?;
+                cmd.stdin(Stdio::from(file));
+            }
+
+            // Set environment variables
+            if let Some(env_input) = env_input {
+                for env_pair in env_input.split(',') {
+                    let env_pair = env_pair.trim();
+                    if let Some((key, value)) = env_pair.split_once('=') {
+                        let expanded_value = expand_env_vars(value.trim());
+                        cmd.env(key.trim(), expanded_value);
+                    }
+                }
+            }
+
+            println!(
+                "\n{} {}",
+                "Running:".bright_green(),
+                cmd_display.bright_cyan()
+            );
+
+            let status = cmd.status()?;
+
+            if !status.success() {
+                println!(
+                    "\n{} Command failed with exit code: {:?}",
+                    "Error:".bright_red(),
+                    status.code()
+                );
+            }
+        }
+        "Copy command to clipboard" => {
+            let shell_command = format!("{}{}", env_prefix, cmd_display);
+            println!("\n{} Command copied to clipboard:", "Info:".bright_blue());
+            println!("{}", shell_command.bright_cyan());
+
+            // Try to copy to clipboard (cross-platform)
+            if let Err(e) = copy_to_clipboard(&shell_command) {
+                println!(
+                    "{} Failed to copy to clipboard: {}",
+                    "Warning:".bright_yellow(),
+                    e
+                );
+                println!("Please copy the command above manually.");
+            }
+        }
+        "Print command to stdout" => {
+            let shell_command = format!("{}{}", env_prefix, cmd_display);
+            println!("{}", shell_command);
+        }
+        _ => {}
     }
 
     Ok(())
@@ -899,6 +1032,50 @@ regex = "1.0""#,
 
     let cmd_display = format_command_display(&cmd);
     println!("Would execute: {}", cmd_display);
+
+    Ok(())
+}
+
+/// Copy text to clipboard (cross-platform)
+fn copy_to_clipboard(text: &str) -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "macos")]
+    {
+        // std::process::Command::new("pbcopy").arg(text).output()?;
+        let mut child = Command::new("pbcopy")
+            .stdin(std::process::Stdio::piped())
+            .spawn()
+            .expect("failed to execute process");
+
+        {
+            let stdin = child.stdin.as_mut().expect("failed to get stdin");
+            use std::io::Write;
+            stdin
+                .write_all(text.as_bytes())
+                .expect("failed to write to stdin");
+        }
+
+        let status = child.wait().expect("failed to wait on child");
+
+        if !status.success() {
+            eprintln!(
+                "pbcopy failed with exit code: {}",
+                status.code().unwrap_or(-1)
+            );
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xclip")
+            .args(["-selection", "clipboard"])
+            .arg(text)
+            .output()?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("clip").arg(text).output()?;
+    }
 
     Ok(())
 }

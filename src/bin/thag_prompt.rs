@@ -299,13 +299,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 match selected_option.name.as_str() {
                     "expression" => {
                         let expr = Text::new("Enter Rust expression:")
-                            .with_help_message("e.g. 2 + 2, println!(\"Hello\"), std::env::args().collect::<Vec<_>>()")
+                            .with_help_message(r#"e.g. 2 + 2, println!("Hello");, std::env::args().collect::<Vec<_>>()"#)
                             .prompt()?;
                         selected_values.insert(selected_option.name.clone(), expr);
                     }
                     "filter" => {
                         let filter = Text::new("Enter filter expression:")
-                            .with_help_message("e.g. line.contains(\"error\"), line.len() > 10")
+                            .with_help_message(r#"e.g. line.contains("error"), line.len() > 10"#)
                             .prompt()?;
                         selected_values.insert(selected_option.name.clone(), filter);
                     }
@@ -372,7 +372,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     let toml_input =
                                         Text::new("Enter manifest info (Cargo.toml format):")
                                             .with_help_message(
-                                                "e.g. [dependencies]\nserde = \"1.0\"",
+                                                r#"e.g. [dependencies]
+serde = "1.0""#,
                                             )
                                             .prompt()?;
                                     selected_values
@@ -387,9 +388,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }
                                 "end" => {
                                     let end_input = Text::new("Enter post-loop Rust statements:")
-                                        .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                        .with_help_message(r#"e.g. println!("Total: {}", count);"#)
                                         .prompt()?;
                                     selected_values.insert(selected_option.name.clone(), end_input);
+                                }
+                                "input_file" => {
+                                    let input_file = Text::new("Enter input file path:")
+                                        .with_help_message("File to pipe to stdin (alternative to shell redirection)")
+                                        .prompt()?;
+                                    selected_values
+                                        .insert(selected_option.name.clone(), input_file);
+                                }
+                                "env_vars" => {
+                                    let env_vars = Text::new(
+                                        "Enter environment variables (KEY=VALUE, comma-separated):",
+                                    )
+                                    .with_help_message("e.g. DEBUG=1,PATH=/custom/path")
+                                    .prompt()?;
+                                    selected_values.insert(selected_option.name.clone(), env_vars);
                                 }
                                 _ => {}
                             }
@@ -413,7 +429,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "filter" => {
                                 let filter = Text::new("Enter filter expression:")
                                     .with_help_message(
-                                        "e.g. line.contains(\"error\"), line.len() > 10",
+                                        r#"e.g. line.contains("error"), line.len() > 10"#,
                                     )
                                     .prompt()?;
                                 selected_values.insert(selected_option.name.clone(), filter);
@@ -421,7 +437,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "toml" => {
                                 let toml_input =
                                     Text::new("Enter manifest info (Cargo.toml format):")
-                                        .with_help_message("e.g. [dependencies]\nserde = \"1.0\"")
+                                        .with_help_message(
+                                            r#"e.g. [dependencies]
+serde = "1.0""#,
+                                        )
                                         .prompt()?;
                                 selected_values.insert(selected_option.name.clone(), toml_input);
                             }
@@ -433,9 +452,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                             "end" => {
                                 let end_input = Text::new("Enter post-loop Rust statements:")
-                                    .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                    .with_help_message(r#"e.g. println!("Total: {}", count);"#)
                                     .prompt()?;
                                 selected_values.insert(selected_option.name.clone(), end_input);
+                            }
+                            "features" => {
+                                let features =
+                                    Text::new("Enter features (comma-separated):").prompt()?;
+                                selected_values.insert(selected_option.name.clone(), features);
+                            }
+                            "infer" => {
+                                let infer_options = ["none", "min", "config", "max"];
+                                let infer_choice = Select::new(
+                                    "Dependency inference level:",
+                                    infer_options.to_vec(),
+                                )
+                                .prompt()?;
+                                selected_values
+                                    .insert(selected_option.name.clone(), infer_choice.to_string());
+                            }
+                            "input_file" => {
+                                let input_file = Text::new("Enter input file path:")
+                                    .with_help_message(
+                                        "File to pipe to stdin (alternative to shell redirection)",
+                                    )
+                                    .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), input_file);
+                            }
+                            "env_vars" => {
+                                let env_input = Text::new(
+                                    "Enter environment variables (KEY=VALUE, comma-separated):",
+                                )
+                                .with_help_message("e.g. RUST_LOG=debug,MY_VAR=value")
+                                .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), env_input);
                             }
                             _ => {}
                         }
@@ -577,6 +627,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args(&script_args);
     }
 
+    // Handle input file - set up stdin redirection
+    if let Some(input_file) = selected_values.get("input_file") {
+        use std::fs::File;
+        use std::process::Stdio;
+
+        let file = File::open(input_file)
+            .map_err(|e| format!("Failed to open input file '{}': {}", input_file, e))?;
+        cmd.stdin(Stdio::from(file));
+    }
+
+    // Handle environment variables
+    if let Some(env_input) = selected_values.get("env_vars") {
+        for env_pair in env_input.split(',') {
+            let env_pair = env_pair.trim();
+            if let Some((key, value)) = env_pair.split_once('=') {
+                cmd.env(key.trim(), value.trim());
+            } else {
+                eprintln!("Warning: Invalid environment variable format: {}", env_pair);
+                eprintln!("Expected format: KEY=VALUE");
+            }
+        }
+    }
+
     // Display and execute the command
     let cmd_display = format_command_display(&cmd);
     println!(
@@ -611,7 +684,7 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
             cmd.arg("--expr").arg("2 + 2");
         }
         "expr_string" => {
-            cmd.arg("--expr").arg("\"Hello world\"");
+            cmd.arg("--expr").arg(r#""Hello world""#);
         }
         "expr_complex" => {
             cmd.arg("--expr")
@@ -636,9 +709,12 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
                 .arg("--begin")
                 .arg("let mut count = 0;")
                 .arg("--end")
-                .arg("println!(\"Total: {}\", count);")
+                .arg(r#"println!("Total: {}", count);"#)
                 .arg("--toml")
-                .arg("[dependencies]\nregex = \"1.0\"");
+                .arg(
+                    r#"[dependencies]
+regex = "1.0""#,
+                );
         }
         "debug_groups" => {
             // Test the option grouping
@@ -656,10 +732,24 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
             }
             return Ok(());
         }
+        "test_input_file" => {
+            cmd.arg("--loop")
+                .arg("line.len() > 0")
+                .stdin(std::process::Stdio::from(std::fs::File::open(
+                    "demo/hello.rs",
+                )?))
+                .env("TEST_VAR", "test_value");
+        }
+        "test_env_vars" => {
+            cmd.arg("--expr")
+                .arg(r#"std::env::var("CUSTOM_VAR").unwrap_or_else(|_| "not set".to_string())"#)
+                .env("CUSTOM_VAR", "hello_world")
+                .env("DEBUG", "1");
+        }
         _ => {
             eprintln!("Unknown test mode: {}", test_mode);
             eprintln!(
-                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups"
+                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups, test_input_file, test_env_vars"
             );
             std::process::exit(1);
         }
@@ -681,7 +771,7 @@ fn format_command_display(cmd: &Command) -> String {
         // Quote arguments that contain spaces or special characters
         if arg_str.contains(' ') || arg_str.contains('"') || arg_str.contains('\'') {
             display.push('\'');
-            display.push_str(&arg_str.replace('\'', "'\"'\"'"));
+            display.push_str(&arg_str.replace('\'', r#"'"'"'"#));
             display.push('\'');
         } else {
             display.push_str(&arg_str);

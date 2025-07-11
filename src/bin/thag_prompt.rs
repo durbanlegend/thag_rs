@@ -1,8 +1,11 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.1, thag-auto" }
+arboard = "3.4.1"
 */
 
+#[cfg(feature = "clipboard")]
+use arboard::Clipboard;
 use clap::CommandFactory;
 use colored::Colorize;
 use inquire::MultiSelect;
@@ -1021,6 +1024,15 @@ regex = "1.0""#,
             cmd.arg("demo/hello.rs");
             // Test that no -- is added when script_args is empty
         }
+        "test_clipboard" => {
+            // Test clipboard functionality
+            let test_text = "thag --expr 'println!(\"Hello from clipboard test!\")'";
+            match copy_to_clipboard(test_text) {
+                Ok(()) => println!("Clipboard test successful"),
+                Err(e) => println!("Clipboard test failed: {}", e),
+            }
+            return Ok(());
+        }
         _ => {
             eprintln!("Unknown test mode: {}", test_mode);
             eprintln!(
@@ -1036,48 +1048,38 @@ regex = "1.0""#,
     Ok(())
 }
 
-/// Copy text to clipboard (cross-platform)
+/// Copy text to clipboard using arboard (cross-platform)
 fn copy_to_clipboard(text: &str) -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(target_os = "macos")]
+    #[cfg(feature = "clipboard")]
     {
-        // std::process::Command::new("pbcopy").arg(text).output()?;
-        let mut child = Command::new("pbcopy")
+        let mut clipboard = Clipboard::new()?;
+        clipboard.set_text(text)?;
+        Ok(())
+    }
+
+    #[cfg(not(feature = "clipboard"))]
+    {
+        // Fallback to thag_copy if clipboard feature not available
+        let mut child = std::process::Command::new("thag_copy")
             .stdin(std::process::Stdio::piped())
-            .spawn()
-            .expect("failed to execute process");
+            .spawn()?;
 
         {
-            let stdin = child.stdin.as_mut().expect("failed to get stdin");
+            let stdin = child.stdin.as_mut().ok_or("Failed to get stdin")?;
             use std::io::Write;
-            stdin
-                .write_all(text.as_bytes())
-                .expect("failed to write to stdin");
+            stdin.write_all(text.as_bytes())?;
         }
 
-        let status = child.wait().expect("failed to wait on child");
-
+        let status = child.wait()?;
         if !status.success() {
-            eprintln!(
-                "pbcopy failed with exit code: {}",
+            return Err(format!(
+                "thag_copy failed with exit code: {}",
                 status.code().unwrap_or(-1)
-            );
+            )
+            .into());
         }
+        Ok(())
     }
-
-    #[cfg(target_os = "linux")]
-    {
-        std::process::Command::new("xclip")
-            .args(["-selection", "clipboard"])
-            .arg(text)
-            .output()?;
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("clip").arg(text).output()?;
-    }
-
-    Ok(())
 }
 
 /// Expand environment variables in a string (e.g., $PWD, ${HOME})

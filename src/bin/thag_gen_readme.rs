@@ -1,12 +1,8 @@
 /*[toml]
 [dependencies]
-convert_case = "0.6.0"
-heck = "0.5.0"
-inquire = "0.7.5"
-regex = "1.10.5"
-strum = { version = "0.26.3", features = ["derive", "phf"] }
+strum = { version = "0.26", features = ["derive", "phf"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "config", "simplelog", "tui"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["simplelog", "tui"] }
 */
 
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
@@ -16,6 +12,8 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["a
 //# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools/ scripts.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
+use inquire;
+use regex;
 use std::{
     collections::HashMap,
     env,
@@ -28,7 +26,7 @@ use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     auto_help, code_utils, cvprtln, find_crates, find_metadata,
     help_system::check_help_and_exit,
-    lazy_static_var, regex, Role, V,
+    lazy_static_var, re, Role, V,
 };
 
 file_navigator! {}
@@ -142,7 +140,7 @@ fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadat
     let maybe_syntax_tree = code_utils::to_ast(file_path_str, &content);
     let (crates, main_methods) = maybe_syntax_tree.as_ref().map_or_else(
         || {
-            let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+            let re = re!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
             (
                 infer_deps_from_source(&content),
                 re.find_iter(&content).count(),

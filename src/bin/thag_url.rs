@@ -1,10 +1,6 @@
 /*[toml]
 [dependencies]
-syn = { version = "2", default-features = false, features = ["derive", "parsing", "full"] }
-tempfile = "3.14.0"
-tinyget = { version = "1.0.2", features = ["https"] }
-url = "2.5.4"
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 /// `thag` front-end command to run scripts from URLs.
 ///

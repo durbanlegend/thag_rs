@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-inquire = "0.7.5"
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// Tool to help migrate existing tools from tools/ to src/bin/ with auto-help integration.
@@ -230,7 +229,7 @@ fn transform_tool_content(
                 if let Some(toml_end) = find_toml_block_end(&lines) {
                     // Insert thag_rs dependency
                     let deps_line = format!(
-                        r#"thag_rs = {{ version = "0.2", path = "../..", default-features = falsee, features = ["core"] }}"#
+                        r#"thag_rs = {{ version = "0.2, thag-auto", default-features = falsee, features = ["core", "simplelog"] }}"#
                     );
                     // This is a simplified approach - in practice you'd want more sophisticated TOML parsing
                     transformed.insert(toml_end, deps_line);

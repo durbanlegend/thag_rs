@@ -2,7 +2,7 @@ use crate::{
     code_utils::write_source,
     debug_log,
     file_dialog::{DialogMode, FileDialog, Status},
-    key, regex,
+    key, re,
     stdin::edit_history,
     styling::Role,
     KeyCombination, ThagError, ThagResult,
@@ -1408,7 +1408,7 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 #[must_use]
 #[profiled]
 pub fn normalize_newlines(input: &str) -> String {
-    let re: &Regex = regex!(r"\r\n?");
+    let re: &Regex = re!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
 }

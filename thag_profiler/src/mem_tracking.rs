@@ -41,7 +41,7 @@ use std::{cell::Cell, thread_local};
 
 /// Regular expression pattern to identify allocation start points in backtraces
 pub static ALLOC_START_PATTERN: LazyLock<&'static Regex> =
-    LazyLock::new(|| regex!("thag_profiler::mem_tracking.+Dispatcher"));
+    LazyLock::new(|| re!("thag_profiler::mem_tracking.+Dispatcher"));
 
 // Thread-local storage for better async/threading isolation
 // Each thread maintains its own flag, preventing cross-thread interference
@@ -777,7 +777,7 @@ pub fn record_dealloc(address: usize, size: usize) {
     // let start_ident = Instant::now();
     // let mut task_id = 0;
     // Now we can safely use backtrace without recursion!
-    let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
+    let start_pattern: &Regex = re!("thag_profiler::mem_tracking.+Dispatcher");
 
     let detailed_memory = lazy_static_var!(bool, deref, is_detailed_memory());
     if size > 0 && detailed_memory {

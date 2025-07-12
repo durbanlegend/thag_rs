@@ -3,7 +3,7 @@ use crate::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     code_utils::get_source_path,
     config::DependencyInference,
-    cvprtln, debug_log, get_verbosity, maybe_config, regex,
+    cvprtln, debug_log, get_verbosity, maybe_config, re,
     styling::Role,
     vlog, Ast, BuildState, Dependencies, Style, ThagResult, V,
 };
@@ -108,7 +108,7 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
 #[profiled]
 pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
     debug_log!("first_line={first_line}");
-    let re: &Regex = regex!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
+    let re: &Regex = re!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
 
     let (name, version) = if re.is_match(first_line) {
         let captures = re.captures(first_line).unwrap();
@@ -255,7 +255,7 @@ fn call_omerge(cargo_manifest: &Manifest, rs_manifest: &mut Manifest) -> ThagRes
 #[profiled]
 pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
     debug_log!("In code_utils::find_use_renames_source");
-    let use_as_regex: &Regex = regex!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
+    let use_as_regex: &Regex = re!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
 
     let mut use_renames_from: Vec<String> = vec![];
     let mut use_renames_to: Vec<String> = vec![];
@@ -437,7 +437,7 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> cargo
 
 #[profiled]
 fn extract_toml_block(input: &str) -> Option<String> {
-    let re: &Regex = regex!(r"(?s)/\*\[toml\](.*?)\*/");
+    let re: &Regex = re!(r"(?s)/\*\[toml\](.*?)\*/");
     re.captures(input)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
@@ -451,8 +451,8 @@ fn extract_toml_block(input: &str) -> Option<String> {
 #[profiled]
 pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
     // Step 1: Capture `use` statements
-    let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
-    let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
+    let use_simple_regex: &Regex = re!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
+    let use_nested_regex: &Regex = re!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
 
     let mut use_statements: Vec<String> = vec![];
 
@@ -767,7 +767,7 @@ fn proc_macros_magic(
 #[must_use]
 #[profiled]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
+    let module_regex: &Regex = re!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
     debug_log!("In code_utils::find_use_renames_source");
     let mut modules: Vec<String> = vec![];
     for cap in module_regex.captures_iter(code) {

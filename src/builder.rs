@@ -51,10 +51,10 @@ use crate::manifest::extract;
 use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::{
     cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
-    modified_since_compiled, regex, repeat_dash, shared, validate_args, vlog, Ast, Cli,
-    ColorSupport, Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
-    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+    modified_since_compiled, re, repeat_dash, shared, validate_args, vlog, Ast, Cli, ColorSupport,
+    Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
+    PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
+    TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -836,7 +836,7 @@ pub fn gen_build_run(
         } else {
             Some(metadata_finder.map_or_else(
                 || {
-                    let re: &Regex = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+                    let re: &Regex = re!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
                     re.find_iter(&rs_source).count()
                 },
                 |metadata_finder| metadata_finder.main_count,

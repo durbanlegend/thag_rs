@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28"
+crossterm = "0.28" # Specific version
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 

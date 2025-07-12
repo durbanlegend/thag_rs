@@ -1,9 +1,8 @@
 /*[toml]
 [dependencies]
 atty = "0.2.14"
-inquire = "0.7.5"
-thag_proc_macros = { version = "0.1, thag-auto" }
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_proc_macros = { version = "0.2, thag-auto" }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// `thag` prompted front-end command to run Cargo commands on scripts.

@@ -107,12 +107,12 @@ macro_rules! lazy_static_var {
 /// From burntsushi at `https://github.com/rust-lang/regex/issues/709`
 /// Syntax:
 /// ```Rust
-/// let re = regex!(<string literal>)
+/// let re = re!(<string literal>)
 /// ```
 ///
 /// NB: In order to avoid fighting the compiler, it is not recommended to make `re` uppercase.
 #[macro_export]
-macro_rules! regex {
+macro_rules! re {
     ($re:literal $(,)?) => {{
         use {regex::Regex, std::sync::OnceLock};
 

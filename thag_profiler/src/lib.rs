@@ -306,12 +306,12 @@ macro_rules! lazy_static_var {
 ///
 /// Syntax:
 /// ```Rust
-/// let re = regex!(<string literal>)
+/// let re = re!(<string literal>)
 /// ```
 ///
-/// NB: In order to avoid fighting the compiler, it is not recommended to make `re` uppercase.
+/// NB: In order to avoid fighting the compiler, it is not recommended to make the variable `re` uppercase.
 #[macro_export]
-macro_rules! regex {
+macro_rules! re {
     ($re:literal $(,)?) => {{
         use {regex::Regex, std::sync::OnceLock};
 
@@ -838,7 +838,7 @@ mod config_tests {
 ///
 /// 2. **Macros**:
 ///    - `lazy_static_var!` for different types
-///    - `regex!` for pattern matching
+///    - `re!` for pattern matching
 ///    - `static_lazy!` for static initialization
 ///
 /// 3. **Profiling API**:

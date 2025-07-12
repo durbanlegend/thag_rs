@@ -10,6 +10,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        #[derive(Debug, Clone, Copy, Display, PartialEq, Eq, EnumIter, EnumString, IntoStaticStr)]
        #[strum(serialize_all = "snake_case", use_phf)]
        enum Category {
+           ANSI,
            AST,
            CLI,
            REPL,
@@ -49,6 +50,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            Resilience,
            Styling,
            Technique,
+           Terminal,
            Testing,
            ThagFrontEnds,
            Timing,
@@ -73,6 +75,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///
        /// let categories = Category::all_categories();
        /// assert_eq!(categories, vec![
+       ///     "ansi",
        ///     "ast",
        ///     "cli",
        ///     "repl",
@@ -112,6 +115,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///     "resilience",
        ///     "styling",
        ///     "technique",
+       ///     "terminal",
        ///     "testing",
        ///     "thag_front_ends",
        ///     "timing",
@@ -123,11 +127,13 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        /// ]);
        /// ```
         pub fn all_categories() -> Vec<String> {
-            let v = lazy_static_var!(Vec<String>, {
-                Category::iter()
+            let v = {
+                use std::sync::OnceLock;
+                static GENERIC_LAZY: OnceLock<Vec<String>> = OnceLock::new();
+                GENERIC_LAZY.get_or_init(|| Category::iter()
                     .map(|variant| variant.to_string())
-                    .collect::<Vec<String>>()
-            });
+                    .collect::<Vec<String>>())
+            };
             v.clone()
         }
     };

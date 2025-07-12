@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-env_logger = "0.11.3"
-rustyline = { version = "14.0.0", features=["with-file-history", "default", "derive", "rustyline-derive"] }
+rustyline = { version = "=14", features=["with-file-history", "default", "derive"] }
 */
 
 /// Published example from the `rustyline` crate.

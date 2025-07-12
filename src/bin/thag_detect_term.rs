@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 log = "0.4.27"
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal

@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.1, thag-auto" }
-arboard = "3.4.1"
+thag_proc_macros = { version = "0.2, thag-auto" }
 */
 
 #[cfg(feature = "clipboard")]
@@ -11,7 +10,6 @@ use colored::Colorize;
 use inquire::MultiSelect;
 use regex;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::process::Command;
 use thag_proc_macros::file_navigator;
 

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-rug = { version = "1.24.1", features = ["integer", "std"] }
-*/
-
 /// Published example from the `rug` crate, showcasing the use of the crate. I added the
 /// last line to return a tuple of the state of the values of interest, as a quick way
 /// of displaying them.

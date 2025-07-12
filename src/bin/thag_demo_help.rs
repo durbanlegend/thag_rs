@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// Demo tool to showcase the lightweight help system.

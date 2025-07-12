@@ -218,7 +218,7 @@ impl ProfileRegistry {
             if let Some(profile) = profile_ref.profile() {
                 // Record the allocation to the profile
                 if profile_ref.detailed_memory() {
-                    let start_pattern: &Regex = regex!("thag_profiler::mem_tracking.+Dispatcher");
+                    let start_pattern: &Regex = re!("thag_profiler::mem_tracking.+Dispatcher");
                     let end_point = profile.fn_name();
                     let mut already_seen = HashSet::new();
 

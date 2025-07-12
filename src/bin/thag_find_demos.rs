@@ -1,34 +1,26 @@
 /*[toml]
 [dependencies]
-edit = "0.1.5"
-inquire = "0.7.5"
-#log = "0.4.22"
-regex = "1.10.5"
-strum = { version = "0.26.3", features = ["derive", "phf"] }
-syn = "2"
 thag_proc_macros = { version = "0.2, thag-auto" }
-# thag_rs = "0.1.9"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "config", "simplelog"] }
-# tokio = "1.41.1"
-tokio = { version = "1", features = ["full"] }
-warp = "0.3.7"
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog"] }
 */
-
 /// Select demo scripts and generate and serve HTML report.
 ///
 /// Strategy and grunt work thanks to `ChatGPT`.
 //# Purpose: Allow user to select scripts by category.
 //# Categories: technique, tools
 use inquire::MultiSelect;
+use regex;
 use std::{
     collections::{BTreeSet, HashMap},
     fs::{self, read_dir},
     path::{Path, PathBuf},
     process::Command,
 };
+use strum;
 use thag_proc_macros::{category_enum, file_navigator};
-use thag_rs::{ast, code_utils::to_ast, lazy_static_var, regex};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_rs::code_utils::to_ast;
+use thag_rs::help_system::check_help_and_exit;
+use thag_rs::{ast, auto_help, re};
 use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
@@ -335,7 +327,7 @@ fn apply_filters(
     }
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!("thag_find_demos");
@@ -726,7 +718,7 @@ fn parse_metadata(file_path: &Path) -> Option<ScriptMetadata> {
 
     let (crates, _main_methods) = maybe_syntax_tree.as_ref().map_or_else(
         || {
-            let re = regex!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
+            let re = re!(r"(?m)^\s*(async\s+)?fn\s+main\s*\(\s*\)");
             (
                 ast::infer_deps_from_source(&content),
                 re.find_iter(&content).count(),

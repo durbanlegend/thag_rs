@@ -4,7 +4,7 @@ use ra_ap_syntax::{
     AstNode, Edition, SourceFile, SyntaxKind, SyntaxNode,
 };
 use std::io::Read;
-use thag_profiler::regex;
+use thag_profiler::re;
 
 /// A stand-alone convenience tool to remove `thag_profiler` profiling instrumentation from a Rust source
 /// program.
@@ -107,7 +107,7 @@ fn deinstrument_code(edition: Edition, source: &str) -> String {
         .filter_map(|node| ast::Fn::cast(node))
         .collect();
 
-    let re = regex!(r"#\[.*(profiled|enable_profiling)");
+    let re = re!(r"#\[.*(profiled|enable_profiling)");
     for function in functions {
         // Do your modifications here
         // let fn_name = function.name().map(|n| n.text().to_string());

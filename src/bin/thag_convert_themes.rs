@@ -1,10 +1,6 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.26", features = ["cargo", "derive"] }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_yaml_ok = "0.9.36"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "color_detect", "config", "simplelog"] }
-toml = "0.8.19"
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "simplelog"] }
 */
 
 /// Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.

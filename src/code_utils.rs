@@ -5,7 +5,7 @@
 )]
 
 use crate::{
-    cvlog_warning, debug_log, regex, vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
+    cvlog_warning, debug_log, re, vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
     TEMP_SCRIPT_NAME, TMPDIR, V,
 };
 use regex::Regex;
@@ -239,7 +239,7 @@ type Zipped<'a> = (Vec<Option<&'a str>>, Vec<Option<&'a str>>);
 #[profiled]
 pub fn extract_inner_attribs(rs_source: &str) -> (String, String) {
     use std::fmt::Write;
-    let inner_attrib_regex: &Regex = regex!(r"(?m)^[\s]*#!\[.+\]");
+    let inner_attrib_regex: &Regex = re!(r"(?m)^[\s]*#!\[.+\]");
 
     debug_log!("rs_source={rs_source}");
 
@@ -453,7 +453,7 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
 #[profiled]
 pub fn strip_curly_braces(haystack: &str) -> Option<String> {
     // Define the regex pattern
-    let re: &Regex = regex!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
+    let re: &Regex = re!(r"(?s)^\s*\{\s*(.*?)\s*\}\s*$");
 
     // Apply the regex to the input string
     re.captures(haystack)

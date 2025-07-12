@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-regex = "1.11"
 thag_profiler = { version = "0.2, thag-auto", default-features = false }
 thag_rs = { version = "0.2, thag-auto", features = ["repl", "simplelog"] }
 
@@ -798,7 +797,7 @@ fn review_history(
 #[allow(clippy::missing_panics_doc)]
 #[profiled]
 pub fn decode(input: &str) -> String {
-    let re = regex!(r"(<\\n>)");
+    let re = re!(r"(<\\n>)");
     let lf = std::str::from_utf8(&[10_u8]).unwrap();
     re.replace_all(input, lf).to_string()
 }
@@ -1306,7 +1305,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
 #[must_use]
 #[profiled]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
-    let re: &Regex = regex!(r#"("[^"\n]+"|[\S]+)"#);
+    let re: &Regex = re!(r#"("[^"\n]+"|[\S]+)"#);
 
     let mut args = re
         .captures_iter(line)

@@ -17,7 +17,7 @@ use std::{
     time::Duration,
 };
 use strum::Display;
-use thag_profiler::{profiling::ProfileStats, regex, thousands, ProfileError, ProfileResult};
+use thag_profiler::{profiling::ProfileStats, re, thousands, ProfileError, ProfileResult};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -1157,7 +1157,7 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
         .to_string_lossy()
         .to_string();
 
-    let re = regex!(r#"^(\w+)\-(\d{8}\-\d{6})"#);
+    let re = re!(r#"^(\w+)\-(\d{8}\-\d{6})"#);
     let timestamp = if let Some(captures) = re.captures(&filename) {
         let _script_stem = captures.get(1).unwrap().as_str();
         let datetime_str = captures.get(2).unwrap().as_str();

@@ -1,15 +1,11 @@
-/*[toml]
-[dependencies]
-slog = "2.7.0"
-slog-term = "2.9.1"
-*/
-
 /// Published example from `slog` crate (misc/examples/expressions.rs).
 //# Purpose: Demo a popular logging crate.
 //# Categories: crates
 use slog::{self, o, slog_warn, warn};
 use slog_term;
 use std::sync::Mutex;
+
+use slog::Drain;
 
 struct Foo;
 
@@ -23,19 +19,13 @@ struct X {
     foo: Foo,
 }
 
-fn baz() -> bool {
-    true
-}
-
 fn main() {
     let decorator = slog_term::TermDecorator::new().build();
-    use slog::Drain;
-
     let drain = Mutex::new(slog_term::FullFormat::new(decorator).build()).fuse();
     let log = slog::Logger::root(drain, o!("version" => env!("CARGO_PKG_VERSION")));
 
     let foo = Foo;
-    let r = X { foo };
+    let r = X { foo: foo };
 
     warn!(log, "logging message");
     slog_warn!(log, "logging message");

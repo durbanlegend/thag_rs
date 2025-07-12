@@ -4,7 +4,7 @@ use crate::{
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
     cvprtln, get_verbosity, key, lazy_static_var,
     manifest::extract,
-    regex,
+    re,
     styling::{
         display_terminal_attributes, display_theme_details, display_theme_roles, ColorInfo,
         Role::{self, Success},
@@ -742,7 +742,7 @@ fn review_history(
 #[allow(clippy::missing_panics_doc)]
 #[profiled]
 pub fn decode(input: &str) -> String {
-    let re = regex!(r"(<\\n>)");
+    let re = re!(r"(<\\n>)");
     let lf = std::str::from_utf8(&[10_u8]).unwrap();
     re.replace_all(input, lf).to_string()
 }
@@ -1250,7 +1250,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
 #[must_use]
 #[profiled]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
-    let re: &Regex = regex!(r#"("[^"\n]+"|[\S]+)"#);
+    let re: &Regex = re!(r#"("[^"\n]+"|[\S]+)"#);
 
     let mut args = re
         .captures_iter(line)

@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{cvprtln, debug_log, regex, Role, ThagResult, BUILT_IN_CRATES, V};
+use crate::{cvprtln, debug_log, re, Role, ThagResult, BUILT_IN_CRATES, V};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -462,8 +462,8 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
         },
     );
 
-    let macro_use_regex: &Regex = regex!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
-    let extern_crate_regex: &Regex = regex!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
+    let macro_use_regex: &Regex = re!(r"(?m)^[\s]*#\[macro_use\((\w+)\)");
+    let extern_crate_regex: &Regex = re!(r"(?m)^[\s]*extern\s+crate\s+([^;{]+)");
 
     let modules = find_modules_source(code);
 
@@ -569,7 +569,7 @@ pub fn should_filter_dependency(name: &str) -> bool {
 #[must_use]
 #[profiled]
 pub fn find_modules_source(code: &str) -> Vec<String> {
-    let module_regex: &Regex = regex!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
+    let module_regex: &Regex = re!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
     debug_log!("In ast::find_use_renames_source");
     let mut modules: Vec<String> = vec![];
     for cap in module_regex.captures_iter(code) {
@@ -590,8 +590,8 @@ pub fn find_modules_source(code: &str) -> Vec<String> {
 #[profiled]
 pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
     // Step 1: Capture `use` statements
-    let use_simple_regex: &Regex = regex!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
-    let use_nested_regex: &Regex = regex!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
+    let use_simple_regex: &Regex = re!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
+    let use_nested_regex: &Regex = re!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
 
     let mut use_statements: Vec<String> = vec![];
 

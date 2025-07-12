@@ -1,13 +1,7 @@
 /*[toml]
 [dependencies]
-anyhow = "1.0.96"
-atty = "0.2.14"
-inquire = "0.7.5"
-# quote = "1.0.38"
-side-by-side-diff = "0.1.2"
-tempfile = "3.17.1"
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["build", "simplelog"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
@@ -17,6 +11,7 @@ thag_rs = { version = "0.2", path = "../..", default-features = false, features 
 //# Purpose: Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 //# Categories: diagnosis, technique, thag_front_ends, tools
 use anyhow::{anyhow, Context, Result};
+use inquire;
 use side_by_side_diff::create_side_by_side_diff;
 use std::{
     env::args,

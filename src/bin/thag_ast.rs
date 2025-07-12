@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
 use quote::quote;

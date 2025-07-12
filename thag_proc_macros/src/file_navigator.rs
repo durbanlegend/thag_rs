@@ -6,6 +6,7 @@ use quote::quote;
 pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
     let output = quote! {
         use inquire::{InquireError, Select, Text};
+
         struct FileNavigator {
             current_dir: std::path::PathBuf,
             history: Vec<std::path::PathBuf>,
@@ -165,7 +166,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             }
         }
 
-        fn select_directory(navigator: &mut FileNavigator, hidden: bool) -> Result<PathBuf, Box<dyn std::error::Error>> {
+        fn select_directory(navigator: &mut FileNavigator, hidden: bool) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
             println!("Select a directory (use arrow keys and Enter to navigate):");
 
             loop {
@@ -205,7 +206,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             }
         }
 
-        fn select_file(navigator: &mut FileNavigator, include_ext: Option<&str>, hidden: bool) -> Result<PathBuf, Box<dyn std::error::Error>> {
+        fn select_file(navigator: &mut FileNavigator, include_ext: Option<&str>, hidden: bool) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
             println!("Select a file (use arrow keys and Enter to navigate):");
 
             loop {

@@ -1,7 +1,7 @@
 /*[toml]
 [profile.dev]
 opt-level = 2
-thag_rs = { version = "0.2", path = "../..", default-features = false, features = ["core"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
 /// Unescape \n and \\" markers in a string to convert the wall of text to readable lines.

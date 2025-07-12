@@ -1,26 +1,35 @@
 /*[toml]
 [dependencies]
-rfd = "0.14.1"
+thag_proc_macros = { version = "0.2, thag-auto" }
 */
 
-/// Prototype of invoking the Rust formatter programmatically, with the addition of an `rfd`
-/// (`Rusty File Dialogs`) cross-platform file chooser to select the file to format. The code
-/// for both was AI-generated because I find AI very handy for this kind of grunt work.
+/// Demo of invoking the Rust formatter programmatically, using `thag_proc_macros`
+/// cross-platform file chooser to select the file to format.
+/// Compare with `demo/file_dialog_gui.rs`, which uses the platform's native gui.
 //# Purpose: Demo file chooser and calling an external program, in this case the Rust formatter.
 //# Categories: crates, technique
-use rfd::FileDialog;
+use inquire;
 use std::error::Error;
+use std::path::PathBuf;
 use std::process::Command;
+use thag_proc_macros::file_navigator;
+
+file_navigator! {}
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let mut navigator = FileNavigator::new();
+
     // Check if rustfmt is available
     if Command::new("rustfmt").arg("--version").output().is_ok() {
-        let source_file = FileDialog::new()
-            .set_title("Pick a .rs file to format")
-            .add_filter("rust", &["rs"])
-            .set_directory(".")
-            .pick_file()
-            .ok_or("No file selected")?;
+        let source_file = match select_file(&mut navigator, Some("rs"), false) {
+            Ok(path) => path,
+            Err(_) => {
+                println!("No file selected. Exiting.");
+                return Ok(());
+            }
+        };
+
+        println!("Selected file: {}\n", source_file.display());
 
         // Run rustfmt on the source file
         let mut command = Command::new("rustfmt");

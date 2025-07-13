@@ -1,10 +1,12 @@
 /*[toml]
-[dependencies]
-nu-ansi-term = "0.50.1"
-reedline = "0.36.0"
+[features]
+default = ["sqlite-dynlib"]
+sqlite = ["reedline/sqlite"]
+sqlite-dynlib = ["reedline/sqlite-dynlib"]
 */
 
-/// Published demo from `reedline` crate.
+/// Published demo from `reedline` crate. Shows use of toml block to specify `reedline`
+/// features referenced in the example.
 //# Purpose: Demo the use of a transient minimal prompt `! ` for returned history.
 //# Categories: crates, REPL, technique
 // Create a reedline object with a transient prompt.

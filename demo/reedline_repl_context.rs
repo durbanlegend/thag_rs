@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-reedline-repl-rs = "1.1.1"
-*/
-
 /// Published example from `reedline-repl-rs` crate. This one uses the
 /// `clap` builder pattern; there is also one using the`clap` derive pattern.
 ///
@@ -51,7 +46,7 @@ fn main() -> Result<()> {
     let mut repl = Repl::new(Context::default())
         .with_name("MyList")
         .with_version("v0.1.0")
-        .with_description("My very cool List")
+        .with_description("My very cool List (Ctrl-D to exit)")
         .with_command(
             Command::new("append")
                 .arg(Arg::new("name").required(true))

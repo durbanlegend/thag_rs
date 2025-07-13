@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-reedline = "0.36.0"
-*/
-
 /// Exploring `reedline` crate.
 //# Purpose: explore featured crate.
 //# Categories: crates, REPL, technique

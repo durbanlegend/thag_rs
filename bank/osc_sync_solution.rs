@@ -1,12 +1,7 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28"
-once_cell = "1.19"
-*/
-
-/// Real solution for terminal corruption in concurrent environments
+/// Claude attempt at real solution for terminal corruption in concurrent environments.
+/// Needs work unfortunately. Banking for now.
 //# Purpose: Provide actual solution for OSC sequence corruption without false positives
-//# Categories: terminal, testing, synchronization, solution
+//# Categories: synchronization, solution, terminal, testing
 use once_cell::sync::Lazy;
 use std::io::{stdout, Write};
 use std::sync::Mutex;
@@ -26,8 +21,9 @@ pub fn sync_print(text: &str) {
 /// Synchronized println function that prevents terminal corruption
 pub fn sync_println(text: &str) {
     let _guard = TERMINAL_MUTEX.lock().unwrap();
+    let mut stdout = std::io::stdout().lock();
     println!("{}", text);
-    let _ = stdout().flush();
+    let _ = stdout.flush();
 }
 
 /// Synchronized OSC sequence sender - this is the key function
@@ -71,7 +67,7 @@ fn demonstrate_real_problem() {
                         "\x1b]8;;http://example.com/{}\x1b\\Link {}\x1b]8;;\x1b\\",
                         i, j
                     );
-                    println!("Thread {} regular output {}", i, j);
+                    println!(" Thread {} regular output {}", i, j);
                     thread::sleep(Duration::from_millis(1));
                 }
             })
@@ -96,12 +92,10 @@ fn demonstrate_solution() {
             thread::spawn(move || {
                 for j in 0..15 {
                     // SYNCHRONIZED OSC sequences - this prevents corruption
-                    sync_osc_sequence(&format!("\x1b]0;Thread {} Title {}\x1b\\", i, j));
-                    sync_osc_sequence(&format!(
-                        "\x1b]8;;http://example.com/{}\x1b\\Link {}\x1b]8;;\x1b\\",
-                        i, j
+                    sync_osc_sequence(&format!("\x1b]0;Thread {} Title {}\x1b\\ \x1b]8;;http://example.com/{}\x1b\\Link {}\x1b]8;;\x1b\\",
+                        i, j, i, j
                     ));
-                    sync_println(&format!("Thread {} regular output {}", i, j));
+                    sync_println(&format!(" Thread {} regular output {}", i, j));
                     thread::sleep(Duration::from_millis(1));
                 }
             })

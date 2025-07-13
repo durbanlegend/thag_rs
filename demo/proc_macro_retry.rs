@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-rand = "0.8"
-*/
-
 /// Demo of the retry attribute macro that adds automatic retry logic to functions.
 ///
 /// This macro demonstrates attribute macro parameter parsing and error handling

@@ -663,6 +663,7 @@ pub enum KeyAction {
     /// Toggle the visibility of the popup help screen
     TogglePopup,
 }
+
 /// Edit content with a TUI
 ///
 /// # Panics

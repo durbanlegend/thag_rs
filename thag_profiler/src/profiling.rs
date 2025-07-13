@@ -2490,9 +2490,6 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .map_err(|e| ProfileError::General(format!("Failed to open input file: {e}")))?;
     let reader = BufReader::new(file);
 
-    // // Store header lines to preserve them
-    // let mut header_lines = Vec::new();
-
     // Store stack lines as (stack_str, time) pairs
     let mut stack_lines: Vec<(String, u64)> = Vec::new();
     let mut input_lines = 0;
@@ -2501,11 +2498,6 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     for (line_count, line) in reader.lines().enumerate() {
         input_lines = line_count;
         let line = line.map_err(|e| ProfileError::General(format!("Failed to read line: {e}")))?;
-        // // Preserve comment/header lines
-        // if line.starts_with('#') || line.trim().is_empty() {
-        //     header_lines.push(line);
-        //     continue;
-        // }
 
         // Parse line: "stack time"
         let parts: Vec<&str> = line.rsplitn(2, ' ').collect();
@@ -2563,17 +2555,6 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         .open(output_path)
         .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
     let mut writer = BufWriter::new(output_file);
-
-    // // Write original headers
-    // for header in &header_lines {
-    //     writeln!(writer, "{header}")
-    //         .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
-    // }
-
-    // // Add a note about this being exclusive time
-    // writeln!(writer, "# Converted to exclusive time by thag_profiler")
-    //     .map_err(|e| ProfileError::General(format!("Failed to write header: {e}")))?;
-    // writeln!(writer).map_err(|e| ProfileError::General(format!("Failed to write newline: {e}")))?;
 
     for (stack, exclusive) in &exclusive_times {
         writeln!(writer, "{stack} {exclusive}")

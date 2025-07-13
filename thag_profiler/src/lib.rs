@@ -682,57 +682,6 @@ pub fn finalize_profiling() {
     {}
 }
 
-// /// Resets profiling configuration state for tests.
-// ///
-// /// This function should be used at the beginning of tests that need to control
-// /// profiling configuration. It ensures that the profiling system reads the
-// /// latest environment variables rather than using cached configurations.
-// #[cfg(feature = "time_profiling")]
-// pub fn reset_profiling_config_for_tests() {
-//     // We need different implementation paths for unit tests vs integration tests
-//     #[cfg(test)]
-//     {
-//         // Unit tests can directly call the internal function
-//         profiling::reset_profile_config_for_tests();
-//     }
-
-//     // For integration tests which are compiled as separate crates and
-//     // can't access the internal implementation
-//     #[cfg(not(test))]
-//     {
-//         // Implement reset logic directly here for integration tests
-//         use std::env;
-//         use std::sync::atomic::Ordering;
-
-//         eprintln!("Integration test: Resetting profile configuration from environment variables");
-
-//         // First, parse the environment configuration
-//         let env_var = env::var("THAG_PROFILER").ok();
-//         let profile_type = if let Some(env_var) = env_var {
-//             let parts: Vec<&str> = env_var.split(',').collect();
-//             if !parts.is_empty() && !parts[0].trim().is_empty() {
-//                 match parts[0].trim() {
-//                     "time" => Some(profiling::ProfileType::Time),
-//                     "memory" => Some(profiling::ProfileType::Memory),
-//                     "both" => Some(profiling::ProfileType::Both),
-//                     _ => None,
-//                 }
-//             } else {
-//                 None
-//             }
-//         } else {
-//             None
-//         };
-
-//         // Update the global profile type to match
-//         if let Some(profile_type) = profile_type {
-//             let value = profiling::ProfileCapability::from_profile_type(profile_type).0;
-//             profiling::GLOBAL_PROFILE_TYPE.store(value, Ordering::SeqCst);
-//             eprintln!("Set global profile type to {:?}", profile_type);
-//         }
-//     }
-// }
-
 #[cfg(test)]
 mod feature_tests {
     use crate::profiling::is_profiling_enabled;

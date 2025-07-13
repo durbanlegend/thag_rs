@@ -2,7 +2,7 @@ use crate::{
     debug_log, flush_debug_log, internal_doc,
     mem_tracking::write_detailed_stack_alloc,
     profiling::{clean_function_name, strip_hex_suffix_slice, Profile},
-    regex, safe_alloc, static_lazy, ProfileError, ProfileResult,
+    re, safe_alloc, static_lazy, ProfileError, ProfileResult,
 };
 use backtrace::{resolve_frame, trace};
 use dashmap::{DashMap, DashSet};

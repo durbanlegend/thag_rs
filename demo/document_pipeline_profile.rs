@@ -1,6 +1,11 @@
 /*[toml]
 [dependencies]
 thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "debug_logging"] }
+
+[profile.release]
+debug-assertions = true
+debug = true
+strip = false
 */
 
 /// Test async program (instrumented version) for `thag_profiler` testing.

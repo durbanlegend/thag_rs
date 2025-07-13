@@ -967,18 +967,18 @@ mod lib_tests {
 
     #[test]
     fn test_regex_macro() {
-        let re = regex!(r"\d+");
+        let re = re!(r"\d+");
         assert!(re.is_match("123"));
         assert!(!re.is_match("abc"));
 
         // Test capturing
-        let cap_re = regex!(r"(\w+):(\d+)");
+        let cap_re = re!(r"(\w+):(\d+)");
         let caps = cap_re.captures("name:42").unwrap();
         assert_eq!(caps.get(1).unwrap().as_str(), "name");
         assert_eq!(caps.get(2).unwrap().as_str(), "42");
 
         // Test special characters
-        let special_re = regex!(r"\s+");
+        let special_re = re!(r"\s+");
         assert!(special_re.is_match(" \t\n"));
         assert!(!special_re.is_match("abc"));
     }

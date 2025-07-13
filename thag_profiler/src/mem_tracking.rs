@@ -20,7 +20,7 @@ use crate::{
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
         is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
     },
-    regex, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
+    re, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
 };
 use backtrace::{resolve_frame, trace};
 use parking_lot::Mutex;

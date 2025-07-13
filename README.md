@@ -16,7 +16,7 @@
 
 - a REPL that also lets you save your code as a script
 
-- an edit-submit TUI playground
+- an edit-submit TUI playground that accepts any crate
 
 - an option to build fast commands from your scripts
 
@@ -261,7 +261,7 @@ This is equivalent to:
 thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```
 
-### * With the built-in TUI (Terminal User Interface) editor
+### * With the built-in TUI (Terminal User Interface) playground editor
 
 ```bash
 thag --edit                                                     # Short form: -d
@@ -270,7 +270,7 @@ thag --edit                                                     # Short form: -d
 
 ![Edit run](assets/edit2t.png)
 
-### * With standard input into the TUI editor:
+### * With standard input into the TUI playground editor:
 
 ```bash
 cat my_file.rs | thag --edit                                    # Short form: -d
@@ -278,7 +278,7 @@ cat my_file.rs | thag --edit                                    # Short form: -d
 
 This allows you to edit or append to the stdin input before submitting it to `thag_rs`. It has file-backed history so you don't lose your edits.
 
-#### Key bindings in the TUI editor
+#### Key bindings in the TUI playground editor
 `thag_rs` tries to define all key bindings explicitly. However, the terminal emulator you use is bound to intercept some of these keys, rendering them unavailable to us.
 If specific key bindings don't work for you, you may have to adjust your terminal settings. For example:
 
@@ -290,7 +290,7 @@ Shift-Up: `\033;[2A` and `Shift-Down`: \033;[2B. Use the Esc key to generate \03
 
 If all else fails, try another terminal emulator.
 
-The TUI editor is also used in the promote-to-TUI (`tui`) and edit history (`history`) functions in the REPL, so the
+The TUI playground editor is also used in the promote-to-TUI (`tui`) and edit history (`history`) functions in the REPL, so the
 above also applies there.
 
 Similar considerations apply to the basic REPL mode (--repl / -r). Note that the key bindings there are not identical to the TUI because the basic REPL uses mostly standard `reedline` emacs
@@ -425,7 +425,7 @@ _— The Rust Reference_
     * **REPL mode** offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
     If REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
     * **Stdin mode** accepts larger scripts and programs on the fly, as typed, pasted or piped input or as URLs (via `thag_url`).
-    * **Edit mode** via a basic TUI (terminal user interface) editor, with optional `thag_url` or other piped input.
+    * **Edit mode** via a basic TUI (terminal user interface) playground editor, with optional `thag_url` or other piped input.
     * The classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
 
 
@@ -579,9 +579,9 @@ You can access the last 25 REPL commands or expressions from within the REPL fun
 #### General notes on REPL
 The REPL temporary files are created under the `rs_repl` subdirectory of your temporary directory (e.g. $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `repl_script.rs`.
 
-The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. If you're in REPL mode and it starts cramping your style, you can clear the REPL command line with `Ctrl-u` and promote the current expression to a full-blown script using either the built-in TUI editor with history support, or the editor of your choice without history support. Both of these options mean that your Rust script no longer has to be a smallish single expression, and both allow you to save your script to a .rs file or your choice and run it from the command line after you exit the REPL session.
+The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. If you're in REPL mode and it starts cramping your style, you can clear the REPL command line with `Ctrl-u` and promote the current expression to a full-blown script using either the built-in TUI playground editor with history support, or the editor of your choice without history support. Both of these options mean that your Rust script no longer has to be a smallish single expression, and both allow you to save your script to a .rs file or your choice and run it from the command line after you exit the REPL session.
 
-1. _The TUI editor._ The `tui` REPL command will open your current REPL expression in the built-in TUI editor. When you've finished editing, you can run it with `Ctrl-d` and/or save it to a .rs file of your choice. The `tui` command will also place the expression in the TUI editor's history, which by the way is kept separate from the REPL's history because it is not subject to the same limitations. `Ctrl-d` will autosave your changes so that you can keep repeating the cycle of `tui` and `Ctrl-d` until you're satisfied with the outcome. The TUI editor is pretty basic but has the advantage of file-backed history support so you can come back to your code later.
+1. _The TUI playground editor._ The `tui` REPL command will open your current REPL expression in the built-in TUI playground editor. When you've finished editing, you can run it with `Ctrl-d` and/or save it to a .rs file of your choice. The `tui` command will also place the expression in the TUI playground editor's history, which by the way is kept separate from the REPL's history because it is not subject to the same limitations. `Ctrl-d` will autosave your changes so that you can keep repeating the cycle of `tui` and `Ctrl-d` until you're satisfied with the outcome. The TUI playground editor is pretty basic but has the advantage of file-backed history support so you can come back to your code later.
 
 2. _Your preferred editor._ You can enter the `edit` command on the REPL command line to edit your script in your preferred editor as configured via the $VISUAL or $EDITOR environment variables, and save it from there. Get back to the REPL session by closing the edit session or tabbing back in the operating system, and run the updated code with the REPL's `run` command. Alternatively you can save the source to a .rs file. As with `tui` and `Ctrl-d`, you can keep repeating the cycle of `edit` and `run` until you're satisfied. However, since the `edit` command has no history support, the only way to see it or preserve the final code in history is to switch to the `tui` command once you've finished, which will add it to the TUI history.
 

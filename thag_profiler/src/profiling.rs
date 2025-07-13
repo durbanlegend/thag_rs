@@ -2199,12 +2199,12 @@ pub fn extract_profile_callstack(
                         safe_alloc!{
                             let new_capacity = (callstack.capacity() * 2).min(MAX_STACK_DEPTH_CAP);
                             callstack.reserve(new_capacity - callstack.len());
+                            debug_log!(
+                                "Resized callstack capacity from {} to {}",
+                                callstack.capacity() / 2,
+                                new_capacity
+                            );
                         }
-                        debug_log!(
-                            "Resized callstack capacity from {} to {}",
-                            callstack.capacity() / 2,
-                            new_capacity
-                        );
                     }
 
                     callstack.push(name);

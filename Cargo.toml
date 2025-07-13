@@ -428,7 +428,7 @@ name = "filter_bench"
 harness = false
 
 [workspace]
-members = ["thag_proc_macros", "thag_profiler"]
+members = ["thag_proc_macros", "thag_profiler", "thag_demo"]
 
 [package.metadata.docs.rs]
 # features = ["document-features"]

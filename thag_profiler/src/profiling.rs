@@ -1524,8 +1524,12 @@ impl Profile {
         });
 
         if is_recursive {
-            debug_log!("Skipping recursive profiling for function: {}", fn_name);
-            return None;
+            panic!(
+                "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
+                Profiling recursive functions causes exponential overhead and is not supported. \
+                Please remove #[profiled] from recursive functions and profile only the calling function instead.",
+                fn_name
+            );
         }
 
         // Mark this function as active
@@ -1695,8 +1699,12 @@ impl Profile {
             });
 
             if is_recursive {
-                debug_log!("Skipping recursive profiling for function: {}", fn_name);
-                return None;
+                panic!(
+                    "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
+                    Profiling recursive functions causes exponential overhead and is not supported. \
+                    Please remove #[profiled] from recursive functions and profile only the calling function instead.",
+                    fn_name
+                );
             }
 
             // Mark this function as active

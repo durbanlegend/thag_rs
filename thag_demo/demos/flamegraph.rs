@@ -64,7 +64,7 @@ fn level_3_function_a2() {
 fn level_3_function_b1() {
     // Moderate duration function
     thread::sleep(Duration::from_millis(20));
-    let _fibonacci = compute_fibonacci(30);
+    let _fibonacci = compute_fibonacci(15);
 }
 
 #[profiled]
@@ -77,7 +77,6 @@ fn expensive_computation(n: i32) -> i32 {
     result
 }
 
-#[profiled]
 fn compute_fibonacci(n: u32) -> u64 {
     if n <= 1 {
         n as u64
@@ -86,7 +85,6 @@ fn compute_fibonacci(n: u32) -> u64 {
     }
 }
 
-#[profiled]
 fn recursive_tree_builder(depth: u32) -> Vec<u32> {
     if depth == 0 {
         vec![1]
@@ -108,7 +106,7 @@ fn demonstrate_call_patterns() {
     level_1_function();
 
     // This will create a wide, recursive pattern
-    let _tree = recursive_tree_builder(8);
+    let _tree = recursive_tree_builder(5);
 
     // This will show repeated calls to the same function
     for i in 0..10 {

@@ -1518,12 +1518,13 @@ impl Profile {
         let fn_name = &cleaned_stack[0];
 
         // Check for recursive calls using thread-local tracking
-        let is_recursive = ACTIVE_FUNCTIONS.with(|active| {
+        // Only check if this function is being profiled (not just in the call stack)
+        let is_recursive_profiling = ACTIVE_FUNCTIONS.with(|active| {
             let active_funcs = active.borrow();
             active_funcs.contains(fn_name)
         });
 
-        if is_recursive {
+        if is_recursive_profiling {
             panic!(
                 "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
                 Profiling recursive functions causes exponential overhead and is not supported. \
@@ -1693,12 +1694,13 @@ impl Profile {
             let fn_name = &cleaned_stack[0];
 
             // Check for recursive calls using thread-local tracking
-            let is_recursive = ACTIVE_FUNCTIONS.with(|active| {
+            // Only check if this function is being profiled (not just in the call stack)
+            let is_recursive_profiling = ACTIVE_FUNCTIONS.with(|active| {
                 let active_funcs = active.borrow();
                 active_funcs.contains(fn_name)
             });
 
-            if is_recursive {
+            if is_recursive_profiling {
                 panic!(
                     "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
                     Profiling recursive functions causes exponential overhead and is not supported. \

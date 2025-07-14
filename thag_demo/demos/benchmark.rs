@@ -35,7 +35,7 @@ struct DataPoint {
     timestamp: u64,
 }
 
-#[profiled(time, memory_summary)]
+#[profiled(time, mem_summary)]
 fn generate_test_data(count: usize) -> Vec<DataPoint> {
     let mut rng = thread_rng();
     let categories = vec!["A", "B", "C", "D", "E"];
@@ -50,7 +50,7 @@ fn generate_test_data(count: usize) -> Vec<DataPoint> {
         .collect()
 }
 
-#[profiled(time, memory_detail)]
+#[profiled(time, mem_detail)]
 fn process_data_sequential(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     let mut result = HashMap::new();
 
@@ -69,7 +69,7 @@ fn process_data_sequential(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     result
 }
 
-#[profiled(time, memory_summary)]
+#[profiled(time, mem_summary)]
 fn process_data_parallel(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     use std::sync::Mutex;
 
@@ -116,7 +116,7 @@ fn compute_statistics(data: &HashMap<String, Vec<f64>>) -> HashMap<String, serde
         .collect()
 }
 
-#[profiled(time, memory_detail)]
+#[profiled(time, mem_detail)]
 fn serialize_results(stats: &HashMap<String, serde_json::Value>) -> String {
     serde_json::to_string_pretty(stats).unwrap_or_else(|_| "Serialization failed".to_string())
 }
@@ -142,7 +142,7 @@ fn cryptographic_hashing(data: &[String]) -> Vec<String> {
         .collect()
 }
 
-#[profiled(time, memory_summary)]
+#[profiled(time, mem_summary)]
 fn memory_intensive_operations(count: usize) -> Vec<Vec<u8>> {
     let mut buffers = Vec::new();
 
@@ -174,7 +174,7 @@ fn cpu_bound_computation(iterations: usize) -> f64 {
     result
 }
 
-#[profiled(time, memory_summary)]
+#[profiled(time, mem_summary)]
 fn comprehensive_benchmark() {
     println!("🚀 Starting comprehensive benchmark...");
 
@@ -234,7 +234,7 @@ fn comprehensive_benchmark() {
     }
 }
 
-#[profiled(time, memory_detail)]
+#[profiled(time, mem_detail)]
 fn stress_test_allocations() {
     println!("🔥 Running allocation stress test...");
 
@@ -258,7 +258,7 @@ fn stress_test_allocations() {
     println!("Stress test completed");
 }
 
-#[enable_profiling(runtime)]
+#[enable_profiling]
 fn main() {
     println!("🏆 Comprehensive Benchmark Demo");
     println!("===============================");

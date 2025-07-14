@@ -92,5 +92,5 @@ fn main() {
     println!("✅ Demo completed!");
     println!("📊 Check the generated memory flamegraph files for allocation analysis.");
     println!("🔍 Use 'thag_profile' command to analyze memory usage patterns.");
-    println!("💡 Notice the difference between memory_summary and memory_detail profiling.");
+    println!("💡 Notice the difference between mem_summary and mem_detail profiling.");
 }

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["memory_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 
 [profile.release]
 debug = true
@@ -14,7 +14,7 @@ strip = false
 use std::collections::HashMap;
 use thag_profiler::{enable_profiling, profiled};
 
-#[profiled(memory_detail)]
+#[profiled(mem_detail)]
 fn allocate_vectors() -> Vec<Vec<u64>> {
     let mut outer = Vec::new();
 
@@ -29,7 +29,7 @@ fn allocate_vectors() -> Vec<Vec<u64>> {
     outer
 }
 
-#[profiled(memory_summary)]
+#[profiled(mem_summary)]
 fn process_strings() -> HashMap<String, usize> {
     let mut map = HashMap::new();
 
@@ -42,7 +42,7 @@ fn process_strings() -> HashMap<String, usize> {
     map
 }
 
-#[profiled(memory_detail)]
+#[profiled(mem_detail)]
 fn memory_intensive_computation() -> Vec<String> {
     let mut results = Vec::new();
 
@@ -63,7 +63,7 @@ fn memory_intensive_computation() -> Vec<String> {
     results
 }
 
-#[profiled(memory_summary)]
+#[profiled(mem_summary)]
 fn nested_allocations() {
     println!("Starting nested allocations...");
 

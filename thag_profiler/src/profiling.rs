@@ -47,6 +47,14 @@ use std::{
     time::SystemTime,
 };
 
+// Thread-local storage to track active functions for recursion detection
+#[cfg(feature = "time_profiling")]
+use std::cell::RefCell;
+#[cfg(feature = "time_profiling")]
+thread_local! {
+    static ACTIVE_FUNCTIONS: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+}
+
 #[cfg(feature = "full_profiling")]
 use regex::Regex;
 
@@ -1509,6 +1517,22 @@ impl Profile {
 
         let fn_name = &cleaned_stack[0];
 
+        // Check for recursive calls using thread-local tracking
+        let is_recursive = ACTIVE_FUNCTIONS.with(|active| {
+            let active_funcs = active.borrow();
+            active_funcs.contains(fn_name)
+        });
+
+        if is_recursive {
+            debug_log!("Skipping recursive profiling for function: {}", fn_name);
+            return None;
+        }
+
+        // Mark this function as active
+        ACTIVE_FUNCTIONS.with(|active| {
+            active.borrow_mut().insert(fn_name.to_string());
+        });
+
         #[cfg(not(target_os = "windows"))]
         let desc_fn_name = if is_async {
             format!("async::{fn_name}")
@@ -1663,6 +1687,22 @@ impl Profile {
 
             // Register this function
             let fn_name = &cleaned_stack[0];
+
+            // Check for recursive calls using thread-local tracking
+            let is_recursive = ACTIVE_FUNCTIONS.with(|active| {
+                let active_funcs = active.borrow();
+                active_funcs.contains(fn_name)
+            });
+
+            if is_recursive {
+                debug_log!("Skipping recursive profiling for function: {}", fn_name);
+                return None;
+            }
+
+            // Mark this function as active
+            ACTIVE_FUNCTIONS.with(|active| {
+                active.borrow_mut().insert(fn_name.to_string());
+            });
 
             #[cfg(not(target_os = "windows"))]
             let desc_fn_name = if section_name.is_some() && is_profiled_function(fn_name) {
@@ -2375,6 +2415,11 @@ impl Drop for Profile {
         // debug_log!("In drop for Profile {:?}", self);
         let drop_start = Instant::now();
 
+        // Clean up active function tracking for recursion detection
+        ACTIVE_FUNCTIONS.with(|active| {
+            active.borrow_mut().remove(&self.fn_name);
+        });
+
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
             match self.profile_type {
@@ -2401,6 +2446,11 @@ impl Drop for Profile {
             // Capture the information needed for deregistration but use it only at the end
             #[cfg(feature = "full_profiling")]
             let instance_id = self.instance_id();
+
+            // Clean up active function tracking for recursion detection
+            ACTIVE_FUNCTIONS.with(|active| {
+                active.borrow_mut().remove(&self.fn_name);
+            });
 
             // debug_log!("In drop for Profile {:?}", self);
             let drop_start = Instant::now();
@@ -2519,33 +2569,47 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         stack_lines.push((stack_str.to_string(), time));
     }
 
-    // Process in reverse order
-    let mut stack_lines: Vec<(String, u64)> = stack_lines.into_iter().rev().collect();
+    // Calculate exclusive times using forward processing
+    // Children appear before parents in the file (children complete first)
 
-    // Calculate exclusive times using a sequential approach
-    let mut exclusive_times: Vec<(String, u64)> = vec![];
-    let len = stack_lines.len();
+    // Pre-parse all stacks once to avoid repeated string operations
+    let parsed_stacks: Vec<(Vec<String>, u64, String)> = stack_lines
+        .into_iter()
+        .map(|(stack, time)| {
+            let parts: Vec<String> = stack.split(';').map(|s| s.to_string()).collect();
+            (parts, time, stack)
+        })
+        .collect();
 
-    for _i in 1..=len {
-        // Process each stack, moving it from the stack_lines to exclusive_times
-        let mut parent = stack_lines.remove(0);
+    // Initialize exclusive times with original inclusive times
+    let mut exclusive_times: Vec<(String, u64)> = parsed_stacks
+        .iter()
+        .map(|(_, time, stack)| (stack.clone(), *time))
+        .collect();
 
-        // For each stack, find its direct descendants and subtract their inclusive time from the parent
-        for (candidate, time_ref) in &mut stack_lines {
-            if !candidate.starts_with(&parent.0) {
-                break;
-            }
-            let parts: Vec<&str> = candidate.split(';').collect();
-            let parent_stack = parts[..parts.len() - 1].join(";");
-            if parent_stack == parent.0 {
-                parent.1 = parent.1.saturating_sub(*time_ref);
+    // Process from bottom (deepest stacks) to top to adjust parent times
+    for i in (0..parsed_stacks.len()).rev() {
+        let (ref current_parts, _, _) = &parsed_stacks[i];
+
+        // Look forward (upward in file) for direct children
+        for j in 0..i {
+            let (ref child_parts, child_time, _) = &parsed_stacks[j];
+
+            // Check if this is a direct child (exactly one level deeper)
+            if child_parts.len() == current_parts.len() + 1 {
+                // Check if current stack is the immediate parent of this child
+                let is_parent = child_parts[..current_parts.len()]
+                    .iter()
+                    .zip(current_parts.iter())
+                    .all(|(child, parent)| child == parent);
+
+                if is_parent {
+                    // This direct child should be subtracted from current stack
+                    exclusive_times[i].1 = exclusive_times[i].1.saturating_sub(*child_time);
+                }
             }
         }
-        exclusive_times.push(parent);
     }
-
-    // Restore original order
-    let exclusive_times: Vec<(String, u64)> = exclusive_times.into_iter().rev().collect();
 
     // Write output file
     let output_file = OpenOptions::new()

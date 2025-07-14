@@ -1,5 +1,5 @@
 [package]
-description = "A versatile cross-platform script runner and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
+description = "A versatile cross-platform playground and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
 version = "0.2.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
@@ -20,7 +20,7 @@ default-run = "thag"
 readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
-keywords = ["REPL", "command-line", "eval", "runner", "script"]
+keywords = ["REPL", "eval", "playground", "runner", "script"]
 rust-version = "1.82"
 
 [package.metadata.wix]
@@ -39,16 +39,15 @@ cargo-lookup = { version = "0.1.0", optional = true }
 cargo_toml = { version = "0.22.1", optional = true }
 chrono = "0.4.39"
 clap = { version = "4.5", features = ["cargo", "derive"], optional = true }
-# crossterm = { version = "0.29", features = ["use-dev-tty"], optional = true }
+colored = { version = "2.0", optional = true }
+convert_case = { version = "0.6.0", optional = true }
+# NB: Required for stdin -d. Must align version with ratatui::crossterm
+crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 dirs = "6.0"
 document-features = { version = "0.2", optional = true }
 documented = "0.9.1"
 edit = { version = "0.1.5", optional = true }
 env_logger = { version = "0.11.8", optional = true }
-colored = { version = "2.0", optional = true }
-convert_case = { version = "0.6.0", optional = true }
-# NB: Required for stdin -d. Must align version with ratatui::crossterm
-crossterm = { version = "0.28.1", features = ["use-dev-tty"] }
 heck = { version = "0.5", optional = true }
 inquire = { version = "0.7.5", optional = true }
 log = "0.4.27"

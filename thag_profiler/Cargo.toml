@@ -8,17 +8,17 @@ authors = ["thag_rs developer"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
+categories = [
+    "development-tools::profiling",
+    "development-tools",
+    "command-line-utilities",
+]
 keywords = [
     "profiling",
     "performance",
     "flamegraph",
     "instrumentation",
     "tracing",
-]
-categories = [
-    "development-tools::profiling",
-    "development-tools",
-    "command-line-utilities",
 ]
 
 [package.metadata.wix]

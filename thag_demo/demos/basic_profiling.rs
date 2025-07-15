@@ -108,7 +108,9 @@ fn nested_function_calls() {
     // First recursively - bad idea as O(2^n)
     fibonacci_recursions(FIB_N);
 
-    let _ = std::io::stdout().flush();
+    println!("\nOof, bad idea. And it will quickly get a lot worse for bigger numbers.");
+    // let _ = std::io::stdout().flush();
+    pause_awhile();
 }
 
 // Pause to display output and help drill down to the tiny flamegraph bars for fast functions
@@ -118,9 +120,7 @@ fn pause_awhile() {
 }
 
 #[profiled]
-#[timing]
-fn alt_fibonacci_strategies() {
-    println!("\nOof, bad idea. And it will quickly get a lot worse for bigger numbers.");
+fn alt_fibonacci_cached() {
     println!("\nHow about we use thag's demo #[cached] attribute on the fibonacci function?\n");
 
     pause_awhile();
@@ -140,6 +140,10 @@ fn alt_fibonacci_strategies() {
     fibonacci_recursions_cached(HUNDREDFOLD);
 
     println!("\nHoly smokes! What a difference! Recursion is not always your friend, but #[cached] is your friend - at least up until the stack overflows from too much recursion.");
+}
+
+#[profiled]
+fn alt_fibonacci_iter() {
     println!("\nWhat if we try Rust iterators instead, still for F({HUNDREDFOLD})?\n");
 
     pause_awhile();
@@ -163,8 +167,11 @@ fn main() {
     println!("Running nested function calls with profiling...");
     nested_function_calls();
 
-    // Separate function so that we can drill past it to see the others
-    alt_fibonacci_strategies();
+    // Separate function to help in drilling down
+    alt_fibonacci_cached();
+
+    // Separate function to help in drilling down
+    alt_fibonacci_iter();
 
     println!();
     println!("✅ Demo completed!");

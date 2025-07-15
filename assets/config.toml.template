@@ -61,7 +61,7 @@ custom_themes_dir = "~/.config/thag/themes"
 # Allows user to specify manifest directory paths for the thag_demo_proc_macro crate and the
 # internal `bank` equivalent. This is a prerequisite for the `thag_rs` proc-macros feature.
 #
-# Specify a valid absolute or relative path string if required, e.g. "/Users/thag/projects/thag_rs/demo/proc_macros/Cargo.toml".
+# Specify a valid absolute or relative path string if required, e.g. "/Users/thag/projects/thag_rs/demo/proc_macros".
 # Relative paths should be relative to the current working directory.
 # A single forward slash is the required path separator in all environments including Windows.
 # Default value: "<dir>/proc_macros".

@@ -299,6 +299,6 @@ fn print_demo_info(demo_name: &str) {
     println!("{}", "🔗 Resources:".bold().blue());
     println!("  • thag_profiler documentation: https://docs.rs/thag_profiler");
     println!("  • thag_rs repository: https://github.com/durbanlegend/thag_rs");
-    println!("  • More examples: thag_demo script <name>");
+    println!("  • More examples: thag_demo --list");
     println!();
 }

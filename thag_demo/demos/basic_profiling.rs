@@ -2,6 +2,8 @@
 [dependencies]
 thag_demo_proc_macros = { version = "0.1, thag-auto" }
 thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+inferno = "0.11"
+chrono = { version = "0.4", features = ["serde"] }
 
 [profile.release]
 debug = true
@@ -12,7 +14,9 @@ strip = false
 /// This demo demonstrates the core profiling features of thag_profiler
 //# Purpose: Demonstrate basic time profiling with thag_profiler
 //# Categories: profiling, demo, timing
+use chrono::Local;
 use ibig::{ubig, UBig};
+use inferno::flamegraph::{self, color::BasicPalette, Options, Palette};
 use num_traits::identities::One;
 use std::io::Write;
 use std::iter::successors;
@@ -101,7 +105,7 @@ fn nested_function_calls() {
     // Calculate some fibonacci numbers
     println!("\nHey, it's-a me, Fibonacci!\n");
     println!(
-        "Let's calculate my {FIB_N}th Fibonacci number recursively, because it's a chunky computation, but not insanely so."
+        "Let's calculate my {FIB_N}th Fibonacci number recursively, because {FIB_N} makes for a chunky computation, but not insanely so."
     );
     println!("Elapsed time for recursion increases exponentially with the Fibonacci number, so we don't want to overdo it.\n");
 
@@ -114,6 +118,7 @@ fn nested_function_calls() {
 }
 
 // Pause to display output and help drill down to the tiny flamegraph bars for fast functions
+#[profiled]
 fn pause_awhile() {
     let _ = std::io::stdout().flush();
     thread::sleep(Duration::from_secs(2));
@@ -184,8 +189,8 @@ fn main() {
 
 fn show_interactive_visualization() {
     println!();
-    println!("🎯 Would you like to view an interactive profile analysis?");
-    println!("This will show you the performance data in a more detailed, interactive format.");
+    println!("🎯 Would you like to view an interactive flamegraph?");
+    println!("This will generate a visual flamegraph and open it in your browser.");
     print!("Enter 'y' for yes, or any other key to skip: ");
     std::io::stdout().flush().unwrap();
 
@@ -193,15 +198,15 @@ fn show_interactive_visualization() {
     if std::io::stdin().read_line(&mut input).is_ok() {
         if input.trim().to_lowercase() == "y" {
             println!();
-            println!("🔍 Loading interactive profile viewer...");
+            println!("🔥 Generating interactive flamegraph...");
 
             // Try to load and display the profile data
             match load_and_show_profile() {
                 Ok(()) => {
-                    println!("✅ Interactive analysis completed!");
+                    println!("✅ Flamegraph generation completed!");
                 }
                 Err(e) => {
-                    println!("⚠️  Could not load profile data: {}", e);
+                    println!("⚠️  Could not generate flamegraph: {}", e);
                     println!(
                         "💡 Make sure the demo completed successfully and generated profile files."
                     );
@@ -215,9 +220,9 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
     // Wait a moment for profile files to be written
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    // Try to find the most recent profile file
     let current_dir = std::env::current_dir()?;
-    let mut profile_files = Vec::new();
+    let mut exclusive_files = Vec::new();
+    let mut inclusive_files = Vec::new();
 
     for entry in std::fs::read_dir(&current_dir)? {
         let entry = entry?;
@@ -225,17 +230,21 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
 
         if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
             if name.starts_with("thag_demo_basic_profiling") && name.ends_with(".folded") {
-                profile_files.push(path);
+                if name.contains("inclusive") {
+                    inclusive_files.push(path);
+                } else {
+                    exclusive_files.push(path);
+                }
             }
         }
     }
 
-    if profile_files.is_empty() {
+    if exclusive_files.is_empty() && inclusive_files.is_empty() {
         return Err("No profile files found".into());
     }
 
     // Sort by modification time, most recent first
-    profile_files.sort_by(|a, b| {
+    exclusive_files.sort_by(|a, b| {
         let time_a = std::fs::metadata(a)
             .and_then(|m| m.modified())
             .unwrap_or(std::time::UNIX_EPOCH);
@@ -245,8 +254,22 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
         time_b.cmp(&time_a)
     });
 
-    let profile_file = &profile_files[0];
-    show_simple_profile_analysis(profile_file)?;
+    inclusive_files.sort_by(|a, b| {
+        let time_a = std::fs::metadata(a)
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::UNIX_EPOCH);
+        let time_b = std::fs::metadata(b)
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::UNIX_EPOCH);
+        time_b.cmp(&time_a)
+    });
+
+    // Use exclusive file for both text analysis and flamegraph generation
+    if !exclusive_files.is_empty() {
+        let exclusive_file = &exclusive_files[0];
+        show_simple_profile_analysis(exclusive_file)?;
+        generate_flamegraph(exclusive_file)?;
+    }
 
     Ok(())
 }
@@ -348,7 +371,7 @@ fn clean_function_name(name: &str) -> String {
     }
 }
 
-fn show_performance_insights(functions: &[(String, u128)], total_duration_us: u128) {
+fn show_performance_insights(functions: &[(String, u128)], _total_duration_us: u128) {
     println!("💡 Performance Insights:");
     println!("────────────────────────");
 
@@ -390,4 +413,78 @@ fn show_performance_insights(functions: &[(String, u128)], total_duration_us: u1
     }
 
     println!();
+}
+
+fn generate_flamegraph(
+    profile_file: &std::path::PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+    println!("\n🔥 Generating Interactive Flamegraph...");
+
+    println!("profile_file={profile_file:#?}");
+    let content = std::fs::read_to_string(profile_file)?;
+
+    println!("content={content}");
+    let stacks: Vec<String> = content.lines().map(|line| line.to_string()).collect();
+
+    if stacks.is_empty() {
+        println!("⚠️  No profile data found in file");
+        return Ok(());
+    }
+
+    // Create flamegraph options
+    let mut opts = Options::default();
+    opts.title = "Basic Profiling Demo - Performance Flamegraph".to_string();
+    opts.subtitle = Some(format!(
+        "Generated: {} | Click and drag to explore function call hierarchy",
+        Local::now().format("%Y-%m-%d %H:%M:%S")
+    ));
+    opts.colors = Palette::Basic(BasicPalette::Aqua);
+    opts.count_name = "μs".to_string();
+    opts.min_width = 0.0;
+    opts.flame_chart = false; // Use aggregated flamegraph
+
+    // Generate flamegraph
+    let svg_path = "basic_profiling_flamegraph.svg";
+    let output = std::fs::File::create(svg_path)?;
+
+    flamegraph::from_lines(&mut opts, stacks.iter().map(String::as_str), output)?;
+
+    println!("✅ Flamegraph generated: {}", svg_path);
+
+    // Open in browser
+    if let Err(e) = open_in_browser(svg_path) {
+        println!("⚠️  Could not open browser automatically: {}", e);
+        println!("💡 You can manually open: {}", svg_path);
+    } else {
+        println!("🌐 Flamegraph opened in your default browser!");
+        println!("🔍 Click and drag to explore the performance visualization");
+        println!("📊 Function width = time spent, height = call stack depth");
+        println!("💡 Notice how the recursive fibonacci dominates the graph!");
+    }
+
+    Ok(())
+}
+
+fn open_in_browser(svg_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let full_path = std::env::current_dir()?.join(svg_path);
+    let url = format!("file://{}", full_path.display());
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open").arg(&url).spawn()?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open").arg(&url).spawn()?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("rundll32")
+            .args(&["url.dll,FileProtocolHandler", &url])
+            .spawn()?;
+    }
+
+    Ok(())
 }

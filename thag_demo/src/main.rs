@@ -10,8 +10,6 @@ use std::path::PathBuf;
 use std::process;
 use thag_rs::{builder::execute, Cli};
 
-mod viz;
-
 /// Demo runner for thag_rs and thag_profiler examples
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

@@ -78,3 +78,4 @@ demo/proc_macros/target
 404.html
 hello.html
 thag_profiler/src/profiling_alt.rs
+*.svg

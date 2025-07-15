@@ -10,6 +10,8 @@ use std::path::PathBuf;
 use std::process;
 use thag_rs::{builder::execute, Cli};
 
+mod viz;
+
 /// Demo runner for thag_rs and thag_profiler examples
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -47,6 +49,9 @@ enum DemoCommand {
 
     /// Full benchmark profiling demo
     Benchmark,
+
+    /// Interactive profiling demo with embedded analysis
+    InteractiveProfiling,
 
     /// Run a specific demo script by name
     Script {
@@ -105,6 +110,10 @@ fn list_demos() {
         ("comparison", "Before/after performance comparison"),
         ("flamegraph", "Interactive flamegraph generation"),
         ("benchmark", "Full benchmark profiling with detailed output"),
+        (
+            "interactive-profiling",
+            "Interactive profiling with embedded analysis",
+        ),
     ];
 
     for (name, description) in demos {
@@ -126,6 +135,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::Comparison => include_str!("../demos/comparison.rs"),
         DemoCommand::Flamegraph => include_str!("../demos/flamegraph.rs"),
         DemoCommand::Benchmark => include_str!("../demos/benchmark.rs"),
+        DemoCommand::InteractiveProfiling => include_str!("../demos/interactive_profiling.rs"),
         DemoCommand::Script { name } => {
             return run_script_demo(&name, verbose);
         }
@@ -138,6 +148,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::Comparison => "comparison",
         DemoCommand::Flamegraph => "flamegraph",
         DemoCommand::Benchmark => "benchmark",
+        DemoCommand::InteractiveProfiling => "interactive_profiling",
         DemoCommand::Script { .. } => unreachable!(),
     };
 
@@ -291,6 +302,10 @@ fn print_demo_info(demo_name: &str) {
         "benchmark" => {
             println!("  • Comprehensive benchmark profiling");
             println!("  • Detailed performance metrics");
+        }
+        "interactive_profiling" => {
+            println!("  • Interactive profiling with embedded analysis");
+            println!("  • Real-time performance insights and comparisons");
         }
         _ => {}
     }

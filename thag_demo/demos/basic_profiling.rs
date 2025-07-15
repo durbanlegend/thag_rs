@@ -177,4 +177,217 @@ fn main() {
     println!("✅ Demo completed!");
     println!("📊 Check the generated flamegraph files for visual analysis.");
     println!("🔍 Use 'thag_profile' command to analyze the profiling data.");
+
+    // Add interactive visualization
+    show_interactive_visualization();
+}
+
+fn show_interactive_visualization() {
+    println!();
+    println!("🎯 Would you like to view an interactive profile analysis?");
+    println!("This will show you the performance data in a more detailed, interactive format.");
+    print!("Enter 'y' for yes, or any other key to skip: ");
+    std::io::stdout().flush().unwrap();
+
+    let mut input = String::new();
+    if std::io::stdin().read_line(&mut input).is_ok() {
+        if input.trim().to_lowercase() == "y" {
+            println!();
+            println!("🔍 Loading interactive profile viewer...");
+
+            // Try to load and display the profile data
+            match load_and_show_profile() {
+                Ok(()) => {
+                    println!("✅ Interactive analysis completed!");
+                }
+                Err(e) => {
+                    println!("⚠️  Could not load profile data: {}", e);
+                    println!(
+                        "💡 Make sure the demo completed successfully and generated profile files."
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
+    // Wait a moment for profile files to be written
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    // Try to find the most recent profile file
+    let current_dir = std::env::current_dir()?;
+    let mut profile_files = Vec::new();
+
+    for entry in std::fs::read_dir(&current_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+            if name.starts_with("thag_demo_basic_profiling") && name.ends_with(".folded") {
+                profile_files.push(path);
+            }
+        }
+    }
+
+    if profile_files.is_empty() {
+        return Err("No profile files found".into());
+    }
+
+    // Sort by modification time, most recent first
+    profile_files.sort_by(|a, b| {
+        let time_a = std::fs::metadata(a)
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::UNIX_EPOCH);
+        let time_b = std::fs::metadata(b)
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::UNIX_EPOCH);
+        time_b.cmp(&time_a)
+    });
+
+    let profile_file = &profile_files[0];
+    show_simple_profile_analysis(profile_file)?;
+
+    Ok(())
+}
+
+fn show_simple_profile_analysis(
+    file_path: &std::path::PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let content = std::fs::read_to_string(file_path)?;
+    let mut function_times: std::collections::HashMap<String, u128> =
+        std::collections::HashMap::new();
+    let mut total_duration_us = 0u128;
+
+    // Parse folded stack format
+    for line in content.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 2 {
+            continue;
+        }
+
+        let stack = parts[0];
+        let time_str = parts[1];
+
+        if let Ok(time_us) = time_str.parse::<u128>() {
+            total_duration_us += time_us;
+
+            // Extract function names from the stack
+            let functions: Vec<&str> = stack.split(';').collect();
+            for func_name in functions {
+                let clean_name = clean_function_name(func_name);
+                *function_times.entry(clean_name).or_insert(0) += time_us;
+            }
+        }
+    }
+
+    // Create and display analysis
+    let mut functions: Vec<_> = function_times.into_iter().collect();
+    functions.sort_by(|a, b| b.1.cmp(&a.1));
+
+    println!("📊 Profile Analysis Results");
+    println!("═══════════════════════════");
+    println!("Total Duration: {:.3}ms", total_duration_us as f64 / 1000.0);
+    println!();
+
+    println!("🏆 Top Functions by Execution Time:");
+    println!("────────────────────────────────────");
+
+    for (i, (name, time_us)) in functions.iter().enumerate().take(10) {
+        let percentage = (*time_us as f64 / total_duration_us as f64) * 100.0;
+        let time_ms = *time_us as f64 / 1000.0;
+
+        let icon = match i {
+            0 => "🥇",
+            1 => "🥈",
+            2 => "🥉",
+            _ => "🏅",
+        };
+
+        println!(
+            "{} {}. {} - {:.3}ms ({:.1}%)",
+            icon,
+            i + 1,
+            name,
+            time_ms,
+            percentage
+        );
+    }
+
+    println!();
+    show_performance_insights(&functions, total_duration_us);
+
+    Ok(())
+}
+
+fn clean_function_name(name: &str) -> String {
+    let clean = name.split("::").last().unwrap_or(name);
+    let clean = clean.split('<').next().unwrap_or(clean);
+    let clean = clean.split('(').next().unwrap_or(clean);
+
+    match clean {
+        s if s.starts_with("thag_demo_") => s.strip_prefix("thag_demo_").unwrap_or(s).to_string(),
+        s if s.contains("fibonacci") => {
+            if s.contains("cached") {
+                "fibonacci_cached"
+            } else if s.contains("iter") {
+                "fibonacci_iter"
+            } else {
+                "fibonacci_recursive"
+            }
+        }
+        .to_string(),
+        s if s.contains("cpu_intensive") => "cpu_intensive_work".to_string(),
+        s if s.contains("simulated_io") => "simulated_io_work".to_string(),
+        s if s.contains("nested_function") => "nested_function_calls".to_string(),
+        s => s.to_string(),
+    }
+}
+
+fn show_performance_insights(functions: &[(String, u128)], total_duration_us: u128) {
+    println!("💡 Performance Insights:");
+    println!("────────────────────────");
+
+    if functions.len() >= 2 {
+        let slowest = &functions[0];
+        let fastest = &functions[functions.len() - 1];
+
+        if fastest.1 > 0 {
+            let speedup = slowest.1 as f64 / fastest.1 as f64;
+            println!(
+                "🐌 Slowest: {} ({:.3}ms)",
+                slowest.0,
+                slowest.1 as f64 / 1000.0
+            );
+            println!(
+                "🚀 Fastest: {} ({:.3}ms)",
+                fastest.0,
+                fastest.1 as f64 / 1000.0
+            );
+            println!("⚡ Performance difference: {:.1}x", speedup);
+
+            if speedup > 1000.0 {
+                println!("🎯 Consider using faster algorithms in production!");
+            }
+        }
+    }
+
+    // Look for specific patterns
+    let has_recursive = functions.iter().any(|(name, _)| name.contains("recursive"));
+    let has_cached = functions.iter().any(|(name, _)| name.contains("cached"));
+    let has_iter = functions.iter().any(|(name, _)| name.contains("iter"));
+
+    if has_recursive && has_cached {
+        println!("🔧 Tip: Caching can dramatically improve recursive algorithms!");
+    }
+
+    if has_iter {
+        println!("🔄 Tip: Iterative approaches often outperform recursion for large inputs!");
+    }
+
+    println!();
 }

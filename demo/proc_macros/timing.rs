@@ -29,7 +29,7 @@ pub fn timing_impl(_attr: TokenStream, item: TokenStream) -> TokenStream {
             };
 
             let _elapsed = _start_time.elapsed();
-            println!("⏱️  Function '{}' took: {:?}", #fn_name_str, _elapsed);
+            println!("⏱️  Function '{}' took: {:.1?}", #fn_name_str, _elapsed);
 
             result
         }

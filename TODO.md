@@ -13,6 +13,7 @@
 - [ ]  ?Use curl to download a compiled binary of a profiling demo.
 - [ ]  Thag tool for invoking thag as a library and running a remote source file.
 - [ ]  "Playground" naming. Multifaceted playground.
+- [ ]  Why is exclusive .folded first being written out as clone of inclusive.folded?
 
 
 thag --loop 'if line.len() > 3 { count += 1; true } else { false }' --begin 'let mut count = 0;' --end 'println!("Total: {}", count);' --toml '[dependencies]

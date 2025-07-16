@@ -1,6 +1,7 @@
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 
+#[cfg_attr(not(feature = "clipboard"), allow(clippy::unnecessary_wraps))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(not(feature = "clipboard"))]
     {

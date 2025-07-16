@@ -11,7 +11,7 @@
 use thag_demo_proc_macros::retry;
 
 /// Unreliable network operation that fails randomly
-#[retry]
+#[retry(expand)]
 fn unreliable_network_call() -> Result<String, String> {
     println!("    Attempting network call...");
 

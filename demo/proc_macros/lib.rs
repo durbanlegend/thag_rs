@@ -14,9 +14,9 @@
 //! - [`DeriveDocComment`] - Documentation extraction
 //!
 //! ### Attribute Macros (3)
-//! - [`macro@cached`] - Function memoization
-//! - [`macro@timing`] - Execution time measurement
-//! - [`macro@retry`] - Automatic retry logic
+//! - [`macro@cached`] - Function memoization (use `expand` flag to see generated code)
+//! - [`macro@timing`] - Execution time measurement (use `expand` flag to see generated code)
+//! - [`macro@retry`] - Automatic retry logic (use `expand` flag to see generated code)
 //!
 //! ### Function-like Macros (4)
 //! - [`macro@file_navigator`] - File system navigation
@@ -37,6 +37,14 @@
 //!
 //! ```rust
 //! use thag_demo_proc_macros::{DeriveBuilder, cached, timing};
+//!
+//! // Basic usage
+//! #[cached]
+//! fn fibonacci(n: u32) -> u32 { ... }
+//!
+//! // With expand flag to see generated code during compilation
+//! #[timing(expand)]
+//! fn slow_operation() -> i32 { ... }
 //! ```
 //!
 //! ## Learning Path
@@ -46,13 +54,24 @@
 //! 3. **DeriveBuilder** - Complex struct generation
 //! 4. **DeriveDisplay** - Trait implementation
 //! 5. **DeriveDocComment** - Attribute parsing
-//! 6. **cached** - Function transformation
-//! 7. **timing** - Performance measurement
-//! 8. **retry** - Error handling patterns
+//! 6. **cached** - Function transformation (try with `expand` flag)
+//! 7. **timing** - Performance measurement (try with `expand` flag)
+//! 8. **retry** - Error handling patterns (try with `expand` flag)
 //! 9. **file_navigator** - Complex code generation
 //! 10. **compile_time_assert** - Compile-time validation
 //! 11. **env_or_default** - Environment processing
 //! 12. **generate_tests** - Test automation
+//!
+//! ## Debugging Generated Code
+//!
+//! Attribute macros (`cached`, `timing`, `retry`) support an `expand` flag to display
+//! the generated code during compilation. This is useful for learning and debugging:
+//!
+//! ```rust
+//! #[cached(expand)]        // Shows caching implementation
+//! #[timing(expand)]        // Shows timing measurement code
+//! #[retry(times = 3, expand)]  // Shows retry logic with custom retry count
+//! ```
 
 mod cached;
 mod compile_time_assert;
@@ -88,6 +107,105 @@ use syn::{
     parse_file, parse_macro_input, parse_str, DeriveInput, Expr, ExprArray, Ident, LitInt, LitStr,
     Token,
 };
+
+/// Simple argument parser for attribute macros to check for expand flag
+#[derive(Default)]
+struct AttrArgs {
+    expand: bool,
+}
+
+impl Parse for AttrArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut args = Self::default();
+
+        // Handle empty case
+        if input.is_empty() {
+            return Ok(args);
+        }
+
+        // Parse as a list of flags
+        let mut first = true;
+
+        while !input.is_empty() {
+            if !first {
+                let _: syn::Token![,] = input.parse()?;
+            }
+            first = false;
+
+            // Parse as flag
+            let flag: syn::Ident = input.parse()?;
+            match flag.to_string().as_str() {
+                "expand" => args.expand = true,
+                _ => {
+                    // Ignore unknown flags for now to maintain compatibility
+                }
+            }
+        }
+
+        Ok(args)
+    }
+}
+
+/// Argument parser for retry macro to handle both times parameter and expand flag
+#[derive(Default)]
+struct RetryArgs {
+    times: Option<u32>,
+    expand: bool,
+}
+
+impl Parse for RetryArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut args = Self::default();
+
+        // Handle empty case
+        if input.is_empty() {
+            return Ok(args);
+        }
+
+        // Parse as a list of arguments
+        let mut first = true;
+
+        while !input.is_empty() {
+            if !first {
+                let _: syn::Token![,] = input.parse()?;
+            }
+            first = false;
+
+            // Try to parse as "key = value" or just "key"
+            let key: syn::Ident = input.parse()?;
+
+            if input.peek(syn::Token![=]) {
+                let _: syn::Token![=] = input.parse()?;
+                let value: syn::Expr = input.parse()?;
+
+                match key.to_string().as_str() {
+                    "times" => {
+                        if let syn::Expr::Lit(syn::ExprLit {
+                            lit: syn::Lit::Int(lit_int),
+                            ..
+                        }) = value
+                        {
+                            args.times = Some(lit_int.base10_parse().unwrap_or(3));
+                        }
+                    }
+                    _ => {
+                        // Ignore unknown key=value pairs for now
+                    }
+                }
+            } else {
+                // This is just a flag
+                match key.to_string().as_str() {
+                    "expand" => args.expand = true,
+                    _ => {
+                        // Ignore unknown flags for now to maintain compatibility
+                    }
+                }
+            }
+        }
+
+        Ok(args)
+    }
+}
 
 /// Generates constructor methods for structs.
 ///
@@ -254,7 +372,7 @@ pub fn derive_getters(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_derive(DeriveDocComment)]
 pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "derive_doc_comment", &input, derive_doc_comment_impl)
+    maybe_expand_proc_macro(false, "derive_doc_comment", &input, derive_doc_comment_impl)
 }
 
 /// Generates interactive file system navigation functionality.
@@ -270,7 +388,7 @@ pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn file_navigator(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "file_navigator", &input, file_navigator_impl)
+    maybe_expand_proc_macro(false, "file_navigator", &input, file_navigator_impl)
 }
 
 /// Adds automatic memoization to functions.
@@ -285,10 +403,17 @@ pub fn file_navigator(input: TokenStream) -> TokenStream {
 /// fn fibonacci(n: u32) -> u32 {
 ///     if n <= 1 { n } else { fibonacci(n-1) + fibonacci(n-2) }
 /// }
+///
+/// // To see the generated code during development:
+/// #[cached(expand)]
+/// fn fibonacci_debug(n: u32) -> u32 {
+///     if n <= 1 { n } else { fibonacci_debug(n-1) + fibonacci_debug(n-2) }
+/// }
 /// ```
 #[proc_macro_attribute]
 pub fn cached(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "cached", &attr, &item, cached_impl)
+    let args = syn::parse::<AttrArgs>(attr.clone()).unwrap_or_default();
+    maybe_expand_attr_macro(args.expand, "cached", &attr, &item, cached_impl)
 }
 
 /// Measures and displays function execution time.
@@ -305,10 +430,18 @@ pub fn cached(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///     42
 /// }
 /// // Output: Function 'slow_operation' took: 100.234ms
+///
+/// // To see the generated code during development:
+/// #[timing(expand)]
+/// fn debug_operation() -> i32 {
+///     std::thread::sleep(std::time::Duration::from_millis(100));
+///     42
+/// }
 /// ```
 #[proc_macro_attribute]
 pub fn timing(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "timing", &attr, &item, timing_impl)
+    let args = syn::parse::<AttrArgs>(attr.clone()).unwrap_or_default();
+    maybe_expand_attr_macro(args.expand, "timing", &attr, &item, timing_impl)
 }
 
 /// Adds automatic retry logic to functions.
@@ -324,10 +457,18 @@ pub fn timing(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///     // Network operation that might fail
 ///     Ok("success".to_string())
 /// }
+///
+/// // To see the generated code during development:
+/// #[retry(times = 3, expand)]
+/// fn debug_operation() -> Result<String, std::io::Error> {
+///     // Network operation that might fail
+///     Ok("success".to_string())
+/// }
 /// ```
 #[proc_macro_attribute]
 pub fn retry(attr: TokenStream, item: TokenStream) -> TokenStream {
-    maybe_expand_attr_macro(true, "retry", &attr, &item, retry_impl)
+    let args = syn::parse::<RetryArgs>(attr.clone()).unwrap_or_default();
+    maybe_expand_attr_macro(args.expand, "retry", &attr, &item, retry_impl)
 }
 
 /// Generates compile-time assertions.
@@ -344,7 +485,7 @@ pub fn retry(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn compile_time_assert(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(
-        true,
+        false,
         "compile_time_assert",
         &input,
         compile_time_assert_impl,
@@ -363,7 +504,7 @@ pub fn compile_time_assert(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn env_or_default(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "env_or_default", &input, env_or_default_impl)
+    maybe_expand_proc_macro(false, "env_or_default", &input, env_or_default_impl)
 }
 
 /// Generates multiple test functions from test data.
@@ -383,7 +524,7 @@ pub fn env_or_default(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn generate_tests(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(true, "generate_tests", &input, generate_tests_impl)
+    maybe_expand_proc_macro(false, "generate_tests", &input, generate_tests_impl)
 }
 
 /// Conditionally expands proc macros for debugging.

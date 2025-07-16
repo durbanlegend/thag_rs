@@ -403,6 +403,7 @@ fn generate_time_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> Profi
     // opts.color_diffusion = true;
     opts.flame_chart = as_chart;
 
+    // Reverse iter in case of flamechart (regular flamegraph will ignore this sort order).
     flamegraph::from_lines(
         &mut opts,
         profile.stacks.iter().rev().map(String::as_str),

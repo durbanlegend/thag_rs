@@ -40,7 +40,7 @@ fn slow_computation(delay_ms: u64) -> String {
 }
 
 /// Recursive function with timing at each level
-#[timing]
+#[timing(expand)]
 fn recursive_fibonacci(n: u32) -> u64 {
     if n <= 1 {
         n as u64

@@ -366,7 +366,7 @@ fn generate_flamegraph(
     let mut opts = Options::default();
     opts.title = "Interactive Profiling Demo - Performance Flamegraph".to_string();
     opts.subtitle = Some(format!(
-        "Generated: {} | Click and drag to explore function call hierarchy",
+        "Generated: {} | Hover over and click on the bars to explore the function call hierarchy",
         Local::now().format("%Y-%m-%d %H:%M:%S")
     ));
     opts.colors = Palette::Basic(BasicPalette::Aqua);
@@ -388,7 +388,7 @@ fn generate_flamegraph(
         println!("💡 You can manually open: {}", svg_path);
     } else {
         println!("🌐 Flamegraph opened in your default browser!");
-        println!("🔍 Click and drag to explore the performance visualization");
+        println!("🔍 Hover over and click on the bars to explore the performance visualization");
         println!("📊 Function width = time spent, height = call stack depth");
     }
 

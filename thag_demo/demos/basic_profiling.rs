@@ -16,7 +16,7 @@ strip = false
 //# Categories: profiling, demo, timing
 use chrono::Local;
 use ibig::{ubig, UBig};
-use inferno::flamegraph::{self, color::BasicPalette, Options, Palette};
+use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
 use num_traits::identities::One;
 use std::io::Write;
 use std::iter::successors;
@@ -25,7 +25,7 @@ use std::time::Duration;
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::{cached, timing};
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, profiled, ProfileResult};
 
 const FIB_N: usize = 45;
 const HUNDREDFOLD: usize = FIB_N * 100;
@@ -157,14 +157,12 @@ fn alt_fibonacci_iter() {
     fibonacci_iter(HUNDREDFOLD);
 
     println!(
-        "\n🤯 Not too shabby! But we can go a lot bigger and faster still with no overflows - you can go down the rabbit hole in the thag demo collection. Ciao!\n"
+        "\n🤯 Not too shabby! But we can go a lot bigger and faster still with no overflows - you can go down the fibonacci rabbit hole in the demo collection of the `thag_rs` crate. Ciao!\n"
     );
-
-    pause_awhile();
 }
 
 #[enable_profiling(time)]
-fn main() {
+fn demo() {
     println!("🔥 Basic Profiling Demo");
     println!("=====================");
     println!();
@@ -178,10 +176,15 @@ fn main() {
     // Separate function to help in drilling down
     alt_fibonacci_iter();
 
-    println!();
+    pause_awhile();
+
     println!("✅ Demo completed!");
-    println!("📊 Check the generated flamegraph files for visual analysis.");
+    println!("📊 Check the generated flame files for visual analysis.");
     println!("🔍 Use 'thag_profile' command to analyze the profiling data.");
+}
+
+fn main() {
+    demo();
 
     // Add interactive visualization
     show_interactive_visualization();
@@ -189,8 +192,8 @@ fn main() {
 
 fn show_interactive_visualization() {
     println!();
-    println!("🎯 Would you like to view an interactive flamegraph?");
-    println!("This will generate a visual flamegraph and open it in your browser.");
+    println!("🎯 Would you like to view an interactive flame?");
+    println!("This will generate a visual flame and open it in your browser.");
     print!("Enter 'y' for yes, or any other key to skip: ");
     std::io::stdout().flush().unwrap();
 
@@ -198,15 +201,15 @@ fn show_interactive_visualization() {
     if std::io::stdin().read_line(&mut input).is_ok() {
         if input.trim().to_lowercase() == "y" {
             println!();
-            println!("🔥 Generating interactive flamegraph...");
+            println!("🔥 Generating interactive flame...");
 
             // Try to load and display the profile data
             match load_and_show_profile() {
                 Ok(()) => {
-                    println!("✅ Flamegraph generation completed!");
+                    println!("✅ Flame generation completed!");
                 }
                 Err(e) => {
-                    println!("⚠️  Could not generate flamegraph: {}", e);
+                    println!("⚠️  Could not generate flame: {}", e);
                     println!(
                         "💡 Make sure the demo completed successfully and generated profile files."
                     );
@@ -264,11 +267,11 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
         time_b.cmp(&time_a)
     });
 
-    // Use exclusive file for both text analysis and flamegraph generation
+    // Use exclusive file for both text analysis and flame generation
     if !exclusive_files.is_empty() {
         let exclusive_file = &exclusive_files[0];
         show_simple_profile_analysis(exclusive_file)?;
-        generate_flamegraph(exclusive_file)?;
+        generate_flamechart(exclusive_file)?;
     }
 
     Ok(())
@@ -415,12 +418,12 @@ fn show_performance_insights(functions: &[(String, u128)], _total_duration_us: u
     println!();
 }
 
-fn generate_flamegraph(
+fn generate_flamechart(
     profile_file: &std::path::PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("\n🔥 Generating Interactive Flamegraph...");
+    println!("\n🔥 Generating Interactive Flamechart...");
 
-    println!("profile_file={profile_file:#?}");
+    // println!("profile_file={profile_file:#?}");
     let content = std::fs::read_to_string(profile_file)?;
 
     println!("content={content}");
@@ -431,37 +434,52 @@ fn generate_flamegraph(
         return Ok(());
     }
 
-    // Create flamegraph options
+    // Create flamechart options
     let mut opts = Options::default();
-    opts.title = "Basic Profiling Demo - Performance Flamegraph".to_string();
+    opts.title = "Basic Profiling Demo - Performance Flamechart".to_string();
     opts.subtitle = Some(format!(
-        "Generated: {} | Click and drag to explore function call hierarchy",
+        "Generated: {} | Hover over and click on the bars to explore function call hierarchy, or use Search ↗️",
         Local::now().format("%Y-%m-%d %H:%M:%S")
     ));
-    opts.colors = Palette::Basic(BasicPalette::Aqua);
+    opts.colors = Palette::Multi(MultiPalette::Rust);
     opts.count_name = "μs".to_string();
     opts.min_width = 0.0;
-    opts.flame_chart = false; // Use aggregated flamegraph
+    opts.flame_chart = true; // Use aggregated flamechart
 
-    // Generate flamegraph
-    let svg_path = "basic_profiling_flamegraph.svg";
+    // Generate flamechart
+    let svg_path = "basic_profiling_flamechart.svg";
     let output = std::fs::File::create(svg_path)?;
 
-    flamegraph::from_lines(&mut opts, stacks.iter().map(String::as_str), output)?;
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
 
-    println!("✅ Flamegraph generated: {}", svg_path);
+    enhance_svg_accessibility(svg_path)?;
+
+    println!("✅ Flame generated: {}", svg_path);
 
     // Open in browser
     if let Err(e) = open_in_browser(svg_path) {
         println!("⚠️  Could not open browser automatically: {}", e);
         println!("💡 You can manually open: {}", svg_path);
     } else {
-        println!("🌐 Flamegraph opened in your default browser!");
-        println!("🔍 Click and drag to explore the performance visualization");
+        println!("🌐 Flame opened in your default browser!");
+        println!("🔍 Hover over and click on the bars to explore the performance visualization");
         println!("📊 Function width = time spent, height = call stack depth");
         println!("💡 Notice how the recursive fibonacci dominates the graph!");
     }
 
+    Ok(())
+}
+
+fn enhance_svg_accessibility(svg_path: &str) -> ProfileResult<()> {
+    let content = std::fs::read_to_string(svg_path)?;
+
+    // Make the inactive search link more visible
+    let enhanced = content.replace(
+        "opacity:0.1",
+        "opacity:0.5", // Darker grey for better visibility
+    );
+
+    std::fs::write(svg_path, enhanced)?;
     Ok(())
 }
 

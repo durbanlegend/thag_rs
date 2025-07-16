@@ -12,7 +12,7 @@ use std::time::Instant;
 use thag_demo_proc_macros::cached;
 
 /// Expensive computation that benefits from caching
-#[cached]
+#[cached(expand)]
 fn fibonacci(n: u32) -> u64 {
     println!("  Computing fibonacci({})", n);
     if n <= 1 {

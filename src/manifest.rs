@@ -5,7 +5,7 @@ use crate::{
     config::DependencyInference,
     cvprtln, debug_log, get_verbosity, maybe_config, re,
     styling::Role,
-    vlog, Ast, BuildState, Dependencies, Style, ThagResult, V,
+    vlog, Ast, BuildState, Dependencies, Style, ThagError, ThagResult, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
@@ -317,20 +317,23 @@ pub fn extract(
 /// # Returns
 /// * `ThagResult<()>` - Success or error result
 ///
+/// # Errors
+///
+/// This function will bubble up any error returned by `resolve_thag_dependency`.
 /// # Environment Variables
 /// * `THAG_DEV_PATH` - Absolute path to local `thag_rs` development directory
 /// * `THAG_GIT_REF` - Git reference (branch/tag/commit) for git dependencies
 /// * `THAG_GIT_REPO` - Git repository URL (defaults to standard `thag_rs` repo)
 /// * `CI` - Indicates CI environment
 #[profiled]
-pub fn process_thag_auto_dependencies(build_state: &mut BuildState) {
+pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
     if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         let thag_crates = ["thag_rs", "thag_proc_macros", "thag_profiler"];
 
         for crate_name in &thag_crates {
             if let Some(dependency) = rs_manifest.dependencies.get(*crate_name) {
                 if should_process_thag_auto(dependency) {
-                    let new_dependency = resolve_thag_dependency(crate_name, dependency);
+                    let new_dependency = resolve_thag_dependency(crate_name, dependency)?;
                     rs_manifest
                         .dependencies
                         .insert((*crate_name).to_string(), new_dependency);
@@ -339,6 +342,7 @@ pub fn process_thag_auto_dependencies(build_state: &mut BuildState) {
             }
         }
     }
+    Ok(())
 }
 
 /// Checks if a dependency has `thag-auto` enabled by looking for a version string
@@ -358,7 +362,10 @@ fn should_process_thag_auto(dependency: &Dependency) -> bool {
 }
 
 /// Resolves a thag dependency based on environment variables and context
-fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> cargo_toml::Dependency {
+fn resolve_thag_dependency(
+    crate_name: &str,
+    original_dep: &Dependency,
+) -> ThagResult<cargo_toml::Dependency> {
     // Extract base dependency details, preserving features and other settings
     let (base_version, features, default_features) = match original_dep {
         Dependency::Detailed(detail) => {
@@ -380,7 +387,7 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> cargo
             };
             (version, Vec::new(), true)
         }
-        Dependency::Inherited(_) => return original_dep.clone(),
+        Dependency::Inherited(_) => return Ok(original_dep.clone()),
     };
 
     // Create new dependency detail with preserved settings
@@ -425,14 +432,60 @@ fn resolve_thag_dependency(crate_name: &str, original_dep: &Dependency) -> cargo
         );
     } else {
         // Default: use crates.io version
-        new_detail.version = base_version;
-        debug_log!(
-            "Using crates.io version for {crate_name}: {:?}",
-            new_detail.version
-        );
+        if let Some(version) = base_version {
+            let query: Query = format!("{crate_name}@={version}")
+                .parse()
+                .map_err(|e| ThagError::FromStr(format!("Failed to parse query: {e}").into()))?;
+            let maybe_specific_release = query.submit();
+            if maybe_specific_release.is_ok() {
+                new_detail.version = Some(version);
+                debug_log!(
+                    "Using crates.io version for {crate_name}: {:?}",
+                    new_detail.version
+                );
+            } else {
+                display_thag_auto_help();
+                return Err(ThagError::FromStr(
+                    format!("{crate_name} version {} not found in crates.io", version).into(),
+                ));
+            }
+        }
     }
+    Ok(Dependency::Detailed(new_detail))
+}
 
-    Dependency::Detailed(new_detail)
+fn display_thag_auto_help() {
+    cvprtln!(
+        Role::ERR,
+        V::N,
+        "Build failed - thag dependency issue detected"
+    );
+    cvprtln!(
+        Role::EMPH,
+        V::N,
+        r"
+This script uses thag dependencies (thag_rs, thag_proc_macros, or thag_profiler)
+with the 'thag-auto' keyword, which automatically resolves to the appropriate
+dependency source based on your environment.
+
+The most likely issue is that the version specified in the script doesn't exist
+on crates.io yet. To fix this, you have several options:
+
+1. DEVELOPMENT (recommended): Set environment variable to use local path
+   export THAG_DEV_PATH=/absolute/path/to/thag_rs
+
+2. GIT DEPENDENCY: Use git reference to get the latest version
+   export THAG_GIT_REF=main
+
+3. ALWAYS RUN THROUGH THAG: Use 'thag script.rs' instead of 'cargo build'
+   (This allows thag-auto processing to work properly)
+
+The thag-auto system is designed to work with crates.io by default, falling back
+to git or local paths when environment variables are set. This allows the same
+script to work in different environments without modification.
+
+For more details, see the comments in demo scripts or the thag documentation."
+    );
 }
 
 #[profiled]

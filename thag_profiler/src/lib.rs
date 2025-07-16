@@ -632,11 +632,8 @@ pub fn finalize_profiling() {
 
         // Process any recorded profiles
         if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
-            // Convert inclusive time profile to exclusive time if enabled
-            if profiling::is_convert_to_exclusive_time_enabled() {
-                if let Err(e) = profiling::process_time_profile() {
-                    debug_log!("Error converting time profile to exclusive time: {e:?}");
-                }
+            if let Err(e) = profiling::process_time_profile() {
+                debug_log!("Error converting time profile to exclusive time: {e:?}");
             }
         }
 
@@ -660,10 +657,8 @@ pub fn finalize_profiling() {
         // Process any recorded profiles
         if matches!(global_profile_type, ProfileType::Time | ProfileType::Both) {
             // Convert inclusive time profile to exclusive time if enabled
-            if profiling::is_convert_to_exclusive_time_enabled() {
-                if let Err(e) = profiling::process_time_profile() {
-                    debug_log!("Error converting time profile to exclusive time: {e:?}");
-                }
+            if let Err(e) = profiling::process_time_profile() {
+                debug_log!("Error converting time profile to exclusive time: {e:?}");
             }
         }
 

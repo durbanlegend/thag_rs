@@ -833,12 +833,6 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
         InclusiveTimeProfileFile::init();
         initialize_file(inclusive_time_path, InclusiveTimeProfileFile::get())?;
         debug_log!("Inclusive time profile will be written to {inclusive_time_path}");
-
-        // Initialize the final time file (will be used for exclusive time)
-        let time_path = get_time_path()?;
-        TimeProfileFile::init();
-        initialize_file(time_path, TimeProfileFile::get())?;
-        debug_log!("Time profile will be written to {time_path}");
     }
 
     flush_debug_log();
@@ -884,10 +878,8 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
         initialize_file(inclusive_time_path, InclusiveTimeProfileFile::get())?;
         debug_log!("Inclusive time profile will be written to {inclusive_time_path}");
 
-        // Initialize the final time file (will be used for exclusive time)
+        // The exclusive time file will be created by de-aggregating the inclusive one at the end.
         let time_path = get_time_path()?;
-        TimeProfileFile::init();
-        initialize_file(time_path, TimeProfileFile::get())?;
         debug_log!("Time profile will be written to {time_path}");
     }
 
@@ -1971,11 +1963,7 @@ impl Profile {
         // First write to the inclusive time file (always)
         let paths = ProfilePaths::get();
         let inclusive_time_path = &paths.inclusive_time;
-        Self::write_profile_event(inclusive_time_path, InclusiveTimeProfileFile::get(), &entry)?;
-
-        // Also write to the main time file (will be overwritten if converting to exclusive time)
-        let time_path = get_time_path()?;
-        Self::write_profile_event(time_path, TimeProfileFile::get(), &entry)
+        Self::write_profile_event(inclusive_time_path, InclusiveTimeProfileFile::get(), &entry)
     }
 
     #[cfg(feature = "full_profiling")]
@@ -2650,20 +2638,6 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     Ok(())
 }
 
-/// Enable or disable exclusive time conversion
-#[internal_doc]
-#[cfg(feature = "time_profiling")]
-pub fn set_convert_to_exclusive_time(enable: bool) {
-    CONVERT_TO_EXCLUSIVE_TIME.store(enable, Ordering::SeqCst);
-}
-
-/// Check if exclusive time conversion is enabled
-#[internal_doc]
-#[cfg(feature = "time_profiling")]
-pub fn is_convert_to_exclusive_time_enabled() -> bool {
-    CONVERT_TO_EXCLUSIVE_TIME.load(Ordering::SeqCst)
-}
-
 /// Perform the conversion from inclusive to exclusive time if enabled
 /// # Errors
 ///
@@ -2671,21 +2645,19 @@ pub fn is_convert_to_exclusive_time_enabled() -> bool {
 #[internal_doc]
 #[cfg(feature = "time_profiling")]
 pub fn process_time_profile() -> ProfileResult<()> {
-    if is_convert_to_exclusive_time_enabled() {
-        let paths = ProfilePaths::get();
-        let inclusive_path = &paths.inclusive_time;
-        let exclusive_path = &paths.time;
+    let paths = ProfilePaths::get();
+    let inclusive_path = &paths.inclusive_time;
+    let exclusive_path = &paths.time;
 
-        // Check if the inclusive time file exists and has content
-        if !inclusive_path.is_empty() {
-            let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
-                ProfileError::General(format!("Failed to check inclusive time file: {e}"))
-            })?;
+    // Check if the inclusive time file exists and has content
+    if !inclusive_path.is_empty() {
+        let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
+            ProfileError::General(format!("Failed to check inclusive time file: {e}"))
+        })?;
 
-            if metadata.len() > 0 {
-                debug_log!("Converting inclusive time profile to exclusive time");
-                convert_to_exclusive_time(inclusive_path, exclusive_path)?;
-            }
+        if metadata.len() > 0 {
+            debug_log!("Converting inclusive time profile to exclusive time");
+            convert_to_exclusive_time(inclusive_path, exclusive_path)?;
         }
     }
     Ok(())
@@ -3061,43 +3033,6 @@ pub fn safely_cleanup_profiling_after_test() {
     use std::sync::atomic::Ordering;
     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
 }
-
-// Flag to determine whether to convert inclusive time profiles to exclusive time
-#[cfg(feature = "time_profiling")]
-static CONVERT_TO_EXCLUSIVE_TIME: AtomicBool = AtomicBool::new(true);
-
-// /// Strips hexadecimal suffixes from Rust function names.
-// ///
-// /// This function removes hash suffixes (like `::h1234abcd`) that are added
-// /// by the Rust compiler for symbol disambiguation.
-// ///
-// /// # Arguments
-// /// * `name` - The function name that may contain a hex suffix
-// ///
-// /// # Returns
-// /// A `String` with the hex suffix removed, or the original name if no suffix was found
-// ///
-// /// # Examples
-// /// ```
-// /// # use thag_profiler::strip_hex_suffix;
-// /// let name = "my_function::h1234abcd".to_string();
-// /// assert_eq!(strip_hex_suffix(name), "my_function");
-// ///
-// /// let name = "no_suffix".to_string();
-// /// assert_eq!(strip_hex_suffix(name), "no_suffix");
-// /// ```
-// #[must_use]
-// pub fn strip_hex_suffix(name: String) -> String {
-//     if let Some(hash_pos) = name.rfind("::h") {
-//         if name[hash_pos + 3..].chars().all(|c| c.is_ascii_hexdigit()) {
-//             name[..hash_pos].to_string()
-//         } else {
-//             name
-//         }
-//     } else {
-//         name
-//     }
-// }
 
 /// Strips hexadecimal suffixes from Rust function names.
 ///

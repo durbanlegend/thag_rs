@@ -185,6 +185,14 @@ fn demo() {
 
 fn main() {
     demo();
+    let child = thread::Builder::new()
+        .stack_size(4 * 1024 * 1024)
+        .spawn(move || {
+            demo();
+        })
+        .unwrap();
+
+    let _ = child.join().unwrap();
 
     // Add interactive visualization
     show_interactive_visualization();

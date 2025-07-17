@@ -164,7 +164,7 @@ fn alt_fibonacci_iter() {
 #[enable_profiling(time)]
 fn demo() {
     println!("🔥 Basic Profiling Demo");
-    println!("=====================");
+    println!("════════════════════════");
     println!();
 
     println!("Running nested function calls with profiling...");
@@ -184,7 +184,7 @@ fn demo() {
 }
 
 fn main() {
-    demo();
+    // Ensure no stack overflow at hundredfold on all platforms
     let child = thread::Builder::new()
         .stack_size(4 * 1024 * 1024)
         .spawn(move || {

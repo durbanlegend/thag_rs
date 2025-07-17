@@ -17,7 +17,9 @@ use std::{
     time::Duration,
 };
 use strum::Display;
-use thag_profiler::{profiling::ProfileStats, re, thousands, ProfileError, ProfileResult};
+use thag_profiler::{
+    enhance_svg_accessibility, profiling::ProfileStats, re, thousands, ProfileError, ProfileResult,
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -1853,17 +1855,4 @@ fn matches_memory_pattern(stack: &str, pattern: &str) -> bool {
         }
         _ => false,
     }
-}
-
-fn enhance_svg_accessibility(svg_path: &str) -> ProfileResult<()> {
-    let content = fs::read_to_string(svg_path)?;
-
-    // Make the inactive search link more visible
-    let enhanced = content.replace(
-        "opacity:0.1",
-        "opacity:0.5", // Darker grey for better visibility
-    );
-
-    fs::write(svg_path, enhanced)?;
-    Ok(())
 }

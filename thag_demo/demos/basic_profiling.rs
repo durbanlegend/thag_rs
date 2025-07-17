@@ -25,7 +25,7 @@ use std::time::Duration;
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::{cached, timing};
-use thag_profiler::{enable_profiling, profiled, ProfileResult};
+use thag_profiler::{enable_profiling, enhance_svg_accessibility, profiled};
 
 const FIB_N: usize = 45;
 const HUNDREDFOLD: usize = FIB_N * 100;
@@ -179,7 +179,7 @@ fn demo() {
     pause_awhile();
 
     println!("✅ Demo completed!");
-    println!("📊 Check the generated flame files for visual analysis.");
+    println!("📊 Check the generated flamechart files for visual analysis.");
     println!("🔍 Use 'thag_profile' command to analyze the profiling data.");
 }
 
@@ -192,8 +192,8 @@ fn main() {
 
 fn show_interactive_visualization() {
     println!();
-    println!("🎯 Would you like to view an interactive flame?");
-    println!("This will generate a visual flame and open it in your browser.");
+    println!("🎯 Would you like to view an interactive flamechart?");
+    println!("This will generate a visual  and open it in your browser.");
     print!("Enter 'y' for yes, or any other key to skip: ");
     std::io::stdout().flush().unwrap();
 
@@ -201,15 +201,15 @@ fn show_interactive_visualization() {
     if std::io::stdin().read_line(&mut input).is_ok() {
         if input.trim().to_lowercase() == "y" {
             println!();
-            println!("🔥 Generating interactive flame...");
+            println!("🔥 Generating interactive flamechart...");
 
             // Try to load and display the profile data
             match load_and_show_profile() {
                 Ok(()) => {
-                    println!("✅ Flame generation completed!");
+                    println!("✅ Flamechart generation completed!");
                 }
                 Err(e) => {
-                    println!("⚠️  Could not generate flame: {}", e);
+                    println!("⚠️  Could not generate flamechart: {}", e);
                     println!(
                         "💡 Make sure the demo completed successfully and generated profile files."
                     );
@@ -267,7 +267,7 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
         time_b.cmp(&time_a)
     });
 
-    // Use exclusive file for both text analysis and flame generation
+    // Use exclusive file for both text analysis and flamechart generation
     if !exclusive_files.is_empty() {
         let exclusive_file = &exclusive_files[0];
         show_simple_profile_analysis(exclusive_file)?;
@@ -438,7 +438,7 @@ fn generate_flamechart(
     let mut opts = Options::default();
     opts.title = "Basic Profiling Demo - Performance Flamechart".to_string();
     opts.subtitle = Some(format!(
-        "Generated: {} | Hover over and click on the bars to explore function call hierarchy, or use Search ↗️",
+        "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
         Local::now().format("%Y-%m-%d %H:%M:%S")
     ));
     opts.colors = Palette::Multi(MultiPalette::Rust);
@@ -454,7 +454,7 @@ fn generate_flamechart(
 
     enhance_svg_accessibility(svg_path)?;
 
-    println!("✅ Flame generated: {}", svg_path);
+    println!("✅ Flamechart generated: {}", svg_path);
 
     // Open in browser
     if let Err(e) = open_in_browser(svg_path) {
@@ -462,24 +462,11 @@ fn generate_flamechart(
         println!("💡 You can manually open: {}", svg_path);
     } else {
         println!("🌐 Flame opened in your default browser!");
-        println!("🔍 Hover over and click on the bars to explore the performance visualization");
+        println!("🔍 Hover over and click on the bars to explore the performance visualization, or use Search");
         println!("📊 Function width = time spent, height = call stack depth");
         println!("💡 Notice how the recursive fibonacci dominates the graph!");
     }
 
-    Ok(())
-}
-
-fn enhance_svg_accessibility(svg_path: &str) -> ProfileResult<()> {
-    let content = std::fs::read_to_string(svg_path)?;
-
-    // Make the inactive search link more visible
-    let enhanced = content.replace(
-        "opacity:0.1",
-        "opacity:0.5", // Darker grey for better visibility
-    );
-
-    std::fs::write(svg_path, enhanced)?;
     Ok(())
 }
 

@@ -12,9 +12,11 @@ strip = false
 //# Purpose: Demonstrate memory allocation tracking with thag_profiler
 //# Categories: profiling, demo, memory
 use std::collections::HashMap;
+use thag_demo_proc_macros::timing;
 use thag_profiler::{enable_profiling, profiled};
 
-#[profiled(mem_detail)]
+#[timing]
+#[profiled(mem_summary)]
 fn allocate_vectors() -> Vec<Vec<u64>> {
     let mut outer = Vec::new();
 
@@ -29,11 +31,12 @@ fn allocate_vectors() -> Vec<Vec<u64>> {
     outer
 }
 
-#[profiled(mem_summary)]
-fn process_strings() -> HashMap<String, usize> {
+#[timing]
+#[profiled(mem_detail)]
+fn process_strings_detail_profile() -> HashMap<String, usize> {
     let mut map = HashMap::new();
 
-    for i in 0..10_000 {
+    for i in 0..1_000 {
         let key = format!("key_{}", i);
         let value = format!("value_{}_with_some_longer_content", i);
         map.insert(key, value.len());
@@ -42,12 +45,13 @@ fn process_strings() -> HashMap<String, usize> {
     map
 }
 
-#[profiled(mem_detail)]
+#[timing]
+#[profiled(mem_summary)]
 fn memory_intensive_computation() -> Vec<String> {
     let mut results = Vec::new();
 
     // Simulate processing that creates many temporary allocations
-    for i in 0..1000 {
+    for i in 0..100 {
         let mut temp = String::new();
         for j in 0..100 {
             temp.push_str(&format!("item_{}_{} ", i, j));
@@ -63,6 +67,7 @@ fn memory_intensive_computation() -> Vec<String> {
     results
 }
 
+#[timing]
 #[profiled(mem_summary)]
 fn nested_allocations() {
     println!("Starting nested allocations...");
@@ -70,7 +75,7 @@ fn nested_allocations() {
     let vectors = allocate_vectors();
     println!("Allocated {} vectors", vectors.len());
 
-    let map = process_strings();
+    let map = process_strings_detail_profile();
     println!("Created map with {} entries", map.len());
 
     let results = memory_intensive_computation();

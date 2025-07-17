@@ -74,7 +74,7 @@ pub mod mem_tracking;
 #[cfg(feature = "full_profiling")]
 pub mod mem_attribution;
 
-use std::{fmt::Display, path::Path};
+use std::{fmt::Display, fs, path::Path};
 
 #[cfg(feature = "time_profiling")]
 use std::sync::OnceLock;
@@ -266,6 +266,24 @@ pub fn file_stem_from_path(path: &Path) -> String {
 #[must_use]
 pub fn file_stem_from_path(path: &Path) -> String {
     safe_alloc!(path.file_stem().unwrap().to_string_lossy().to_string())
+}
+
+/// Rewrite the svg file with the `Search` link rendered more visible.
+///
+/// # Errors
+///
+/// This function will return an error if .
+pub fn enhance_svg_accessibility(svg_path: &str) -> ProfileResult<()> {
+    let content = fs::read_to_string(svg_path)?;
+
+    // Make the inactive search link more visible
+    let enhanced = content.replace(
+        "opacity:0.1",
+        "opacity:0.5", // Darker grey for better visibility
+    );
+
+    fs::write(svg_path, enhanced)?;
+    Ok(())
 }
 
 /// Constant reflecting whether any profiling feature is enabled.

@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+use crate::safe_alloc;
 use crate::{debug_log, internal_doc, static_lazy, ProfileError, ProfileResult};
 use chrono::Local;
 use parking_lot::{Mutex, RwLock};
@@ -13,8 +14,6 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
     time::Instant,
 };
-
-use crate::safe_alloc;
 
 #[cfg(feature = "full_profiling")]
 use crate::{
@@ -46,14 +45,6 @@ use std::{
     },
     time::SystemTime,
 };
-
-// Thread-local storage to track active functions for recursion detection
-#[cfg(feature = "time_profiling")]
-use std::cell::RefCell;
-#[cfg(feature = "time_profiling")]
-thread_local! {
-    static ACTIVE_FUNCTIONS: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
-}
 
 #[cfg(feature = "full_profiling")]
 use regex::Regex;
@@ -1500,35 +1491,35 @@ impl Profile {
             && (profile_type == ProfileType::Memory || profile_type == ProfileType::Both);
 
         // debug_log!("Current function/section: {section_name:?}, requested_type: {requested_type:?}, full_profiling?: {}", cfg!(feature = "full_profiling"));
-        let start_pattern = "Profile::new";
+        // let start_pattern = "Profile::new";
 
         // let mut current_backtrace = Backtrace::new_unresolved();
-        let cleaned_stack = extract_profile_callstack(start_pattern);
+        let cleaned_stack = extract_profile_callstack();
 
         // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
         let fn_name = &cleaned_stack[0];
 
-        // Check for recursive calls using thread-local tracking
-        // Only check if this function is being profiled (not just in the call stack)
-        let is_recursive_profiling = ACTIVE_FUNCTIONS.with(|active| {
-            let active_funcs = active.borrow();
-            active_funcs.contains(fn_name)
-        });
+        // // Check for recursive calls using thread-local tracking
+        // // Only check if this function is being profiled (not just in the call stack)
+        // let is_recursive_profiling = ACTIVE_FUNCTIONS.with(|active| {
+        //     let active_funcs = active.borrow();
+        //     active_funcs.contains(fn_name)
+        // });
 
-        if is_recursive_profiling {
-            panic!(
-                "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
-                Profiling recursive functions causes exponential overhead and is not supported. \
-                Please remove #[profiled] from recursive functions and profile only the calling function instead.",
-                fn_name
-            );
-        }
+        // if is_recursive_profiling {
+        //     panic!(
+        //         "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
+        //         Profiling recursive functions causes exponential overhead and is not supported. \
+        //         Please remove #[profiled] from recursive functions and profile only the calling function instead.",
+        //         fn_name
+        //     );
+        // }
 
-        // Mark this function as active
-        ACTIVE_FUNCTIONS.with(|active| {
-            active.borrow_mut().insert(fn_name.to_string());
-        });
+        // // Mark this function as active
+        // ACTIVE_FUNCTIONS.with(|active| {
+        //     active.borrow_mut().insert(fn_name.to_string());
+        // });
 
         #[cfg(not(target_os = "windows"))]
         let desc_fn_name = if is_async {
@@ -1672,7 +1663,7 @@ impl Profile {
 
             let cleaned_stack = extract_profile_callstack(
                 // fn_name,
-                start_pattern,
+                // start_pattern,
                 // &mut current_backtrace,
             );
             // debug_log!("cleaned_stack={cleaned_stack:#?}");
@@ -1685,26 +1676,26 @@ impl Profile {
             // Register this function
             let fn_name = &cleaned_stack[0];
 
-            // Check for recursive calls using thread-local tracking
-            // Only check if this function is being profiled (not just in the call stack)
-            let is_recursive_profiling = ACTIVE_FUNCTIONS.with(|active| {
-                let active_funcs = active.borrow();
-                active_funcs.contains(fn_name)
-            });
+            // // Check for recursive calls using thread-local tracking
+            // // Only check if this function is being profiled (not just in the call stack)
+            // let is_recursive_profiling = ACTIVE_FUNCTIONS.with(|active| {
+            //     let active_funcs = active.borrow();
+            //     active_funcs.contains(fn_name)
+            // });
 
-            if is_recursive_profiling {
-                panic!(
-                    "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
-                    Profiling recursive functions causes exponential overhead and is not supported. \
-                    Please remove #[profiled] from recursive functions and profile only the calling function instead.",
-                    fn_name
-                );
-            }
+            // if is_recursive_profiling {
+            //     panic!(
+            //         "THAG_PROFILER ERROR: Recursive profiling detected for function '{}'. \
+            //         Profiling recursive functions causes exponential overhead and is not supported. \
+            //         Please remove #[profiled] from recursive functions and profile only the calling function instead.",
+            //         fn_name
+            //     );
+            // }
 
-            // Mark this function as active
-            ACTIVE_FUNCTIONS.with(|active| {
-                active.borrow_mut().insert(fn_name.to_string());
-            });
+            // // Mark this function as active
+            // ACTIVE_FUNCTIONS.with(|active| {
+            //     active.borrow_mut().insert(fn_name.to_string());
+            // });
 
             #[cfg(not(target_os = "windows"))]
             let desc_fn_name = if section_name.is_some() && is_profiled_function(fn_name) {
@@ -2157,19 +2148,22 @@ pub fn filter_scaffolding(name: &str) -> bool {
 }
 
 /// Extracts the callstack for a `Profile`.
-///
-/// # Panics
-///
-/// Panics if the arbitrary limit of 20 frames is exceeded.
 #[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[must_use]
-pub fn extract_profile_callstack(
-    start_pattern: &str,
+pub fn extract_profile_callstack(// start_pattern: &str,
+    // fn_name: &str,
     // current_backtrace: &mut Backtrace,
 ) -> Vec<String> {
     const MAX_STACK_DEPTH_CAP: usize = 1000;
     const INITIAL_STACK_DEPTH: usize = 20;
+    const START_PATTERN: &'static str = "Profile::new";
+    #[derive(Debug)]
+    struct Site {
+        filename: Option<PathBuf>,
+        name: String,
+        // lineno: Option<u32>,
+    }
 
     let end_point = safe_alloc!(get_base_location().unwrap_or("__rust_begin_short_backtrace"));
     let mut already_seen = safe_alloc!(HashSet::new());
@@ -2178,10 +2172,12 @@ pub fn extract_profile_callstack(
         let mut callstack: Vec<String> = Vec::with_capacity(INITIAL_STACK_DEPTH);
         let mut start = false;
         let mut fin = false;
+        let mut is_current_fn = false;
+        // let (filename, fn_name, lineno): (String, String, u32);
+        let mut maybe_site: Option<Site> = None;
 
         trace(|frame| {
             let mut suppress = false;
-
             resolve_frame(frame, |symbol| {
                 'process_symbol: {
                     let Some(name) = symbol.name() else {
@@ -2194,8 +2190,9 @@ pub fn extract_profile_callstack(
                         break 'process_symbol;
                     }
                     if !start {
-                        if name.contains(start_pattern) && !name.contains("{{closure}}") {
+                        if name.contains(START_PATTERN) && !name.contains("{{closure}}") {
                             start = true;
+                            is_current_fn = true;
                         }
                         suppress = true;
                         break 'process_symbol;
@@ -2204,6 +2201,27 @@ pub fn extract_profile_callstack(
                         fin = true;
                         suppress = true;
                         break 'process_symbol;
+                    }
+                    let filename = symbol.filename().map(|path| path.to_path_buf());
+                    let lineno = symbol.lineno();
+                    if is_current_fn {
+                        is_current_fn = false;
+                        maybe_site = Some(Site{
+                            filename,
+                            name: name.clone(),
+                            // lineno,
+                        });
+                        // eprintln!("maybe_site={maybe_site:#?}");
+                    } else if let Some(site) = &maybe_site {
+                        if filename == site.filename && name == site.name /* && lineno == site.lineno */ {
+                            panic!(
+                                "THAG_PROFILER ERROR: Recursive profiling detected for function '{site:#?}'. \
+                                Profiling recursive functions causes exponential overhead and is not supported. \
+                                Please remove #[profiled] from recursive functions and profile only the calling function instead."
+                            );
+                        // } else {
+                        //     eprintln!("filename={filename:#?}, name={name}, lineno={lineno:?}");
+                        }
                     }
 
                     for &s in SCAFFOLDING_PATTERNS {
@@ -2413,10 +2431,10 @@ impl Drop for Profile {
         // debug_log!("In drop for Profile {:?}", self);
         let drop_start = Instant::now();
 
-        // Clean up active function tracking for recursion detection
-        ACTIVE_FUNCTIONS.with(|active| {
-            active.borrow_mut().remove(&self.fn_name);
-        });
+        // // Clean up active function tracking for recursion detection
+        // ACTIVE_FUNCTIONS.with(|active| {
+        //     active.borrow_mut().remove(&self.fn_name);
+        // });
 
         if let Some(start) = self.start.take() {
             // Handle time profiling as before
@@ -2445,10 +2463,10 @@ impl Drop for Profile {
             #[cfg(feature = "full_profiling")]
             let instance_id = self.instance_id();
 
-            // Clean up active function tracking for recursion detection
-            ACTIVE_FUNCTIONS.with(|active| {
-                active.borrow_mut().remove(&self.fn_name);
-            });
+            // // Clean up active function tracking for recursion detection
+            // ACTIVE_FUNCTIONS.with(|active| {
+            //     active.borrow_mut().remove(&self.fn_name);
+            // });
 
             // debug_log!("In drop for Profile {:?}", self);
             let drop_start = Instant::now();

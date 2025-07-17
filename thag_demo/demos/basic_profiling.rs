@@ -193,7 +193,7 @@ fn main() {
 fn show_interactive_visualization() {
     println!();
     println!("🎯 Would you like to view an interactive flamechart?");
-    println!("This will generate a visual  and open it in your browser.");
+    println!("This will generate a visual flamechart and open it in your browser.");
     print!("Enter 'y' for yes, or any other key to skip: ");
     std::io::stdout().flush().unwrap();
 

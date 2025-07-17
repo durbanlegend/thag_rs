@@ -1661,11 +1661,7 @@ impl Profile {
             // current_backtrace.resolve();
             // debug_log!("************\n{current_backtrace:?}\n************");
 
-            let cleaned_stack = extract_profile_callstack(
-                // fn_name,
-                // start_pattern,
-                // &mut current_backtrace,
-            );
+            let cleaned_stack = extract_profile_callstack();
             // debug_log!("cleaned_stack={cleaned_stack:#?}");
 
             if cleaned_stack.is_empty() {
@@ -2151,10 +2147,7 @@ pub fn filter_scaffolding(name: &str) -> bool {
 #[internal_doc]
 #[cfg(feature = "time_profiling")]
 #[must_use]
-pub fn extract_profile_callstack(// start_pattern: &str,
-    // fn_name: &str,
-    // current_backtrace: &mut Backtrace,
-) -> Vec<String> {
+pub fn extract_profile_callstack() -> Vec<String> {
     const MAX_STACK_DEPTH_CAP: usize = 1000;
     const INITIAL_STACK_DEPTH: usize = 20;
     const START_PATTERN: &'static str = "Profile::new";
@@ -2162,18 +2155,17 @@ pub fn extract_profile_callstack(// start_pattern: &str,
     struct Site {
         filename: Option<PathBuf>,
         name: String,
-        // lineno: Option<u32>,
     }
 
     let end_point = safe_alloc!(get_base_location().unwrap_or("__rust_begin_short_backtrace"));
     let mut already_seen = safe_alloc!(HashSet::new());
+    let mut recursion_detected = false;
 
     safe_alloc! {
         let mut callstack: Vec<String> = Vec::with_capacity(INITIAL_STACK_DEPTH);
         let mut start = false;
         let mut fin = false;
         let mut is_current_fn = false;
-        // let (filename, fn_name, lineno): (String, String, u32);
         let mut maybe_site: Option<Site> = None;
 
         trace(|frame| {
@@ -2209,18 +2201,13 @@ pub fn extract_profile_callstack(// start_pattern: &str,
                         maybe_site = Some(Site{
                             filename,
                             name: name.clone(),
-                            // lineno,
                         });
-                        // eprintln!("maybe_site={maybe_site:#?}");
                     } else if let Some(site) = &maybe_site {
-                        if filename == site.filename && name == site.name /* && lineno == site.lineno */ {
-                            panic!(
-                                "THAG_PROFILER ERROR: Recursive profiling detected for function '{site:#?}'. \
-                                Profiling recursive functions causes exponential overhead and is not supported. \
-                                Please remove #[profiled] from recursive functions and profile only the calling function instead."
-                            );
-                        // } else {
-                        //     eprintln!("filename={filename:#?}, name={name}, lineno={lineno:?}");
+                        if name == site.name && filename == site.filename {
+                            recursion_detected = true;
+                            eprintln!("Recursion detected for filename={filename:#?}, name={name}, lineno={lineno:?}");
+                            suppress = true;
+                            break 'process_symbol;
                         }
                     }
 
@@ -2266,12 +2253,21 @@ pub fn extract_profile_callstack(// start_pattern: &str,
                     callstack.push(name);
                 }
             });
-            !fin
+            !fin && !recursion_detected
         });
+        if recursion_detected {
+            panic!(
+                 r#"THAG_PROFILER ERROR: Recursive profiling detected for above location.
+Profiling recursive functions may cause exponential overhead and is not supported.
+Please remove #[profiled] from recursive functions and profile only the calling function instead."#
+             );
+        }
+
         callstack
     }
 }
-/// .
+
+/// Extract the callstack for a detailed memory allocation.
 ///
 /// # Panics
 ///

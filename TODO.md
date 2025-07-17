@@ -12,7 +12,7 @@
 - [ ]  Thag tool for invoking thag as a library and running a remote source file.
 - [ ]  "Playground" naming. Multifaceted playground.
 - [ ]  `Build failed - thag dependency issue detected` message not always correct.
-- [ ]  Recursion detection not working. Try looking for filename and fn_name, fn_name and lineno in callstack? HashSet already_seen needs to become a HashMap<(filename, fn_name), Vec<lineno>>.
+- [ ]  DONE Fix recursion detection - TLS not working as usual.
 
 url -sL https://raw.githubusercontent.com/durbanlegend/thag_rs/main/thag_demo/install_and_demo.sh | bash
 

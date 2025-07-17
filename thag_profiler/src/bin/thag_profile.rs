@@ -854,13 +854,13 @@ fn select_color_scheme(profile_type: &ProfileType) -> ProfileResult<Option<Palet
 
     // Group schemes for display
     println!("\nBasic Color Schemes:");
-    println!("-------------------");
+    println!("───────────────────");
     schemes.iter().take(9).for_each(|s| {
         println!("{}: {}", s.name, s.description);
     });
 
     println!("\nSpecial Color Schemes:");
-    println!("--------------------");
+    println!("─────────────────────");
     schemes.iter().skip(9).for_each(|s| {
         println!("{}: {}", s.name, s.description);
     });

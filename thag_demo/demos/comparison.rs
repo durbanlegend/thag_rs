@@ -94,7 +94,7 @@ fn map_lookup_hashmap(data: &HashMap<String, i32>, key: &str) -> Option<i32> {
 #[profiled]
 fn demonstrate_sorting_comparison() {
     println!("🔄 Sorting Algorithm Comparison");
-    println!("-------------------------------");
+    println!("{}", "─".repeat(31));
 
     let test_data: Vec<i32> = (0..1000).rev().collect(); // Reverse sorted (worst case)
 
@@ -111,7 +111,7 @@ fn demonstrate_sorting_comparison() {
 #[profiled]
 fn demonstrate_string_comparison() {
     println!("📝 String Concatenation Comparison");
-    println!("----------------------------------");
+    println!("{}", "─".repeat(34));
 
     let words = vec![
         "hello",
@@ -139,7 +139,7 @@ fn demonstrate_string_comparison() {
 #[profiled]
 fn demonstrate_lookup_comparison() {
     println!("🔍 Data Lookup Comparison");
-    println!("-------------------------");
+    println!("{}", "─".repeat(25));
 
     // Prepare test data
     let mut vector_data = Vec::new();

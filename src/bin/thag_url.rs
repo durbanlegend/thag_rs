@@ -82,9 +82,9 @@ fn validate_rust_content(content: &str) -> Result<(), UrlError> {
 
     // Display formatted content
     println!("Invalid Rust syntax. Formatted content:");
-    println!("----------------------------------------");
+    println!("{}", "─".repeat(40));
     println!("{}", String::from_utf8_lossy(&output.stdout));
-    println!("----------------------------------------");
+    println!("{}", "─".repeat(40));
 
     Err(UrlError::SyntaxError(
         "Content is not valid Rust code".to_string(),

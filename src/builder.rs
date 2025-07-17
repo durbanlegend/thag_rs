@@ -1353,7 +1353,6 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
         // fs::remove_file(executable_path)?;
     }
 
-    // let dash_line = "─".repeat(&FLOWER_BOX_LEN);
     repeat_dash!(70);
     cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
 

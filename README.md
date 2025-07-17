@@ -8,7 +8,11 @@
 
 ## Intro
 
-`thag(_rs)` is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding. `thag` includes:
+`thag(_rs)` is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
+
+v0.2 brings a ton of new features and a sleek look with themes to match your terminal preferences.
+
+`thag` includes:
 
 - a script runner
 
@@ -24,7 +28,7 @@
 
 - tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
 
-- a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo scripts for each proc macros. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+- a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo scripts for each proc macros. As of v0.2, this goes from being a rough sketchpad to a select set of useful and educational examples with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 - concurrently with version 0.2, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library `thag_profiler`. Check it out here: [thag_profiler](thag_profiler/README.md).
 

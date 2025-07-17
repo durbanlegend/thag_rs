@@ -27,7 +27,7 @@ fn list_themes() -> ThagResult<()> {
     themes.sort();
 
     println!("\nAvailable built-in themes:");
-    println!("{}", "=".repeat(25));
+    println!("{}", "═".repeat(25));
 
     for theme_name in &themes {
         let theme = Theme::get_builtin(theme_name)?;
@@ -66,10 +66,10 @@ fn interactive_theme_browser() -> ThagResult<()> {
 
     loop {
         println!("\n🎨 Interactive Theme Browser");
-        println!("{}", "=".repeat(80));
+        println!("{}", "═".repeat(80));
         println!("📚 {} themes available", themes.len());
         println!("💡 Start typing to filter themes by name");
-        println!("{}", "=".repeat(80));
+        println!("{}", "═".repeat(80));
 
         let selection: InquireResult<ListOption<String>> =
             Select::new("🔍 Select a theme to preview:", theme_options.clone())
@@ -95,7 +95,7 @@ fn interactive_theme_browser() -> ThagResult<()> {
 
                 match show_theme(theme_name) {
                     Ok(()) => {
-                        println!("\n{}", "=".repeat(80));
+                        println!("\n{}", "═".repeat(80));
                         println!("🔙 Press Enter to return to theme browser, or Ctrl+C to exit...");
                         let _ = io::stdin().read_line(&mut String::new());
                         // Clear screen before returning to menu

@@ -230,7 +230,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "🚀 {} - Interactive Thag Builder",
         "Thag Prompt".bright_cyan()
     );
-    println!("=========================================\n");
+    println!("{}\n", "═".repeat(41));
 
     // Check for test mode environment variable
     if let Ok(test_mode) = std::env::var("THAG_PROMPT_TEST") {

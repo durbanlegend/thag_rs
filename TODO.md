@@ -14,7 +14,7 @@
 - [ ]  `Build failed - thag dependency issue detected` message not always correct.
 - [ ]  DONE Fix recursion detection - TLS not working as usual.
 
-url -sL https://raw.githubusercontent.com/durbanlegend/thag_rs/main/thag_demo/install_and_demo.sh | bash
+curl -sL https://raw.githubusercontent.com/durbanlegend/thag_rs/main/thag_demo/install_and_demo.sh | bash
 
 We agreed to ban profiling of recursive functions in profiling.rs attached because it's not feasible. We tried implementing a recursion thread-local ACTIVE_FUNCTIONS, so that when a new function Profile is being created with its `new` method, if it detects the same function in ACTIVE_FUNCTIONS it will terminate the profiling due to detected recursion. Unfortunately async_profiling attached proved that this doesn't work, because it wrongly identified fn simulate_database_query as being recursive. I suspect tokio work stealing for causing a task to change threads.
 So unless you have a better plan, I want the key function extract_profile_callstack to check for a recurrence of the current filename and function name in the callstack. Before we change any code, does that sound workable

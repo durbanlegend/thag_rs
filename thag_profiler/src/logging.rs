@@ -65,7 +65,7 @@ fn create_debug_logger() -> Option<Mutex<BufWriter<File>>> {
                 "Start time: {}",
                 Local::now().format("%Y-%m-%d %H:%M:%S")
             );
-            let _ = writeln!(header_writer, "---------------------------");
+            let _ = writeln!(header_writer, "{}", "─".repeat(27));
 
             // Make sure to flush the header before returning
             if let Err(e) = header_writer.flush() {

@@ -8,11 +8,11 @@ use std::{
     env,
     fmt::{Display, Formatter},
     fs::File,
-    io::BufWriter,
+    io::{BufRead, BufReader, BufWriter, Write},
     path::PathBuf,
     str::FromStr,
     sync::atomic::{AtomicU8, Ordering},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 #[cfg(feature = "full_profiling")]
@@ -38,7 +38,6 @@ use std::{
     collections::HashSet,
     convert::Into,
     fs::OpenOptions,
-    io::{BufRead, BufReader, Write},
     sync::{
         atomic::{AtomicBool, AtomicU64},
         OnceLock,
@@ -528,6 +527,7 @@ static_lazy! {
         ProfileFilePaths {
             time: format!("{base}.folded"),
             inclusive_time: format!("{base}-inclusive.folded"),
+            profraw: format!("{base}.profraw"),
             memory: format!("{base}-memory.folded"),
             debug_log: debug_log_path.to_string_lossy().to_string(),
             executable_stem: script_stem.to_string(),
@@ -545,6 +545,10 @@ static_lazy! {
 
 static_lazy! {
     InclusiveTimeProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
+}
+
+static_lazy! {
+    ProfrawProfileFile: Mutex<Option<BufWriter<File>>> = Mutex::new(None)
 }
 
 // #[cfg(feature = "full_profiling")]
@@ -578,6 +582,7 @@ static START_TIME: AtomicU64 = AtomicU64::new(0);
 pub struct ProfileFilePaths {
     time: String,
     inclusive_time: String, // Stores inclusive times before conversion to exclusive
+    profraw: String,        // Raw profile data with payload and overhead
     memory: String,
     memory_detail: String,
     memory_detail_dealloc: String,
@@ -818,8 +823,14 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<()> {
 
     // Initialize time profiling
     if matches!(profile_type, ProfileType::Time | ProfileType::Both) {
-        // Initialize the inclusive time file first
+        // Initialize the profraw file first
         let paths = ProfilePaths::get();
+        let profraw_path = &paths.profraw;
+        ProfrawProfileFile::init();
+        initialize_file(profraw_path, ProfrawProfileFile::get())?;
+        debug_log!("Profraw profile will be written to {profraw_path}");
+
+        // Initialize the inclusive time file first
         let inclusive_time_path = &paths.inclusive_time;
         InclusiveTimeProfileFile::init();
         initialize_file(inclusive_time_path, InclusiveTimeProfileFile::get())?;
@@ -862,8 +873,14 @@ fn initialize_profile_files(profile_type: ProfileType) -> ProfileResult<bool> {
     // Initialize files based on the actual capabilities
     // Initialize time profiling if needed
     if (actual_caps.0 & ProfileCapability::TIME.0) != 0 {
-        // Initialize the inclusive time file first
+        // Initialize the profraw file first
         let paths = ProfilePaths::get();
+        let profraw_path = &paths.profraw;
+        ProfrawProfileFile::init();
+        initialize_file(profraw_path, ProfrawProfileFile::get())?;
+        debug_log!("Profraw profile will be written to {profraw_path}");
+
+        // Initialize the inclusive time file first
         let inclusive_time_path = &paths.inclusive_time;
         InclusiveTimeProfileFile::init();
         initialize_file(inclusive_time_path, InclusiveTimeProfileFile::get())?;
@@ -1322,6 +1339,8 @@ pub struct Profile {
     detailed_memory: bool,   // Whether to do detailed memory profiling for this profile
     file_name: String,       // Filename where this profile was created
     instance_id: u64,        // Unique identifier for this Profile instance
+    setup_duration: Duration, // Time spent in Profile::new() setup
+    actual_start: Instant,   // When actual profiling started (after setup)
     #[cfg(feature = "full_profiling")]
     allocation_total: Arc<AtomicUsize>, // All clones share the same underlying value
     #[cfg(feature = "full_profiling")]
@@ -1462,6 +1481,9 @@ impl Profile {
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
+        // Track setup time from the very beginning
+        let setup_start = Instant::now();
+
         warn_once!(
             !is_profiling_enabled(),
             || {
@@ -1565,9 +1587,12 @@ impl Profile {
         #[cfg(not(feature = "full_profiling"))]
         let instance_id = 0; // Dummy value when full_profiling is disabled
 
+        let setup_duration = setup_start.elapsed();
+        let actual_start = Instant::now();
+
         Some(Self {
             profile_type,
-            start: Some(Instant::now()),
+            start: Some(actual_start),
             path,
             section_name,
             registered_name: fn_name.to_string(),
@@ -1577,6 +1602,8 @@ impl Profile {
             detailed_memory,
             file_name: file_name_stem,
             instance_id,
+            setup_duration,
+            actual_start,
         })
     }
 
@@ -1623,6 +1650,9 @@ impl Profile {
         start_line: Option<u32>,
         end_line: Option<u32>,
     ) -> Option<Self> {
+        // Track setup time from the very beginning
+        let setup_start = Instant::now();
+
         warn_once!(
             !is_profiling_enabled(),
             || {
@@ -1808,6 +1838,9 @@ impl Profile {
                     matches!(profile_type, ProfileType::Memory | ProfileType::Both)
                 );
 
+                let setup_duration = setup_start.elapsed();
+                let actual_start = Instant::now();
+
                 Self {
                     profile_type,
                     start: None,
@@ -1823,6 +1856,8 @@ impl Profile {
                     #[cfg(not(feature = "debug_logging"))]
                     file_name: file_name_stem,
                     instance_id,
+                    setup_duration,
+                    actual_start,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
                     memory_reported: Arc::new(AtomicBool::new(false)),
                     memory_task: Some(memory_task),
@@ -1853,7 +1888,7 @@ impl Profile {
                 &profile.file_name
             );
 
-            profile.start = Some(Instant::now());
+            profile.start = Some(profile.actual_start);
 
             Some(profile)
         }
@@ -1951,6 +1986,39 @@ impl Profile {
         let paths = ProfilePaths::get();
         let inclusive_time_path = &paths.inclusive_time;
         Self::write_profile_event(inclusive_time_path, InclusiveTimeProfileFile::get(), &entry)
+    }
+
+    #[cfg(feature = "time_profiling")]
+    fn write_profraw_event(
+        &self,
+        payload_duration: Duration,
+        overhead_duration: Duration,
+    ) -> ProfileResult<()> {
+        let payload_micros = payload_duration.as_micros();
+        let overhead_micros = overhead_duration.as_micros();
+
+        if payload_micros == 0 {
+            debug_log!(
+                "DEBUG: Not writing profraw event for stack: {:?} due to zero payload duration",
+                self.path
+            );
+            return Ok(());
+        }
+
+        let path = &self.path;
+
+        if path.is_empty() {
+            debug_log!("DEBUG: Stack is empty for {:?}", self.section_name);
+            return Err(ProfileError::General("Stack is empty".into()));
+        }
+
+        let stack = self.build_stack(path);
+        let entry = format!("{stack} {payload_micros} {overhead_micros}");
+
+        // Write to the .profraw file
+        let paths = ProfilePaths::get();
+        let profraw_path = &paths.profraw;
+        Self::write_profile_event(profraw_path, ProfrawProfileFile::get(), &entry)
     }
 
     #[cfg(feature = "full_profiling")]
@@ -2436,8 +2504,10 @@ impl Drop for Profile {
             // Handle time profiling as before
             match self.profile_type {
                 ProfileType::Time | ProfileType::Both => {
-                    let elapsed = start.elapsed();
-                    let _ = self.write_time_event(elapsed);
+                    let payload_duration = start.elapsed();
+                    let drop_duration = drop_start.elapsed();
+                    let total_overhead = self.setup_duration + drop_duration;
+                    let _ = self.write_profraw_event(payload_duration, total_overhead);
                 }
                 ProfileType::Memory | ProfileType::None => todo!(),
             }
@@ -2475,8 +2545,10 @@ impl Drop for Profile {
                             get_global_profile_type(),
                             ProfileType::Time | ProfileType::Both
                         ) {
-                            let elapsed = start.elapsed();
-                            let _ = self.write_time_event(elapsed);
+                            let payload_duration = start.elapsed();
+                            let drop_duration = drop_start.elapsed();
+                            let total_overhead = self.setup_duration + drop_duration;
+                            let _ = self.write_profraw_event(payload_duration, total_overhead);
                         }
                     }
                     ProfileType::Memory | ProfileType::None => (),
@@ -2660,18 +2732,40 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
 #[cfg(feature = "time_profiling")]
 pub fn process_time_profile() -> ProfileResult<()> {
     let paths = ProfilePaths::get();
+    let profraw_path = &paths.profraw;
     let inclusive_path = &paths.inclusive_time;
     let exclusive_path = &paths.time;
 
-    // Check if the inclusive time file exists and has content
-    if !inclusive_path.is_empty() {
-        let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
-            ProfileError::General(format!("Failed to check inclusive time file: {e}"))
-        })?;
+    // Check if the .profraw file exists and has content
+    if !profraw_path.is_empty() {
+        let metadata = std::fs::metadata(profraw_path)
+            .map_err(|e| ProfileError::General(format!("Failed to check .profraw file: {e}")))?;
 
         if metadata.len() > 0 {
-            debug_log!("Converting inclusive time profile to exclusive time");
+            debug_log!("Converting .profraw to clean inclusive time profile");
+            process_profraw_to_folded(profraw_path, inclusive_path)?;
+
+            debug_log!("Converting clean inclusive time profile to exclusive time");
             convert_to_exclusive_time(inclusive_path, exclusive_path)?;
+
+            // Clean up .profraw file after processing
+            if let Err(e) = std::fs::remove_file(profraw_path) {
+                debug_log!("Warning: Failed to remove .profraw file: {}", e);
+            } else {
+                debug_log!("Successfully removed .profraw file: {}", profraw_path);
+            }
+        }
+    } else {
+        // Fallback to old behavior if no .profraw file
+        if !inclusive_path.is_empty() {
+            let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
+                ProfileError::General(format!("Failed to check inclusive time file: {e}"))
+            })?;
+
+            if metadata.len() > 0 {
+                debug_log!("Converting inclusive time profile to exclusive time");
+                convert_to_exclusive_time(inclusive_path, exclusive_path)?;
+            }
         }
     }
     Ok(())
@@ -3271,4 +3365,220 @@ mod tests_internal {
             "Time path should contain timestamp in YYYYmmdd-HHMMSS format"
         );
     }
+}
+
+/// Represents a parsed entry from a .profraw file
+#[derive(Debug, Clone)]
+struct ProfrawEntry {
+    stack: String,
+    payload_micros: u64,
+    overhead_micros: u64,
+}
+
+/// Parses a .profraw file and extracts payload and overhead data
+#[cfg(feature = "time_profiling")]
+pub fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
+    debug_log!("Parsing .profraw file: {}", profraw_path);
+
+    let file = File::open(profraw_path)
+        .map_err(|e| ProfileError::General(format!("Failed to open .profraw file: {e}")))?;
+    let reader = BufReader::new(file);
+
+    let mut entries = Vec::new();
+
+    for (line_number, line) in reader.lines().enumerate() {
+        let line = line.map_err(|e| {
+            ProfileError::General(format!("Failed to read line {}: {e}", line_number + 1))
+        })?;
+
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        // Parse line: "stack payload_micros overhead_micros"
+        let parts: Vec<&str> = line.rsplitn(3, ' ').collect();
+        if parts.len() != 3 {
+            debug_log!(
+                "Warning: Invalid line format at line {}: {}",
+                line_number + 1,
+                line
+            );
+            continue;
+        }
+
+        let stack = parts[2].trim().to_string();
+        let payload_micros = match parts[1].parse::<u64>() {
+            Ok(p) => p,
+            Err(e) => {
+                debug_log!(
+                    "Warning: Invalid payload value at line {}: {}",
+                    line_number + 1,
+                    e
+                );
+                continue;
+            }
+        };
+        let overhead_micros = match parts[0].parse::<u64>() {
+            Ok(o) => o,
+            Err(e) => {
+                debug_log!(
+                    "Warning: Invalid overhead value at line {}: {}",
+                    line_number + 1,
+                    e
+                );
+                continue;
+            }
+        };
+
+        entries.push(ProfrawEntry {
+            stack,
+            payload_micros,
+            overhead_micros,
+        });
+    }
+
+    debug_log!("Parsed {} entries from .profraw file", entries.len());
+    Ok(entries)
+}
+
+/// Subtracts child overhead from parent payload to get clean inclusive times
+#[cfg(feature = "time_profiling")]
+pub fn subtract_child_overhead(entries: Vec<ProfrawEntry>) -> ProfileResult<HashMap<String, u64>> {
+    debug_log!("Subtracting child overhead from parent payload");
+
+    let mut clean_times = HashMap::new();
+
+    // First pass: collect all stack -> overhead mapping
+    let mut stack_overhead = HashMap::new();
+    for entry in &entries {
+        *stack_overhead.entry(entry.stack.clone()).or_insert(0) += entry.overhead_micros;
+    }
+
+    // Second pass: for each stack, calculate clean inclusive time
+    for entry in &entries {
+        let stack_parts: Vec<&str> = entry.stack.split(';').collect();
+
+        // Calculate child overhead for this stack
+        let mut child_overhead = 0u64;
+        for other_entry in &entries {
+            let other_parts: Vec<&str> = other_entry.stack.split(';').collect();
+
+            // Check if other_entry is a child of current entry
+            if other_parts.len() > stack_parts.len() {
+                // Check if the other stack starts with our stack
+                let other_prefix = &other_parts[0..stack_parts.len()];
+                if other_prefix == stack_parts {
+                    child_overhead += other_entry.overhead_micros;
+                }
+            }
+        }
+
+        // Clean payload = original payload - child overhead
+        let clean_payload = entry.payload_micros.saturating_sub(child_overhead);
+
+        // Add to clean times (accumulate if multiple entries for same stack)
+        *clean_times.entry(entry.stack.clone()).or_insert(0) += clean_payload;
+
+        debug_log!(
+            "Stack: {} | Original payload: {}μs | Child overhead: {}μs | Clean payload: {}μs",
+            entry.stack,
+            entry.payload_micros,
+            child_overhead,
+            clean_payload
+        );
+    }
+
+    debug_log!("Generated {} clean inclusive times", clean_times.len());
+    Ok(clean_times)
+}
+
+/// Converts .profraw file to clean .folded file by subtracting overhead
+#[cfg(feature = "time_profiling")]
+pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> ProfileResult<()> {
+    debug_log!(
+        "Converting .profraw to clean .folded: {} -> {}",
+        profraw_path,
+        output_path
+    );
+
+    // Parse the .profraw file
+    let entries = parse_profraw_file(profraw_path)?;
+
+    if entries.is_empty() {
+        debug_log!("No entries found in .profraw file, creating empty .folded file");
+        File::create(output_path)
+            .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
+        return Ok(());
+    }
+
+    // Subtract child overhead to get clean inclusive times
+    let clean_times = subtract_child_overhead(entries)?;
+
+    // Write clean times to .folded file
+    let mut output_file = File::create(output_path)
+        .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
+
+    // Sort by stack depth (children first, then parents) for proper disaggregation
+    let mut sorted_entries: Vec<_> = clean_times.into_iter().collect();
+    sorted_entries.sort_by(|a, b| {
+        let depth_a = a.0.matches(';').count();
+        let depth_b = b.0.matches(';').count();
+        // Sort by depth descending (deeper stacks first), then by time descending
+        match depth_b.cmp(&depth_a) {
+            std::cmp::Ordering::Equal => b.1.cmp(&a.1),
+            other => other,
+        }
+    });
+
+    for (stack, time_micros) in sorted_entries {
+        if time_micros > 0 {
+            writeln!(output_file, "{} {}", stack, time_micros).map_err(|e| {
+                ProfileError::General(format!("Failed to write to output file: {e}"))
+            })?;
+        }
+    }
+
+    debug_log!("Successfully converted .profraw to clean .folded file");
+    Ok(())
+}
+
+/// Processes all .profraw files in the current directory to .folded files
+#[cfg(feature = "time_profiling")]
+pub fn process_all_profraw_files() -> ProfileResult<()> {
+    debug_log!("Processing all .profraw files in current directory");
+
+    let current_dir = std::env::current_dir()
+        .map_err(|e| ProfileError::General(format!("Failed to get current directory: {e}")))?;
+
+    let mut processed_count = 0;
+
+    for entry in std::fs::read_dir(&current_dir)
+        .map_err(|e| ProfileError::General(format!("Failed to read directory: {e}")))?
+    {
+        let entry = entry
+            .map_err(|e| ProfileError::General(format!("Failed to read directory entry: {e}")))?;
+        let path = entry.path();
+
+        if let Some(extension) = path.extension() {
+            if extension == "profraw" {
+                let profraw_path = path.to_string_lossy();
+                let folded_path = profraw_path.replace(".profraw", "-inclusive.folded");
+
+                debug_log!("Processing: {} -> {}", profraw_path, folded_path);
+
+                match process_profraw_to_folded(&profraw_path, &folded_path) {
+                    Ok(()) => {
+                        processed_count += 1;
+                        debug_log!("Successfully processed: {}", profraw_path);
+                    }
+                    Err(e) => {
+                        debug_log!("Failed to process {}: {}", profraw_path, e);
+                    }
+                }
+            }
+        }
+    }
+
+    debug_log!("Processed {} .profraw files", processed_count);
+    Ok(())
 }

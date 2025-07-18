@@ -1397,7 +1397,9 @@ In general, choose flamegraphs for a high-level view of resource usage and flame
 
 **6. Don't run with option `both` for serious time profiling**: The memory profiling overhead will tend to distort the relative execution times of the functions and sections
 
-**7. Section profiling in async functions**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions:
+**7. Section profiling in async functions**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions
+
+**8. Caution when profiling small durations**: While time-profiled functions exclude their own Profile setup and teardown time, this does not extend to the Profile setup and teardown time of profiled child functions. Callers can't avoid including the time profiling overhead of their children functions. The time to set up a Profile for each execution of a function may be significantly greater than the time to execute the function. This will show up as the parent bars being much longer than their children, which may be puzzling or inconveniently shrink the bars of the child functions. This effect will be aggravated if repeatedly calling the profiled function in a loop. If this is inconvenient, consider  profiling the loop section instead of the called function, either using section profiling or by refactoring the loop to its own profiled function.
 
 ```rust
 async fn fetch_data() {

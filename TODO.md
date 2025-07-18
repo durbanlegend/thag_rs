@@ -13,6 +13,7 @@
 - [ ]  "Playground" naming. Multifaceted playground.
 - [ ]  `Build failed - thag dependency issue detected` message not always correct.
 - [ ]  DONE Fix recursion detection - TLS not working as usual.
+- [ ]  Look for ways to remove Profile setup and drop times from time profiling.
 
 curl -sL https://raw.githubusercontent.com/durbanlegend/thag_rs/main/thag_demo/install_and_demo.sh | bash
 

@@ -27,30 +27,30 @@ fn bubble_sort_inefficient(mut arr: Vec<i32>) -> Vec<i32> {
     arr
 }
 
-#[profiled]
-fn quicksort_efficient(mut arr: Vec<i32>) -> Vec<i32> {
-    if arr.len() <= 1 {
+fn quicksort(mut arr: Vec<i32>) -> Vec<i32> {
+    let len = arr.len();
+    if len <= 1 {
         return arr;
     }
 
-    let pivot = arr.len() / 2;
+    let pivot = len / 2;
     let pivot_value = arr[pivot];
-    arr.swap(pivot, arr.len() - 1);
+    arr.swap(pivot, len - 1);
 
     let mut i = 0;
-    for j in 0..arr.len() - 1 {
+    for j in 0..len - 1 {
         if arr[j] < pivot_value {
             arr.swap(i, j);
             i += 1;
         }
     }
-    arr.swap(i, arr.len() - 1);
+    arr.swap(i, len - 1);
 
     let (left, right) = arr.split_at_mut(i);
     let (pivot_slice, right) = right.split_at_mut(1);
 
-    let mut left_sorted = quicksort_efficient(left.to_vec());
-    let mut right_sorted = quicksort_efficient(right.to_vec());
+    let mut left_sorted = quicksort(left.to_vec());
+    let right_sorted = quicksort(right.to_vec());
 
     left_sorted.extend_from_slice(pivot_slice);
     left_sorted.extend_from_slice(&right_sorted);
@@ -58,37 +58,56 @@ fn quicksort_efficient(mut arr: Vec<i32>) -> Vec<i32> {
 }
 
 #[profiled]
-fn string_concatenation_naive(words: &[&str]) -> String {
-    let mut result = String::new();
-    for word in words {
-        result = result + word + " ";
-    }
-    result
-}
-
-#[profiled]
-fn string_concatenation_efficient(words: &[&str]) -> String {
-    let mut result = String::with_capacity(words.len() * 10); // Pre-allocate
-    for word in words {
-        result.push_str(word);
-        result.push(' ');
-    }
-    result
-}
-
-#[profiled]
-fn map_lookup_vector(data: &[(String, i32)], key: &str) -> Option<i32> {
-    for (k, v) in data {
-        if k == key {
-            return Some(*v);
+fn string_concatenation_naive(words: &[&str]) {
+    fn concat(words: &[&str]) -> String {
+        let mut result = String::new();
+        for word in words {
+            result = result + word + " ";
         }
+        result
     }
-    None
+    for _ in 0..100 {
+        let _ = concat(words);
+    }
 }
 
 #[profiled]
-fn map_lookup_hashmap(data: &HashMap<String, i32>, key: &str) -> Option<i32> {
-    data.get(key).copied()
+fn string_concatenation_efficient(words: &[&str]) {
+    let concat = || {
+        let mut result = String::with_capacity(words.len() * 10); // Pre-allocate
+        for word in words {
+            result.push_str(word);
+            result.push(' ');
+        }
+        result
+    };
+
+    for _ in 0..100 {
+        let _ = concat();
+    }
+}
+
+#[profiled]
+fn map_lookup_vector(data: &[(String, i32)], key: &str) {
+    let lookup = || {
+        for (k, v) in data {
+            if k == key {
+                return Some(*v);
+            }
+        }
+        None
+    };
+    for _ in 0..1000 {
+        let _ = lookup();
+    }
+}
+
+#[profiled]
+fn map_lookup_hashmap(data: &HashMap<String, i32>, key: &str) {
+    let lookup = || data.get(key).copied();
+    for _ in 0..1000 {
+        let _ = lookup();
+    }
 }
 
 #[profiled]
@@ -106,6 +125,12 @@ fn demonstrate_sorting_comparison() {
 
     println!("Sorting comparison completed!");
     println!();
+}
+
+#[profiled]
+fn quicksort_efficient(test_data: Vec<i32>) {
+    println!("Testing quicksort (O(n log n))...");
+    let _sorted2 = quicksort(test_data);
 }
 
 #[profiled]
@@ -127,10 +152,10 @@ fn demonstrate_string_comparison() {
     let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
 
     println!("Testing naive string concatenation...");
-    let _result1 = string_concatenation_naive(&test_words);
+    string_concatenation_naive(&test_words);
 
     println!("Testing efficient string concatenation...");
-    let _result2 = string_concatenation_efficient(&test_words);
+    string_concatenation_efficient(&test_words);
 
     println!("String concatenation comparison completed!");
     println!();
@@ -155,14 +180,14 @@ fn demonstrate_lookup_comparison() {
     let search_key = "key_500";
 
     println!("Testing vector linear search...");
-    for _ in 0..100 {
-        let _result = map_lookup_vector(&vector_data, search_key);
-    }
+    // for _ in 0..1000 {
+    map_lookup_vector(&vector_data, search_key);
+    // }
 
     println!("Testing HashMap O(1) lookup...");
-    for _ in 0..100 {
-        let _result = map_lookup_hashmap(&hashmap_data, search_key);
-    }
+    // for _ in 0..1000 {
+    map_lookup_hashmap(&hashmap_data, search_key);
+    // }
 
     println!("Lookup comparison completed!");
     println!();

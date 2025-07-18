@@ -4,11 +4,9 @@
 //! including flamegraphs, flamecharts, and differential comparisons.
 
 use chrono::Local;
-use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
-use std::collections::HashMap;
+use inferno::flamegraph::{color::MultiPalette, Palette};
 use std::io::Write;
 use std::path::PathBuf;
-use thag_profiler::enhance_svg_accessibility;
 
 pub mod differential;
 pub mod flamegraph_gen;
@@ -76,10 +74,7 @@ pub fn generate_visualization(
             }
             generate_single_visualization(&folded_files[0], output_path, config)
         }
-        AnalysisType::Differential {
-            before_name,
-            after_name,
-        } => {
+        AnalysisType::Differential { .. } => {
             if folded_files.len() < 2 {
                 return Err("Need at least two profile files for differential analysis".into());
             }
@@ -88,8 +83,8 @@ pub fn generate_visualization(
                 &folded_files[1],
                 output_path,
                 config,
-                &before_name,
-                &after_name,
+                // &before_name,
+                // &after_name,
             )
         }
     }

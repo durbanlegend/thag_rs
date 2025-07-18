@@ -14,8 +14,8 @@ pub fn generate_differential_visualization(
     after_file: &PathBuf,
     output_path: &str,
     config: VisualizationConfig,
-    before_name: &str,
-    after_name: &str,
+    // before_name: &str,
+    // after_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // First try using inferno's built-in differential mode
     if let Ok(()) = generate_inferno_differential(before_file, after_file, output_path, &config) {
@@ -28,8 +28,8 @@ pub fn generate_differential_visualization(
         after_file,
         output_path,
         config,
-        before_name,
-        after_name,
+        // before_name,
+        // after_name,
     )
 }
 
@@ -78,8 +78,8 @@ fn generate_manual_differential(
     after_file: &PathBuf,
     output_path: &str,
     config: VisualizationConfig,
-    before_name: &str,
-    after_name: &str,
+    // before_name: &str,
+    // after_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let before_stacks = parse_folded_file(before_file)?;
     let after_stacks = parse_folded_file(after_file)?;

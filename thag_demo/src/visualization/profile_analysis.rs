@@ -71,7 +71,7 @@ pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn s
         .collect();
 
     // Generate insights
-    let insights = generate_insights(&functions, total_duration_us);
+    let insights = generate_insights(&functions /*, total_duration_us */);
 
     Ok(ProfileAnalysis {
         total_duration_us,
@@ -323,7 +323,7 @@ fn clean_function_name(name: &str) -> String {
 }
 
 /// Generate insights from profile analysis
-fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> Vec<String> {
+fn generate_insights(functions: &[(String, u128)], /* , total_duration_us: u128 */) -> Vec<String> {
     let mut insights = Vec::new();
 
     if functions.len() >= 2 {
@@ -440,7 +440,6 @@ fn generate_differential_summary(
 mod tests {
     use super::*;
     use std::fs;
-    use std::path::Path;
 
     #[test]
     fn test_clean_function_name() {
@@ -468,7 +467,7 @@ mod tests {
             ("cpu_work".to_string(), 500),
         ];
 
-        let insights = generate_insights(&functions, 1001500);
+        let insights = generate_insights(&functions /*, 1001500 */);
         assert!(!insights.is_empty());
         assert!(insights.iter().any(|s| s.contains("Caching")));
     }

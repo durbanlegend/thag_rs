@@ -14,7 +14,7 @@ strip = false
 //# Purpose: Demonstrate differential profiling with before/after comparison
 //# Categories: profiling, demo, comparison, optimization, differential
 use std::io::Write;
-use std::path::PathBuf;
+// use std::path::PathBuf;
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
@@ -29,42 +29,53 @@ mod visualization {
 
     pub mod differential {
         use super::*;
-        use inferno::flamegraph::{self, Options};
+        use inferno::flamegraph::Options;
         use std::fs::File;
-        use std::io::Write;
+        // use std::io::Write;
         use std::path::PathBuf;
+        use thag_profiler::ProfileError;
 
         pub fn generate_differential_visualization(
             before_file: &PathBuf,
             after_file: &PathBuf,
             output_path: &str,
             config: super::VisualizationConfig,
-            before_name: &str,
-            after_name: &str,
+            // before_name: &str,
+            // after_name: &str,
         ) -> Result<(), Box<dyn std::error::Error>> {
             // Generate manual differential by computing differences
-            let before_stacks = parse_folded_file(before_file)?;
-            let after_stacks = parse_folded_file(after_file)?;
+            // let before_stacks = parse_folded_file(before_file)?;
+            // let after_stacks = parse_folded_file(after_file)?;
 
-            let diff_stacks = compute_stack_diff(&before_stacks, &after_stacks)?;
+            // let diff_stacks = compute_stack_diff(&before_stacks, &after_stacks)?;
 
-            if diff_stacks.is_empty() {
-                return Err("No differential data to visualize".into());
-            }
+            // if diff_stacks.is_empty() {
+            //     return Err("No differential data to visualize".into());
+            // }
 
-            // Create temporary differential file
-            let temp_path = std::env::temp_dir().join("temp_differential.folded");
-            let mut temp_file = File::create(&temp_path)?;
+            // // Create temporary differential file
+            // let temp_path = std::env::temp_dir().join("temp_differential.folded");
+            // let mut temp_file = File::create(&temp_path)?;
 
-            for (stack, count) in diff_stacks {
-                writeln!(temp_file, "{} {}", stack, count)?;
-            }
-            temp_file.flush()?;
-            drop(temp_file);
+            // for (stack, count) in diff_stacks {
+            //     writeln!(temp_file, "{} {}", stack, count)?;
+            // }
+            // temp_file.flush()?;
+            // drop(temp_file);
 
-            // Generate flamegraph from differential data
-            let diff_content = std::fs::read_to_string(&temp_path)?;
-            let stacks: Vec<String> = diff_content.lines().map(|line| line.to_string()).collect();
+            // // Generate flamegraph from differential data
+            // let diff_content = std::fs::read_to_string(&temp_path)?;
+            // let stacks: Vec<String> = diff_content.lines().map(|line| line.to_string()).collect();
+
+            // First, generate the differential data
+            let mut diff_data = Vec::new();
+            inferno::differential::from_files(
+                inferno::differential::Options::default(), // Options for differential processing
+                before_file,
+                after_file,
+                &mut diff_data,
+            )
+            .map_err(|e| ProfileError::General(e.to_string()))?;
 
             let mut opts = Options::default();
             opts.title = config.title;
@@ -74,75 +85,76 @@ mod visualization {
             opts.min_width = config.min_width;
             opts.flame_chart = config.flame_chart;
 
+            // Convert diff_data to lines
+            let diff_lines =
+                String::from_utf8(diff_data).map_err(|e| ProfileError::General(e.to_string()))?;
+            let lines: Vec<&str> = diff_lines.lines().collect();
+
             let output_file = File::create(output_path)?;
-            inferno::flamegraph::from_lines(
-                &mut opts,
-                stacks.iter().map(String::as_str),
-                output_file,
-            )?;
+            inferno::flamegraph::from_lines(&mut opts, lines.iter().copied(), output_file)?;
 
             enhance_svg_accessibility(output_path)?;
 
-            // Clean up temp file
-            let _ = std::fs::remove_file(&temp_path);
+            // // Clean up temp file
+            // let _ = std::fs::remove_file(&temp_path);
 
             Ok(())
         }
 
-        fn parse_folded_file(
-            file_path: &PathBuf,
-        ) -> Result<HashMap<String, i64>, Box<dyn std::error::Error>> {
-            let content = std::fs::read_to_string(file_path)?;
-            let mut stacks = HashMap::new();
+        // fn parse_folded_file(
+        //     file_path: &PathBuf,
+        // ) -> Result<HashMap<String, i64>, Box<dyn std::error::Error>> {
+        //     let content = std::fs::read_to_string(file_path)?;
+        //     let mut stacks = HashMap::new();
 
-            for line in content.lines() {
-                if line.trim().is_empty() {
-                    continue;
-                }
+        //     for line in content.lines() {
+        //         if line.trim().is_empty() {
+        //             continue;
+        //         }
 
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    let stack = parts[0].to_string();
-                    let count: i64 = parts[1].parse().unwrap_or(0);
-                    *stacks.entry(stack).or_insert(0) += count;
-                }
-            }
+        //         let parts: Vec<&str> = line.split_whitespace().collect();
+        //         if parts.len() >= 2 {
+        //             let stack = parts[0].to_string();
+        //             let count: i64 = parts[1].parse().unwrap_or(0);
+        //             *stacks.entry(stack).or_insert(0) += count;
+        //         }
+        //     }
 
-            Ok(stacks)
-        }
+        //     Ok(stacks)
+        // }
 
-        fn compute_stack_diff(
-            before: &HashMap<String, i64>,
-            after: &HashMap<String, i64>,
-        ) -> Result<Vec<(String, i64)>, Box<dyn std::error::Error>> {
-            let mut diff_stacks = Vec::new();
-            let mut all_stacks = std::collections::HashSet::new();
+        // fn compute_stack_diff(
+        //     before: &HashMap<String, i64>,
+        //     after: &HashMap<String, i64>,
+        // ) -> Result<Vec<(String, i64)>, Box<dyn std::error::Error>> {
+        //     let mut diff_stacks = Vec::new();
+        //     let mut all_stacks = std::collections::HashSet::new();
 
-            // Collect all unique stacks
-            for stack in before.keys() {
-                all_stacks.insert(stack.clone());
-            }
-            for stack in after.keys() {
-                all_stacks.insert(stack.clone());
-            }
+        //     // Collect all unique stacks
+        //     for stack in before.keys() {
+        //         all_stacks.insert(stack.clone());
+        //     }
+        //     for stack in after.keys() {
+        //         all_stacks.insert(stack.clone());
+        //     }
 
-            // Calculate differences
-            for stack in all_stacks {
-                let before_count = before.get(&stack).copied().unwrap_or(0);
-                let after_count = after.get(&stack).copied().unwrap_or(0);
-                let diff = after_count - before_count;
+        //     // Calculate differences
+        //     for stack in all_stacks {
+        //         let before_count = before.get(&stack).copied().unwrap_or(0);
+        //         let after_count = after.get(&stack).copied().unwrap_or(0);
+        //         let diff = after_count - before_count;
 
-                // Only include stacks with significant differences
-                if diff != 0 {
-                    diff_stacks.push((stack, diff));
-                }
-            }
+        //         // Only include stacks with significant differences
+        //         if diff != 0 {
+        //             diff_stacks.push((stack, diff));
+        //         }
+        //     }
 
-            // Sort by absolute difference (largest changes first)
-            diff_stacks.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
+        //     // Sort by absolute difference (largest changes first)
+        //     diff_stacks.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
 
-            Ok(diff_stacks)
-        }
+        //     Ok(diff_stacks)
+        // }
     }
 
     pub mod profile_analysis {
@@ -152,18 +164,18 @@ mod visualization {
         pub struct ProfileAnalysis {
             pub total_duration_us: u128,
             pub function_times: Vec<(String, u128)>,
-            pub top_functions: Vec<(String, u128, f64)>,
-            pub insights: Vec<String>,
+            // pub top_functions: Vec<(String, u128, f64)>,
+            // pub insights: Vec<String>,
         }
 
         #[derive(Debug, Clone)]
         pub struct DifferentialAnalysis {
-            pub before_analysis: ProfileAnalysis,
-            pub after_analysis: ProfileAnalysis,
+            // pub before_analysis: ProfileAnalysis,
+            // pub after_analysis: ProfileAnalysis,
             pub improvements: Vec<(String, i128, f64)>,
             pub regressions: Vec<(String, i128, f64)>,
-            pub new_functions: Vec<(String, u128)>,
-            pub removed_functions: Vec<(String, u128)>,
+            // pub new_functions: Vec<(String, u128)>,
+            // pub removed_functions: Vec<(String, u128)>,
             pub summary: String,
         }
 
@@ -203,22 +215,22 @@ mod visualization {
             let mut functions: Vec<_> = function_times.into_iter().collect();
             functions.sort_by(|a, b| b.1.cmp(&a.1));
 
-            let top_functions: Vec<_> = functions
-                .iter()
-                .take(10)
-                .map(|(name, time)| {
-                    let percentage = (*time as f64 / total_duration_us as f64) * 100.0;
-                    (name.clone(), *time, percentage)
-                })
-                .collect();
+            // let top_functions: Vec<_> = functions
+            //     .iter()
+            //     .take(10)
+            //     .map(|(name, time)| {
+            //         let percentage = (*time as f64 / total_duration_us as f64) * 100.0;
+            //         (name.clone(), *time, percentage)
+            //     })
+            //     .collect();
 
-            let insights = vec!["Analysis completed".to_string()];
+            // let insights = vec!["Analysis completed".to_string()];
 
             Ok(ProfileAnalysis {
                 total_duration_us,
                 function_times: functions,
-                top_functions,
-                insights,
+                // top_functions,
+                // insights,
             })
         }
 
@@ -294,12 +306,12 @@ mod visualization {
             );
 
             Ok(DifferentialAnalysis {
-                before_analysis,
-                after_analysis,
+                // before_analysis,
+                // after_analysis,
                 improvements,
                 regressions,
-                new_functions,
-                removed_functions,
+                // new_functions,
+                // removed_functions,
                 summary,
             })
         }
@@ -414,7 +426,7 @@ mod visualization {
         pub count_name: String,
         pub min_width: f64,
         pub flame_chart: bool,
-        pub open_browser: bool,
+        // pub open_browser: bool,
     }
 
     impl Default for VisualizationConfig {
@@ -429,19 +441,19 @@ mod visualization {
                 count_name: "μs".to_string(),
                 min_width: 0.0,
                 flame_chart: true,
-                open_browser: false,
+                // open_browser: false,
             }
         }
     }
 
-    #[derive(Debug, Clone)]
-    pub enum AnalysisType {
-        Single,
-        Differential {
-            before_name: String,
-            after_name: String,
-        },
-    }
+    // #[derive(Debug, Clone)]
+    // pub enum AnalysisType {
+    //     Single,
+    //     Differential {
+    //         before_name: String,
+    //         after_name: String,
+    //     },
+    // }
 
     pub fn find_latest_profile_files(
         pattern: &str,
@@ -476,29 +488,29 @@ mod visualization {
         Ok(files)
     }
 
-    pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let full_path = std::env::current_dir()?.join(file_path);
-        let url = format!("file://{}", full_path.display());
+    // pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    //     let full_path = std::env::current_dir()?.join(file_path);
+    //     let url = format!("file://{}", full_path.display());
 
-        #[cfg(target_os = "macos")]
-        {
-            std::process::Command::new("open").arg(&url).spawn()?;
-        }
+    //     #[cfg(target_os = "macos")]
+    //     {
+    //         std::process::Command::new("open").arg(&url).spawn()?;
+    //     }
 
-        #[cfg(target_os = "linux")]
-        {
-            std::process::Command::new("xdg-open").arg(&url).spawn()?;
-        }
+    //     #[cfg(target_os = "linux")]
+    //     {
+    //         std::process::Command::new("xdg-open").arg(&url).spawn()?;
+    //     }
 
-        #[cfg(target_os = "windows")]
-        {
-            std::process::Command::new("rundll32")
-                .args(&["url.dll,FileProtocolHandler", &url])
-                .spawn()?;
-        }
+    //     #[cfg(target_os = "windows")]
+    //     {
+    //         std::process::Command::new("rundll32")
+    //             .args(&["url.dll,FileProtocolHandler", &url])
+    //             .spawn()?;
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }
 
 use visualization::*;
@@ -903,8 +915,8 @@ fn generate_and_show_differential_flamegraph() -> Result<(), Box<dyn std::error:
         after_file,
         output_path,
         config,
-        "inefficient",
-        "efficient",
+        // "inefficient",
+        // "efficient",
     )?;
 
     println!("✅ Differential flamegraph generated: {}", output_path);
@@ -925,64 +937,64 @@ fn generate_and_show_differential_flamegraph() -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
-fn create_exclusive_from_inclusive(
-    inclusive_file: &std::path::PathBuf,
-    exclusive_file: &std::path::PathBuf,
-) -> Result<bool, Box<dyn std::error::Error>> {
-    use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::{BufRead, BufReader, Write};
+// fn create_exclusive_from_inclusive(
+//     inclusive_file: &std::path::PathBuf,
+//     exclusive_file: &std::path::PathBuf,
+// ) -> Result<bool, Box<dyn std::error::Error>> {
+//     use std::collections::HashMap;
+//     use std::fs::File;
+//     use std::io::{BufRead, BufReader, Write};
 
-    let file = File::open(inclusive_file)?;
-    let reader = BufReader::new(file);
+//     let file = File::open(inclusive_file)?;
+//     let reader = BufReader::new(file);
 
-    let mut stack_times: HashMap<String, u64> = HashMap::new();
+//     let mut stack_times: HashMap<String, u64> = HashMap::new();
 
-    // Parse the inclusive file and disaggregate
-    for line in reader.lines() {
-        let line = line?;
-        if line.trim().is_empty() {
-            continue;
-        }
+//     // Parse the inclusive file and disaggregate
+//     for line in reader.lines() {
+//         let line = line?;
+//         if line.trim().is_empty() {
+//             continue;
+//         }
 
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 2 {
-            continue;
-        }
+//         let parts: Vec<&str> = line.split_whitespace().collect();
+//         if parts.len() < 2 {
+//             continue;
+//         }
 
-        let stack = parts[0];
-        let time: u64 = parts[1].parse().unwrap_or(0);
+//         let stack = parts[0];
+//         let time: u64 = parts[1].parse().unwrap_or(0);
 
-        // For each stack, add the time to itself and subtract from all ancestors
-        let stack_parts: Vec<&str> = stack.split(';').collect();
+//         // For each stack, add the time to itself and subtract from all ancestors
+//         let stack_parts: Vec<&str> = stack.split(';').collect();
 
-        for i in 0..stack_parts.len() {
-            let current_stack = stack_parts[0..=i].join(";");
+//         for i in 0..stack_parts.len() {
+//             let current_stack = stack_parts[0..=i].join(";");
 
-            if i == stack_parts.len() - 1 {
-                // This is the leaf stack - add the time
-                *stack_times.entry(current_stack).or_insert(0) += time;
-            } else {
-                // This is an ancestor stack - subtract the time
-                let current_time = stack_times.entry(current_stack.clone()).or_insert(0);
-                *current_time = current_time.saturating_sub(time);
-            }
-        }
-    }
+//             if i == stack_parts.len() - 1 {
+//                 // This is the leaf stack - add the time
+//                 *stack_times.entry(current_stack).or_insert(0) += time;
+//             } else {
+//                 // This is an ancestor stack - subtract the time
+//                 let current_time = stack_times.entry(current_stack.clone()).or_insert(0);
+//                 *current_time = current_time.saturating_sub(time);
+//             }
+//         }
+//     }
 
-    // Write the exclusive file
-    let mut output = File::create(exclusive_file)?;
-    let mut entries: Vec<_> = stack_times.into_iter().collect();
-    entries.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by time descending
+//     // Write the exclusive file
+//     let mut output = File::create(exclusive_file)?;
+//     let mut entries: Vec<_> = stack_times.into_iter().collect();
+//     entries.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by time descending
 
-    for (stack, time) in entries {
-        if time > 0 {
-            writeln!(output, "{} {}", stack, time)?;
-        }
-    }
+//     for (stack, time) in entries {
+//         if time > 0 {
+//             writeln!(output, "{} {}", stack, time)?;
+//         }
+//     }
 
-    Ok(true)
-}
+//     Ok(true)
+// }
 
 fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let full_path = std::env::current_dir()?.join(file_path);

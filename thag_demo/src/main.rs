@@ -10,6 +10,8 @@ use std::path::PathBuf;
 use std::process;
 use thag_rs::{builder::execute, Cli};
 
+pub mod visualization;
+
 /// Demo runner for thag_rs and thag_profiler examples
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -41,6 +43,9 @@ enum DemoCommand {
 
     /// Before/after comparison demo
     Comparison,
+
+    /// Differential comparison demo with before/after analysis
+    DifferentialComparison,
 
     /// Interactive flamegraph demo
     Flamegraph,
@@ -112,6 +117,10 @@ fn list_demos() {
             "interactive-profiling",
             "Interactive profiling with embedded analysis",
         ),
+        (
+            "differential-comparison",
+            "True differential comparison with before/after analysis",
+        ),
     ];
 
     for (name, description) in demos {
@@ -131,6 +140,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::MemoryProfiling => include_str!("../demos/memory_profiling.rs"),
         DemoCommand::AsyncProfiling => include_str!("../demos/async_profiling.rs"),
         DemoCommand::Comparison => include_str!("../demos/comparison.rs"),
+        DemoCommand::DifferentialComparison => include_str!("../demos/differential_comparison.rs"),
         DemoCommand::Flamegraph => include_str!("../demos/flamegraph.rs"),
         DemoCommand::Benchmark => include_str!("../demos/benchmark.rs"),
         DemoCommand::InteractiveProfiling => include_str!("../demos/interactive_profiling.rs"),
@@ -144,6 +154,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::MemoryProfiling => "memory_profiling",
         DemoCommand::AsyncProfiling => "async_profiling",
         DemoCommand::Comparison => "comparison",
+        DemoCommand::DifferentialComparison => "differential_comparison",
         DemoCommand::Flamegraph => "flamegraph",
         DemoCommand::Benchmark => "benchmark",
         DemoCommand::InteractiveProfiling => "interactive_profiling",
@@ -291,7 +302,12 @@ fn print_demo_info(demo_name: &str) {
         }
         "comparison" => {
             println!("  • Before/after performance comparison");
-            println!("  • Differential flamegraph analysis");
+            println!("  • Side-by-side algorithm analysis");
+        }
+        "differential_comparison" => {
+            println!("  • True differential profiling with before/after analysis");
+            println!("  • Automated execution of inefficient vs efficient versions");
+            println!("  • Interactive differential flamegraph generation");
         }
         "flamegraph" => {
             println!("  • Interactive flamegraph generation");

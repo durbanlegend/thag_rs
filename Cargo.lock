@@ -3790,6 +3790,8 @@ dependencies = [
  "clap",
  "colored",
  "dirs",
+ "inferno",
+ "thag_profiler",
  "thag_rs",
 ]
 

@@ -29,8 +29,6 @@ use thag_profiler::{enable_profiling, enhance_svg_accessibility, profiled};
 
 const FIB_N: usize = 45;
 const HUNDREDFOLD: usize = FIB_N * 100;
-// const MULTIPLIER: usize = 200;
-// const MULTIPLIED: usize = FIB_N * MULTIPLIER;
 
 #[profiled]
 #[timing]

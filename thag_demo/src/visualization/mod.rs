@@ -26,7 +26,7 @@ pub struct VisualizationConfig {
     pub count_name: String,
     /// Minimum bar width to display
     pub min_width: f64,
-    /// Whether to generate flamechart (aggregated) vs flamegraph (timeline)
+    /// Whether to generate flamechart (timeline) vs flamegraph (aggregated)
     pub flame_chart: bool,
     /// Whether to open in browser automatically
     pub open_browser: bool,

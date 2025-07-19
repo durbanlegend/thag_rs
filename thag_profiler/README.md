@@ -62,7 +62,7 @@ Output analysis:
 
 - **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are disabled.
 
-- **Execution time profiling**: Low-overhead profiling to highlight hotspots.
+- **Execution time profiling**: Low-overhead profiling to highlight hotspots. Profiler overhead is stripped out for accuracy even at small scale.
 
 - **Accurate memory profiling**: Memory allocations are accurately tracked at line number level and ring-fenced from profiler code so that the latter can't distort the measurements. Allocations may be summarized by function or section, or broken out in detail where desired.
 

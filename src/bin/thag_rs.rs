@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::error::Error;
 #[cfg(debug_assertions)]
 use std::time::Instant;
-// use thag_proc_macros::enable_profiling;
 use thag_profiler::enable_profiling;
 use thag_profiler::profiling;
 
@@ -19,7 +18,7 @@ use thag_rs::debug_timings;
 use thag_rs::logging::configure_log;
 
 #[cfg(feature = "build")]
-use thag_rs::{execute, get_args};
+use thag_rs::{execute, get_args, ThagResult};
 
 // use thag_rs::ThagResult;
 
@@ -37,18 +36,23 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         #[cfg(debug_assertions)]
         debug_timings(&start, "Configured logging");
 
-        handle(&cli);
+        handle(&cli)?
     }
 
-    Ok(())
+    #[cfg(feature = "build")]
+    {
+        Ok(())
+    }
 }
 
 #[cfg(feature = "build")]
-fn handle(cli: &RefCell<thag_rs::Cli>) {
+fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
     // Use borrow_mut to get a mutable reference
-    let result = execute(&mut cli.borrow_mut());
-    match result {
-        Ok(()) => (),
-        Err(e) => println!("{e}"),
-    }
+    // let result = execute(&mut cli.borrow_mut());
+    // match result {
+    //     Ok(()) => (),
+    //     Err(e) => println!("{e}"),
+    // }
+
+    execute(&mut cli.borrow_mut())
 }

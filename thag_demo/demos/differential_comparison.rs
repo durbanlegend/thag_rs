@@ -14,10 +14,7 @@ strip = false
 //# Purpose: Demonstrate differential profiling with before/after comparison
 //# Categories: profiling, demo, comparison, optimization, differential
 use std::io::Write;
-// use std::path::PathBuf;
 use std::process::Command;
-use std::thread;
-use std::time::Duration;
 
 // Inline visualization functionality for this demo
 mod visualization {
@@ -318,7 +315,7 @@ mod visualization {
 
         pub fn display_differential_analysis(analysis: &DifferentialAnalysis) {
             println!("📊 Differential Analysis Results");
-            println!("═══════════════════════════════════");
+            println!("════════════════════════════════");
             println!();
 
             println!("📈 Performance Summary:");
@@ -528,15 +525,15 @@ fn main() {
 
     // Step 1: Run the before version
     println!("🔄 Step 1: Running BEFORE version (inefficient implementations)...");
-    println!("────────────────────────────────────────────────────────────────");
+    println!("──────────────────────────────────────────────────────────────────");
 
     if let Err(e) = run_before_version() {
         eprintln!("❌ Failed to run before version: {}", e);
         return;
     }
 
-    // Short pause to ensure profile files are written
-    thread::sleep(Duration::from_secs(1));
+    // // Short pause to ensure profile files are written
+    // thread::sleep(Duration::from_secs(1));
 
     // Step 2: Run the after version
     println!();
@@ -548,8 +545,8 @@ fn main() {
         return;
     }
 
-    // Short pause to ensure profile files are written
-    thread::sleep(Duration::from_secs(1));
+    // // Short pause to ensure profile files are written
+    // thread::sleep(Duration::from_secs(1));
 
     // Step 3: Generate differential analysis
     println!();
@@ -585,7 +582,7 @@ strip = false
 
 /// Comparison demo - BEFORE version with inefficient implementations
 use std::collections::HashMap;
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, end, profile, profiled};
 
 #[profiled]
 fn sort(mut arr: Vec<i32>) -> Vec<i32> {
@@ -610,31 +607,44 @@ fn string_concat(words: &[&str]) -> String {
 }
 
 #[profiled]
-fn lookup(data: &[(String, i32)], key: &str) -> Option<i32> {
-    for (k, v) in data {
-        if k == key {
-            return Some(*v);
+fn lookup(vector_data: &[(String, i32]) {
+    let lookup = |data: &[(String, i32)], key: &str| {
+        for (k, v) in data {
+            if k == key {
+                return Some(*v);
+            }
         }
+        None
+    };
+
+    for _ in 0..100 {
+        let _result = lookup(vector_data, "key_500");
     }
-    None
 }
 
 #[profiled]
 fn run_all_tests() {
+    profile!(sort_prep);
     let test_data: Vec<i32> = (0..1000).rev().collect();
+    end!(sort_prep);
+
     let _sorted = sort(test_data);
 
+    profile!(concat_prep);
     let words = vec!["hello", "world", "test"];
     let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
+    end!(concat_prep);
+
     let _result = string_concat(&test_words);
 
+    profile!(lookup_prep);
     let mut vector_data = Vec::new();
     for i in 0..1000 {
         vector_data.push((format!("key_{}", i), i * 2));
     }
-    for _ in 0..100 {
-        let _result = lookup(&vector_data, "key_500");
-    }
+    end!(lookup_prep);
+
+    lookup(&vector_data);
 }
 
 #[enable_profiling(time)]
@@ -669,8 +679,8 @@ fn main() {
 
     println!("✅ Before version completed successfully");
 
-    // Wait a moment to ensure all profile files are written
-    thread::sleep(Duration::from_secs(2));
+    // // Wait a moment to ensure all profile files are written
+    // thread::sleep(Duration::from_secs(2));
 
     Ok(())
 }
@@ -687,7 +697,7 @@ strip = false
 
 /// Comparison demo - AFTER version with efficient implementations
 use std::collections::HashMap;
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, end, profile, profiled};
 
 #[profiled]
 fn sort(arr: Vec<i32>) -> Vec<i32> {
@@ -716,7 +726,7 @@ fn quicksort(mut arr: Vec<i32>) -> Vec<i32> {
     let (pivot_slice, right) = right.split_at_mut(1);
 
     let mut left_sorted = quicksort(left.to_vec());
-    let mut right_sorted = quicksort(right.to_vec());
+    let right_sorted = quicksort(right.to_vec());
 
     left_sorted.extend_from_slice(pivot_slice);
     left_sorted.extend_from_slice(&right_sorted);
@@ -734,26 +744,39 @@ fn string_concat(words: &[&str]) -> String {
 }
 
 #[profiled]
-fn lookup(data: &HashMap<String, i32>, key: &str) -> Option<i32> {
-    data.get(key).copied()
+fn lookup(hashmap_data: &HashMap<String, i32>) {
+    let lookup = |data: &HashMap<String, i32>, key: &str| {
+        data.get(key).copied()
+    };
+
+    for _ in 0..100 {
+        let _result = lookup(hashmap_data, "key_500");
+    }
 }
 
 #[profiled]
 fn run_all_tests() {
+    profile!(sort_prep);
     let test_data: Vec<i32> = (0..1000).rev().collect();
+    end!(sort_prep);
+
     let _sorted = sort(test_data);
 
+    profile!(concat_prep);
     let words = vec!["hello", "world", "test"];
     let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
+    end!(concat_prep);
+
     let _result = string_concat(&test_words);
 
+    profile!(lookup_prep);
     let mut hashmap_data = HashMap::new();
     for i in 0..1000 {
         hashmap_data.insert(format!("key_{}", i), i * 2);
     }
-    for _ in 0..100 {
-        let _result = lookup(&hashmap_data, "key_500");
-    }
+    end!(lookup_prep);
+
+    lookup(&hashmap_data);
 }
 
 #[enable_profiling(time)]
@@ -788,8 +811,8 @@ fn main() {
 
     println!("✅ After version completed successfully");
 
-    // Wait a moment to ensure all profile files are written
-    thread::sleep(Duration::from_secs(2));
+    // // Wait a moment to ensure all profile files are written
+    // thread::sleep(Duration::from_secs(2));
 
     Ok(())
 }

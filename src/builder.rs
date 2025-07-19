@@ -1394,7 +1394,8 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
 
-    let _exit_status = run_command.spawn()?.wait()?;
+    let exit_status = run_command.status()?;
+    cvprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
 
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
 
@@ -1402,6 +1403,10 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // debug_log!("Exit status={exit_status:#?}");
 
     display_timings(&start_run, "Completed run", proc_flags);
+
+    if !exit_status.success() {
+        return Err(ThagError::Command("Script execution was unsuccessful"));
+    }
 
     Ok(())
 }

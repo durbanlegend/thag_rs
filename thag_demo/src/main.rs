@@ -225,6 +225,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     std::env::set_var("THAG_DEV_PATH", thag_rs_root);
 
     let mut cli = create_demo_cli(&demo_path, verbose);
+    // eprintln!("cli={cli:#?}");
 
     match execute(&mut cli) {
         Ok(()) => {

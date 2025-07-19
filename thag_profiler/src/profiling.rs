@@ -39,6 +39,7 @@ use std::{
     convert::Into,
     fs::OpenOptions,
     io::{BufRead, BufReader, Write},
+    path::Path,
     sync::{
         atomic::{AtomicBool, AtomicU64},
         OnceLock,
@@ -1768,6 +1769,9 @@ impl Profile {
                     build_stack(&path, section_name.as_ref(), " -> ")
                 );
 
+                let setup_duration = setup_start.elapsed();
+                let actual_start = Instant::now();
+
                 let mut profile = Self {
                     profile_type,
                     start: None,
@@ -1780,6 +1784,8 @@ impl Profile {
                     detailed_memory,
                     file_name: file_name_stem,
                     instance_id,
+                    setup_duration,
+                    actual_start,
                     allocation_total: Arc::new(AtomicUsize::new(0)),
                     memory_reported: Arc::new(AtomicBool::new(false)),
                     memory_task: None,
@@ -2164,12 +2170,13 @@ pub fn filter_scaffolding(name: &str) -> bool {
 
 /// Extracts the callstack for a `Profile`.
 #[internal_doc]
+#[allow(clippy::too_many_lines)]
 #[cfg(feature = "time_profiling")]
 #[must_use]
 pub fn extract_profile_callstack() -> Vec<String> {
     const MAX_STACK_DEPTH_CAP: usize = 1000;
     const INITIAL_STACK_DEPTH: usize = 20;
-    const START_PATTERN: &'static str = "Profile::new";
+    const START_PATTERN: &str = "Profile::new";
     #[derive(Debug)]
     struct Site {
         filename: Option<PathBuf>,
@@ -2213,7 +2220,7 @@ pub fn extract_profile_callstack() -> Vec<String> {
                         suppress = true;
                         break 'process_symbol;
                     }
-                    let filename = symbol.filename().map(|path| path.to_path_buf());
+                    let filename = symbol.filename().map(Path::to_path_buf);
                     let lineno = symbol.lineno();
                     if is_current_fn {
                         is_current_fn = false;
@@ -2274,13 +2281,11 @@ pub fn extract_profile_callstack() -> Vec<String> {
             });
             !fin && !recursion_detected
         });
-        if recursion_detected {
-            panic!(
-                 r#"THAG_PROFILER ERROR: Recursive profiling detected for above location.
+        assert!(!recursion_detected,
+                 r"THAG_PROFILER ERROR: Recursive profiling detected for above location.
 Profiling recursive functions may cause exponential overhead and is not supported.
-Please remove #[profiled] from recursive functions and profile only the calling function instead."#
+Please remove #[profiled] from recursive functions and profile only the calling function instead."
              );
-        }
 
         callstack
     }
@@ -2568,6 +2573,8 @@ impl Drop for Profile {
 #[cfg(feature = "time_profiling")]
 #[allow(clippy::branches_sharing_code, unused_assignments)]
 pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> ProfileResult<()> {
+    use std::string::ToString;
+
     debug_log!("Converting inclusive time profile to exclusive time");
 
     // Read input file
@@ -2607,11 +2614,13 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
     // Calculate exclusive times using forward processing
     // Children appear before parents in the file (children complete first)
 
+    let len = &stack_lines.len();
+
     // Pre-parse all stacks once to avoid repeated string operations
     let parsed_stacks: Vec<(Vec<String>, u64, String)> = stack_lines
         .into_iter()
         .map(|(stack, time)| {
-            let parts: Vec<String> = stack.split(';').map(|s| s.to_string()).collect();
+            let parts: Vec<String> = stack.split(';').map(ToString::to_string).collect();
             (parts, time, stack)
         })
         .collect();
@@ -2627,8 +2636,8 @@ pub fn convert_to_exclusive_time(input_path: &str, output_path: &str) -> Profile
         let (ref current_parts, _, _) = &parsed_stacks[i];
 
         // Look forward (upward in file) for direct children
-        for j in 0..i {
-            let (ref child_parts, child_time, _) = &parsed_stacks[j];
+        for stack in parsed_stacks.iter().take(i) {
+            let (ref child_parts, child_time, _) = &stack;
 
             // Check if this is a direct child (exactly one level deeper)
             if child_parts.len() == current_parts.len() + 1 {
@@ -2688,7 +2697,19 @@ pub fn process_time_profile() -> ProfileResult<()> {
     let exclusive_path = &paths.time;
 
     // Check if the .profraw file exists and has content
-    if !profraw_path.is_empty() {
+    if profraw_path.is_empty() {
+        // Fall back to old behavior if no .profraw file
+        if !inclusive_path.is_empty() {
+            let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
+                ProfileError::General(format!("Failed to check inclusive time file: {e}"))
+            })?;
+
+            if metadata.len() > 0 {
+                debug_log!("Converting inclusive time profile to exclusive time");
+                convert_to_exclusive_time(inclusive_path, exclusive_path)?;
+            }
+        }
+    } else {
         let metadata = std::fs::metadata(profraw_path)
             .map_err(|e| ProfileError::General(format!("Failed to check .profraw file: {e}")))?;
 
@@ -2700,22 +2721,11 @@ pub fn process_time_profile() -> ProfileResult<()> {
             convert_to_exclusive_time(inclusive_path, exclusive_path)?;
 
             // Clean up .profraw file after processing
+            #[cfg(feature = "debug_logging")]
             if let Err(e) = std::fs::remove_file(profraw_path) {
                 debug_log!("Warning: Failed to remove .profraw file: {}", e);
             } else {
                 debug_log!("Successfully removed .profraw file: {}", profraw_path);
-            }
-        }
-    } else {
-        // Fallback to old behavior if no .profraw file
-        if !inclusive_path.is_empty() {
-            let metadata = std::fs::metadata(inclusive_path).map_err(|e| {
-                ProfileError::General(format!("Failed to check inclusive time file: {e}"))
-            })?;
-
-            if metadata.len() > 0 {
-                debug_log!("Converting inclusive time profile to exclusive time");
-                convert_to_exclusive_time(inclusive_path, exclusive_path)?;
             }
         }
     }
@@ -3395,24 +3405,24 @@ fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
 
 /// Subtracts child overhead from parent payload to get clean inclusive times
 #[cfg(feature = "time_profiling")]
-fn subtract_child_overhead(entries: Vec<ProfrawEntry>) -> ProfileResult<HashMap<String, u64>> {
+fn subtract_child_overhead(entries: &[ProfrawEntry]) -> HashMap<String, u64> {
     debug_log!("Subtracting child overhead from parent payload");
 
     let mut clean_times = HashMap::new();
 
     // First pass: collect all stack -> overhead mapping
     let mut stack_overhead = HashMap::new();
-    for entry in &entries {
+    for entry in entries {
         *stack_overhead.entry(entry.stack.clone()).or_insert(0) += entry.overhead_micros;
     }
 
     // Second pass: for each stack, calculate clean inclusive time
-    for entry in &entries {
+    for entry in entries {
         let stack_parts: Vec<&str> = entry.stack.split(';').collect();
 
         // Calculate child overhead for this stack
         let mut child_overhead = 0u64;
-        for other_entry in &entries {
+        for other_entry in entries {
             let other_parts: Vec<&str> = other_entry.stack.split(';').collect();
 
             // Check if other_entry is a child of current entry
@@ -3441,10 +3451,14 @@ fn subtract_child_overhead(entries: Vec<ProfrawEntry>) -> ProfileResult<HashMap<
     }
 
     debug_log!("Generated {} clean inclusive times", clean_times.len());
-    Ok(clean_times)
+    clean_times
 }
 
 /// Converts .profraw file to clean .folded file by subtracting overhead
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered processing the files.
 #[cfg(feature = "time_profiling")]
 pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> ProfileResult<()> {
     debug_log!(
@@ -3464,7 +3478,7 @@ pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> Profi
     }
 
     // Subtract child overhead to get clean inclusive times
-    let clean_times = subtract_child_overhead(entries)?;
+    let clean_times = subtract_child_overhead(&entries);
 
     // Write clean times to .folded file
     let mut output_file = File::create(output_path)
@@ -3495,6 +3509,10 @@ pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> Profi
 }
 
 /// Processes all .profraw files in the current directory to .folded files
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered processing the files.
 #[cfg(feature = "time_profiling")]
 pub fn process_all_profraw_files() -> ProfileResult<()> {
     debug_log!("Processing all .profraw files in current directory");

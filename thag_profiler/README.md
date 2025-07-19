@@ -20,8 +20,8 @@ Why choose `thag_profiling`?:
 
 ---
 
-[![Hot flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250703-210923.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_hot_20250703-210923.svg)<br>
-*Time profile in `inferno` "hot" color scheme. Click on image for interactive version with clickable bars and search.*
+[![Rust-themed flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_rust_time.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_rust_time.svg)<br>
+*Time profile in `inferno` "Rust" color scheme. Click on image for interactive version with clickable bars and search.*
 
 ---
 

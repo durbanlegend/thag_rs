@@ -2720,13 +2720,14 @@ pub fn process_time_profile() -> ProfileResult<()> {
             debug_log!("Converting clean inclusive time profile to exclusive time");
             convert_to_exclusive_time(inclusive_path, exclusive_path)?;
 
-            // Clean up .profraw file after processing
-            #[cfg(feature = "debug_logging")]
-            if let Err(e) = std::fs::remove_file(profraw_path) {
-                debug_log!("Warning: Failed to remove .profraw file: {}", e);
-            } else {
-                debug_log!("Successfully removed .profraw file: {}", profraw_path);
-            }
+            // // Clean up .profraw file after processing
+            // let remove_file = std::fs::remove_file(profraw_path);
+            // #[cfg(feature = "debug_logging")]
+            // if let Err(e) = remove_file {
+            //     debug_log!("Warning: Failed to remove .profraw file: {}", e);
+            // } else {
+            //     debug_log!("Successfully removed .profraw file: {}", profraw_path);
+            // }
         }
     }
     Ok(())

@@ -19,9 +19,8 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 use std::time::{Duration, Instant};
-use tokio::time::sleep;
 
-use thag_profiler::{self, enable_profiling, profiled};
+use thag_profiler::{self, enable_profiling, end, profile, profiled};
 
 struct Document {
     id: usize,
@@ -139,11 +138,24 @@ impl Document {
     }
 }
 
+/// Busy-wait for approximately `duration` without calling `.await`.
+/// Await was taking 200ms+ in tokio overhead
+#[profiled]
+pub fn busy_wait(duration: Duration) {
+    let start = Instant::now();
+    while start.elapsed() < duration {
+        std::hint::spin_loop(); // A CPU-friendly hint for spin-waiting
+    }
+}
+
 #[profiled]
 async fn fetch_document(id: usize) -> Document {
     // Simulate network delay
-    sleep(Duration::from_millis(50 + (id % 10 * 5) as u64)).await;
+    // profile!(network_delay);
+    busy_wait(Duration::from_millis(20));
+    // end!(network_delay);
 
+    profile!(gen_content);
     let _dummy = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     // Generate some random content
@@ -154,6 +166,7 @@ async fn fetch_document(id: usize) -> Document {
                           depending on the document.",
         id
     );
+    end!(gen_content);
 
     Document::new(id, content)
 }
@@ -164,8 +177,8 @@ async fn process_document(mut doc: Document) -> Document {
     doc.count_words();
     doc.calculate_sentiment();
 
-    // Simulate some async processing
-    sleep(Duration::from_millis(20)).await;
+    // // Simulate some async processing
+    // sleep(Duration::from_millis(20)).await;
 
     doc.is_processed = true;
     doc
@@ -248,6 +261,7 @@ fn load_documents_from_file(path: &Path) -> io::Result<Vec<Document>> {
 async fn generate_and_process_documents(count: usize) -> Vec<Document> {
     let mut tasks = Vec::new();
 
+    profile!(task_loop);
     for id in 0..count {
         // Document::new without the added Vec allocation seems to have a zero-byte runtime allocation.
         // In order for the `fetch_document` profile to show up, we either have to add an extra allocation
@@ -261,8 +275,12 @@ async fn generate_and_process_documents(count: usize) -> Vec<Document> {
             process_document(doc).await
         });
     }
+    end!(task_loop);
 
-    join_all(tasks).await
+    profile!(joins);
+    let docs = join_all(tasks).await;
+    end!(joins);
+    docs
 }
 
 #[tokio::main]

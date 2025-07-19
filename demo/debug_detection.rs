@@ -5,7 +5,7 @@ crossterm = "0.28"
 
 /// Simple diagnostic script to debug the terminal corruption detection
 //# Purpose: Debug why we're getting false positives in corruption detection
-//# Categories: terminal, debugging, diagnostic
+//# Categories: debugging, diagnosis, terminal
 use crossterm::{
     cursor::position,
     terminal::{disable_raw_mode, enable_raw_mode},

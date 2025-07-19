@@ -2,7 +2,7 @@
 /// and capture and print its stdout and stderr concurrently in a
 /// separate thread.
 //# Purpose: Demo process::Command with output capture, debugging unit tests.
-//# Categories: technique, testing
+//# Categories: debugging, technique, testing
 use env_logger::Builder;
 use std::env;
 use std::ffi::OsStr;

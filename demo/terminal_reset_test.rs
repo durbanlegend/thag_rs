@@ -1,6 +1,6 @@
 /// Demo script to test terminal reset functionality for OSC sequence corruption
 //# Purpose: Test terminal reset when OSC sequences cause line discipline corruption
-//# Categories: terminal, debugging, OSC
+//# Categories: debugging, terminal, xterm
 use std::io::{stdout, Write};
 use std::thread;
 use std::time::Duration;

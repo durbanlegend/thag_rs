@@ -531,7 +531,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_capture_ou
 
 **Type:** Program
 
-**Categories:** technique, testing
+**Categories:** debugging, technique, testing
 
 **Link:** [cargo_debug_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_debug_test_case.rs)
 
@@ -945,6 +945,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
 **Categories:** demo, testing
 
 **Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors.rs)
+
+**Not suitable to be run from a URL.**
+
+
+---
+
+### Script: colors_claude.rs
+
+**Description:**  Runner for legacy module `src/colors.rs`, removed after "0.1.9".
+ This demo now uses basic ANSI colors via nu-ansi-term instead of the removed colors module.
+ NB: If you have the [misc] option `unquote` specified in your `config.toml` and
+ don't use the git tag `config_quoted_or_unquoted_booleans` in the `toml` block
+ you will need to ensure that its boolean value is a quoted string ("true" or "false")
+ in order to run this demo, otherwise it will fail trying to process the config
+ file correctly.
+
+ E.g. `thag demo/colors.rs`
+
+**Purpose:** Originally to test the look of the various colours. Replaced by `demo/styling_demo.rs`.
+
+**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** ANSI, color, demo, styling, terminal, testing
+
+**Link:** [colors_claude.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors_claude.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -1552,6 +1579,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_
 
 ---
 
+### Script: debug_detection.rs
+
+**Description:**  Simple diagnostic script to debug the terminal corruption detection
+ Simple corruption detection without synchronization
+ Test what happens with normal println
+ Test manual cursor positioning
+ Test raw mode behavior
+ Test the specific sequence that our detection function uses
+ Visual alignment test
+
+**Purpose:** Debug why we're getting false positives in corruption detection
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** debugging, diagnosis, terminal
+
+**Link:** [debug_detection.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_detection.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_detection.rs
+```
+
+---
+
 ### Script: derive_deftly.rs
 
 **Description:**  Introductory example from the `derive-deftly` user guide.
@@ -1632,6 +1687,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipelin
 **Description:**  Test async program (instrumented version) for `thag_profiler` testing.
  See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
 
+ Busy-wait for approximately `duration` without calling `.await`.
+ Await was taking 200ms+ in tokio overhead
 
 **Purpose:** Test profiling using `thag_profiler`.
 
@@ -2889,6 +2946,55 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_quadrupling_
 
 ---
 
+### Script: file_dialog_gui.rs
+
+**Description:**  Demo of invoking the Rust formatter programmatically, with the addition of an `rfd`
+ (`Rusty File Dialogs`) cross-platform file chooser to select the file to format.
+ Compare with `demo/file_dialog_thag.rs`, which uses `thag_proc_macros` text-based
+ file navigator and `inquire` to choose the file.
+
+**Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
+
+**Crates:** `rfd`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [file_dialog_gui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_gui.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_gui.rs
+```
+
+---
+
+### Script: file_dialog_thag.rs
+
+**Description:**  Demo of invoking the Rust formatter programmatically, using `thag_proc_macros`
+ cross-platform file chooser to select the file to format.
+ Compare with `demo/file_dialog_gui.rs`, which uses the platform's native gui.
+
+**Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
+
+**Crates:** `inquire`, `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [file_dialog_thag.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_thag.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_thag.rs
+```
+
+---
+
 ### Script: fizz_buzz_blandy_orendorff.rs
 
 **Description:**  A fun example from Programming Rust by Jim Blandy and Jason Orendorff (O’Reilly).
@@ -3164,7 +3270,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_minimal.rs
 
 **Type:** Snippet
 
-**Categories:** testing
+**Categories:** debugging, testing
 
 **Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/history_debug.rs)
 
@@ -4572,7 +4678,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
 
 ---
 
-### Script: puffin_egui_29.rs
+### Script: puffin_egui_28.rs
 
 **Description:**  Published demo from the `puffin` profiling crate. The only change is to add a toml block
  entry to prevent a more recent `eframe` version from clashing with `puffin`.
@@ -4585,12 +4691,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
 
 **Categories:** crates
 
-**Link:** [puffin_egui_29.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_29.rs)
+**Link:** [puffin_egui_28.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_28.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_29.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_28.rs
 ```
 
 ---
@@ -5214,7 +5320,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.r
 
 ### Script: reedline_transient_prompt.rs
 
-**Description:**  Published demo from `reedline` crate.
+**Description:**  Published demo from `reedline` crate. Shows use of toml block to specify `reedline`
+ features referenced in the example.
 
 **Purpose:** Demo the use of a transient minimal prompt `! ` for returned history.
 
@@ -5283,7 +5390,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs
 
 ### Script: repl_partial_match.rs
 
-**Description:**  Experiment with matching REPL commands with a partial match of any length.
+**Description:**  Experiment with matching REPL commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 
@@ -5351,30 +5458,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rug_arbitrary_precision_nums.rs
-```
-
----
-
-### Script: rustfmt.rs
-
-**Description:**  Prototype of invoking the Rust formatter programmatically, with the addition of an `rfd`
- (`Rusty File Dialogs`) cross-platform file chooser to select the file to format. The code
- for both was AI-generated because I find AI very handy for this kind of grunt work.
-
-**Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
-
-**Crates:** `rfd`
-
-**Type:** Program
-
-**Categories:** crates, technique
-
-**Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt.rs
 ```
 
 ---
@@ -5646,10 +5729,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_import_s
 ### Script: snippet_name_clash.rs
 
 **Description:**  Demo scope of import statements. Two conflicting imports with the same name
- coexisting in the same `println!` invocation. Demonstrates that when wrapping
- a snippet we can't assume it's OK to pull the imports up to the top level.
+ `ubig` coexisting in the same `println!` invocation. Demonstrates that when
+ wrapping a snippet we can't assume it's OK to pull the imports up to the top
+ level.
 
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
+
+**Crates:** `dashu`, `ibig`
 
 **Type:** Snippet
 
@@ -5734,20 +5820,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs
 
 ### Script: stdin_main.rs
 
-**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
- with the `develop` branch version being debugged.
+**Description:**  Open the history file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
 
- E.g. `thag demo/stdin_main.rs`
- Apply highlights to the text depending on the light or dark theme as detected, configured
- or defaulted, or as toggled by the user with Ctrl-t.
+**Purpose:** Debugging and demonstration.
 
-**Purpose:** Debugging.
-
-**Crates:** `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+**Crates:** `edit`, `ratatui`, `thag_rs`
 
 **Type:** Program
 
-**Categories:** testing
+**Categories:** demo, testing
 
 **Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs)
 
@@ -5759,7 +5842,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs
 
 ---
 
-### Script: stdin_main_instr.rs
+### Script: stdin_main_old_instr.rs
 
 **Description:**  Apply highlights to the text depending on the light or dark theme as detected, configured
  or defaulted, or as toggled by the user with Ctrl-t.
@@ -5772,12 +5855,93 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs
 
 **Categories:** testing
 
-**Link:** [stdin_main_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_instr.rs)
+**Link:** [stdin_main_old_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_instr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_instr.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_instr.rs
+```
+
+---
+
+### Script: stdin_main_upd_instr.rs
+
+**Description:**  Edit the stdin stream.
+
+
+ # Examples
+
+ ```no_run
+ use thag_rs::stdin::edit;
+ use thag_rs::CrosstermEventReader;
+ use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+ use thag_rs::MockEventReader;
+
+ let mut event_reader = MockEventReader::new();
+ event_reader.expect_read_event().return_once(|| {
+     Ok(Event::Key(KeyEvent::new(
+         KeyCode::Char('d'),
+         KeyModifiers::CONTROL,
+     )))
+ });
+ let actual = edit(&event_reader);
+ let buf = vec![""];
+ assert!(matches!(actual, Ok(buf)));
+ ```
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ # Panics
+
+ If the terminal cannot be reset.
+ Prompt for and read Rust source code from stdin.
+
+ # Examples
+
+ ``` ignore
+ use thag_rs::stdin::read;
+
+ let hello = String::from("Hello world!");
+ assert!(matches!(read(), Ok(hello)));
+ ```
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ Read Rust source code into a String from the provided reader (e.g., stdin or a mock reader).
+
+ # Examples
+
+ ``` ignore
+ use thag_rs::stdin::read_to_string;
+
+ let stdin = std::io::stdin();
+ let mut input = stdin.lock();
+ let hello = String::from("Hello world!");
+ assert!(matches!(read_to_string(&mut input), Ok(hello)));
+ ```
+
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ Open the history file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
+
+**Purpose:** Debugging.
+
+**Crates:** `edit`, `ratatui`, `thag_profiler`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** profiling, testing
+
+**Link:** [stdin_main_upd_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_upd_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_upd_instr.rs
 ```
 
 ---
@@ -6084,7 +6248,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern
 
 **Purpose:** Demo programmatically modifying Rust source code using `syn` and `quote`.
 
-**Crates:** `quote`, `syn`
+**Crates:** `prettyplease`, `quote`, `syn`
 
 **Type:** Program
 
@@ -6297,7 +6461,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_f
 
 **Purpose:** Demo of the `terminal-light` crate.
 
-**Crates:** `coolor`, `crossterm`, `terminal_light`
+**Crates:** `crossterm`, `terminal_light`
 
 **Type:** Program
 
@@ -6309,6 +6473,32 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_f
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_skins.rs
+```
+
+---
+
+### Script: terminal_reset_test.rs
+
+**Description:**  Demo script to test terminal reset functionality for OSC sequence corruption
+ Soft terminal reset - attempts to restore normal terminal behavior
+ Hard terminal reset - more aggressive reset
+ Simulate the problematic OSC sequence output that causes corruption
+ Test if terminal state is corrupted by checking cursor position
+ Demonstrate detection of terminal corruption
+ Main demo function
+
+**Purpose:** Test terminal reset when OSC sequences cause line discipline corruption
+
+**Type:** Program
+
+**Categories:** debugging, terminal, xterm
+
+**Link:** [terminal_reset_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_test.rs
 ```
 
 ---
@@ -6339,6 +6529,56 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_s
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs -- --write --show-hex
+```
+
+---
+
+### Script: test_profiler_demo_viz.rs
+
+**Description:**  Test script to verify the profiler demo visualization feature works
+
+**Purpose:** test if the error exists, then periodically to see if it persists.
+
+**Crates:** `thag_profiler`
+
+**Type:** Program
+
+**Categories:** profiling, testing
+
+**Link:** [test_profiler_demo_viz.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_demo_viz.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_demo_viz.rs
+```
+
+---
+
+### Script: test_safe_print_macros.rs
+
+**Description:**  Demo script to test the new safe print macros for terminal synchronization
+ Test basic safe print functionality
+ Test OSC sequences with safe_osc macro
+ Test concurrent safe prints (the main use case)
+ Test mixing safe and unsafe prints (demonstration)
+ Test error output scenarios
+ Demonstrate unit test usage pattern
+
+**Purpose:** Test safe print macros that prevent terminal corruption in concurrent environments
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** terminal, testing, macros, synchronization
+
+**Link:** [test_safe_print_macros.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_macros.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_macros.rs
 ```
 
 ---
@@ -6435,11 +6675,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_ben
 
 ### Script: thag_prompt.rs
 
-**Description:**  Early prototype of prompting front-end for `thag`.
+**Description:**  Early prototype of a front-end prompt for `thag`.
 
 **Purpose:** Ultimately, to provide a prompt-driven front-end to the `thag` command.
 
-**Crates:** `inquire`
+**Crates:** `colored`, `inquire`, `thag_proc_macros`
 
 **Type:** Program
 
@@ -6607,7 +6847,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/to_relative_path
 ### Script: tokio_hello_short.rs
 
 **Description:**  Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
- Before running, start a server: `ncat -l 6142` in another terminal.
+ Before running, start a background server: `ncat -l 6142 &`.
 
 **Purpose:** Demo running `tokio` from `thag_rs`.
 
@@ -6630,7 +6870,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_shor
 ### Script: tokio_hello_world.rs
 
 **Description:**  Published example from `tokio` crate. Before running, start a server: `ncat -l 6142`
- in another terminal.
+ in another terminal, or simply `ncat -l 6142 &` in the same terminal.
 
 **Purpose:** Demo running `tokio` from `thag_rs`.
 
@@ -6699,7 +6939,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_worl
 ### Script: tui_ta_editor_profile.rs
 
 **Description:**  A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate
- profiling.
+ time profiling.
 
  Not suitable for running from a URL.
 
@@ -7131,7 +7371,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_termina
  Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
  "rightward march" of log output due to suppression of carriage returns in all environments. I've
  addressed the former by using non-blocking `crossterm` event polling instead of `stdin`, and also
- introduced a
+ had a PR accepted into the `termbg` crate as v0.6.1. This should substantially address the issue
+ although I have not yet managed to overcome an occasional outbreak rightward march in any given
+ environment. The only fix I know for this is a completely new terminal session, but
+ Ensure the following is present as a dependency in the toml block or defaulted in your configuration
+ file (for the Windows builds this is intended for):
+ (`thag - C`): `winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }`
 
 **Purpose:** Debug `termbg`
 

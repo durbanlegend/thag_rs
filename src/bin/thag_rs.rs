@@ -36,10 +36,11 @@ pub fn main() -> Result<(), Box<dyn Error>> {
         #[cfg(debug_assertions)]
         debug_timings(&start, "Configured logging");
 
-        handle(&cli)?
+        handle(&cli)?;
+        Ok(())
     }
 
-    #[cfg(feature = "build")]
+    #[cfg(not(feature = "build"))]
     {
         Ok(())
     }

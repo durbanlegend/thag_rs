@@ -4,6 +4,13 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["t
 */
 
 #![allow(clippy::uninlined_format_args)]
+/**
+A demo version of src/stdin.rs.
+
+E.g. `thag demo/stdin_main.rs < demo/hello.rs`
+*/
+//# Purpose: Debugging and demonstration.
+//# Categories: demo, testing
 use edit::edit_file;
 use ratatui::style::{Color, Modifier, Style};
 use std::{
@@ -12,7 +19,6 @@ use std::{
     io::{self, BufRead, IsTerminal},
     path::PathBuf,
 };
-// use thag_profiler::{enable_profiling, profiled};
 use thag_rs::{
     // debug_log,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
@@ -26,7 +32,6 @@ use thag_rs::{
 };
 
 #[allow(dead_code)]
-// #[enable_profiling]
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
@@ -35,35 +40,14 @@ fn main() -> ThagResult<()> {
     Ok(())
 }
 
-/// Edit the stdin stream.
-///
-///
-/// # Examples
-///
-/// ```no_run
-/// use thag_rs::stdin::edit;
-/// use thag_rs::CrosstermEventReader;
-/// use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
-/// use thag_rs::MockEventReader;
-///
-/// let mut event_reader = MockEventReader::new();
-/// event_reader.expect_read_event().return_once(|| {
-///     Ok(Event::Key(KeyEvent::new(
-///         KeyCode::Char('d'),
-///         KeyModifiers::CONTROL,
-///     )))
-/// });
-/// let actual = edit(&event_reader);
-/// let buf = vec![""];
-/// assert!(matches!(actual, Ok(buf)));
-/// ```
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-/// # Panics
-///
-/// If the terminal cannot be reset.
-// #[profiled]
+// Edit the stdin stream.
+//
+// # Errors
+//
+// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+// # Panics
+//
+// If the terminal cannot be reset.
 pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -127,20 +111,11 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     }
 }
 
-/// Prompt for and read Rust source code from stdin.
-///
-/// # Examples
-///
-/// ``` ignore
-/// use thag_rs::stdin::read;
-///
-/// let hello = String::from("Hello world!");
-/// assert!(matches!(read(), Ok(hello)));
-/// ```
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-// #[profiled]
+// Prompt for and read Rust source code from stdin.
+//
+// # Errors
+//
+// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
@@ -149,23 +124,11 @@ pub fn read() -> Result<String, std::io::Error> {
     Ok(buffer)
 }
 
-/// Read Rust source code into a String from the provided reader (e.g., stdin or a mock reader).
-///
-/// # Examples
-///
-/// ``` ignore
-/// use thag_rs::stdin::read_to_string;
-///
-/// let stdin = std::io::stdin();
-/// let mut input = stdin.lock();
-/// let hello = String::from("Hello world!");
-/// assert!(matches!(read_to_string(&mut input), Ok(hello)));
-/// ```
-///
-/// # Errors
-///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
-// #[profiled]
+// Read Rust source code into a String from the provided reader (e.g., stdin or a mock reader).
+//
+// # Errors
+//
+// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
@@ -176,7 +139,6 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
-// #[profiled]
 pub fn edit_history() -> ThagResult<Option<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");

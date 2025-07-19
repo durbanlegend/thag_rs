@@ -1,7 +1,7 @@
 /// Debug the history handling logic of the `stdin` module and display the effects.
 /// Using this abstraction because stdout/stderr displays don't work nicely in a TUI editor.
 //# Purpose: Debug and demo history ordering.
-//# Categories: testing
+//# Categories: debugging, testing
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;

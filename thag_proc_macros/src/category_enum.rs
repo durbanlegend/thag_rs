@@ -27,6 +27,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            CompileTime,
            Configuration,
            Crates,
+           Debugging,
            Demo,
            DeriveMacros,
            Diagnosis,
@@ -49,6 +50,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            Reference,
            Resilience,
            Styling,
+           Synchronization,
            Technique,
            Terminal,
            Testing,
@@ -59,6 +61,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
            TypeIdentification,
            Unsafe,
            Validation,
+           Xterm,
        }
 
        /// Returns a vector of all valid category names as strings.
@@ -92,6 +95,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///     "compile_time",
        ///     "configuration",
        ///     "crates",
+       ///     "debugging",
        ///     "demo",
        ///     "derive_macros",
        ///     "diagnosis",
@@ -114,6 +118,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///     "reference",
        ///     "resilience",
        ///     "styling",
+       ///     "synchronization",
        ///     "technique",
        ///     "terminal",
        ///     "testing",
@@ -124,6 +129,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///     "type_identification",
        ///     "unsafe",
        ///     "validation",
+       ///     "xterm",
        /// ]);
        /// ```
         pub fn all_categories() -> Vec<String> {

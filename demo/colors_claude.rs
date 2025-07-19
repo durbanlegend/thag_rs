@@ -22,8 +22,7 @@ use thag_rs::{cvprtln, vlog, Lvl};
 ///
 /// E.g. `thag demo/colors.rs`
 //# Purpose: Originally to test the look of the various colours. Replaced by `demo/styling_demo.rs`.
-//# Categories: ANSI, colour, style, terminal
-//# Categories: demo, testing
+//# Categories: ANSI, color, demo, styling, terminal, testing
 // Main function for use by testing or the script runner.
 #[allow(dead_code)]
 pub fn main() {

@@ -618,11 +618,11 @@ fn resolve_script_dir_path(
             .script
             .as_ref()
             .ok_or("Problem resolving script path")?;
-        let script_path = PathBuf::from(script);
-        let script_dir_path = script_path
+        PathBuf::from(script)
+            .canonicalize()?
             .parent()
-            .ok_or("Problem resolving script parent path")?;
-        script_dir_path.canonicalize()?
+            .ok_or("Problem resolving script parent path")?
+            .to_path_buf()
     };
     Ok(script_dir_path)
 }

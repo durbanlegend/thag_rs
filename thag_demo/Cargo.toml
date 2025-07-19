@@ -22,3 +22,6 @@ inferno = "0.12"
 
 [package.metadata.docs.rs]
 all-features = true
+
+[lints.clippy]
+uninlined_format_args = "allow"

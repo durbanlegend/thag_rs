@@ -1,18 +1,18 @@
-//! thag_demo - Interactive demos for thag_rs and thag_profiler
+//! `thag_demo` - Interactive demos for `thag_rs` and `thag_profiler`
 //!
-//! This crate provides a simple way to run profiling demos without installing thag_rs.
-//! It acts as a lightweight facade over thag_rs functionality.
+//! This crate provides a simple way to run profiling demos without installing `thag_rs`.
+//! It acts as a lightweight facade over `thag_rs` functionality.
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use colored::*;
-use std::path::PathBuf;
+use colored::Colorize;
+use std::path::{Path, PathBuf};
 use std::process;
 use thag_rs::{builder::execute, Cli};
 
 pub mod visualization;
 
-/// Demo runner for thag_rs and thag_profiler examples
+/// Demo runner for `thag_rs` and `thag_profiler` examples
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(name = "thag_demo")]
@@ -83,17 +83,13 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let demo = match args.demo {
-        Some(demo) => demo,
-        None => {
-            println!(
-                "{}",
-                "No demo specified. Use --list to see available demos or --help for usage."
-                    .yellow()
-            );
-            list_demos();
-            return Ok(());
-        }
+    let Some(demo) = args.demo else {
+        println!(
+            "{}",
+            "No demo specified. Use --list to see available demos or --help for usage.".yellow()
+        );
+        list_demos();
+        return Ok(());
     };
 
     run_demo(demo, args.verbose)
@@ -161,15 +157,12 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::Script { .. } => unreachable!(),
     };
 
-    println!(
-        "{}",
-        format!("Running {} demo...", demo_name).bold().green()
-    );
+    println!("{}", format!("Running {demo_name} demo...").bold().green());
     println!();
 
     // Create a temporary file for the demo script
     let temp_dir = std::env::temp_dir();
-    let script_path = temp_dir.join(format!("thag_demo_{}.rs", demo_name));
+    let script_path = temp_dir.join(format!("thag_demo_{demo_name}.rs"));
 
     std::fs::write(&script_path, demo_script)?;
 
@@ -179,7 +172,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     std::env::set_var("THAG_DEV_PATH", thag_rs_root);
 
     // Configure CLI args for thag_rs
-    let mut cli = create_demo_cli(script_path, verbose);
+    let mut cli = create_demo_cli(&script_path, verbose);
 
     // Execute the demo using thag_rs
     match execute(&mut cli) {
@@ -189,7 +182,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
             print_demo_info(demo_name);
         }
         Err(e) => {
-            eprintln!("{}", format!("❌ Demo failed: {}", e).bold().red());
+            eprintln!("{}", format!("❌ Demo failed: {e}").bold().red());
             process::exit(1);
         }
     }
@@ -197,18 +190,19 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     // Look for the script in the parent thag_rs demo directory
     let demo_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
         .join("demo")
-        .join(format!("{}.rs", script_name));
+        .join(format!("{script_name}.rs"));
 
     if !demo_path.exists() {
         eprintln!(
             "{}",
-            format!("❌ Demo script '{}' not found", script_name)
+            format!("❌ Demo script '{script_name}' not found")
                 .bold()
                 .red()
         );
@@ -221,9 +215,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
 
     println!(
         "{}",
-        format!("Running script demo: {}", script_name)
-            .bold()
-            .green()
+        format!("Running script demo: {script_name}").bold().green()
     );
     println!();
 
@@ -232,7 +224,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     let thag_rs_root = current_dir.parent().unwrap_or(&current_dir);
     std::env::set_var("THAG_DEV_PATH", thag_rs_root);
 
-    let mut cli = create_demo_cli(demo_path, verbose);
+    let mut cli = create_demo_cli(&demo_path, verbose);
 
     match execute(&mut cli) {
         Ok(()) => {
@@ -243,7 +235,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
             );
         }
         Err(e) => {
-            eprintln!("{}", format!("❌ Script demo failed: {}", e).bold().red());
+            eprintln!("{}", format!("❌ Script demo failed: {e}").bold().red());
             process::exit(1);
         }
     }
@@ -251,7 +243,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-fn create_demo_cli(script_path: PathBuf, verbose: bool) -> Cli {
+fn create_demo_cli(script_path: &Path, verbose: bool) -> Cli {
     Cli {
         script: Some(script_path.to_string_lossy().to_string()),
         features: None,

@@ -1,4 +1,4 @@
-//! Visualization library for thag_demo profiling analysis
+//! Visualization library for `thag_demo` profiling analysis
 //!
 //! This module provides reusable visualization functions for analyzing profiling data,
 //! including flamegraphs, flamecharts, and differential comparisons.
@@ -7,6 +7,7 @@ use chrono::Local;
 use inferno::flamegraph::{color::MultiPalette, Palette};
 use std::io::Write;
 use std::path::PathBuf;
+use std::string::ToString;
 
 pub mod differential;
 pub mod flamegraph_gen;
@@ -61,11 +62,15 @@ pub enum AnalysisType {
 }
 
 /// Generate visualization from folded profile data
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered generating the visualizations.
 pub fn generate_visualization(
     folded_files: &[PathBuf],
     output_path: &str,
     config: VisualizationConfig,
-    analysis_type: AnalysisType,
+    analysis_type: &AnalysisType,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match analysis_type {
         AnalysisType::Single => {
@@ -97,7 +102,7 @@ fn generate_single_visualization(
     config: VisualizationConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(folded_file)?;
-    let stacks: Vec<String> = content.lines().map(|line| line.to_string()).collect();
+    let stacks: Vec<String> = content.lines().map(ToString::to_string).collect();
 
     if stacks.is_empty() {
         return Err("No profile data found in file".into());
@@ -107,6 +112,10 @@ fn generate_single_visualization(
 }
 
 /// Find the most recent profile files matching a pattern
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered locating the files.
 pub fn find_latest_profile_files(
     pattern: &str,
     count: usize,
@@ -141,6 +150,10 @@ pub fn find_latest_profile_files(
 }
 
 /// Open a file in the default browser
+///
+/// # Errors
+///
+/// Will bubble up any errors encountered processing the command.
 pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let full_path = std::env::current_dir()?.join(file_path);
     let url = format!("file://{}", full_path.display());
@@ -166,6 +179,10 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>
 }
 
 /// Show interactive visualization prompt
+///
+/// # Errors
+///
+/// Will bubble up any errors encountered.
 pub fn show_interactive_prompt(
     demo_name: &str,
     analysis_type: AnalysisType,
@@ -181,33 +198,27 @@ pub fn show_interactive_prompt(
             ref after_name,
         } => {
             println!("🎯 Would you like to view a differential comparison?");
-            println!("This will generate a visual comparison between {} and {} and open it in your browser.", before_name, after_name);
+            println!("This will generate a visual comparison between {before_name} and {after_name} and open it in your browser.");
         }
     }
 
     print!("Enter 'y' for yes, or any other key to skip: ");
-    std::io::stdout().flush().unwrap();
+    std::io::stdout().flush()?;
 
     let mut input = String::new();
-    if std::io::stdin().read_line(&mut input).is_ok() {
-        if input.trim().to_lowercase() == "y" {
-            println!();
-            match analysis_type {
-                AnalysisType::Single => {
-                    println!("🔥 Generating interactive flamechart...");
-                    generate_and_show_single_visualization(demo_name)?;
-                }
-                AnalysisType::Differential {
-                    before_name,
-                    after_name,
-                } => {
-                    println!("🔥 Generating differential comparison...");
-                    generate_and_show_differential_visualization(
-                        demo_name,
-                        &before_name,
-                        &after_name,
-                    )?;
-                }
+    if std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y" {
+        println!();
+        match analysis_type {
+            AnalysisType::Single => {
+                println!("🔥 Generating interactive flamechart...");
+                generate_and_show_single_visualization(demo_name)?;
+            }
+            AnalysisType::Differential {
+                before_name,
+                after_name,
+            } => {
+                println!("🔥 Generating differential comparison...");
+                generate_and_show_differential_visualization(demo_name, &before_name, &after_name)?;
             }
         }
     }
@@ -234,15 +245,15 @@ fn generate_and_show_single_visualization(
         ..Default::default()
     };
 
-    let output_path = format!("{}_flamechart.svg", demo_name);
+    let output_path = format!("{demo_name}_flamechart.svg");
 
-    generate_visualization(&files, &output_path, config, AnalysisType::Single)?;
+    generate_visualization(&files, &output_path, config, &AnalysisType::Single)?;
 
-    println!("✅ Flamechart generated: {}", output_path);
+    println!("✅ Flamechart generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️  Could not open browser automatically: {}", e);
-        println!("💡 You can manually open: {}", output_path);
+        println!("⚠️  Could not open browser automatically: {e}");
+        println!("💡 You can manually open: {output_path}");
     } else {
         println!("🌐 Flamechart opened in your default browser!");
         println!("🔍 Hover over and click on the bars to explore the performance visualization");
@@ -258,8 +269,8 @@ fn generate_and_show_differential_visualization(
     before_name: &str,
     after_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let before_files = find_latest_profile_files(&format!("thag_demo_{}_before", demo_name), 1)?;
-    let after_files = find_latest_profile_files(&format!("thag_demo_{}_after", demo_name), 1)?;
+    let before_files = find_latest_profile_files(&format!("thag_demo_{demo_name}_before"), 1)?;
+    let after_files = find_latest_profile_files(&format!("thag_demo_{demo_name}_after"), 1)?;
 
     if before_files.is_empty() || after_files.is_empty() {
         return Err("Could not find both before and after profile files".into());
@@ -271,33 +282,31 @@ fn generate_and_show_differential_visualization(
             demo_name.replace('_', " ").to_title_case()
         ),
         subtitle: Some(format!(
-            "Differential Analysis: {} vs {} | Generated: {} | Red=Slower, Blue=Faster",
-            before_name,
-            after_name,
+            "Differential Analysis: {before_name} vs {after_name} | Generated: {} | Red=Slower, Blue=Faster",
             Local::now().format("%Y-%m-%d %H:%M:%S")
         )),
         palette: Palette::Multi(MultiPalette::Java),
         ..Default::default()
     };
 
-    let output_path = format!("{}_differential.svg", demo_name);
+    let output_path = format!("{demo_name}_differential.svg");
     let files = vec![before_files[0].clone(), after_files[0].clone()];
 
     generate_visualization(
         &files,
         &output_path,
         config,
-        AnalysisType::Differential {
+        &AnalysisType::Differential {
             before_name: before_name.to_string(),
             after_name: after_name.to_string(),
         },
     )?;
 
-    println!("✅ Differential comparison generated: {}", output_path);
+    println!("✅ Differential comparison generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️  Could not open browser automatically: {}", e);
-        println!("💡 You can manually open: {}", output_path);
+        println!("⚠️  Could not open browser automatically: {e}");
+        println!("💡 You can manually open: {output_path}");
     } else {
         println!("🌐 Differential comparison opened in your default browser!");
         println!(
@@ -319,12 +328,9 @@ impl ToTitleCase for str {
         self.split('_')
             .map(|word| {
                 let mut chars = word.chars();
-                match chars.next() {
-                    None => String::new(),
-                    Some(first) => {
-                        first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
-                    }
-                }
+                chars.next().map_or_else(String::new, |first| {
+                    first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
+                })
             })
             .collect::<Vec<_>>()
             .join(" ")

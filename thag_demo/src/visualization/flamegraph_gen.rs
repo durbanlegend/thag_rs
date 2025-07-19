@@ -1,11 +1,15 @@
-//! Flamegraph generation utilities for thag_demo profiling analysis
+//! Flamegraph generation utilities for `thag_demo` profiling analysis
 
 use crate::visualization::VisualizationConfig;
 use inferno::flamegraph::{self, Options};
-use std::fs::File;
+use std::{fs::File, string::ToString};
 use thag_profiler::enhance_svg_accessibility;
 
 /// Generate a flamegraph SVG from folded stack data
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered generating the SVG.
 pub fn generate_flamegraph_svg(
     stacks: &[String],
     output_path: &str,
@@ -36,18 +40,26 @@ pub fn generate_flamegraph_svg(
 }
 
 /// Generate a flamegraph from a single folded file
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered generating the SVG.
 pub fn generate_flamegraph_from_file(
     folded_file: &std::path::Path,
     output_path: &str,
     config: VisualizationConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(folded_file)?;
-    let stacks: Vec<String> = content.lines().map(|line| line.to_string()).collect();
+    let stacks: Vec<String> = content.lines().map(ToString::to_string).collect();
 
     generate_flamegraph_svg(&stacks, output_path, config)
 }
 
 /// Generate both flamegraph and flamechart versions
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered generating the SVGs.
 pub fn generate_both_visualizations(
     stacks: &[String],
     base_output_path: &str,

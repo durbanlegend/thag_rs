@@ -8,7 +8,7 @@ use std::{
     env,
     fmt::{Display, Formatter},
     fs::File,
-    io::{BufRead, BufReader, BufWriter, Write},
+    io::BufWriter,
     path::PathBuf,
     str::FromStr,
     sync::atomic::{AtomicU8, Ordering},
@@ -38,6 +38,7 @@ use std::{
     collections::HashSet,
     convert::Into,
     fs::OpenOptions,
+    io::{BufRead, BufReader, Write},
     sync::{
         atomic::{AtomicBool, AtomicU64},
         OnceLock,
@@ -1938,56 +1939,6 @@ impl Profile {
         Ok(())
     }
 
-    /// Records a time profiling event.
-    ///
-    /// Writes the elapsed time for a profiled section along with its stack trace
-    /// to the time profile file.
-    ///
-    /// # Arguments
-    /// * `duration` - The elapsed time of the profiled section
-    ///
-    /// # Errors
-    /// Returns a `ProfileError` if writing to the profile file fails
-    #[cfg(feature = "time_profiling")]
-    fn write_time_event(&self, duration: std::time::Duration) -> ProfileResult<()> {
-        // Profile must exist and profiling must be enabled if we got here
-        // Only keep the business logic checks
-
-        let micros = duration.as_micros();
-        if micros == 0 {
-            debug_log!(
-                "DEBUG: Not writing time event for stack: {:?} due to zero duration",
-                self.path
-            );
-            return Ok(());
-        }
-
-        let path = &self.path;
-
-        if path.is_empty() {
-            debug_log!("DEBUG: Stack is empty for {:?}", self.section_name);
-            return Err(ProfileError::General("Stack is empty".into()));
-        }
-
-        // debug_log!("DEBUG: write_time_event for stack: {:?}", path);
-
-        // eprintln!(
-        //     "Backtrace for section::print_docs:\n{:#?}",
-        //     Backtrace::new()
-        // );
-        let stack = self.build_stack(path);
-
-        // Add our custom section name to the end of the stack path if present
-        // let stack = self.append_section_to_stack(path.clone());
-
-        let entry = format!("{stack} {micros}");
-
-        // First write to the inclusive time file (always)
-        let paths = ProfilePaths::get();
-        let inclusive_time_path = &paths.inclusive_time;
-        Self::write_profile_event(inclusive_time_path, InclusiveTimeProfileFile::get(), &entry)
-    }
-
     #[cfg(feature = "time_profiling")]
     fn write_profraw_event(
         &self,
@@ -3368,6 +3319,7 @@ mod tests_internal {
 }
 
 /// Represents a parsed entry from a .profraw file
+#[cfg(feature = "time_profiling")]
 #[derive(Debug, Clone)]
 struct ProfrawEntry {
     stack: String,
@@ -3377,7 +3329,7 @@ struct ProfrawEntry {
 
 /// Parses a .profraw file and extracts payload and overhead data
 #[cfg(feature = "time_profiling")]
-pub fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
+fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
     debug_log!("Parsing .profraw file: {}", profraw_path);
 
     let file = File::open(profraw_path)
@@ -3443,7 +3395,7 @@ pub fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>
 
 /// Subtracts child overhead from parent payload to get clean inclusive times
 #[cfg(feature = "time_profiling")]
-pub fn subtract_child_overhead(entries: Vec<ProfrawEntry>) -> ProfileResult<HashMap<String, u64>> {
+fn subtract_child_overhead(entries: Vec<ProfrawEntry>) -> ProfileResult<HashMap<String, u64>> {
     debug_log!("Subtracting child overhead from parent payload");
 
     let mut clean_times = HashMap::new();

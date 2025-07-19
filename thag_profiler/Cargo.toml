@@ -113,3 +113,6 @@ features = [
     "debug_logging",
     "internal_docs",
 ]
+
+[lints.clippy]
+uninlined_format_args = "allow"

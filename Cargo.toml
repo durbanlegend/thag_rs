@@ -432,3 +432,6 @@ members = ["thag_proc_macros", "thag_profiler", "thag_demo", "demo/proc_macros"]
 [package.metadata.docs.rs]
 # features = ["document-features"]
 all-features = true
+
+[lints.clippy]
+uninlined_format_args = "allow"

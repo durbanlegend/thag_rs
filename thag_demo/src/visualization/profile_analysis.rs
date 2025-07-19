@@ -1,6 +1,8 @@
-//! Profile analysis utilities for thag_demo profiling analysis
+//! Profile analysis utilities for `thag_demo` profiling analysis
+#![allow(clippy::cast_possible_wrap, clippy::cast_precision_loss)]
 
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::path::PathBuf;
 
 /// Analysis results for a single profile
@@ -25,6 +27,10 @@ pub struct DifferentialAnalysis {
 }
 
 /// Analyze a single profile from a folded file
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered accessing the file.
 pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(file_path)?;
     let mut function_times: HashMap<String, u128> = HashMap::new();
@@ -82,6 +88,10 @@ pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn s
 }
 
 /// Analyze differential comparison between two profiles
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered analyzing the profiles.
 pub fn analyze_differential(
     before_file: &PathBuf,
     after_file: &PathBuf,
@@ -407,31 +417,35 @@ fn generate_differential_summary(
     let mut summary = String::new();
 
     if total_change_ms < 0.0 {
-        summary.push_str(&format!(
+        let _ = writeln!(
+            summary,
             "🎉 Overall Performance Improved by {:.3}ms ({:.1}% faster)\n",
             -total_change_ms, -total_change_percent
-        ));
+        );
     } else if total_change_ms > 0.0 {
-        summary.push_str(&format!(
+        let _ = writeln!(
+            summary,
             "⚠️  Overall Performance Declined by {:.3}ms ({:.1}% slower)\n",
             total_change_ms, total_change_percent
-        ));
+        );
     } else {
         summary.push_str("➡️  Overall Performance Unchanged\n");
     }
 
-    summary.push_str(&format!(
+    let _ = writeln!(
+        summary,
         "📏 Before: {:.3}ms | After: {:.3}ms\n",
         before_total_ms, after_total_ms
-    ));
+    );
 
-    summary.push_str(&format!(
+    let _ = writeln!(
+        summary,
         "📈 {} improvements, {} regressions, {} new functions, {} removed functions",
         improvements.len(),
         regressions.len(),
         new_functions.len(),
         removed_functions.len()
-    ));
+    );
 
     summary
 }

@@ -328,6 +328,11 @@ fn clean_function_name(name: &str) -> String {
         s if s.contains("cpu_intensive") => "cpu_intensive_work".to_string(),
         s if s.contains("simulated_io") => "simulated_io_work".to_string(),
         s if s.contains("nested_function") => "nested_function_calls".to_string(),
+        // Memory profiling patterns
+        s if s.contains("allocate_vectors") => "allocate_vectors".to_string(),
+        s if s.contains("process_strings") => "process_strings_detail".to_string(),
+        s if s.contains("memory_intensive") => "memory_intensive_computation".to_string(),
+        s if s.contains("nested_allocations") => "nested_allocations".to_string(),
         s => s.to_string(),
     }
 }

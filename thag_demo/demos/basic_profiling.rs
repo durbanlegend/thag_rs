@@ -231,24 +231,22 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
 
     let current_dir = std::env::current_dir()?;
     let mut exclusive_files = Vec::new();
-    let mut inclusive_files = Vec::new();
 
     for entry in std::fs::read_dir(&current_dir)? {
         let entry = entry?;
         let path = entry.path();
 
         if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            if name.starts_with("thag_demo_basic_profiling") && name.ends_with(".folded") {
-                if name.contains("inclusive") {
-                    inclusive_files.push(path);
-                } else {
-                    exclusive_files.push(path);
-                }
+            if name.starts_with("thag_demo_basic_profiling")
+                && name.ends_with(".folded")
+                && !name.contains("inclusive")
+            {
+                exclusive_files.push(path);
             }
         }
     }
 
-    if exclusive_files.is_empty() && inclusive_files.is_empty() {
+    if exclusive_files.is_empty() {
         return Err("No profile files found".into());
     }
 
@@ -263,29 +261,14 @@ fn load_and_show_profile() -> Result<(), Box<dyn std::error::Error>> {
         time_b.cmp(&time_a)
     });
 
-    inclusive_files.sort_by(|a, b| {
-        let time_a = std::fs::metadata(a)
-            .and_then(|m| m.modified())
-            .unwrap_or(std::time::UNIX_EPOCH);
-        let time_b = std::fs::metadata(b)
-            .and_then(|m| m.modified())
-            .unwrap_or(std::time::UNIX_EPOCH);
-        time_b.cmp(&time_a)
-    });
-
-    // Use exclusive file for both text analysis and flamechart generation
-    if !exclusive_files.is_empty() {
-        let exclusive_file = &exclusive_files[0];
-        show_simple_profile_analysis(exclusive_file)?;
-        generate_flamechart(exclusive_file)?;
-    }
+    let exclusive_file = &exclusive_files[0];
+    show_profile_analysis(exclusive_file)?;
+    generate_flamechart(exclusive_file)?;
 
     Ok(())
 }
 
-fn show_simple_profile_analysis(
-    file_path: &std::path::PathBuf,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn show_profile_analysis(file_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(file_path)?;
     let mut function_times: std::collections::HashMap<String, u128> =
         std::collections::HashMap::new();
@@ -351,7 +334,7 @@ fn show_simple_profile_analysis(
     }
 
     println!();
-    show_performance_insights(&functions, total_duration_us);
+    show_performance_insights(&functions);
 
     Ok(())
 }
@@ -380,7 +363,7 @@ fn clean_function_name(name: &str) -> String {
     }
 }
 
-fn show_performance_insights(functions: &[(String, u128)], _total_duration_us: u128) {
+fn show_performance_insights(functions: &[(String, u128)]) {
     println!("💡 Performance Insights:");
     println!("────────────────────────");
 
@@ -429,10 +412,7 @@ fn generate_flamechart(
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🔥 Generating Interactive Flamechart...");
 
-    // println!("profile_file={profile_file:#?}");
     let content = std::fs::read_to_string(profile_file)?;
-
-    println!("content={content}");
     let stacks: Vec<String> = content.lines().map(|line| line.to_string()).collect();
 
     if stacks.is_empty() {
@@ -467,7 +447,7 @@ fn generate_flamechart(
         println!("⚠️  Could not open browser automatically: {}", e);
         println!("💡 You can manually open: {}", svg_path);
     } else {
-        println!("🌐 Flame opened in your default browser!");
+        println!("🌐 Flamechart opened in your default browser!");
         println!("🔍 Hover over and click on the bars to explore the performance visualization, or use Search");
         println!("📊 Function width = time spent, height = call stack depth");
         println!("💡 Notice how the recursive fibonacci dominates the graph!");

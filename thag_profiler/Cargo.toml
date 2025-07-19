@@ -87,6 +87,9 @@ tools = ["analyze_tool", "instrument_tool"] # Enable all tools
 ## Include dependencies required for `thag_instrument` and `thag_uninstrument` binaries.
 instrument_tool = ["ra_ap_syntax"] # Dependencies for instrument
 
+## Enable demo visualization functionality with required dependencies.
+demo = ["inferno"]
+
 [[bin]]
 name = "thag_profile"
 path = "src/bin/thag_profile.rs"

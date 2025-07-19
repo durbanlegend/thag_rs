@@ -74,6 +74,10 @@ pub mod mem_tracking;
 #[cfg(feature = "full_profiling")]
 pub mod mem_attribution;
 
+/// Demo visualization utilities for analyzing profiling data.
+#[cfg(feature = "demo")]
+pub mod visualization;
+
 use std::{fmt::Display, fs, path::Path};
 
 #[cfg(feature = "time_profiling")]

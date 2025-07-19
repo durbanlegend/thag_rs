@@ -245,13 +245,19 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
         the pull request.
 
 
-feature_sets=(
+export feature_sets=(
     ""
     "debug_logging"
     "time_profiling"
     "time_profiling,debug_logging"
     "full_profiling"
     "full_profiling,debug_logging"
+    "demo,"
+    "demo,debug_logging"
+    "demo,time_profiling"
+    "demo,time_profiling,debug_logging"
+    "demo,full_profiling"
+    "demo,full_profiling,debug_logging"
 )
 
 failures=()

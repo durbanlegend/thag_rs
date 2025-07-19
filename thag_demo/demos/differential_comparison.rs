@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+thag_demo_proc_macros = { version = "0.1, thag-auto" }
 thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
 inferno = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
@@ -14,7 +15,8 @@ strip = false
 //# Purpose: Demonstrate differential profiling with before/after comparison
 //# Categories: profiling, demo, comparison, optimization, differential
 use std::io::Write;
-use std::process::Command;
+use std::process::{exit, Command};
+use thag_demo_proc_macros::timing;
 
 // Inline visualization functionality for this demo
 mod visualization {
@@ -529,7 +531,7 @@ fn main() {
 
     if let Err(e) = run_before_version() {
         eprintln!("❌ Failed to run before version: {}", e);
-        return;
+        exit(1);
     }
 
     // // Short pause to ensure profile files are written
@@ -542,7 +544,7 @@ fn main() {
 
     if let Err(e) = run_after_version() {
         eprintln!("❌ Failed to run after version: {}", e);
-        return;
+        exit(1);
     }
 
     // // Short pause to ensure profile files are written
@@ -555,7 +557,7 @@ fn main() {
 
     if let Err(e) = generate_differential_analysis() {
         eprintln!("❌ Failed to generate differential analysis: {}", e);
-        return;
+        exit(1);
     }
 
     println!();
@@ -570,6 +572,7 @@ fn main() {
     show_interactive_differential_prompt();
 }
 
+#[timing]
 fn run_before_version() -> Result<(), Box<dyn std::error::Error>> {
     let before_script = r#"/*[toml]
 [dependencies]
@@ -598,12 +601,18 @@ fn sort(mut arr: Vec<i32>) -> Vec<i32> {
 }
 
 #[profiled]
-fn string_concat(words: &[&str]) -> String {
-    let mut result = String::new();
-    for word in words {
-        result = result + word + " ";
+fn string_concat(words: &[&str]) {
+    let concat = |words: &[&str]| {
+        let mut result = String::new();
+        for word in words {
+            result = result + word + " ";
+        }
+        result
+    };
+
+    for _ in 0..100 {
+        let _result = concat(words);
     }
-    result
 }
 
 #[profiled]
@@ -635,7 +644,7 @@ fn run_all_tests() {
     let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
     end!(concat_prep);
 
-    let _result = string_concat(&test_words);
+    string_concat(&test_words);
 
     profile!(lookup_prep);
     let mut vector_data = Vec::new();
@@ -685,6 +694,7 @@ fn main() {
     Ok(())
 }
 
+#[timing]
 fn run_after_version() -> Result<(), Box<dyn std::error::Error>> {
     let after_script = r#"/*[toml]
 [dependencies]
@@ -734,23 +744,24 @@ fn quicksort(mut arr: Vec<i32>) -> Vec<i32> {
 }
 
 #[profiled]
-fn string_concat(words: &[&str]) -> String {
-    let mut result = String::with_capacity(words.len() * 10);
-    for word in words {
-        result.push_str(word);
-        result.push(' ');
+fn string_concat(words: &[&str]) {
+    let concat = |words: &[&str]| {
+        let mut result = String::with_capacity(words.len() * 10);
+        for word in words {
+            result.push_str(word);
+            result.push(' ');
+        }
+        result
+    };
+
+    for _ in 0..100 {
+        let _result = concat(words);
     }
-    result
 }
 
 #[profiled]
 fn lookup(hashmap_data: &HashMap<String, i32>) {
-    let lookup = |data: &HashMap<String, i32>, key: &str| {
-        data.get(key).copied()
-    };
-
     for _ in 0..1000 {
-        // let _result = lookup(hashmap_data, "key_500");
         let _result = hashmap_data.get("key_500").copied();
     }
 }
@@ -768,7 +779,7 @@ fn run_all_tests() {
     let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
     end!(concat_prep);
 
-    let _result = string_concat(&test_words);
+    string_concat(&test_words);
 
     profile!(lookup_prep);
     let mut hashmap_data = HashMap::new();

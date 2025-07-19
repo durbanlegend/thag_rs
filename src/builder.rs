@@ -1395,7 +1395,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     let exit_status = run_command.status()?;
-    cvprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
+    // cvprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
 
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
 

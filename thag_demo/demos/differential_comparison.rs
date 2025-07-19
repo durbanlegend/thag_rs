@@ -607,7 +607,7 @@ fn string_concat(words: &[&str]) -> String {
 }
 
 #[profiled]
-fn lookup(vector_data: &[(String, i32]) {
+fn lookup(vector_data: &[(String, i32)]) {
     let lookup = |data: &[(String, i32)], key: &str| {
         for (k, v) in data {
             if k == key {
@@ -617,7 +617,7 @@ fn lookup(vector_data: &[(String, i32]) {
         None
     };
 
-    for _ in 0..100 {
+    for _ in 0..1000 {
         let _result = lookup(vector_data, "key_500");
     }
 }
@@ -749,8 +749,9 @@ fn lookup(hashmap_data: &HashMap<String, i32>) {
         data.get(key).copied()
     };
 
-    for _ in 0..100 {
-        let _result = lookup(hashmap_data, "key_500");
+    for _ in 0..1000 {
+        // let _result = lookup(hashmap_data, "key_500");
+        let _result = hashmap_data.get("key_500").copied();
     }
 }
 

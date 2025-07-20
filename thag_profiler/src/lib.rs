@@ -136,6 +136,10 @@ pub use {
 #[internal_doc]
 pub use profiling::extract_path;
 
+/// Demo utilities.
+#[cfg(feature = "demo")]
+pub use visualization::AnalysisType;
+
 // ============================================================================
 // Internal Utilities (hidden from public API docs unless internal_docs feature is enabled)
 // ============================================================================

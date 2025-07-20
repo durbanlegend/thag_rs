@@ -12,9 +12,9 @@ strip = false
 //# Purpose: Demonstrate memory allocation tracking with thag_profiler
 //# Categories: profiling, demo, memory
 use std::collections::HashMap;
-use std::io::Write;
+// use std::io::Write;
 use thag_demo_proc_macros::timing;
-use thag_profiler::{enable_profiling, profiled, visualization};
+use thag_profiler::{enable_profiling, profiled, visualization, AnalysisType, ProfileType};
 
 #[timing]
 #[profiled(mem_summary)]
@@ -69,7 +69,7 @@ fn memory_intensive_computation() -> Vec<String> {
 }
 
 #[timing]
-#[profiled(mem_summary)]
+#[enable_profiling(memory, function(mem_summary))]
 fn nested_allocations() {
     println!("Starting nested allocations...");
 
@@ -85,7 +85,6 @@ fn nested_allocations() {
     // All data structures will be deallocated when this function ends
 }
 
-#[enable_profiling(memory)]
 fn main() {
     println!("🧠 Memory Profiling Demo");
     println!("========================");
@@ -100,8 +99,13 @@ fn main() {
     println!("🔍 Use 'thag_profile' command to analyze memory usage patterns.");
     println!("💡 Notice the difference between mem_summary and mem_detail profiling.");
 
-    // Add interactive memory visualization
-    if let Err(e) = visualization::generate_and_show_memory_visualization("memory_profiling") {
-        eprintln!("⚠️ Could not show interactive memory visualization: {}", e);
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    if let Err(e) = visualization::show_interactive_prompt(
+        "memory_profiling",
+        &ProfileType::Memory,
+        &AnalysisType::Flamegraph,
+    ) {
+        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
     }
 }

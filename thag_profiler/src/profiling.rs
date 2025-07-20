@@ -15,6 +15,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(feature = "time_profiling")]
+use std::collections::HashSet;
+
 #[cfg(feature = "full_profiling")]
 use crate::{
     fn_name,
@@ -35,7 +38,6 @@ use parking_lot::ReentrantMutex;
 
 #[cfg(feature = "time_profiling")]
 use std::{
-    collections::HashSet,
     convert::Into,
     fs::OpenOptions,
     io::{BufRead, BufReader, Write},
@@ -3406,10 +3408,11 @@ fn parse_profraw_file(profraw_path: &str) -> ProfileResult<Vec<ProfrawEntry>> {
 
 /// Subtracts child overhead from parent payload to get clean inclusive times
 #[cfg(feature = "time_profiling")]
-fn subtract_child_overhead(entries: &[ProfrawEntry]) -> HashMap<String, u64> {
+fn subtract_child_overhead(entries: &[ProfrawEntry]) -> Vec<(String, u64)> {
     debug_log!("Subtracting child overhead from parent payload");
 
-    let mut clean_times = HashMap::new();
+    let mut result = Vec::new();
+    let mut stack_totals = HashMap::new();
 
     // First pass: collect all stack -> overhead mapping
     let mut stack_overhead = HashMap::new();
@@ -3417,7 +3420,7 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> HashMap<String, u64> {
         *stack_overhead.entry(entry.stack.clone()).or_insert(0) += entry.overhead_micros;
     }
 
-    // Second pass: for each stack, calculate clean inclusive time
+    // Process entries in original order to preserve chronological sequence
     for entry in entries {
         let stack_parts: Vec<&str> = entry.stack.split(';').collect();
 
@@ -3439,8 +3442,8 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> HashMap<String, u64> {
         // Clean payload = original payload - child overhead
         let clean_payload = entry.payload_micros.saturating_sub(child_overhead);
 
-        // Add to clean times (accumulate if multiple entries for same stack)
-        *clean_times.entry(entry.stack.clone()).or_insert(0) += clean_payload;
+        // Track total for this stack (for accumulation)
+        *stack_totals.entry(entry.stack.clone()).or_insert(0) += clean_payload;
 
         debug_log!(
             "Stack: {} | Original payload: {}μs | Child overhead: {}μs | Clean payload: {}μs",
@@ -3451,8 +3454,20 @@ fn subtract_child_overhead(entries: &[ProfrawEntry]) -> HashMap<String, u64> {
         );
     }
 
-    debug_log!("Generated {} clean inclusive times", clean_times.len());
-    clean_times
+    // Add entries in the order they first appeared, with accumulated totals
+    let mut processed_stacks = HashSet::new();
+    for entry in entries {
+        if !processed_stacks.contains(&entry.stack) {
+            let total_time = stack_totals[&entry.stack];
+            if total_time > 0 {
+                result.push((entry.stack.clone(), total_time));
+            }
+            processed_stacks.insert(entry.stack.clone());
+        }
+    }
+
+    debug_log!("Generated {} clean inclusive times", result.len());
+    result
 }
 
 /// Converts .profraw file to clean .folded file by subtracting overhead
@@ -3485,24 +3500,10 @@ pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> Profi
     let mut output_file = File::create(output_path)
         .map_err(|e| ProfileError::General(format!("Failed to create output file: {e}")))?;
 
-    // Sort by stack depth (children first, then parents) for proper disaggregation
-    let mut sorted_entries: Vec<_> = clean_times.into_iter().collect();
-    sorted_entries.sort_by(|a, b| {
-        let depth_a = a.0.matches(';').count();
-        let depth_b = b.0.matches(';').count();
-        // Sort by depth descending (deeper stacks first), then by time descending
-        match depth_b.cmp(&depth_a) {
-            std::cmp::Ordering::Equal => b.1.cmp(&a.1),
-            other => other,
-        }
-    });
-
-    for (stack, time_micros) in sorted_entries {
-        if time_micros > 0 {
-            writeln!(output_file, "{} {}", stack, time_micros).map_err(|e| {
-                ProfileError::General(format!("Failed to write to output file: {e}"))
-            })?;
-        }
+    // Write entries in their original chronological order (no sorting)
+    for (stack, time_micros) in clean_times {
+        writeln!(output_file, "{} {}", stack, time_micros)
+            .map_err(|e| ProfileError::General(format!("Failed to write to output file: {e}")))?;
     }
 
     debug_log!("Successfully converted .profraw to clean .folded file");

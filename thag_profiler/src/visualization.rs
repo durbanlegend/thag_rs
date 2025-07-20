@@ -6,13 +6,28 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-use crate::enhance_svg_accessibility;
+use crate::{enhance_svg_accessibility, ProfileType};
 use chrono::Local;
+use inferno::flamegraph::color::BasicPalette::Mem;
+use inferno::flamegraph::Palette::Basic;
 use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::string::ToString;
+use strum::Display;
+
+#[derive(Debug, Default, Clone, Display, PartialEq, Eq)]
+/// Type of analysis visualization to generate
+pub enum AnalysisType {
+    /// Differential analysis comparing two profiles
+    Differential,
+    /// Timeline-based flamechart showing execution over time
+    #[default]
+    Flamechart,
+    /// Aggregated flamegraph showing cumulative execution time
+    Flamegraph,
+}
 
 /// Configuration for visualization generation
 #[derive(Debug, Clone)]
@@ -28,7 +43,7 @@ pub struct VisualizationConfig {
     /// Minimum bar width to display
     pub min_width: f64,
     /// Whether to generate flamechart (timeline) vs flamegraph (aggregated)
-    pub flame_chart: bool,
+    pub analysis_type: AnalysisType,
 }
 
 impl Default for VisualizationConfig {
@@ -42,7 +57,7 @@ impl Default for VisualizationConfig {
             palette: Palette::Multi(MultiPalette::Rust),
             count_name: "μs".to_string(),
             min_width: 0.0,
-            flame_chart: true,
+            analysis_type: AnalysisType::Flamechart,
         }
     }
 }
@@ -84,7 +99,7 @@ pub fn generate_flamegraph_svg(
     opts.colors = config.palette;
     opts.count_name = config.count_name;
     opts.min_width = config.min_width;
-    opts.flame_chart = config.flame_chart;
+    opts.flame_chart = matches!(config.analysis_type, AnalysisType::Flamechart);
 
     // Generate flamegraph
     let output = std::fs::File::create(output_path)?;
@@ -128,6 +143,7 @@ pub fn generate_flamegraph_from_file(
 #[allow(clippy::cast_precision_loss)]
 pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(file_path)?;
+    // eprintln!("content=\n{content}");
     let mut function_times: HashMap<String, u128> = HashMap::new();
     let mut total_duration_us = 0u128;
 
@@ -152,6 +168,7 @@ pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn s
             let functions: Vec<&str> = stack.split(';').collect();
             for func_name in functions {
                 let clean_name = clean_function_name(func_name);
+                eprintln!("clean_name={clean_name}, time_us={time_us}");
                 *function_times.entry(clean_name).or_insert(0) += time_us;
             }
         }
@@ -204,7 +221,7 @@ pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
         };
 
         println!(
-            "{} {}. {} - {:.3}ms ({:.1}%)",
+            "{} {}. {} - {:.0}ms ({:.1}%)",
             icon,
             i + 1,
             name,
@@ -232,6 +249,7 @@ pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
 /// - File metadata cannot be accessed
 pub fn find_latest_profile_files(
     pattern: &str,
+    is_memory: bool,
     count: usize,
 ) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
     let current_dir = std::env::current_dir()?;
@@ -242,7 +260,8 @@ pub fn find_latest_profile_files(
         let path = entry.path();
 
         if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            if name.contains(pattern) && name.ends_with(".folded") {
+            let is_memory_file = name.ends_with("-memory.folded");
+            if name.contains(pattern) && name.ends_with(".folded") && is_memory == is_memory_file {
                 files.push(path);
             }
         }
@@ -304,29 +323,37 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>
 /// - System command to open browser fails
 pub fn show_interactive_prompt(
     demo_name: &str,
-    analysis_type: &str,
+    profile_type: &ProfileType,
+    analysis_type: &AnalysisType,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let profile_type_lower = profile_type.to_string().to_lowercase();
+    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+
     println!();
     println!(
-        "🎯 Would you like to view an interactive {}?",
-        analysis_type
+        "🎯 Would you like to view an interactive {profile_type_lower} {analysis_type_lower}?"
     );
-    println!("This will generate a visual flamechart and open it in your browser.");
+    println!(
+        "This will generate a visual {profile_type_lower} {analysis_type_lower} and open it in your browser.");
 
     print!("Enter 'y' for yes, or any other key to skip: ");
     std::io::stdout().flush()?;
 
     let mut input = String::new();
     if std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y" {
+        println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
         println!();
-        println!("🔥 Generating interactive {}...", analysis_type);
-        generate_and_show_visualization(demo_name)?;
+        if matches!(profile_type, ProfileType::Memory) {
+            generate_and_show_memory_visualization(demo_name, analysis_type)?;
+        } else {
+            generate_and_show_time_visualization(demo_name, analysis_type)?;
+        }
     }
 
     Ok(())
 }
 
-/// Generate and show visualization for a demo
+/// Generate and show a time visualization for a demo
 ///
 /// # Errors
 ///
@@ -334,11 +361,14 @@ pub fn show_interactive_prompt(
 /// - Profile files cannot be found or read
 /// - Flamegraph generation fails
 /// - Browser cannot be opened to display results
-pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn generate_and_show_time_visualization(
+    demo_name: &str,
+    analysis_type: &AnalysisType,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Wait a moment for profile files to be written
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), 1)?;
+    let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), false, 1)?;
 
     if files.is_empty() {
         println!("⚠️  No profile files found");
@@ -352,21 +382,27 @@ pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn st
 
     let config = VisualizationConfig {
         title: format!(
-            "{} Demo - Performance Flamechart",
-            demo_name.to_title_case()
+            "{} Demo - Performance {}",
+            demo_name.to_title_case(),
+            analysis_type.to_string()
         ),
         subtitle: Some(format!(
             "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
             Local::now().format("%Y-%m-%d %H:%M:%S")
         )),
+        analysis_type: analysis_type.clone(),
         ..Default::default()
     };
 
-    let output_path = format!("{}_flamechart.svg", demo_name);
+    let output_path = format!(
+        "{}_{}.svg",
+        demo_name,
+        analysis_type.to_string().to_lowercase()
+    );
 
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
 
-    println!("✅ Flamechart generated: {}", output_path);
+    println!("✅ {} generated: {output_path}", analysis_type.to_string());
 
     if let Err(e) = open_in_browser(&output_path) {
         println!("⚠️  Could not open browser automatically: {}", e);
@@ -390,11 +426,12 @@ pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn st
 /// - Browser cannot be opened to display results
 pub fn generate_and_show_memory_visualization(
     demo_name: &str,
+    analysis_type: &AnalysisType,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Wait a moment for profile files to be written
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), 1)?;
+    let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), true, 1)?;
 
     if files.is_empty() {
         println!("⚠️  No memory profile files found");
@@ -408,29 +445,33 @@ pub fn generate_and_show_memory_visualization(
 
     let config = VisualizationConfig {
         title: format!(
-            "{} Demo - Memory Allocation Flamechart",
-            demo_name.to_title_case()
+            "{} Demo - Memory Allocation {}",
+            demo_name.to_title_case(),
+            analysis_type.to_string()
         ),
         subtitle: Some(format!(
             "Generated: {} | Hover over and click on the bars to explore memory allocations, or use Search ↗️",
             Local::now().format("%Y-%m-%d %H:%M:%S")
         )),
-        palette: inferno::flamegraph::Palette::Basic(inferno::flamegraph::color::BasicPalette::Mem),
+        palette: Basic(Mem),
         count_name: "bytes".to_string(),
         ..Default::default()
     };
 
-    let output_path = format!("{}_memory_flamechart.svg", demo_name);
+    let output_path = format!(
+        "{demo_name}_memory_{}.svg",
+        analysis_type.to_string().to_lowercase()
+    );
 
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
 
-    println!("✅ Memory flamechart generated: {}", output_path);
+    println!("✅ Memory {analysis_type} generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️  Could not open browser automatically: {}", e);
-        println!("💡 You can manually open: {}", output_path);
+        println!("⚠️  Could not open browser automatically: {e}");
+        println!("💡 You can manually open: {output_path}");
     } else {
-        println!("🌐 Memory flamechart opened in your default browser!");
+        println!("🌐 Memory {analysis_type} opened in your default browser!");
         println!("🔍 Hover over and click on the bars to explore memory allocation patterns");
         println!("📊 Bar width = bytes allocated, height = call stack depth");
         println!("🎨 Color scheme optimized for memory visualization");
@@ -558,7 +599,7 @@ fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> V
             insights.push(format!("⚡ Performance difference: {:.1}x", speedup));
 
             if speedup > 1000.0 {
-                insights.push("🎯 Consider using faster algorithms in production!".to_string());
+                insights.push("🎯 Consider using the faster algorithms in production!".to_string());
             }
         }
     }
@@ -649,7 +690,7 @@ mod tests {
         let config = VisualizationConfig::default();
         assert_eq!(config.title, "Profiling Analysis");
         assert_eq!(config.count_name, "μs");
-        assert_eq!(config.flame_chart, true);
+        assert_eq!(config.analysis_type, true);
     }
 
     #[test]

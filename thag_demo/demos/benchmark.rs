@@ -1,12 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
-rand = "0.8"
-rayon = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-regex = "1.0"
-sha2 = "0.10"
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "demo"] }
 
 [profile.release]
 debug = true
@@ -17,7 +11,7 @@ strip = false
 /// This demo demonstrates full profiling capabilities including time, memory, and detailed analysis
 //# Purpose: Demonstrate comprehensive benchmark profiling with thag_profiler
 //# Categories: profiling, demo, benchmark, performance
-use rand::prelude::*;
+use rand::{rng, Rng};
 use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -25,7 +19,8 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::time::Instant;
-use thag_profiler::{enable_profiling, profiled};
+use thag_demo_proc_macros::timing;
+use thag_profiler::{enable_profiling, profiled, visualization, AnalysisType, ProfileType};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct DataPoint {
@@ -35,21 +30,23 @@ struct DataPoint {
     timestamp: u64,
 }
 
+#[timing]
 #[profiled(time, mem_summary)]
 fn generate_test_data(count: usize) -> Vec<DataPoint> {
-    let mut rng = thread_rng();
+    let mut rng = rng();
     let categories = vec!["A", "B", "C", "D", "E"];
 
     (0..count)
         .map(|i| DataPoint {
             id: i as u64,
-            value: rng.gen_range(0.0..1000.0),
-            category: categories[rng.gen_range(0..categories.len())].to_string(),
-            timestamp: rng.gen_range(1_000_000..2_000_000),
+            value: rng.random_range(0.0..1000.0),
+            category: categories[rng.random_range(0..categories.len())].to_string(),
+            timestamp: rng.random_range(1_000_000..2_000_000),
         })
         .collect()
 }
 
+#[timing]
 #[profiled(time, mem_detail)]
 fn process_data_sequential(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     let mut result = HashMap::new();
@@ -69,6 +66,7 @@ fn process_data_sequential(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     result
 }
 
+#[timing]
 #[profiled(time, mem_summary)]
 fn process_data_parallel(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     use std::sync::Mutex;
@@ -92,6 +90,7 @@ fn process_data_parallel(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     final_result
 }
 
+#[timing]
 #[profiled(time)]
 fn compute_statistics(data: &HashMap<String, Vec<f64>>) -> HashMap<String, serde_json::Value> {
     data.iter()
@@ -116,11 +115,13 @@ fn compute_statistics(data: &HashMap<String, Vec<f64>>) -> HashMap<String, serde
         .collect()
 }
 
+#[timing]
 #[profiled(time, mem_detail)]
 fn serialize_results(stats: &HashMap<String, serde_json::Value>) -> String {
     serde_json::to_string_pretty(stats).unwrap_or_else(|_| "Serialization failed".to_string())
 }
 
+#[timing]
 #[profiled(time)]
 fn regex_processing(data: &[DataPoint]) -> Vec<String> {
     let pattern = Regex::new(r"[A-E]").unwrap();
@@ -131,6 +132,7 @@ fn regex_processing(data: &[DataPoint]) -> Vec<String> {
         .collect()
 }
 
+#[timing]
 #[profiled(time)]
 fn cryptographic_hashing(data: &[String]) -> Vec<String> {
     data.par_iter()
@@ -142,7 +144,8 @@ fn cryptographic_hashing(data: &[String]) -> Vec<String> {
         .collect()
 }
 
-#[profiled(time, mem_summary)]
+#[timing]
+#[profiled(time, mem_detail)]
 fn memory_intensive_operations(count: usize) -> Vec<Vec<u8>> {
     let mut buffers = Vec::new();
 
@@ -162,6 +165,7 @@ fn memory_intensive_operations(count: usize) -> Vec<Vec<u8>> {
     buffers
 }
 
+#[timing]
 #[profiled(time)]
 fn cpu_bound_computation(iterations: usize) -> f64 {
     let mut result = 0.0;
@@ -174,6 +178,7 @@ fn cpu_bound_computation(iterations: usize) -> f64 {
     result
 }
 
+#[timing]
 #[profiled(time, mem_summary)]
 fn comprehensive_benchmark() {
     println!("🚀 Starting comprehensive benchmark...");
@@ -182,7 +187,7 @@ fn comprehensive_benchmark() {
 
     // Data generation phase
     println!("📊 Phase 1: Generating test data...");
-    let data = generate_test_data(50_000);
+    let data = generate_test_data(5_000);
     println!("Generated {} data points", data.len());
 
     // Sequential processing phase
@@ -208,7 +213,7 @@ fn comprehensive_benchmark() {
 
     // Memory intensive operations phase
     println!("🧠 Phase 6: Memory intensive operations...");
-    let buffers = memory_intensive_operations(1000);
+    let buffers = memory_intensive_operations(100);
     println!("Created {} buffers", buffers.len());
 
     // CPU bound computation phase
@@ -234,13 +239,14 @@ fn comprehensive_benchmark() {
     }
 }
 
-#[profiled(time, mem_detail)]
+#[timing]
+#[profiled(mem_detail)]
 fn stress_test_allocations() {
     println!("🔥 Running allocation stress test...");
 
     let mut large_structures = Vec::new();
 
-    for i in 0..100 {
+    for i in 0..5 {
         let mut map = HashMap::new();
         for j in 0..1000 {
             let key = format!("key_{}_{}", i, j);
@@ -253,12 +259,21 @@ fn stress_test_allocations() {
     println!("Created {} large structures", large_structures.len());
 
     // Force some deallocations
-    large_structures.truncate(50);
+    large_structures.truncate(2);
 
     println!("Stress test completed");
 }
 
 #[enable_profiling]
+fn demo() {
+    // Run the main benchmark
+    comprehensive_benchmark();
+
+    println!();
+    println!("🧪 Running additional stress tests...");
+    stress_test_allocations();
+}
+
 fn main() {
     println!("🏆 Comprehensive Benchmark Demo");
     println!("===============================");
@@ -268,13 +283,7 @@ fn main() {
     println!("It includes time profiling, memory tracking, and detailed performance analysis.");
     println!();
 
-    // Run the main benchmark
-    comprehensive_benchmark();
-
-    println!();
-    println!("🧪 Running additional stress tests...");
-    stress_test_allocations();
-
+    demo();
     println!();
     println!("✅ All benchmarks completed!");
     println!("📊 Check the generated profile files for detailed analysis:");
@@ -291,4 +300,24 @@ fn main() {
     println!("   • CPU-bound vs I/O-bound operations");
     println!("   • Different profiling annotation types");
     println!("🎯 Look for hotspots and optimization opportunities!");
+
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    if let Err(e) = visualization::show_interactive_prompt(
+        "benchmark",
+        &ProfileType::Time,
+        &AnalysisType::Flamechart,
+    ) {
+        eprintln!("⚠️ Could not show interactive visualization: {e}");
+    }
+
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    if let Err(e) = visualization::show_interactive_prompt(
+        "benchmark",
+        &ProfileType::Memory,
+        &AnalysisType::Flamegraph,
+    ) {
+        eprintln!("⚠️ Could not show interactive visualization: {e}");
+    }
 }

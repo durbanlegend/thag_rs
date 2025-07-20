@@ -21,7 +21,7 @@ use std::time::Duration;
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::{cached, timing};
-use thag_profiler::{enable_profiling, profiled, visualization};
+use thag_profiler::{enable_profiling, profiled, visualization, AnalysisType, ProfileType};
 
 const FIB_N: usize = 45;
 const HUNDREDFOLD: usize = FIB_N * 100;
@@ -188,8 +188,13 @@ fn main() {
 
     let _ = child.join().unwrap();
 
-    // Add interactive visualization
-    if let Err(e) = visualization::show_interactive_prompt("basic_profiling", "flamechart") {
-        eprintln!("⚠️ Could not show interactive visualization: {}", e);
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    if let Err(e) = visualization::show_interactive_prompt(
+        "basic_profiling",
+        &ProfileType::Time,
+        &AnalysisType::Flamechart,
+    ) {
+        eprintln!("⚠️ Could not show interactive visualization: {e}");
     }
 }

@@ -12,6 +12,7 @@ use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
+use std::string::ToString;
 
 /// Configuration for visualization generation
 #[derive(Debug, Clone)]
@@ -49,13 +50,24 @@ impl Default for VisualizationConfig {
 /// Profile analysis results
 #[derive(Debug, Clone)]
 pub struct ProfileAnalysis {
+    /// Total duration of the profiling session in microseconds
     pub total_duration_us: u128,
+    /// Function names paired with their execution times in microseconds
     pub function_times: Vec<(String, u128)>,
+    /// Top functions with name, execution time in microseconds, and percentage of total time
     pub top_functions: Vec<(String, u128, f64)>,
+    /// Generated insights and observations about the profiling data
     pub insights: Vec<String>,
 }
 
 /// Generate a flamegraph SVG from folded stack data
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The stack data is empty
+/// - File creation or writing fails
+/// - Flamegraph generation fails
 pub fn generate_flamegraph_svg(
     stacks: &[String],
     output_path: &str,
@@ -86,6 +98,13 @@ pub fn generate_flamegraph_svg(
 }
 
 /// Generate a flamegraph from a single folded file
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The folded file cannot be read
+/// - The file is empty or contains no valid stack data
+/// - Flamegraph SVG generation fails
 pub fn generate_flamegraph_from_file(
     folded_file: &std::path::Path,
     output_path: &str,
@@ -93,12 +112,19 @@ pub fn generate_flamegraph_from_file(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(folded_file)?;
     eprintln!("content={content}");
-    let stacks: Vec<String> = content.lines().map(|line| line.to_string()).collect();
+    let stacks: Vec<String> = content.lines().map(ToString::to_string).collect();
 
     generate_flamegraph_svg(&stacks, output_path, config)
 }
 
 /// Analyze a profile file and extract function timing data
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The file cannot be read
+/// - The file contains invalid profile data format
+/// - Duration parsing fails for any line
 #[allow(clippy::cast_precision_loss)]
 pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(file_path)?;
@@ -197,6 +223,13 @@ pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
 }
 
 /// Find the most recent profile files matching a pattern
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Cannot get current working directory
+/// - Cannot read directory contents
+/// - File metadata cannot be accessed
 pub fn find_latest_profile_files(
     pattern: &str,
     count: usize,
@@ -231,6 +264,13 @@ pub fn find_latest_profile_files(
 }
 
 /// Open a file in the default browser
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Cannot get current working directory
+/// - System command to open browser fails
+/// - Platform is not supported (Windows/macOS/Linux)
 pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let full_path = std::env::current_dir()?.join(file_path);
     let url = format!("file://{}", full_path.display());
@@ -256,6 +296,12 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>
 }
 
 /// Show interactive visualization prompt
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Cannot read user input from stdin
+/// - System command to open browser fails
 pub fn show_interactive_prompt(
     demo_name: &str,
     analysis_type: &str,
@@ -281,6 +327,13 @@ pub fn show_interactive_prompt(
 }
 
 /// Generate and show visualization for a demo
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Profile files cannot be found or read
+/// - Flamegraph generation fails
+/// - Browser cannot be opened to display results
 pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Wait a moment for profile files to be written
     std::thread::sleep(std::time::Duration::from_millis(500));
@@ -328,6 +381,13 @@ pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn st
 }
 
 /// Generate memory-specific visualization
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Memory profile files cannot be found or read
+/// - Flamegraph generation fails
+/// - Browser cannot be opened to display results
 pub fn generate_and_show_memory_visualization(
     demo_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {

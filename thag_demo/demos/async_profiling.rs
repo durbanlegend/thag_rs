@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
 tokio = { version = "1.0", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -14,8 +14,9 @@ strip = false
 /// This demo demonstrates async profiling features of thag_profiler with tokio
 //# Purpose: Demonstrate async function profiling with thag_profiler
 //# Categories: profiling, demo, async, tokio
+use std::thread;
 use std::time::Duration;
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, profiled, visualization};
 use tokio::time::sleep;
 
 #[profiled]
@@ -107,7 +108,7 @@ async fn async_computation_heavy() {
     }
 }
 
-#[profiled]
+#[enable_profiling(time)]
 async fn demonstrate_async_profiling() {
     // Run different types of async operations
     concurrent_operations().await;
@@ -117,7 +118,6 @@ async fn demonstrate_async_profiling() {
 }
 
 #[tokio::main]
-#[enable_profiling(time)]
 async fn main() {
     println!("🚀 Async Profiling Demo");
     println!("=======================");
@@ -131,4 +131,9 @@ async fn main() {
     println!("📊 Check the generated flamegraph files for async operation analysis.");
     println!("🔍 Use 'thag_profile' command to analyze async execution patterns.");
     println!("⚡ Notice how concurrent vs sequential operations appear in the flamegraph.");
+
+    // Add interactive visualization
+    if let Err(e) = visualization::show_interactive_prompt("async_profiling", "flamechart") {
+        eprintln!("⚠️ Could not show interactive visualization: {}", e);
+    }
 }

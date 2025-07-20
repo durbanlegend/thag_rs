@@ -111,7 +111,7 @@ pub fn generate_flamegraph_from_file(
     config: VisualizationConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(folded_file)?;
-    eprintln!("content={content}");
+    // eprintln!("content={content}");
     let stacks: Vec<String> = content.lines().map(ToString::to_string).collect();
 
     generate_flamegraph_svg(&stacks, output_path, config)
@@ -353,7 +353,7 @@ pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn st
     let config = VisualizationConfig {
         title: format!(
             "{} Demo - Performance Flamechart",
-            demo_name.replace('_', " ").to_title_case()
+            demo_name.to_title_case()
         ),
         subtitle: Some(format!(
             "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
@@ -409,7 +409,7 @@ pub fn generate_and_show_memory_visualization(
     let config = VisualizationConfig {
         title: format!(
             "{} Demo - Memory Allocation Flamechart",
-            demo_name.replace('_', " ").to_title_case()
+            demo_name.to_title_case()
         ),
         subtitle: Some(format!(
             "Generated: {} | Hover over and click on the bars to explore memory allocations, or use Search ↗️",

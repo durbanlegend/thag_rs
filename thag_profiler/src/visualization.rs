@@ -6,21 +6,14 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-#[cfg(feature = "demo")]
 use crate::enhance_svg_accessibility;
-#[cfg(feature = "demo")]
 use chrono::Local;
-#[cfg(feature = "demo")]
 use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
-#[cfg(feature = "demo")]
 use std::collections::HashMap;
-#[cfg(feature = "demo")]
 use std::io::Write;
-#[cfg(feature = "demo")]
 use std::path::PathBuf;
 
 /// Configuration for visualization generation
-#[cfg(feature = "demo")]
 #[derive(Debug, Clone)]
 pub struct VisualizationConfig {
     /// Title for the visualization
@@ -37,7 +30,6 @@ pub struct VisualizationConfig {
     pub flame_chart: bool,
 }
 
-#[cfg(feature = "demo")]
 impl Default for VisualizationConfig {
     fn default() -> Self {
         Self {
@@ -55,7 +47,6 @@ impl Default for VisualizationConfig {
 }
 
 /// Profile analysis results
-#[cfg(feature = "demo")]
 #[derive(Debug, Clone)]
 pub struct ProfileAnalysis {
     pub total_duration_us: u128,
@@ -65,7 +56,6 @@ pub struct ProfileAnalysis {
 }
 
 /// Generate a flamegraph SVG from folded stack data
-#[cfg(feature = "demo")]
 pub fn generate_flamegraph_svg(
     stacks: &[String],
     output_path: &str,
@@ -96,20 +86,20 @@ pub fn generate_flamegraph_svg(
 }
 
 /// Generate a flamegraph from a single folded file
-#[cfg(feature = "demo")]
 pub fn generate_flamegraph_from_file(
     folded_file: &std::path::Path,
     output_path: &str,
     config: VisualizationConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(folded_file)?;
+    eprintln!("content={content}");
     let stacks: Vec<String> = content.lines().map(|line| line.to_string()).collect();
 
     generate_flamegraph_svg(&stacks, output_path, config)
 }
 
 /// Analyze a profile file and extract function timing data
-#[cfg(feature = "demo")]
+#[allow(clippy::cast_precision_loss)]
 pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(file_path)?;
     let mut function_times: HashMap<String, u128> = HashMap::new();
@@ -164,7 +154,7 @@ pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn s
 }
 
 /// Display profile analysis results
-#[cfg(feature = "demo")]
+#[allow(clippy::cast_precision_loss)]
 pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
     println!("📊 Profile Analysis Results");
     println!("═══════════════════════════");
@@ -207,7 +197,6 @@ pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
 }
 
 /// Find the most recent profile files matching a pattern
-#[cfg(feature = "demo")]
 pub fn find_latest_profile_files(
     pattern: &str,
     count: usize,
@@ -242,7 +231,6 @@ pub fn find_latest_profile_files(
 }
 
 /// Open a file in the default browser
-#[cfg(feature = "demo")]
 pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let full_path = std::env::current_dir()?.join(file_path);
     let url = format!("file://{}", full_path.display());
@@ -268,7 +256,6 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>
 }
 
 /// Show interactive visualization prompt
-#[cfg(feature = "demo")]
 pub fn show_interactive_prompt(
     demo_name: &str,
     analysis_type: &str,
@@ -294,7 +281,6 @@ pub fn show_interactive_prompt(
 }
 
 /// Generate and show visualization for a demo
-#[cfg(feature = "demo")]
 pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Wait a moment for profile files to be written
     std::thread::sleep(std::time::Duration::from_millis(500));
@@ -342,7 +328,6 @@ pub fn generate_and_show_visualization(demo_name: &str) -> Result<(), Box<dyn st
 }
 
 /// Generate memory-specific visualization
-#[cfg(feature = "demo")]
 pub fn generate_and_show_memory_visualization(
     demo_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -395,7 +380,7 @@ pub fn generate_and_show_memory_visualization(
 }
 
 /// Display memory-specific analysis
-#[cfg(feature = "demo")]
+#[allow(clippy::cast_precision_loss)]
 pub fn display_memory_analysis(analysis: &ProfileAnalysis) {
     println!("📊 Memory Profile Analysis Results");
     println!("═══════════════════════════════════");
@@ -438,7 +423,6 @@ pub fn display_memory_analysis(analysis: &ProfileAnalysis) {
 }
 
 /// Clean function names for better display
-#[cfg(feature = "demo")]
 fn clean_function_name(name: &str) -> String {
     let clean = name.split("::").last().unwrap_or(name);
     let clean = clean.split('<').next().unwrap_or(clean);
@@ -491,7 +475,7 @@ fn clean_function_name(name: &str) -> String {
 }
 
 /// Generate insights from function timing data
-#[cfg(feature = "demo")]
+#[allow(clippy::cast_precision_loss)]
 fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> Vec<String> {
     let mut insights = Vec::new();
 
@@ -571,12 +555,10 @@ fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> V
 }
 
 /// Helper trait for string case conversion
-#[cfg(feature = "demo")]
 trait ToTitleCase {
     fn to_title_case(&self) -> String;
 }
 
-#[cfg(feature = "demo")]
 impl ToTitleCase for str {
     fn to_title_case(&self) -> String {
         self.split('_')
@@ -592,7 +574,6 @@ impl ToTitleCase for str {
 }
 
 #[cfg(test)]
-#[cfg(feature = "demo")]
 mod tests {
     use super::*;
 

@@ -48,7 +48,7 @@ use thag_rs::{
     cvprtln, debug_log, debug_timings, get_verbosity, key, lazy_static_var,
     logging::configure_log,
     manifest::extract,
-    regex,
+    re,
     styling::{
         display_terminal_attributes, display_theme_details, display_theme_roles, ColorInitStrategy,
         Role::{self, Success},

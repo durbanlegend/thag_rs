@@ -14,6 +14,10 @@ simplelog = ["dep:simplelog"]
 /// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
+/// The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
+///
+/// See also `demo/colors_old.rs`.
+///
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
 //# Categories: prototype, reference, testing
 use log::debug;

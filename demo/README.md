@@ -925,63 +925,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
 
 ---
 
-### Script: colors.rs
-
-**Description:**  Runner for legacy module `src/colors.rs`, removed after "0.1.9".
- NB: If you have the [misc] option `unquote` specified in your `config.toml` and
- don't use the git tag `config_quoted_or_unquoted_booleans` in the `toml` block
- you will need to ensure that its boolean value is a quoted string ("true" or "false")
- in order to run this demo, otherwise it will fail trying to process the config
- file due to a breaking change after "0.1.9".
-
- E.g. `thag demo/colors.rs`
-
-**Purpose:** Originally to test the look of the various colours. Replaced by `demo/styling_demo.rs`.
-
-**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** demo, testing
-
-**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors.rs)
-
-**Not suitable to be run from a URL.**
-
-
----
-
-### Script: colors_claude.rs
-
-**Description:**  Runner for legacy module `src/colors.rs`, removed after "0.1.9".
- This demo now uses basic ANSI colors via nu-ansi-term instead of the removed colors module.
- NB: If you have the [misc] option `unquote` specified in your `config.toml` and
- don't use the git tag `config_quoted_or_unquoted_booleans` in the `toml` block
- you will need to ensure that its boolean value is a quoted string ("true" or "false")
- in order to run this demo, otherwise it will fail trying to process the config
- file correctly.
-
- E.g. `thag demo/colors.rs`
-
-**Purpose:** Originally to test the look of the various colours. Replaced by `demo/styling_demo.rs`.
-
-**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** ANSI, color, demo, styling, terminal, testing
-
-**Link:** [colors_claude.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors_claude.rs)
-
-**Not suitable to be run from a URL.**
-
-
----
-
 ### Script: colors_old.rs
 
-**Description:**  An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
+**Description:**  A version of `thag_rs`'s  now defunct `colors` module to style messages according to their type. Like the `stdin`
  module, `colors` was originally developed here as a separate script and integrated as a module later.
+
+ The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
 
  E.g. `thag demo/colors_old.rs`
 
@@ -1005,6 +954,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
 **Description:**  Original prototype of `thag_rs`'s `colors` module to style messages according
  to their type. I only dropped `owo-colors` because I switched from `rustyline` to
  `reedline`, which was already using `nu_ansi_term`.
+
+ The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
+
+ See also `demo/colors_old.rs`.
 
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
@@ -4466,29 +4419,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_
 
 ---
 
-### Script: proc_macro_functionlike_basic.rs
-
-**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
- `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
-
-**Purpose:** Sample model of a basic function-like proc macro.
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Program
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_functionlike_basic.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_functionlike_basic.rs
-```
-
----
-
 ### Script: proc_macro_generate_tests.rs
 
 **Description:**  Demo of the generate_tests function-like macro for automatic test generation.
@@ -4565,7 +4495,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry
 
 **Purpose:** Demonstrate automatic function timing and performance measurement
 
-**Crates:** `thag_demo_proc_macros`
+**Crates:** `thag_proc_macros`
 
 **Type:** Program
 
@@ -5418,7 +5348,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_mat
 
 **Purpose:** Demonstrate building a `thag`-style REPL.
 
-**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `strum`, `thag_profiler`, `thag_rs`, `tui_textarea`
+**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -5610,6 +5540,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/side_by_side_dif
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/slog_expressions.rs
+```
+
+---
+
+### Script: smol_background_task_return.rs
+
+**Description:**  ChatGPT-generated example of running a single task in the background.
+
+**Purpose:** Demo.
+
+**Crates:** `smol`
+
+**Type:** Program
+
+**Categories:** crates, demo
+
+**Link:** [smol_background_task_return.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_background_task_return.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_background_task_return.rs
 ```
 
 ---
@@ -6536,6 +6488,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.r
 ### Script: test_profiler_demo_viz.rs
 
 **Description:**  Test script to verify the profiler demo visualization feature works
+ Work in progress.
 
 **Purpose:** test if the error exists, then periodically to see if it persists.
 
@@ -6633,8 +6586,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_bench
  local or git versions instead.
 
 **Purpose:** Demonstrate thag-auto dependency resolution system
-
-**Crates:** `thag_rs`
 
 **Type:** Program
 

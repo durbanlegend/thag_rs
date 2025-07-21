@@ -2,8 +2,10 @@
 [dependencies]
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
 */
-/// An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
+/// A version of `thag_rs`'s  now defunct `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.
+///
+/// The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
 ///
 /// E.g. `thag demo/colors_old.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.

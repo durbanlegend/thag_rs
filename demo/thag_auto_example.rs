@@ -23,11 +23,8 @@ thag_profiler = { version = "0.1, thag-auto" }
 /// local or git versions instead.
 //# Purpose: Demonstrate thag-auto dependency resolution system
 //# Categories: demo, documentation
-use thag_rs::logging::*;
 
 fn main() {
-    init_logger();
-
     println!("This is an example of thag-auto dependency resolution!");
     println!("The dependencies in this script use 'thag-auto' to automatically");
     println!("resolve to the appropriate source based on your environment.");

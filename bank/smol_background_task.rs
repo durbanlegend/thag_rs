@@ -1,12 +1,12 @@
 /// ChatGPT-generated example of running a single task in the background.
 //# Purpose: Demo.
-//# Categories: crates. demo
+//# Categories: crates, demo
 use smol::{self, Timer};
 use std::io::{self, Write};
 use std::time::Duration;
 
-/// Some blocking work we don't want to run on the async reactor thread.
-/// Pretend it's CPU-heavy or does blocking I/O.
+// Some blocking work we don't want to run on the async reactor thread.
+// Pretend it's CPU-heavy or does blocking I/O.
 fn slow_blocking_compute() -> u64 {
     // Simulate ~1.5s of work
     std::thread::sleep(Duration::from_millis(1500));

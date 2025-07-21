@@ -4,6 +4,7 @@ thag_profiler = { version = "0.1, thag-auto", features = ["demo"] }
 */
 
 /// Test script to verify the profiler demo visualization feature works
+/// Work in progress.
 //# Purpose: test if the error exists, then periodically to see if it persists.
 //# Categories: profiling, testing
 use thag_profiler::visualization;
@@ -12,7 +13,7 @@ fn main() {
     println!("🧪 Testing thag_profiler demo visualization access...");
 
     // Test that we can access the visualization module
-    match visualization::find_latest_profile_files("test", 1) {
+    match visualization::find_latest_profile_files("test", true, 1) {
         Ok(files) => {
             println!("✅ Successfully accessed visualization::find_latest_profile_files");
             println!("   Found {} files", files.len());

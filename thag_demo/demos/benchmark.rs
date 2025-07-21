@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
+use std::error::Error;
 use std::time::Instant;
 use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
 
@@ -273,17 +274,13 @@ fn demo() {
     stress_test_allocations();
 }
 
-async fn run_analysis(profile_type: &ProfileType, analysis_type: &AnalysisType) {
+async fn run_analysis(
+    profile_type: ProfileType,
+    analysis_type: AnalysisType,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
     // because profile output is only available after that function completes.
-    if let Err(e) =
-        visualization::show_interactive_prompt("benchmark", profile_type, analysis_type).await
-    {
-        eprintln!(
-            "⚠️ Could not show interactive {} visualization: {e}",
-            profile_type.to_string().to_lowercase()
-        );
-    }
+    visualization::show_interactive_prompt("benchmark", &profile_type, &analysis_type).await
 }
 
 fn main() {
@@ -313,28 +310,12 @@ fn main() {
     println!("   • Different profiling annotation types");
     println!("🎯 Look for hotspots and optimization opportunities!");
 
-    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // because profile output is only available after that function completes.
-    // if let Err(e) = visualization::show_interactive_prompt(
-    //     "benchmark",
-    //     &ProfileType::Time,
-    //     &AnalysisType::Flamechart,
-    // ) {
-    //     eprintln!("⚠️ Could not show interactive visualization: {e}");
-    // }
-    smol::block_on(run_analysis(&ProfileType::Time, &AnalysisType::Flamechart));
+    // Run analysis concurrently - shows results immediately while generating visualizations
+    if let Err(e) = smol::block_on(run_analysis(ProfileType::Time, AnalysisType::Flamechart)) {
+        eprintln!("⚠️ Could not show time visualization: {e}");
+    }
 
-    // // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // // because profile output is only available after that function completes.
-    // if let Err(e) = visualization::show_interactive_prompt(
-    //     "benchmark",
-    //     &ProfileType::Memory,
-    //     &AnalysisType::Flamegraph,
-    // ) {
-    //     eprintln!("⚠️ Could not show interactive visualization: {e}");
-    // }
-    smol::block_on(run_analysis(
-        &ProfileType::Memory,
-        &AnalysisType::Flamegraph,
-    ));
+    if let Err(e) = smol::block_on(run_analysis(ProfileType::Memory, AnalysisType::Flamegraph)) {
+        eprintln!("⚠️ Could not show memory visualization: {e}");
+    }
 }

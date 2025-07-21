@@ -178,24 +178,22 @@ pub fn analyze_profile(
             continue;
         }
 
-        let maybe_parts = line.rsplit_once(' ');
-        let Some((stack, time_str)) = maybe_parts else {
-            continue;
-        };
+        // Handle spaces in function names by splitting on last whitespace only
+        if let Some(last_space_pos) = line.rfind(' ') {
+            let stack = &line[..last_space_pos];
+            let time_str = &line[last_space_pos + 1..];
 
-        // let stack = parts.0;
-        // let time_str = parts.1;
+            if let Ok(time_us) = time_str.parse::<u128>() {
+                total_duration_us += time_us;
 
-        if let Ok(time_us) = time_str.parse::<u128>() {
-            total_duration_us += time_us;
+                // Extract function names from the stack
+                let functions: Vec<&str> = stack.split(';').collect();
 
-            // Extract function names from the stack
-            let functions: Vec<&str> = stack.split(';').collect();
-
-            for func_name in functions {
-                let clean_name = clean_function_name(func_name);
-                // eprintln!("clean_name={clean_name}, time_us={time_us}");
-                *function_times.entry(clean_name).or_insert(0) += time_us;
+                for func_name in functions {
+                    let clean_name = clean_function_name(func_name);
+                    // eprintln!("clean_name={clean_name}, time_us={time_us}");
+                    *function_times.entry(clean_name).or_insert(0) += time_us;
+                }
             }
         }
     }
@@ -492,24 +490,27 @@ pub async fn generate_and_show_memory_visualization(
     let demo_name = demo_name.to_string();
 
     if show_graph {
-        let bg_task = smol::unblock(move || {
-            generate_and_show_memory_flamegraph(
-                demo_name,
-                analysis_type,
-                // analysis_type_lower,
-                files,
-            )
-        });
-
-        println!(); // newline after the carriage-return updates
-        println!("\nWaiting for background result...");
+        println!("🔥 Generating interactive {analysis_type_lower} in background...");
         let _ = std::io::stdout().flush();
 
-        display_memory_analysis(&analysis);
-        // Move to a clean line, flush final display before we join.
+        let bg_task = smol::unblock(move || {
+            generate_and_show_memory_flamegraph(demo_name, analysis_type, files)
+        });
 
-        // Join: await the background result. Use `?` to bubble up any error.
-        bg_task.await?;
+        // Show analysis immediately while flamegraph generates in background
+        display_memory_analysis(&analysis);
+
+        println!("\n⏳ Waiting for flamegraph generation to complete...");
+        let _ = std::io::stdout().flush();
+
+        // Await the background task and handle any errors
+        match bg_task.await {
+            Ok(_) => println!("✅ Flamegraph generation completed!"),
+            Err(e) => {
+                eprintln!("⚠️ Flamegraph generation failed: {}", e);
+                println!("💡 Analysis results are still available above.");
+            }
+        }
     } else {
         display_memory_analysis(&analysis);
     }
@@ -548,13 +549,12 @@ fn generate_and_show_memory_flamegraph(
     println!("✅ Memory {analysis_type} generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️  Could not open browser automatically: {e}");
+        println!("⚠️ Could not open browser automatically: {e}");
         println!("💡 You can manually open: {output_path}");
     } else {
-        println!("🌐 Memory {analysis_type} opened in your default browser!");
-        println!("🔍 Hover over and click on the bars to explore memory allocation patterns");
-        println!("📊 Bar width = bytes allocated, height = call stack depth");
-        println!("🎨 Color scheme optimized for memory visualization");
+        println!("🌐 Memory {analysis_type_lower} opened in your default browser!");
+        println!("🔍 Hover over and click on the bars to explore memory allocations");
+        println!("📊 Function width = memory allocated, height = call stack depth");
     }
 
     Ok(())

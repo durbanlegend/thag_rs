@@ -354,7 +354,7 @@ pub async fn show_interactive_prompt(
     analysis_type: &AnalysisType,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let profile_type_lower = profile_type.to_string().to_lowercase();
-    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
 
     println!();
     println!(
@@ -399,7 +399,7 @@ pub fn generate_and_show_time_visualization(
     show_graph: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     // Wait a moment for profile files to be written
-    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
 
     // std::thread::sleep(std::time::Duration::from_millis(500));
 
@@ -416,7 +416,7 @@ pub fn generate_and_show_time_visualization(
     display_profile_analysis(&analysis);
 
     if show_graph {
-        generate_and_show_time_flamegraph(demo_name, analysis_type, analysis_type_lower, files)?;
+        generate_and_show_time_flamegraph(demo_name, analysis_type, files)?;
     }
 
     Ok(())
@@ -426,9 +426,10 @@ pub fn generate_and_show_time_visualization(
 fn generate_and_show_time_flamegraph(
     demo_name: &str,
     analysis_type: &AnalysisType,
-    analysis_type_lower: String,
     files: Vec<PathBuf>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
+
     println!("🔥 Generating interactive time {analysis_type_lower}...");
     println!();
     let config = VisualizationConfig {
@@ -441,7 +442,7 @@ fn generate_and_show_time_flamegraph(
         "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
         Local::now().format("%Y-%m-%d %H:%M:%S")
     )),
-    // analysis_type: analysis_type.clone(),
+    analysis_type: analysis_type.clone(),
     ..Default::default()
         };
     let output_path = format!("{demo_name}_{analysis_type_lower}.svg");
@@ -473,7 +474,7 @@ pub async fn generate_and_show_memory_visualization(
     analysis_type: AnalysisType,
     show_graph: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let analysis_type_lower = analysis_type.clone().to_string().to_lowercase();
+    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
 
     // Wait a moment for profile files to be written
     // std::thread::sleep(std::time::Duration::from_millis(500));
@@ -520,10 +521,9 @@ pub async fn generate_and_show_memory_visualization(
 fn generate_and_show_memory_flamegraph(
     demo_name: String,
     analysis_type: AnalysisType,
-    // analysis_type_lower: String,
     files: Vec<PathBuf>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
 
     println!("🔥 Generating interactive memory {analysis_type_lower}...");
     println!();
@@ -539,9 +539,11 @@ fn generate_and_show_memory_flamegraph(
         )),
         palette: Basic(Mem),
         count_name: "bytes".to_string(),
+        analysis_type: analysis_type.clone(),
         ..Default::default()
     };
     let output_path = format!("{demo_name}_memory_{analysis_type_lower}.svg");
+    eprintln!("\nanalysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
     println!("✅ Memory {analysis_type} generated: {output_path}");
 

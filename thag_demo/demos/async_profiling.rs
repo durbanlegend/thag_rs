@@ -120,7 +120,7 @@ async fn demonstrate_async_profiling() {
 #[tokio::main]
 async fn main() {
     println!("🚀 Async Profiling Demo");
-    println!("=======================");
+    println!("{}", "═".repeat(23));
     println!();
 
     println!("Running async operations with profiling...");

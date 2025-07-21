@@ -126,7 +126,7 @@ impl fmt::Display for Allocator {
 #[internal_doc]
 #[must_use]
 pub fn current_allocator() -> Allocator {
-    let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get);
+    let using_system = USING_SYSTEM_ALLOCATOR.with(Cell::get) || !crate::is_profiling_enabled();
     if using_system {
         Allocator::System
     } else {

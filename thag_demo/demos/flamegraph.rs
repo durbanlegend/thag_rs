@@ -180,7 +180,7 @@ fn demonstrate_flamegraph_features() {
 #[enable_profiling(time)]
 fn main() {
     println!("🔥 Flamegraph Generation Demo");
-    println!("=============================");
+    println!("{}", "═".repeat(28));
     println!();
 
     println!("This demo creates various call patterns to showcase flamegraph visualization.");

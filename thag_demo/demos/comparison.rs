@@ -203,7 +203,7 @@ fn run_all_comparisons() {
 #[enable_profiling(time)]
 fn main() {
     println!("⚖️  Performance Comparison Demo");
-    println!("===============================");
+    println!("{}", "═".repeat(31));
     println!();
 
     println!("Running performance comparisons with profiling...");

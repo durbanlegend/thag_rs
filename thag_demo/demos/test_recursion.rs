@@ -46,7 +46,7 @@ fn test_recursion_detection() {
 #[enable_profiling(time)]
 fn main() {
     println!("🔄 Recursion Detection Test");
-    println!("===========================");
+    println!("{}", "═".repeat(26));
     println!();
 
     println!("This demo tests the recursion detection feature.");

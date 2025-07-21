@@ -24,7 +24,7 @@ fn simple_recursive(n: u32) -> u32 {
 #[enable_profiling(time)]
 fn main() {
     println!("🔄 Minimal Recursion Test");
-    println!("=========================");
+    println!("{}", "═".repeat(25));
 
     let result = simple_recursive(5);
     println!("Result: {}", result);

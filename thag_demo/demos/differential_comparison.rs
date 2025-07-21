@@ -515,7 +515,7 @@ use visualization::*;
 
 fn main() {
     println!("🔥 Differential Comparison Demo");
-    println!("===============================");
+    println!("{}", "═".repeat(31));
     println!();
 
     println!("This demo will:");

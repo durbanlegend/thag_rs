@@ -17,6 +17,7 @@ use std::{
     time::Duration,
 };
 use strum::Display;
+use thag_proc_macros::timing;
 use thag_profiler::{
     enhance_svg_accessibility, profiling::ProfileStats, re, thousands, ProfileError, ProfileResult,
 };
@@ -1306,6 +1307,7 @@ fn build_time_stats(processed: &ProcessedProfile) -> ProfileResult<ProfileStats>
     Ok(stats)
 }
 
+#[timing]
 fn generate_memory_flamegraph(profile: &ProcessedProfile, as_chart: bool) -> ProfileResult<()> {
     if profile.stacks.is_empty() {
         return Err(ProfileError::General(

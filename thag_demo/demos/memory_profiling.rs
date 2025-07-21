@@ -98,10 +98,9 @@ async fn run_analysis() {
     }
 }
 
-fn main() /* -> Result<(), Box<dyn Error + Send + Sync + 'static>>*/
-{
+fn main() {
     println!("🧠 Memory Profiling Demo");
-    println!("========================");
+    println!("{}", "═".repeat(23));
     println!();
 
     println!("Running memory-intensive operations with profiling...");

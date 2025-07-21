@@ -122,7 +122,7 @@ fn run_all_tests() {
 #[enable_profiling(time)]
 fn main() {
     println!("⚖️  Performance Comparison Demo - BEFORE (Inefficient)");
-    println!("======================================================");
+    println!("{}", "═".repeat(54));
     println!();
 
     println!("Running inefficient algorithm implementations...");

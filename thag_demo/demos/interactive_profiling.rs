@@ -100,7 +100,7 @@ fn simulated_io_work() {
 #[profiled]
 fn algorithm_comparison() {
     println!("\n🔬 Algorithm Performance Comparison");
-    println!("=====================================");
+    println!("{}", "═".repeat(34));
 
     println!("\n1. Recursive Fibonacci (O(2^n) - exponential time):");
     fibonacci_recursive_demo(FIB_N);
@@ -121,7 +121,7 @@ fn algorithm_comparison() {
 #[profiled]
 fn performance_workloads() {
     println!("\n⚡ Different Performance Workloads");
-    println!("===================================");
+    println!("{}", "═".repeat(33));
 
     cpu_intensive_work();
     pause_between_demos();
@@ -136,7 +136,7 @@ fn pause_between_demos() {
 
 fn show_simple_analysis() {
     println!("\n🎯 Profile Analysis & Flamegraph Generation");
-    println!("===========================================");
+    println!("{}", "═".repeat(42));
 
     // Wait for profile files to be written
     thread::sleep(Duration::from_millis(1000));
@@ -421,7 +421,7 @@ fn open_in_browser(svg_path: &str) -> Result<(), Box<dyn std::error::Error>> {
 #[enable_profiling(time)]
 fn main() {
     println!("🔥 Interactive Profiling Demo");
-    println!("=============================");
+    println!("{}", "═".repeat(28));
     println!("This demo shows algorithm performance differences and analyzes the results!");
     println!();
 

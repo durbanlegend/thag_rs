@@ -288,7 +288,7 @@ async fn run_analysis(profile_type: &ProfileType, analysis_type: &AnalysisType) 
 
 fn main() {
     println!("🏆 Comprehensive Benchmark Demo");
-    println!("===============================");
+    println!("{}", "═".repeat(31));
     println!();
 
     println!("This demo runs a comprehensive benchmark to showcase all profiling features.");

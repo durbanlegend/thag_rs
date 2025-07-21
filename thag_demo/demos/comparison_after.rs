@@ -136,7 +136,7 @@ fn run_all_tests() {
 #[enable_profiling(time)]
 fn main() {
     println!("⚖️  Performance Comparison Demo - AFTER (Efficient)");
-    println!("===================================================");
+    println!("{}", "═".repeat(51));
     println!();
 
     println!("Running efficient algorithm implementations...");

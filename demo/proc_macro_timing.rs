@@ -1,3 +1,7 @@
+/*[toml]
+[dependencies]
+thag_proc_macros = { version = "0.2, thag-auto" }
+*/
 /// Demo of the timing attribute macro that adds automatic execution time measurement.
 ///
 /// This macro demonstrates simple but effective attribute macro patterns by wrapping
@@ -8,7 +12,7 @@
 use std::time::Duration;
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::timing;
+use thag_proc_macros::timing;
 
 /// Fast computation - should show minimal timing
 #[timing]

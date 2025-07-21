@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
 
 [profile.release]
 debug = true

@@ -138,7 +138,7 @@ pub use profiling::extract_path;
 
 /// Demo utilities.
 #[cfg(feature = "demo")]
-pub use visualization::AnalysisType;
+pub use {thag_proc_macros::timing, visualization::AnalysisType};
 
 // ============================================================================
 // Internal Utilities (hidden from public API docs unless internal_docs feature is enabled)
@@ -280,7 +280,7 @@ pub fn file_stem_from_path(path: &Path) -> String {
 ///
 /// # Errors
 ///
-/// This function will return an error if .
+/// This function will bubble up any i/o error encountered reading or writing the file.
 pub fn enhance_svg_accessibility(svg_path: &str) -> ProfileResult<()> {
     let content = fs::read_to_string(svg_path)?;
 

@@ -198,6 +198,10 @@ thag --expr '"Hello world!"'                                    # Short form: -e
 ```
 ![Expr](assets/hellot.png)
 
+```bash
+thag -qe u64::MAX                                               # Long form: --quiet --expr
+```
+
 Invoking quiet mode (`--quiet / -q`) suppresses most feedback except for the flowerbox to highlight the output.
 Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
 output to be used as a filter.

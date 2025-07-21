@@ -158,7 +158,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     };
 
     println!("{}", format!("Running {demo_name} demo...").bold().green());
-    println!();
+    // println!();
 
     // Create a temporary file for the demo script
     let temp_dir = std::env::temp_dir();
@@ -217,7 +217,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
         "{}",
         format!("Running script demo: {script_name}").bold().green()
     );
-    println!();
+    // println!();
 
     // Set THAG_DEV_PATH for local development - point to thag_rs root
     let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));

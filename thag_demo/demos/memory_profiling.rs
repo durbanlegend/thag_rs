@@ -12,9 +12,8 @@ strip = false
 //# Purpose: Demonstrate memory allocation tracking with thag_profiler
 //# Categories: profiling, demo, memory
 use std::collections::HashMap;
-// use std::io::Write;
-use thag_demo_proc_macros::timing;
-use thag_profiler::{enable_profiling, profiled, visualization, AnalysisType, ProfileType};
+// use std::error::Error;
+use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
 
 #[timing]
 #[profiled(mem_summary)]
@@ -85,7 +84,22 @@ fn nested_allocations() {
     // All data structures will be deallocated when this function ends
 }
 
-fn main() {
+async fn run_analysis() {
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    if let Err(e) = visualization::show_interactive_prompt(
+        "memory_profiling",
+        &ProfileType::Memory,
+        &AnalysisType::Flamegraph,
+    )
+    .await
+    {
+        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
+    }
+}
+
+fn main() /* -> Result<(), Box<dyn Error + Send + Sync + 'static>>*/
+{
     println!("🧠 Memory Profiling Demo");
     println!("========================");
     println!();
@@ -93,19 +107,13 @@ fn main() {
     println!("Running memory-intensive operations with profiling...");
     nested_allocations();
 
+    smol::block_on(run_analysis());
+
     println!();
     println!("✅ Demo completed!");
     println!("📊 Check the generated memory flamegraph files for allocation analysis.");
     println!("🔍 Use 'thag_profile' command to analyze memory usage patterns.");
     println!("💡 Notice the difference between mem_summary and mem_detail profiling.");
 
-    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // because profile output is only available after that function completes.
-    if let Err(e) = visualization::show_interactive_prompt(
-        "memory_profiling",
-        &ProfileType::Memory,
-        &AnalysisType::Flamegraph,
-    ) {
-        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
-    }
+    // Ok(())
 }

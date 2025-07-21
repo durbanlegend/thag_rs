@@ -23,6 +23,7 @@ mod palette_methods;
 mod preload_themes;
 mod repeat_dash;
 mod safe_print;
+mod timing;
 mod tool_errors;
 
 #[cfg(feature = "full_profiling")]
@@ -56,9 +57,11 @@ use crate::repeat_dash::repeat_dash_impl;
 use crate::safe_print::{
     safe_eprint_impl, safe_eprintln_impl, safe_osc_impl, safe_print_impl, safe_println_impl,
 };
+use crate::timing::timing_impl;
 use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::parse::{Parse, ParseStream};
 use syn::{parse_file, parse_str, Expr};
 
 #[cfg(feature = "full_profiling")]
@@ -78,6 +81,41 @@ use crate::end::end_impl;
 
 #[cfg(feature = "tui")]
 use crate::tui_keys::key_impl;
+
+/// Simple argument parser for attribute macros to check for expand flag
+#[derive(Default)]
+struct AttrArgs {
+    expand: bool,
+}
+
+impl Parse for AttrArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut args = Self::default();
+
+        // Handle empty case
+        if input.is_empty() {
+            return Ok(args);
+        }
+
+        // Parse as a list of flags
+        let mut first = true;
+
+        while !input.is_empty() {
+            if !first {
+                let _: syn::Token![,] = input.parse()?;
+            }
+            first = false;
+
+            // Parse as flag
+            let flag: syn::Ident = input.parse()?;
+            if flag.to_string().as_str() == "expand" {
+                args.expand = true;
+            }
+        }
+
+        Ok(args)
+    }
+}
 
 /// Generates a `Category` enum with predefined variants and utility implementations for use with the
 /// `thag_gen_readme` utility to generate a README.md for a directory such as demo/.
@@ -757,4 +795,31 @@ pub fn safe_eprintln(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn safe_osc(input: TokenStream) -> TokenStream {
     safe_osc_impl(input)
+}
+
+/// Measures and displays function execution time.
+///
+/// Wraps functions to measure execution time and output results to console.
+///
+/// ## Example
+/// ```rust
+/// use thag_proc_macros::timing;
+/// #[timing]
+/// fn slow_operation() -> i32 {
+///     std::thread::sleep(std::time::Duration::from_millis(100));
+///     42
+/// }
+/// // Output: Function 'slow_operation' took: 100.234ms
+///
+/// // To see the generated code during development:
+/// #[timing(expand)]
+/// fn debug_operation() -> i32 {
+///     std::thread::sleep(std::time::Duration::from_millis(100));
+///     42
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn timing(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let args = syn::parse::<AttrArgs>(attr.clone()).unwrap_or_default();
+    maybe_expand_attr_macro(args.expand, "timing", &attr, &item, timing_impl)
 }

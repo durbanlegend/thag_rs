@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
 thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
 
 [profile.release]
@@ -18,10 +17,8 @@ use std::io::Write;
 use std::iter::successors;
 use std::thread;
 use std::time::Duration;
-// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::{cached, timing};
-use thag_profiler::{enable_profiling, profiled, visualization, AnalysisType, ProfileType};
+use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
 
 const FIB_N: usize = 45;
 const HUNDREDFOLD: usize = FIB_N * 100;

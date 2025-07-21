@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_demo_proc_macros = { version = "0.1, thag-auto" }
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
 inferno = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
 

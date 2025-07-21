@@ -134,11 +134,8 @@ impl Parse for AttrArgs {
 
             // Parse as flag
             let flag: syn::Ident = input.parse()?;
-            match flag.to_string().as_str() {
-                "expand" => args.expand = true,
-                _ => {
-                    // Ignore unknown flags for now to maintain compatibility
-                }
+            if flag.to_string().as_str() == "expand" {
+                args.expand = true
             }
         }
 

@@ -6,12 +6,14 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-use crate::{enhance_svg_accessibility, ProfileType};
+use crate::{enhance_svg_accessibility, timing, ProfileType};
 use chrono::Local;
 use inferno::flamegraph::color::BasicPalette::Mem;
 use inferno::flamegraph::Palette::Basic;
 use inferno::flamegraph::{self, color::MultiPalette, Options, Palette};
+use smol;
 use std::collections::HashMap;
+use std::error::Error;
 use std::io::Write;
 use std::path::PathBuf;
 use std::string::ToString;
@@ -83,11 +85,13 @@ pub struct ProfileAnalysis {
 /// - The stack data is empty
 /// - File creation or writing fails
 /// - Flamegraph generation fails
+#[timing]
 pub fn generate_flamegraph_svg(
-    stacks: &[String],
     output_path: &str,
     config: VisualizationConfig,
-) -> Result<(), Box<dyn std::error::Error>> {
+    content: String,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let stacks: Vec<&str> = content.lines().collect();
     if stacks.is_empty() {
         return Err("No profile data found".into());
     }
@@ -104,7 +108,7 @@ pub fn generate_flamegraph_svg(
     // Generate flamegraph
     let output = std::fs::File::create(output_path)?;
 
-    flamegraph::from_lines(&mut opts, stacks.iter().rev().map(String::as_str), output)?;
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().copied(), output)?;
 
     // Enhance accessibility
     enhance_svg_accessibility(output_path)?;
@@ -124,12 +128,31 @@ pub fn generate_flamegraph_from_file(
     folded_file: &std::path::Path,
     output_path: &str,
     config: VisualizationConfig,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let content = std::fs::read_to_string(folded_file)?;
-    // eprintln!("content={content}");
-    let stacks: Vec<String> = content.lines().map(ToString::to_string).collect();
+    let stacks: Vec<&str> = content.lines().collect();
+    if stacks.is_empty() {
+        return Err("No profile data found".into());
+    }
 
-    generate_flamegraph_svg(&stacks, output_path, config)
+    // Create flamegraph options
+    let mut opts = Options::default();
+    opts.title = config.title;
+    opts.subtitle = config.subtitle;
+    opts.colors = config.palette;
+    opts.count_name = config.count_name;
+    opts.min_width = config.min_width;
+    opts.flame_chart = matches!(config.analysis_type, AnalysisType::Flamechart);
+
+    // Generate flamegraph
+    let output = std::fs::File::create(output_path)?;
+
+    flamegraph::from_lines(&mut opts, stacks.iter().rev().copied(), output)?;
+
+    // Enhance accessibility
+    enhance_svg_accessibility(output_path)?;
+
+    Ok(())
 }
 
 /// Analyze a profile file and extract function timing data
@@ -141,7 +164,9 @@ pub fn generate_flamegraph_from_file(
 /// - The file contains invalid profile data format
 /// - Duration parsing fails for any line
 #[allow(clippy::cast_precision_loss)]
-pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn std::error::Error>> {
+pub fn analyze_profile(
+    file_path: &PathBuf,
+) -> Result<ProfileAnalysis, Box<dyn Error + Send + Sync + 'static>> {
     let content = std::fs::read_to_string(file_path)?;
     // eprintln!("content=\n{content}");
     let mut function_times: HashMap<String, u128> = HashMap::new();
@@ -153,22 +178,23 @@ pub fn analyze_profile(file_path: &PathBuf) -> Result<ProfileAnalysis, Box<dyn s
             continue;
         }
 
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 2 {
+        let maybe_parts = line.rsplit_once(' ');
+        let Some((stack, time_str)) = maybe_parts else {
             continue;
-        }
+        };
 
-        let stack = parts[0];
-        let time_str = parts[1];
+        // let stack = parts.0;
+        // let time_str = parts.1;
 
         if let Ok(time_us) = time_str.parse::<u128>() {
             total_duration_us += time_us;
 
             // Extract function names from the stack
             let functions: Vec<&str> = stack.split(';').collect();
+
             for func_name in functions {
                 let clean_name = clean_function_name(func_name);
-                eprintln!("clean_name={clean_name}, time_us={time_us}");
+                // eprintln!("clean_name={clean_name}, time_us={time_us}");
                 *function_times.entry(clean_name).or_insert(0) += time_us;
             }
         }
@@ -237,6 +263,7 @@ pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
         println!("{}", insight);
     }
     println!();
+    let _ = std::io::stdout().flush();
 }
 
 /// Find the most recent profile files matching a pattern
@@ -251,7 +278,7 @@ pub fn find_latest_profile_files(
     pattern: &str,
     is_memory: bool,
     count: usize,
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+) -> Result<Vec<PathBuf>, Box<dyn Error + Send + Sync + 'static>> {
     let current_dir = std::env::current_dir()?;
     let mut files = Vec::new();
 
@@ -290,7 +317,7 @@ pub fn find_latest_profile_files(
 /// - Cannot get current working directory
 /// - System command to open browser fails
 /// - Platform is not supported (Windows/macOS/Linux)
-pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let full_path = std::env::current_dir()?.join(file_path);
     let url = format!("file://{}", full_path.display());
 
@@ -321,11 +348,11 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>
 /// Returns an error if:
 /// - Cannot read user input from stdin
 /// - System command to open browser fails
-pub fn show_interactive_prompt(
+pub async fn show_interactive_prompt(
     demo_name: &str,
     profile_type: &ProfileType,
     analysis_type: &AnalysisType,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let profile_type_lower = profile_type.to_string().to_lowercase();
     let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
@@ -337,17 +364,22 @@ pub fn show_interactive_prompt(
         "This will generate a visual {profile_type_lower} {analysis_type_lower} and open it in your browser.");
 
     print!("Enter 'y' for yes, or any other key to skip: ");
-    std::io::stdout().flush()?;
+    let _ = std::io::stdout().flush();
 
     let mut input = String::new();
-    if std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y" {
-        println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
-        println!();
-        if matches!(profile_type, ProfileType::Memory) {
-            generate_and_show_memory_visualization(demo_name, analysis_type)?;
-        } else {
-            generate_and_show_time_visualization(demo_name, analysis_type)?;
-        }
+    let show_graph =
+        std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y";
+
+    // if show_graph {
+    //     println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
+    //     println!();
+    // }
+
+    if matches!(profile_type, ProfileType::Memory) {
+        generate_and_show_memory_visualization(demo_name, analysis_type.clone(), show_graph)
+            .await?;
+    } else {
+        generate_and_show_time_visualization(demo_name, analysis_type, show_graph)?;
     }
 
     Ok(())
@@ -364,9 +396,12 @@ pub fn show_interactive_prompt(
 pub fn generate_and_show_time_visualization(
     demo_name: &str,
     analysis_type: &AnalysisType,
-) -> Result<(), Box<dyn std::error::Error>> {
+    show_graph: bool,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     // Wait a moment for profile files to be written
-    std::thread::sleep(std::time::Duration::from_millis(500));
+    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+
+    // std::thread::sleep(std::time::Duration::from_millis(500));
 
     let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), false, 1)?;
 
@@ -380,33 +415,42 @@ pub fn generate_and_show_time_visualization(
     let analysis = analyze_profile(&files[0])?;
     display_profile_analysis(&analysis);
 
+    if show_graph {
+        generate_and_show_time_flamegraph(demo_name, analysis_type, analysis_type_lower, files)?;
+    }
+
+    Ok(())
+}
+
+#[timing]
+fn generate_and_show_time_flamegraph(
+    demo_name: &str,
+    analysis_type: &AnalysisType,
+    analysis_type_lower: String,
+    files: Vec<PathBuf>,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    println!("🔥 Generating interactive time {analysis_type_lower}...");
+    println!();
     let config = VisualizationConfig {
-        title: format!(
-            "{} Demo - Performance {}",
-            demo_name.to_title_case(),
-            analysis_type.to_string()
-        ),
-        subtitle: Some(format!(
-            "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
-            Local::now().format("%Y-%m-%d %H:%M:%S")
-        )),
-        analysis_type: analysis_type.clone(),
-        ..Default::default()
-    };
+    title: format!(
+        "{} Demo - Performance {analysis_type}",
+        demo_name.to_title_case(),
 
-    let output_path = format!(
-        "{}_{}.svg",
-        demo_name,
-        analysis_type.to_string().to_lowercase()
-    );
-
+    ),
+    subtitle: Some(format!(
+        "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
+        Local::now().format("%Y-%m-%d %H:%M:%S")
+    )),
+    // analysis_type: analysis_type.clone(),
+    ..Default::default()
+        };
+    let output_path = format!("{demo_name}_{analysis_type_lower}.svg");
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
-
-    println!("✅ {} generated: {output_path}", analysis_type.to_string());
+    println!("✅ {analysis_type} generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️  Could not open browser automatically: {}", e);
-        println!("💡 You can manually open: {}", output_path);
+        println!("⚠️  Could not open browser automatically: {e}");
+        println!("💡 You can manually open: {output_path}");
     } else {
         println!("🌐 Flamechart opened in your default browser!");
         println!("🔍 Hover over and click on the bars to explore the performance visualization");
@@ -424,12 +468,15 @@ pub fn generate_and_show_time_visualization(
 /// - Memory profile files cannot be found or read
 /// - Flamegraph generation fails
 /// - Browser cannot be opened to display results
-pub fn generate_and_show_memory_visualization(
+pub async fn generate_and_show_memory_visualization(
     demo_name: &str,
-    analysis_type: &AnalysisType,
-) -> Result<(), Box<dyn std::error::Error>> {
+    analysis_type: AnalysisType,
+    show_graph: bool,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let analysis_type_lower = analysis_type.clone().to_string().to_lowercase();
+
     // Wait a moment for profile files to be written
-    std::thread::sleep(std::time::Duration::from_millis(500));
+    // std::thread::sleep(std::time::Duration::from_millis(500));
 
     let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), true, 1)?;
 
@@ -441,13 +488,50 @@ pub fn generate_and_show_memory_visualization(
 
     // Show memory profile analysis first
     let analysis = analyze_profile(&files[0])?;
-    display_memory_analysis(&analysis);
+    let demo_name = demo_name.to_string();
 
+    if show_graph {
+        let bg_task = smol::unblock(move || {
+            generate_and_show_memory_flamegraph(
+                demo_name,
+                analysis_type,
+                // analysis_type_lower,
+                files,
+            )
+        });
+
+        println!(); // newline after the carriage-return updates
+        println!("\nWaiting for background result...");
+        let _ = std::io::stdout().flush();
+
+        display_memory_analysis(&analysis);
+        // Move to a clean line, flush final display before we join.
+
+        // Join: await the background result. Use `?` to bubble up any error.
+        bg_task.await?;
+    } else {
+        display_memory_analysis(&analysis);
+    }
+
+    Ok(())
+}
+
+#[timing]
+fn generate_and_show_memory_flamegraph(
+    demo_name: String,
+    analysis_type: AnalysisType,
+    // analysis_type_lower: String,
+    files: Vec<PathBuf>,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+
+    println!("🔥 Generating interactive memory {analysis_type_lower}...");
+    println!();
     let config = VisualizationConfig {
         title: format!(
-            "{} Demo - Memory Allocation {}",
+            "{} Demo - Memory Allocation {analysis_type}",
             demo_name.to_title_case(),
-            analysis_type.to_string()
+
         ),
         subtitle: Some(format!(
             "Generated: {} | Hover over and click on the bars to explore memory allocations, or use Search ↗️",
@@ -457,14 +541,8 @@ pub fn generate_and_show_memory_visualization(
         count_name: "bytes".to_string(),
         ..Default::default()
     };
-
-    let output_path = format!(
-        "{demo_name}_memory_{}.svg",
-        analysis_type.to_string().to_lowercase()
-    );
-
+    let output_path = format!("{demo_name}_memory_{analysis_type_lower}.svg");
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
-
     println!("✅ Memory {analysis_type} generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
@@ -521,6 +599,7 @@ pub fn display_memory_analysis(analysis: &ProfileAnalysis) {
         println!("{}", insight);
     }
     println!();
+    let _ = std::io::stdout().flush();
 }
 
 /// Clean function names for better display
@@ -566,9 +645,13 @@ fn clean_function_name(name: &str) -> String {
         s if s.contains("cpu_intensive") => "cpu_intensive_work".to_string(),
         s if s.contains("simulated_io") => "simulated_io_work".to_string(),
         s if s.contains("nested_function") => "nested_function_calls".to_string(),
-        // Memory profiling patterns
+        // Memory profiling patterns - be more specific to avoid collisions
         s if s.contains("allocate_vectors") => "allocate_vectors".to_string(),
-        s if s.contains("process_strings") => "process_strings_detail".to_string(),
+        s if s.contains("process_strings_detail_profile") => {
+            "process_strings_detail_profile".to_string()
+        }
+        s if s.contains("process_strings_detail") => "process_strings_detail".to_string(),
+        s if s.contains("process_strings") => "process_strings".to_string(),
         s if s.contains("memory_intensive") => "memory_intensive_computation".to_string(),
         s if s.contains("nested_allocations") => "nested_allocations".to_string(),
         s => s.to_string(),
@@ -638,7 +721,7 @@ fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> V
 
     if has_hash_map {
         insights.push(
-            "🗺️  Tip: HashMap usage detected - consider pre-sizing for known data sizes!"
+            "🗺️ Tip: HashMap usage detected - consider pre-sizing for known data sizes!"
                 .to_string(),
         );
     }
@@ -647,7 +730,7 @@ fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> V
     let total_ms = total_duration_us as f64 / 1000.0;
     if total_ms > 1000.0 {
         insights.push(
-            "⏱️  Consider profiling with release mode for production performance analysis!"
+            "⏱️ Consider profiling with release mode for production performance analysis!"
                 .to_string(),
         );
     }

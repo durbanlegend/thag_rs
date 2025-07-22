@@ -11,10 +11,9 @@
 - [ ]  ?Use curl to download a compiled binary of a profiling demo.
 - [ ]  Thag tool for invoking thag as a library and running a remote source file.
 - [ ]  "Playground" naming. Multifaceted playground.
-- [ ]  DONE `Build failed - thag dependency issue detected` message not always correct.
-- [ ]  DONE Look for ways to remove Profile setup and drop times from time profiling.
-- [ ]  Make a proc macro if possible to display visualisations - see demo/document_pipeline_profile_minimal.rs.
 
+In the attached profiled snippet which is run as `thag demo/factorial_ibig_product_instr.rs`, lines 105-119 represent the most concise invocation yet of thag_profiler's new demo visualisation system, which in case you recall it I've now generalised a bit to allow it to be invoked from any profiled script, not just the thag_demo system.
+What I'm looking for now is a macro or proc
 To find snippets with many functions:
 grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done
 

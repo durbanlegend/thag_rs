@@ -138,7 +138,10 @@ pub use profiling::extract_path;
 
 /// Demo utilities.
 #[cfg(feature = "demo")]
-pub use {thag_proc_macros::timing, visualization::AnalysisType};
+pub use {
+    thag_proc_macros::timing,
+    visualization::{prompted_analysis, AnalysisType},
+};
 
 // ============================================================================
 // Internal Utilities (hidden from public API docs unless internal_docs feature is enabled)

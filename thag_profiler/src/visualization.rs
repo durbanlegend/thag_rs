@@ -363,6 +363,32 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn Error + Send + Syn
     Ok(())
 }
 
+/// Run prompted analysis for profiling visualization
+///
+/// This function provides an interactive prompt to the user asking if they want to
+/// generate and view a profiling visualization. It handles the async execution
+/// of the interactive prompt and error handling.
+///
+/// # Arguments
+/// * `demo_name` - Name of the demo being profiled
+/// * `profile_type` - Type of profiling (Time or Memory)
+/// * `analysis_type` - Type of analysis visualization to generate
+pub fn prompted_analysis(
+    demo_name: &str,
+    profile_type: &ProfileType,
+    analysis_type: &AnalysisType,
+) {
+    let run_analysis = async || {
+        // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+        // because profile output is only available after that function completes.
+        if let Err(e) = show_interactive_prompt(demo_name, profile_type, analysis_type).await {
+            eprintln!("⚠️ Could not show interactive memory visualization: {e}");
+        }
+    };
+
+    smol::block_on(run_analysis());
+}
+
 /// Show interactive visualization prompt
 ///
 /// # Errors

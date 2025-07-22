@@ -13,7 +13,7 @@ use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Product};
 use std::ops::{Deref, DerefMut};
-use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
+use thag_profiler::{enable_profiling, prompted_analysis, profiled, timing, visualization, AnalysisType, ProfileType};
 
 // Step 1: Define the Wrapper Type
 #[derive(Debug, Clone)]
@@ -102,18 +102,7 @@ let n: usize = args[1].parse().expect("Please provide a valid number");
 
 demo(n);
 
-let run_analysis = async || {
-    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // because profile output is only available after that function completes.
-    if let Err(e) = visualization::show_interactive_prompt(
-        "factorial_ibig_product_instr",
-        &ProfileType::Time,
-        &AnalysisType::Flamechart,
-    )
-    .await
-    {
-        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
-    }
-};
+let file_stem =file!().strip_suffix(".rs").expect("Error retrieving file name stem");
+prompted_analysis(file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
 
-smol::block_on(run_analysis());
+prompted_analysis(file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);

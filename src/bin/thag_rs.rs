@@ -23,12 +23,27 @@ use thag_rs::{execute, get_args, ThagResult};
 // use thag_rs::ThagResult;
 
 #[enable_profiling(no)]
-pub fn main() -> Result<(), Box<dyn Error>> {
+pub fn main() {
     #[cfg(feature = "build")]
     {
+        let cli = RefCell::new(get_args()); // Wrap args in a RefCell
+        let result = handle(&cli);
+
+        if result.is_err() {
+            std::process::exit(1);
+        }
+    }
+
+    // #[cfg(not(feature = "build"))]
+    // {
+    //     Ok(())
+    // }
+}
+
+#[cfg(feature = "build")]
+fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
         #[cfg(debug_assertions)]
         let start = Instant::now();
-        let cli = RefCell::new(get_args()); // Wrap args in a RefCell
 
         set_verbosity(&cli.borrow())?;
 
@@ -38,22 +53,6 @@ pub fn main() -> Result<(), Box<dyn Error>> {
 
         handle(&cli)?;
         Ok(())
-    }
-
-    #[cfg(not(feature = "build"))]
-    {
-        Ok(())
-    }
-}
-
-#[cfg(feature = "build")]
-fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
-    // Use borrow_mut to get a mutable reference
-    // let result = execute(&mut cli.borrow_mut());
-    // match result {
-    //     Ok(()) => (),
-    //     Err(e) => println!("{e}"),
-    // }
 
     execute(&mut cli.borrow_mut())
 }

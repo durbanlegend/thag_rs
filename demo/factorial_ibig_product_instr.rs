@@ -13,7 +13,7 @@ use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Product};
 use std::ops::{Deref, DerefMut};
-use thag_profiler::{enable_profiling, prompted_analysis, profiled, timing, visualization, AnalysisType, ProfileType};
+use thag_profiler::{file_stem_from_path_str,enable_profiling, prompted_analysis, profiled, timing, visualization, AnalysisType, ProfileType};
 
 // Step 1: Define the Wrapper Type
 #[derive(Debug, Clone)]
@@ -102,7 +102,7 @@ let n: usize = args[1].parse().expect("Please provide a valid number");
 
 demo(n);
 
-let file_stem =file!().strip_suffix(".rs").expect("Error retrieving file name stem");
-prompted_analysis(file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
+let file_stem = file_stem_from_path_str(&file!());
+prompted_analysis(&file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
 
-prompted_analysis(file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);
+prompted_analysis(&file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);

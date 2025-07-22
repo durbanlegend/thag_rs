@@ -20,7 +20,10 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::Instant;
-use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
+use thag_profiler::{
+    enable_profiling, file_stem_from_path_str, profiled, prompted_analysis, timing, AnalysisType,
+    ProfileType,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct DataPoint {
@@ -274,16 +277,6 @@ fn demo() {
     stress_test_allocations();
 }
 
-async fn run_analysis(
-    profile_type: ProfileType,
-    analysis_type: AnalysisType,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // because profile output is only available after that function completes.
-    visualization::show_interactive_prompt("thag_demo_benchmark", &profile_type, &analysis_type)
-        .await
-}
-
 fn main() {
     println!("🏆 Comprehensive Benchmark Demo");
     println!("{}", "═".repeat(31));
@@ -311,12 +304,7 @@ fn main() {
     println!("   • Different profiling annotation types");
     println!("🎯 Look for hotspots and optimization opportunities!");
 
-    // Run analysis concurrently - shows results immediately while generating visualizations
-    if let Err(e) = smol::block_on(run_analysis(ProfileType::Time, AnalysisType::Flamechart)) {
-        eprintln!("⚠️ Could not show time visualization: {e}");
-    }
-
-    if let Err(e) = smol::block_on(run_analysis(ProfileType::Memory, AnalysisType::Flamegraph)) {
-        eprintln!("⚠️ Could not show memory visualization: {e}");
-    }
+    let file_stem = file_stem_from_path_str(&file!());
+    prompted_analysis(&file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
+    prompted_analysis(&file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);
 }

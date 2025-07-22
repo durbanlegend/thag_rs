@@ -18,7 +18,10 @@ use std::iter::successors;
 use std::thread;
 use std::time::Duration;
 use thag_demo_proc_macros::cached;
-use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
+use thag_profiler::{
+    enable_profiling, file_stem_from_path_str, profiled, prompted_analysis, timing, AnalysisType,
+    ProfileType,
+};
 
 const FIB_N: usize = 45;
 const HUNDREDFOLD: usize = FIB_N * 100;
@@ -166,22 +169,6 @@ fn demo() {
 
     // Separate function to help in drilling down
     alt_fibonacci_iter();
-
-    //     pause_awhile();
-}
-
-async fn run_analysis() {
-    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // because profile output is only available after that function completes.
-    if let Err(e) = visualization::show_interactive_prompt(
-        "thag_demo_basic_profiling",
-        &ProfileType::Time,
-        &AnalysisType::Flamechart,
-    )
-    .await
-    {
-        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
-    }
 }
 
 fn main() {
@@ -195,7 +182,8 @@ fn main() {
 
     let _ = child.join().unwrap();
 
-    smol::block_on(run_analysis());
+    let file_stem = file_stem_from_path_str(&file!());
+    prompted_analysis(&file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
 
     println!("✅ Demo completed!");
     println!("📊 Check the generated flamechart files for visual analysis.");

@@ -165,6 +165,7 @@ pub fn generate_flamegraph_from_file(
 /// - Duration parsing fails for any line
 #[allow(clippy::cast_precision_loss)]
 pub fn analyze_profile(
+    profile_type: &ProfileType,
     file_path: &PathBuf,
 ) -> Result<ProfileAnalysis, Box<dyn Error + Send + Sync + 'static>> {
     let content = std::fs::read_to_string(file_path)?;
@@ -181,18 +182,19 @@ pub fn analyze_profile(
         // Handle spaces in function names by splitting on last whitespace only
         if let Some(last_space_pos) = line.rfind(' ') {
             let stack = &line[..last_space_pos];
-            let time_str = &line[last_space_pos + 1..];
+            let value_str = &line[last_space_pos + 1..];
 
-            if let Ok(time_us) = time_str.parse::<u128>() {
-                metric_total += time_us;
+            if let Ok(value) = value_str.parse::<u128>() {
+                metric_total += value;
 
                 // Extract function names from the stack
                 let functions: Vec<&str> = stack.split(';').collect();
 
-                for func_name in functions {
+                // Skip root function
+                for &func_name in &functions[1..] {
                     let clean_name = clean_function_name(func_name);
-                    // eprintln!("clean_name={clean_name}, time_us={time_us}");
-                    *function_value_map.entry(clean_name).or_insert(0) += time_us;
+                    // eprintln!("clean_name={clean_name}, value={value}");
+                    *function_value_map.entry(clean_name).or_insert(0) += value;
                 }
             }
         }
@@ -204,13 +206,13 @@ pub fn analyze_profile(
     let top_functions: Vec<_> = function_value_pairs
         .iter()
         .take(10)
-        .map(|(name, time)| {
-            let percentage = (*time as f64 / metric_total as f64) * 100.0;
-            (name.clone(), *time, percentage)
+        .map(|(name, value)| {
+            let percentage = (*value as f64 / metric_total as f64) * 100.0;
+            (name.clone(), *value, percentage)
         })
         .collect();
 
-    let insights = generate_insights(&function_value_pairs, metric_total);
+    let insights = generate_insights(profile_type, &function_value_pairs, metric_total);
 
     Ok(ProfileAnalysis {
         metric_total,
@@ -227,36 +229,37 @@ pub fn analyze_profile(
 /// Will panic if profile type isn't one of Time or Memory
 #[allow(clippy::cast_precision_loss)]
 pub fn display_analysis(profile_type: &ProfileType, analysis: &ProfileAnalysis) {
-    let (title1, title2, title3, metric_desc, units) = match profile_type {
+    let (title1, title2, title3, metric_desc, thousands) = match profile_type {
         ProfileType::Memory => (
             "Memory Allocation",
             "Memory Allocation",
             "Memory Allocated",
-            "memory allocations",
-            "bytes",
+            "Memory Allocations",
+            "kB",
         ),
         ProfileType::Time => (
             "Execution Timeline",
             "Execution Time",
             "Duration",
-            "execution times",
-            "μs",
+            "Execution Times",
+            "ms",
         ),
         &ProfileType::Both | &ProfileType::None => {
             panic!("Profile type must be Time or Memory")
         }
     };
 
+    println!();
     println!("📊 {metric_desc} Analysis Results");
-    println!("═══════════════════════════");
+    println!("{}", "═".repeat(20 + metric_desc.len()));
     println!(
-        "Total Duration: {:.3}ms",
+        "Total {title3}: {:.3}{thousands}",
         analysis.metric_total as f64 / 1000.0
     );
     println!();
 
     println!("🏆 Top Functions by {title2}:");
-    println!("────────────────────────────────────");
+    println!("{}", "─".repeat(21 + title2.len()));
 
     for (i, (name, metric_value, percentage)) in analysis.top_functions.iter().enumerate() {
         let value = *metric_value as f64 / 1000.0;
@@ -269,7 +272,7 @@ pub fn display_analysis(profile_type: &ProfileType, analysis: &ProfileAnalysis) 
         };
 
         println!(
-            "{} {}. {} - {:.0}ms ({:.1}%)",
+            "{} {}. {} - {:.0}{thousands} ({:.1}%)",
             icon,
             i + 1,
             name,
@@ -327,7 +330,14 @@ pub fn find_latest_profile_files(
         time_b.cmp(&time_a)
     });
 
-    files.truncate(count);
+    if files.is_empty() {
+        println!(
+            "⚠️  No {} profile .folded files found for {pattern}",
+            if is_memory { "memory" } else { "time" }
+        );
+    } else {
+        files.truncate(count);
+    }
     Ok(files)
 }
 
@@ -450,13 +460,12 @@ pub async fn generate_and_show_visualization(
     let files = find_latest_profile_files(demo_name, is_memory, 1)?;
 
     if files.is_empty() {
-        println!("⚠️  No {profile_type} profile files found");
         println!("💡 Make sure the demo completed successfully and generated profile files.");
         return Ok(());
     }
 
     // Show analysis first
-    let analysis = analyze_profile(&files[0])?;
+    let analysis = analyze_profile(profile_type, &files[0])?;
     let demo_name = demo_name.to_string();
 
     if show_graph {
@@ -515,7 +524,13 @@ fn generate_and_show_flamegraph(
             "Generated: {} | Hover over and click on the bars to explore, or use Search ↗️",
             Local::now().format("%Y-%m-%d %H:%M:%S")
         )),
-        palette: Basic(Mem),
+        palette: match &profile_type {
+            ProfileType::Time => Palette::Multi(MultiPalette::Rust),
+            ProfileType::Memory => Basic(Mem),
+            &ProfileType::Both | &ProfileType::None => {
+                panic!("Profile type must be Time or Memory")
+            }
+        },
         count_name: match &profile_type {
             ProfileType::Memory => "bytes".to_string(),
             ProfileType::Time => "μs".to_string(),
@@ -603,29 +618,43 @@ fn clean_function_name(name: &str) -> String {
 
 /// Generate insights from function timing data
 #[allow(clippy::cast_precision_loss)]
-fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> Vec<String> {
+fn generate_insights(
+    profile_type: &ProfileType,
+    functions: &[(String, u128)],
+    metric_total: u128,
+) -> Vec<String> {
+    let (greatest_desc, least_desc, better_desc, units, thousands, threshold) = match &profile_type
+    {
+        ProfileType::Memory => ("Largest", "Smallest", "leaner", "bytes", "kB", 1.0),
+        ProfileType::Time => ("Slowest", "Fastest", "faster", "μs", "ms", 1000.0),
+        &ProfileType::Both | &ProfileType::None => {
+            panic!("Profile type must be Time or Memory")
+        }
+    };
     let mut insights = Vec::new();
 
     if functions.len() >= 2 {
-        let slowest = &functions[0];
-        let fastest = &functions[functions.len() - 1];
+        let biggest = &functions[0];
+        let smallest = &functions[functions.len() - 1];
 
-        if fastest.1 > 0 {
-            let speedup = slowest.1 as f64 / fastest.1 as f64;
+        if smallest.1 > 0 {
+            let ratio = biggest.1 as f64 / smallest.1 as f64;
             insights.push(format!(
-                "🐌 Slowest: {} ({:.3}ms)",
-                slowest.0,
-                slowest.1 as f64 / 1000.0
+                "🐌 {greatest_desc}: {} ({:.3}{thousands})",
+                biggest.0,
+                biggest.1 as f64 / 1000.0
             ));
             insights.push(format!(
-                "🚀 Fastest: {} ({:.3}ms)",
-                fastest.0,
-                fastest.1 as f64 / 1000.0
+                "🚀 {least_desc}: {} ({:.3}{thousands})",
+                smallest.0,
+                smallest.1 as f64 / 1000.0
             ));
-            insights.push(format!("⚡ Performance difference: {:.1}x", speedup));
+            insights.push(format!("⚡ Performance difference: {:.1}x", ratio));
 
-            if speedup > 1000.0 {
-                insights.push("🎯 Consider using the faster algorithms in production!".to_string());
+            if ratio > threshold {
+                insights.push(format!(
+                    "🎯 Consider using the {better_desc} algorithm(s) in production, if applicable"
+                ));
             }
         }
     }
@@ -641,39 +670,38 @@ fn generate_insights(functions: &[(String, u128)], total_duration_us: u128) -> V
         .any(|(name, _)| name.contains("HashMap") || name.contains("map"));
 
     if has_recursive && has_cached {
-        insights.push("🔧 Tip: Caching can dramatically improve recursive algorithms!".to_string());
+        insights.push("🔧 Tip: Caching can dramatically improve recursive algorithms".to_string());
     }
 
     if has_iter {
         insights.push(
-            "🔄 Tip: Iterative approaches often outperform recursion for large inputs!".to_string(),
+            "🔄 Tip: Iterative approaches often outperform recursion for large inputs".to_string(),
         );
     }
 
     // Memory-specific insights
     if has_vectors {
         insights.push(
-            "📋 Tip: Vector allocations detected - consider pre-allocating with capacity!"
+            "📋 Tip: Vector allocations detected - consider pre-allocating with capacity"
                 .to_string(),
         );
     }
 
     if has_strings {
-        insights.push("📝 Tip: String operations found - consider using String::with_capacity() for better performance!".to_string());
+        insights.push("📝 Tip: String operations found - consider using String::with_capacity() for better performance".to_string());
     }
 
     if has_hash_map {
         insights.push(
-            "🗺️ Tip: HashMap usage detected - consider pre-sizing for known data sizes!"
-                .to_string(),
+            "🗺️ Tip: HashMap usage detected - consider pre-sizing for known data sizes".to_string(),
         );
     }
 
     // General performance advice based on total duration
-    let total_ms = total_duration_us as f64 / 1000.0;
-    if total_ms > 1000.0 {
+    let total_thousands = metric_total as f64 / 1000.0;
+    if total_thousands > 1000.0 {
         insights.push(
-            "⏱️ Consider profiling with release mode for production performance analysis!"
+            "⏱️ Consider profiling with release mode for production performance analysis"
                 .to_string(),
         );
     }

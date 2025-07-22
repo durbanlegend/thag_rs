@@ -13,7 +13,10 @@ strip = false
 //# Categories: profiling, demo, memory
 use std::collections::HashMap;
 // use std::error::Error;
-use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
+use thag_profiler::{
+    enable_profiling, file_stem_from_path_str, profiled, prompted_analysis, timing, AnalysisType,
+    ProfileType,
+};
 
 #[timing]
 #[profiled(mem_summary)]
@@ -84,29 +87,16 @@ fn nested_allocations() {
     // All data structures will be deallocated when this function ends
 }
 
-async fn run_analysis() {
-    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
-    // because profile output is only available after that function completes.
-    if let Err(e) = visualization::show_interactive_prompt(
-        "thag_demo_memory_profiling",
-        &ProfileType::Memory,
-        &AnalysisType::Flamegraph,
-    )
-    .await
-    {
-        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
-    }
-}
-
 fn main() {
     println!("🧠 Memory Profiling Demo");
-    println!("{}", "═".repeat(23));
+    println!("{}", "═".repeat(24));
     println!();
 
     println!("Running memory-intensive operations with profiling...");
     nested_allocations();
 
-    smol::block_on(run_analysis());
+    let file_stem = file_stem_from_path_str(&file!());
+    prompted_analysis(&file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);
 
     println!();
     println!("✅ Demo completed!");

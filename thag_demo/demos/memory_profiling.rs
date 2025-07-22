@@ -88,7 +88,7 @@ async fn run_analysis() {
     // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
     // because profile output is only available after that function completes.
     if let Err(e) = visualization::show_interactive_prompt(
-        "memory_profiling",
+        "thag_demo_memory_profiling",
         &ProfileType::Memory,
         &AnalysisType::Flamegraph,
     )

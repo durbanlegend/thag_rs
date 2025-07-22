@@ -368,17 +368,13 @@ pub async fn show_interactive_prompt(
     let show_graph =
         std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y";
 
-    // if show_graph {
-    //     println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
-    //     println!();
+    // if matches!(profile_type, ProfileType::Memory) {
+    //     generate_and_show_memory_visualization(demo_name, analysis_type.clone(), show_graph)
+    //         .await?;
+    // } else {
+    //     generate_and_show_time_visualization(demo_name, analysis_type, show_graph)?;
     // }
-
-    if matches!(profile_type, ProfileType::Memory) {
-        generate_and_show_memory_visualization(demo_name, analysis_type.clone(), show_graph)
-            .await?;
-    } else {
-        generate_and_show_time_visualization(demo_name, analysis_type, show_graph)?;
-    }
+    generate_and_show_visualization(demo_name, profile_type, analysis_type, show_graph).await?;
 
     Ok(())
 }
@@ -396,12 +392,11 @@ pub fn generate_and_show_time_visualization(
     analysis_type: &AnalysisType,
     show_graph: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    // Wait a moment for profile files to be written
+    let pattern = format!("thag_demo_{}", demo_name);
+
     let analysis_type_lower = &analysis_type.to_string().to_lowercase();
 
-    // std::thread::sleep(std::time::Duration::from_millis(500));
-
-    let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), false, 1)?;
+    let files = find_latest_profile_files(&pattern, false, 1)?;
 
     if files.is_empty() {
         println!("⚠️  No profile files found");
@@ -472,12 +467,11 @@ pub async fn generate_and_show_memory_visualization(
     analysis_type: AnalysisType,
     show_graph: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let pattern = format!("thag_demo_{}", demo_name);
+
     let analysis_type_lower = &analysis_type.to_string().to_lowercase();
 
-    // Wait a moment for profile files to be written
-    // std::thread::sleep(std::time::Duration::from_millis(500));
-
-    let files = find_latest_profile_files(&format!("thag_demo_{}", demo_name), true, 1)?;
+    let files = find_latest_profile_files(&pattern, true, 1)?;
 
     if files.is_empty() {
         println!("⚠️  No memory profile files found");
@@ -495,6 +489,67 @@ pub async fn generate_and_show_memory_visualization(
 
         let bg_task = smol::unblock(move || {
             generate_and_show_memory_flamegraph(demo_name, analysis_type, files)
+        });
+
+        // Show analysis immediately while flamegraph generates in background
+        display_memory_analysis(&analysis);
+
+        println!("\n⏳ Waiting for flamegraph generation to complete...");
+        let _ = std::io::stdout().flush();
+
+        // Await the background task and handle any errors
+        match bg_task.await {
+            Ok(_) => println!("✅ Flamegraph generation completed!"),
+            Err(e) => {
+                eprintln!("⚠️ Flamegraph generation failed: {}", e);
+                println!("💡 Analysis results are still available above.");
+            }
+        }
+    } else {
+        display_memory_analysis(&analysis);
+    }
+
+    Ok(())
+}
+
+/// Generate visualization
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Profile files cannot be found or read
+/// - Flamegraph generation fails
+/// - Browser cannot be opened to display results
+pub async fn generate_and_show_visualization(
+    demo_name: &str,
+    profile_type: &ProfileType,
+    analysis_type: &AnalysisType,
+    show_graph: bool,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let profile_type_lower = profile_type.to_string().to_lowercase();
+    let analysis_type_lower = analysis_type.to_string().to_lowercase();
+
+    let is_memory = &ProfileType::Memory == profile_type;
+    let files = find_latest_profile_files(&demo_name, is_memory, 1)?;
+
+    if files.is_empty() {
+        println!("⚠️  No {profile_type} profile files found");
+        println!("💡 Make sure the demo completed successfully and generated profile files.");
+        return Ok(());
+    }
+
+    // Show analysis first
+    let analysis = analyze_profile(&files[0])?;
+    let demo_name = demo_name.to_string();
+
+    if show_graph {
+        println!("🔥 Generating interactive {analysis_type_lower} in background...");
+        let _ = std::io::stdout().flush();
+
+        let profile_type = profile_type.clone();
+        let analysis_type = analysis_type.clone();
+        let bg_task = smol::unblock(move || {
+            generate_and_show_flamegraph(demo_name, profile_type, analysis_type, files)
         });
 
         // Show analysis immediately while flamegraph generates in background
@@ -557,6 +612,60 @@ fn generate_and_show_memory_flamegraph(
         println!("📊 Function width = memory allocated, height = call stack depth");
     }
 
+    Ok(())
+}
+
+#[timing]
+fn generate_and_show_flamegraph(
+    demo_name: String,
+    profile_type: ProfileType,
+    analysis_type: AnalysisType,
+    files: Vec<PathBuf>,
+) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
+    let profile_type_lower = &profile_type.to_string().to_lowercase();
+    let (title, metric_desc) = match &profile_type {
+        ProfileType::Memory => ("Memory Allocation", "memory allocations"),
+        ProfileType::Time => ("Execution Timeline", "execution times"),
+        &ProfileType::Both | &ProfileType::None => {
+            panic!("Profile type must be Time or Memory")
+        }
+    };
+    println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
+    println!();
+    let config = VisualizationConfig {
+        title: format!("{} {title} {analysis_type}", demo_name.to_title_case(),),
+        subtitle: Some(format!(
+            "Generated: {} | Hover over and click on the bars to explore, or use Search ↗️",
+            Local::now().format("%Y-%m-%d %H:%M:%S")
+        )),
+        palette: Basic(Mem),
+        count_name: match &profile_type {
+            ProfileType::Memory => "bytes".to_string(),
+            ProfileType::Time => "μs".to_string(),
+            &ProfileType::Both | &ProfileType::None => {
+                panic!("Profile type must be Time or Memory")
+            }
+        },
+        analysis_type: analysis_type.clone(),
+        ..Default::default()
+    };
+    let output_path = format!("{demo_name}_{profile_type_lower}_{analysis_type_lower}.svg");
+    eprintln!("\nprofile_type_lower={profile_type_lower}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
+    generate_flamegraph_from_file(&files[0], &output_path, config)?;
+    println!("✅ {profile_type} {analysis_type} generated: {output_path}");
+
+    if let Err(e) = open_in_browser(&output_path) {
+        println!("⚠️ Could not open browser automatically: {e}");
+        println!("💡 You can manually open: {output_path}");
+    } else {
+        println!("🌐 {profile_type} {analysis_type} opened in your default browser!");
+        println!(
+            "🔍 Hover over and click on the bars to explore {}",
+            metric_desc
+        );
+        println!("📊 Function width = {metric_desc}, height = call stack depth");
+    }
     Ok(())
 }
 

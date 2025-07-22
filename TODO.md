@@ -11,14 +11,14 @@
 - [ ]  ?Use curl to download a compiled binary of a profiling demo.
 - [ ]  Thag tool for invoking thag as a library and running a remote source file.
 - [ ]  "Playground" naming. Multifaceted playground.
-- [ ]  `Build failed - thag dependency issue detected` message not always correct.
-- [ ]  DONE Fix recursion detection - TLS not working as usual.
-- [ ]  Look for ways to remove Profile setup and drop times from time profiling.
+- [ ]  DONE `Build failed - thag dependency issue detected` message not always correct.
+- [ ]  DONE Look for ways to remove Profile setup and drop times from time profiling.
+- [ ]  Make a proc macro if possible to display visualisations - see demo/document_pipeline_profile_minimal.rs.
+
+To find snippets with many functions:
+grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done
 
 curl -sL https://raw.githubusercontent.com/durbanlegend/thag_rs/main/thag_demo/install_and_demo.sh | bash
-
-We agreed to ban profiling of recursive functions in profiling.rs attached because it's not feasible. We tried implementing a recursion thread-local ACTIVE_FUNCTIONS, so that when a new function Profile is being created with its `new` method, if it detects the same function in ACTIVE_FUNCTIONS it will terminate the profiling due to detected recursion. Unfortunately async_profiling attached proved that this doesn't work, because it wrongly identified fn simulate_database_query as being recursive. I suspect tokio work stealing for causing a task to change threads.
-So unless you have a better plan, I want the key function extract_profile_callstack to check for a recurrence of the current filename and function name in the callstack. Before we change any code, does that sound workable
 
 thag --loop 'if line.len() > 3 { count += 1; true } else { false }' --begin 'let mut count = 0;' --end 'println!("Total: {}", count);' --toml '[dependencies]
 regex = "1.0"'

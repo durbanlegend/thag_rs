@@ -27,7 +27,7 @@ Why choose `thag_profiling`?:
 
 Instrumentation:
 
-- `#[enable_profiling]` attribute for your main function
+- `#[enable_profiling]` attribute for your lowest-level profiled function, typically `main`
 
 - `#[profiled]` attribute for other functions
 
@@ -315,7 +315,7 @@ cargo run --features thag_profiler/time_profiling
 
   This section applies only to the `thag(_rs)` script runner, aka [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not using `thag(_rs)`.
 
-  Profiled scripts must have a `main` function to be annotated with `#[enable_profiling]`, in other words snippets are not supported.
+  Snippets may be profiled if they have a function to be annotated with `#[enable_profiling]`, since the generated `fn main` will not get annotated. For an example see `demo/factorial_ibig_product_instr.rs`.
 
   When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above, except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only dependency inference and configuration:
 

@@ -280,7 +280,8 @@ async fn run_analysis(
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
     // because profile output is only available after that function completes.
-    visualization::show_interactive_prompt("benchmark", &profile_type, &analysis_type).await
+    visualization::show_interactive_prompt("thag_demo_benchmark", &profile_type, &analysis_type)
+        .await
 }
 
 fn main() {

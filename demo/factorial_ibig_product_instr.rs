@@ -1,10 +1,9 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "demo"] }
 */
 
-/// A version of `demo/factorial_ibig_product.rs` converted to a program and instrumented for profiling using
-/// `tools/profile_instr.rs`.
+/// A version of `demo/factorial_ibig_product.rs` instrumented for profiling.
 ///
 /// Run this version in the normal way, then run `tools/thag_profile.rs` to analyse the profiling data.
 //# Purpose: Demo `thag_rs` execution timeline and memory profiling.
@@ -14,8 +13,7 @@ use ibig::{ubig, UBig};
 use std::env;
 use std::iter::{successors, Product};
 use std::ops::{Deref, DerefMut};
-
-use thag_profiler::*;
+use thag_profiler::{enable_profiling, profiled, timing, visualization, AnalysisType, ProfileType};
 
 // Step 1: Define the Wrapper Type
 #[derive(Debug, Clone)]
@@ -57,6 +55,14 @@ impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
 // Function example using Product
 #[profiled]
 fn fac_product(n: usize) -> UBig {
+    // Create a dummy object just to prove that memory profiling is happening here
+    let _create_something = vec![
+        "Hello".to_string(),
+        "world".to_string(),
+        "testing".to_string(),
+        "testing".to_string(),
+    ];
+
     if n == 0 {
         ubig!(0)
     } else {
@@ -79,17 +85,35 @@ fn fac_successors(n: usize) -> UBig {
 }
 
 #[enable_profiling]
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <n>", args[0]);
-        std::process::exit(1);
-    }
-
-    let n: usize = args[1].parse().expect("Please provide a valid number");
-
+fn demo(n: usize) {
     let fac_prod_n = fac_product(n);
 
     assert_eq!(fac_prod_n, fac_successors(n));
     println!("factorial({n}) = {fac_prod_n}");
 }
+
+let args: Vec<String> = env::args().collect();
+if args.len() != 2 {
+    eprintln!("Usage: {} <n>", args[0]);
+    std::process::exit(1);
+}
+
+let n: usize = args[1].parse().expect("Please provide a valid number");
+
+let run_analysis = async || {
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    if let Err(e) = visualization::show_interactive_prompt(
+        "factorial_ibig_product_instr",
+        &ProfileType::Time,
+        &AnalysisType::Flamechart,
+    )
+    .await
+    {
+        eprintln!("⚠️ Could not show interactive memory visualization: {e}");
+    }
+};
+
+demo(n);
+
+smol::block_on(run_analysis());

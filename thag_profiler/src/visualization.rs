@@ -413,15 +413,12 @@ pub async fn show_interactive_prompt(
     profile_type: ProfileType,
     analysis_type: AnalysisType,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let profile_type_lower = profile_type.to_string().to_lowercase();
     let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
     println!();
+    println!("🎯 Would you like to view an interactive {profile_type} {analysis_type_lower}?");
     println!(
-        "🎯 Would you like to view an interactive {profile_type_lower} {analysis_type_lower}?"
-    );
-    println!(
-        "This will generate a visual {profile_type_lower} {analysis_type_lower} and open it in your browser.");
+        "This will generate a visual {profile_type} {analysis_type_lower} and open it in your browser.");
 
     print!("Enter 'y' for yes, or any other key to skip: ");
     let _ = std::io::stdout().flush();
@@ -430,12 +427,6 @@ pub async fn show_interactive_prompt(
     let show_graph =
         std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y";
 
-    // if matches!(profile_type, ProfileType::Memory) {
-    //     generate_and_show_memory_visualization(demo_name, analysis_type.clone(), show_graph)
-    //         .await?;
-    // } else {
-    //     generate_and_show_time_visualization(demo_name, analysis_type, show_graph)?;
-    // }
     generate_and_show_visualization(demo_name, profile_type, analysis_type, show_graph).await?;
 
     Ok(())
@@ -455,7 +446,7 @@ pub async fn generate_and_show_visualization(
     analysis_type: AnalysisType,
     show_graph: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let profile_type_lower = profile_type.to_string().to_lowercase();
+    let profile_type_title = profile_type.to_string().to_title_case();
     let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
     let is_memory = ProfileType::Memory == profile_type;
@@ -506,8 +497,8 @@ fn generate_and_show_flamegraph(
     analysis_type: AnalysisType,
     files: Vec<PathBuf>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let profile_type_title = profile_type.to_string().to_title_case();
     let analysis_type_lower = &analysis_type.to_string().to_lowercase();
-    let profile_type_lower = &profile_type.to_string().to_lowercase();
     let (title, metric_desc) = match &profile_type {
         ProfileType::Memory => ("Memory Allocation", "memory allocations"),
         ProfileType::Time => ("Execution Timeline", "execution times"),
@@ -516,10 +507,10 @@ fn generate_and_show_flamegraph(
         }
     };
 
-    println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
+    println!("🔥 Generating interactive {profile_type} {analysis_type_lower}...");
     println!();
     let config = VisualizationConfig {
-        title: format!("{} {title} {analysis_type}", demo_name.to_title_case(),),
+        title: format!("{demo_name} {title} {analysis_type}"),
         subtitle: Some(format!(
             "Generated: {} | Hover over and click on the bars to explore, or use Search ↗️",
             Local::now().format("%Y-%m-%d %H:%M:%S")
@@ -541,16 +532,16 @@ fn generate_and_show_flamegraph(
         analysis_type,
         ..Default::default()
     };
-    let output_path = format!("{demo_name}_{profile_type_lower}_{analysis_type_lower}.svg");
-    eprintln!("\nprofile_type_lower={profile_type_lower}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
+    let output_path = format!("{demo_name}_{profile_type}_{analysis_type_lower}.svg");
+    eprintln!("\nprofile_type={profile_type}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
-    println!("✅ {profile_type} {analysis_type} generated: {output_path}");
+    println!("✅ {profile_type_title} {analysis_type} generated: {output_path}");
 
     if let Err(e) = open_in_browser(&output_path) {
         println!("⚠️ Could not open browser automatically: {e}");
         println!("💡 You can manually open: {output_path}");
     } else {
-        println!("🌐 {profile_type} {analysis_type} opened in your default browser!");
+        println!("🌐 {profile_type_title} {analysis_type} opened in your default browser!");
         println!(
             "🔍 Hover over and click on the bars to explore {}",
             metric_desc

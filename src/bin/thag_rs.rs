@@ -42,17 +42,16 @@ pub fn main() {
 
 #[cfg(feature = "build")]
 fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
-        #[cfg(debug_assertions)]
-        let start = Instant::now();
+    #[cfg(debug_assertions)]
+    let start = Instant::now();
 
-        set_verbosity(&cli.borrow())?;
+    set_verbosity(&cli.borrow())?;
 
-        configure_log();
-        #[cfg(debug_assertions)]
-        debug_timings(&start, "Configured logging");
+    configure_log();
+    #[cfg(debug_assertions)]
+    debug_timings(&start, "Configured logging");
 
-        handle(&cli)?;
-        Ok(())
+    handle(&cli)?;
 
     execute(&mut cli.borrow_mut())
 }

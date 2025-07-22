@@ -19,7 +19,7 @@ use std::path::PathBuf;
 use std::string::ToString;
 use strum::Display;
 
-#[derive(Debug, Default, Clone, Display, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, Display, PartialEq, Eq)]
 /// Type of analysis visualization to generate
 pub enum AnalysisType {
     /// Differential analysis comparing two profiles
@@ -67,11 +67,11 @@ impl Default for VisualizationConfig {
 /// Profile analysis results
 #[derive(Debug, Clone)]
 pub struct ProfileAnalysis {
-    /// Total duration of the profiling session in microseconds
-    pub total_duration_us: u128,
-    /// Function names paired with their execution times in microseconds
-    pub function_times: Vec<(String, u128)>,
-    /// Top functions with name, execution time in microseconds, and percentage of total time
+    /// Total duration of the profiling session in microseconds, or total of allocations in bytes
+    pub metric_total: u128,
+    /// Function names paired with their metric values (execution times in microseconds or allocation values in bytes)
+    pub function_value_pairs: Vec<(String, u128)>,
+    /// Top functions with name, metric value, and percentage of metric total value
     pub top_functions: Vec<(String, u128, f64)>,
     /// Generated insights and observations about the profiling data
     pub insights: Vec<String>,
@@ -169,8 +169,8 @@ pub fn analyze_profile(
 ) -> Result<ProfileAnalysis, Box<dyn Error + Send + Sync + 'static>> {
     let content = std::fs::read_to_string(file_path)?;
     // eprintln!("content=\n{content}");
-    let mut function_times: HashMap<String, u128> = HashMap::new();
-    let mut total_duration_us = 0u128;
+    let mut function_value_map: HashMap<String, u128> = HashMap::new();
+    let mut metric_total = 0u128;
 
     // Parse folded stack format
     for line in content.lines() {
@@ -184,7 +184,7 @@ pub fn analyze_profile(
             let time_str = &line[last_space_pos + 1..];
 
             if let Ok(time_us) = time_str.parse::<u128>() {
-                total_duration_us += time_us;
+                metric_total += time_us;
 
                 // Extract function names from the stack
                 let functions: Vec<&str> = stack.split(';').collect();
@@ -192,50 +192,74 @@ pub fn analyze_profile(
                 for func_name in functions {
                     let clean_name = clean_function_name(func_name);
                     // eprintln!("clean_name={clean_name}, time_us={time_us}");
-                    *function_times.entry(clean_name).or_insert(0) += time_us;
+                    *function_value_map.entry(clean_name).or_insert(0) += time_us;
                 }
             }
         }
     }
 
-    let mut functions: Vec<_> = function_times.into_iter().collect();
-    functions.sort_by(|a, b| b.1.cmp(&a.1));
+    let mut function_value_pairs: Vec<_> = function_value_map.into_iter().collect();
+    function_value_pairs.sort_by(|a, b| b.1.cmp(&a.1));
 
-    let top_functions: Vec<_> = functions
+    let top_functions: Vec<_> = function_value_pairs
         .iter()
         .take(10)
         .map(|(name, time)| {
-            let percentage = (*time as f64 / total_duration_us as f64) * 100.0;
+            let percentage = (*time as f64 / metric_total as f64) * 100.0;
             (name.clone(), *time, percentage)
         })
         .collect();
 
-    let insights = generate_insights(&functions, total_duration_us);
+    let insights = generate_insights(&function_value_pairs, metric_total);
 
     Ok(ProfileAnalysis {
-        total_duration_us,
-        function_times: functions,
+        metric_total,
+        function_value_pairs,
         top_functions,
         insights,
     })
 }
 
 /// Display profile analysis results
+///
+/// # Panics
+///
+/// Will panic if profile type isn't one of Time or Memory
 #[allow(clippy::cast_precision_loss)]
-pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
-    println!("📊 Profile Analysis Results");
+pub fn display_analysis(profile_type: &ProfileType, analysis: &ProfileAnalysis) {
+    let (title1, title2, title3, metric_desc, units) = match profile_type {
+        ProfileType::Memory => (
+            "Memory Allocation",
+            "Memory Allocation",
+            "Memory Allocated",
+            "memory allocations",
+            "bytes",
+        ),
+        ProfileType::Time => (
+            "Execution Timeline",
+            "Execution Time",
+            "Duration",
+            "execution times",
+            "μs",
+        ),
+        &ProfileType::Both | &ProfileType::None => {
+            panic!("Profile type must be Time or Memory")
+        }
+    };
+
+    println!("📊 {metric_desc} Analysis Results");
     println!("═══════════════════════════");
     println!(
         "Total Duration: {:.3}ms",
-        analysis.total_duration_us as f64 / 1000.0
+        analysis.metric_total as f64 / 1000.0
     );
     println!();
 
-    println!("🏆 Top Functions by Execution Time:");
+    println!("🏆 Top Functions by {title2}:");
     println!("────────────────────────────────────");
 
-    for (i, (name, time_us, percentage)) in analysis.top_functions.iter().enumerate() {
-        let time_ms = *time_us as f64 / 1000.0;
+    for (i, (name, metric_value, percentage)) in analysis.top_functions.iter().enumerate() {
+        let value = *metric_value as f64 / 1000.0;
 
         let icon = match i {
             0 => "🥇",
@@ -249,7 +273,7 @@ pub fn display_profile_analysis(analysis: &ProfileAnalysis) {
             icon,
             i + 1,
             name,
-            time_ms,
+            value,
             percentage
         );
     }
@@ -379,139 +403,6 @@ pub async fn show_interactive_prompt(
     Ok(())
 }
 
-/// Generate and show a time visualization for a demo
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - Profile files cannot be found or read
-/// - Flamegraph generation fails
-/// - Browser cannot be opened to display results
-pub fn generate_and_show_time_visualization(
-    demo_name: &str,
-    analysis_type: &AnalysisType,
-    show_graph: bool,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let pattern = format!("thag_demo_{}", demo_name);
-
-    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
-
-    let files = find_latest_profile_files(&pattern, false, 1)?;
-
-    if files.is_empty() {
-        println!("⚠️  No profile files found");
-        println!("💡 Make sure the demo completed successfully and generated profile files.");
-        return Ok(());
-    }
-
-    // Show profile analysis first
-    let analysis = analyze_profile(&files[0])?;
-    display_profile_analysis(&analysis);
-
-    if show_graph {
-        generate_and_show_time_flamegraph(demo_name, analysis_type, files)?;
-    }
-
-    Ok(())
-}
-
-#[timing]
-fn generate_and_show_time_flamegraph(
-    demo_name: &str,
-    analysis_type: &AnalysisType,
-    files: Vec<PathBuf>,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
-
-    println!("🔥 Generating interactive time {analysis_type_lower}...");
-    println!();
-    let config = VisualizationConfig {
-    title: format!(
-        "{} Demo - Performance {analysis_type}",
-        demo_name.to_title_case(),
-
-    ),
-    subtitle: Some(format!(
-        "Generated: {} | Hover over and click on the bars to explore the function call hierarchy, or use Search ↗️",
-        Local::now().format("%Y-%m-%d %H:%M:%S")
-    )),
-    analysis_type: analysis_type.clone(),
-    ..Default::default()
-        };
-    let output_path = format!("{demo_name}_{analysis_type_lower}.svg");
-    generate_flamegraph_from_file(&files[0], &output_path, config)?;
-    println!("✅ {analysis_type} generated: {output_path}");
-
-    if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️  Could not open browser automatically: {e}");
-        println!("💡 You can manually open: {output_path}");
-    } else {
-        println!("🌐 Flamechart opened in your default browser!");
-        println!("🔍 Hover over and click on the bars to explore the performance visualization");
-        println!("📊 Function width = time spent, height = call stack depth");
-    }
-
-    Ok(())
-}
-
-/// Generate memory-specific visualization
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - Memory profile files cannot be found or read
-/// - Flamegraph generation fails
-/// - Browser cannot be opened to display results
-pub async fn generate_and_show_memory_visualization(
-    demo_name: &str,
-    analysis_type: AnalysisType,
-    show_graph: bool,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let pattern = format!("thag_demo_{}", demo_name);
-
-    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
-
-    let files = find_latest_profile_files(&pattern, true, 1)?;
-
-    if files.is_empty() {
-        println!("⚠️  No memory profile files found");
-        println!("💡 Make sure the demo completed successfully and generated profile files.");
-        return Ok(());
-    }
-
-    // Show memory profile analysis first
-    let analysis = analyze_profile(&files[0])?;
-    let demo_name = demo_name.to_string();
-
-    if show_graph {
-        println!("🔥 Generating interactive {analysis_type_lower} in background...");
-        let _ = std::io::stdout().flush();
-
-        let bg_task = smol::unblock(move || {
-            generate_and_show_memory_flamegraph(demo_name, analysis_type, files)
-        });
-
-        // Show analysis immediately while flamegraph generates in background
-        display_memory_analysis(&analysis);
-
-        println!("\n⏳ Waiting for flamegraph generation to complete...");
-        let _ = std::io::stdout().flush();
-
-        // Await the background task and handle any errors
-        match bg_task.await {
-            Ok(_) => println!("✅ Flamegraph generation completed!"),
-            Err(e) => {
-                eprintln!("⚠️ Flamegraph generation failed: {}", e);
-                println!("💡 Analysis results are still available above.");
-            }
-        }
-    } else {
-        display_memory_analysis(&analysis);
-    }
-
-    Ok(())
-}
-
 /// Generate visualization
 ///
 /// # Errors
@@ -530,7 +421,7 @@ pub async fn generate_and_show_visualization(
     let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
     let is_memory = &ProfileType::Memory == profile_type;
-    let files = find_latest_profile_files(&demo_name, is_memory, 1)?;
+    let files = find_latest_profile_files(demo_name, is_memory, 1)?;
 
     if files.is_empty() {
         println!("⚠️  No {profile_type} profile files found");
@@ -546,70 +437,28 @@ pub async fn generate_and_show_visualization(
         println!("🔥 Generating interactive {analysis_type_lower} in background...");
         let _ = std::io::stdout().flush();
 
-        let profile_type = profile_type.clone();
-        let analysis_type = analysis_type.clone();
+        let profile_type = *profile_type;
+        let analysis_type = *analysis_type;
         let bg_task = smol::unblock(move || {
             generate_and_show_flamegraph(demo_name, profile_type, analysis_type, files)
         });
 
         // Show analysis immediately while flamegraph generates in background
-        display_memory_analysis(&analysis);
+        display_analysis(&profile_type, &analysis);
 
         println!("\n⏳ Waiting for flamegraph generation to complete...");
         let _ = std::io::stdout().flush();
 
         // Await the background task and handle any errors
         match bg_task.await {
-            Ok(_) => println!("✅ Flamegraph generation completed!"),
+            Ok(()) => println!("✅ Flamegraph generation completed!"),
             Err(e) => {
                 eprintln!("⚠️ Flamegraph generation failed: {}", e);
                 println!("💡 Analysis results are still available above.");
             }
         }
     } else {
-        display_memory_analysis(&analysis);
-    }
-
-    Ok(())
-}
-
-#[timing]
-fn generate_and_show_memory_flamegraph(
-    demo_name: String,
-    analysis_type: AnalysisType,
-    files: Vec<PathBuf>,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
-
-    println!("🔥 Generating interactive memory {analysis_type_lower}...");
-    println!();
-    let config = VisualizationConfig {
-        title: format!(
-            "{} Demo - Memory Allocation {analysis_type}",
-            demo_name.to_title_case(),
-
-        ),
-        subtitle: Some(format!(
-            "Generated: {} | Hover over and click on the bars to explore memory allocations, or use Search ↗️",
-            Local::now().format("%Y-%m-%d %H:%M:%S")
-        )),
-        palette: Basic(Mem),
-        count_name: "bytes".to_string(),
-        analysis_type: analysis_type.clone(),
-        ..Default::default()
-    };
-    let output_path = format!("{demo_name}_memory_{analysis_type_lower}.svg");
-    eprintln!("\nanalysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
-    generate_flamegraph_from_file(&files[0], &output_path, config)?;
-    println!("✅ Memory {analysis_type} generated: {output_path}");
-
-    if let Err(e) = open_in_browser(&output_path) {
-        println!("⚠️ Could not open browser automatically: {e}");
-        println!("💡 You can manually open: {output_path}");
-    } else {
-        println!("🌐 Memory {analysis_type_lower} opened in your default browser!");
-        println!("🔍 Hover over and click on the bars to explore memory allocations");
-        println!("📊 Function width = memory allocated, height = call stack depth");
+        display_analysis(profile_type, &analysis);
     }
 
     Ok(())
@@ -631,6 +480,7 @@ fn generate_and_show_flamegraph(
             panic!("Profile type must be Time or Memory")
         }
     };
+
     println!("🔥 Generating interactive {profile_type_lower} {analysis_type_lower}...");
     println!();
     let config = VisualizationConfig {
@@ -647,7 +497,7 @@ fn generate_and_show_flamegraph(
                 panic!("Profile type must be Time or Memory")
             }
         },
-        analysis_type: analysis_type.clone(),
+        analysis_type,
         ..Default::default()
     };
     let output_path = format!("{demo_name}_{profile_type_lower}_{analysis_type_lower}.svg");
@@ -667,50 +517,6 @@ fn generate_and_show_flamegraph(
         println!("📊 Function width = {metric_desc}, height = call stack depth");
     }
     Ok(())
-}
-
-/// Display memory-specific analysis
-#[allow(clippy::cast_precision_loss)]
-pub fn display_memory_analysis(analysis: &ProfileAnalysis) {
-    println!("📊 Memory Profile Analysis Results");
-    println!("═══════════════════════════════════");
-    println!(
-        "Total Memory Allocated: {:.2} KB",
-        analysis.total_duration_us as f64 / 1024.0
-    );
-    println!();
-
-    println!("🏆 Top Functions by Memory Allocation:");
-    println!("──────────────────────────────────────");
-
-    for (i, (name, bytes, percentage)) in analysis.top_functions.iter().enumerate() {
-        let size_kb = *bytes as f64 / 1024.0;
-
-        let icon = match i {
-            0 => "🥇",
-            1 => "🥈",
-            2 => "🥉",
-            _ => "🏅",
-        };
-
-        println!(
-            "{} {}. {} - {:.2} KB ({:.1}%)",
-            icon,
-            i + 1,
-            name,
-            size_kb,
-            percentage
-        );
-    }
-
-    println!();
-    println!("💡 Memory Allocation Insights:");
-    println!("─────────────────────────────");
-    for insight in &analysis.insights {
-        println!("{}", insight);
-    }
-    println!();
-    let _ = std::io::stdout().flush();
 }
 
 /// Clean function names for better display

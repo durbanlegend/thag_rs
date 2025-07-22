@@ -100,6 +100,8 @@ if args.len() != 2 {
 
 let n: usize = args[1].parse().expect("Please provide a valid number");
 
+demo(n);
+
 let run_analysis = async || {
     // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
     // because profile output is only available after that function completes.
@@ -113,7 +115,5 @@ let run_analysis = async || {
         eprintln!("⚠️ Could not show interactive memory visualization: {e}");
     }
 };
-
-demo(n);
 
 smol::block_on(run_analysis());

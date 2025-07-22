@@ -193,14 +193,13 @@ fn demonstrate_lookup_comparison() {
     println!();
 }
 
-#[profiled]
+#[enable_profiling(time)]
 fn run_all_comparisons() {
     demonstrate_sorting_comparison();
     demonstrate_string_comparison();
     demonstrate_lookup_comparison();
 }
 
-#[enable_profiling(time)]
 fn main() {
     println!("⚖️  Performance Comparison Demo");
     println!("{}", "═".repeat(31));
@@ -211,6 +210,10 @@ fn main() {
     println!();
 
     run_all_comparisons();
+
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    prompted_analysis(file!(), ProfileType::Time, AnalysisType::Flamechart);
 
     println!("✅ Demo completed!");
     println!("📊 Check the generated flamegraph files to see performance differences.");

@@ -304,7 +304,6 @@ fn main() {
     println!("   • Different profiling annotation types");
     println!("🎯 Look for hotspots and optimization opportunities!");
 
-    let file_stem = file_stem_from_path_str(&file!());
-    prompted_analysis(&file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
-    prompted_analysis(&file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);
+    prompted_analysis(file_stem, ProfileType::Time, AnalysisType::Flamechart);
+    prompted_analysis(file_stem, ProfileType::Memory, AnalysisType::Flamegraph);
 }

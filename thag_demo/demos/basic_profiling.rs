@@ -183,7 +183,7 @@ fn main() {
     let _ = child.join().unwrap();
 
     let file_stem = file_stem_from_path_str(&file!());
-    prompted_analysis(&file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
+    prompted_analysis(&file_stem, ProfileType::Time, AnalysisType::Flamechart);
 
     println!("✅ Demo completed!");
     println!("📊 Check the generated flamechart files for visual analysis.");

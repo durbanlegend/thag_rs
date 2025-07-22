@@ -102,7 +102,6 @@ let n: usize = args[1].parse().expect("Please provide a valid number");
 
 demo(n);
 
-let file_stem = file_stem_from_path_str(&file!());
-prompted_analysis(&file_stem, &ProfileType::Time, &AnalysisType::Flamechart);
+prompted_analysis(file!(), ProfileType::Time, AnalysisType::Flamechart);
 
-prompted_analysis(&file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);
+prompted_analysis(file!(), ProfileType::Memory, AnalysisType::Flamegraph);

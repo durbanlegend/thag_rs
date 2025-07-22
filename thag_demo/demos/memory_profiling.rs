@@ -95,8 +95,7 @@ fn main() {
     println!("Running memory-intensive operations with profiling...");
     nested_allocations();
 
-    let file_stem = file_stem_from_path_str(&file!());
-    prompted_analysis(&file_stem, &ProfileType::Memory, &AnalysisType::Flamegraph);
+    prompted_analysis(file!(), ProfileType::Memory, AnalysisType::Flamegraph);
 
     println!();
     println!("✅ Demo completed!");

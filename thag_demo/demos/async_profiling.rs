@@ -134,7 +134,5 @@ async fn main() {
 
     // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
     // because profile output is only available after that function completes.
-    if let Err(e) = visualization::show_interactive_prompt("async_profiling", "flamechart") {
-        eprintln!("⚠️ Could not show interactive visualization: {}", e);
-    }
+    prompted_analysis(file!(), ProfileType::Time, AnalysisType::Flamechart);
 }

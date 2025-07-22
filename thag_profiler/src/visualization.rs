@@ -6,7 +6,7 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-use crate::{enhance_svg_accessibility, timing, ProfileType};
+use crate::{enhance_svg_accessibility, file_stem_from_path_str, timing, ProfileType};
 use chrono::Local;
 use inferno::flamegraph::color::BasicPalette::Mem;
 use inferno::flamegraph::Palette::Basic;
@@ -165,7 +165,7 @@ pub fn generate_flamegraph_from_file(
 /// - Duration parsing fails for any line
 #[allow(clippy::cast_precision_loss)]
 pub fn analyze_profile(
-    profile_type: &ProfileType,
+    profile_type: ProfileType,
     file_path: &PathBuf,
 ) -> Result<ProfileAnalysis, Box<dyn Error + Send + Sync + 'static>> {
     let content = std::fs::read_to_string(file_path)?;
@@ -228,7 +228,7 @@ pub fn analyze_profile(
 ///
 /// Will panic if profile type isn't one of Time or Memory
 #[allow(clippy::cast_precision_loss)]
-pub fn display_analysis(profile_type: &ProfileType, analysis: &ProfileAnalysis) {
+pub fn display_analysis(profile_type: ProfileType, analysis: &ProfileAnalysis) {
     let (title1, title2, title3, metric_desc, thousands) = match profile_type {
         ProfileType::Memory => (
             "Memory Allocation",
@@ -244,7 +244,7 @@ pub fn display_analysis(profile_type: &ProfileType, analysis: &ProfileAnalysis) 
             "Execution Times",
             "ms",
         ),
-        &ProfileType::Both | &ProfileType::None => {
+        ProfileType::Both | ProfileType::None => {
             panic!("Profile type must be Time or Memory")
         }
     };
@@ -384,14 +384,16 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn Error + Send + Syn
 /// * `profile_type` - Type of profiling (Time or Memory)
 /// * `analysis_type` - Type of analysis visualization to generate
 pub fn prompted_analysis(
-    demo_name: &str,
-    profile_type: &ProfileType,
-    analysis_type: &AnalysisType,
+    file_path_str: &'static str,
+    profile_type: ProfileType,
+    analysis_type: AnalysisType,
 ) {
+    let file_stem = file_stem_from_path_str(file_path_str);
+
     let run_analysis = async || {
         // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
         // because profile output is only available after that function completes.
-        if let Err(e) = show_interactive_prompt(demo_name, profile_type, analysis_type).await {
+        if let Err(e) = show_interactive_prompt(&file_stem, profile_type, analysis_type).await {
             eprintln!("⚠️ Could not show interactive memory visualization: {e}");
         }
     };
@@ -408,11 +410,11 @@ pub fn prompted_analysis(
 /// - System command to open browser fails
 pub async fn show_interactive_prompt(
     demo_name: &str,
-    profile_type: &ProfileType,
-    analysis_type: &AnalysisType,
+    profile_type: ProfileType,
+    analysis_type: AnalysisType,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let profile_type_lower = profile_type.to_string().to_lowercase();
-    let analysis_type_lower = &analysis_type.to_string().to_lowercase();
+    let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
     println!();
     println!(
@@ -449,14 +451,14 @@ pub async fn show_interactive_prompt(
 /// - Browser cannot be opened to display results
 pub async fn generate_and_show_visualization(
     demo_name: &str,
-    profile_type: &ProfileType,
-    analysis_type: &AnalysisType,
+    profile_type: ProfileType,
+    analysis_type: AnalysisType,
     show_graph: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let profile_type_lower = profile_type.to_string().to_lowercase();
     let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
-    let is_memory = &ProfileType::Memory == profile_type;
+    let is_memory = ProfileType::Memory == profile_type;
     let files = find_latest_profile_files(demo_name, is_memory, 1)?;
 
     if files.is_empty() {
@@ -472,14 +474,12 @@ pub async fn generate_and_show_visualization(
         println!("🔥 Generating interactive {analysis_type_lower} in background...");
         let _ = std::io::stdout().flush();
 
-        let profile_type = *profile_type;
-        let analysis_type = *analysis_type;
         let bg_task = smol::unblock(move || {
             generate_and_show_flamegraph(demo_name, profile_type, analysis_type, files)
         });
 
         // Show analysis immediately while flamegraph generates in background
-        display_analysis(&profile_type, &analysis);
+        display_analysis(profile_type, &analysis);
 
         println!("\n⏳ Waiting for flamegraph generation to complete...");
         let _ = std::io::stdout().flush();
@@ -619,7 +619,7 @@ fn clean_function_name(name: &str) -> String {
 /// Generate insights from function timing data
 #[allow(clippy::cast_precision_loss)]
 fn generate_insights(
-    profile_type: &ProfileType,
+    profile_type: ProfileType,
     functions: &[(String, u128)],
     metric_total: u128,
 ) -> Vec<String> {

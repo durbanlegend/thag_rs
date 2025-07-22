@@ -320,13 +320,13 @@ mod visualization {
             println!();
 
             println!("📈 Performance Summary:");
-            println!("──────────────────────");
+            println!("{}", "─".repeat(23));
             println!("{}", analysis.summary);
             println!();
 
             if !analysis.improvements.is_empty() {
                 println!("🚀 Top Improvements (faster):");
-                println!("────────────────────────────");
+                println!("{}", "─".repeat(29));
                 for (i, (name, time_diff, percentage)) in
                     analysis.improvements.iter().enumerate().take(5)
                 {
@@ -344,7 +344,7 @@ mod visualization {
 
             if !analysis.regressions.is_empty() {
                 println!("🐌 Top Regressions (slower):");
-                println!("───────────────────────────");
+                println!("{}", "─".repeat(28));
                 for (i, (name, time_diff, percentage)) in
                     analysis.regressions.iter().enumerate().take(5)
                 {
@@ -970,65 +970,6 @@ fn generate_and_show_differential_flamegraph() -> Result<(), Box<dyn std::error:
 
     Ok(())
 }
-
-// fn create_exclusive_from_inclusive(
-//     inclusive_file: &std::path::PathBuf,
-//     exclusive_file: &std::path::PathBuf,
-// ) -> Result<bool, Box<dyn std::error::Error>> {
-//     use std::collections::HashMap;
-//     use std::fs::File;
-//     use std::io::{BufRead, BufReader, Write};
-
-//     let file = File::open(inclusive_file)?;
-//     let reader = BufReader::new(file);
-
-//     let mut stack_times: HashMap<String, u64> = HashMap::new();
-
-//     // Parse the inclusive file and disaggregate
-//     for line in reader.lines() {
-//         let line = line?;
-//         if line.trim().is_empty() {
-//             continue;
-//         }
-
-//         let parts: Vec<&str> = line.split_whitespace().collect();
-//         if parts.len() < 2 {
-//             continue;
-//         }
-
-//         let stack = parts[0];
-//         let time: u64 = parts[1].parse().unwrap_or(0);
-
-//         // For each stack, add the time to itself and subtract from all ancestors
-//         let stack_parts: Vec<&str> = stack.split(';').collect();
-
-//         for i in 0..stack_parts.len() {
-//             let current_stack = stack_parts[0..=i].join(";");
-
-//             if i == stack_parts.len() - 1 {
-//                 // This is the leaf stack - add the time
-//                 *stack_times.entry(current_stack).or_insert(0) += time;
-//             } else {
-//                 // This is an ancestor stack - subtract the time
-//                 let current_time = stack_times.entry(current_stack.clone()).or_insert(0);
-//                 *current_time = current_time.saturating_sub(time);
-//             }
-//         }
-//     }
-
-//     // Write the exclusive file
-//     let mut output = File::create(exclusive_file)?;
-//     let mut entries: Vec<_> = stack_times.into_iter().collect();
-//     entries.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by time descending
-
-//     for (stack, time) in entries {
-//         if time > 0 {
-//             writeln!(output, "{} {}", stack, time)?;
-//         }
-//     }
-
-//     Ok(true)
-// }
 
 fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let full_path = std::env::current_dir()?.join(file_path);

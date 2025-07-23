@@ -78,4 +78,14 @@ demo/proc_macros/target
 404.html
 hello.html
 thag_profiler/src/profiling_alt.rs
-*.svg
+thag_demo/memory_profiling_memory_flamegraph.svg
+thag_demo/memory_profiling_flamechart.svg
+thag_demo/interactive_profiling_flamegraph.svg
+thag_demo/differential_comparison.svg
+thag_demo/benchmark_memory_Flamegraph.svg
+thag_demo/benchmark_flamechart.svg
+thag_demo/basic_profiling_flamegraph.svg
+thag_demo/basic_profiling_flamechart.svg
+thag_demo/async_profiling_flamechart.svg
+factorial_ibig_product_instr_time_flamechart.svg
+factorial_ibig_product_instr_memory_flamegraph.svg

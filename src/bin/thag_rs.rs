@@ -10,6 +10,8 @@ use thag_profiler::profiling;
 #[cfg(feature = "build")]
 use thag_rs::cmd_args::set_verbosity;
 
+use thag_rs::cvlog;
+use thag_rs::cvprtln;
 #[cfg(debug_assertions)]
 #[cfg(feature = "core")]
 use thag_rs::debug_timings;
@@ -17,6 +19,8 @@ use thag_rs::debug_timings;
 #[cfg(feature = "core")]
 use thag_rs::logging::configure_log;
 
+use thag_rs::Role;
+use thag_rs::V;
 #[cfg(feature = "build")]
 use thag_rs::{execute, get_args, ThagResult};
 
@@ -29,7 +33,9 @@ pub fn main() {
         let cli = RefCell::new(get_args()); // Wrap args in a RefCell
         let result = handle(&cli);
 
-        if result.is_err() {
+        if let Err(e) = result {
+            cvprtln!(Role::ERR, V::N, "Error running thag: {e}.");
+
             std::process::exit(1);
         }
     }
@@ -52,11 +58,6 @@ fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
     configure_log();
     #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
-
-    eprintln!(
-        "logging::is_debug_logging_enabled()={}",
-        logging::is_debug_logging_enabled()
-    );
 
     execute(&mut cli.borrow_mut())
 }

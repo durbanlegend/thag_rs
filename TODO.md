@@ -12,6 +12,7 @@
 - [ ]  Thag tool for invoking thag as a library and running a remote source file.
 - [ ]  "Playground" naming. Multifaceted playground.
 - [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
+- [ ]  DONE: thag return codes - fix inference level detection in builder::display_build_failure and cmd args setting.
 
 In the attached profiled snippet which is run as `thag demo/factorial_ibig_product_instr.rs`, lines 105-119 represent the most concise invocation yet of thag_profiler's new demo visualisation system, which in case you recall it I've now generalised a bit to allow it to be invoked from any profiled script, not just the thag_demo system.
 What I'm looking for now is a macro or proc

@@ -49,8 +49,9 @@ use crate::config::{self, DependencyInference, RealContext};
 use crate::crossterm::terminal;
 use crate::manifest::extract;
 use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
+use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::{
-    cvprtln, debug_log, get_home_dir, get_proc_flags, manifest, maybe_config,
+    cvprtln, debug_log, get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config,
     modified_since_compiled, re, repeat_dash, shared, validate_args, vlog, Ast, Cli, ColorSupport,
     Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
     PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
@@ -1229,8 +1230,16 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
     let status = cargo_command.spawn()?.wait()?;
 
     if !status.success() {
-        display_build_failure();
-        return Err("Build failed".into());
+        let verbosity = get_verbosity();
+        let err_msg = match verbosity {
+            Verbose | Dbug => {
+                display_build_failure(&build_state.infer);
+                "Build failed"
+            }
+            _ => "Build failed: run with -v for diagnostics",
+        };
+        // eprintln!("BuildState.infer={:?}", build_state.infer);
+        return Err(err_msg.into());
     }
 
     if proc_flags.contains(ProcFlags::EXECUTABLE) {
@@ -1257,14 +1266,7 @@ fn display_expansion_diff(stdout: Vec<u8>, build_state: &BuildState) -> ThagResu
 }
 
 #[profiled]
-fn display_build_failure() {
-    cvprtln!(Role::ERR, V::N, "Build failed");
-
-    let config = maybe_config();
-    let binding = Dependencies::default();
-    let dep_config = config.as_ref().map_or(&binding, |c| &c.dependencies);
-    let inference_level = &dep_config.inference_level;
-
+fn display_build_failure(inference_level: &DependencyInference) {
     let advice = match inference_level {
         config::DependencyInference::None => "You are running without dependency inference.",
         config::DependencyInference::Min => "You may be missing features or `thag` may not be picking up dependencies.",
@@ -1273,13 +1275,13 @@ fn display_build_failure() {
     };
 
     cvprtln!(
-        Role::EMPH,
+        Role::HD3,
         V::V,
         r"Dependency inference_level={inference_level:#?}
 If the problem is a dependency error, consider the following advice:"
     );
     cvprtln!(
-        Role::Info,
+        Role::EMPH,
         V::V,
         r"{advice}
 {}",

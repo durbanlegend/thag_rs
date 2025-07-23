@@ -6,7 +6,10 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-use crate::{enhance_svg_accessibility, file_stem_from_path_str, timing, ProfileType};
+use crate::{
+    enhance_svg_accessibility, extract_filename_timestamp, file_stem_from_path_str, timing,
+    ProfileType,
+};
 use chrono::Local;
 use inferno::flamegraph::color::BasicPalette::Mem;
 use inferno::flamegraph::Palette::Basic;
@@ -466,7 +469,7 @@ pub async fn generate_and_show_visualization(
         let _ = std::io::stdout().flush();
 
         let bg_task = smol::unblock(move || {
-            generate_and_show_flamegraph(demo_name, profile_type, analysis_type, files)
+            generate_and_show_flamegraph(demo_name, profile_type, analysis_type, &files)
         });
 
         // Show analysis immediately while flamegraph generates in background
@@ -495,7 +498,7 @@ fn generate_and_show_flamegraph(
     demo_name: String,
     profile_type: ProfileType,
     analysis_type: AnalysisType,
-    files: Vec<PathBuf>,
+    files: &[PathBuf],
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     let profile_type_title = profile_type.to_string().to_title_case();
     let analysis_type_lower = &analysis_type.to_string().to_lowercase();
@@ -506,14 +509,29 @@ fn generate_and_show_flamegraph(
             panic!("Profile type must be Time or Memory")
         }
     };
+    let graph_desc = match analysis_type {
+        AnalysisType::Flamechart => "Flamechart (Individual)",
+        AnalysisType::Flamegraph => "Flamegraph (Aggregated)",
+        AnalysisType::Differential => {
+            panic!("Analysis type must be Flamegraph or Flamechart")
+        }
+    };
 
     println!("🔥 Generating interactive {profile_type} {analysis_type_lower}...");
     println!();
+
+    let filename = files[0].file_stem().unwrap().display().to_string();
+    // eprintln!(
+    //     "filename={filename}, extracted timestamp={}",
+    //     extract_filename_timestamp(&filename)
+    //         .format("%Y-%m-%d %H:%M:%S")
+    //         .to_string()
+    // );
+
     let config = VisualizationConfig {
-        title: format!("{demo_name} {title} {analysis_type}"),
+        title: format!("{title} {graph_desc}"),
         subtitle: Some(format!(
-            "Generated: {} | Hover over and click on the bars to explore, or use Search ↗️",
-            Local::now().format("%Y-%m-%d %H:%M:%S")
+            "{filename} | Hover over and click on the bars to explore, or use Search ↗️"
         )),
         palette: match &profile_type {
             ProfileType::Time => Palette::Multi(MultiPalette::Rust),

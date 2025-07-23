@@ -1,7 +1,6 @@
 #![allow(unused_variables)]
-use crate::safe_alloc;
-use crate::{debug_log, internal_doc, static_lazy, ProfileError, ProfileResult};
-use chrono::Local;
+use crate::{debug_log, internal_doc, re, safe_alloc, static_lazy, ProfileError, ProfileResult};
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use parking_lot::{Mutex, RwLock};
 use std::{
     collections::{BTreeSet, HashMap},
@@ -3141,194 +3140,25 @@ pub fn strip_hex_suffix_slice(name: &str) -> String {
     )
 }
 
-#[cfg(test)]
-#[cfg(feature = "time_profiling")]
-pub(crate) mod test_utils {
-    //! This module contains utilities for testing profiling functionality.
-    //! These are not part of the public API and are only used for internal tests.
-
-    #[cfg(feature = "full_profiling")]
-    use crate::ProfileType;
-
-    /// Initializes profiling for tests
-    ///
-    /// This is an internal function provided for tests to initialize profiling
-    /// without exposing the implementation details of how profiling is enabled.
-    ///
-    /// # Arguments
-    /// * `profile_type` - The type of profiling to enable
-    #[cfg(feature = "full_profiling")]
-    pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
-        use crate::profiling::{enable_profiling, TEST_MODE_ACTIVE};
-        use std::sync::atomic::Ordering;
-
-        // Set test mode active to prevent #[profiled] from creating duplicate entries
-        TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
-
-        // Then enable profiling using the internal function
-        enable_profiling(true, Some(profile_type))
-    }
-
-    // /// Safely cleans up profiling after a test
-    // pub fn cleanup_profiling_after_test() -> crate::ProfileResult<()> {
-    //     // First disable profiling
-    //     let result = enable_profiling(false, None);
-
-    //     // Reset test mode flag
-    //     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
-
-    //     result
-    // }
-
-    // /// Force sets the profiling state for testing purposes
-    // /// This is only used in tests to directly manipulate the profiling state
-    // pub fn force_set_profiling_state(enabled: bool) {
-    //     // This function is only used in tests to directly manipulate the profiling state
-    //     PROFILING_STATE.store(enabled, Ordering::SeqCst);
-    // }
-}
-
-#[cfg(test)]
-mod tests_internal {
-    use super::*;
-    use regex::Regex;
-    use serial_test::serial;
-    // use std::env;
-    use std::time::Duration;
-
-    // Basic profiling tests
-
-    #[test]
-    #[serial]
-    fn test_profiling_profile_type_from_str() {
-        assert_eq!(ProfileType::from_str("time"), Ok(ProfileType::Time));
-        assert_eq!(ProfileType::from_str("memory"), Ok(ProfileType::Memory));
-        assert_eq!(ProfileType::from_str("both"), Ok(ProfileType::Both));
-        assert_eq!(ProfileType::from_str("none"), Ok(ProfileType::None));
-        assert_eq!(ProfileType::from_str(""), Ok(ProfileType::None));
-        assert_eq!(
-            ProfileType::from_str("invalid"),
-            Err(
-                "Invalid profile type 'invalid'. Expected 'time', 'memory', 'both', or 'none'"
-                    .to_string()
+/// Extracts the `yyyymmdd-hhmmss` timestamp from a `.folded` filename
+///
+/// # Panics
+///
+/// Panics if the filename does not contain a timestamp in the expected format.
+pub fn extract_filename_timestamp(filename: &str) -> DateTime<Local> {
+    let re = re!(r"^([\w/\\]+)\-(\d{8}\-\d{6})");
+    re.captures(filename)
+        .map_or_else(DateTime::default, |captures| {
+            let _script_stem = captures.get(1).unwrap().as_str();
+            let datetime_str = captures.get(2).unwrap().as_str();
+            NaiveDateTime::parse_from_str(datetime_str, "%Y%m%d-%H%M%S").map_or_else(
+                |_| {
+                    println!("Failed to parse datetime");
+                    DateTime::default()
+                },
+                |naive_dt| Local.from_local_datetime(&naive_dt).single().unwrap(),
             )
-        );
-    }
-
-    // Function registry tests
-
-    #[test]
-    #[serial]
-    fn test_profiling_function_registry() {
-        // Register a function
-        register_profiled_function("test_func", "test_desc");
-
-        // Check if it's registered
-        assert!(is_profiled_function("test_func"));
-
-        // Check the descriptive name
-        assert_eq!(
-            get_reg_desc_name("test_func"),
-            Some("test_desc".to_string())
-        );
-
-        // Check a non-registered function
-        assert!(!is_profiled_function("nonexistent"));
-        assert_eq!(get_reg_desc_name("nonexistent"), None);
-    }
-
-    // ProfileStats tests
-
-    #[test]
-    fn test_profiling_profile_stats() {
-        let mut stats = ProfileStats::default();
-
-        // Record some calls
-        stats.record("func1", Duration::from_micros(100));
-        stats.record("func1", Duration::from_micros(200));
-        stats.record("func2", Duration::from_micros(150));
-
-        // Check call counts
-        assert_eq!(*stats.calls.get("func1").unwrap(), 2);
-        assert_eq!(*stats.calls.get("func2").unwrap(), 1);
-
-        // Check total times
-        assert_eq!(*stats.total_time.get("func1").unwrap(), 300);
-        assert_eq!(*stats.total_time.get("func2").unwrap(), 150);
-    }
-
-    // Profile type tests
-
-    // Thread-safety tests
-
-    // utils tests
-
-    #[test]
-    fn test_profiling_clean_function_name() {
-        // Test with hash suffix
-        let mut name = "module::func::h1234abcd".to_string();
-        assert_eq!(clean_function_name(&mut name), "module::func");
-
-        // Test with closure
-        let mut name = "module::func::{{closure}}".to_string();
-        assert_eq!(clean_function_name(&mut name), "module::func");
-
-        // Test with both
-        let mut name = "module::func::{{closure}}::h1234abcd".to_string();
-        assert_eq!(clean_function_name(&mut name), "module::func");
-
-        // Test with multiple colons
-        let mut name = "module::::func".to_string();
-        assert_eq!(clean_function_name(&mut name), "module::func");
-    }
-
-    #[test]
-    fn test_profiling_extract_fn_only() {
-        // Test with module path
-        let name = "module::submodule::function";
-        assert_eq!(extract_fn_only(name), Some("function".to_string()));
-
-        // Test with just function
-        let name = "function";
-        assert_eq!(extract_fn_only(name), Some("function".to_string()));
-    }
-
-    // Memory profiling tests
-
-    // Test enabling/disabling profiling
-
-    #[test]
-    #[serial]
-    fn test_profiling_enable_disable_profiling() {
-        // Only test in our integrated test that doesn't depend on the other tests
-        // This test is replaced by feature_tests::test_profiling_feature_flag_behavior in lib.rs
-        // Skip in normal internal unit tests
-    }
-
-    // Test different file paths
-
-    #[test]
-    #[serial]
-    fn test_profiling_profile_paths() {
-        // Check that paths include the executable name and timestamp
-        let paths = ProfilePaths::get();
-
-        assert!(
-            paths.time.ends_with(".folded"),
-            "Time path should end with .folded"
-        );
-        assert!(
-            paths.memory.ends_with("-memory.folded"),
-            "Memory path should end with -memory.folded"
-        );
-
-        // Check that timestamp format is correct (YYYYmmdd-HHMMSS)
-        let re = Regex::new(r"\d{8}-\d{6}\.folded$").unwrap();
-        assert!(
-            re.is_match(&paths.time),
-            "Time path should contain timestamp in YYYYmmdd-HHMMSS format"
-        );
-    }
+        })
 }
 
 /// Represents a parsed entry from a .profraw file
@@ -3553,4 +3383,176 @@ pub fn process_all_profraw_files() -> ProfileResult<()> {
 
     debug_log!("Processed {} .profraw files", processed_count);
     Ok(())
+}
+
+#[cfg(test)]
+#[cfg(feature = "time_profiling")]
+pub(crate) mod test_utils {
+    //! This module contains utilities for testing profiling functionality.
+    //! These are not part of the public API and are only used for internal tests.
+
+    #[cfg(feature = "full_profiling")]
+    use crate::ProfileType;
+
+    /// Initializes profiling for tests
+    ///
+    /// This is an internal function provided for tests to initialize profiling
+    /// without exposing the implementation details of how profiling is enabled.
+    ///
+    /// # Arguments
+    /// * `profile_type` - The type of profiling to enable
+    #[cfg(feature = "full_profiling")]
+    pub fn initialize_profiling_for_test(profile_type: ProfileType) -> crate::ProfileResult<()> {
+        use crate::profiling::{enable_profiling, TEST_MODE_ACTIVE};
+        use std::sync::atomic::Ordering;
+
+        // Set test mode active to prevent #[profiled] from creating duplicate entries
+        TEST_MODE_ACTIVE.store(true, Ordering::SeqCst);
+
+        // Then enable profiling using the internal function
+        enable_profiling(true, Some(profile_type))
+    }
+}
+
+#[cfg(test)]
+mod tests_internal {
+    use super::*;
+    use regex::Regex;
+    use serial_test::serial;
+    // use std::env;
+    use std::time::Duration;
+
+    // Basic profiling tests
+
+    #[test]
+    #[serial]
+    fn test_profiling_profile_type_from_str() {
+        assert_eq!(ProfileType::from_str("time"), Ok(ProfileType::Time));
+        assert_eq!(ProfileType::from_str("memory"), Ok(ProfileType::Memory));
+        assert_eq!(ProfileType::from_str("both"), Ok(ProfileType::Both));
+        assert_eq!(ProfileType::from_str("none"), Ok(ProfileType::None));
+        assert_eq!(ProfileType::from_str(""), Ok(ProfileType::None));
+        assert_eq!(
+            ProfileType::from_str("invalid"),
+            Err(
+                "Invalid profile type 'invalid'. Expected 'time', 'memory', 'both', or 'none'"
+                    .to_string()
+            )
+        );
+    }
+
+    // Function registry tests
+
+    #[test]
+    #[serial]
+    fn test_profiling_function_registry() {
+        // Register a function
+        register_profiled_function("test_func", "test_desc");
+
+        // Check if it's registered
+        assert!(is_profiled_function("test_func"));
+
+        // Check the descriptive name
+        assert_eq!(
+            get_reg_desc_name("test_func"),
+            Some("test_desc".to_string())
+        );
+
+        // Check a non-registered function
+        assert!(!is_profiled_function("nonexistent"));
+        assert_eq!(get_reg_desc_name("nonexistent"), None);
+    }
+
+    // ProfileStats tests
+
+    #[test]
+    fn test_profiling_profile_stats() {
+        let mut stats = ProfileStats::default();
+
+        // Record some calls
+        stats.record("func1", Duration::from_micros(100));
+        stats.record("func1", Duration::from_micros(200));
+        stats.record("func2", Duration::from_micros(150));
+
+        // Check call counts
+        assert_eq!(*stats.calls.get("func1").unwrap(), 2);
+        assert_eq!(*stats.calls.get("func2").unwrap(), 1);
+
+        // Check total times
+        assert_eq!(*stats.total_time.get("func1").unwrap(), 300);
+        assert_eq!(*stats.total_time.get("func2").unwrap(), 150);
+    }
+
+    // Profile type tests
+
+    // Thread-safety tests
+
+    // utils tests
+
+    #[test]
+    fn test_profiling_clean_function_name() {
+        // Test with hash suffix
+        let mut name = "module::func::h1234abcd".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
+
+        // Test with closure
+        let mut name = "module::func::{{closure}}".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
+
+        // Test with both
+        let mut name = "module::func::{{closure}}::h1234abcd".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
+
+        // Test with multiple colons
+        let mut name = "module::::func".to_string();
+        assert_eq!(clean_function_name(&mut name), "module::func");
+    }
+
+    #[test]
+    fn test_profiling_extract_fn_only() {
+        // Test with module path
+        let name = "module::submodule::function";
+        assert_eq!(extract_fn_only(name), Some("function".to_string()));
+
+        // Test with just function
+        let name = "function";
+        assert_eq!(extract_fn_only(name), Some("function".to_string()));
+    }
+
+    // Memory profiling tests
+
+    // Test enabling/disabling profiling
+
+    #[test]
+    #[serial]
+    fn test_profiling_enable_disable_profiling() {
+        // Only test in our integrated test that doesn't depend on the other tests
+        // This test is replaced by feature_tests::test_profiling_feature_flag_behavior in lib.rs
+        // Skip in normal internal unit tests
+    }
+
+    // Test different file paths
+
+    #[test]
+    #[serial]
+    fn test_profiling_profile_paths() {
+        // Check that paths include the executable name and timestamp
+        let paths = ProfilePaths::get();
+
+        assert!(
+            paths.time.ends_with(".folded"),
+            "Time path should end with .folded"
+        );
+        assert!(
+            paths.memory.ends_with("-memory.folded"),
+            "Memory path should end with -memory.folded"
+        );
+
+        // Check that timestamp format is correct (YYYYmmdd-HHMMSS)
+        let re = Regex::new(r"\d{8}-\d{6}\.folded$").unwrap();
+        assert!(
+            re.is_match(&paths.time),
+            "Time path should contain timestamp in YYYYmmdd-HHMMSS format"
+        );
+    }
 }

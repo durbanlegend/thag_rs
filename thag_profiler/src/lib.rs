@@ -91,7 +91,8 @@ use std::sync::OnceLock;
 pub use {
     errors::{ProfileError, ProfileResult},
     profiling::{
-        disable_profiling, is_profiling_enabled, Profile, ProfileConfiguration, ProfileType,
+        disable_profiling, extract_filename_timestamp, is_profiling_enabled, Profile,
+        ProfileConfiguration, ProfileType,
     },
     thag_proc_macros::{fn_name, internal_doc},
 };

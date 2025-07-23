@@ -19,7 +19,7 @@ use std::{
 use strum::Display;
 use thag_proc_macros::timing;
 use thag_profiler::{
-    enhance_svg_accessibility, profiling::ProfileStats, re, thousands, ProfileError, ProfileResult,
+    enhance_svg_accessibility, profiling::ProfileStats, thousands, ProfileError, ProfileResult,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -1161,25 +1161,6 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
         .to_string_lossy()
         .to_string();
 
-    let re = re!(r#"^(\w+)\-(\d{8}\-\d{6})"#);
-    let timestamp = if let Some(captures) = re.captures(&filename) {
-        let _script_stem = captures.get(1).unwrap().as_str();
-        let datetime_str = captures.get(2).unwrap().as_str();
-        if let Ok(naive_dt) = NaiveDateTime::parse_from_str(datetime_str, "%Y%m%d-%H%M%S") {
-            let local_dt = Local.from_local_datetime(&naive_dt).single().unwrap();
-            // println!("Parsed datetime: {local_dt}");
-            // println!("ISO format: {}", local_dt.to_rfc3339());
-            // processed.timestamp = local_dt;
-            local_dt
-        } else {
-            println!("Failed to parse datetime");
-            DateTime::default()
-        }
-    } else {
-        DateTime::default()
-    };
-
-    let subtitle = filename.clone();
     let mut processed = ProcessedProfile {
         path: path.clone(),
         profile_type: if filename.contains("memory.folded")
@@ -1190,8 +1171,8 @@ fn read_and_process_profile(path: &PathBuf) -> ProfileResult<ProcessedProfile> {
         } else {
             ProfileType::Time
         },
-        subtitle,
-        timestamp,
+        subtitle: filename.clone(),
+        timestamp: extract_filename_timestamp(&filename),
         ..Default::default()
     };
 

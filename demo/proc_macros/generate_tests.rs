@@ -1,6 +1,8 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
 use quote::quote;
+use std::fs::OpenOptions;
+use std::io::Write;
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input, Expr, Ident, Token,
@@ -95,6 +97,30 @@ pub fn generate_tests_impl(tokens: TokenStream) -> TokenStream {
     let expanded = quote! {
         #(#test_functions)*
     };
+
+    // // Debug: Write generated code to file
+    // let generated_code = expanded.to_string();
+    // let debug_output = format!(
+    //     "// Generated tests for {}\n{}\n\n",
+    //     base_test_name, generated_code
+    // );
+
+    // if let Ok(mut file) = OpenOptions::new()
+    //     .create(true)
+    //     .append(true)
+    //     .open("generated_tests_debug.rs")
+    // {
+    //     let _ = writeln!(file, "{}", debug_output);
+    // }
+
+    // Also print to stderr so it shows during compilation
+    let generated_code = expanded.to_string();
+    eprintln!(
+        "Generated {} test functions for {}",
+        test_data.len(),
+        base_test_name
+    );
+    eprintln!("Code:\n{}", generated_code);
 
     TokenStream::from(expanded)
 }

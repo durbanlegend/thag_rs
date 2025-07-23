@@ -3,6 +3,25 @@
 /// This macro demonstrates repetitive code generation patterns by creating multiple
 /// test functions from a list of test data. It reduces boilerplate in test suites
 /// and shows how macros can automate common development tasks.
+///
+/// Note that the expansion is not picked up by `cargo expand`, for reasons unknown.
+/// To compensate, the proc macro `generate_tests` prints the test source to `stderr`.
+///
+/// Also, the expansions of the individual `generate_tests!` invocations are visible
+/// if the `expand` argument of the call to fn `maybe_expand_proc_macro` from the proc
+/// macro function fn `generate_tests` in `lib.rs` iis set to `true`. So if you prefer
+/// to use this, you can remove the hard-coded debugging from `generate_tests.rs`.
+///
+/// To perform the tests and see the results, simply run:
+///
+/// ```bash
+/// thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+///
+/// ```
+///
+/// # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+///
+/// See also: `demo/test_profile_extract_timestamp.rs`
 //# Purpose: Demonstrate automatic test case generation from data
 //# Categories: technique, proc_macros, function_like_macros, testing, automation
 

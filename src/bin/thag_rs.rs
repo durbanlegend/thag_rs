@@ -34,14 +34,16 @@ pub fn main() {
         }
     }
 
-    // #[cfg(not(feature = "build"))]
-    // {
-    //     Ok(())
-    // }
+    #[cfg(not(feature = "build"))]
+    {
+        println!("Feature `build` not specified - exiting")
+    }
 }
 
 #[cfg(feature = "build")]
 fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
+    use thag_rs::logging;
+
     #[cfg(debug_assertions)]
     let start = Instant::now();
 
@@ -51,7 +53,10 @@ fn handle(cli: &RefCell<thag_rs::Cli>) -> ThagResult<()> {
     #[cfg(debug_assertions)]
     debug_timings(&start, "Configured logging");
 
-    handle(&cli)?;
+    eprintln!(
+        "logging::is_debug_logging_enabled()={}",
+        logging::is_debug_logging_enabled()
+    );
 
     execute(&mut cli.borrow_mut())
 }

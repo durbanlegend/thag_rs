@@ -1,6 +1,165 @@
-<!-- Inline SVG (full interactivity)
-<object type="image/svg+xml" data="thag_profiler/assets/flamechart_rust_time.svg" width="600" height="400"></object>
--->
-<!-- Or link directly -->
-<a href="thag_profiler/assets/flamechart_time_20250302-080709.svg" target="_blank">Open SVG</a><br/>
-<a href="thag_profiler/assets/thag_profile_main.png" target="_blank">thag_profile menu</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thag_rs Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .file-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        .file-card h3 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+        .file-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px 5px 5px 0;
+            transition: background-color 0.3s;
+        }
+        .file-link:hover {
+            background: #2980b9;
+        }
+        .svg-link {
+            background: #e74c3c;
+        }
+        .svg-link:hover {
+            background: #c0392b;
+        }
+        .png-link {
+            background: #f39c12;
+        }
+        .png-link:hover {
+            background: #e67e22;
+        }
+        .inline-svg {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>thag_rs Documentation</h1>
+
+    <p>Welcome to the thag_rs documentation site. This page provides access to profiling visualizations and documentation assets.</p>
+
+    <h2>Featured Profiling Visualizations</h2>
+
+    <div class="file-card">
+        <h3>Latest Rust Time Flamechart</h3>
+        <div class="description">Interactive flamechart showing Rust execution time profiling data</div>
+        <a href="thag_profiler/assets/flamechart_rust_time.svg" target="_blank" class="file-link svg-link">Open SVG</a>
+        <a href="thag_profiler/assets/flamechart_rust_time.png" target="_blank" class="file-link png-link">PNG Version</a>
+    </div>
+
+    <div class="file-card">
+        <h3>thag_profile Main Interface</h3>
+        <div class="description">Screenshot of the main thag_profile menu interface</div>
+        <a href="thag_profiler/assets/thag_profile_main.png" target="_blank" class="file-link png-link">View Screenshot</a>
+    </div>
+
+    <h2>All Available Assets</h2>
+
+    <div class="file-grid">
+        <div class="file-card">
+            <h3>Flamecharts (Time)</h3>
+            <div class="description">Time-based flame visualizations</div>
+            <a href="thag_profiler/assets/flamechart.svg" target="_blank" class="file-link svg-link">flamechart.svg</a>
+            <a href="thag_profiler/assets/flamechart_rust_time.svg" target="_blank" class="file-link svg-link">flamechart_rust_time.svg</a>
+            <a href="thag_profiler/assets/flamechart_time_20250302-080709.svg" target="_blank" class="file-link svg-link">flamechart_time_20250302.svg</a>
+            <a href="thag_profiler/assets/flamechart_time_20250519-155436.svg" target="_blank" class="file-link svg-link">flamechart_time_20250519.svg</a>
+        </div>
+
+        <div class="file-card">
+            <h3>Flamegraphs (Time)</h3>
+            <div class="description">Time-based flame graphs</div>
+            <a href="thag_profiler/assets/flamegraph_time_20250302-080709.svg" target="_blank" class="file-link svg-link">flamegraph_time_20250302.svg</a>
+            <a href="thag_profiler/assets/flamegraph_hot_20250703-210923.svg" target="_blank" class="file-link svg-link">flamegraph_hot_20250703.svg</a>
+        </div>
+
+        <div class="file-card">
+            <h3>Memory Profiling</h3>
+            <div class="description">Memory allocation and usage visualizations</div>
+            <a href="thag_profiler/assets/memory_flamechart_20250521-100000.svg" target="_blank" class="file-link svg-link">memory_flamechart.svg</a>
+            <a href="thag_profiler/assets/flamegraph_mem_20250624-141421.svg" target="_blank" class="file-link svg-link">flamegraph_mem.svg</a>
+            <a href="thag_profiler/assets/flamegraph_mem_diff.svg" target="_blank" class="file-link svg-link">flamegraph_mem_diff.svg</a>
+            <a href="thag_profiler/assets/memory_flamegraph_detail_thag.svg" target="_blank" class="file-link svg-link">memory_flamegraph_detail.svg</a>
+            <a href="thag_profiler/assets/memory_flamegraph_filtered.svg" target="_blank" class="file-link svg-link">memory_flamegraph_filtered.svg</a>
+            <a href="thag_profiler/assets/memory_flamegraph_unfiltered.svg" target="_blank" class="file-link svg-link">memory_flamegraph_unfiltered.svg</a>
+        </div>
+
+        <div class="file-card">
+            <h3>PNG Versions</h3>
+            <div class="description">Static image versions of the visualizations</div>
+            <a href="thag_profiler/assets/flamechart_rust_time.png" target="_blank" class="file-link png-link">flamechart_rust_time.png</a>
+            <a href="thag_profiler/assets/flamechart_time_20250302-080709.png" target="_blank" class="file-link png-link">flamechart_time_20250302.png</a>
+            <a href="thag_profiler/assets/flamechart_time_20250519-155436.png" target="_blank" class="file-link png-link">flamechart_time_20250519.png</a>
+            <a href="thag_profiler/assets/flamegraph_hot_20250703-210923.png" target="_blank" class="file-link png-link">flamegraph_hot_20250703.png</a>
+            <a href="thag_profiler/assets/flamegraph_mem_20250624-141421.png" target="_blank" class="file-link png-link">flamegraph_mem.png</a>
+            <a href="thag_profiler/assets/flamegraph_mem_diff.png" target="_blank" class="file-link png-link">flamegraph_mem_diff.png</a>
+            <a href="thag_profiler/assets/memory_flamechart_20250521-100000.png" target="_blank" class="file-link png-link">memory_flamechart.png</a>
+            <a href="thag_profiler/assets/memory_flamegraph_detail_thag.png" target="_blank" class="file-link png-link">memory_flamegraph_detail.png</a>
+            <a href="thag_profiler/assets/memory_flamegraph_filtered.png" target="_blank" class="file-link png-link">memory_flamegraph_filtered.png</a>
+            <a href="thag_profiler/assets/memory_flamegraph_unfiltered.png" target="_blank" class="file-link png-link">memory_flamegraph_unfiltered.png</a>
+        </div>
+
+        <div class="file-card">
+            <h3>Other Assets</h3>
+            <div class="description">Additional documentation assets</div>
+            <a href="thag_profiler/assets/thag_profile_main.png" target="_blank" class="file-link png-link">thag_profile_main.png</a>
+            <a href="thag_profiler/assets/vimdiff_profile_instrument.png" target="_blank" class="file-link png-link">vimdiff_profile_instrument.png</a>
+            <a href="thag_profiler/assets/dont_make_me_tap_the_sign.jpg" target="_blank" class="file-link">dont_make_me_tap_the_sign.jpg</a>
+        </div>
+    </div>
+
+    <h2>Inline Preview</h2>
+    <div class="inline-svg">
+        <h3>flamechart_rust_time.svg</h3>
+        <object type="image/svg+xml" data="thag_profiler/assets/flamechart_rust_time.svg" width="100%" height="400">
+            Your browser does not support SVG
+        </object>
+    </div>
+
+    <footer style="margin-top: 50px; text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+        <p>Generated for thag_rs profiling documentation</p>
+    </footer>
+</body>
+</html>

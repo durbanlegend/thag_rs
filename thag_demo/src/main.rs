@@ -8,7 +8,8 @@ use clap::{Parser, Subcommand};
 use colored::Colorize;
 use std::path::{Path, PathBuf};
 use std::process;
-use thag_rs::{builder::execute, Cli};
+use thag_rs::{builder::execute, configure_log, Cli};
+use thag_rs::{get_verbosity, set_global_verbosity, V};
 
 pub mod visualization;
 
@@ -92,6 +93,7 @@ fn main() -> Result<()> {
         return Ok(());
     };
 
+    // eprintln!("args.verbose={}", args.verbose);
     run_demo(demo, args.verbose)
 }
 
@@ -174,6 +176,11 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     // Configure CLI args for thag_rs
     let mut cli = create_demo_cli(&script_path, verbose);
 
+    set_global_verbosity(if verbose { V::D } else { V::N })?;
+    eprintln!("verbosity={}", get_verbosity());
+
+    configure_log();
+
     // Execute the demo using thag_rs
     match execute(&mut cli) {
         Ok(()) => {
@@ -202,7 +209,7 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     if !demo_path.exists() {
         eprintln!(
             "{}",
-            format!("❌ Demo script '{script_name}' not found")
+            format!("❌ Demo script '{demo_path:?}' not found")
                 .bold()
                 .red()
         );
@@ -225,7 +232,11 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     std::env::set_var("THAG_DEV_PATH", thag_rs_root);
 
     let mut cli = create_demo_cli(&demo_path, verbose);
-    // eprintln!("cli={cli:#?}");
+
+    set_global_verbosity(if verbose { V::D } else { V::N })?;
+    eprintln!("verbosity={}", get_verbosity());
+
+    configure_log();
 
     match execute(&mut cli) {
         Ok(()) => {
@@ -260,7 +271,7 @@ fn create_demo_cli(script_path: &Path, verbose: bool) -> Cli {
         end: None,
         multimain: false,
         timings: false,
-        verbose: if verbose { 2 } else { 1 },
+        verbose: if verbose { 2 } else { 0 },
         normal_verbosity: false,
         quiet: 0,
         generate: false,

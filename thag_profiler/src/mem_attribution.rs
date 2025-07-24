@@ -50,10 +50,8 @@ pub struct ProfileRegistry {
     // Optional: Quick lookup by module for get_file_names
     modules: DashMap<String, ()>, // Just track module names
 
-    // // Task tracking (restore the original approach)
-    // active_tasks: DashMap<u64, usize>, // task_id -> some identifier
-    // // or
-    active_tasks: DashSet<usize>, // Just track active task IDs
+    // Just track active task IDs
+    active_tasks: DashSet<usize>,
 }
 
 impl Default for ProfileRegistry {

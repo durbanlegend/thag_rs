@@ -18,11 +18,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::error::Error;
 use std::time::Instant;
 use thag_profiler::{
-    enable_profiling, file_stem_from_path_str, profiled, prompted_analysis, timing, AnalysisType,
-    ProfileType,
+    enable_profiling, end, profile, profiled, prompted_analysis, timing, AnalysisType, ProfileType,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -54,41 +52,49 @@ fn generate_test_data(count: usize) -> Vec<DataPoint> {
 fn process_data_sequential(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     let mut result = HashMap::new();
 
+    profile!(seq_insert);
     for point in data {
         result
             .entry(point.category.clone())
             .or_insert_with(Vec::new)
             .push(point.value);
     }
+    end!(seq_insert);
 
     // Calculate statistics for each category
+    profile!(seq_sort);
     for values in result.values_mut() {
         values.sort_by(|a, b| a.partial_cmp(b).unwrap());
     }
+    end!(seq_sort);
 
     result
 }
 
 #[timing]
-#[profiled(time, mem_summary)]
+#[profiled(time, mem_detail)]
 fn process_data_parallel(data: &[DataPoint]) -> HashMap<String, Vec<f64>> {
     use std::sync::Mutex;
 
     let result = Mutex::new(HashMap::new());
 
+    profile!(parallel_insert);
     data.par_iter().for_each(|point| {
         let mut map = result.lock().unwrap();
         map.entry(point.category.clone())
             .or_insert_with(Vec::new)
             .push(point.value);
     });
+    end!(parallel_insert);
 
     let mut final_result = result.into_inner().unwrap();
 
     // Sort values in parallel
+    profile!(parallel_sort);
     final_result.par_iter_mut().for_each(|(_, values)| {
         values.sort_by(|a, b| a.partial_cmp(b).unwrap());
     });
+    end!(parallel_sort);
 
     final_result
 }
@@ -304,6 +310,6 @@ fn main() {
     println!("   • Different profiling annotation types");
     println!("🎯 Look for hotspots and optimization opportunities!");
 
-    prompted_analysis(file_stem, ProfileType::Time, AnalysisType::Flamechart);
-    prompted_analysis(file_stem, ProfileType::Memory, AnalysisType::Flamegraph);
+    prompted_analysis(file!(), ProfileType::Time, AnalysisType::Flamechart);
+    prompted_analysis(file!(), ProfileType::Memory, AnalysisType::Flamegraph);
 }

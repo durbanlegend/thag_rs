@@ -173,8 +173,9 @@ pub use {
 #[cfg(feature = "build")]
 pub use {
     builder::{display_timings, execute, gen_build_run, process_expr, BuildState, ScriptState},
-    cmd_args::{get_args, get_proc_flags, validate_args, Cli, ProcFlags},
+    cmd_args::{get_args, get_proc_flags, set_verbosity, validate_args, Cli, ProcFlags},
     code_utils::modified_since_compiled,
+    logging::{configure_log, set_global_verbosity},
     manifest::extract,
     ratatui::crossterm,
 };

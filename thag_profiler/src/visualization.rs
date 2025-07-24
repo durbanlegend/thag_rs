@@ -440,7 +440,7 @@ pub async fn show_interactive_prompt(
 /// - Flamegraph generation fails
 /// - Browser cannot be opened to display results
 pub async fn generate_and_show_visualization(
-    file_stem: &str, // Cow<'_, str>,
+    file_stem: &str,
     profile_type: ProfileType,
     analysis_type: AnalysisType,
     show_graph: bool,

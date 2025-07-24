@@ -16,7 +16,9 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{
+    enable_profiling, end, profile, profiled, prompted_analysis, AnalysisType, ProfileType,
+};
 
 #[profiled]
 fn level_1_function() {
@@ -41,8 +43,12 @@ fn level_2_function_b() {
 #[profiled]
 fn level_2_function_c() {
     // Parallel processing - will show interesting patterns
-    let data: Vec<i32> = (0..1000).collect();
+    profile!(init_vec);
+    let data: Vec<i32> = (0..300).collect();
+    end!(init_vec);
+    profile!(parallel_iter);
     let _results: Vec<i32> = data.par_iter().map(|x| expensive_computation(*x)).collect();
+    end!(parallel_iter);
 }
 
 #[profiled]
@@ -67,11 +73,11 @@ fn level_3_function_b1() {
     let _fibonacci = compute_fibonacci(15);
 }
 
-#[profiled]
+// #[profiled]
 fn expensive_computation(n: i32) -> i32 {
     // This will be called many times in parallel
     let mut result = n;
-    for _ in 0..100 {
+    for _ in 0..300 {
         result = result.wrapping_mul(2).wrapping_add(1);
     }
     result
@@ -122,8 +128,8 @@ fn cpu_intensive_section() {
     println!("Running CPU-intensive section...");
 
     // This will show up as a prominent block in the flamegraph
-    let mut matrix = vec![vec![0.0; 100]; 100];
-    for i in 0..100 {
+    let mut matrix = vec![vec![0.0; 100]; 1000];
+    for i in 0..1000 {
         for j in 0..100 {
             matrix[i][j] = (i * j) as f64 / 10.0;
             // Add some computation to make it visible
@@ -163,7 +169,7 @@ fn mixed_workload_section() {
     }
 }
 
-#[profiled]
+#[enable_profiling(time)]
 fn demonstrate_flamegraph_features() {
     println!("🔥 Demonstrating flamegraph features...");
     println!();
@@ -177,7 +183,6 @@ fn demonstrate_flamegraph_features() {
     println!("All flamegraph demonstration sections completed!");
 }
 
-#[enable_profiling(time)]
 fn main() {
     println!("🔥 Flamegraph Generation Demo");
     println!("{}", "═".repeat(28));
@@ -201,4 +206,8 @@ fn main() {
     println!("   • Click on bars to zoom in");
     println!("   • Use search to find specific functions");
     println!("🎯 Look for the CPU-intensive section as the widest bar!");
+
+    // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
+    // because profile output is only available after that function completes.
+    prompted_analysis(file!(), ProfileType::Time, AnalysisType::Flamegraph);
 }

@@ -12,7 +12,7 @@ strip = false
 //# Purpose: Demonstrate before/after performance comparison with thag_profiler
 //# Categories: profiling, demo, comparison, optimization
 use std::collections::HashMap;
-use thag_profiler::{enable_profiling, profiled};
+use thag_profiler::{enable_profiling, profiled, prompted_analysis, AnalysisType, ProfileType};
 
 #[profiled]
 fn bubble_sort_inefficient(mut arr: Vec<i32>) -> Vec<i32> {

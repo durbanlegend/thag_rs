@@ -180,6 +180,11 @@ path = "src/bin/thag_find_demos.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_from_rust_script"
+path = "src/bin/thag_from_rust_script.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_gen_config"
 path = "src/bin/thag_gen_config.rs"
 required-features = ["tools"]

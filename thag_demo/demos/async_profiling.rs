@@ -14,9 +14,8 @@ strip = false
 /// This demo demonstrates async profiling features of thag_profiler with tokio
 //# Purpose: Demonstrate async function profiling with thag_profiler
 //# Categories: profiling, demo, async, tokio
-use std::thread;
 use std::time::Duration;
-use thag_profiler::{enable_profiling, profiled, visualization};
+use thag_profiler::{enable_profiling, profiled, prompted_analysis, AnalysisType, ProfileType};
 use tokio::time::sleep;
 
 #[profiled]

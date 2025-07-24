@@ -6,10 +6,7 @@
 //!
 //! This module is only available when the `demo` feature is enabled.
 
-use crate::{
-    enhance_svg_accessibility, extract_filename_timestamp, file_stem_from_path_str, timing,
-    ProfileType,
-};
+use crate::{enhance_svg_accessibility, file_stem_from_path_str, timing, ProfileType};
 use chrono::Local;
 use inferno::flamegraph::color::BasicPalette::Mem;
 use inferno::flamegraph::Palette::Basic;
@@ -387,16 +384,14 @@ pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn Error + Send + Syn
 /// * `profile_type` - Type of profiling (Time or Memory)
 /// * `analysis_type` - Type of analysis visualization to generate
 pub fn prompted_analysis(
-    file_path_str: &'static str,
+    file_path_str: &str,
     profile_type: ProfileType,
     analysis_type: AnalysisType,
 ) {
-    let file_stem = file_stem_from_path_str(file_path_str);
-
     let run_analysis = async || {
         // Interactive visualization: must run AFTER function with `enable_profiling` profiling attribute,
         // because profile output is only available after that function completes.
-        if let Err(e) = show_interactive_prompt(&file_stem, profile_type, analysis_type).await {
+        if let Err(e) = show_interactive_prompt(file_path_str, profile_type, analysis_type).await {
             eprintln!("⚠️ Could not show interactive memory visualization: {e}");
         }
     };
@@ -412,7 +407,7 @@ pub fn prompted_analysis(
 /// - Cannot read user input from stdin
 /// - System command to open browser fails
 pub async fn show_interactive_prompt(
-    demo_name: &str,
+    file_path_str: &str,
     profile_type: ProfileType,
     analysis_type: AnalysisType,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
@@ -430,7 +425,8 @@ pub async fn show_interactive_prompt(
     let show_graph =
         std::io::stdin().read_line(&mut input).is_ok() && input.trim().to_lowercase() == "y";
 
-    generate_and_show_visualization(demo_name, profile_type, analysis_type, show_graph).await?;
+    let file_stem = file_stem_from_path_str(file_path_str);
+    generate_and_show_visualization(&file_stem, profile_type, analysis_type, show_graph).await?;
 
     Ok(())
 }
@@ -444,7 +440,7 @@ pub async fn show_interactive_prompt(
 /// - Flamegraph generation fails
 /// - Browser cannot be opened to display results
 pub async fn generate_and_show_visualization(
-    demo_name: &str,
+    file_stem: &str, // Cow<'_, str>,
     profile_type: ProfileType,
     analysis_type: AnalysisType,
     show_graph: bool,
@@ -453,7 +449,7 @@ pub async fn generate_and_show_visualization(
     let analysis_type_lower = analysis_type.to_string().to_lowercase();
 
     let is_memory = ProfileType::Memory == profile_type;
-    let files = find_latest_profile_files(demo_name, is_memory, 1)?;
+    let files = find_latest_profile_files(file_stem, is_memory, 1)?;
 
     if files.is_empty() {
         println!("💡 Make sure the demo completed successfully and generated profile files.");
@@ -462,7 +458,7 @@ pub async fn generate_and_show_visualization(
 
     // Show analysis first
     let analysis = analyze_profile(profile_type, &files[0])?;
-    let demo_name = demo_name.to_string();
+    let demo_name = file_stem.to_string();
 
     if show_graph {
         println!("🔥 Generating interactive {analysis_type_lower} in background...");
@@ -753,7 +749,7 @@ mod tests {
         let config = VisualizationConfig::default();
         assert_eq!(config.title, "Profiling Analysis");
         assert_eq!(config.count_name, "μs");
-        assert_eq!(config.analysis_type, true);
+        assert_eq!(config.analysis_type, AnalysisType::Flamechart);
     }
 
     #[test]

@@ -230,7 +230,7 @@ pub fn get_root_module() -> Option<&'static str> {
 #[internal_doc]
 #[must_use]
 #[cfg(not(target_os = "windows"))]
-pub fn file_stem_from_path_str(file_name: &'static str) -> String {
+pub fn file_stem_from_path_str(file_name: &str) -> String {
     let fname_start = file_name.rfind('/').map_or_else(|| 0, |pos| pos + 1);
     let fname_dot = file_name.rfind('.').unwrap_or(file_name.len());
     file_name[fname_start..fname_dot].to_string()

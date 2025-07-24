@@ -19,8 +19,7 @@ use std::thread;
 use std::time::Duration;
 use thag_demo_proc_macros::cached;
 use thag_profiler::{
-    enable_profiling, file_stem_from_path_str, profiled, prompted_analysis, timing, AnalysisType,
-    ProfileType,
+    enable_profiling, profiled, prompted_analysis, timing, AnalysisType, ProfileType,
 };
 
 const FIB_N: usize = 45;
@@ -182,8 +181,7 @@ fn main() {
 
     let _ = child.join().unwrap();
 
-    let file_stem = file_stem_from_path_str(&file!());
-    prompted_analysis(&file_stem, ProfileType::Time, AnalysisType::Flamechart);
+    prompted_analysis(&file!(), ProfileType::Time, AnalysisType::Flamechart);
 
     println!("✅ Demo completed!");
     println!("📊 Check the generated flamechart files for visual analysis.");

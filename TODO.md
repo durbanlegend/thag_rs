@@ -14,8 +14,6 @@
 - [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
 - [ ]  DONE: thag return codes - fix inference level detection in builder::display_build_failure and cmd args setting.
 
-In the attached profiled snippet which is run as `thag demo/factorial_ibig_product_instr.rs`, lines 105-119 represent the most concise invocation yet of thag_profiler's new demo visualisation system, which in case you recall it I've now generalised a bit to allow it to be invoked from any profiled script, not just the thag_demo system.
-What I'm looking for now is a macro or proc
 To find snippets with many functions:
 grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done
 

@@ -40,7 +40,7 @@ inquire = { version = "0.7.5", optional = true }
 once_cell = "1.20.3"
 parking_lot = { version = "0.12.3", default-features = false }
 ra_ap_syntax = { version = "0.0.290", optional = true }
-regex = { version = "1.11.1", default-features = false }
+regex = { version = "1.11.1", default-features = false, features = ["unicode"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", optional = true }
 smol = { version = "2", optional = true }
@@ -73,14 +73,7 @@ internal_docs = ["thag_proc_macros/internal_docs"]
 
 
 ## Include dependencies required only for `thag_profile` binary.
-analyze_tool = [
-    "dirs",
-    "inferno",
-    "inquire",
-    "ra_ap_syntax",
-    "serde_json",
-    "regex/unicode-perl",
-]
+analyze_tool = ["dirs", "inferno", "inquire", "ra_ap_syntax", "serde_json"]
 
 ## Include dependencies for all tools.
 tools = ["analyze_tool", "instrument_tool"] # Enable all tools

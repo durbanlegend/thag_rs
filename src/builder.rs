@@ -619,7 +619,13 @@ fn resolve_script_dir_path(
             .script
             .as_ref()
             .ok_or("Problem resolving script path")?;
-        PathBuf::from(script)
+        let script_path = PathBuf::from(script);
+        if !script_path.exists() {
+            return Err(ThagError::FromStr(
+                format!("Script path `{}` does not exist.", script_path.display()).into(),
+            ));
+        }
+        script_path
             .canonicalize()?
             .parent()
             .ok_or("Problem resolving script parent path")?

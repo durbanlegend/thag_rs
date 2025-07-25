@@ -27,8 +27,11 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn list_items(&self, include_ext: Option<&str>, hidden: bool) -> Vec<String> {
+            fn list_items(&self, include_ext: Option<&str>, hidden: bool, new_subdir: bool) -> Vec<String> {
                 let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "*TYPE PATH TO NAVIGATE*".to_string(), "..".to_string()];
+                if new_subdir {
+                    items.insert(2, "*CREATE NEW SUBDIRECTORY*".to_string());
+                }
 
                 // Add directories
                 let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
@@ -170,9 +173,10 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             println!("Select a directory (use arrow keys and Enter to navigate):");
 
             loop {
-                let items = navigator.list_items(None, hidden);
+                let current_path = navigator.current_path().display();
+                let items = navigator.list_items(None, hidden, true);
                 let selection = Select::new(
-                    &format!("Current directory: {}", navigator.current_path().display()),
+                    &format!("Current directory: {current_path}", ),
                     items,
                 )
                 .with_help_message("Press Enter to navigate, select '*SELECT CURRENT DIRECTORY*' to choose current directory")
@@ -186,7 +190,23 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     match navigator.navigate_to_path(&path_input) {
                         Ok(()) => continue,
                         Err(err) => {
-                            println!("Error: {err}");
+                            println!("\nFile navigator: {err}\n");
+                            continue;
+                        }
+                    }
+                }
+
+                if selection == "*CREATE NEW SUBDIRECTORY*" {
+                    let subdir = Text::new("Enter name of new subdirectory")
+                        .with_help_message("Examples: demo, cat123")
+                        .prompt()?;
+                    let new_path = format!("{current_path}/{subdir}");
+                    std::fs::create_dir_all(&new_path)?;
+
+                    match navigator.navigate_to_path(&new_path) {
+                        Ok(()) => continue,
+                        Err(err) => {
+                            println!("\nFile navigator: {err}\n");
                             continue;
                         }
                     }
@@ -210,7 +230,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             println!("Select a file (use arrow keys and Enter to navigate):");
 
             loop {
-                let items = navigator.list_items(include_ext, hidden);
+                let items = navigator.list_items(include_ext, hidden, false);
                 let selection = Select::new(
                     &format!("Current directory: {}", navigator.current_path().display()),
                     items,
@@ -226,7 +246,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     match navigator.navigate_to_path(&path_input) {
                         Ok(()) => continue,
                         Err(err) => {
-                            println!("Error: {err}");
+                            println!("\nFile navigator: {err}\n");
                             continue;
                         }
                     }
@@ -252,7 +272,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             println!("Select destination directory (use arrow keys and Enter to navigate):");
 
             let selected_dir = loop {
-                let items = navigator.list_items(include_ext, hidden);
+                let items = navigator.list_items(include_ext, hidden, true);
                 let selection = Select::new(
                     &format!("Current directory: {}", navigator.current_path().display()),
                     items,
@@ -273,7 +293,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                             match navigator.navigate_to_path(&path_input) {
                                 Ok(()) => continue,
                                 Err(err) => {
-                                    println!("Error: {err}");
+                                    println!("\nFile navigator: {err}\n");
                                     continue;
                                 }
                             }

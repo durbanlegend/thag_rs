@@ -14,6 +14,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 /// by ChatGPT, local directory handling assisted by Claude.
 //# Purpose: Prototype for `thag_get_demo_dir`.
 //# Categories: crates, prototype, technique
+use colored::Colorize;
 use inquire;
 use std::error::Error;
 use std::fs;
@@ -38,23 +39,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 1) Select a target parent directory
     let mut navigator = FileNavigator::new();
 
-    println!("Step 0: Select where you want to save the new `demo` directory");
-    let dest_dir = match select_directory(&mut navigator, false) {
-        Ok(path) => path,
-        Err(_) => {
-            println!("No directory selected. Exiting.");
-            return Ok(());
+    let (dest_dir, demo_dest) = loop {
+        println!("Select where you want to save the new `demo` directory");
+        let dest_dir = match select_directory(&mut navigator, false) {
+            Ok(path) => path,
+            Err(_) => {
+                println!("\nNo directory selected. Exiting.\n");
+                return Ok(());
+            }
+        };
+
+        // // `select_directory` already handles this.
+        // fs::create_dir_all(&dest_dir)?;
+
+        // Check if demo already exists in destination
+        let demo_dest = dest_dir.join("demo");
+        if demo_dest.exists() {
+            println!(
+                "\n{}\n",
+                format!("Destination already has subdirectory {}", "demo".bold())
+                    // .bold()
+                    .magenta()
+            );
+            continue;
         }
+        break (dest_dir, demo_dest);
     };
-
-    // Create the destination dir if it doesn't exist
-    fs::create_dir_all(&dest_dir)?;
-
-    // Check if demo already exists in destination
-    let demo_dest = dest_dir.join("demo");
-    if demo_dest.exists() {
-        return Err(format!("Destination already has {:?}", demo_dest).into());
-    }
 
     // We'll do a temporary clone as a sibling of the destination demo directory
     let temp_clone = dest_dir.join("temp_thag_rs_clone");
@@ -113,6 +123,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 7) Move demo/ directory to the user-specified destination
     let demo_src = temp_clone.join("demo");
     fs::rename(&demo_src, &demo_dest)?;
+
+    // 8) Remove the temporary clone directory
+    fs::remove_dir_all(&temp_clone)?;
 
     println!("✅ demo/ downloaded to: {}", demo_dest.display());
     Ok(())

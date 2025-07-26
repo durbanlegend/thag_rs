@@ -3791,6 +3791,7 @@ dependencies = [
  "colored",
  "dirs",
  "inferno",
+ "inquire",
  "thag_profiler",
  "thag_rs",
 ]

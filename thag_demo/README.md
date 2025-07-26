@@ -62,6 +62,24 @@ thag_demo benchmark
 ```
 Run a full-featured benchmark showcasing all profiling capabilities.
 
+### 🧭 Interactive Demo Browser
+```bash
+thag_demo browse
+```
+Browse and run demo scripts interactively with filtering and search.
+
+### 📋 List All Scripts
+```bash
+thag_demo list-scripts
+```
+See all available demo scripts with descriptions and categories.
+
+### ⚙️ Demo Directory Management
+```bash
+thag_demo manage
+```
+Download, update, or manage the demo script collection.
+
 ### 📝 Custom Scripts
 ```bash
 thag_demo script <script_name>
@@ -71,11 +89,14 @@ Run any script from the thag_rs demo collection.
 ## Features
 
 - **Zero installation friction** - One command to install and run
+- **Interactive demo browser** - Browse 270+ demo scripts with filtering and search
+- **Automatic demo directory management** - Downloads demo collection as needed
 - **Interactive examples** - Each demo explains what it's doing
 - **Progressive complexity** - Start simple, work up to advanced features
 - **Visual output** - Generates flamegraphs and performance visualizations
 - **Educational** - Learn profiling techniques through practical examples
 - **Comprehensive** - Covers time, memory, async, and differential profiling
+- **Smart discovery** - Finds demo directory in multiple standard locations
 
 ## What You'll Learn
 
@@ -104,14 +125,55 @@ Run any script from the thag_rs demo collection.
 `thag_demo` is a thin wrapper around `thag_rs` that:
 
 1. **Bundles curated examples** - High-quality profiling demonstrations
-2. **Configures thag_rs** - Pre-configured for optimal demo experience  
-3. **Provides guidance** - Explains what each demo teaches
-4. **Generates artifacts** - Creates flamegraphs and profile data you can explore
+2. **Manages demo collection** - Automatically downloads 270+ demo scripts
+3. **Provides interactive browsing** - Filter and search through demos by name/category
+4. **Configures thag_rs** - Pre-configured for optimal demo experience  
+5. **Provides guidance** - Explains what each demo teaches
+6. **Generates artifacts** - Creates flamegraphs and profile data you can explore
+
+### Demo Directory Discovery
+
+The tool automatically searches for demo scripts in multiple locations:
+- Sibling to thag_demo installation
+- `~/.thag/demo` (standard user location)
+- `$THAG_DEMO_DIR` environment variable
+- `./demo` in current directory
+
+If not found, it offers to download the demo collection using `thag_get_demo_dir`.
+
+## Interactive Commands
+
+### Browse Demos Interactively
+```bash
+thag_demo browse
+```
+- Filter demos by typing part of the name
+- Navigate with arrow keys
+- See descriptions and categories inline
+- Run demos directly from the browser
+
+### Manage Demo Directory
+```bash
+thag_demo manage
+```
+- Download the demo collection if not present
+- Update existing demo collection
+- View directory information and statistics
+- Browse demos interactively
+
+### List All Available Scripts
+```bash
+thag_demo list-scripts
+```
+- Shows both built-in demos and script demos
+- Displays descriptions and categories
+- Provides usage examples
 
 ## Requirements
 
 - Rust toolchain (stable)
-- Internet connection (for initial install)
+- Internet connection (for demo directory download)
+- Git (for downloading demo collection)
 
 ## Output Files
 

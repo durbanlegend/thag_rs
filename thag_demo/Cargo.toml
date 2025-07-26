@@ -19,6 +19,7 @@ dirs = "6.0"
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 inferno = "0.12"
+inquire = "0.7"
 
 [package.metadata.docs.rs]
 all-features = true

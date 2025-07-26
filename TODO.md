@@ -19,7 +19,18 @@ To find snippets with many functions:
 grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done
 
 Syntax for changing background color using OSC:
-echo -e "\033]1337;SetColors=bg=f4f4f4\a"
+bg=f9f5d7
+echo -e "\033]1337;SetColors=bg=$bg\a"
+
+# iterm2 change prompt
+autoload -Uz vcs_info
+precmd() { vcs_info }
+
+zstyle ':vcs_info:git:*' formats '%b '
+
+setopt PROMPT_SUBST
+PROMPT='%F{green}%*%f %F{blue}%~%f %F{red}${vcs_info_msg_0_}%f$ '
+
 
 curl -sL https://raw.githubusercontent.com/durbanlegend/thag_rs/main/thag_demo/install_and_demo.sh | bash
 

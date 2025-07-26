@@ -82,6 +82,8 @@ ___
 
   ```bash
   thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+
+  thag_url https://github.com/mikaelmello/inquire/blob/main/inquire/examples/render_config.rs --features=inquire/date
   ```
 
   **New in 0.2.0:** Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (i.e. most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.

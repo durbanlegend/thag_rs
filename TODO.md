@@ -13,7 +13,7 @@
 - [ ]  "Playground" naming. Multifaceted playground.
 - [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
-- [ ]  Give file_navigator can't find typed.
+- [ ]  Add a F() key in tui_editor for save a copy
 
 To find snippets with many functions:
 grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done

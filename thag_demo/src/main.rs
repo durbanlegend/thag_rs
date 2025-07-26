@@ -6,6 +6,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
+use inquire::ui::{Attributes, Color, RenderConfig, StyleSheet};
 use inquire::{Confirm, Select, Text};
 use std::path::{Path, PathBuf};
 use std::process;
@@ -212,7 +213,7 @@ fn download_demo_dir() -> Result<PathBuf> {
         fs::create_dir_all(&location)?;
     }
 
-    println!("{}", "Downloading demo directory...".cyan());
+    println!("{}", "Downloading demo directory...".green());
 
     // Call thag_get_demo_dir subprocess
     let output = std::process::Command::new("thag")
@@ -256,13 +257,26 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
     let mut usage_example = None;
 
     let lines: Vec<&str> = content.lines().collect();
+    // eprintln!("lines={lines:#?}");
     let mut _in_doc_comment = false;
+    let mut _in_block_doc_comment = false;
 
     for line in lines {
         let trimmed = line.trim();
+        // eprintln!(
+        //     r#"trimmed={trimmed}, trimmed.starts_with("///")={}"#,
+        //     trimmed.starts_with("///")
+        // );
 
+        // Look for block doc comments (/** ... */)
+        if trimmed.starts_with("/**") {
+            _in_block_doc_comment = true;
+        } else if _in_block_doc_comment && trimmed.starts_with("*/") {
+            _in_block_doc_comment = false;
+            _in_doc_comment = true;
+        }
         // Look for doc comments (///)
-        if trimmed.starts_with("///") {
+        else if trimmed.starts_with("///") {
             _in_doc_comment = true;
             let comment_text = trimmed.trim_start_matches("///").trim();
             if !comment_text.is_empty() && description.is_none() {
@@ -271,6 +285,17 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
             // Look for usage examples in doc comments
             if comment_text.starts_with("E.g.") || comment_text.contains("thag") {
                 usage_example = Some(comment_text.to_string());
+            }
+        } else if _in_block_doc_comment {
+            if !trimmed.starts_with("/**") {
+                let comment_text = trimmed;
+                if !comment_text.is_empty() && description.is_none() {
+                    description = Some(comment_text.to_string());
+                }
+                // Look for usage examples in doc comments
+                if comment_text.starts_with("E.g.") || comment_text.contains("thag") {
+                    usage_example = Some(comment_text.to_string());
+                }
             }
         }
         // Look for categories comment (//# Categories:)
@@ -288,7 +313,7 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
             sample_arguments = Some(args_text.to_string());
         }
         // Stop at first non-comment line
-        else if !trimmed.starts_with("//") && !trimmed.is_empty() {
+        else if _in_doc_comment && !trimmed.starts_with("//") && !trimmed.is_empty() {
             break;
         }
     }
@@ -508,7 +533,7 @@ fn list_all_demos() -> Result<()> {
     ];
 
     for (name, description) in demos {
-        println!("  {} - {}", name.bold().cyan(), description.dimmed());
+        println!("  {} - {}", name.bold().green(), description.dimmed());
     }
 
     println!();
@@ -530,7 +555,7 @@ fn list_all_demos() -> Result<()> {
                         };
                     println!(
                         "  {} - {}{}",
-                        demo.name.bold().cyan(),
+                        demo.name.bold().green(),
                         demo.description.dimmed(),
                         args_hint
                     );
@@ -555,7 +580,7 @@ fn list_all_demos() -> Result<()> {
 
 /// Manage demo directory (download, update, set location)
 fn manage_demo_directory() -> Result<()> {
-    println!("{}", "Demo Directory Management".bold().cyan());
+    println!("{}", "Demo Directory Management".bold().green());
     println!("{}", "═".repeat(30));
 
     // Check current status
@@ -655,13 +680,15 @@ fn manage_demo_directory() -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    inquire::set_global_render_config(get_render_config());
+
     let args = DemoArgs::parse();
 
     println!(
         "{}",
         format!("🔥 thag_demo v{}", env!("CARGO_PKG_VERSION"))
             .bold()
-            .cyan()
+            .green()
     );
     println!(
         "{}",
@@ -719,24 +746,24 @@ fn list_demos() {
     ];
 
     for (name, description) in demos {
-        println!("  {} - {}", name.bold().cyan(), description.dimmed());
+        println!("  {} - {}", name.bold().green(), description.dimmed());
     }
 
     println!();
     println!("{}", "Interactive Commands:".bold().green());
     println!(
         "  {} - {}",
-        "browse".bold().cyan(),
+        "browse".bold().green(),
         "Interactive demo script browser".dimmed()
     );
     println!(
         "  {} - {}",
-        "manage".bold().cyan(),
+        "manage".bold().green(),
         "Manage demo directory (download/update)".dimmed()
     );
     println!(
         "  {} - {}",
-        "list-scripts".bold().cyan(),
+        "list-scripts".bold().green(),
         "List all available demo scripts".dimmed()
     );
 
@@ -1003,4 +1030,15 @@ fn print_demo_info(demo_name: &str) {
     println!("  • thag_rs repository: https://github.com/durbanlegend/thag_rs");
     println!("  • More examples: thag_demo --list");
     println!();
+}
+
+fn get_render_config() -> RenderConfig<'static> {
+    let mut render_config = RenderConfig::default();
+    render_config.selected_option = Some(
+        StyleSheet::new()
+            .with_fg(Color::LightRed)
+            .with_attr(Attributes::BOLD),
+    );
+    render_config.help_message = StyleSheet::empty().with_fg(Color::DarkMagenta);
+    render_config
 }

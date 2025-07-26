@@ -12,7 +12,7 @@ use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 #[derive(Parser)]
 #[command(version, about, long_about = Some("This is the long 'about'"))]
 struct Cli {
-    /// Which of 3 variants to choose
+    // Which of 3 variants to choose
     #[arg(value_enum)]
     opt: Opt,
 }
@@ -23,13 +23,13 @@ struct Cli {
 #[strum(serialize_all = "kebab-case")]
 enum Opt {
     #[default]
-    /// Help for variant 1
+    // Help for variant 1
     #[strum(props(key = "var1"))]
     VariantNum1,
-    /// Help for variant 2
+    // Help for variant 2
     #[strum(props(key = "var2"))]
     VariantNum2,
-    /// Help for variant 3
+    // Help for variant 3
     #[strum(props(key = "var3"))]
     VariantNum3,
 }

@@ -22,6 +22,8 @@ struct DemoFile {
     path: PathBuf,
     description: String,
     categories: Vec<String>,
+    sample_arguments: Option<String>,
+    usage_example: Option<String>,
 }
 
 /// Represents possible locations for the demo directory
@@ -250,6 +252,8 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
 
     let mut description = None;
     let mut categories = Vec::new();
+    let mut sample_arguments = None;
+    let mut usage_example = None;
 
     let lines: Vec<&str> = content.lines().collect();
     let mut _in_doc_comment = false;
@@ -264,6 +268,10 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
             if !comment_text.is_empty() && description.is_none() {
                 description = Some(comment_text.to_string());
             }
+            // Look for usage examples in doc comments
+            if comment_text.starts_with("E.g.") || comment_text.contains("thag") {
+                usage_example = Some(comment_text.to_string());
+            }
         }
         // Look for categories comment (//# Categories:)
         else if trimmed.starts_with("//# Categories:") {
@@ -273,6 +281,11 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
                 .collect();
+        }
+        // Look for sample arguments comment (//# Sample arguments:)
+        else if trimmed.starts_with("//# Sample arguments:") {
+            let args_text = trimmed.trim_start_matches("//# Sample arguments:").trim();
+            sample_arguments = Some(args_text.to_string());
         }
         // Stop at first non-comment line
         else if !trimmed.starts_with("//") && !trimmed.is_empty() {
@@ -287,6 +300,8 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
         path: path.to_path_buf(),
         description: final_description,
         categories,
+        sample_arguments,
+        usage_example,
     }))
 }
 
@@ -328,7 +343,12 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
             } else {
                 format!(" [{}]", demo.categories.join(", "))
             };
-            format!("{} - {}{}", demo.name, demo.description, cats)
+            let args_hint = if demo.sample_arguments.is_some() || demo.usage_example.is_some() {
+                " 📝"
+            } else {
+                ""
+            };
+            format!("{} - {}{}{}", demo.name, demo.description, cats, args_hint)
         })
         .collect();
 
@@ -343,7 +363,7 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
         println!("\n🚀 Interactive Demo Browser");
         println!("{}", "═".repeat(80));
         println!("📚 {} demo scripts available", demo_files.len());
-        println!("💡 Start typing to filter demos by name");
+        println!("💡 Start typing to filter demos by name • 📝 = accepts arguments");
         println!("{}", "═".repeat(80));
 
         let selection: InquireResult<ListOption<String>> =
@@ -372,6 +392,16 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
                     "{}",
                     format!("Running demo script: {}", demo_name).bold().green()
                 );
+
+                // Show additional info if available
+                if let Some(demo_file) = demo_files.iter().find(|d| d.name == demo_name) {
+                    if let Some(ref usage) = demo_file.usage_example {
+                        println!("💡 Usage: {}", usage.dimmed());
+                    }
+                    if let Some(ref args) = demo_file.sample_arguments {
+                        println!("📝 Sample args: {}", args.dimmed());
+                    }
+                }
                 println!();
 
                 match run_selected_demo(&demo_dir, demo_name, verbose) {
@@ -418,12 +448,20 @@ fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<
         ));
     }
 
+    // Extract demo metadata to get sample arguments
+    let demo_metadata = extract_demo_metadata(&demo_path)?;
+    let demo_file = demo_metadata
+        .ok_or_else(|| anyhow::anyhow!("Could not extract metadata from demo file"))?;
+
+    // Collect arguments if needed
+    let args = collect_demo_arguments(&demo_file)?;
+
     // Set THAG_DEV_PATH for local development - point to thag_rs root
     let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let thag_rs_root = current_dir.parent().unwrap_or(&current_dir);
     env::set_var("THAG_DEV_PATH", thag_rs_root);
 
-    let mut cli = create_demo_cli(&demo_path, verbose);
+    let mut cli = create_demo_cli_with_args(&demo_path, verbose, args);
 
     set_global_verbosity(if verbose { V::D } else { V::N })?;
 
@@ -473,13 +511,23 @@ fn list_all_demos() -> Result<()> {
                 println!("  {}", "No script demos found".dimmed());
             } else {
                 for demo in &demo_files {
+                    let args_hint =
+                        if demo.sample_arguments.is_some() || demo.usage_example.is_some() {
+                            " 📝"
+                        } else {
+                            ""
+                        };
                     println!(
-                        "  {} - {}",
+                        "  {} - {}{}",
                         demo.name.bold().cyan(),
-                        demo.description.dimmed()
+                        demo.description.dimmed(),
+                        args_hint
                     );
                     if !demo.categories.is_empty() {
                         println!("    Categories: {}", demo.categories.join(", ").dimmed());
+                    }
+                    if let Some(ref args) = demo.sample_arguments {
+                        println!("    Sample args: {}", args.dimmed());
                     }
                 }
             }
@@ -798,10 +846,14 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
 }
 
 fn create_demo_cli(script_path: &Path, verbose: bool) -> Cli {
+    create_demo_cli_with_args(script_path, verbose, Vec::new())
+}
+
+fn create_demo_cli_with_args(script_path: &Path, verbose: bool, args: Vec<String>) -> Cli {
     Cli {
         script: Some(script_path.to_string_lossy().to_string()),
         features: None,
-        args: Vec::new(),
+        args,
         force: false,
         expression: None,
         repl: false,
@@ -826,6 +878,70 @@ fn create_demo_cli(script_path: &Path, verbose: bool) -> Cli {
         infer: None,
         cargo: false,
         test_only: false,
+    }
+}
+
+/// Collect arguments for a demo if needed
+fn collect_demo_arguments(demo_file: &DemoFile) -> Result<Vec<String>> {
+    // Check if this demo needs arguments by looking for usage patterns
+    let needs_args = demo_file.sample_arguments.is_some()
+        || demo_file
+            .usage_example
+            .as_ref()
+            .map_or(false, |ex| ex.contains("--"))
+        || demo_file.description.contains("Usage:")
+        || demo_file.description.contains("E.g.");
+
+    if !needs_args {
+        return Ok(Vec::new());
+    }
+
+    println!("\n📝 This demo accepts command-line arguments.");
+
+    if let Some(ref sample_args) = demo_file.sample_arguments {
+        println!("💡 Sample arguments: {}", sample_args);
+    }
+
+    if let Some(ref usage) = demo_file.usage_example {
+        println!("💡 Usage example: {}", usage);
+    }
+
+    match Text::new("Enter arguments (or press Enter for no arguments):")
+        .with_default("")
+        .with_help_message("Space-separated arguments that will be passed to the demo")
+        .prompt()
+    {
+        Ok(input) => {
+            if input.trim().is_empty() {
+                Ok(Vec::new())
+            } else {
+                // Simple argument parsing - split by spaces but preserve quoted strings
+                Ok(shell_words::split(&input).unwrap_or_else(|_| {
+                    // Fallback to simple split if shell_words fails
+                    input.split_whitespace().map(String::from).collect()
+                }))
+            }
+        }
+        Err(e) => {
+            println!("❌ Interactive prompt failed: {}", e);
+            // Try using sample arguments as fallback
+            if let Some(ref sample_args) = demo_file.sample_arguments {
+                // Clean up the arguments by removing backticks and extracting content after --
+                let cleaned = sample_args.trim_matches('`').trim();
+                let args_str = if cleaned.starts_with("-- ") {
+                    &cleaned[3..]
+                } else if cleaned.contains("-- ") {
+                    cleaned.split("-- ").nth(1).unwrap_or(cleaned)
+                } else {
+                    cleaned
+                };
+                println!("💡 Using sample arguments as fallback: {}", args_str);
+                return Ok(shell_words::split(args_str)
+                    .unwrap_or_else(|_| args_str.split_whitespace().map(String::from).collect()));
+            }
+            println!("💡 Running demo without arguments");
+            Ok(Vec::new())
+        }
     }
 }
 

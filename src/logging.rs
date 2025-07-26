@@ -4,7 +4,7 @@ use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
-    LazyLock, Mutex,
+    LazyLock, Mutex, Once,
 };
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_profiler::profiled;
@@ -22,6 +22,7 @@ use {
 use env_logger::{Builder, Env};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
+static LOGGING_INIT: Once = Once::new();
 
 /// Initializes and returns the global verbosity setting.
 ///
@@ -179,7 +180,9 @@ pub fn configure_log() {
 #[cfg(feature = "simplelog")]
 #[profiled]
 pub fn configure_log() {
-    configure_simplelog();
+    LOGGING_INIT.call_once(|| {
+        configure_simplelog();
+    });
     // info!("Initialized simplelog");  // interferes with testing
     vlog!(V::V, "Initialized simplelog");
 }
@@ -192,7 +195,7 @@ pub fn configure_log() {
 #[cfg(feature = "simplelog")]
 #[profiled]
 fn configure_simplelog() {
-    CombinedLogger::init(vec![
+    if let Err(e) = CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Info,
             Config::default(),
@@ -204,8 +207,10 @@ fn configure_simplelog() {
             Config::default(),
             File::create("app.log").unwrap(),
         ),
-    ])
-    .unwrap();
+    ]) {
+        // Logger already initialized, which is fine
+        eprintln!("Logger already initialized: {}", e);
+    }
 }
 
 /// A line print macro that prints a styled and coloured message.

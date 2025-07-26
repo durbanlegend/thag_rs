@@ -11,7 +11,11 @@ keywords = ["demo", "profiling", "rust", "thag", "examples"]
 categories = ["development-tools", "command-line-utilities"]
 
 [dependencies]
-thag_rs = { version = "0.2", path = "../", features = ["build", "simplelog"] }
+thag_rs = { version = "0.2", path = "../", features = [
+    "build",
+    "color_detect",
+    "simplelog",
+] }
 thag_profiler = { version = "0.1", path = "../thag_profiler" }
 clap = { version = "4.5", features = ["derive"] }
 colored = "2.0"

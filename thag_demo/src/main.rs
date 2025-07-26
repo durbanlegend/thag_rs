@@ -11,6 +11,7 @@ use inquire::{Confirm, Select, Text};
 use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
+use thag_rs::styling::{ColorValue, Role, TermAttributes};
 use thag_rs::{builder::execute, configure_log, Cli};
 use thag_rs::{get_verbosity, set_global_verbosity, V};
 
@@ -1032,13 +1033,64 @@ fn print_demo_info(demo_name: &str) {
     println!();
 }
 
+/// Creates a theme-aware RenderConfig for inquire prompts.
+///
+/// This function integrates thag's color system with inquire's UI rendering by:
+/// - Detecting terminal capabilities (TrueColor, 256-color, or Basic)
+/// - Mapping inquire UI elements to appropriate thag semantic roles
+/// - Converting colors based on terminal support:
+///   * TrueColor terminals: Use RGB values directly
+///   * 256-color terminals: Use color palette indices
+///   * Basic terminals: Use thag's existing role-to-color mapping
+///
+/// The mapping uses these thag roles for inquire elements:
+/// - `selected_option` → `Role::Emphasis` (currently highlighted item)
+/// - `help_message` → `Role::Hint` (help text)
+/// - `error_message` → `Role::Error` (error messages)
+/// - `prompt` → `Role::Normal` (main prompt text)
+/// - `answer` → `Role::Success` (completed prompts)
+/// - `placeholder` → `Role::Subtle` (placeholder text)
 fn get_render_config() -> RenderConfig<'static> {
     let mut render_config = RenderConfig::default();
+
+    // Get terminal attributes and current theme from thag's color system
+    let term_attrs = TermAttributes::get_or_init();
+    let theme = &term_attrs.theme;
+
+    // Helper function to convert thag colors to inquire colors
+    let convert_color = |role: Role| -> Color {
+        let style = theme.style_for(role);
+        if let Some(color_info) = &style.foreground {
+            match &color_info.value {
+                ColorValue::TrueColor { rgb } => Color::Rgb {
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2],
+                },
+                ColorValue::Color256 { color256 } => Color::AnsiValue(*color256),
+                ColorValue::Basic { .. } => {
+                    // Use thag's existing color mapping for basic terminals
+                    Color::AnsiValue(u8::from(&role))
+                }
+            }
+        } else {
+            // Fallback if no foreground color is defined
+            Color::AnsiValue(u8::from(&role))
+        }
+    };
+
+    // Map inquire UI elements to appropriate thag roles
     render_config.selected_option = Some(
         StyleSheet::new()
-            .with_fg(Color::LightRed)
+            .with_fg(convert_color(Role::Emphasis))
             .with_attr(Attributes::BOLD),
     );
-    render_config.help_message = StyleSheet::empty().with_fg(Color::DarkMagenta);
+    render_config.help_message = StyleSheet::empty().with_fg(convert_color(Role::Hint));
+    render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
+        .with_message(StyleSheet::empty().with_fg(convert_color(Role::Error)));
+    render_config.prompt = StyleSheet::empty().with_fg(convert_color(Role::Normal));
+    render_config.answer = StyleSheet::empty().with_fg(convert_color(Role::Success));
+    render_config.placeholder = StyleSheet::empty().with_fg(convert_color(Role::Subtle));
+
     render_config
 }

@@ -14,12 +14,14 @@
 - [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
 - [ ]  Add a F() key in tui_editor for save a copy
+- [ ]  Consider using thag styling to control inquire colors as per thag_demo/src/main.rs (i.e. thag-specific RenderConfig) elsewhere. Perhaps offer some alternatives for cases where e.g. hint is too quiet.
 
 To find snippets with many functions:
 grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done
 
 Syntax for changing background color using OSC:
 bg=f9f5d7
+bg=24273a
 echo -e "\033]1337;SetColors=bg=$bg\a"
 
 # iterm2 change prompt

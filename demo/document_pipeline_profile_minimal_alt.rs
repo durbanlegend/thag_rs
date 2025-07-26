@@ -23,10 +23,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::{
-    self, /*, disable_profiling*/
-    enable_profiling, profiled, /*, end, profile, ProfileType */
-};
+use thag_profiler::{self, enable_profiling, is_profiling_enabled, profiled};
 
 struct Document {
     id: usize,
@@ -209,7 +206,9 @@ async fn main() {
     // Only process small batches of documents for easy tracing
     run_batch(1).await;
 
-    println!("Profiling data written to folded files in current directory");
+    if is_profiling_enabled() {
+        println!("Profiling data written to folded files in current directory");
+    }
 
     // println!(
     //     "thag_profiler::PROFILING_MUTEX.is_locked()? {}",

@@ -22,7 +22,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-use thag_profiler::{self, enable_profiling, end, profile, profiled};
+use thag_profiler::{self, enable_profiling, end, is_profiling_enabled, profile, profiled};
 
 struct Document {
     id: usize,
@@ -213,5 +213,7 @@ async fn main() {
     run_batch(1).await;
     end!(last_batch);
 
-    println!("Profiling data written to folded files in current directory");
+    if is_profiling_enabled() {
+        println!("Profiling data written to folded files in current directory");
+    }
 }

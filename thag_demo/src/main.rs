@@ -453,6 +453,17 @@ fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<
     let demo_file = demo_metadata
         .ok_or_else(|| anyhow::anyhow!("Could not extract metadata from demo file"))?;
 
+    // Check if this is a profiling demo and suggest environment variable
+    if demo_file.name.contains("profile") || demo_file.categories.contains(&"profiling".to_string())
+    {
+        if env::var("THAG_PROFILER").is_err() {
+            println!("\n📊 This appears to be a profiling demo.");
+            println!("💡 For profiling output (.folded files), set: export THAG_PROFILER=both");
+            println!("   Other options: THAG_PROFILER=time or THAG_PROFILER=memory");
+            println!("   Without this, the demo runs but no profiling data is collected.");
+        }
+    }
+
     // Collect arguments if needed
     let args = collect_demo_arguments(&demo_file)?;
 

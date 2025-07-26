@@ -189,7 +189,7 @@ fn select_config_file(
     println!("Select a configuration file (use arrow keys and Enter to navigate):");
 
     loop {
-        let items = navigator.list_items(Some("toml"), true);
+        let items = navigator.list_items(Some("toml"), true, false);
         let selection = Select::new(
             &format!("Current directory: {}", navigator.current_path().display()),
             items,

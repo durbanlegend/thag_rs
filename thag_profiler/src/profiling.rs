@@ -2858,40 +2858,43 @@ const SCAFFOLDING_PATTERNS: &[&str] = &[
 
 /// Normalises function names by removing closure references and hash suffixes.
 #[internal_doc]
-pub fn clean_function_name(clean_name: &mut str) -> String {
-    // Remove any closure markers
-    let mut clean_name: &mut str = if let Some(closure_pos) = clean_name.find("::{{closure}}") {
-        // index = closure_pos;
-        &mut clean_name[..closure_pos]
-    } else if let Some(hash_pos) = clean_name.rfind("::h") {
-        // Find and remove hash suffixes (::h followed by hex digits)
-        // from the last path segment
-        if clean_name[hash_pos + 3..]
-            .chars()
-            .all(|c| c.is_ascii_hexdigit())
-        {
-            &mut clean_name[..hash_pos]
+pub fn clean_function_name(name: &mut str) -> String {
+    // Trim suffix like ::{{closure}} or ::h[hexdigits]
+    let trimmed = if let Some(pos) = name.find("::{{closure}}") {
+        &name[..pos]
+    } else if let Some(pos) = name.rfind("::h") {
+        let hex = &name[pos + 3..];
+        if hex.chars().all(|c| c.is_ascii_hexdigit()) {
+            &name[..pos]
         } else {
-            clean_name
+            name
         }
     } else {
-        clean_name
+        name
     };
-    // .to_string();
 
-    while clean_name.ends_with("::") {
-        let len = clean_name.len();
-        clean_name = &mut clean_name[..len - 2];
+    // Remove trailing ::
+    let trimmed = trimmed.trim_end_matches("::");
+
+    // Collapse sequences of four colons to two colons
+    // This assumes backtraces sometimes produce "::::"
+    let mut result = String::with_capacity(trimmed.len());
+    let mut chars = trimmed.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == ':' && chars.peek() == Some(&':') {
+            // Start of potential run
+            let mut colon_count = 1;
+            while chars.peek() == Some(&':') {
+                chars.next();
+                colon_count += 1;
+            }
+            result.push_str("::");
+        } else {
+            result.push(c);
+        }
     }
 
-    let mut clean_name = (*clean_name).to_string();
-
-    // Clean up any double colons that might be left
-    while clean_name.contains("::::") {
-        clean_name = clean_name.replace("::::", "::");
-    }
-
-    clean_name
+    result
 }
 
 // Optional: add memory info to error handling

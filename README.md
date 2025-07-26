@@ -203,7 +203,14 @@ thag -qe u64::MAX                                               # Long form: --q
 ```
 
 Invoking quiet mode (`--quiet / -q`) suppresses most feedback except for the flowerbox to highlight the output.
-Invoking it twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
+
+Quickly calculating a percentage:
+
+![Percentage](assets/percentage.png)
+
+No quotes, no spaces, escape asterisks and parens, and remember Rust decimal arithmetic requires decimal points or floating point notation on all numbers.
+
+Invoking `--quiet` twice (`-qq` for short) suppresses all non-error feedback including the flowerbox, allowing the
 output to be used as a filter.
 
 By default, `thag` and Cargo will feed back to you:
@@ -309,21 +316,22 @@ key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 At a minimum, this loops though `stdin` running the `--loop` expression against every line. The line number and content are made available to the expression as `i` and `line` respectively.
 
 ```bash
-thag --loop 'println!("{i:>3}.{line}")' < demo/hello.rs    # Short form: -l
+thag --loop 'println!("{i:>3}.  {line}")' < demo/iter.rs       # Short form: -l
 ```
 ![Loop](assets/loopt.png)
 
 `thag` will print returned values automatically. Strings will now be quoted:
 
 ```bash
-thag -ql 'format!("{i:>3}.{line}")' < demo/hello.rs            # Long form: --quiet --loop
+thag -ql 'format!("{i:>3}.  {line}")' < demo/hello.rs            # Long form: --quiet --loop
 
 ```
 For a true filter that you can safely pipe to another process, use `-qq` (or `--quiet --quiet`) to suppress all non-error output:
 
 ```bash
-thag -qql 'println!("{i:>3}.{line}")' < demo/hello.rs | grep Categories          # Long form: --quiet --quiet --loop
-
+bash-3.2$ thag -qql 'println!("{i:>3}.  {line}")' < demo/hello.rs | grep Categories
+  3.  //# Categories: basic
+bash-3.2$
 ```
 Loop mode also accepts the following optional arguments supplying surrounding code, along the lines of AWK:
 
@@ -366,7 +374,9 @@ For an example of tolerating a broken pipe, see
 #### Using `writeln!` with a pipe:
 
 ```bash
-thag -qql 'let _ = writeln!(io::stdout(), "{i:>3}.{line}");' < demo/hello.rs | grep Categories    # long form: --quiet --quiet --loop
+bash-3.2$ thag -qql 'let _ = writeln!(io::stdout(), "{i:>3}.  {line}");' < demo/hello.rs | grep Categories    # long form: --quiet --quiet --loop
+  3.  //# Categories: basic
+bash-3.2$
 ```
 
 ### * As an executable:
@@ -537,10 +547,9 @@ The different ways `thag` accepts code are as far as possible "orthagonal" to th
 
 ### Running a script in quiet mode but with timings
 ```bash
-thag -tq demo/fizz_buzz_gpt.rs
-Completed generation in 0.276s
-Completed build in 1.171s
-----------------------------------------------------------------------
+bash-3.2$ thag -tq demo/fizz_buzz_gpt.rs
+
+──────────────────────────────────────────────────────────────────────
 1
 2
 Fizz
@@ -570,9 +579,10 @@ Fizz
 98
 Fizz
 Buzz
-----------------------------------------------------------------------
-Completed run in 0.558s
-thag_rs completed processing script fizz_buzz_gpt.rs in 2.43s
+──────────────────────────────────────────────────────────────────────
+Completed run in 0.21s
+thag_rs completed processing script fizz_buzz_gpt.rs in 0.59s
+bash-3.2$
 ```
 
 ### Using the REPL

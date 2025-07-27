@@ -34,7 +34,7 @@ pub fn main() {
         let result = handle(&cli);
 
         if let Err(e) = result {
-            cvprtln!(Role::ERR, V::N, "Error running thag: {e}.");
+            cvprtln!(Role::ERR, V::N, "Error running thag: {e}");
 
             std::process::exit(1);
         }

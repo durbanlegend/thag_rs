@@ -44,7 +44,8 @@ fn show_color_analysis() {
     println!("─────────────────────────");
 
     let normal_rgb = get_rgb_from_role(Role::Normal, theme);
-    let candidates = [Role::Emphasis, Role::Code, Role::Heading3];
+    // let candidates = [Role::Emphasis, Role::Code, Role::Heading3];
+    let candidates = [Role::Emphasis, Role::Heading3, Role::Info, Role::Success];
 
     if let Some(normal_color) = normal_rgb {
         println!("Normal role (regular entries): RGB {:?}", normal_color);
@@ -106,11 +107,12 @@ fn demo_theme_roles() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     let role_options = vec![
-        "Normal - standard text role",
         "Emphasis - emphasized text role",
-        "Code - code snippet role",
         "Heading3 - tertiary heading role",
         "Info - informational text role",
+        "Normal - standard text role",
+        "Success - success text role",
+        // "Code - code snippet role",
     ];
 
     let _choice = Select::new("Select a role type:", role_options)
@@ -165,7 +167,7 @@ fn get_optimized_render_config() -> RenderConfig<'static> {
 
     // Color distance optimization for selected_option
     let normal_rgb = get_rgb_from_role(Role::Normal, theme);
-    let candidate_roles = [Role::Emphasis, Role::Code, Role::Heading3];
+    let candidate_roles = [Role::Emphasis, Role::Heading3, Role::Info, Role::Success];
 
     let optimal_role = if let Some(normal_color) = normal_rgb {
         candidate_roles
@@ -188,7 +190,7 @@ fn get_optimized_render_config() -> RenderConfig<'static> {
     );
 
     // Regular options use Normal role for consistent baseline
-    render_config.option = StyleSheet::empty().with_fg(convert_color(Role::Normal));
+    render_config.option = StyleSheet::empty().with_fg(convert_color(Role::Subtle));
 
     // Other UI elements
     render_config.help_message = StyleSheet::empty().with_fg(convert_color(Role::Info));

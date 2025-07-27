@@ -1153,16 +1153,16 @@ fn get_render_config() -> RenderConfig<'static> {
     };
 
     // Choose the best selected_option color based on color distance from Normal
-    let normal_rgb = get_rgb(Role::Normal);
+    let prompt_rgb = get_rgb(Role::Normal);
     let candidate_roles = [
         Role::Emphasis,
-        Role::Code,
-        Role::Success,
-        Role::Info,
+        Role::Heading2,
         Role::Heading3,
+        Role::Info,
+        Role::Success,
     ];
 
-    let best_role = if let Some(normal_color) = normal_rgb {
+    let best_role = if let Some(normal_color) = prompt_rgb {
         candidate_roles
             .iter()
             .filter_map(|&role| get_rgb(role).map(|rgb| (role, color_distance(normal_color, rgb))))

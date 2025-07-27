@@ -436,13 +436,24 @@ fn resolve_thag_dependency(
             let query: Query = format!("{crate_name}@={version}")
                 .parse()
                 .map_err(|e| ThagError::FromStr(format!("Failed to parse query: {e}").into()))?;
-            let maybe_specific_release = query.submit();
-            if maybe_specific_release.is_ok() {
-                new_detail.version = Some(version);
-                debug_log!(
-                    "Using crates.io version for {crate_name}: {:?}",
-                    new_detail.version
-                );
+            let result = query.submit();
+            // .map_err(|e| ThagError::FromStr(format!("{e}").into()))?;
+            // .map_err(|e| -> ThagError { format!("{e}").into() })?;
+            if let Ok(maybe_specific_release) = result {
+                if let Some(release) = maybe_specific_release {
+                    let vers = release.vers;
+                    new_detail.version =
+                        Some(format!("{}.{}.{}", vers.major, vers.minor, vers.patch));
+                    debug_log!(
+                        "Using crates.io version for {crate_name}: {:?}",
+                        new_detail.version
+                    );
+                } else {
+                    display_thag_auto_help();
+                    return Err(ThagError::FromStr(
+                        format!("{crate_name} version {} not found in crates.io", version).into(),
+                    ));
+                }
             } else {
                 display_thag_auto_help();
                 return Err(ThagError::FromStr(

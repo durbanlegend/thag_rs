@@ -244,7 +244,7 @@ pub fn file_stem_from_path_str(file_name: &str) -> String {
 #[internal_doc]
 #[must_use]
 #[cfg(target_os = "windows")]
-pub fn file_stem_from_path_str(file_name: &'static str) -> String {
+pub fn file_stem_from_path_str(file_name: &str) -> String {
     // On Windows, paths use backslashes and may be escaped (double backslashes)
     // Look for both single and double backslashes
     let fname_start = file_name

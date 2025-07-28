@@ -439,21 +439,13 @@ fn resolve_thag_dependency(
             let result = query.submit();
             // .map_err(|e| ThagError::FromStr(format!("{e}").into()))?;
             // .map_err(|e| -> ThagError { format!("{e}").into() })?;
-            if let Ok(maybe_specific_release) = result {
-                if let Some(release) = maybe_specific_release {
-                    let vers = release.vers;
-                    new_detail.version =
-                        Some(format!("{}.{}.{}", vers.major, vers.minor, vers.patch));
-                    debug_log!(
-                        "Using crates.io version for {crate_name}: {:?}",
-                        new_detail.version
-                    );
-                } else {
-                    display_thag_auto_help();
-                    return Err(ThagError::FromStr(
-                        format!("{crate_name} version {} not found in crates.io", version).into(),
-                    ));
-                }
+            if let Ok(Some(release)) = result {
+                let vers = release.vers;
+                new_detail.version = Some(format!("{}.{}.{}", vers.major, vers.minor, vers.patch));
+                debug_log!(
+                    "Using crates.io version for {crate_name}: {:?}",
+                    new_detail.version
+                );
             } else {
                 display_thag_auto_help();
                 return Err(ThagError::FromStr(

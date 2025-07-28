@@ -533,15 +533,14 @@ pub fn run_repl(
                             continue;
                         }
                         let source_path = &build_state.source_path;
-                        let mut save_path: PathBuf =
-                            build_state.cargo_home.join("repl_tui_save.rs");
+                        let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
                         // let backup_path: PathBuf =
                         //     &build_state.cargo_home.join("repl_tui_backup.rs");
 
                         let rs_source = read_to_string(source_path)?;
                         tui(
                             rs_source.as_str(),
-                            &mut save_path,
+                            &save_path,
                             build_state,
                             args,
                             proc_flags,
@@ -628,7 +627,7 @@ pub fn process_source(
 #[profiled]
 fn tui(
     initial_content: &str,
-    save_path: &mut PathBuf,
+    save_path: &Path,
     build_state: &mut BuildState,
     args: &Cli,
     proc_flags: &ProcFlags,
@@ -648,7 +647,7 @@ fn tui(
     let mut edit_data = EditData {
         return_text: true,
         initial_content: &initial_content,
-        save_path: Some(save_path),
+        save_path: Some(save_path.to_path_buf()),
         history_path: Some(&history_path),
         history: Some(history),
     };
@@ -758,11 +757,10 @@ pub fn edit_history<R: EventReader + Debug>(
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
-    let mut staging_path_buf = staging_path.to_path_buf();
     let mut edit_data = EditData {
         return_text: false,
         initial_content,
-        save_path: Some(&mut staging_path_buf),
+        save_path: Some(staging_path.to_path_buf()),
         history_path: None,
         history: None::<History>,
     };
@@ -830,7 +828,7 @@ pub fn history_key_handler(
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
-    let maybe_save_path = &mut edit_data.save_path;
+    let maybe_save_path = &edit_data.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
     match key_combination {
@@ -838,13 +836,13 @@ pub fn history_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             // Save logic
-            save_file(maybe_save_path, textarea)?;
+            save_file(maybe_save_path.as_ref(), textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            let save_file = save_file(maybe_save_path, textarea)?;
+            let save_file = save_file(maybe_save_path.as_ref(), textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
             status_message.clear();
@@ -869,11 +867,8 @@ pub fn history_key_handler(
 }
 
 #[profiled]
-fn save_file(
-    maybe_save_path: &Option<&mut PathBuf>,
-    textarea: &TextArea<'_>,
-) -> ThagResult<String> {
-    let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
+fn save_file(maybe_save_path: Option<&PathBuf>, textarea: &TextArea<'_>) -> ThagResult<String> {
+    let staging_path = maybe_save_path.ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
         .write(true)

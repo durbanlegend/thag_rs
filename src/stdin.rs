@@ -2,10 +2,10 @@
 use crate::{
     debug_log,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
-    vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError, ThagResult, V,
+    vlog, CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V,
 };
 use edit::edit_file;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Style};
 use std::{
     fmt::Debug,
     fs::OpenOptions,
@@ -79,16 +79,16 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         history_path: Some(&history_path),
         history: Some(history),
     };
-    let add_keys = [
-        KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
-        KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
-    ];
+    // let add_keys = [
+    //     KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
+    //     KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
+    //     // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+    // ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
-        title_style: Style::from((Color::Yellow, Modifier::BOLD)),
+        title_style: Style::new().fg(Color::from(&Role::Heading3)),
         remove_keys: &[""; 0],
-        add_keys: &add_keys,
+        add_keys: &[],
     };
     let (key_action, maybe_text) = tui_edit(
         event_reader,
@@ -108,7 +108,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     )?;
     match key_action {
         KeyAction::Quit(_saved) => Ok(vec![]),
-        // KeyAction::SaveAndExit => false,
+        KeyAction::AbandonChanges => Ok(vec![]),
         KeyAction::Submit => maybe_text.ok_or(ThagError::Cancelled),
         _ => Err(ThagError::FromStr(
             format!("Logic error: {key_action:?} should not return from tui_edit").into(),

@@ -216,7 +216,8 @@ pub fn category_enum(input: TokenStream) -> TokenStream {
 #[doc(hidden)]
 #[proc_macro]
 pub fn key(input: TokenStream) -> TokenStream {
-    key_impl(input)
+    // key_impl(input)
+    maybe_expand_proc_macro(false, "key", &input, key_impl)
 }
 
 /// Generates a constant `DASH_LINE` consisting of a dash (hyphen) repeated the number of times specified by the integer literal argument `n`.

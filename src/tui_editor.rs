@@ -585,7 +585,7 @@ pub struct EditData<'a> {
     /// The initial content to display in the editor
     pub initial_content: &'a str,
     /// Optional path where the edited content should be saved
-    pub save_path: Option<&'a mut PathBuf>,
+    pub save_path: Option<PathBuf>,
     /// Optional path to the history file for storing edit history
     pub history_path: Option<&'a PathBuf>,
     /// Optional history object for managing edit history
@@ -704,6 +704,8 @@ where
 
     // Create the `TextArea` from initial content
     let mut textarea = TextArea::from(edit_data.initial_content.lines());
+    textarea.set_hard_tab_indent(true);
+    eprintln!("textarea.tab_length()={}", textarea.tab_length());
 
     // Set up the display parameters for the `TextArea`
     textarea.set_block(
@@ -831,9 +833,10 @@ where
                 key!(ctrl - h) | key!(backspace) => {
                     textarea.delete_char();
                 }
-                key!(ctrl - i) | key!(tab) => {
-                    textarea.indent();
-                }
+                // Not how this works. Intercepting tab and Ctrl-i is counter-productive.
+                // key!(ctrl - i) | key!(tab) => {
+                //     textarea.indent();
+                // }
                 key!(ctrl - m) | key!(enter) => {
                     textarea.insert_newline();
                 }
@@ -856,7 +859,7 @@ where
                     textarea.redo();
                 }
                 key!(ctrl - c) => {
-                    textarea.yank_text();
+                    textarea.copy();
                 }
                 key!(ctrl - x) => {
                     textarea.cut();
@@ -888,7 +891,7 @@ where
                     }
                     textarea.move_cursor(CursorMove::Down);
                 }
-                key!(alt - f) | key!(ctrl - right) => {
+                key!(alt - f) => {
                     if textarea.is_selecting() {
                         textarea.cancel_selection();
                     }
@@ -897,25 +900,25 @@ where
                 key!(alt - shift - f) => {
                     textarea.move_cursor(CursorMove::WordEnd);
                 }
-                key!(alt - b) | key!(ctrl - left) => {
+                key!(alt - b) => {
                     if textarea.is_selecting() {
                         textarea.cancel_selection();
                     }
                     textarea.move_cursor(CursorMove::WordBack);
                 }
-                key!(alt - p) | key!(alt - ')') | key!(ctrl - up) => {
+                key!(alt - p) | key!(alt - ')') | key!(f1) => {
                     if textarea.is_selecting() {
                         textarea.cancel_selection();
                     }
                     textarea.move_cursor(CursorMove::ParagraphBack);
                 }
-                key!(alt - n) | key!(alt - '(') | key!(ctrl - down) => {
+                key!(alt - n) | key!(alt - '(') | key!(f2) => {
                     textarea.move_cursor(CursorMove::ParagraphForward);
                 }
-                key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) | key!(ctrl - alt - right) => {
+                key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) => {
                     textarea.move_cursor(CursorMove::End);
                 }
-                key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) | key!(ctrl - alt - left) => {
+                key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
                     textarea.move_cursor(CursorMove::Head);
                 }
                 key!(f9) => {
@@ -929,6 +932,7 @@ where
                     );
                 }
                 key!(f10) => {
+                    eprintln!("key_combination={key_combination:?}");
                     ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
                     textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
                     textarea.set_block(
@@ -938,10 +942,10 @@ where
                             .title_style(display.title_style),
                     );
                 }
-                key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
+                key!(alt - '<') | key!(ctrl - alt - p) => {
                     textarea.move_cursor(CursorMove::Top);
                 }
-                key!(alt - '>') | key!(ctrl - alt - n) | key!(ctrl - alt - down) => {
+                key!(alt - '>') | key!(ctrl - alt - n) => {
                     textarea.move_cursor(CursorMove::Bottom);
                 }
                 key!(alt - c) => {
@@ -950,6 +954,42 @@ where
                     } else {
                         textarea.start_selection();
                     }
+                }
+                key!(alt - shift - 'h') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::WordBack);
+                }
+                key!(alt - shift - 'j') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::Down);
+                }
+                key!(alt - shift - 'k') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::Up);
+                }
+                key!(alt - shift - 'l') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::WordEnd);
+                }
+                key!(alt - shift - 'p') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::ParagraphBack);
+                }
+                key!(alt - shift - 'n') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::ParagraphForward);
                 }
                 // key!(alt - shift - c) => {
                 //     textarea.start_selection();
@@ -1051,6 +1091,7 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
+    // let mut owned_path: PathBuf;
     if !matches!(key_event.kind, event::KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
@@ -1062,21 +1103,21 @@ pub fn script_key_handler(
 
     #[allow(clippy::unnested_or_patterns)]
     match key_combination {
-        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(esc) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => save_and_submit(history_path.as_ref(), edit_data, textarea),
-        key!(ctrl - s) | key!(ctrl - alt - s) => {
-            // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if matches!(key_combination, key!(ctrl - s)) {
+        key!(ctrl - s) | key!(ctrl - alt - s) | key!(f12) => {
+            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
+                // eprintln!("key_combination matches ctrl-s");
                 save(
                     edit_data,
                     history_path.as_ref(),
                     textarea,
                     saved,
                     status_message,
-                )?;
-                Ok(KeyAction::Save)
+                )
             } else {
-                save_as(maybe_term, textarea, saved, status_message)
+                let key_action = save_as(edit_data, maybe_term, textarea, saved, status_message)?;
+                Ok(key_action)
             }
         }
         key!(ctrl - l) => {
@@ -1188,6 +1229,7 @@ fn wipe_textarea(
 
 #[profiled]
 fn save_as(
+    edit_data: &mut EditData<'_>,
     maybe_term: Option<&mut ManagedTerminal<'_>>,
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
@@ -1204,15 +1246,18 @@ fn save_as(
             }
         }
 
+        status_message.clear();
         if let Some(ref to_rs_path) = save_dialog.selected_file {
             save_source_file(to_rs_path, textarea, saved)?;
-            status_message.clear();
             let _ = write!(status_message, "Saved to {}", to_rs_path.display());
+            edit_data.save_path = Some(to_rs_path.clone());
             Ok(KeyAction::Save)
         } else {
+            let _ = write!(status_message, "Failed to save file");
             Ok(KeyAction::Continue)
         }
     } else {
+        let _ = write!(status_message, "No terminal to display file save dialog");
         Ok(KeyAction::Continue)
     }
 }
@@ -1224,24 +1269,33 @@ fn save(
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
     status_message: &mut String,
-) -> ThagResult<()> {
-    if let Some(ref mut save_path) = edit_data.save_path {
+) -> ThagResult<KeyAction> {
+    if let Some(ref save_path) = edit_data.save_path {
         if let Some(hist_path) = history_path {
             let history = &mut edit_data.history;
             if let Some(hist) = history {
                 preserve(textarea, hist, hist_path)?;
             }
-            let result = save_source_file(save_path, textarea, saved);
-            match result {
-                Ok(()) => {
-                    status_message.clear();
-                    let _ = write!(status_message, "Saved to {}", save_path.display());
-                }
-                Err(e) => return Err(e),
-            }
         }
+        let result = save_source_file(save_path, textarea, saved);
+        // eprintln!("result={result:?}");
+        match result {
+            Ok(()) => {
+                status_message.clear();
+                let _ = write!(status_message, "Saved to {}", save_path.display());
+                Ok(KeyAction::Save)
+            }
+            Err(e) => Err(e),
+        }
+    } else {
+        status_message.clear();
+        let _ = write!(
+            status_message,
+            "No save path: edit_data.save_path={:?}",
+            edit_data.save_path
+        );
+        Ok(KeyAction::Continue)
     }
-    Ok(())
 }
 
 #[profiled]
@@ -1644,15 +1698,12 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     ),
     (
         30,
-        "Shift+Ctrl+arrow keys",
-        "Select/deselect words (←→) or paras (↑↓)"
+        "Alt+shift+ h/j/k/l",
+        "Select/deselect words (←h l→) or lines (↑k j↓)"
     ),
-    (40, "Alt+a", "Select all"),
-    (
-        50,
-        "Alt+c",
-        "Toggle selection mode: start selecting / cancel selection"
-    ),
+    (35, "Alt+shift+ p/n", "Select/deselect paras (↑p n↓)"),
+    (40, "Alt+Shift+a", "Select all"),
+    (50, "Alt+c", "Cancel selection"),
     (60, "Ctrl+d", "Submit"),
     (70, "Ctrl+q", "Cancel and quit"),
     (80, "Ctrl+h, Backspace", "Delete character before cursor"),
@@ -1674,37 +1725,29 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (
         200,
         "Ctrl+v, Shift+Ins, Cmd+v",
-        "Paste from system clipboard"
+        "Paste from system clipboard according to platform"
     ),
     (210, "Ctrl+f, →", "Move cursor forward one character"),
     (220, "Ctrl+b, ←", "Move cursor backward one character"),
     (230, "Ctrl+p, ↑", "Move cursor up one line"),
     (240, "Ctrl+n, ↓", "Move cursor down one line"),
-    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (250, "Alt+f", "Move cursor forward one word"),
     (260, "Alt+Shift+f", "Move cursor to next word end"),
-    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
-    (
-        300,
-        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
-        "Move cursor to end of line"
-    ),
+    (270, "Atl+b", "Move cursor backward one word"),
+    (280, "Alt+p", "Move cursor up one paragraph"),
+    (290, "Alt+n", "Move cursor down one paragraph"),
+    (300, "Ctrl+e, End, Ctrl+Alt+f", "Move cursor to end of line"),
     (
         310,
-        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
+        "Ctrl+a, Home, Ctrl+Alt+b",
         "Move cursor to start of line"
     ),
-    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
-    (
-        330,
-        "Alt+>, Ctrl+Alt+n or ↓",
-        "Move cursor to bottom of file"
-    ),
-    (340, "PageDown, Cmd+↓", "Page down"),
-    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
-    (360, "Ctrl+l", "Toggle keys display (this screen)"),
-    (370, "Ctrl+t", "Toggle selection highlight colours"),
+    (320, "Alt+<, Ctrl+Alt+p", "Move cursor to top of file"),
+    (330, "Alt+>, Ctrl+Alt+n", "Move cursor to bottom of file"),
+    (340, "Ctrl+l", "Toggle keys display (this screen)"),
+    (350, "Ctrl+t", "Toggle selection highlight colours"),
+    (360, "Alt+v, PageUp, F1", "Page up"),
+    (370, "PageDown, F2", "Page down"),
     (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     (
         390,
@@ -1717,9 +1760,10 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (
         430,
         "F9",
-        "Suspend mouse capture, line numbers and borders for system copy"
+        "Enter `copy to system clipboard` mode with mouse selection and OS keys"
     ),
-    (440, "F10", "Resume capture, line numbers and borders"),
+    (440, "F10", "Exit `copy to system clipboard` mode"),
+    (450, "F12", "Save as..."),
 ];
 
 #[derive(Clone, Debug, PartialEq, Eq)]

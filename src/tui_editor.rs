@@ -674,7 +674,7 @@ pub enum KeyAction {
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 #[profiled]
 pub fn tui_edit<R, F>(
     event_reader: &R,

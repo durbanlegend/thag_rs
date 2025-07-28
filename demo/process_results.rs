@@ -3,7 +3,7 @@
 /// combined with an example from the `itertools` crate at https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.process_results.
 ///
 //# Purpose: RYO iterator result processor
-//# Categories: Learning, Technique
+//# Categories: learning, technique
 pub trait IteratorExt: Iterator {
     fn process_results<R, T, E>(
         self,

@@ -1,5 +1,4 @@
 use crate::errors::ThemeError;
-use crate::styling::Role::{Heading1, Info, Normal};
 use crate::{lazy_static_var, vlog, ThagError, ThagResult, V};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
@@ -1247,16 +1246,16 @@ impl Palette {
     #[profiled]
     pub fn style_for_role(&self, role: Role) -> Style {
         match role {
-            Heading1 => self.heading1.clone(),
+            Role::Heading1 => self.heading1.clone(),
             Role::Heading2 => self.heading2.clone(),
             Role::Heading3 => self.heading3.clone(),
             Role::Error => self.error.clone(),
             Role::Warning => self.warning.clone(),
             Role::Success => self.success.clone(),
-            Info => self.info.clone(),
+            Role::Info => self.info.clone(),
             Role::Emphasis => self.emphasis.clone(),
             Role::Code => self.code.clone(),
-            Normal => self.normal.clone(),
+            Role::Normal => self.normal.clone(),
             Role::Subtle => self.subtle.clone(),
             Role::Hint => self.hint.clone(),
             Role::Debug => self.debug.clone(),
@@ -2558,8 +2557,8 @@ pub fn display_theme_roles(theme: &Theme) {
     // println!("\n\tRole Styles:");
     println!(
         "\n\t{} {}",
-        paint_for_role(Normal, "Role styles:"),
-        theme.style_for(Heading1).paint(&theme.name)
+        paint_for_role(Role::Normal, "Role styles:"),
+        theme.style_for(Role::Heading1).paint(&theme.name)
     );
     // println!("\t{}", "═".repeat(80));
     println!("\t{}", "─".repeat(80));
@@ -2674,17 +2673,17 @@ pub fn display_theme_details(theme: &Theme) {
 
     let flower_box_len = 80;
 
-    println!("\n\t{}", paint_for_role(Normal, "Theme attributes:"));
+    println!("\n\t{}", paint_for_role(Role::Normal, "Theme attributes:"));
     println!("\t{}", "─".repeat(flower_box_len));
 
     for (attr, description) in theme_docs {
-        let styled_name = paint_for_role(Info, attr);
+        let styled_name = paint_for_role(Role::Info, attr);
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{styled_name}{padding}");
 
         // Get style for this role
-        let style = theme.style_for(Heading1);
+        let style = theme.style_for(Role::Heading1);
 
         let description = if *attr == "Theme" {
             style.paint(description)
@@ -2733,11 +2732,14 @@ pub fn display_terminal_attributes() {
 
     let flower_box_len = 80;
 
-    println!("\n\t{}", paint_for_role(Normal, "Terminal attributes:"));
+    println!(
+        "\n\t{}",
+        paint_for_role(Role::Normal, "Terminal attributes:")
+    );
     println!("\t{}", "─".repeat(flower_box_len));
 
     for (attr, description) in terminal_docs {
-        let styled_name = paint_for_role(Info, attr);
+        let styled_name = paint_for_role(Role::Info, attr);
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{styled_name}{padding}");

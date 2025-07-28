@@ -8,7 +8,6 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 /// E.g. `thag demo/styling_demo.rs`
 //# Purpose: Demonstrate and test the look of available colour palettes and styling settings.
 //# Categories: prototype, reference, testing
-// use nu_ansi_term::Color::Fixed;
 use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_rs::{
     cvprtln,

@@ -78,6 +78,9 @@ pub mod mem_attribution;
 #[cfg(feature = "demo")]
 pub mod visualization;
 
+/// User interface utilities including theme-aware inquire integration.
+pub mod ui;
+
 use std::{fmt::Display, fs, path::Path};
 
 #[cfg(feature = "time_profiling")]

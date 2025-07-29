@@ -36,7 +36,7 @@ atty = { version = "0.2.14", optional = true }
 backtrace = "0.3"
 bitflags = { version = "2.9", optional = true }
 cargo-lookup = { version = "0.1.0", optional = true }
-cargo_toml = { version = "0.22.1", optional = true }
+cargo_toml = { version = "0.22.3", optional = true }
 chrono = "0.4.39"
 clap = { version = "4.5", features = ["cargo", "derive"], optional = true }
 colored = { version = "2.0", optional = true }
@@ -90,7 +90,7 @@ tokio = { version = "1.36.0", features = [
     "macros",
     "time",
 ], optional = true }
-toml = "0.9.0"
+toml = "0.9"
 toml_edit = { version = "0.23", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
@@ -416,7 +416,7 @@ requires-any = [["simplelog", "env_logger"]]
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
-criterion = "0.6"
+criterion = "0.7"
 either = "1.15.0"
 env_logger = "0.11.5"
 lazy_static = "1.5.0"

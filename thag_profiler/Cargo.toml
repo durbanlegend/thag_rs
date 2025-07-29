@@ -71,7 +71,6 @@ debug_logging = ["thag_proc_macros/debug_logging"]
 ## Enable documentation of internal APIs and implementation details.
 internal_docs = ["thag_proc_macros/internal_docs"]
 
-
 ## Include dependencies required only for `thag_profile` binary.
 analyze_tool = ["dirs", "inferno", "inquire", "ra_ap_syntax", "serde_json"]
 
@@ -83,6 +82,9 @@ instrument_tool = ["ra_ap_syntax"] # Dependencies for instrument
 
 ## Enable demo visualization functionality with required dependencies.
 demo = ["inferno", "smol"]
+
+## Enable theme-aware inquire UI integration.
+inquire_theming = ["inquire"]
 
 [[bin]]
 name = "thag_profile"
@@ -98,6 +100,11 @@ required-features = ["instrument_tool"]
 name = "thag_uninstrument"
 path = "src/bin/thag_uninstrument.rs"
 required-features = ["instrument_tool"]
+
+[[example]]
+name = "inquire_theming_demo"
+path = "../examples/inquire_theming_demo.rs"
+required-features = ["inquire_theming"]
 
 [package.metadata.docs.rs]
 # features = ["document-features"]

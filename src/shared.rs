@@ -1,7 +1,10 @@
 #![allow(clippy::uninlined_format_args)]
 use crate::{debug_log, ThagResult};
+use documented::{Documented, DocumentedVariants};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::{path::PathBuf, time::Instant};
+use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_profiler::profiled;
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
@@ -48,6 +51,49 @@ pub fn escape_path_for_windows(path_str: &str) -> String {
 pub fn debug_timings(start: &Instant, process: &str) {
     let dur = start.elapsed();
     debug_log!("{} in {}.{}s", process, dur.as_secs(), dur.subsec_millis());
+}
+
+/// Terminal background luminance detection and specification
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Display,
+    Documented,
+    DocumentedVariants,
+    EnumIter,
+    EnumString,
+    Eq,
+    Hash,
+    IntoStaticStr,
+    PartialEq,
+    Serialize,
+)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum TermBgLuma {
+    /// Light background terminal
+    Light,
+    /// Dark background terminal
+    Dark,
+    /// Let `thag` autodetect the background luminosity
+    Undetermined,
+}
+
+impl Default for TermBgLuma {
+    #[profiled]
+    fn default() -> Self {
+        #[cfg(feature = "color_detect")]
+        {
+            Self::Undetermined
+        }
+
+        #[cfg(not(feature = "color_detect"))]
+        {
+            Self::Dark // Safe default when detection isn't available
+        }
+    }
 }
 
 /// Debugging logger.

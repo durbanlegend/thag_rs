@@ -14,12 +14,278 @@ use thag_profiler::{enable_profiling, end, profile, profiled};
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg_rgb, is_light_color};
 
+use crate::shared::TermBgLuma;
+
 #[cfg(feature = "config")]
 use crate::config::maybe_config;
+
+/// Trait for providing styling configuration to break circular dependency
+pub trait StylingConfigProvider {
+    /// Get color support setting
+    fn color_support(&self) -> ColorSupport;
+    /// Get terminal background luminance setting
+    fn term_bg_luma(&self) -> TermBgLuma;
+    /// Get terminal background RGB setting
+    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)>;
+    /// Get background color list
+    fn backgrounds(&self) -> Vec<String>;
+    /// Get preferred light themes
+    fn preferred_light(&self) -> Vec<String>;
+    /// Get preferred dark themes
+    fn preferred_dark(&self) -> Vec<String>;
+}
+
+/// Default implementation that uses no configuration
+pub struct NoConfigProvider;
+
+impl StylingConfigProvider for NoConfigProvider {
+    fn color_support(&self) -> ColorSupport {
+        ColorSupport::Undetermined
+    }
+
+    fn term_bg_luma(&self) -> TermBgLuma {
+        TermBgLuma::default()
+    }
+
+    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
+        None
+    }
+
+    fn backgrounds(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn preferred_light(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn preferred_dark(&self) -> Vec<String> {
+        Vec::new()
+    }
+}
+
+#[cfg(feature = "config")]
+/// Implementation that uses the actual config
+pub struct ConfigProvider;
+
+#[cfg(feature = "config")]
+impl StylingConfigProvider for ConfigProvider {
+    fn color_support(&self) -> ColorSupport {
+        maybe_config()
+            .map(|c| c.styling.color_support)
+            .unwrap_or_default()
+    }
+
+    fn term_bg_luma(&self) -> TermBgLuma {
+        maybe_config()
+            .map(|c| c.styling.term_bg_luma)
+            .unwrap_or_default()
+    }
+
+    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
+        maybe_config().and_then(|c| c.styling.term_bg_rgb)
+    }
+
+    fn backgrounds(&self) -> Vec<String> {
+        maybe_config()
+            .map(|c| c.styling.backgrounds.clone())
+            .unwrap_or_default()
+    }
+
+    fn preferred_light(&self) -> Vec<String> {
+        maybe_config()
+            .map(|c| c.styling.preferred_light.clone())
+            .unwrap_or_default()
+    }
+
+    fn preferred_dark(&self) -> Vec<String> {
+        maybe_config()
+            .map(|c| c.styling.preferred_dark.clone())
+            .unwrap_or_default()
+    }
+}
 
 #[allow(unused_imports)]
 #[cfg(debug_assertions)]
 use crate::debug_log;
+
+/// Helper functions for inquire UI theming integration
+#[cfg(all(feature = "color_detect", feature = "tools"))]
+pub mod inquire_theming {
+    use super::*;
+
+    /// Convert a thag Role to an inquire Color using the current theme
+    pub fn role_to_inquire_color(role: Role) -> Option<inquire::ui::Color> {
+        let term_attrs = TermAttributes::get_or_init();
+        let theme = &term_attrs.theme;
+        let style = theme.style_for(role);
+
+        if let Some(color_info) = &style.foreground {
+            match &color_info.value {
+                ColorValue::TrueColor { rgb } => Some(inquire::ui::Color::Rgb {
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2],
+                }),
+                ColorValue::Color256 { color256 } => Some(inquire::ui::Color::AnsiValue(*color256)),
+                ColorValue::Basic { .. } => {
+                    // Use thag's existing color mapping for basic terminals
+                    Some(inquire::ui::Color::AnsiValue(u8::from(&role)))
+                }
+            }
+        } else {
+            // Fallback if no foreground color is defined
+            Some(inquire::ui::Color::AnsiValue(u8::from(&role)))
+        }
+    }
+
+    /// Create a theme-aware RenderConfig for inquire prompts
+    pub fn create_render_config() -> inquire::ui::RenderConfig<'static> {
+        let mut render_config = inquire::ui::RenderConfig::default();
+
+        // Get terminal attributes and current theme from thag's color system
+        let term_attrs = TermAttributes::get_or_init();
+        let theme = &term_attrs.theme;
+
+        // Helper function to convert thag colors to inquire colors
+        let convert_color = |role: Role| -> inquire::ui::Color {
+            let style = theme.style_for(role);
+            if let Some(color_info) = &style.foreground {
+                match &color_info.value {
+                    ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
+                        r: rgb[0],
+                        g: rgb[1],
+                        b: rgb[2],
+                    },
+                    ColorValue::Color256 { color256 } => inquire::ui::Color::AnsiValue(*color256),
+                    ColorValue::Basic { .. } => {
+                        // Use thag's existing color mapping for basic terminals
+                        inquire::ui::Color::AnsiValue(u8::from(&role))
+                    }
+                }
+            } else {
+                // Fallback if no foreground color is defined
+                inquire::ui::Color::AnsiValue(u8::from(&role))
+            }
+        };
+
+        // Helper function to extract RGB values from a role for color distance calculation
+        let get_rgb = |role: Role| -> Option<(u8, u8, u8)> {
+            let style = theme.style_for(role);
+            if let Some(color_info) = &style.foreground {
+                match &color_info.value {
+                    ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+                    ColorValue::Color256 { color256 } => {
+                        // Convert 256-color to RGB for distance calculation
+                        let index = *color256 as usize;
+                        if index < 16 {
+                            // Standard colors
+                            let colors = [
+                                (0, 0, 0),       // Black
+                                (128, 0, 0),     // Red
+                                (0, 128, 0),     // Green
+                                (128, 128, 0),   // Yellow
+                                (0, 0, 128),     // Blue
+                                (128, 0, 128),   // Magenta
+                                (0, 128, 128),   // Cyan
+                                (192, 192, 192), // White
+                                (128, 128, 128), // Bright Black
+                                (255, 0, 0),     // Bright Red
+                                (0, 255, 0),     // Bright Green
+                                (255, 255, 0),   // Bright Yellow
+                                (0, 0, 255),     // Bright Blue
+                                (255, 0, 255),   // Bright Magenta
+                                (0, 255, 255),   // Bright Cyan
+                                (255, 255, 255), // Bright White
+                            ];
+                            colors.get(index).copied()
+                        } else if index < 232 {
+                            // 216 color cube
+                            let n = index - 16;
+                            let r = (n / 36) * 51;
+                            let g = ((n % 36) / 6) * 51;
+                            let b = (n % 6) * 51;
+                            Some((r as u8, g as u8, b as u8))
+                        } else {
+                            // Grayscale
+                            let gray = 8 + (index - 232) * 10;
+                            Some((gray as u8, gray as u8, gray as u8))
+                        }
+                    }
+                    ColorValue::Basic { .. } => {
+                        // Convert basic role to approximate RGB for distance calculation
+                        match role {
+                            Role::Error => Some((255, 0, 0)),
+                            Role::Success => Some((0, 255, 0)),
+                            Role::Warning => Some((255, 255, 0)),
+                            Role::Info => Some((0, 255, 255)),
+                            Role::Code => Some((255, 0, 255)),
+                            Role::Emphasis => Some((255, 128, 0)),
+                            Role::Heading3 => Some((128, 255, 128)),
+                            _ => Some((192, 192, 192)),
+                        }
+                    }
+                }
+            } else {
+                None
+            }
+        };
+
+        // Color distance function (same as in styling.rs)
+        let color_distance = |c1: (u8, u8, u8), c2: (u8, u8, u8)| -> f32 {
+            let dr = (f32::from(c1.0) - f32::from(c2.0)).powi(2);
+            let dg = (f32::from(c1.1) - f32::from(c2.1)).powi(2);
+            let db = (f32::from(c1.2) - f32::from(c2.2)).powi(2);
+            (dr + dg + db).sqrt()
+        };
+
+        // Choose the best selected_option color based on color distance from Normal
+        let prompt_rgb = get_rgb(Role::Normal);
+        let candidate_roles = [
+            Role::Emphasis,
+            Role::Heading2,
+            Role::Heading3,
+            Role::Info,
+            Role::Success,
+        ];
+
+        let best_role = if let Some(normal_color) = prompt_rgb {
+            candidate_roles
+                .iter()
+                .filter_map(|&role| {
+                    get_rgb(role).map(|rgb| (role, color_distance(normal_color, rgb)))
+                })
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                .map(|(role, _)| role)
+                .unwrap_or(Role::Code) // Fallback to Code if no distance can be calculated
+        } else {
+            Role::Code // Fallback if Normal color can't be extracted
+        };
+
+        // Map inquire UI elements to appropriate thag roles
+        render_config.selected_option = Some(
+            inquire::ui::StyleSheet::new()
+                .with_fg(convert_color(best_role))
+                .with_attr(inquire::ui::Attributes::BOLD),
+        );
+
+        // Set regular option styling to Normal role
+        render_config.option =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Normal));
+        render_config.help_message =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Info));
+        render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
+            .with_message(inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Error)));
+        render_config.prompt =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Normal));
+        render_config.answer =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Success));
+        render_config.placeholder =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Subtle));
+
+        render_config
+    }
+}
 
 // Include the generated theme data
 // include!(concat!(env!("OUT_DIR"), "/theme_data.rs"));
@@ -581,47 +847,6 @@ impl Default for ColorSupport {
 
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
 /// or defaulted.
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Deserialize,
-    Documented,
-    DocumentedVariants,
-    Display,
-    EnumIter,
-    EnumString,
-    IntoStaticStr,
-    PartialEq,
-    Eq,
-    Serialize,
-)]
-#[strum(serialize_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
-pub enum TermBgLuma {
-    /// Light background terminal
-    Light,
-    /// Dark background terminal
-    Dark,
-    /// Let `thag` autodetect the background luminosity
-    Undetermined,
-}
-
-impl Default for TermBgLuma {
-    #[profiled]
-    fn default() -> Self {
-        #[cfg(feature = "color_detect")]
-        {
-            Self::Undetermined
-        }
-
-        #[cfg(not(feature = "color_detect"))]
-        {
-            Self::Dark // Safe default when detection isn't available
-        }
-    }
-}
-
 /// Type alias for `Role` - provides shorter naming for role constants
 pub type Lvl = Role;
 

@@ -19,7 +19,8 @@ use std::{
 use strum::Display;
 use thag_proc_macros::timing;
 use thag_profiler::{
-    enhance_svg_accessibility, profiling::ProfileStats, thousands, ProfileError, ProfileResult,
+    enhance_svg_accessibility, extract_filename_timestamp, profiling::ProfileStats, thousands,
+    ui::inquire_theming, ProfileError, ProfileResult,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -99,6 +100,9 @@ impl ChartType {
 /// thag_profile .
 /// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Apply theme-aware styling to inquire prompts
+    inquire_theming::apply_global_theming();
+
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         return Err("Usage: analyze <directory>".to_string().into());

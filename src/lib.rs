@@ -148,8 +148,9 @@ pub use {
     logging::{get_verbosity, Verbosity, V},
     shared::{
         debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, thousands,
+        TermBgLuma,
     },
-    styling::{Color, ColorSupport, Lvl, Role, Style, TermBgLuma},
+    styling::{Color, ColorSupport, Lvl, Role, Style},
 };
 
 // pub use thag_profiler::*; // Re-export everything from profiler
@@ -182,6 +183,9 @@ pub use {
 
 #[cfg(feature = "color_detect")]
 pub use termbg;
+
+#[cfg(all(feature = "color_detect", feature = "tools"))]
+pub use styling::inquire_theming;
 
 #[cfg(feature = "config")]
 pub use config::{

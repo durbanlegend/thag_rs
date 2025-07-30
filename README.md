@@ -30,9 +30,9 @@ v0.2 brings a ton of new features and a sleek look with themes to match your ter
 
 - a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo scripts for each proc macros. As of v0.2, this goes from being a rough sketchpad to a select set of useful and educational examples with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
-- concurrently with version 0.2, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library `thag_profiler`. Check it out here: [thag_profiler](thag_profiler/README.md).
+- concurrently with version 0.2, `thag_profiler`, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library. Check it out here: [thag_profiler](thag_profiler/README.md).
 
-- as of v0.2, a wide range of themes - atelier, brogrammer, catppuccin etc. - to match your preferred dark or light terminal theme
+- as of v0.2, `thag` goes gorgeous with a wide range of themes - atelier, brogrammer, catppuccin etc. - to match your preferred dark or light terminal theme, and the possibility to use theme colours with `inquire` as well as in your own message displays. With TrueColor and 256-color support keyed to your terminal's theme `thag`'s subtle styling is easy to implement while going far beyond the typical fixed 16-color offering.
 
 The core purpose of `thag` is straightforward: to make it easy and fun to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 

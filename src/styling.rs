@@ -3546,7 +3546,7 @@ mod tests {
         let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
 
         // Heading1 should be bold
-        let error_style = style_for_theme_and_role(&attrs.theme, Heading1);
+        let error_style = style_for_theme_and_role(&attrs.theme, Role::Heading1);
         let painted = error_style.paint("test");
         eprintln!(
             "theme={}, error_style={error_style:?}, painted={painted:?}",

@@ -1,109 +1,137 @@
-/*[toml]
-[dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["inquire_theming"] }
-
-[features]
-default = ["inquire_theming"]
-inquire_theming = ["thag_profiler/inquire_theming"]
-*/
-
-//! Demonstration of theme-aware inquire integration in thag_profiler
+//! Demonstration of hybrid inquire theming with multiple strategies
 //!
-//! This example shows how the new inquire theming system works in thag_profiler
-//! without requiring the full thag_rs styling system.
+//! This example shows how the new hybrid inquire theming system works in thag_profiler,
+//! offering multiple theming approaches from full thag_rs integration to lightweight options.
 //!
 //! To run this example:
 //! ```bash
 //! cd thag_rs
-//! cargo run --example inquire_theming_demo --features "tools"
+//! cargo run -p thag_profiler --example inquire_theming_demo --features inquire_theming
 //! ```
 
 use inquire::{Confirm, MultiSelect, Select, Text};
 use std::error::Error;
 
-// Import the inquire theming from thag_profiler
-use thag_profiler::ui::inquire_theming;
+// Import the hybrid inquire theming from thag_profiler
+use thag_profiler::ui::inquire_theming::{self, ThemingStrategy};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("🎨 Inquire Theming Demo");
-    println!("{}", "=".repeat(50));
+    println!("🎨 Hybrid Inquire Theming Demo");
+    println!("{}", "=".repeat(60));
+    println!();
+
+    // Show what strategies are available
+    let available_strategies = inquire_theming::get_available_strategies();
+    println!("📋 Available theming strategies:");
+    for strategy in &available_strategies {
+        println!("  • {:?}: {}", strategy, inquire_theming::describe_strategy(*strategy));
+    }
+    println!();
 
     // Show terminal capabilities detection
     #[cfg(feature = "inquire_theming")]
     {
-        let (color_support, background) = inquire_theming::get_terminal_info();
-        println!("Detected terminal capabilities:");
-        println!("  Color support: {:?}", color_support);
-        println!("  Background: {:?}", background);
+        let (color_capability, background_type) = inquire_theming::get_terminal_info();
+        println!("🔍 Detected terminal capabilities:");
+        println!("  Color capability: {:?}", color_capability);
+        println!("  Background type: {:?}", background_type);
         println!();
     }
 
     #[cfg(not(feature = "inquire_theming"))]
     {
-        println!("Theming is disabled - using default inquire styling");
+        println!("⚠️  Theming is disabled - using default inquire styling");
         println!();
     }
 
-    // Apply theme-aware styling globally
-    inquire_theming::apply_global_theming();
-
-    println!("🚀 Testing different inquire prompt types with theming...");
-    println!();
-
-    // Test 1: Select prompt
-    let theme_options = vec![
-        "Dark theme optimized",
-        "Light theme optimized",
-        "High contrast mode",
-        "Colorblind friendly",
-        "Minimal styling",
+    // Let user choose which theming strategy to demonstrate
+    let strategy_options = vec![
+        "Auto (recommended)",
+        "Lightweight theming",
+        "Default inquire colors",
+        "Compare all strategies",
     ];
 
-    let selected_theme = Select::new("Choose a theme preference:", theme_options)
-        .with_help_message("This demonstrates theme-aware select styling")
+    let selected_demo = Select::new("Which theming approach would you like to demonstrate?", strategy_options)
+        .with_help_message("This selection uses Auto strategy")
         .prompt()?;
 
-    println!("✅ You selected: {}", selected_theme);
     println!();
 
-    // Test 2: MultiSelect prompt
-    let features = vec![
-        "Color detection",
-        "Terminal background detection",
-        "Theme switching",
-        "Color distance optimization",
-        "Fallback support",
+    match selected_demo {
+        "Auto (recommended)" => demonstrate_strategy(ThemingStrategy::Auto, "Auto Strategy")?,
+        "Lightweight theming" => demonstrate_strategy(ThemingStrategy::Lightweight, "Lightweight Strategy")?,
+        "Default inquire colors" => demonstrate_strategy(ThemingStrategy::Default, "Default Strategy")?,
+        "Compare all strategies" => compare_all_strategies()?,
+        _ => unreachable!(),
+    }
+
+    println!();
+    println!("🎉 Demo complete!");
+    println!();
+    println!("💡 Key improvements in this hybrid approach:");
+    println!("  ✨ Multiple strategies - choose what works best for your use case");
+    println!("  🎯 Better contrast - magenta/blue for subtle text instead of gray");
+    println!("  🌓 Light/dark support - appropriate colors for both backgrounds");
+    println!("  🔄 Graceful fallback - always works, even with limited terminal support");
+    println!("  🚀 Flexible integration - from full thag_rs themes to lightweight options");
+    println!();
+
+    Ok(())
+}
+
+fn demonstrate_strategy(strategy: ThemingStrategy, name: &str) -> Result<(), Box<dyn Error>> {
+    println!("🎨 Demonstrating: {}", name);
+    println!("{}", "-".repeat(40));
+
+    // Apply the chosen strategy
+    inquire_theming::apply_global_theming_with_strategy(strategy);
+
+    // Test 1: Select prompt
+    let color_options = vec![
+        "Bright green (selected items)",
+        "Light gray/white (normal text)",
+        "Blue/cyan (help messages)",
+        "Red (error messages)",
+        "Green (success/answers)",
+        "Magenta (subtle/placeholder - improved contrast!)",
     ];
 
-    let selected_features = MultiSelect::new("Which features interest you?", features)
+    let _selected_color = Select::new("Notice the color scheme - which color looks best?", color_options)
+        .with_help_message("Help text uses blue/cyan for better visibility")
+        .prompt()?;
+
+    // Test 2: MultiSelect with various elements
+    let features = vec![
+        "Improved contrast for subtle text",
+        "Light/dark background detection",
+        "TrueColor/256-color/Basic fallbacks",
+        "Magenta instead of gray for better visibility",
+        "Multiple theming strategies",
+    ];
+
+    let _selected_features = MultiSelect::new("What improvements do you notice?", features)
         .with_help_message("Multiple selections allowed - notice the themed colors")
         .prompt()?;
 
-    println!("✅ You're interested in: {:?}", selected_features);
-    println!();
-
-    // Test 3: Text input
-    let user_input = Text::new("Enter a comment about the theming:")
-        .with_placeholder("The colors look great!")
-        .with_help_message("This text input also uses themed colors")
+    // Test 3: Text input with placeholder
+    let _user_input = Text::new("How does the color contrast look?")
+        .with_placeholder("The magenta placeholder text should be more visible now!")
+        .with_help_message("Placeholder text now uses magenta for better contrast")
         .prompt()?;
 
-    println!("✅ Your comment: {}", user_input);
-    println!();
-
-    // Test 4: Confirmation
-    let continue_demo = Confirm::new("Would you like to see error handling?")
+    // Test 4: Error demonstration
+    let continue_demo = Confirm::new("Would you like to see the error styling?")
         .with_default(true)
-        .with_help_message("This tests themed error messages")
+        .with_help_message("This tests themed error message colors")
         .prompt()?;
 
     if continue_demo {
-        // Test 5: Error handling with themed colors
-        let _invalid_input = Text::new("Enter 'error' to see themed error styling:")
+        let _error_demo = Text::new("Type 'error' to see themed error styling:")
             .with_validator(|input: &str| {
                 if input == "error" {
                     Ok(inquire::validator::Validation::Invalid(
-                        "This is a demonstration error message with themed colors!".into()
+                        "This error message should appear in themed red color!".into()
                     ))
                 } else {
                     Ok(inquire::validator::Validation::Valid)
@@ -112,22 +140,41 @@ fn main() -> Result<(), Box<dyn Error>> {
             .prompt()?;
     }
 
-    println!();
-    println!("🎉 Demo complete!");
-    println!();
-    println!("Key benefits of the new approach:");
-    println!("  ✨ Lightweight - no dependency on full thag_rs styling");
-    println!("  🎯 Automatic - detects terminal capabilities");
-    println!("  🔄 Fallback - graceful degradation on limited terminals");
-    println!("  🚀 Fast - minimal overhead");
-    println!("  🔧 Extensible - easy to customize colors");
-    println!();
+    println!("✅ {} demonstration complete!\n", name);
+    Ok(())
+}
 
-    #[cfg(feature = "inquire_theming")]
-    println!("🔧 Theming is ENABLED - you saw theme-aware colors");
+fn compare_all_strategies() -> Result<(), Box<dyn Error>> {
+    println!("🔄 Comparing all theming strategies");
+    println!("{}", "-".repeat(40));
 
-    #[cfg(not(feature = "inquire_theming"))]
-    println!("🔧 Theming is DISABLED - you saw default inquire colors");
+    let strategies = vec![
+        (ThemingStrategy::Auto, "Auto"),
+        (ThemingStrategy::Lightweight, "Lightweight"),
+        (ThemingStrategy::Default, "Default"),
+    ];
+
+    for (strategy, name) in strategies {
+        println!("\n🎨 Testing {} strategy:", name);
+        inquire_theming::apply_global_theming_with_strategy(strategy);
+
+        let test_options = vec!["Good contrast", "Poor contrast", "Can't tell the difference"];
+        let _rating = Select::new(&format!("How's the contrast with {} theming?", name), test_options)
+            .with_help_message(&format!("{}: {}", name, inquire_theming::describe_strategy(strategy)))
+            .prompt()?;
+    }
+
+    // Reset to auto for final question
+    inquire_theming::apply_global_theming_with_strategy(ThemingStrategy::Auto);
+
+    let _final_choice = Select::new("Which strategy did you prefer?", vec![
+        "Auto (smart fallback)",
+        "Lightweight (consistent basic theming)",
+        "Default (no theming)",
+        "They all looked the same to me",
+    ])
+    .with_help_message("This final question uses Auto strategy")
+    .prompt()?;
 
     Ok(())
 }

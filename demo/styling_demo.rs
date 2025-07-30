@@ -121,7 +121,7 @@ pub fn main() -> ThagResult<()> {
     Ok(())
 }
 
-// An enum of the colours in a 256-colour palette, per the naming in `https://docs.rs/owo-colors/latest/owo_colors/colors/xterm/index.html#`.
+// An enum of the colours in a 256-colour palette, per the naming in `https://docs.rs/owo-colors/latest/owo_colors/colors/xterm/index.html`.
 #[warn(dead_code)]
 #[derive(Display, EnumIter)]
 #[strum(use_phf)]

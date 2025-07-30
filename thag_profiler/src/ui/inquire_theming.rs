@@ -1,7 +1,11 @@
-//! Inquire UI theming integration for thag_profiler
+//! Hybrid inquire UI theming with multiple strategies
 //!
-//! This module provides theme-aware styling for inquire prompts with lightweight
-//! color detection that doesn't depend on the full thag_rs styling system.
+//! This module provides multiple theming approaches for inquire prompts:
+//! 1. Full thag_rs integration (when available) - sophisticated base16/base24 themes
+//! 2. Lightweight self-contained theming - basic color detection
+//! 3. Fallback to default inquire colors
+//!
+//! The system automatically selects the best available strategy or allows manual selection.
 
 #[cfg(feature = "inquire_theming")]
 pub use self::themed::*;
@@ -10,9 +14,22 @@ pub use self::themed::*;
 mod themed {
     use inquire::ui::{Attributes, Color, RenderConfig, StyleSheet};
 
-    /// Simple color support detection
+    /// Available theming strategies
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum ColorSupport {
+    pub enum ThemingStrategy {
+        /// Use full thag_rs styling system (requires thag_rs with color_detect)
+        FullThagRs,
+        /// Use lightweight self-contained theming
+        Lightweight,
+        /// Use default inquire colors
+        Default,
+        /// Automatically select best available strategy
+        Auto,
+    }
+
+    /// Simple color support detection for lightweight theming
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ColorCapability {
         /// No color support
         None,
         /// Basic 16-color support
@@ -23,171 +40,198 @@ mod themed {
         TrueColor,
     }
 
-    /// Simple terminal background detection
+    /// Terminal background type for lightweight theming
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum TerminalBackground {
+    pub enum BackgroundType {
         /// Light background
         Light,
         /// Dark background
         Dark,
-        /// Unknown background
+        /// Unknown background (default to dark)
         Unknown,
     }
 
     /// Detect color support level of the terminal
-    fn detect_color_support() -> ColorSupport {
+    fn detect_color_capability() -> ColorCapability {
         // Check environment variables for color support
         if std::env::var("NO_COLOR").is_ok() {
-            return ColorSupport::None;
+            return ColorCapability::None;
         }
 
         // Check COLORTERM for truecolor support
         if let Ok(colorterm) = std::env::var("COLORTERM") {
             if colorterm == "truecolor" || colorterm == "24bit" {
-                return ColorSupport::TrueColor;
+                return ColorCapability::TrueColor;
             }
         }
 
         // Check TERM for color capabilities
         if let Ok(term) = std::env::var("TERM") {
             if term.contains("256color") || term.contains("256") {
-                return ColorSupport::Color256;
+                return ColorCapability::Color256;
             } else if term.contains("color") || term == "xterm" || term == "screen" {
-                return ColorSupport::Basic;
+                return ColorCapability::Basic;
             }
         }
 
         // Default to basic color support
-        ColorSupport::Basic
+        ColorCapability::Basic
     }
 
     /// Simple terminal background detection
-    fn detect_terminal_background() -> TerminalBackground {
+    fn detect_background_type() -> BackgroundType {
         // For now, default to dark since most developer terminals are dark
         // In a full implementation, this would query the terminal background
-        TerminalBackground::Dark
+        // Could be enhanced with environment variable detection
+        if let Ok(bg) = std::env::var("TERM_BACKGROUND") {
+            match bg.to_lowercase().as_str() {
+                "light" => BackgroundType::Light,
+                "dark" => BackgroundType::Dark,
+                _ => BackgroundType::Unknown,
+            }
+        } else {
+            BackgroundType::Dark // Safe default
+        }
     }
 
-    /// Create theme-appropriate colors based on detected capabilities
-    fn create_color_scheme(support: ColorSupport, background: TerminalBackground) -> ColorScheme {
-        match (support, background) {
-            (ColorSupport::TrueColor, TerminalBackground::Dark) => ColorScheme {
+    /// Color scheme for inquire UI elements
+    struct ColorScheme {
+        selected: Color,
+        normal: Color,
+        help: Color,
+        error: Color,
+        success: Color,
+        subtle: Color,
+    }
+
+    /// Create color scheme based on capabilities and background - with improved contrast
+    fn create_color_scheme(capability: ColorCapability, background: BackgroundType) -> ColorScheme {
+        match (capability, background) {
+            // TrueColor with dark background
+            (ColorCapability::TrueColor, BackgroundType::Dark) => ColorScheme {
                 selected: Color::Rgb {
                     r: 98,
                     g: 209,
                     b: 150,
-                }, // Green
+                }, // Bright green
+                normal: Color::Rgb {
+                    r: 220,
+                    g: 220,
+                    b: 220,
+                }, // Light gray
+                help: Color::Rgb {
+                    r: 135,
+                    g: 175,
+                    b: 255,
+                }, // Light blue
+                error: Color::Rgb {
+                    r: 255,
+                    g: 120,
+                    b: 120,
+                }, // Light red
+                success: Color::Rgb {
+                    r: 120,
+                    g: 255,
+                    b: 120,
+                }, // Light green
+                subtle: Color::Rgb {
+                    r: 200,
+                    g: 100,
+                    b: 255,
+                }, // Magenta (better contrast)
+            },
+            // TrueColor with light background
+            (ColorCapability::TrueColor, BackgroundType::Light) => ColorScheme {
+                selected: Color::Rgb { r: 0, g: 120, b: 0 }, // Dark green
+                normal: Color::Rgb {
+                    r: 40,
+                    g: 40,
+                    b: 40,
+                }, // Dark gray
+                help: Color::Rgb {
+                    r: 0,
+                    g: 80,
+                    b: 160,
+                }, // Dark blue
+                error: Color::Rgb { r: 180, g: 0, b: 0 },    // Dark red
+                success: Color::Rgb { r: 0, g: 140, b: 0 },  // Dark green
+                subtle: Color::Rgb {
+                    r: 140,
+                    g: 0,
+                    b: 140,
+                }, // Dark magenta (better contrast)
+            },
+            // TrueColor with unknown background (default to dark theme colors)
+            (ColorCapability::TrueColor, BackgroundType::Unknown) => ColorScheme {
+                selected: Color::Rgb {
+                    r: 98,
+                    g: 209,
+                    b: 150,
+                }, // Bright green
                 normal: Color::Rgb {
                     r: 200,
                     g: 200,
                     b: 200,
                 }, // Light gray
                 help: Color::Rgb {
-                    r: 150,
-                    g: 150,
-                    b: 150,
-                }, // Medium gray
+                    r: 135,
+                    g: 175,
+                    b: 255,
+                }, // Light blue
                 error: Color::Rgb {
                     r: 255,
-                    g: 100,
-                    b: 100,
-                }, // Red
-                success: Color::Rgb {
-                    r: 100,
-                    g: 255,
-                    b: 100,
-                }, // Green
-                subtle: Color::Rgb {
-                    r: 120,
                     g: 120,
                     b: 120,
-                }, // Dark gray
-            },
-            (ColorSupport::TrueColor, TerminalBackground::Light) => ColorScheme {
-                selected: Color::Rgb { r: 0, g: 128, b: 0 }, // Dark green
-                normal: Color::Rgb {
-                    r: 50,
-                    g: 50,
-                    b: 50,
-                }, // Dark gray
-                help: Color::Rgb {
-                    r: 100,
-                    g: 100,
-                    b: 100,
-                }, // Medium gray
-                error: Color::Rgb { r: 200, g: 0, b: 0 },    // Dark red
-                success: Color::Rgb { r: 0, g: 150, b: 0 },  // Dark green
+                }, // Light red
+                success: Color::Rgb {
+                    r: 120,
+                    g: 255,
+                    b: 120,
+                }, // Light green
                 subtle: Color::Rgb {
-                    r: 150,
-                    g: 150,
-                    b: 150,
-                }, // Light gray
+                    r: 200,
+                    g: 100,
+                    b: 255,
+                }, // Magenta
             },
-            (ColorSupport::Color256, TerminalBackground::Dark) => ColorScheme {
+            // 256-color with dark background
+            (ColorCapability::Color256, BackgroundType::Dark) => ColorScheme {
                 selected: Color::AnsiValue(10), // Bright green
-                normal: Color::AnsiValue(15),   // White
-                help: Color::AnsiValue(8),      // Bright black (gray)
+                normal: Color::AnsiValue(250),  // Light gray
+                help: Color::AnsiValue(75),     // Light blue
                 error: Color::AnsiValue(9),     // Bright red
                 success: Color::AnsiValue(10),  // Bright green
-                subtle: Color::AnsiValue(8),    // Bright black (gray)
+                subtle: Color::AnsiValue(13),   // Bright magenta (better contrast)
             },
-            (ColorSupport::Color256, TerminalBackground::Light) => ColorScheme {
+            // 256-color with light background
+            (ColorCapability::Color256, BackgroundType::Light) => ColorScheme {
                 selected: Color::AnsiValue(2), // Green
                 normal: Color::AnsiValue(0),   // Black
-                help: Color::AnsiValue(8),     // Bright black (gray)
+                help: Color::AnsiValue(4),     // Blue
                 error: Color::AnsiValue(1),    // Red
                 success: Color::AnsiValue(2),  // Green
-                subtle: Color::AnsiValue(8),   // Bright black (gray)
+                subtle: Color::AnsiValue(5),   // Magenta (better contrast)
             },
-            (ColorSupport::Color256, TerminalBackground::Unknown) => ColorScheme {
-                selected: Color::AnsiValue(10), // Bright green (default to dark theme)
-                normal: Color::AnsiValue(15),   // White
-                help: Color::AnsiValue(8),      // Bright black (gray)
-                error: Color::AnsiValue(9),     // Bright red
-                success: Color::AnsiValue(10),  // Bright green
-                subtle: Color::AnsiValue(8),    // Bright black (gray)
-            },
-            (ColorSupport::TrueColor, TerminalBackground::Unknown) => ColorScheme {
-                selected: Color::Rgb {
-                    r: 98,
-                    g: 209,
-                    b: 150,
-                }, // Green (default to dark theme)
-                normal: Color::Rgb {
-                    r: 200,
-                    g: 200,
-                    b: 200,
-                }, // Light gray
-                help: Color::Rgb {
-                    r: 150,
-                    g: 150,
-                    b: 150,
-                }, // Medium gray
-                error: Color::Rgb {
-                    r: 255,
-                    g: 100,
-                    b: 100,
-                }, // Red
-                success: Color::Rgb {
-                    r: 100,
-                    g: 255,
-                    b: 100,
-                }, // Green
-                subtle: Color::Rgb {
-                    r: 120,
-                    g: 120,
-                    b: 120,
-                }, // Dark gray
-            },
-            (ColorSupport::Basic, _) => ColorScheme {
+            // 256-color with unknown background (default to dark)
+            (ColorCapability::Color256, BackgroundType::Unknown) => ColorScheme {
                 selected: Color::AnsiValue(10), // Bright green
                 normal: Color::AnsiValue(15),   // White
-                help: Color::AnsiValue(8),      // Bright black (gray)
+                help: Color::AnsiValue(14),     // Bright cyan
                 error: Color::AnsiValue(9),     // Bright red
                 success: Color::AnsiValue(10),  // Bright green
-                subtle: Color::AnsiValue(8),    // Bright black (gray)
+                subtle: Color::AnsiValue(13),   // Bright magenta
             },
-            (ColorSupport::None, _) => ColorScheme {
+            // Basic color support (all backgrounds)
+            (ColorCapability::Basic, _) => ColorScheme {
+                selected: Color::AnsiValue(10), // Bright green
+                normal: Color::AnsiValue(15),   // White
+                help: Color::AnsiValue(14),     // Bright cyan
+                error: Color::AnsiValue(9),     // Bright red
+                success: Color::AnsiValue(10),  // Bright green
+                subtle: Color::AnsiValue(13),   // Bright magenta (better than gray)
+            },
+            // No color support
+            (ColorCapability::None, _) => ColorScheme {
                 selected: Color::AnsiValue(15), // White
                 normal: Color::AnsiValue(15),   // White
                 help: Color::AnsiValue(15),     // White
@@ -198,44 +242,19 @@ mod themed {
         }
     }
 
-    /// Color scheme for the UI
-    struct ColorScheme {
-        selected: Color,
-        normal: Color,
-        help: Color,
-        error: Color,
-        success: Color,
-        subtle: Color,
+    /// Attempt to create render config using full thag_rs styling (when available)
+    fn try_full_thag_styling() -> Option<RenderConfig<'static>> {
+        // This would require thag_rs as a dependency, which creates circular dependency
+        // For now, this returns None. In the future, this could be feature-gated
+        // or use runtime detection of thag_rs availability
+        None
     }
 
-    /// Get a theme-aware RenderConfig for inquire prompts
-    ///
-    /// This function creates an inquire RenderConfig that automatically:
-    /// - Detects terminal capabilities (TrueColor, 256-color, or Basic)
-    /// - Applies appropriate colors based on terminal background
-    /// - Falls back gracefully on limited terminals
-    ///
-    /// # Returns
-    ///
-    /// A configured `RenderConfig` that matches the current terminal capabilities
-    ///
-    /// # Example
-    ///
-    /// ```rust,no_run
-    /// use thag_profiler::ui::inquire_theming::get_themed_render_config;
-    /// use inquire::Select;
-    ///
-    /// // Apply theme-aware styling to all inquire prompts
-    /// inquire::set_global_render_config(get_themed_render_config());
-    ///
-    /// // Now use inquire normally - it will use the themed config
-    /// let options = vec!["Option 1", "Option 2", "Option 3"];
-    /// let selection = Select::new("Choose an option:", options).prompt();
-    /// ```
-    pub fn get_themed_render_config() -> RenderConfig<'static> {
-        let color_support = detect_color_support();
-        let background = detect_terminal_background();
-        let colors = create_color_scheme(color_support, background);
+    /// Create render config using lightweight theming
+    fn create_lightweight_render_config() -> RenderConfig<'static> {
+        let capability = detect_color_capability();
+        let background = detect_background_type();
+        let colors = create_color_scheme(capability, background);
 
         let mut render_config = RenderConfig::default();
 
@@ -254,53 +273,114 @@ mod themed {
         render_config.prompt = StyleSheet::empty().with_fg(colors.normal);
         render_config.answer = StyleSheet::empty().with_fg(colors.success);
         render_config.placeholder = StyleSheet::empty().with_fg(colors.subtle);
-        render_config.placeholder = StyleSheet::empty().with_fg(colors.subtle);
 
         render_config
     }
 
+    /// Get a themed RenderConfig using the specified strategy
+    ///
+    /// # Arguments
+    /// * `strategy` - The theming strategy to use
+    ///
+    /// # Returns
+    /// A configured `RenderConfig` based on the selected strategy
+    pub fn get_render_config_with_strategy(strategy: ThemingStrategy) -> RenderConfig<'static> {
+        match strategy {
+            ThemingStrategy::FullThagRs => {
+                try_full_thag_styling().unwrap_or_else(|| create_lightweight_render_config())
+            }
+            ThemingStrategy::Lightweight => create_lightweight_render_config(),
+            ThemingStrategy::Default => RenderConfig::default(),
+            ThemingStrategy::Auto => {
+                // Try full thag_rs first, fall back to lightweight
+                try_full_thag_styling().unwrap_or_else(|| create_lightweight_render_config())
+            }
+        }
+    }
+
+    /// Get a theme-aware RenderConfig for inquire prompts (auto strategy)
+    ///
+    /// This function creates an inquire RenderConfig that automatically:
+    /// - Tries to use full thag_rs theming if available
+    /// - Falls back to lightweight terminal-capability-based theming
+    /// - Uses improved color contrast (magenta/blue for subtle text)
+    /// - Handles light/dark backgrounds appropriately
+    ///
+    /// # Returns
+    /// A configured `RenderConfig` with the best available theming
+    pub fn get_themed_render_config() -> RenderConfig<'static> {
+        get_render_config_with_strategy(ThemingStrategy::Auto)
+    }
+
     /// Apply theme-aware styling globally to all inquire prompts
     ///
-    /// This is a convenience function that automatically configures inquire
-    /// to use theme-aware styling for all subsequent prompts in your application.
-    ///
-    /// # Example
-    ///
-    /// ```rust,no_run
-    /// use thag_profiler::ui::inquire_theming::apply_global_theming;
-    ///
-    /// // Call once at the start of your application
-    /// apply_global_theming();
-    ///
-    /// // All inquire prompts will now use theme-aware styling
-    /// ```
+    /// Uses the auto strategy to select the best available theming approach.
     pub fn apply_global_theming() {
         inquire::set_global_render_config(get_themed_render_config());
     }
 
+    /// Apply specific theming strategy globally to all inquire prompts
+    ///
+    /// # Arguments
+    /// * `strategy` - The theming strategy to use
+    pub fn apply_global_theming_with_strategy(strategy: ThemingStrategy) {
+        inquire::set_global_render_config(get_render_config_with_strategy(strategy));
+    }
+
     /// Get information about the detected terminal capabilities
     ///
-    /// This function returns information about what was detected about the
-    /// terminal's color capabilities and background.
+    /// # Returns
+    /// A tuple of (ColorCapability, BackgroundType) indicating detected capabilities
+    pub fn get_terminal_info() -> (ColorCapability, BackgroundType) {
+        (detect_color_capability(), detect_background_type())
+    }
+
+    /// Check which theming strategies are available
     ///
     /// # Returns
-    ///
-    /// A tuple of (ColorSupport, TerminalBackground) indicating the detected capabilities
-    pub fn get_terminal_info() -> (ColorSupport, TerminalBackground) {
-        (detect_color_support(), detect_terminal_background())
+    /// A vector of available theming strategies
+    pub fn get_available_strategies() -> Vec<ThemingStrategy> {
+        let mut strategies = vec![
+            ThemingStrategy::Lightweight,
+            ThemingStrategy::Default,
+            ThemingStrategy::Auto,
+        ];
+
+        // Check if full thag_rs theming is available
+        if try_full_thag_styling().is_some() {
+            strategies.insert(0, ThemingStrategy::FullThagRs);
+        }
+
+        strategies
+    }
+
+    /// Get a description of a theming strategy
+    pub fn describe_strategy(strategy: ThemingStrategy) -> &'static str {
+        match strategy {
+            ThemingStrategy::FullThagRs => "Full thag_rs theming with base16/base24 theme support",
+            ThemingStrategy::Lightweight => "Lightweight terminal-capability-based theming",
+            ThemingStrategy::Default => "Default inquire colors (no theming)",
+            ThemingStrategy::Auto => "Automatically select best available theming",
+        }
     }
 }
 
 #[cfg(not(feature = "inquire_theming"))]
 mod fallback {
-    use inquire::ui::RenderConfig;
+    /// Theming strategy placeholder when feature is disabled
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum ThemingStrategy {
+        Default,
+    }
 
     /// Fallback function when theming is disabled
-    ///
-    /// Returns the default inquire RenderConfig when the `inquire_theming`
-    /// feature is not enabled.
-    pub fn get_themed_render_config() -> RenderConfig<'static> {
-        RenderConfig::default()
+    pub fn get_themed_render_config() -> () {
+        ()
+    }
+
+    /// Fallback function when theming is disabled
+    pub fn get_render_config_with_strategy(_strategy: ThemingStrategy) -> () {
+        ()
     }
 
     /// No-op fallback when theming is disabled
@@ -308,9 +388,24 @@ mod fallback {
         // Do nothing when theming is not available
     }
 
+    /// No-op fallback when theming is disabled
+    pub fn apply_global_theming_with_strategy(_strategy: ThemingStrategy) {
+        // Do nothing when theming is not available
+    }
+
     /// Fallback terminal info when theming is disabled
     pub fn get_terminal_info() -> ((), ()) {
         ((), ())
+    }
+
+    /// Fallback strategies when theming is disabled
+    pub fn get_available_strategies() -> Vec<ThemingStrategy> {
+        vec![ThemingStrategy::Default]
+    }
+
+    /// Fallback description when theming is disabled
+    pub fn describe_strategy(_strategy: ThemingStrategy) -> &'static str {
+        "Theming disabled"
     }
 }
 

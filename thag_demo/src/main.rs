@@ -6,12 +6,12 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use inquire::ui::{Attributes, Color, RenderConfig, StyleSheet};
+
 use inquire::{Confirm, Select, Text};
 use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
-use thag_rs::styling::{ColorValue, Role, TermAttributes};
+
 use thag_rs::{builder::execute, configure_log, Cli};
 use thag_rs::{get_verbosity, set_global_verbosity, V};
 
@@ -681,7 +681,7 @@ fn manage_demo_directory() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    inquire::set_global_render_config(get_render_config());
+    inquire::set_global_render_config(thag_rs::styling::create_theme_aware_inquire_config());
 
     let args = DemoArgs::parse();
 
@@ -1033,161 +1033,12 @@ fn print_demo_info(demo_name: &str) {
     println!();
 }
 
-/// Creates a theme-aware RenderConfig for inquire prompts with optimized contrast.
-///
-/// This function integrates thag's color system with inquire's UI rendering by:
-/// - Detecting terminal capabilities (TrueColor, 256-color, or Basic)
-/// - Mapping inquire UI elements to appropriate thag semantic roles
-/// - Using color distance calculation to optimize contrast between selected and normal options
-/// - Converting colors based on terminal support:
-///   * TrueColor terminals: Use RGB values directly
-///   * 256-color terminals: Use color palette indices
-///   * Basic terminals: Use thag's existing role-to-color mapping
-///
-/// The mapping uses these thag roles for inquire elements:
-/// - `selected_option` → Chosen from Role::Emphasis, Role::Code, Role::Heading3 based on color distance
-/// - `option` → `Role::Normal` (regular list items)
-/// - `help_message` → `Role::Info` (help text)
-/// - `error_message` → `Role::Error` (error messages)
-/// - `prompt` → `Role::Normal` (main prompt text)
-/// - `answer` → `Role::Success` (completed prompts)
-/// - `placeholder` → `Role::Subtle` (placeholder text)
-fn get_render_config() -> RenderConfig<'static> {
-    let mut render_config = RenderConfig::default();
-
-    // Get terminal attributes and current theme from thag's color system
-    let term_attrs = TermAttributes::get_or_init();
-    let theme = &term_attrs.theme;
-
-    // Helper function to convert thag colors to inquire colors
-    let convert_color = |role: Role| -> Color {
-        let style = theme.style_for(role);
-        if let Some(color_info) = &style.foreground {
-            match &color_info.value {
-                ColorValue::TrueColor { rgb } => Color::Rgb {
-                    r: rgb[0],
-                    g: rgb[1],
-                    b: rgb[2],
-                },
-                ColorValue::Color256 { color256 } => Color::AnsiValue(*color256),
-                ColorValue::Basic { .. } => {
-                    // Use thag's existing color mapping for basic terminals
-                    Color::AnsiValue(u8::from(&role))
-                }
-            }
-        } else {
-            // Fallback if no foreground color is defined
-            Color::AnsiValue(u8::from(&role))
-        }
-    };
-
-    // Helper function to extract RGB values from a role for color distance calculation
-    let get_rgb = |role: Role| -> Option<(u8, u8, u8)> {
-        let style = theme.style_for(role);
-        if let Some(color_info) = &style.foreground {
-            match &color_info.value {
-                ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-                ColorValue::Color256 { color256 } => {
-                    // Convert 256-color to RGB for distance calculation
-                    // This is a simplified mapping - could be more accurate
-                    let index = *color256 as usize;
-                    if index < 16 {
-                        // Standard colors
-                        let colors = [
-                            (0, 0, 0),       // Black
-                            (128, 0, 0),     // Red
-                            (0, 128, 0),     // Green
-                            (128, 128, 0),   // Yellow
-                            (0, 0, 128),     // Blue
-                            (128, 0, 128),   // Magenta
-                            (0, 128, 128),   // Cyan
-                            (192, 192, 192), // White
-                            (128, 128, 128), // Bright Black
-                            (255, 0, 0),     // Bright Red
-                            (0, 255, 0),     // Bright Green
-                            (255, 255, 0),   // Bright Yellow
-                            (0, 0, 255),     // Bright Blue
-                            (255, 0, 255),   // Bright Magenta
-                            (0, 255, 255),   // Bright Cyan
-                            (255, 255, 255), // Bright White
-                        ];
-                        colors.get(index).copied()
-                    } else if index < 232 {
-                        // 216 color cube
-                        let n = index - 16;
-                        let r = (n / 36) * 51;
-                        let g = ((n % 36) / 6) * 51;
-                        let b = (n % 6) * 51;
-                        Some((r as u8, g as u8, b as u8))
-                    } else {
-                        // Grayscale
-                        let gray = 8 + (index - 232) * 10;
-                        Some((gray as u8, gray as u8, gray as u8))
-                    }
-                }
-                ColorValue::Basic { .. } => {
-                    // Convert basic role to approximate RGB for distance calculation
-                    match role {
-                        Role::Error => Some((255, 0, 0)),
-                        Role::Success => Some((0, 255, 0)),
-                        Role::Warning => Some((255, 255, 0)),
-                        Role::Info => Some((0, 255, 255)),
-                        Role::Code => Some((255, 0, 255)),
-                        Role::Emphasis => Some((255, 128, 0)),
-                        Role::Heading3 => Some((128, 255, 128)),
-                        _ => Some((192, 192, 192)),
-                    }
-                }
-            }
-        } else {
-            None
-        }
-    };
-
-    // Color distance function (same as in styling.rs)
-    let color_distance = |c1: (u8, u8, u8), c2: (u8, u8, u8)| -> f32 {
-        let dr = (f32::from(c1.0) - f32::from(c2.0)).powi(2);
-        let dg = (f32::from(c1.1) - f32::from(c2.1)).powi(2);
-        let db = (f32::from(c1.2) - f32::from(c2.2)).powi(2);
-        (dr + dg + db).sqrt()
-    };
-
-    // Choose the best selected_option color based on color distance from Normal
-    let prompt_rgb = get_rgb(Role::Normal);
-    let candidate_roles = [
-        Role::Emphasis,
-        Role::Heading2,
-        Role::Heading3,
-        Role::Info,
-        Role::Success,
-    ];
-
-    let best_role = if let Some(normal_color) = prompt_rgb {
-        candidate_roles
-            .iter()
-            .filter_map(|&role| get_rgb(role).map(|rgb| (role, color_distance(normal_color, rgb))))
-            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
-            .map(|(role, _)| role)
-            .unwrap_or(Role::Code) // Fallback to Code if no distance can be calculated
-    } else {
-        Role::Code // Fallback if Normal color can't be extracted
-    };
-
-    // Map inquire UI elements to appropriate thag roles
-    render_config.selected_option = Some(
-        StyleSheet::new()
-            .with_fg(convert_color(best_role))
-            .with_attr(Attributes::BOLD),
-    );
-
-    // Set regular option styling to Normal role
-    render_config.option = StyleSheet::empty().with_fg(convert_color(Role::Normal));
-    render_config.help_message = StyleSheet::empty().with_fg(convert_color(Role::Info));
-    render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
-        .with_message(StyleSheet::empty().with_fg(convert_color(Role::Error)));
-    render_config.prompt = StyleSheet::empty().with_fg(convert_color(Role::Normal));
-    render_config.answer = StyleSheet::empty().with_fg(convert_color(Role::Success));
-    render_config.placeholder = StyleSheet::empty().with_fg(convert_color(Role::Subtle));
-
-    render_config
-}
+// Theme-aware inquire configuration is now handled by thag_rs::styling::create_theme_aware_inquire_config()
+// This respects the configured theme (Black Metal, Base16, etc.) by mapping:
+// - selected_option → Role::Emphasis (your theme's emphasis color)
+// - help_message → Role::Info (your theme's info color)
+// - error_message → Role::Error (your theme's error color)
+// - And so on...
+//
+// The complex color distance calculation and hardcoded fallbacks have been moved
+// to thag_rs/src/styling.rs for better maintainability and to avoid duplication.

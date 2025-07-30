@@ -109,6 +109,55 @@ impl StylingConfigProvider for ConfigProvider {
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
+/// Create an inquire RenderConfig that respects the current thag_rs theme
+#[cfg(all(feature = "color_detect", feature = "tools"))]
+pub fn create_theme_aware_inquire_config() -> inquire::ui::RenderConfig<'static> {
+    let term_attrs = TermAttributes::get_or_init();
+    let theme = &term_attrs.theme;
+
+    // Helper function to convert thag colors to inquire colors
+    let convert_role_to_color = |role: Role| -> inquire::ui::Color {
+        let style = theme.style_for(role);
+        if let Some(color_info) = &style.foreground {
+            match &color_info.value {
+                ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2],
+                },
+                ColorValue::Color256 { color256 } => inquire::ui::Color::AnsiValue(*color256),
+                ColorValue::Basic { .. } => inquire::ui::Color::AnsiValue(u8::from(&role)),
+            }
+        } else {
+            inquire::ui::Color::AnsiValue(u8::from(&role))
+        }
+    };
+
+    let mut render_config = inquire::ui::RenderConfig::default();
+
+    // Map inquire UI elements to thag_rs Roles - respects Black Metal, etc.
+    render_config.selected_option = Some(
+        inquire::ui::StyleSheet::new()
+            .with_fg(convert_role_to_color(Role::Emphasis))
+            .with_attr(inquire::ui::Attributes::BOLD),
+    );
+
+    render_config.option =
+        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal));
+    render_config.help_message =
+        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Info));
+    render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
+        .with_message(inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Error)));
+    render_config.prompt =
+        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal));
+    render_config.answer =
+        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Success));
+    render_config.placeholder =
+        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Subtle));
+
+    render_config
+}
+
 /// Helper functions for inquire UI theming integration
 #[cfg(all(feature = "color_detect", feature = "tools"))]
 pub mod inquire_theming {

@@ -24,8 +24,14 @@ git push --force origin develop
 To find snippets with many functions:
 grep -c fn demo/*.rs | egrep -v ':0' | egrep -v ':1$' | grep -v '2' | sort -t: -k2rn,2rn | while read x; do sed 's/:/ /'; done | while read f n; do grep -L "fn main" $f; done
 
-iterm2 syntax for changing background color using OSC:
-bg=f9f5d7
+Syntax for changing background color using OSC:
+All (iterm2, Wezterm, terminal):
+bg=24273a
+printf "\x1b]11;#$bg\x1b\\"
+Reset: printf "\x1b]104;\x1b\\"
+
+iterm only:
+bg=f9f5d7 # Gruvbox light hard
 bg=24273a # Catppuccin Macchiato
 echo -e "\033]1337;SetColors=bg=$bg\a"
 

@@ -243,61 +243,6 @@ mod themed {
         }
     }
 
-    /// Theme color provider trait for dependency injection
-    pub trait ThemeColorProvider {
-        /// Get color for selected items (emphasis role)
-        fn selected_color(&self) -> Color;
-        /// Get color for normal text
-        fn normal_color(&self) -> Color;
-        /// Get color for help messages (info role)
-        fn help_color(&self) -> Color;
-        /// Get color for error messages
-        fn error_color(&self) -> Color;
-        /// Get color for success/answer text
-        fn success_color(&self) -> Color;
-        /// Get color for subtle/placeholder text
-        fn subtle_color(&self) -> Color;
-    }
-
-    /// Global theme color provider - can be set by applications
-    static mut THEME_PROVIDER: Option<Box<dyn ThemeColorProvider + Send + Sync>> = None;
-
-    /// Set a global theme color provider (typically called by thag_rs or other host applications)
-    pub fn set_theme_provider(provider: Box<dyn ThemeColorProvider + Send + Sync>) {
-        unsafe {
-            THEME_PROVIDER = Some(provider);
-        }
-    }
-
-    /// Try to create render config using provided theme colors
-    fn try_theme_provider_styling() -> Option<RenderConfig<'static>> {
-        unsafe {
-            if let Some(provider) = &THEME_PROVIDER {
-                let mut render_config = RenderConfig::default();
-
-                // Use theme provider colors - respects configured theme (Black Metal, etc.)
-                render_config.selected_option = Some(
-                    StyleSheet::new()
-                        .with_fg(provider.selected_color())
-                        .with_attr(Attributes::BOLD),
-                );
-
-                render_config.option = StyleSheet::empty().with_fg(provider.normal_color());
-                render_config.help_message = StyleSheet::empty().with_fg(provider.help_color());
-                render_config.error_message =
-                    inquire::ui::ErrorMessageRenderConfig::default_colored()
-                        .with_message(StyleSheet::empty().with_fg(provider.error_color()));
-                render_config.prompt = StyleSheet::empty().with_fg(provider.normal_color());
-                render_config.answer = StyleSheet::empty().with_fg(provider.success_color());
-                render_config.placeholder = StyleSheet::empty().with_fg(provider.subtle_color());
-
-                Some(render_config)
-            } else {
-                None
-            }
-        }
-    }
-
     /// Create render config using lightweight theming (fallback when thag_rs not available)
     fn create_lightweight_render_config() -> RenderConfig<'static> {
         let capability = detect_color_capability();
@@ -326,59 +271,6 @@ mod themed {
         render_config
     }
 
-    /// Convenience function for external tools to provide their theme colors
-    ///
-    /// This allows tools like thag_demo to inject their theme-aware colors
-    /// without creating circular dependencies.
-    pub fn apply_external_theme_colors(
-        selected: Color,
-        normal: Color,
-        help: Color,
-        error: Color,
-        success: Color,
-        subtle: Color,
-    ) {
-        struct ExternalThemeProvider {
-            selected: Color,
-            normal: Color,
-            help: Color,
-            error: Color,
-            success: Color,
-            subtle: Color,
-        }
-
-        impl ThemeColorProvider for ExternalThemeProvider {
-            fn selected_color(&self) -> Color {
-                self.selected
-            }
-            fn normal_color(&self) -> Color {
-                self.normal
-            }
-            fn help_color(&self) -> Color {
-                self.help
-            }
-            fn error_color(&self) -> Color {
-                self.error
-            }
-            fn success_color(&self) -> Color {
-                self.success
-            }
-            fn subtle_color(&self) -> Color {
-                self.subtle
-            }
-        }
-
-        let provider = Box::new(ExternalThemeProvider {
-            selected,
-            normal,
-            help,
-            error,
-            success,
-            subtle,
-        });
-        set_theme_provider(provider);
-    }
-
     /// Get a themed RenderConfig using the specified strategy
     ///
     /// # Arguments
@@ -389,29 +281,27 @@ mod themed {
     pub fn get_render_config_with_strategy(strategy: ThemingStrategy) -> RenderConfig<'static> {
         match strategy {
             ThemingStrategy::FullThagRs => {
-                // Try to use theme provider colors, fall back to lightweight if not available
-                try_theme_provider_styling().unwrap_or_else(|| create_lightweight_render_config())
+                // Note: Full thag_rs integration should use thag_rs::styling::create_theme_aware_inquire_config()
+                // This strategy is for tools that have their own theme integration
+                create_lightweight_render_config()
             }
             ThemingStrategy::Lightweight => create_lightweight_render_config(),
             ThemingStrategy::Default => RenderConfig::default(),
             ThemingStrategy::Auto => {
-                // PRIORITY: Try theme provider colors first to respect configured themes
-                // Only fall back to lightweight hardcoded colors if theme unavailable
-                try_theme_provider_styling().unwrap_or_else(|| create_lightweight_render_config())
+                // For auto, just use lightweight since full integration is handled at the application level
+                create_lightweight_render_config()
             }
         }
     }
 
-    /// Get a theme-aware RenderConfig for inquire prompts (auto strategy)
+    /// Get a theme-aware RenderConfig for inquire prompts (lightweight strategy)
     ///
-    /// This function creates an inquire RenderConfig that automatically:
-    /// - FIRST: Tries to use configured theme's Role-based colors (respects Black Metal, etc.)
-    /// - FALLBACK: Uses lightweight terminal-capability-based theming
-    /// - Maps inquire elements to semantic Roles (help → Info, selected → Emphasis, etc.)
-    /// - Preserves theme consistency across all UI elements
+    /// This function creates an inquire RenderConfig with basic terminal-aware theming.
+    /// For full theme integration (respects Black Metal, Base16, etc.),
+    /// use `thag_rs::styling::create_theme_aware_inquire_config()` instead.
     ///
     /// # Returns
-    /// A configured `RenderConfig` that respects the current theme configuration
+    /// A configured `RenderConfig` with improved color contrast for basic terminals
     pub fn get_themed_render_config() -> RenderConfig<'static> {
         get_render_config_with_strategy(ThemingStrategy::Auto)
     }
@@ -444,16 +334,13 @@ mod themed {
     /// # Returns
     /// A vector of available theming strategies
     pub fn get_available_strategies() -> Vec<ThemingStrategy> {
-        let mut strategies = vec![
+        let strategies = vec![
             ThemingStrategy::Lightweight,
             ThemingStrategy::Default,
             ThemingStrategy::Auto,
         ];
 
-        // Check if theme provider is available (respects configured themes)
-        if try_theme_provider_styling().is_some() {
-            strategies.insert(0, ThemingStrategy::FullThagRs);
-        }
+        // FullThagRs strategy is always available but should be used with external theme integration
 
         strategies
     }
@@ -462,11 +349,11 @@ mod themed {
     pub fn describe_strategy(strategy: ThemingStrategy) -> &'static str {
         match strategy {
             ThemingStrategy::FullThagRs => {
-                "Respects configured theme Role colors (Black Metal, etc.)"
+                "Use with external theme integration (thag_rs::styling::create_theme_aware_inquire_config)"
             }
-            ThemingStrategy::Lightweight => "Basic terminal-aware colors (ignores theme)",
+            ThemingStrategy::Lightweight => "Self-contained terminal-aware colors with improved contrast",
             ThemingStrategy::Default => "Default inquire colors (no theming)",
-            ThemingStrategy::Auto => "Use theme colors if available, else basic colors",
+            ThemingStrategy::Auto => "Lightweight theming with automatic terminal detection",
         }
     }
 }

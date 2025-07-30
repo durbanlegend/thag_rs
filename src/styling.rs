@@ -88,19 +88,19 @@ impl StylingConfigProvider for ConfigProvider {
 
     fn backgrounds(&self) -> Vec<String> {
         maybe_config()
-            .map(|c| c.styling.backgrounds.clone())
+            .map(|c| c.styling.backgrounds)
             .unwrap_or_default()
     }
 
     fn preferred_light(&self) -> Vec<String> {
         maybe_config()
-            .map(|c| c.styling.preferred_light.clone())
+            .map(|c| c.styling.preferred_light)
             .unwrap_or_default()
     }
 
     fn preferred_dark(&self) -> Vec<String> {
         maybe_config()
-            .map(|c| c.styling.preferred_dark.clone())
+            .map(|c| c.styling.preferred_dark)
             .unwrap_or_default()
     }
 }
@@ -109,17 +109,21 @@ impl StylingConfigProvider for ConfigProvider {
 #[cfg(debug_assertions)]
 use crate::debug_log;
 
-/// Create an inquire RenderConfig that respects the current thag_rs theme
+/// Create an inquire `RenderConfig` that respects the current `thag_rs` theme
 #[cfg(all(feature = "color_detect", feature = "tools"))]
+#[must_use]
 pub fn create_theme_aware_inquire_config() -> inquire::ui::RenderConfig<'static> {
+    use inquire::ui::{RenderConfig, StyleSheet};
+
     let term_attrs = TermAttributes::get_or_init();
     let theme = &term_attrs.theme;
 
     // Helper function to convert thag colors to inquire colors
     let convert_role_to_color = |role: Role| -> inquire::ui::Color {
         let style = theme.style_for(role);
-        if let Some(color_info) = &style.foreground {
-            match &color_info.value {
+        style.foreground.as_ref().map_or_else(
+            || inquire::ui::Color::AnsiValue(u8::from(&role)),
+            |color_info| match &color_info.value {
                 ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
                     r: rgb[0],
                     g: rgb[1],
@@ -127,33 +131,26 @@ pub fn create_theme_aware_inquire_config() -> inquire::ui::RenderConfig<'static>
                 },
                 ColorValue::Color256 { color256 } => inquire::ui::Color::AnsiValue(*color256),
                 ColorValue::Basic { .. } => inquire::ui::Color::AnsiValue(u8::from(&role)),
-            }
-        } else {
-            inquire::ui::Color::AnsiValue(u8::from(&role))
-        }
+            },
+        )
     };
 
-    let mut render_config = inquire::ui::RenderConfig::default();
-
-    // Map inquire UI elements to thag_rs Roles - respects Black Metal, etc.
-    render_config.selected_option = Some(
-        inquire::ui::StyleSheet::new()
-            .with_fg(convert_role_to_color(Role::Emphasis))
-            .with_attr(inquire::ui::Attributes::BOLD),
-    );
-
-    render_config.option =
-        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal));
-    render_config.help_message =
-        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Info));
-    render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
-        .with_message(inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Error)));
-    render_config.prompt =
-        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal));
-    render_config.answer =
-        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Success));
-    render_config.placeholder =
-        inquire::ui::StyleSheet::empty().with_fg(convert_role_to_color(Role::Subtle));
+    let render_config = RenderConfig::<'_> {
+        // Map inquire UI elements to thag_rs Roles - respects Black Metal, etc.
+        selected_option: Some(
+            StyleSheet::new()
+                .with_fg(convert_role_to_color(Role::Emphasis))
+                .with_attr(inquire::ui::Attributes::BOLD),
+        ),
+        option: StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal)),
+        help_message: StyleSheet::empty().with_fg(convert_role_to_color(Role::Info)),
+        error_message: inquire::ui::ErrorMessageRenderConfig::default_colored()
+            .with_message(StyleSheet::empty().with_fg(convert_role_to_color(Role::Error))),
+        prompt: StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal)),
+        answer: StyleSheet::empty().with_fg(convert_role_to_color(Role::Success)),
+        placeholder: StyleSheet::empty().with_fg(convert_role_to_color(Role::Subtle)),
+        ..Default::default()
+    };
 
     render_config
 }
@@ -161,16 +158,18 @@ pub fn create_theme_aware_inquire_config() -> inquire::ui::RenderConfig<'static>
 /// Helper functions for inquire UI theming integration
 #[cfg(all(feature = "color_detect", feature = "tools"))]
 pub mod inquire_theming {
-    use super::*;
+    use super::{ColorValue, Role, TermAttributes};
 
     /// Convert a thag Role to an inquire Color using the current theme
+    #[must_use]
     pub fn role_to_inquire_color(role: Role) -> Option<inquire::ui::Color> {
         let term_attrs = TermAttributes::get_or_init();
         let theme = &term_attrs.theme;
         let style = theme.style_for(role);
 
-        if let Some(color_info) = &style.foreground {
-            match &color_info.value {
+        style.foreground.as_ref().map_or_else(
+            || Some(inquire::ui::Color::AnsiValue(u8::from(&role))),
+            |color_info| match &color_info.value {
                 ColorValue::TrueColor { rgb } => Some(inquire::ui::Color::Rgb {
                     r: rgb[0],
                     g: rgb[1],
@@ -181,14 +180,13 @@ pub mod inquire_theming {
                     // Use thag's existing color mapping for basic terminals
                     Some(inquire::ui::Color::AnsiValue(u8::from(&role)))
                 }
-            }
-        } else {
-            // Fallback if no foreground color is defined
-            Some(inquire::ui::Color::AnsiValue(u8::from(&role)))
-        }
+            },
+        )
     }
 
-    /// Create a theme-aware RenderConfig for inquire prompts
+    /// Create a theme-aware `RenderConfig` for inquire prompts
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
     pub fn create_render_config() -> inquire::ui::RenderConfig<'static> {
         let mut render_config = inquire::ui::RenderConfig::default();
 
@@ -199,8 +197,9 @@ pub mod inquire_theming {
         // Helper function to convert thag colors to inquire colors
         let convert_color = |role: Role| -> inquire::ui::Color {
             let style = theme.style_for(role);
-            if let Some(color_info) = &style.foreground {
-                match &color_info.value {
+            style.foreground.as_ref().map_or_else(
+                || inquire::ui::Color::AnsiValue(u8::from(&role)),
+                |color_info| match &color_info.value {
                     ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
                         r: rgb[0],
                         g: rgb[1],
@@ -211,18 +210,18 @@ pub mod inquire_theming {
                         // Use thag's existing color mapping for basic terminals
                         inquire::ui::Color::AnsiValue(u8::from(&role))
                     }
-                }
-            } else {
-                // Fallback if no foreground color is defined
-                inquire::ui::Color::AnsiValue(u8::from(&role))
-            }
+                },
+            )
         };
 
         // Helper function to extract RGB values from a role for color distance calculation
+        #[allow(clippy::cast_possible_truncation)]
         let get_rgb = |role: Role| -> Option<(u8, u8, u8)> {
             let style = theme.style_for(role);
-            if let Some(color_info) = &style.foreground {
-                match &color_info.value {
+            style
+                .foreground
+                .as_ref()
+                .and_then(|color_info| match &color_info.value {
                     ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
                     ColorValue::Color256 { color256 } => {
                         // Convert 256-color to RGB for distance calculation
@@ -274,10 +273,7 @@ pub mod inquire_theming {
                             _ => Some((192, 192, 192)),
                         }
                     }
-                }
-            } else {
-                None
-            }
+                })
         };
 
         // Color distance function (same as in styling.rs)
@@ -298,19 +294,15 @@ pub mod inquire_theming {
             Role::Success,
         ];
 
-        let best_role = if let Some(normal_color) = prompt_rgb {
+        let best_role = prompt_rgb.map_or(Role::Code, |normal_color| {
             candidate_roles
                 .iter()
                 .filter_map(|&role| {
                     get_rgb(role).map(|rgb| (role, color_distance(normal_color, rgb)))
                 })
                 .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
-                .map(|(role, _)| role)
-                .unwrap_or(Role::Code) // Fallback to Code if no distance can be calculated
-        } else {
-            Role::Code // Fallback if Normal color can't be extracted
-        };
-
+                .map_or(Role::Code, |(role, _)| role)
+        });
         // Map inquire UI elements to appropriate thag roles
         render_config.selected_option = Some(
             inquire::ui::StyleSheet::new()

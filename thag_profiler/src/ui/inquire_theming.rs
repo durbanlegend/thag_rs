@@ -1,9 +1,9 @@
 //! Hybrid inquire UI theming with multiple strategies
 //!
 //! This module provides multiple theming approaches for inquire prompts:
-//! 1. Full thag_rs integration (when available) - sophisticated base16/base24 themes
+//! 1. Full `thag_rs` integration (when available) - sophisticated base16/base24 themes
 //! 2. Lightweight self-contained theming - basic color detection
-//! 3. Fallback to default inquire colors
+//! 3. Fallback to default `inquire` colors
 //!
 //! The system automatically selects the best available strategy or allows manual selection.
 
@@ -18,7 +18,7 @@ mod themed {
     /// Available theming strategies
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum ThemingStrategy {
-        /// Use full thag_rs styling system (requires thag_rs with color_detect)
+        /// Use full `thag_rs` styling system (requires `thag_rs` with `color_detect`)
         FullThagRs,
         /// Use lightweight self-contained theming
         Lightweight,
@@ -84,15 +84,13 @@ mod themed {
         // For now, default to dark since most developer terminals are dark
         // In a full implementation, this would query the terminal background
         // Could be enhanced with environment variable detection
-        if let Ok(bg) = std::env::var("TERM_BACKGROUND") {
+        std::env::var("TERM_BACKGROUND").map_or(BackgroundType::Dark, |bg| {
             match bg.to_lowercase().as_str() {
                 "light" => BackgroundType::Light,
                 "dark" => BackgroundType::Dark,
                 _ => BackgroundType::Unknown,
             }
-        } else {
-            BackgroundType::Dark // Safe default
-        }
+        })
     }
 
     /// Color scheme for inquire UI elements
@@ -106,7 +104,11 @@ mod themed {
     }
 
     /// Create color scheme based on capabilities and background - with improved contrast
-    fn create_color_scheme(capability: ColorCapability, background: BackgroundType) -> ColorScheme {
+    #[allow(clippy::too_many_lines)]
+    const fn create_color_scheme(
+        capability: ColorCapability,
+        background: BackgroundType,
+    ) -> ColorScheme {
         match (capability, background) {
             // TrueColor with dark background
             (ColorCapability::TrueColor, BackgroundType::Dark) => ColorScheme {
@@ -213,24 +215,18 @@ mod themed {
                 success: Color::AnsiValue(2),  // Green
                 subtle: Color::AnsiValue(5),   // Magenta (better contrast)
             },
-            // 256-color with unknown background (default to dark)
-            (ColorCapability::Color256, BackgroundType::Unknown) => ColorScheme {
-                selected: Color::AnsiValue(10), // Bright green
-                normal: Color::AnsiValue(15),   // White
-                help: Color::AnsiValue(14),     // Bright cyan
-                error: Color::AnsiValue(9),     // Bright red
-                success: Color::AnsiValue(10),  // Bright green
-                subtle: Color::AnsiValue(13),   // Bright magenta
-            },
-            // Basic color support (all backgrounds)
-            (ColorCapability::Basic, _) => ColorScheme {
-                selected: Color::AnsiValue(10), // Bright green
-                normal: Color::AnsiValue(15),   // White
-                help: Color::AnsiValue(14),     // Bright cyan
-                error: Color::AnsiValue(9),     // Bright red
-                success: Color::AnsiValue(10),  // Bright green
-                subtle: Color::AnsiValue(13),   // Bright magenta (better than gray)
-            },
+            // 256-color with unknown background (default to dark),
+            // or basic color support (all backgrounds)
+            (ColorCapability::Color256, BackgroundType::Unknown) | (ColorCapability::Basic, _) => {
+                ColorScheme {
+                    selected: Color::AnsiValue(10), // Bright green
+                    normal: Color::AnsiValue(15),   // White
+                    help: Color::AnsiValue(14),     // Bright cyan
+                    error: Color::AnsiValue(9),     // Bright red
+                    success: Color::AnsiValue(10),  // Bright green
+                    subtle: Color::AnsiValue(13),   // Bright magenta
+                }
+            }
             // No color support
             (ColorCapability::None, _) => ColorScheme {
                 selected: Color::AnsiValue(15), // White
@@ -243,41 +239,39 @@ mod themed {
         }
     }
 
-    /// Create render config using lightweight theming (fallback when thag_rs not available)
+    /// Create render config using lightweight theming (fallback when `thag_rs` not available)
     fn create_lightweight_render_config() -> RenderConfig<'static> {
         let capability = detect_color_capability();
         let background = detect_background_type();
         let colors = create_color_scheme(capability, background);
 
-        let mut render_config = RenderConfig::default();
-
-        // Configure the selected option with emphasis
-        render_config.selected_option = Some(
-            StyleSheet::new()
-                .with_fg(colors.selected)
-                .with_attr(Attributes::BOLD),
-        );
-
-        // Configure other UI elements using improved contrast colors
-        // Note: This is a fallback - when thag_rs is available, actual theme colors are used
-        render_config.option = StyleSheet::empty().with_fg(colors.normal);
-        render_config.help_message = StyleSheet::empty().with_fg(colors.help);
-        render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
-            .with_message(StyleSheet::empty().with_fg(colors.error));
-        render_config.prompt = StyleSheet::empty().with_fg(colors.normal);
-        render_config.answer = StyleSheet::empty().with_fg(colors.success);
-        render_config.placeholder = StyleSheet::empty().with_fg(colors.subtle);
+        let render_config = RenderConfig::<'_> {
+            selected_option: Some(
+                StyleSheet::new()
+                    .with_fg(colors.selected)
+                    .with_attr(Attributes::BOLD),
+            ),
+            option: StyleSheet::empty().with_fg(colors.normal),
+            help_message: StyleSheet::empty().with_fg(colors.help),
+            error_message: inquire::ui::ErrorMessageRenderConfig::default_colored()
+                .with_message(StyleSheet::empty().with_fg(colors.error)),
+            prompt: StyleSheet::empty().with_fg(colors.normal),
+            answer: StyleSheet::empty().with_fg(colors.success),
+            placeholder: StyleSheet::empty().with_fg(colors.subtle),
+            ..Default::default()
+        };
 
         render_config
     }
 
-    /// Get a themed RenderConfig using the specified strategy
+    /// Get a themed `RenderConfig` using the specified strategy
     ///
     /// # Arguments
     /// * `strategy` - The theming strategy to use
     ///
     /// # Returns
     /// A configured `RenderConfig` based on the selected strategy
+    #[must_use]
     pub fn get_render_config_with_strategy(strategy: ThemingStrategy) -> RenderConfig<'static> {
         match strategy {
             ThemingStrategy::FullThagRs => {
@@ -294,14 +288,15 @@ mod themed {
         }
     }
 
-    /// Get a theme-aware RenderConfig for inquire prompts (lightweight strategy)
+    /// Get a theme-aware `RenderConfig` for `inquire` prompts (lightweight strategy)
     ///
-    /// This function creates an inquire RenderConfig with basic terminal-aware theming.
+    /// This function creates an inquire `RenderConfig` with basic terminal-aware theming.
     /// For full theme integration (respects Black Metal, Base16, etc.),
     /// use `thag_rs::styling::create_theme_aware_inquire_config()` instead.
     ///
     /// # Returns
     /// A configured `RenderConfig` with improved color contrast for basic terminals
+    #[must_use]
     pub fn get_themed_render_config() -> RenderConfig<'static> {
         get_render_config_with_strategy(ThemingStrategy::Auto)
     }
@@ -324,7 +319,8 @@ mod themed {
     /// Get information about the detected terminal capabilities
     ///
     /// # Returns
-    /// A tuple of (ColorCapability, BackgroundType) indicating detected capabilities
+    /// A tuple of (`olorCapability`, `BackgroundType`) indicating detected capabilities
+    #[must_use]
     pub fn get_terminal_info() -> (ColorCapability, BackgroundType) {
         (detect_color_capability(), detect_background_type())
     }
@@ -333,6 +329,7 @@ mod themed {
     ///
     /// # Returns
     /// A vector of available theming strategies
+    #[must_use]
     pub fn get_available_strategies() -> Vec<ThemingStrategy> {
         let strategies = vec![
             ThemingStrategy::Lightweight,
@@ -346,7 +343,8 @@ mod themed {
     }
 
     /// Get a description of a theming strategy
-    pub fn describe_strategy(strategy: ThemingStrategy) -> &'static str {
+    #[must_use]
+    pub const fn describe_strategy(strategy: ThemingStrategy) -> &'static str {
         match strategy {
             ThemingStrategy::FullThagRs => {
                 "Use with external theme integration (thag_rs::styling::create_theme_aware_inquire_config)"

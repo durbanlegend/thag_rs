@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
+use chrono::{DateTime, Local};
 use inferno::flamegraph::{
     self,
     color::{BasicPalette, MultiPalette},

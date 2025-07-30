@@ -12,8 +12,9 @@ use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
 
-use thag_rs::{builder::execute, configure_log, Cli};
-use thag_rs::{get_verbosity, set_global_verbosity, V};
+use thag_rs::{
+    builder::execute, configure_log, cvprtln, get_verbosity, set_global_verbosity, Cli, Role, V,
+};
 
 pub mod visualization;
 
@@ -118,8 +119,7 @@ fn discover_demo_dir() -> Option<PathBuf> {
         DemoLocation::Environment(
             env::var("THAG_DEMO_DIR")
                 .ok()
-                .map(PathBuf::from)
-                .unwrap_or_else(|| PathBuf::from("")),
+                .map_or_else(|| PathBuf::from(""), PathBuf::from),
         ),
         // Current working directory
         DemoLocation::Current(PathBuf::from("demo")),
@@ -188,7 +188,7 @@ fn find_or_setup_demo_dir() -> Result<PathBuf> {
     }
 }
 
-/// Download demo directory using thag_get_demo_dir
+/// Download demo directory using `thag_get_demo_dir`
 fn download_demo_dir() -> Result<PathBuf> {
     let default_location = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
@@ -218,7 +218,7 @@ fn download_demo_dir() -> Result<PathBuf> {
 
     // Call thag_get_demo_dir subprocess
     let output = std::process::Command::new("thag")
-        .args(&["thag_get_demo_dir"])
+        .args(["thag_get_demo_dir"])
         .env("THAG_DEMO_TARGET", &location)
         .output();
 
@@ -259,8 +259,8 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
 
     let lines: Vec<&str> = content.lines().collect();
     // eprintln!("lines={lines:#?}");
-    let mut _in_doc_comment = false;
-    let mut _in_block_doc_comment = false;
+    let mut in_doc_comment = false;
+    let mut in_block_doc_comment = false;
 
     for line in lines {
         let trimmed = line.trim();
@@ -271,14 +271,14 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
 
         // Look for block doc comments (/** ... */)
         if trimmed.starts_with("/**") {
-            _in_block_doc_comment = true;
-        } else if _in_block_doc_comment && trimmed.starts_with("*/") {
-            _in_block_doc_comment = false;
-            _in_doc_comment = true;
+            in_block_doc_comment = true;
+        } else if in_block_doc_comment && trimmed.starts_with("*/") {
+            in_block_doc_comment = false;
+            in_doc_comment = true;
         }
         // Look for doc comments (///)
         else if trimmed.starts_with("///") {
-            _in_doc_comment = true;
+            in_doc_comment = true;
             let comment_text = trimmed.trim_start_matches("///").trim();
             if !comment_text.is_empty() && description.is_none() {
                 description = Some(comment_text.to_string());
@@ -287,7 +287,7 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
             if comment_text.starts_with("E.g.") || comment_text.contains("thag") {
                 usage_example = Some(comment_text.to_string());
             }
-        } else if _in_block_doc_comment {
+        } else if in_block_doc_comment {
             if !trimmed.starts_with("/**") {
                 let comment_text = trimmed;
                 if !comment_text.is_empty() && description.is_none() {
@@ -314,7 +314,7 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
             sample_arguments = Some(args_text.to_string());
         }
         // Stop at first non-comment line
-        else if _in_doc_comment && !trimmed.starts_with("//") && !trimmed.is_empty() {
+        else if in_doc_comment && !trimmed.starts_with("//") && !trimmed.is_empty() {
             break;
         }
     }
@@ -339,7 +339,7 @@ fn scan_demo_files(demo_dir: &Path) -> Result<Vec<DemoFile>> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.extension().map_or(false, |ext| ext == "rs") {
+        if path.extension().is_some_and(|ext| ext == "rs") {
             if let Some(demo) = extract_demo_metadata(&path)? {
                 demos.push(demo);
             }
@@ -350,8 +350,11 @@ fn scan_demo_files(demo_dir: &Path) -> Result<Vec<DemoFile>> {
     Ok(demos)
 }
 
-/// Interactive demo browser similar to thag_show_themes
+/// Interactive demo browser similar to `thag_show_themes`
 fn interactive_demo_browser(verbose: bool) -> Result<()> {
+    use inquire::error::InquireResult;
+    use inquire::list_option::ListOption;
+
     let demo_dir = find_or_setup_demo_dir()?;
     let demo_files = scan_demo_files(&demo_dir)?;
 
@@ -382,8 +385,6 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
     print!("\x1b[2J\x1b[H");
 
     let mut cursor = 0_usize;
-    use inquire::error::InquireResult;
-    use inquire::list_option::ListOption;
 
     loop {
         println!("\n🚀 Interactive Demo Browser");
@@ -480,18 +481,18 @@ fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<
         .ok_or_else(|| anyhow::anyhow!("Could not extract metadata from demo file"))?;
 
     // Check if this is a profiling demo and suggest environment variable
-    if demo_file.name.contains("profile") || demo_file.categories.contains(&"profiling".to_string())
+    if (demo_file.name.contains("profile")
+        || demo_file.categories.contains(&"profiling".to_string()))
+        && env::var("THAG_PROFILER").is_err()
     {
-        if env::var("THAG_PROFILER").is_err() {
-            println!("\n📊 This appears to be a profiling demo.");
-            println!("💡 For profiling output (.folded files), set: export THAG_PROFILER=both");
-            println!("   Other options: THAG_PROFILER=time or THAG_PROFILER=memory");
-            println!("   Without this, the demo runs but no profiling data is collected.");
-        }
+        println!("\n📊 This appears to be a profiling demo.");
+        println!("💡 For profiling output (.folded files), set: export THAG_PROFILER=both");
+        println!("   Other options: THAG_PROFILER=time or THAG_PROFILER=memory");
+        println!("   Without this, the demo runs but no profiling data is collected.");
     }
 
     // Collect arguments if needed
-    let args = collect_demo_arguments(&demo_file)?;
+    let args = collect_demo_arguments(&demo_file);
 
     // Set THAG_DEV_PATH for local development - point to thag_rs root
     let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
@@ -539,41 +540,37 @@ fn list_all_demos() -> Result<()> {
 
     println!();
 
-    match find_demo_dir_quietly() {
-        Ok(demo_dir) => {
-            println!("{}", "Script demos:".bold().green());
-            let demo_files = scan_demo_files(&demo_dir)?;
+    if let Ok(demo_dir) = find_demo_dir_quietly() {
+        println!("{}", "Script demos:".bold().green());
+        let demo_files = scan_demo_files(&demo_dir)?;
 
-            if demo_files.is_empty() {
-                println!("  {}", "No script demos found".dimmed());
-            } else {
-                for demo in &demo_files {
-                    let args_hint =
-                        if demo.sample_arguments.is_some() || demo.usage_example.is_some() {
-                            " 📝"
-                        } else {
-                            ""
-                        };
-                    println!(
-                        "  {} - {}{}",
-                        demo.name.bold().green(),
-                        demo.description.dimmed(),
-                        args_hint
-                    );
-                    if !demo.categories.is_empty() {
-                        println!("    Categories: {}", demo.categories.join(", ").dimmed());
-                    }
-                    if let Some(ref args) = demo.sample_arguments {
-                        println!("    Sample args: {}", args.dimmed());
-                    }
+        if demo_files.is_empty() {
+            println!("  {}", "No script demos found".dimmed());
+        } else {
+            for demo in &demo_files {
+                let args_hint = if demo.sample_arguments.is_some() || demo.usage_example.is_some() {
+                    " 📝"
+                } else {
+                    ""
+                };
+                println!(
+                    "  {} - {}{}",
+                    demo.name.bold().green(),
+                    demo.description.dimmed(),
+                    args_hint
+                );
+                if !demo.categories.is_empty() {
+                    println!("    Categories: {}", demo.categories.join(", ").dimmed());
+                }
+                if let Some(ref args) = demo.sample_arguments {
+                    println!("    Sample args: {}", args.dimmed());
                 }
             }
-            println!("\nTotal script demos: {}", demo_files.len());
         }
-        Err(_) => {
-            println!("{}", "Script demos: Not available".yellow());
-            println!("  Use 'thag_demo manage' to download demo directory");
-        }
+        println!("\nTotal script demos: {}", demo_files.len());
+    } else {
+        println!("{}", "Script demos: Not available".yellow());
+        println!("  Use 'thag_demo manage' to download demo directory");
     }
 
     Ok(())
@@ -585,94 +582,89 @@ fn manage_demo_directory() -> Result<()> {
     println!("{}", "═".repeat(30));
 
     // Check current status
-    match discover_demo_dir() {
-        Some(path) => {
-            println!(
-                "✅ Demo directory found at: {}",
-                path.display().to_string().green()
-            );
+    if let Some(path) = discover_demo_dir() {
+        println!(
+            "✅ Demo directory found at: {}",
+            path.display().to_string().green()
+        );
 
-            let demo_files = scan_demo_files(&path)?;
-            println!("📁 Contains {} demo scripts", demo_files.len());
+        let demo_files = scan_demo_files(&path)?;
+        println!("📁 Contains {} demo scripts", demo_files.len());
 
-            let options = vec![
-                "Browse demos".to_string(),
-                "Re-download/update demos".to_string(),
-                "Show directory info".to_string(),
-                "Exit".to_string(),
-            ];
+        let options = vec![
+            "Browse demos".to_string(),
+            "Re-download/update demos".to_string(),
+            "Show directory info".to_string(),
+            "Exit".to_string(),
+        ];
 
-            match Select::new("What would you like to do?", options).prompt() {
-                Ok(choice) => {
-                    match choice.as_str() {
-                        "Browse demos" => interactive_demo_browser(false)?,
-                        "Re-download/update demos" => {
-                            println!("Re-downloading demo directory...");
-                            download_demo_dir()?;
-                        }
-                        "Show directory info" => {
-                            println!("\nDemo Directory Information:");
-                            println!("Location: {}", path.display());
-                            println!("Files: {}", demo_files.len());
-
-                            // Show first few files as examples
-                            if !demo_files.is_empty() {
-                                println!("\nSample files:");
-                                for demo in demo_files.iter().take(5) {
-                                    println!("  {} -> {}", demo.name, demo.path.display());
-                                }
-                                if demo_files.len() > 5 {
-                                    println!("  ... and {} more", demo_files.len() - 5);
-                                }
-                            }
-
-                            // Show some stats
-                            let mut categories: std::collections::HashMap<String, usize> =
-                                std::collections::HashMap::new();
-                            for demo in &demo_files {
-                                for cat in &demo.categories {
-                                    *categories.entry(cat.clone()).or_insert(0) += 1;
-                                }
-                            }
-
-                            if !categories.is_empty() {
-                                println!("\nCategories:");
-                                let mut cat_list: Vec<_> = categories.into_iter().collect();
-                                cat_list.sort_by(|a, b| b.1.cmp(&a.1));
-                                for (cat, count) in cat_list {
-                                    println!("  {} ({})", cat, count);
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                Err(e) => {
-                    println!("❌ Interactive prompt failed: {}", e);
-                    println!("💡 Demo directory is available at: {}", path.display());
-                    println!(
-                        "   Use 'thag_demo browse' or 'thag_demo list-scripts' to explore demos"
-                    );
-                }
-            }
-        }
-        None => {
-            println!("❌ Demo directory not found");
-            println!("Would you like to download it?");
-
-            match Confirm::new("Download demo directory?")
-                .with_default(true)
-                .prompt()
-            {
-                Ok(should_download) => {
-                    if should_download {
+        match Select::new("What would you like to do?", options).prompt() {
+            Ok(choice) => {
+                match choice.as_str() {
+                    "Browse demos" => interactive_demo_browser(false)?,
+                    "Re-download/update demos" => {
+                        println!("Re-downloading demo directory...");
                         download_demo_dir()?;
                     }
+                    "Show directory info" => {
+                        println!("\nDemo Directory Information:");
+                        println!("Location: {}", path.display());
+                        println!("Files: {}", demo_files.len());
+
+                        // Show first few files as examples
+                        if !demo_files.is_empty() {
+                            println!("\nSample files:");
+                            for demo in demo_files.iter().take(5) {
+                                println!("  {} -> {}", demo.name, demo.path.display());
+                            }
+                            if demo_files.len() > 5 {
+                                println!("  ... and {} more", demo_files.len() - 5);
+                            }
+                        }
+
+                        // Show some stats
+                        let mut categories: std::collections::HashMap<String, usize> =
+                            std::collections::HashMap::new();
+                        for demo in &demo_files {
+                            for cat in &demo.categories {
+                                *categories.entry(cat.clone()).or_insert(0) += 1;
+                            }
+                        }
+
+                        if !categories.is_empty() {
+                            println!("\nCategories:");
+                            let mut cat_list: Vec<_> = categories.into_iter().collect();
+                            cat_list.sort_by(|a, b| b.1.cmp(&a.1));
+                            for (cat, count) in cat_list {
+                                println!("  {} ({})", cat, count);
+                            }
+                        }
+                    }
+                    _ => {}
                 }
-                Err(e) => {
-                    println!("❌ Interactive prompt failed: {}", e);
-                    println!("💡 You can manually download with: thag thag_get_demo_dir");
+            }
+            Err(e) => {
+                println!("❌ Interactive prompt failed: {}", e);
+                println!("💡 Demo directory is available at: {}", path.display());
+                println!("   Use 'thag_demo browse' or 'thag_demo list-scripts' to explore demos");
+            }
+        }
+    } else {
+        println!("❌ Demo directory not found");
+        println!("Would you like to download it?");
+
+        match Confirm::new("Download demo directory?")
+            .with_default(true)
+            .prompt()
+        {
+            Ok(should_download) => {
+                if should_download {
+                    download_demo_dir()?;
                 }
+            }
+            Err(e) => {
+                println!("❌ Interactive prompt failed: {}", e);
+                println!("💡 You can manually download with: thag thag_get_demo_dir");
             }
         }
     }
@@ -685,16 +677,13 @@ fn main() -> Result<()> {
 
     let args = DemoArgs::parse();
 
-    println!(
-        "{}",
-        format!("🔥 thag_demo v{}", env!("CARGO_PKG_VERSION"))
-            .bold()
-            .green()
+    cvprtln!(
+        Role::Heading1,
+        V::QQ,
+        "🔥 thag_demo v{}",
+        env!("CARGO_PKG_VERSION")
     );
-    println!(
-        "{}",
-        "Interactive demos for thag_rs and thag_profiler".dimmed()
-    );
+    println!("Interactive demos for thag_rs and thag_profiler");
     println!();
 
     if args.list {
@@ -723,7 +712,8 @@ fn main() -> Result<()> {
 }
 
 fn list_demos() {
-    println!("{}", "Available demos:".bold().green());
+    // println!("{}", "Available demos:".bold().green());
+    cvprtln!(Role::Heading2, V::QQ, "Available demos:");
     println!();
 
     let demos = vec![
@@ -747,34 +737,40 @@ fn list_demos() {
     ];
 
     for (name, description) in demos {
-        println!("  {} - {}", name.bold().green(), description.dimmed());
+        // println!("  {} - {}", name.bold().green(), description.dimmed());
+        cvprtln!(Role::Heading3, V::QQ, "  {name} - {}", description.dimmed());
     }
 
     println!();
-    println!("{}", "Interactive Commands:".bold().green());
-    println!(
-        "  {} - {}",
-        "browse".bold().green(),
+    cvprtln!(Role::Heading2, V::QQ, "Interactive Commands:");
+    println!();
+    cvprtln!(
+        Role::Heading3,
+        V::QQ,
+        "  browse - {}",
         "Interactive demo script browser".dimmed()
     );
-    println!(
-        "  {} - {}",
-        "manage".bold().green(),
+    cvprtln!(
+        Role::Heading3,
+        V::QQ,
+        "  manage - {}",
         "Manage demo directory (download/update)".dimmed()
     );
-    println!(
-        "  {} - {}",
-        "list-scripts".bold().green(),
+    cvprtln!(
+        Role::Heading3,
+        V::QQ,
+        "  list-scripts - {}",
         "List all available demo scripts".dimmed()
     );
 
     println!();
-    println!("{}", "Usage:".bold());
-    println!("  thag_demo <demo_name>");
-    println!("  thag_demo script <script_name>");
-    println!("  thag_demo browse");
-    println!("  thag_demo manage");
-    println!("  thag_demo list-scripts");
+    // println!("{}", "Usage:".bold());
+    cvprtln!(Role::Emphasis, V::QQ, "Usage:");
+    cvprtln!(Role::Heading3, V::QQ, "  thag_demo <demo_name>");
+    cvprtln!(Role::Heading3, V::QQ, "  thag_demo script <script_name>");
+    cvprtln!(Role::Heading3, V::QQ, "  thag_demo browse");
+    cvprtln!(Role::Heading3, V::QQ, "  thag_demo manage");
+    cvprtln!(Role::Heading3, V::QQ, "  thag_demo list-scripts");
     println!();
 }
 
@@ -921,18 +917,18 @@ fn create_demo_cli_with_args(script_path: &Path, verbose: bool, args: Vec<String
 }
 
 /// Collect arguments for a demo if needed
-fn collect_demo_arguments(demo_file: &DemoFile) -> Result<Vec<String>> {
+fn collect_demo_arguments(demo_file: &DemoFile) -> Vec<String> {
     // Check if this demo needs arguments by looking for usage patterns
     let needs_args = demo_file.sample_arguments.is_some()
         || demo_file
             .usage_example
             .as_ref()
-            .map_or(false, |ex| ex.contains("--"))
+            .is_some_and(|ex| ex.contains("--"))
         || demo_file.description.contains("Usage:")
         || demo_file.description.contains("E.g.");
 
     if !needs_args {
-        return Ok(Vec::new());
+        return Vec::new();
     }
 
     println!("\n📝 This demo accepts command-line arguments.");
@@ -952,13 +948,13 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Result<Vec<String>> {
     {
         Ok(input) => {
             if input.trim().is_empty() {
-                Ok(Vec::new())
+                Vec::new()
             } else {
                 // Simple argument parsing - split by spaces but preserve quoted strings
-                Ok(shell_words::split(&input).unwrap_or_else(|_| {
+                shell_words::split(&input).unwrap_or_else(|_| {
                     // Fallback to simple split if shell_words fails
                     input.split_whitespace().map(String::from).collect()
-                }))
+                })
             }
         }
         Err(e) => {
@@ -967,19 +963,22 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Result<Vec<String>> {
             if let Some(ref sample_args) = demo_file.sample_arguments {
                 // Clean up the arguments by removing backticks and extracting content after --
                 let cleaned = sample_args.trim_matches('`').trim();
-                let args_str = if cleaned.starts_with("-- ") {
-                    &cleaned[3..]
-                } else if cleaned.contains("-- ") {
-                    cleaned.split("-- ").nth(1).unwrap_or(cleaned)
-                } else {
-                    cleaned
-                };
+                let args_str = cleaned.strip_prefix("-- ").map_or_else(
+                    || {
+                        if cleaned.contains("-- ") {
+                            cleaned.split("-- ").nth(1).unwrap_or(cleaned)
+                        } else {
+                            cleaned
+                        }
+                    },
+                    |stripped| stripped,
+                );
                 println!("💡 Using sample arguments as fallback: {}", args_str);
-                return Ok(shell_words::split(args_str)
-                    .unwrap_or_else(|_| args_str.split_whitespace().map(String::from).collect()));
+                return shell_words::split(args_str)
+                    .unwrap_or_else(|_| args_str.split_whitespace().map(String::from).collect());
             }
             println!("💡 Running demo without arguments");
-            Ok(Vec::new())
+            Vec::new()
         }
     }
 }

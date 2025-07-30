@@ -32,7 +32,7 @@ v0.2 brings a ton of new features and a sleek look with themes to match your ter
 
 - concurrently with version 0.2, `thag_profiler`, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library. Check it out here: [thag_profiler](thag_profiler/README.md).
 
-- as of v0.2, `thag` goes gorgeous with a wide range of themes - atelier, brogrammer, catppuccin etc. - to match your preferred dark or light terminal theme, and the possibility to use theme colours with `inquire` as well as in your own message displays. With TrueColor and 256-color support keyed to your terminal's theme `thag`'s subtle styling is easy to implement while going far beyond the typical fixed 16-color offering.
+- as of v0.2, `thag` goes gorgeous with a wide range of themes - atelier, brogrammer, catppuccin etc. - to match your preferred dark or light terminal theme, and the possibility to use theme colours with `inquire` as well as in your own message displays. With TrueColor and 256-colour support keyed to your terminal's theme, `thag`'s subtle styling is easy to implement while going far beyond the typical fixed 16-colour offering.
 
 The core purpose of `thag` is straightforward: to make it easy and fun to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
@@ -44,7 +44,9 @@ Whether you're:
 
 - Prototyping a concept
 
-- Examining a crate
+- Running crate examples without the need to install
+
+- Using dependencies not supported by the Rust playground
 
 - Debugging proc macros
 
@@ -694,7 +696,7 @@ Common Usage Patterns:
    features = ["core", "simplelog"]
 2. Core with profiling enabled:
    features = ["core", "simplelog", "profiling"]
-3. Core with color detection:
+3. Core with colour detection:
    features = ["core", "color_detect", "simplelog"]
 4. Full functionality with profiling:
    features = ["full", "simplelog", "profiling"]

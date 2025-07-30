@@ -19,7 +19,7 @@ fn fac_product(n: usize) -> UBig {
     if n == 0 {
         ubig!(0)
     } else {
-        (1..=n).map(|i| UBig::from(i)).product::<UBig>()
+        (1..=n).map(UBig::from).product::<UBig>()
     }
 }
 

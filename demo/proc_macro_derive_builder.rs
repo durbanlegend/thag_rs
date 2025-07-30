@@ -1,4 +1,5 @@
-/// Demo of the DeriveBuilder proc macro that generates builder pattern implementations.
+#![allow(clippy::uninlined_format_args)]
+/// Demo of the `DeriveBuilder` proc macro that generates builder pattern implementations.
 ///
 /// This macro demonstrates advanced derive macro techniques by generating a complete
 /// builder pattern implementation including:
@@ -9,7 +10,6 @@
 /// - Documentation generation
 //# Purpose: Demonstrate builder pattern generation with validation
 //# Categories: technique, proc_macros, derive_macros, builder_pattern
-
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::DeriveBuilder;

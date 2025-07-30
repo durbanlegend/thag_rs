@@ -13,9 +13,9 @@ use thag_rs::{
     cvprtln,
     styling::{
         display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
-        TermBgLuma, Theme,
+        Theme,
     },
-    vlog, ColorSupport, Style, ThagResult, V,
+    vlog, ColorSupport, Style, TermBgLuma, ThagResult, V,
 };
 
 pub fn main() -> ThagResult<()> {
@@ -43,7 +43,6 @@ pub fn main() -> ThagResult<()> {
                 .bold()
                 .paint(format!("{:<col_width$}", "Bold")),
             color
-                .clone()
                 .bold()
                 .italic()
                 .paint(format!("{:<col_width$}", "Bold Italic")),

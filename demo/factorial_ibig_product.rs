@@ -35,17 +35,13 @@ impl DerefMut for UBigWrapper {
 // Step 3: Implement the Product Trait
 impl Product for UBigWrapper {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
-            UBigWrapper(acc.0 * x.0)
-        })
+        iter.fold(Self(ubig!(1)), |acc, x| Self(acc.0 * x.0))
     }
 }
 
-impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
+impl<'a> Product<&'a Self> for UBigWrapper {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
-            UBigWrapper(acc.0.clone() * x.0.clone())
-        })
+        iter.fold(Self(ubig!(1)), |acc, x| Self(acc.0 * x.0.clone()))
     }
 }
 
@@ -60,9 +56,8 @@ fn fac_product(n: usize) -> UBig {
 
 // Function example using successors
 let fac_successors = |n: usize| -> UBig {
-    successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
-        Some((i + 1, acc * (i + 1)))
-    })
+    successors(Some((ubig!(1), ubig!(1))), |(i, acc)|
+        Some((i + 1, acc * (i + 1))))
     .map(|(_a, b)| b)
     .nth(n - 1)
     .unwrap()

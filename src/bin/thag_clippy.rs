@@ -13,9 +13,15 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Categories: technique, thag_front_ends, tools
 //# Usage: thag_clippy [script_path] or thag_clippy (interactive mode)
 use colored::Colorize;
-use inquire::{Confirm, MultiSelect, Select};
+use inquire::{set_global_render_config, Confirm, MultiSelect};
 use std::{env, error::Error, path::PathBuf, process::Command};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_proc_macros::file_navigator;
+use thag_rs::{
+    auto_help, cvprtln, help_system::check_help_and_exit,
+    styling::create_theme_aware_inquire_config, Role, V,
+};
+
+file_navigator! {}
 
 #[derive(Debug, Clone)] // Added Clone
 struct ClippyLintGroup {
@@ -114,78 +120,11 @@ impl ClippyLintGroup {
     }
 }
 
-struct FileNavigator {
-    current_dir: PathBuf,
-    history: Vec<PathBuf>,
-}
-
-impl FileNavigator {
-    fn new() -> Self {
-        Self {
-            current_dir: env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
-            history: Vec::new(),
-        }
-    }
-
-    fn list_items(&self) -> Vec<String> {
-        let mut items = vec!["..".to_string()]; // Parent directory
-
-        // Add directories
-        let mut dirs: Vec<_> = std::fs::read_dir(&self.current_dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
-            .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.')) // Optional: hide hidden dirs
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect();
-        dirs.sort();
-        items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
-
-        // Add .rs files
-        let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .filter(|entry| {
-                entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                    && entry.path().extension().is_some_and(|ext| ext == "rs")
-            })
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .collect();
-        files.sort();
-        items.extend(files.into_iter().map(|f| format!("📄 {f}")));
-
-        items
-    }
-
-    fn navigate(&mut self, selection: &str) -> Option<PathBuf> {
-        if selection == ".." {
-            if let Some(parent) = self.current_dir.parent() {
-                self.history.push(self.current_dir.clone());
-                self.current_dir = parent.to_path_buf();
-            }
-            None
-        } else {
-            let clean_name = selection.trim_start_matches(['📁', '📄', ' ']);
-            let new_path = self.current_dir.join(clean_name);
-
-            if new_path.is_dir() {
-                self.history.push(self.current_dir.clone());
-                self.current_dir = new_path;
-                None
-            } else {
-                Some(new_path)
-            }
-        }
-    }
-}
-
 fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut navigator = FileNavigator::new();
 
     loop {
-        let items = navigator.list_items();
+        let items = navigator.list_items(Some("rs"), false, false);
 
         let selection = Select::new(
             &format!("Current dir: {}", navigator.current_dir.display()),
@@ -195,7 +134,9 @@ fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
         .with_page_size(20)
         .prompt()?;
 
-        if let Some(script_path) = navigator.navigate(&selection) {
+        if let NavigationResult::SelectionComplete(script_path) =
+            navigator.navigate(&selection, false)
+        {
             if Confirm::new(&format!("Use {}?", script_path.display()))
                 .with_default(true)
                 .prompt()?
@@ -253,9 +194,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let help = auto_help!("thag_clippy");
     check_help_and_exit(&help);
 
+    set_global_render_config(create_theme_aware_inquire_config());
+
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
-            eprintln!("This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            cvprtln!(Role::Error, V::QQ, "This tool cannot be run with stdin input. Please provide a file path or run interactively.");
             std::process::exit(1);
         }
         ScriptMode::File => {
@@ -269,18 +212,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    println!("\n{}", "Select lint groups to apply:".bold());
+    cvprtln!(Role::Heading1, V::QQ, "\nSelect lint groups to apply:");
     match select_lint_groups() {
         Ok(selected_groups) => {
             if selected_groups.is_empty() {
-                println!(
+                cvprtln!(
+                    Role::Warning,
+                    V::QQ,
                     "{}",
-                    "\nNo lint groups selected. Using default Clippy checks.".yellow()
+                    "\nNo lint groups selected. Using default Clippy checks."
                 );
-                println!("\n{}", "Running command:".bold());
-                println!(
+                cvprtln!(Role::Heading3, V::QQ, "\n{}", "Running command:".bold());
+                cvprtln!(
+                    Role::Code,
+                    V::QQ,
                     "thag --cargo {} -- clippy",
-                    script_path.display().to_string().bright_cyan()
+                    script_path.display()
                 );
             } else {
                 // Group selected lints by level
@@ -311,7 +258,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                println!("\n{}", "Selected lint groups:".bold());
+                cvprtln!(
+                    Role::Heading3,
+                    V::QQ,
+                    "\n{}",
+                    "Selected lint groups:".bold()
+                );
                 for (level_name, groups) in &by_level {
                     println!("  {}", level_name.bold());
                     for group in groups {
@@ -331,8 +283,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     script_path.display(),
                     warn_flags.join(" ")
                 );
-                println!("\n{}", "Command to run:".bold());
-                println!("{}", command.cyan());
+                cvprtln!(Role::Heading3, V::QQ, "\n{}", "Command to run:".bold());
+                cvprtln!(Role::Code, V::QQ, "{command}");
 
                 let script_path = script_path.display().to_string();
                 // Execute the command
@@ -342,13 +294,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let status = Command::new("thag").args(&thag_args).status()?;
 
                 if !status.success() {
-                    eprintln!("{}", "Clippy check failed".red());
+                    cvprtln!(Role::Error, V::QQ, "Clippy check failed");
                     return Err("Clippy check failed".into());
                 }
             }
         }
         Err(e) => {
-            eprintln!("{}", format!("Error selecting lint groups: {e}").red());
+            cvprtln!(Role::Error, V::QQ, "Error selecting lint groups: {e}");
             return Err(e);
         }
     }

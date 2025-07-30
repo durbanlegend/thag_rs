@@ -7,13 +7,13 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 
-use inquire::{Confirm, Select, Text};
+use inquire::{set_global_render_config, Confirm, Select, Text};
 use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
-
 use thag_rs::{
-    builder::execute, configure_log, cvprtln, get_verbosity, set_global_verbosity, Cli, Role, V,
+    builder::execute, configure_log, cvprtln, get_verbosity, set_global_verbosity,
+    styling::create_theme_aware_inquire_config, Cli, Role, V,
 };
 
 pub mod visualization;
@@ -673,7 +673,7 @@ fn manage_demo_directory() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    inquire::set_global_render_config(thag_rs::styling::create_theme_aware_inquire_config());
+    set_global_render_config(create_theme_aware_inquire_config());
 
     let args = DemoArgs::parse();
 

@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 /// Demo of the cached attribute macro that adds automatic memoization to functions.
 ///
 /// This macro demonstrates advanced attribute macro techniques by wrapping functions
@@ -16,7 +17,7 @@ use thag_demo_proc_macros::cached;
 fn fibonacci(n: u32) -> u64 {
     println!("  Computing fibonacci({})", n);
     if n <= 1 {
-        n as u64
+        u64::from(n)
     } else {
         fibonacci(n - 1) + fibonacci(n - 2)
     }
@@ -41,13 +42,14 @@ fn complex_calculation(a: i32, b: i32, c: i32) -> i32 {
 }
 
 /// Prime number checking (expensive operation)
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 #[cached]
 fn is_prime(n: u32) -> bool {
     println!("  Checking if {} is prime", n);
     if n < 2 {
         return false;
     }
-    for i in 2..=(n as f64).sqrt() as u32 {
+    for i in 2..=f64::from(n).sqrt() as u32 {
         if n % i == 0 {
             return false;
         }
@@ -138,7 +140,7 @@ fn main() {
     println!("\n5. Performance comparison:");
     println!("   Computing fibonacci(8) multiple times to show caching benefit:");
 
-    let numbers = vec![8, 8, 8, 9, 8, 10, 8];
+    let numbers = [8, 8, 8, 9, 8, 10, 8];
     for (i, n) in numbers.iter().enumerate() {
         println!("\n   Call {}: fibonacci({})", i + 1, n);
         let result = time_function(&format!("Call {}", i + 1), || fibonacci(*n));

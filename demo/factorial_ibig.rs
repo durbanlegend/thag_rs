@@ -54,4 +54,4 @@ let n: usize = args[1].parse().expect("Please provide a valid number");
 let fac_fold_n = fac_fold(n);
 
 assert_eq!(fac_fold_n, fac_successors(n));
-println!("factorial({n}) = {:#?}", fac_fold_n);
+println!("factorial({n}) = {fac_fold_n:#?}");

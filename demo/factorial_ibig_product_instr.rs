@@ -39,21 +39,20 @@ impl DerefMut for UBigWrapper {
 impl Product for UBigWrapper {
     #[profiled]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(ubig!(1)), |acc, x| UBigWrapper(acc.0 * x.0))
+        iter.fold(Self(ubig!(1)), |acc, x| Self(acc.0 * x.0))
     }
 }
 
-impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
+impl<'a> Product<&'a Self> for UBigWrapper {
     #[profiled]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
-            UBigWrapper(acc.0.clone() * x.0.clone())
-        })
+        iter.fold(Self(ubig!(1)), |acc, x| Self(acc.0 * x.0.clone()))
     }
 }
 
 // Function example using Product
 #[profiled]
+#[allow(clippy::useless_vec)]
 fn fac_product(n: usize) -> UBig {
     // Create a dummy object just to prove that memory profiling is happening here
     let _create_something = vec![

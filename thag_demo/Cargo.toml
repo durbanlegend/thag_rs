@@ -11,13 +11,6 @@ keywords = ["demo", "profiling", "rust", "thag", "examples"]
 categories = ["development-tools", "command-line-utilities"]
 
 [dependencies]
-thag_rs = { version = "0.2", path = "../", features = [
-    "build",
-    "color_detect",
-    "simplelog",
-    "tools",
-] }
-thag_profiler = { version = "0.1", path = "../thag_profiler" }
 clap = { version = "4.5", features = ["derive"] }
 colored = "2.0"
 dirs = "6.0"
@@ -26,6 +19,13 @@ chrono = { version = "0.4", features = ["serde"] }
 inferno = "0.12"
 inquire = "0.7"
 shell-words = "1.1"
+thag_profiler = { version = "0.1", path = "../thag_profiler" }
+thag_rs = { version = "0.2", path = "../", features = [
+    "build",
+    "color_detect",
+    "simplelog",
+    "tools",
+] }
 
 [package.metadata.docs.rs]
 all-features = true

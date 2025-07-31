@@ -27,6 +27,7 @@ simplelog = ["thag_rs/simplelog"]
 //# Categories: demo, REPL, technique
 use clap::{CommandFactory, Parser};
 use edit::edit_file;
+use log;
 use nu_ansi_term::Color as NuColor;
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use ratatui::style::Color;
@@ -713,7 +714,7 @@ fn tui(
     let mut edit_data = EditData {
         return_text: true,
         initial_content: &initial_content,
-        save_path: Some(save_path),
+        save_path: Some(save_path.clone()),
         history_path: Some(&history_path),
         history: Some(history),
     };
@@ -823,11 +824,11 @@ pub fn edit_history<R: EventReader + Debug>(
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
-    let mut staging_path_buf = staging_path.to_path_buf();
+    let staging_path_buf = staging_path.to_path_buf();
     let mut edit_data = EditData {
         return_text: false,
         initial_content,
-        save_path: Some(&mut staging_path_buf),
+        save_path: Some(staging_path_buf),
         history_path: None,
         history: None::<History>,
     };
@@ -903,13 +904,13 @@ pub fn history_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             // Save logic
-            save_file(maybe_save_path, textarea)?;
+            save_file(&maybe_save_path.as_mut(), textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            let save_file = save_file(maybe_save_path, textarea)?;
+            let save_file = save_file(&maybe_save_path.as_mut(), textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
             status_message.clear();

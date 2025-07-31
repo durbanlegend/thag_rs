@@ -5,8 +5,8 @@
 )]
 
 use crate::{
-    cvlog_warning, debug_log, re, vlog, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    TEMP_SCRIPT_NAME, TMPDIR, V,
+    cvprtln, debug_log, re, shared::V, vprtln, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
+    TEMP_SCRIPT_NAME, TMPDIR,
 };
 use regex::Regex;
 use std::{
@@ -36,7 +36,7 @@ use {
 use crate::escape_path_for_windows;
 
 #[cfg(debug_assertions)]
-use {crate::cvlog_emphasis, std::time::Instant};
+use {crate::styling::Role, std::time::Instant};
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {
@@ -97,7 +97,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // vlog!(V::N, "str={str}");
+        // vprtln!(V::N, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }
@@ -129,15 +129,15 @@ pub fn display_output(output: &Output) -> ThagResult<()> {
     // let stdout = output.stdout;
 
     // Print the captured stdout
-    vlog!(V::N, "Captured stdout:");
+    vprtln!(V::N, "Captured stdout:");
     for result in output.stdout.lines() {
-        vlog!(V::N, "{}", result?);
+        vprtln!(V::N, "{}", result?);
     }
 
     // Print the captured stderr
-    vlog!(V::N, "Captured stderr:");
+    vprtln!(V::N, "Captured stderr:");
     for result in output.stderr.lines() {
-        vlog!(V::N, "{}", result?);
+        vprtln!(V::N, "{}", result?);
     }
     Ok(())
 }
@@ -185,7 +185,7 @@ pub fn modified_since_compiled(
         }
     }
     if let Some(file) = most_recent {
-        vlog!(
+        vprtln!(
             V::V,
             "The most recently modified file compared to {executable:#?} is: {file:#?}"
         );
@@ -208,19 +208,19 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     if let Ok(tree) = { syn::parse_file(source_code) } {
         #[cfg(debug_assertions)]
         {
-            cvlog_emphasis!(V::V, "Parsed to syn::File");
+            cvprtln!(Role::Emphasis, V::V, "Parsed to syn::File");
             debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         }
         Some(Ast::File(tree))
     } else if let Ok(tree) = { extract_ast_expr(source_code) } {
         #[cfg(debug_assertions)]
         {
-            cvlog_emphasis!(V::V, "Parsed to syn::Expr");
+            cvprtln!(Role::Emphasis, V::V, "Parsed to syn::Expr");
             debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         }
         Some(Ast::Expr(tree))
     } else {
-        cvlog_warning!(V::V,
+        cvprtln!(Role::Warning, V::V,
             "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
         );
         rustfmt(sourch_path_string);
@@ -389,7 +389,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
 }}
 ",
         loop_toml.as_ref().map_or_else(String::new, |toml| {
-            vlog!(V::V, "toml={toml}");
+            vprtln!(V::V, "toml={toml}");
             format!(
                 r"/*[toml]
 {toml}
@@ -397,11 +397,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {{
             )
         }),
         loop_begin.as_ref().map_or("", |prelude| {
-            vlog!(V::V, "prelude={prelude}");
+            vprtln!(V::V, "prelude={prelude}");
             prelude
         }),
         loop_end.as_ref().map_or("", |postlude| {
-            vlog!(V::V, "postlude={postlude}");
+            vprtln!(V::V, "postlude={postlude}");
             postlude
         })
     )
@@ -427,12 +427,12 @@ pub fn display_dir_contents(path: &PathBuf) -> io::Result<()> {
     if path.is_dir() {
         let entries = fs::read_dir(path)?;
 
-        vlog!(V::N, "Directory listing for {path:?}");
+        vprtln!(V::N, "Directory listing for {path:?}");
         for entry in entries {
             let entry = entry?;
             let file_type = entry.file_type()?;
             let file_name = entry.file_name();
-            vlog!(
+            vprtln!(
                 V::QQ,
                 "  {file_name:?} ({})",
                 if file_type.is_dir() {
@@ -511,7 +511,7 @@ fn rustfmt(source_path_str: &str) {
             );
         }
     } else {
-        vlog!(
+        vprtln!(
             V::QQ,
             "`rustfmt` not found. Please install it to use this script."
         );

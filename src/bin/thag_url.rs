@@ -102,7 +102,7 @@ pub fn extract_ast_expr(rs_source: &str) -> Result<Expr, syn::Error> {
         // Try putting the expression in braces.
         let string = format!(r"{{{rs_source}}}");
         let str = string.as_str();
-        // vlog!(V::N, "str={str}");
+        // vprtln!(V::N, "str={str}");
 
         expr = syn::parse_str::<Expr>(str);
     }

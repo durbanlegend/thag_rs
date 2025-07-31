@@ -103,14 +103,14 @@ mod tests {
 thag_rs = {{ path = {thag_rs_path:#?}, features = ["core", "simplelog"]}}
 */
 
-use thag_rs::vlog;
+use thag_rs::vprtln;
 use thag_rs::logging::Verbosity;
 
 fn main() {{
-    vlog!(Verbosity::Quieter, "Quieter message");
-    vlog!(Verbosity::Quiet, "Quiet message");
-    vlog!(Verbosity::Normal, "Normal message");
-    vlog!(Verbosity::Verbose, "Verbose message");
+    vprtln!(Verbosity::Quieter, "Quieter message");
+    vprtln!(Verbosity::Quiet, "Quiet message");
+    vprtln!(Verbosity::Normal, "Normal message");
+    vprtln!(Verbosity::Verbose, "Verbose message");
 }}
 "#
         );
@@ -155,14 +155,14 @@ fn main() {{
 thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 
-use thag_rs::vlog;
+use thag_rs::vprtln;
 use thag_rs::logging::Verbosity;
 
 fn main() {{
-    vlog!(Verbosity::Quieter, "Macro quieter message");
-    vlog!(Verbosity::Quiet, "Macro quiet message");
-    vlog!(Verbosity::Normal, "Macro normal message");
-    vlog!(Verbosity::Verbose, "Macro verbose message");
+    vprtln!(Verbosity::Quieter, "Macro quieter message");
+    vprtln!(Verbosity::Quiet, "Macro quiet message");
+    vprtln!(Verbosity::Normal, "Macro normal message");
+    vprtln!(Verbosity::Verbose, "Macro verbose message");
 }}
 "#
         );
@@ -190,14 +190,14 @@ fn main() {{
 thag_rs = {{ path = {thag_rs_path:#?}, default-features = false, features = ["core", "env_logger"]}}
 */
 
-use thag_rs::vlog;
+use thag_rs::vprtln;
 use thag_rs::logging::Verbosity;
 
 fn main() {{
-    vlog!(Verbosity::Quieter, "Macro quieter message");
-    vlog!(Verbosity::Quiet, "Macro quiet message");
-    vlog!(Verbosity::Normal, "Macro normal message");
-    vlog!(Verbosity::Verbose, "Macro verbose message");
+    vprtln!(Verbosity::Quieter, "Macro quieter message");
+    vprtln!(Verbosity::Quiet, "Macro quiet message");
+    vprtln!(Verbosity::Normal, "Macro normal message");
+    vprtln!(Verbosity::Verbose, "Macro verbose message");
 }}
 "#
         );

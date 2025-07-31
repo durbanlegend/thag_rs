@@ -3,9 +3,142 @@ use crate::{debug_log, ThagResult};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use std::sync::{LazyLock, Mutex};
 use std::{path::PathBuf, time::Instant};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_profiler::profiled;
+
+/// Controls the detail level of user messaging
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Serialize,
+    Display,
+    Documented,
+    DocumentedVariants,
+    EnumIter,
+    EnumString,
+    IntoStaticStr,
+    PartialEq,
+    PartialOrd,
+    Eq,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum Verbosity {
+    /// Minimal output, suitable for piping to another process
+    Quieter = 0,
+    /// Less detailed output
+    Quiet = 1,
+    /// Standard output level
+    #[default]
+    Normal = 2,
+    /// More detailed output
+    Verbose = 3,
+    /// Maximum detail for debugging
+    Debug = 4,
+}
+
+/// Type alias for Verbosity to provide a shorter name for convenience
+pub type V = Verbosity;
+
+impl V {
+    /// Shorthand for `Verbosity::Quieter`
+    pub const QQ: Self = Self::Quieter;
+    /// Shorthand for `Verbosity::Quiet`
+    pub const Q: Self = Self::Quiet;
+    /// Shorthand for `Verbosity::Normal`
+    pub const N: Self = Self::Normal;
+    /// Shorthand for `Verbosity::Verbose`
+    pub const V: Self = Self::Verbose;
+    /// Shorthand for `Verbosity::Debug`
+    pub const VV: Self = Self::Debug;
+    /// Shorthand for `Verbosity::Debug`
+    pub const D: Self = Self::Debug;
+}
+
+/// Manages user message output with verbosity control and thread-safe locking
+#[derive(Debug)]
+pub struct OutputManager {
+    /// The current verbosity level for this output manager
+    pub verbosity: Verbosity,
+}
+
+impl OutputManager {
+    /// Construct a new `OutputManager` with the given Verbosity level.
+    #[must_use]
+    pub const fn new(verbosity: Verbosity) -> Self {
+        Self { verbosity }
+    }
+
+    /// Output a message if it passes the verbosity filter.
+    #[profiled]
+    pub fn log(&self, verbosity: Verbosity, message: &str) {
+        if verbosity as u8 <= self.verbosity as u8 {
+            println!("{}", message);
+        }
+    }
+
+    /// Set the verbosity level.
+    #[profiled]
+    pub fn set_verbosity(&mut self, verbosity: Verbosity) {
+        self.verbosity = verbosity;
+        debug_log!("Verbosity set to {verbosity:?}");
+    }
+
+    /// Return the verbosity level
+    #[allow(clippy::missing_const_for_fn)]
+    #[profiled]
+    pub fn verbosity(&mut self) -> Verbosity {
+        self.verbosity
+    }
+}
+
+/// Global output manager instance protected by a mutex for thread-safe access
+pub static OUTPUT_MANAGER: LazyLock<Mutex<OutputManager>> =
+    LazyLock::new(|| Mutex::new(OutputManager::new(V::N)));
+
+/// Set the output verbosity for the current execution.
+/// # Errors
+/// Will return `Err` if the output manager mutex cannot be locked.
+/// # Panics
+/// Will panic in debug mode if the global verbosity value is not the value we just set.
+#[profiled]
+pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
+    OUTPUT_MANAGER.lock()?.set_verbosity(verbosity);
+    #[cfg(debug_assertions)]
+    assert_eq!(get_verbosity(), verbosity);
+    // Enable debug logging if -vv is passed
+    if verbosity as u8 == Verbosity::Debug as u8 {
+        crate::logging::enable_debug_logging(); // Set the runtime flag
+    }
+
+    Ok(())
+}
+
+/// Initializes and returns the global verbosity setting.
+///
+/// # Panics
+///
+/// Will panic if it can't unwrap the lock on the mutex protecting the `OUTPUT_MANAGER` static variable.
+#[must_use]
+#[profiled]
+pub fn get_verbosity() -> Verbosity {
+    OUTPUT_MANAGER.lock().unwrap().verbosity
+}
+
+/// Verbosity-gated print line macro for user messages
+#[macro_export]
+macro_rules! vprtln {
+    ($verbosity:expr, $($arg:tt)*) => {
+        {
+            $crate::shared::OUTPUT_MANAGER.lock().unwrap().log($verbosity, &format!($($arg)*))
+        }
+    };
+}
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]

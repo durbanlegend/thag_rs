@@ -1,6 +1,6 @@
 use crate::{
     config::{maybe_config, DependencyInference},
-    logging::{set_global_verbosity, Verbosity, V},
+    shared::{set_global_verbosity, Verbosity, V},
     ThagError, ThagResult, RS_SUFFIX,
 };
 use bitflags::bitflags;

@@ -5,7 +5,7 @@ use crate::{
     config::DependencyInference,
     cvprtln, debug_log, get_verbosity, maybe_config, re,
     styling::Role,
-    vlog, Ast, BuildState, Dependencies, Style, ThagError, ThagResult, V,
+    vprtln, Ast, BuildState, Dependencies, Style, ThagError, ThagResult, V,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
@@ -114,11 +114,11 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
         let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
-        // vlog!(V::N, "Dependency name: {}", name);
-        // vlog!(V::N, "Dependency version: {}", version);
+        // vprtln!(V::N, "Dependency name: {}", name);
+        // vprtln!(V::N, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
-        vlog!(V::QQ, "Not a valid Cargo dependency format.");
+        vprtln!(V::QQ, "Not a valid Cargo dependency format.");
         return Err("Not a valid Cargo dependency format".into());
     };
     Ok((name, version))
@@ -168,7 +168,7 @@ path = "{}"
         source_stem, source_stem, gen_src_path
     );
 
-    // vlog!(V::N, "cargo_manifest=\n{cargo_manifest}");
+    // vprtln!(V::N, "cargo_manifest=\n{cargo_manifest}");
 
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
@@ -756,7 +756,7 @@ fn display_toml_info(
     } else {
         format!("This toml block contains the same {styled_inference_level} manifest information that was generated for this run. If you want to, you can copy it into")
     };
-    vlog!(
+    vprtln!(
         V::N,
         "\n{wording} the top of your script, to lock it down or maybe compile a little faster in future:\n{styled_toml_block}\n"
     );

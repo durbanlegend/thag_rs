@@ -15,7 +15,7 @@ use thag_rs::{
         display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
         Theme,
     },
-    vlog, ColorSupport, Style, TermBgLuma, ThagResult, V,
+    vprtln, ColorSupport, Style, TermBgLuma, ThagResult, V,
 };
 
 pub fn main() -> ThagResult<()> {
@@ -110,7 +110,7 @@ pub fn main() -> ThagResult<()> {
 
     // Section 5: Current terminal attributes
     print_header("This terminal's color attributes:\n");
-    vlog!(
+    vprtln!(
         V::N,
         "Color support={color_support}, theme={}: {}\n",
         theme.name,

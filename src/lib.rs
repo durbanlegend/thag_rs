@@ -142,13 +142,11 @@ pub mod repl;
 
 #[cfg(feature = "core")]
 pub use {
-    cvprtln as cvlog,
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
-    logging::{get_verbosity, Verbosity, V},
     shared::{
-        debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, thousands,
-        TermBgLuma,
+        debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, get_verbosity,
+        set_global_verbosity, thousands, TermBgLuma, Verbosity, V,
     },
     styling::{Color, ColorSupport, Lvl, Role, Style},
 };
@@ -176,7 +174,7 @@ pub use {
     builder::{display_timings, execute, gen_build_run, process_expr, BuildState, ScriptState},
     cmd_args::{get_args, get_proc_flags, set_verbosity, validate_args, Cli, ProcFlags},
     code_utils::modified_since_compiled,
-    logging::{configure_log, set_global_verbosity},
+    logging::configure_log,
     manifest::extract,
     ratatui::crossterm,
 };

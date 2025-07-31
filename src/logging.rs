@@ -1,41 +1,25 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::{debug_log, ThagResult};
-use documented::{Documented, DocumentedVariants};
-use serde::{Deserialize, Serialize};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    LazyLock, Mutex, Once,
-};
-use strum::{Display, EnumIter, EnumString, IntoStaticStr};
+use std::sync::atomic::{AtomicBool, Ordering};
 use thag_profiler::profiled;
 
 #[cfg(feature = "simplelog")]
 use {
-    crate::vlog,
+    crate::shared::V,
+    crate::vprtln,
     simplelog::{
         ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     },
     std::fs::File,
+    std::sync::Once,
 };
 
-#[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
+#[cfg(feature = "env_logger")]
 use env_logger::{Builder, Env};
 
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
-static LOGGING_INIT: Once = Once::new();
 
-/// Initializes and returns the global verbosity setting.
-///
-/// # Panics
-///
-/// Will panic if it can't unwrap the lock on the mutex protecting the `LOGGER` static variable.
-#[must_use]
-#[profiled]
-pub fn get_verbosity() -> Verbosity {
-    // NB: Do not profile this function, because module `profiling` may need to
-    // call it to determine whether to print debugging output.
-    LOGGER.lock().unwrap().verbosity
-}
+#[cfg(feature = "simplelog")]
+static LOGGING_INIT: Once = Once::new();
 
 /// Enables debug logging by setting the global debug flag to true.
 #[allow(clippy::module_name_repetitions)]
@@ -50,117 +34,6 @@ pub fn is_debug_logging_enabled() -> bool {
     DEBUG_LOG_ENABLED.load(Ordering::SeqCst)
 }
 
-/// Controls the detail level of logging messages
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    Deserialize,
-    Serialize,
-    Display,
-    Documented,
-    DocumentedVariants,
-    EnumIter,
-    EnumString,
-    IntoStaticStr,
-    PartialEq,
-    PartialOrd,
-    Eq,
-)]
-#[strum(serialize_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
-pub enum Verbosity {
-    /// Minimal output, suitable for piping to another process
-    Quieter = 0,
-    /// Less detailed output
-    Quiet = 1,
-    /// Standard output level
-    #[default]
-    Normal = 2,
-    /// More detailed output
-    Verbose = 3,
-    /// Maximum detail for debugging
-    Debug = 4,
-}
-
-/// Type alias for Verbosity to provide a shorter name for convenience
-pub type V = Verbosity;
-
-impl V {
-    /// Shorthand for `Verbosity::Quieter`
-    pub const QQ: Self = Self::Quieter;
-    /// Shorthand for `Verbosity::Quiet`
-    pub const Q: Self = Self::Quiet;
-    /// Shorthand for `Verbosity::Normal`
-    pub const N: Self = Self::Normal;
-    /// Shorthand for `Verbosity::Verbose`
-    pub const V: Self = Self::Verbose;
-    /// Shorthand for `Verbosity::Debug`
-    pub const VV: Self = Self::Debug;
-    /// Shorthand for `Verbosity::Debug`
-    pub const D: Self = Self::Debug;
-}
-
-/// Define the Logger.
-#[derive(Debug)]
-pub struct Logger {
-    /// The current verbosity level for this logger
-    pub verbosity: Verbosity,
-}
-
-impl Logger {
-    /// Construct a new Logger with the given Verbosity level.
-    #[must_use]
-    pub const fn new(verbosity: Verbosity) -> Self {
-        Self { verbosity }
-    }
-
-    /// Log a message if it passes the verbosity filter.
-    #[profiled]
-    pub fn log(&self, verbosity: Verbosity, message: &str) {
-        if verbosity as u8 <= self.verbosity as u8 {
-            println!("{}", message);
-        }
-    }
-
-    /// Set the verbosity level.
-    #[profiled]
-    pub fn set_verbosity(&mut self, verbosity: Verbosity) {
-        self.verbosity = verbosity;
-
-        debug_log!("Verbosity set to {verbosity:?}");
-    }
-
-    /// Return the verbosity level
-    #[allow(clippy::missing_const_for_fn)]
-    #[profiled]
-    pub fn verbosity(&mut self) -> Verbosity {
-        self.verbosity
-    }
-}
-
-/// Global logger instance protected by a mutex for thread-safe access
-pub static LOGGER: LazyLock<Mutex<Logger>> = LazyLock::new(|| Mutex::new(Logger::new(V::N)));
-
-/// Set the logging verbosity for the current execution.
-/// # Errors
-/// Will return `Err` if the logger mutex cannot be locked.
-/// # Panics
-/// Will panic in debug mode if the global verbosity value is not the value we just set.
-#[profiled]
-pub fn set_global_verbosity(verbosity: Verbosity) -> ThagResult<()> {
-    LOGGER.lock()?.set_verbosity(verbosity);
-    #[cfg(debug_assertions)]
-    assert_eq!(get_verbosity(), verbosity);
-    // Enable debug logging if -vv is passed
-    if verbosity as u8 == Verbosity::Debug as u8 {
-        enable_debug_logging(); // Set the runtime flag
-    }
-
-    Ok(())
-}
-
 /// Configure log level
 #[cfg(feature = "env_logger")]
 #[profiled]
@@ -168,7 +41,9 @@ pub fn configure_log() {
     use log::info;
 
     let env = Env::new().filter("RUST_LOG");
-    Builder::new().parse_env(env).init();
+    eprintln!("env={env:?}");
+    let builder = Builder::new().parse_env(env).init();
+    eprintln!("builder={builder:?}");
     info!("Initialized env_logger");
 }
 
@@ -184,7 +59,7 @@ pub fn configure_log() {
         configure_simplelog();
     });
     // info!("Initialized simplelog");  // interferes with testing
-    vlog!(V::V, "Initialized simplelog");
+    vprtln!(V::V, "Initialized simplelog");
 }
 
 /// Configure log level
@@ -221,36 +96,7 @@ macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
         let painted = $style.paint(content);
-        let verbosity = $crate::logging::get_verbosity();
-        $crate::vlog!(verbosity, "{painted}");
+        let verbosity = $crate::shared::get_verbosity();
+        $crate::vprtln!(verbosity, "{painted}");
     }};
-}
-
-/// Logs a message provided the verbosity value passed in is at least as great as the current
-/// verbosity level.
-///
-/// The current (global) verbosity level can be thought of as a cutoff level. This cutoff level
-/// is either specified by the user via `-v`, `-vv`, `-n`, `-q` or `-qq` or their long-form
-/// equivalents, or failing that, by the user's configured `default_verbosity` setting, or
-/// failing *that*, by the system default verbosity setting of `Normal`.
-///
-/// How this works may still seem counterintuitive depending on your intuitions, so here are
-/// some examples:
-///
-/// E.g. `vlog!(V::Q), "Hairy Rotter and the Philosopher's Stone Axe")` is an instruction
-/// to print at verbosity (V) settings down to and including `Quiet (Q)` level, so it will
-/// log the output as long as the user specified or defaulted to a verbosity other than
-/// `Quieter (QQ) (-qq)` for the current `thag` execution.
-///
-/// Conversely, specifying `vlog(V::V)` (or in long form, `vlog!(Verbosity::Verbose)`, is an
-/// instruction to print at verbosities down to and including `Verbose (V)`, so it will only
-/// log the output if the user specified or defaulted to verbosity `Verbose (V) (-v)` or
-/// `Debug (VV) (-vv)` for the current `thag` execution.
-#[macro_export]
-macro_rules! vlog {
-    ($verbosity:expr, $($arg:tt)*) => {
-        {
-            $crate::logging::LOGGER.lock().unwrap().log($verbosity, &format!($($arg)*))
-        }
-    };
 }

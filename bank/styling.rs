@@ -21,7 +21,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, PaletteMethods};
-use thag_rs::{errors::ThemeError, lazy_static_var, vlog, ThagError, ThagResult, V};
+use thag_rs::{errors::ThemeError, lazy_static_var, vprtln, ThagError, ThagResult, V};
 
 #[cfg(feature = "color_detect")]
 use thag_rs::terminal::{self, get_term_bg_rgb, is_light_color};
@@ -286,7 +286,7 @@ impl Style {
     where
         D: std::fmt::Display,
     {
-        // vlog!(V::VV, "self.foreground={:#?}", self.foreground);
+        // vprtln!(V::VV, "self.foreground={:#?}", self.foreground);
         if self.foreground.is_none() {
             return val.to_string();
         }
@@ -1002,7 +1002,7 @@ impl TermAttributes {
             Self::initialize(ColorInitStrategy::determine());
         }
         // Safe to unwrap as we just checked/initialized it
-        // vlog!(V::VV, "INSTANCE.get()={:?}", INSTANCE.get());
+        // vprtln!(V::VV, "INSTANCE.get()={:?}", INSTANCE.get());
         INSTANCE.get().unwrap()
     }
 
@@ -1324,12 +1324,12 @@ pub struct Theme {
 
 impl Theme {
     fn from_toml(theme_name: &str, theme_toml: &str) -> Result<Self, ThagError> {
-        // vlog!(V::VV, "About to call toml::from_str(theme_toml)");
+        // vprtln!(V::VV, "About to call toml::from_str(theme_toml)");
         let mut def: ThemeDefinition = toml::from_str(theme_toml)?;
-        // vlog!(V::VV, "Done! def={def:?}");
+        // vprtln!(V::VV, "Done! def={def:?}");
         def.filename = PathBuf::from(format!("themes/built_in/{theme_name}.toml"));
         def.is_builtin = true;
-        // vlog!(V::VV, "About to call Theme::from_definition({def:?})");
+        // vprtln!(V::VV, "About to call Theme::from_definition({def:?})");
         Self::from_definition(def)
     }
 
@@ -1349,25 +1349,25 @@ impl Theme {
     ) -> ThagResult<Self> {
         // NB: don't call `TermAttributes::get_or_init()` here because it will cause a tight loop
         // since we're called from the TermAttributes::initialize.
-        vlog!(V::VV, "maybe_term_bg={maybe_term_bg:?}");
+        vprtln!(V::VV, "maybe_term_bg={maybe_term_bg:?}");
         let Some(term_bg_rgb) = maybe_term_bg else {
             return fallback_theme(term_bg_luma);
         };
 
         // let signatures = get_theme_signatures();
-        // vlog!(V::VV, "signatures={signatures:?}");
+        // vprtln!(V::VV, "signatures={signatures:?}");
         let hex = rgb_to_bare_hex(term_bg_rgb);
         let exact_matches = BG_LOOKUP
             .get(&hex)
             .map(|names| Vec::from(*names))
             .unwrap_or_default();
-        vlog!(
+        vprtln!(
             V::VV,
             "term_bg_rgb={term_bg_rgb:?}, hex={hex}, exact_matches for hex={exact_matches:?}"
         );
 
         // let exact_matches = get_exact_matches(&exact_bg_matches, *term_bg_rgb, color_support);
-        // vlog!(V::VV, "exact_matches={exact_matches:#?}");
+        // vprtln!(V::VV, "exact_matches={exact_matches:#?}");
 
         // First filter themes by luma and compatible colour distance
         #[cfg(feature = "config")]
@@ -1388,25 +1388,25 @@ impl Theme {
             .map(|(&name, idx)| (name, idx))
             .collect();
         #[cfg(feature = "config")]
-        vlog!(V::VV, "Found {} eligible themes", eligible_themes.len());
+        vprtln!(V::VV, "Found {} eligible themes", eligible_themes.len());
         #[cfg(feature = "config")]
         if let Some(config) = maybe_config() {
-            vlog!(
+            vprtln!(
                 V::VV,
                 "1. Try exact background RGB match of a preferred theme."
             );
-            vlog!(V::VV, "Looking for match on config styling");
+            vprtln!(V::VV, "Looking for match on config styling");
             let preferred_styling = get_preferred_styling(term_bg_luma, &config);
 
             for preferred_name in preferred_styling {
-                vlog!(V::VV, "preferred_name={preferred_name}");
+                vprtln!(V::VV, "preferred_name={preferred_name}");
                 if exact_matches.contains(&preferred_name.as_str()) {
-                    vlog!(V::VV, "Found an exact match in {preferred_name}");
+                    vprtln!(V::VV, "Found an exact match in {preferred_name}");
                     return Self::get_theme_with_color_support(preferred_name, color_support);
                 }
             }
 
-            // vlog!(
+            // vprtln!(
             //     V::V,
             //     "2. If TrueColor, look for exact RGB match of a preferred Color256 theme."
             // );
@@ -1420,12 +1420,12 @@ impl Theme {
             //         })
             //         .map(|(name, _)| (*name).to_string())
             //         .collect::<Vec<String>>();
-            //     vlog!(V::VV, "next_best_matches={next_best_matches:#?}");
+            //     vprtln!(V::VV, "next_best_matches={next_best_matches:#?}");
 
             //     for preferred_name in preferred_styling {
-            //         vlog!(V::VV, "preferred_name={preferred_name}");
+            //         vprtln!(V::VV, "preferred_name={preferred_name}");
             //         if next_best_matches.contains(preferred_name) {
-            //             vlog!(
+            //             vprtln!(
             //                 V::V,
             //                 "Found an exact match at reduced color in {preferred_name}"
             //             );
@@ -1434,29 +1434,29 @@ impl Theme {
             //     }
             // }
 
-            vlog!(V::VV, "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours.");
-            vlog!(V::VV, "a. Try exact match on fallback names");
+            vprtln!(V::VV, "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours.");
+            vprtln!(V::VV, "a. Try exact match on fallback names");
             let fallback_styling = get_fallback_styling(term_bg_luma, &config);
             for fallback_name in fallback_styling {
-                vlog!(V::VV, "fallback_name={fallback_name}");
+                vprtln!(V::VV, "fallback_name={fallback_name}");
                 if exact_matches.contains(&fallback_name.as_str()) {
-                    vlog!(V::VV, "Found an exact match in fallback {fallback_name}");
+                    vprtln!(V::VV, "Found an exact match in fallback {fallback_name}");
                     return Self::get_theme_with_color_support(fallback_name, color_support);
                 }
             }
-            vlog!(V::VV, "b. Try for any exact match.");
+            vprtln!(V::VV, "b. Try for any exact match.");
             if let Some(exact_match) = exact_matches.into_iter().next() {
-                vlog!(V::VV, "Found an exact match with {exact_match}");
+                vprtln!(V::VV, "Found an exact match with {exact_match}");
                 return Self::get_theme_with_color_support(exact_match, color_support);
             }
-            vlog!(V::VV, "No exact matches found.");
+            vprtln!(V::VV, "No exact matches found.");
 
-            vlog!(V::VV, "3. Try closest match to a preferred theme.");
+            vprtln!(V::VV, "3. Try closest match to a preferred theme.");
             let mut best_match = None;
             let mut min_distance = f32::MAX;
             for preferred_name in preferred_styling {
                 let preferred_idx = THEME_INDEX.get(preferred_name);
-                // vlog!(V::VV, "theme_name={theme_name}");
+                // vprtln!(V::VV, "theme_name={theme_name}");
                 if let Some(idx) = preferred_idx {
                     for rgb in idx.bg_rgbs {
                         let distance = color_distance(*term_bg_rgb, *rgb);
@@ -1468,11 +1468,11 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vlog!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                vprtln!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
-            vlog!(
+            vprtln!(
                 V::V,
                 "4. Try closest match to a fallback theme, irrespective of colour support."
             );
@@ -1480,7 +1480,7 @@ impl Theme {
             let mut min_distance = f32::MAX;
             for fallback_name in fallback_styling {
                 let fallback_idx = THEME_INDEX.get(fallback_name);
-                // vlog!(V::VV, "theme_name={theme_name}");
+                // vprtln!(V::VV, "theme_name={theme_name}");
                 if let Some(idx) = fallback_idx {
                     for rgb in idx.bg_rgbs {
                         let distance = color_distance(*term_bg_rgb, *rgb);
@@ -1492,11 +1492,11 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vlog!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
+                vprtln!(V::VV, "Choosing preferred theme {theme} because it most closely matches terminal bg {term_bg_rgb:?}");
                 return Self::get_theme_with_color_support(theme, color_support);
             }
 
-            vlog!(V::VV, "5. Try closest match.");
+            vprtln!(V::VV, "5. Try closest match.");
             let mut min_distance = f32::MAX;
             let mut best_match = None;
             for (theme, idx) in &eligible_themes {
@@ -1509,12 +1509,12 @@ impl Theme {
                 }
             }
             if let Some(theme) = best_match {
-                vlog!(V::VV, "Found the closest match with {theme}");
+                vprtln!(V::VV, "Found the closest match with {theme}");
                 return Self::get_theme_with_color_support(theme, color_support);
             }
         }
 
-        vlog!(V::VV, "6. Fall back to basic theme.");
+        vprtln!(V::VV, "6. Fall back to basic theme.");
         Self::get_theme_with_color_support(
             if term_bg_luma == TermBgLuma::Light {
                 "basic_light"
@@ -1621,7 +1621,7 @@ impl Theme {
     ) -> ThagResult<Self> {
         let mut theme = Self::get_builtin(theme_name)?;
         if color_support != ColorSupport::TrueColor {
-            vlog!(V::VV, "Converting to {color_support:?}");
+            vprtln!(V::VV, "Converting to {color_support:?}");
             theme.convert_to_color_support(color_support);
         }
         // eprintln!("Theme={:#?}", theme);
@@ -1645,9 +1645,9 @@ impl Theme {
     /// - Background luminance string cannot be parsed
     /// - Palette configuration is invalid
     fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
-        // vlog!(V::VV, "def.min_color_support={:?}", def.min_color_support);
+        // vprtln!(V::VV, "def.min_color_support={:?}", def.min_color_support);
         let color_support = ColorSupport::from_str(&def.min_color_support);
-        // vlog!(V::VV, "color_support={color_support:?})");
+        // vprtln!(V::VV, "color_support={color_support:?})");
 
         // Convert hex strings to RGB tuples
         let bg_rgbs: Vec<(u8, u8, u8)> = def
@@ -1708,8 +1708,8 @@ impl Theme {
         term_bg_luma: &TermBgLuma,
     ) -> ThagResult<()> {
         // Check color support
-        // vlog!(V::VV, "self.min_color_support={:?}", self.min_color_support);
-        // vlog!(V::VV, "available_support={available_support:?}");
+        // vprtln!(V::VV, "self.min_color_support={:?}", self.min_color_support);
+        // vprtln!(V::VV, "available_support={available_support:?}");
         if available_support < &self.min_color_support {
             return Err(ThemeError::ColorSupportMismatch {
                 required: self.min_color_support,
@@ -2221,7 +2221,7 @@ macro_rules! cvprtln {
             let style = thag_rs::styling::Style::for_role($role);
             let content = format!($($arg)*);
             let verbosity = thag_rs::logging::get_verbosity();
-            thag_rs::vlog!(verbosity, "{}", style.paint(content));
+            thag_rs::vprtln!(verbosity, "{}", style.paint(content));
         }
     }};
 }
@@ -3123,7 +3123,7 @@ macro_rules! cvlog_hint {
 
 //     // Section 5: Current terminal attributes
 //     print_header("This terminal's color attributes:\n");
-//     vlog!(
+//     vprtln!(
 //         V::N,
 //         "Color support={color_support}, theme={}: {}\n",
 //         theme.name,

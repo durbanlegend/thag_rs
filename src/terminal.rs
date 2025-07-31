@@ -3,7 +3,7 @@
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
 use crate::styling::ColorSupport;
-use crate::{lazy_static_var, vlog, TermBgLuma, ThagError, ThagResult, V};
+use crate::{lazy_static_var, vprtln, TermBgLuma, ThagError, ThagResult, V};
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use std::io::{stdout, Write};
 use supports_color::Stream;
@@ -119,7 +119,7 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
     let _guard = TerminalStateGuard::new(raw_now);
 
     let color_support = lazy_static_var!(ColorSupport, {
-        vlog!(V::V, "Checking colour support");
+        vprtln!(V::V, "Checking colour support");
 
         supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
             if color_level.has_16m {
@@ -255,7 +255,7 @@ pub fn get_term_bg_rgb() -> ThagResult<&'static (u8, u8, u8)> {
             let _guard = RawModeGuard(raw_before);
 
             // Now do theme detection
-            vlog!(V::V, "Checking terminal background");
+            vprtln!(V::V, "Checking terminal background");
             let timeout = std::time::Duration::from_millis(500);
             let bg_rgb = termbg::rgb(timeout)?;
 
@@ -306,7 +306,7 @@ pub fn get_term_bg_rgb_unguarded() -> ThagResult<&'static (u8, u8, u8)> {
     lazy_static_var!(
     Result < (u8, u8, u8),
     termbg::Error >, {
-        vlog!(V::V, "Checking terminal background");
+        vprtln!(V::V, "Checking terminal background");
         let timeout = std::time::Duration::from_millis(500);
         let bg_rgb = termbg::rgb(timeout)?;
 

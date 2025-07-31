@@ -54,7 +54,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::io::{self, BufRead, IsTerminal};
 use std::{collections::VecDeque, fs, path::PathBuf};
-use thag_rs::{errors::ThagError, logging::Verbosity, vlog};
+use thag_rs::{errors::ThagError, logging::Verbosity, vprtln};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 use thag_profiler::*;
@@ -157,7 +157,7 @@ impl EventReader for CrosstermEventReader {
 fn main() -> Result<(), ThagError> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        vlog!(Verbosity::Normal, "{line}");
+        vprtln!(Verbosity::Normal, "{line}");
     }
     Ok(())
 }
@@ -360,7 +360,7 @@ pub fn edit<R: EventReader>(event_reader: &R) -> Result<Vec<String>, ThagError> 
 // If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 #[profiled]
 pub fn read() -> Result<String, std::io::Error> {
-    vlog!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+    vprtln!(Verbosity::Normal, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
 }

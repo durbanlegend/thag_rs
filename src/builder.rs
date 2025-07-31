@@ -52,10 +52,10 @@ use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::{
     cvprtln, debug_log, get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config,
-    modified_since_compiled, re, repeat_dash, shared, validate_args, vlog, Ast, Cli, ColorSupport,
-    Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN,
-    PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
-    TMPDIR, TOML_NAME, V,
+    modified_since_compiled, re, repeat_dash, shared, validate_args, vprtln, Ast, Cli,
+    ColorSupport, Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR,
+    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
+    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -727,7 +727,7 @@ fn process(
             }
         };
 
-        vlog!(V::V, "rs_source={rs_source}");
+        vprtln!(V::V, "rs_source={rs_source}");
 
         let rs_manifest = extract(&rs_source, Instant::now())
             // .map_err(|_err| "Error parsing rs_source")
@@ -762,7 +762,7 @@ pub fn process_expr(
     // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, start);
-    vlog!(V::N, "{result:?}");
+    vprtln!(V::N, "{result:?}");
     Ok(())
 }
 
@@ -1034,7 +1034,7 @@ pub fn generate(
 
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
     // let is_repl = proc_flags.contains(ProcFlags::REPL);
-    vlog!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
+    vprtln!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {
         // TODO make this configurable
@@ -1113,7 +1113,7 @@ fn prettyplease_unparse(syntax_tree: &syn::File) -> String {
 #[profiled]
 pub fn build(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let start_build = Instant::now();
-    vlog!(V::V, "BBBBBBBB In build");
+    vprtln!(V::V, "BBBBBBBB In build");
 
     if proc_flags.contains(ProcFlags::EXPAND) {
         handle_expand(proc_flags, build_state)
@@ -1364,7 +1364,7 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     repeat_dash!(70);
     cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
 
-    vlog!(
+    vprtln!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_stem}"
     );
@@ -1433,6 +1433,6 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
     #[cfg(debug_assertions)]
     debug_log!("{msg}");
     if proc_flags.intersects(ProcFlags::DEBUG | ProcFlags::VERBOSE | ProcFlags::TIMINGS) {
-        vlog!(V::QQ, "{msg}");
+        vprtln!(V::QQ, "{msg}");
     }
 }

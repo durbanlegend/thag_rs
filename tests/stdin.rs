@@ -14,7 +14,7 @@ use std::{
     sync::Once,
 };
 use thag_rs::stdin::{edit, read_to_string};
-use thag_rs::{vlog, MockEventReader, V};
+use thag_rs::{vprtln, MockEventReader, V};
 
 #[cfg(feature = "simplelog")]
 use simplelog::{
@@ -117,7 +117,7 @@ fn test_stdin_edit_stdin_submit() {
 
     let result = edit(&mock_reader);
 
-    vlog!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
+    vprtln!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
     // Expecting a Vec with one entry: an empty string

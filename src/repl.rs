@@ -14,7 +14,7 @@ use crate::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
     },
-    vlog, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
+    vprtln, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
     KeyDisplayLine, ProcFlags, ThagError, ThagResult, V,
 };
 use clap::{CommandFactory, Parser};
@@ -308,7 +308,7 @@ impl Prompt for ReplPrompt {
         if let Some(color_info) = Style::for_role(Success).foreground {
             Color::Indexed(color_info.index).into()
         } else {
-            vlog!(V::VV, "defaulting to Green");
+            vprtln!(V::VV, "defaulting to Green");
             Color::Green.into()
         }
     }
@@ -493,7 +493,7 @@ pub fn run_repl(
         }
 
         let (first_word, rest) = parse_line(rs_source);
-        // vlog!(V::VV, "first_word={first_word}, rest={rest:#?}");
+        // vprtln!(V::VV, "first_word={first_word}, rest={rest:#?}");
         let maybe_cmd = if rest.is_empty() {
             let mut matches = 0;
             let mut cmd = String::new();
@@ -1205,9 +1205,9 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        vlog!(V::QQ, "Deleted");
+        vprtln!(V::QQ, "Deleted");
     } else {
-        vlog!(
+        vprtln!(
             V::QQ,
             "Failed to delete all files - enter l(ist) to list remaining files"
         );
@@ -1236,7 +1236,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     if cargo_toml_file.exists() {
         edit_file(cargo_toml_file)?;
     } else {
-        vlog!(V::QQ, "No Cargo.toml file found - have you run anything?");
+        vprtln!(V::QQ, "No Cargo.toml file found - have you run anything?");
     }
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
@@ -1290,7 +1290,7 @@ pub fn disp_repl_banner(cmd_list: &str) {
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        vlog!(V::QQ, "File: {source_path:?}");
+        vprtln!(V::QQ, "File: {source_path:?}");
     }
 
     // Display directory contents
@@ -1298,7 +1298,7 @@ pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        vlog!(V::QQ, "No temporary files found");
+        vprtln!(V::QQ, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }

@@ -22,7 +22,7 @@ use std::{
 use thag_rs::{
     // debug_log,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
-    vlog,
+    vprtln,
     CrosstermEventReader,
     EventReader,
     KeyDisplayLine,
@@ -35,7 +35,7 @@ use thag_rs::{
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        vlog!(V::N, "{line}");
+        vprtln!(V::N, "{line}");
     }
     Ok(())
 }
@@ -118,7 +118,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 // If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
-        vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+        vprtln!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)

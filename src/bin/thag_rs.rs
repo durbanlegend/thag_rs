@@ -10,7 +10,7 @@ use thag_profiler::profiling;
 #[cfg(feature = "build")]
 use thag_rs::cmd_args::set_verbosity;
 
-use thag_rs::cvlog;
+use thag_rs::cprtln;
 use thag_rs::cvprtln;
 #[cfg(debug_assertions)]
 #[cfg(feature = "core")]

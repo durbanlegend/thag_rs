@@ -2,7 +2,7 @@
 use crate::{
     debug_log,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
-    vlog, CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V,
+    vprtln, CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V,
 };
 use edit::edit_file;
 use ratatui::style::{Color, Style};
@@ -19,7 +19,7 @@ use thag_profiler::{enable_profiling, profiled};
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        vlog!(V::N, "{line}");
+        vprtln!(V::N, "{line}");
     }
     Ok(())
 }
@@ -132,7 +132,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 #[profiled]
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
-        vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+        vprtln!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)

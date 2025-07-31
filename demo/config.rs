@@ -20,6 +20,7 @@ simplelog = ["dep:simplelog"]
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use home;
+use log;
 use mockall::{automock, predicate::str};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};

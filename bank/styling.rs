@@ -1,27 +1,36 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "config", "simplelog"] }
+phf = { version = "0.12", features = ["macros"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_profiler = { version = "0.1, thag-auto" }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
 
 [features]
-default = ["color_detect", "config", "simplelog"]
-debug-logs = []
-color_detect = ["thag_rs/color_detect"]
+default = ["color_detect", "simplelog", "tools"]
+color_detect = ["config", "thag_rs/color_detect"]
 config = ["thag_rs/config"]
+debug-logs = []
 simplelog = ["thag_rs/simplelog"]
+tools = ["thag_rs/tools"]
 */
-
-use documented::{Documented, DocumentedVariants};
-use serde::{Deserialize, Serialize};
+/// Demo version of `styling` options of `thag_rs`.
+/// Currently requires themes/built_in dir and contents to be manually copied into $TMPDIR/thag_rs/styling
+///
+///
+/// E.g. `thag demo/styling_demo.rs`
+//# Purpose: Investigate possibility of spltting off `styling` into an independent subcrate.
+//# Categories: prototype, reference, testing
+use log;
+use phf;
+use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
-use strum::{Display, EnumIter, EnumString, IntoStaticStr};
+use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_proc_macros::{preload_themes, PaletteMethods};
-use thag_rs::{errors::ThemeError, lazy_static_var, vprtln, ThagError, ThagResult, V};
+use thag_rs::errors::ThemeError;
+use thag_rs::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagError, ThagResult, V};
 
 #[cfg(feature = "color_detect")]
 use thag_rs::terminal::{self, get_term_bg_rgb, is_light_color};
@@ -29,10 +38,319 @@ use thag_rs::terminal::{self, get_term_bg_rgb, is_light_color};
 #[cfg(feature = "config")]
 use thag_rs::config::maybe_config;
 
+/// Trait for providing styling configuration to break circular dependency
+pub trait StylingConfigProvider {
+    /// Get color support setting
+    fn color_support(&self) -> ColorSupport;
+    /// Get terminal background luminance setting
+    fn term_bg_luma(&self) -> TermBgLuma;
+    /// Get terminal background RGB setting
+    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)>;
+    /// Get background color list
+    fn backgrounds(&self) -> Vec<String>;
+    /// Get preferred light themes
+    fn preferred_light(&self) -> Vec<String>;
+    /// Get preferred dark themes
+    fn preferred_dark(&self) -> Vec<String>;
+}
+
+/// Default implementation that uses no configuration
+pub struct NoConfigProvider;
+
+impl StylingConfigProvider for NoConfigProvider {
+    fn color_support(&self) -> ColorSupport {
+        ColorSupport::Undetermined
+    }
+
+    fn term_bg_luma(&self) -> TermBgLuma {
+        TermBgLuma::default()
+    }
+
+    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
+        None
+    }
+
+    fn backgrounds(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn preferred_light(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn preferred_dark(&self) -> Vec<String> {
+        Vec::new()
+    }
+}
+
+#[cfg(feature = "config")]
+/// Implementation that uses the actual config
+pub struct ConfigProvider;
+
+#[cfg(feature = "config")]
+impl StylingConfigProvider for ConfigProvider {
+    fn color_support(&self) -> ColorSupport {
+        maybe_config()
+            .map(|c| c.styling.color_support)
+            .unwrap_or_default()
+    }
+
+    fn term_bg_luma(&self) -> TermBgLuma {
+        maybe_config()
+            .map(|c| c.styling.term_bg_luma)
+            .unwrap_or_default()
+    }
+
+    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
+        maybe_config().and_then(|c| c.styling.term_bg_rgb)
+    }
+
+    fn backgrounds(&self) -> Vec<String> {
+        maybe_config()
+            .map(|c| c.styling.backgrounds)
+            .unwrap_or_default()
+    }
+
+    fn preferred_light(&self) -> Vec<String> {
+        maybe_config()
+            .map(|c| c.styling.preferred_light)
+            .unwrap_or_default()
+    }
+
+    fn preferred_dark(&self) -> Vec<String> {
+        maybe_config()
+            .map(|c| c.styling.preferred_dark)
+            .unwrap_or_default()
+    }
+}
+
 #[allow(unused_imports)]
 #[cfg(debug_assertions)]
 use thag_rs::debug_log;
 
+/// Create an inquire `RenderConfig` that respects the current `thag_rs` theme
+#[cfg(all(feature = "color_detect", feature = "tools"))]
+#[must_use]
+pub fn themed_inquire_config() -> inquire::ui::RenderConfig<'static> {
+    use inquire::ui::{RenderConfig, StyleSheet};
+
+    let term_attrs = TermAttributes::get_or_init();
+    let theme = &term_attrs.theme;
+
+    // Helper function to convert thag colors to inquire colors
+    let convert_role_to_color = |role: Role| -> inquire::ui::Color {
+        let style = theme.style_for(role);
+        style.foreground.as_ref().map_or_else(
+            || inquire::ui::Color::AnsiValue(u8::from(&role)),
+            |color_info| match &color_info.value {
+                ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2],
+                },
+                ColorValue::Color256 { color256 } => inquire::ui::Color::AnsiValue(*color256),
+                ColorValue::Basic { .. } => inquire::ui::Color::AnsiValue(u8::from(&role)),
+            },
+        )
+    };
+
+    let render_config = RenderConfig::<'_> {
+        // Map inquire UI elements to thag_rs Roles - respects Black Metal, etc.
+        selected_option: Some(
+            StyleSheet::new()
+                .with_fg(convert_role_to_color(Role::Emphasis))
+                .with_attr(inquire::ui::Attributes::BOLD),
+        ),
+        option: StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal)),
+        help_message: StyleSheet::empty().with_fg(convert_role_to_color(Role::Info)),
+        error_message: inquire::ui::ErrorMessageRenderConfig::default_colored()
+            .with_message(StyleSheet::empty().with_fg(convert_role_to_color(Role::Error))),
+        prompt: StyleSheet::empty().with_fg(convert_role_to_color(Role::Normal)),
+        answer: StyleSheet::empty().with_fg(convert_role_to_color(Role::Success)),
+        placeholder: StyleSheet::empty().with_fg(convert_role_to_color(Role::Subtle)),
+        ..Default::default()
+    };
+
+    render_config
+}
+
+/// Helper functions for inquire UI theming integration
+#[cfg(all(feature = "color_detect", feature = "tools"))]
+pub mod inquire_theming {
+    use super::{ColorValue, Role, TermAttributes};
+
+    /// Convert a thag Role to an inquire Color using the current theme
+    #[must_use]
+    pub fn role_to_inquire_color(role: Role) -> Option<inquire::ui::Color> {
+        let term_attrs = TermAttributes::get_or_init();
+        let theme = &term_attrs.theme;
+        let style = theme.style_for(role);
+
+        style.foreground.as_ref().map_or_else(
+            || Some(inquire::ui::Color::AnsiValue(u8::from(&role))),
+            |color_info| match &color_info.value {
+                ColorValue::TrueColor { rgb } => Some(inquire::ui::Color::Rgb {
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2],
+                }),
+                ColorValue::Color256 { color256 } => Some(inquire::ui::Color::AnsiValue(*color256)),
+                ColorValue::Basic { .. } => {
+                    // Use thag's existing color mapping for basic terminals
+                    Some(inquire::ui::Color::AnsiValue(u8::from(&role)))
+                }
+            },
+        )
+    }
+
+    /// Create a theme-aware `RenderConfig` for inquire prompts
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
+    pub fn create_render_config() -> inquire::ui::RenderConfig<'static> {
+        let mut render_config = inquire::ui::RenderConfig::default();
+
+        // Get terminal attributes and current theme from thag's color system
+        let term_attrs = TermAttributes::get_or_init();
+        let theme = &term_attrs.theme;
+
+        // Helper function to convert thag colors to inquire colors
+        let convert_color = |role: Role| -> inquire::ui::Color {
+            let style = theme.style_for(role);
+            style.foreground.as_ref().map_or_else(
+                || inquire::ui::Color::AnsiValue(u8::from(&role)),
+                |color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
+                        r: rgb[0],
+                        g: rgb[1],
+                        b: rgb[2],
+                    },
+                    ColorValue::Color256 { color256 } => inquire::ui::Color::AnsiValue(*color256),
+                    ColorValue::Basic { .. } => {
+                        // Use thag's existing color mapping for basic terminals
+                        inquire::ui::Color::AnsiValue(u8::from(&role))
+                    }
+                },
+            )
+        };
+
+        // Helper function to extract RGB values from a role for color distance calculation
+        #[allow(clippy::cast_possible_truncation)]
+        let get_rgb = |role: Role| -> Option<(u8, u8, u8)> {
+            let style = theme.style_for(role);
+            style
+                .foreground
+                .as_ref()
+                .and_then(|color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+                    ColorValue::Color256 { color256 } => {
+                        // Convert 256-color to RGB for distance calculation
+                        let index = *color256 as usize;
+                        if index < 16 {
+                            // Standard colors
+                            let colors = [
+                                (0, 0, 0),       // Black
+                                (128, 0, 0),     // Red
+                                (0, 128, 0),     // Green
+                                (128, 128, 0),   // Yellow
+                                (0, 0, 128),     // Blue
+                                (128, 0, 128),   // Magenta
+                                (0, 128, 128),   // Cyan
+                                (192, 192, 192), // White
+                                (128, 128, 128), // Bright Black
+                                (255, 0, 0),     // Bright Red
+                                (0, 255, 0),     // Bright Green
+                                (255, 255, 0),   // Bright Yellow
+                                (0, 0, 255),     // Bright Blue
+                                (255, 0, 255),   // Bright Magenta
+                                (0, 255, 255),   // Bright Cyan
+                                (255, 255, 255), // Bright White
+                            ];
+                            colors.get(index).copied()
+                        } else if index < 232 {
+                            // 216 color cube
+                            let n = index - 16;
+                            let r = (n / 36) * 51;
+                            let g = ((n % 36) / 6) * 51;
+                            let b = (n % 6) * 51;
+                            Some((r as u8, g as u8, b as u8))
+                        } else {
+                            // Grayscale
+                            let gray = 8 + (index - 232) * 10;
+                            Some((gray as u8, gray as u8, gray as u8))
+                        }
+                    }
+                    ColorValue::Basic { .. } => {
+                        // Convert basic role to approximate RGB for distance calculation
+                        match role {
+                            Role::Error => Some((255, 0, 0)),
+                            Role::Success => Some((0, 255, 0)),
+                            Role::Warning => Some((255, 255, 0)),
+                            Role::Info => Some((0, 255, 255)),
+                            Role::Code => Some((255, 0, 255)),
+                            Role::Emphasis => Some((255, 128, 0)),
+                            Role::Heading3 => Some((128, 255, 128)),
+                            _ => Some((192, 192, 192)),
+                        }
+                    }
+                })
+        };
+
+        // Color distance function (same as in styling.rs)
+        let color_distance = |c1: (u8, u8, u8), c2: (u8, u8, u8)| -> f32 {
+            let dr = (f32::from(c1.0) - f32::from(c2.0)).powi(2);
+            let dg = (f32::from(c1.1) - f32::from(c2.1)).powi(2);
+            let db = (f32::from(c1.2) - f32::from(c2.2)).powi(2);
+            (dr + dg + db).sqrt()
+        };
+
+        // Choose the best selected_option color based on color distance from Normal
+        let prompt_rgb = get_rgb(Role::Normal);
+        let candidate_roles = [
+            Role::Emphasis,
+            Role::Heading2,
+            Role::Heading3,
+            Role::Info,
+            Role::Success,
+        ];
+
+        let best_role = prompt_rgb.map_or(Role::Code, |normal_color| {
+            candidate_roles
+                .iter()
+                .filter_map(|&role| {
+                    get_rgb(role).map(|rgb| (role, color_distance(normal_color, rgb)))
+                })
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                .map_or(Role::Code, |(role, _)| role)
+        });
+        // Map inquire UI elements to appropriate thag roles
+        render_config.selected_option = Some(
+            inquire::ui::StyleSheet::new()
+                .with_fg(convert_color(best_role))
+                .with_attr(inquire::ui::Attributes::BOLD),
+        );
+
+        // Set regular option styling to Normal role
+        render_config.option =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Normal));
+        render_config.help_message =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Info));
+        render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
+            .with_message(inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Error)));
+        render_config.prompt =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Normal));
+        render_config.answer =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Success));
+        render_config.placeholder =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Subtle));
+
+        render_config
+    }
+}
+
+// Include the generated theme data
+// include!(concat!(env!("OUT_DIR"), "/theme_data.rs"));
+
+// #[cfg(feature = "color_detect")]
 #[cfg(feature = "config")]
 const THRESHOLD: f32 = 30.0; // Adjust this value as needed
 
@@ -509,101 +827,8 @@ impl Color {
     }
 }
 
-/// An enum to categorise the current terminal's level of colour support as detected, configured
-/// or defaulted.
-///
-/// We fold `TrueColor` into Xterm256 as we're not interested in more than 256
-/// colours just for messages.
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Deserialize,
-    Display,
-    Documented,
-    DocumentedVariants,
-    EnumIter,
-    EnumString,
-    IntoStaticStr,
-    PartialEq,
-    PartialOrd,
-    Eq,
-    Serialize,
-)]
-#[strum(serialize_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
-pub enum ColorSupport {
-    /// Still to be determined or defaulted
-    Undetermined = 0,
-    /// No color support
-    None = 1,
-    /// Basic 16-color support
-    #[serde(alias = "ansi16")] // Accept old "ansi16" value
-    Basic = 2,
-    /// Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
-    #[serde(alias = "xterm256")] // Accept old "256" value
-    Color256 = 3,
-    /// Full color support, 24 bits -> 16 million colors.
-    TrueColor = 4,
-}
-
-impl Default for ColorSupport {
-    fn default() -> Self {
-        #[cfg(feature = "color_detect")]
-        {
-            Self::Undetermined
-        }
-
-        #[cfg(not(feature = "color_detect"))]
-        {
-            Self::Basic // Safe default when detection isn't available
-        }
-    }
-}
-
 /// An enum to categorise the current terminal's light or dark theme as detected, configured
 /// or defaulted.
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Deserialize,
-    Documented,
-    DocumentedVariants,
-    Display,
-    EnumIter,
-    EnumString,
-    IntoStaticStr,
-    PartialEq,
-    Eq,
-    Serialize,
-)]
-#[strum(serialize_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
-pub enum TermBgLuma {
-    /// Light background terminal
-    Light,
-    /// Dark background terminal
-    Dark,
-    /// Let `thag` autodetect the background luminosity
-    Undetermined,
-}
-
-impl Default for TermBgLuma {
-    #[profiled]
-    fn default() -> Self {
-        #[cfg(feature = "color_detect")]
-        {
-            Self::Undetermined
-        }
-
-        #[cfg(not(feature = "color_detect"))]
-        {
-            Self::Dark // Safe default when detection isn't available
-        }
-    }
-}
-
 /// Type alias for `Role` - provides shorter naming for role constants
 pub type Lvl = Role;
 
@@ -1281,7 +1506,6 @@ impl ThemeDefinition {
 }
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 /// Represents a complete theme configuration with color palette and styling information
 ///
 /// A `Theme` encapsulates all the styling information needed to consistently format
@@ -1696,8 +1920,8 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::ThagError;
-    /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
+    /// use thag_rs::{TermBgLuma, ThagError};
+    /// use thag_rs::styling::{ColorSupport, Theme};
     /// let theme = Theme::get_builtin("dracula")?;
     /// theme.validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)?;
     /// # Ok::<(), ThagError>(())
@@ -1803,8 +2027,8 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::ThagError;
-    /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
+    /// use thag_rs::{TermBgLuma, ThagError};
+    /// use thag_rs::styling::{ColorSupport, Theme};
     /// let theme = Theme::load(
     ///     Path::new("themes/built_in/basic_light.toml"),
     ///     ColorSupport::Basic,
@@ -2193,6 +2417,30 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
     )
 }
 
+// // #[cfg(feature = "color_detect")]
+// fn matches_background(bg: (u8, u8, u8)) -> ThagResult<bool> {
+//     if let Some(config) = maybe_config() {
+//         let mut found = false;
+//         for hex in &config.styling.backgrounds {
+//             // vprtln!(V::VV, "name=");
+//             let theme_bg = hex_to_rgb(hex)?;
+//             // if color_distance(bg, theme_bg) < THRESHOLD {
+//             if bg == theme_bg {
+//                 found = true;
+//                 break;
+//             }
+//         }
+//         Ok(found)
+//     } else {
+//         Ok(false)
+//     }
+// }
+
+// #[must_use]
+// pub fn rgb_to_hex((r, g, b): &(u8, u8, u8)) -> String {
+//     format!("#{r:02x}{g:02x}{b:02x}")
+// }
+
 // Convenience macros
 /// Conditionally logs a message with verbosity control and styling.
 ///
@@ -2217,27 +2465,14 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 #[macro_export]
 macro_rules! cvprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
-        if $verbosity <= thag_rs::logging::get_verbosity() {
-            let style = thag_rs::styling::Style::for_role($role);
+        if $verbosity <= thag_rs::shared::get_verbosity() {
+            let style = Style::for_role($role);
             let content = format!($($arg)*);
-            let verbosity = thag_rs::logging::get_verbosity();
+            let verbosity = thag_rs::shared::get_verbosity();
             thag_rs::vprtln!(verbosity, "{}", style.paint(content));
         }
     }};
 }
-
-// #[allow(dead_code)]
-// fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8), is_system: bool) -> u32 {
-//     let base_distance = base_distance(c1, c2);
-
-//     // Give a slight preference to system colors when they're close matches
-//     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-//     if is_system {
-//         (f64::from(base_distance) * 0.9) as u32
-//     } else {
-//         base_distance
-//     }
-// }
 
 fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
     let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;
@@ -2388,14 +2623,115 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     }
 }
 
-// Usage:
-#[allow(dead_code)]
-fn main() -> ThagResult<()> {
-    // Load built-in theme
-    let _dracula = Theme::get_builtin("dracula")?;
+// #[allow(dead_code)]
+// fn main() -> ThagResult<()> {
+//     // Load built-in theme
+//     let _dracula = Theme::get_builtin("dracula")?;
 
-    // Load custom theme
-    let _custom = Theme::load_from_file(Path::new("themes/examples/custom_theme.toml"))?;
+//     // Load custom theme
+//     let _custom = Theme::load_from_file(Path::new("themes/built_in/espresso.toml"))?;
+
+//     Ok(())
+// }
+
+pub fn main() -> ThagResult<()> {
+    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let color_support = term_attrs.color_support;
+    let theme = &term_attrs.theme;
+    let header_style = Style::for_role(Role::Normal).underline();
+    let print_header = |arg| println!("{}", header_style.clone().paint(arg));
+
+    // Section 1: ANSI / Xterm 256 color palette
+    if color_support >= ColorSupport::Color256 {
+        println!();
+        let col_width = 25;
+        print_header("ANSI / Xterm 256 color palette:\n");
+        let color = Color::fixed(u8::from(&Role::HD1));
+        println!(
+            "{}{}{}{}",
+            color.clone().paint(format!("{:<col_width$}", "Normal")),
+            color
+                .clone()
+                .italic()
+                .paint(format!("{:<col_width$}", "Italic")),
+            color
+                .clone()
+                .bold()
+                .paint(format!("{:<col_width$}", "Bold")),
+            color
+                .bold()
+                .italic()
+                .paint(format!("{:<col_width$}", "Bold Italic")),
+            // color.paint(format!("{:<col_width$}", "Normal"))
+        );
+        // let dash_line = "─".repeat(col_width * 4);
+        // cvprtln!(Role::HD2, V::Q, "{dash_line}");
+        // XtermColor::iter().for_each(|variant| {
+        //     let color_string = variant.to_string();
+        //     let pad_color_string = format!("{color_string:<col_width$}");
+        //     let color = Color::fixed(u8::from(&variant));
+        //     println!(
+        //         "{}{}{}{}",
+        //         color.clone().paint(pad_color_string.clone()),
+        //         color.clone().italic().paint(pad_color_string.clone()),
+        //         color.clone().bold().paint(pad_color_string.clone()),
+        //         color.bold().italic().paint(pad_color_string)
+        //     );
+        // });
+        println!();
+    }
+
+    let theme_name = match theme.term_bg_luma {
+        TermBgLuma::Light => "basic_light",
+        TermBgLuma::Dark | TermBgLuma::Undetermined => "basic_dark",
+    };
+    let theme = Theme::get_builtin(theme_name)?;
+
+    // Section 2: ANSI-16 color palette using basic styles
+    let header = format!("ANSI-16 color palette in use for {theme_name} theme:\n");
+    print_header(&header);
+    for role in Role::iter() {
+        let style = theme.style_for(role);
+        let content = format!("{role} message: role={role}, style={style:?}");
+        println!("{}", style.paint(content));
+    }
+
+    println!();
+
+    // Section 3: ANSI-16 palette using u8 colors
+    let header = format!("ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n");
+    print_header(&header);
+    for role in Role::iter() {
+        let style = theme.style_for(role);
+        // eprintln!("style={style:?}");
+        if let Some(color_info) = style.foreground {
+            let index: u8 = color_info.index;
+            let color = Color::fixed(index);
+            let content = format!("{role} message: role={role:?}, index={index}, color={color:?}");
+            println!("{}", color.paint(content));
+        }
+    }
+
+    println!();
+
+    // Section 4: Current terminal color palette
+    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let theme = &term_attrs.theme;
+    // let user_config = maybe_config();
+    // let current = user_config.clone().unwrap_or_default();
+    print_header("Color palette in use on this terminal:\n");
+    display_theme_roles(theme);
+    display_theme_details(theme);
+    println!();
+
+    // Section 5: Current terminal attributes
+    print_header("This terminal's color attributes:\n");
+    vprtln!(
+        V::N,
+        "Color support={color_support}, theme={}: {}\n",
+        theme.name,
+        theme.description
+    );
 
     Ok(())
 }
@@ -2660,475 +2996,277 @@ fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
 }
 
-#[macro_export]
-/// Conditionally logs a message with styling based on role if logging is enabled.
-///
-/// This macro checks if logging is enabled via the `LOGGING_ENABLED` atomic flag,
-/// and if so, applies the appropriate style for the given role and prints the formatted message.
-///
-/// # Arguments
-/// * `$role` - The `Role` that determines the styling to apply
-/// * `$($arg:tt)*` - Format string and arguments, same as `println!` macro
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog;
-/// use thag_rs::styling::Role;
-/// let error_msg = "Bad thing happened";
-/// clog!(Role::Error, "Something went wrong: {}", error_msg);
-/// let filename = "my_precious.doc";
-/// clog!(Role::Info, "Processing file: {}", filename);
-/// ```
-macro_rules! clog {
-    ($role:expr, $($arg:tt)*) => {{
-        if thag_rs::styling::LOGGING_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
-            let style = thag_rs::styling::Style::for_role($role);
-            println!("{}", style.paint(format!($($arg)*)));
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::serial;
+    use std::io::Write;
+    use std::path::Path;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+
+    static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
+    static BLACK_BG: &(u8, u8, u8) = &(0, 0, 0);
+
+    impl TermAttributes {
+        fn with_mock_theme(color_support: ColorSupport, term_bg_luma: TermBgLuma) -> Self {
+            MOCK_THEME_DETECTION.store(true, Ordering::SeqCst);
+            let theme_name = match (color_support, term_bg_luma) {
+                (ColorSupport::Basic | ColorSupport::Undetermined, TermBgLuma::Light) => {
+                    "basic_light"
+                }
+                (
+                    ColorSupport::Basic | ColorSupport::Undetermined,
+                    TermBgLuma::Dark | TermBgLuma::Undetermined,
+                ) => "basic_dark",
+                (ColorSupport::None, _) => "none",
+                (ColorSupport::Color256, TermBgLuma::Light) => "github",
+                (
+                    ColorSupport::Color256 | ColorSupport::TrueColor,
+                    TermBgLuma::Dark | TermBgLuma::Undetermined,
+                ) => "dracula",
+                (ColorSupport::TrueColor, TermBgLuma::Light) => "one-light",
+            };
+            let theme = Theme::get_theme_with_color_support(theme_name, color_support)
+                .expect("Failed to load or resolve builtin theme {theme_name}");
+            Self::new(color_support, Some(BLACK_BG).copied(), term_bg_luma, theme)
         }
-    }};
+    }
+
+    // use std::io::Write;
+
+    // Use a static Mutex for test output collection
+    static TEST_OUTPUT: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+    // #[profiled]
+    fn init_test_output() {
+        if let Ok(mut guard) = TEST_OUTPUT.lock() {
+            guard.clear();
+            guard.push(String::new());
+        }
+    }
+
+    // #[profiled]
+    fn get_test_output() -> Vec<String> {
+        match TEST_OUTPUT.lock() {
+            Ok(guard) => guard.clone(),
+            Err(_) => Vec::new(),
+        }
+    }
+
+    // #[profiled]
+    fn flush_test_output() {
+        if let Ok(guard) = TEST_OUTPUT.lock() {
+            let mut stdout = std::io::stdout();
+            for line in guard.iter() {
+                writeln!(stdout, "{}", line).expect("Failed to write to stdout");
+            }
+        }
+    }
+
+    // Tests that need access to internal implementation
+    #[test]
+    #[serial]
+    fn test_styling_default_theme_with_mock() {
+        init_test_output();
+        let term_attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+        let defaulted = term_attrs.term_bg_luma;
+        // assert!(matches!(defaulted, TermBgLuma::Dark)); // TODO alt: out?
+        assert_eq!(defaulted, TermBgLuma::Dark);
+        println!();
+        let output = get_test_output();
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_styling_color_support_levels() {
+        init_test_output();
+        let none = TermAttributes::with_mock_theme(ColorSupport::None, TermBgLuma::Dark);
+        let basic = TermAttributes::with_mock_theme(ColorSupport::Basic, TermBgLuma::Dark);
+        let color256 = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+        let true_color = TermAttributes::with_mock_theme(ColorSupport::TrueColor, TermBgLuma::Dark);
+
+        let test_role = Role::Error;
+
+        let none_style = style_for_theme_and_role(&none.theme, test_role);
+        // No color support should return plain text
+        assert_eq!(none_style.paint("test"), "test");
+
+        // Basic support should use ANSI 16 colors
+        vprtln!(V::VV, "basic={basic:#?}");
+        let basic_style = style_for_theme_and_role(&basic.theme, test_role);
+        let painted = basic_style.paint("test");
+        vprtln!(V::VV, "painted={painted:?}, style={basic_style:?}");
+        assert!(painted.contains("\x1b[31m"));
+        assert!(painted.ends_with("\u{1b}[0m"));
+
+        // Color_256 support should use a different ANSI string from basic
+        let color256_style = style_for_theme_and_role(&color256.theme, test_role);
+        let painted = color256_style.paint("test");
+        vprtln!(V::VV, "painted={painted:?}");
+        assert!(painted.contains("\x1b[38;5;"));
+        assert!(painted.ends_with("\u{1b}[0m"));
+
+        // TrueColor support should use RGB formatting
+        let true_color_style = style_for_theme_and_role(&true_color.theme, test_role);
+        let painted = true_color_style.paint("test");
+        vprtln!(V::VV, "painted={painted:?}");
+        assert!(painted.contains("\x1b[38;2;"));
+        assert!(painted.ends_with("\u{1b}[0m"));
+        let output = get_test_output();
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_styling_theme_variations() {
+        init_test_output();
+        let attrs_light =
+            TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Light);
+        let attrs_dark = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+
+        let test_role = Role::Heading1;
+
+        let light_style = style_for_theme_and_role(&attrs_light.theme, test_role);
+        let heading_light = light_style.paint("test");
+
+        let dark_style = style_for_theme_and_role(&attrs_dark.theme, test_role);
+        let heading_dark = dark_style.paint("test");
+
+        // Light and dark themes should produce different colors
+        assert_ne!(heading_light, heading_dark);
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_styling_style_attributes() {
+        init_test_output();
+        let attrs = TermAttributes::with_mock_theme(ColorSupport::Color256, TermBgLuma::Dark);
+
+        // Heading1 should be bold
+        let error_style = style_for_theme_and_role(&attrs.theme, Role::Heading1);
+        let painted = error_style.paint("test");
+        eprintln!(
+            "theme={}, error_style={error_style:?}, painted={painted:?}",
+            attrs.theme.name
+        );
+        assert!(painted.contains("\x1b[1m"));
+
+        // Hint should be italic
+        let hint_style = style_for_theme_and_role(&attrs.theme, Role::Hint);
+        let painted = hint_style.paint("test");
+        eprintln!(
+            "theme={}, hint_style={hint_style:?}, painted={painted:?}",
+            attrs.theme.name
+        );
+        let output = get_test_output();
+        assert!(painted.contains("\x1b[3m"));
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_styling_load_dracula_theme() -> ThagResult<()> {
+        init_test_output();
+        let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
+
+        // Check theme metadata
+        assert_eq!(theme.term_bg_luma, TermBgLuma::Dark);
+        assert_eq!(theme.min_color_support, ColorSupport::TrueColor);
+        assert_eq!(theme.bg_rgbs, vec![(40, 42, 54)]);
+
+        // Check a few key styles
+        if let ColorValue::TrueColor { rgb } = &theme
+            .palette
+            .heading1
+            .foreground
+            .expect("Failed to load heading1 foreground color")
+            .value
+        {
+            assert_eq!(rgb, &[255, 85, 85]);
+        } else {
+            panic!("Expected TrueColor for heading1");
+        }
+
+        // Check style attributes
+        assert!(theme.palette.heading1.bold);
+        assert!(!theme.palette.normal.bold);
+        assert!(theme.palette.hint.italic);
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn test_styling_dracula_validation() -> ThagResult<()> {
+        init_test_output();
+        let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
+
+        // Should succeed with TrueColor support and dark background
+        assert!(theme
+            .validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)
+            .is_ok());
+
+        // Should fail with insufficient color support
+        assert!(theme
+            .validate(&ColorSupport::Color256, &TermBgLuma::Dark)
+            .is_err());
+
+        // Should fail with wrong background
+        assert!(theme
+            .validate(&ColorSupport::TrueColor, &TermBgLuma::Light)
+            .is_err());
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn test_styling_color_support_ordering() {
+        init_test_output();
+        assert!(ColorSupport::None < ColorSupport::Basic);
+        assert!(ColorSupport::Basic < ColorSupport::Color256);
+        assert!(ColorSupport::Color256 < ColorSupport::TrueColor);
+
+        // Or more comprehensively:
+        let supports = [
+            ColorSupport::Undetermined,
+            ColorSupport::None,
+            ColorSupport::Basic,
+            ColorSupport::Color256,
+            ColorSupport::TrueColor,
+        ];
+
+        for i in 0..supports.len() - 1 {
+            assert!(
+                supports[i] < supports[i + 1],
+                "ColorSupport ordering violated between {:?} and {:?}",
+                supports[i],
+                supports[i + 1]
+            );
+        }
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
 }
-
-/// Logs an error message with error styling if logging is enabled.
-///
-/// This is a convenience macro that applies error role styling to the message.
-/// It's equivalent to calling `clog!(Role::Error, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_error;
-/// let filename = "Single File";
-/// let error_details = "erroneous";
-/// clog_error!("Failed to process file: {}", filename);
-/// clog_error!("Invalid input: {}", error_details);
-/// ```
-#[macro_export]
-macro_rules! clog_error {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Error, $($arg)*) };
-}
-
-#[macro_export]
-/// Logs a warning message with warning styling if logging is enabled.
-///
-/// This is a convenience macro that applies warning role styling to the message.
-/// It's equivalent to calling `clog!(Role::Warning, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_warning;
-/// let operation_name = "Covert ops";
-/// let feature_name = "obsolete";
-/// clog_warning!("This operation might be slow: {}", operation_name);
-/// clog_warning!("Deprecated feature used: {}", feature_name);
-/// ```
-macro_rules! clog_warning {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Warning, $($arg)*) };
-}
-
-/// Logs a heading1 message with heading1 styling if logging is enabled.
-///
-/// This is a convenience macro that applies heading1 role styling to the message.
-/// It's equivalent to calling `clog!(Role::Heading1, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_heading1;
-/// let section_name = "The Horne Section";
-/// clog_heading1!("Main Section: {}", section_name);
-/// clog_heading1!("Processing started");
-/// ```
-#[macro_export]
-macro_rules! clog_heading1 {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Heading1, $($arg)*) };
-}
-
-/// Logs a heading2 message with heading2 styling if logging is enabled.
-///
-/// This is a convenience macro that applies heading2 role styling to the message.
-/// It's equivalent to calling `clog!(Role::Heading2, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_heading2;
-/// let subsection_name = "Part 1";
-/// clog_heading2!("Subsection: {}", subsection_name);
-/// clog_heading2!("Configuration loaded");
-/// ```
-#[macro_export]
-macro_rules! clog_heading2 {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Heading2, $($arg)*) };
-}
-
-/// Logs a heading3 message with heading3 styling if logging is enabled.
-///
-/// This is a convenience macro that applies heading3 role styling to the message.
-/// It's equivalent to calling `clog!(Role::Heading3, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_heading3;
-/// let detail_name = "Detalle";
-/// clog_heading3!("Details: {}", detail_name);
-/// clog_heading3!("Step completed");
-/// ```
-#[macro_export]
-macro_rules! clog_heading3 {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Heading3, $($arg)*) };
-}
-
-/// Logs an emphasis message with emphasis styling if logging is enabled.
-///
-/// This is a convenience macro that applies emphasis role styling to the message.
-/// It's equivalent to calling `clog!(Role::Emphasis, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_emphasis;
-/// let note = "A flat";
-/// clog_emphasis!("Important note: {}", note);
-/// clog_emphasis!("This requires attention");
-/// ```
-#[macro_export]
-macro_rules! clog_emphasis {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Emphasis, $($arg)*) };
-}
-/// Logs a success message with success styling if logging is enabled.
-///
-/// This is a convenience macro that applies success role styling to the message.
-/// It's equivalent to calling `clog!(Role::Success, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_success;
-/// let operation_name = "Appendectomy";
-/// clog_success!("Operation completed successfully: {}", operation_name);
-/// clog_success!("File saved");
-/// ```
-#[macro_export]
-macro_rules! clog_success {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Success, $($arg)*) };
-}
-
-/// Logs an info message with info styling if logging is enabled.
-///
-/// This is a convenience macro that applies info role styling to the message.
-/// It's equivalent to calling `clog!(Role::Info, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_info;
-/// let filename = "The Ipcress File";
-/// clog_info!("Processing file: {}", filename);
-/// clog_info!("Configuration loaded");
-/// ```
-#[macro_export]
-macro_rules! clog_info {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Info, $($arg)*) };
-}
-
-/// Logs a normal message with normal styling if logging is enabled.
-///
-/// This is a convenience macro that applies normal role styling to the message.
-/// It's equivalent to calling `clog!(Role::Normal, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_normal;
-/// let content = "innehålle";
-/// clog_normal!("Standard message: {}", content);
-/// clog_normal!("Regular output");
-/// ```
-#[macro_export]
-macro_rules! clog_normal {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Normal, $($arg)*) };
-}
-
-/// Logs a debug message with debug styling if logging is enabled.
-///
-/// This is a convenience macro that applies debug role styling to the message.
-/// It's equivalent to calling `clog!(Role::Debug, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_debug;
-/// let debug_data = "debug_data";
-/// let variable = 1.23_f32;
-/// clog_debug!("Debug info: {}", debug_data);
-/// clog_debug!("Variable value: {:?}", variable);
-/// ```
-#[macro_export]
-macro_rules! clog_debug {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Debug, $($arg)*) };
-}
-
-/// Logs a subtle message with subtle styling if logging is enabled.
-///
-/// This is a convenience macro that applies subtle role styling to the message.
-/// It's equivalent to calling `clog!(Role::Subtle, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::clog_subtle;
-/// let process_name = "Poke with stick";
-/// clog_subtle!("Background process: {}", process_name);
-/// clog_subtle!("Minor detail");
-/// ```
-#[macro_export]
-macro_rules! clog_subtle {
-    ($($arg:tt)*) => { thag_rs::clog!(thag_rs::styling::Role::Subtle, $($arg)*) };
-}
-
-/// Logs an error message with verbosity control and error styling.
-///
-/// This is a convenience macro that applies error role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Error, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_error;
-/// use thag_rs::logging::Verbosity;
-/// let error_msg = "You done messed up";
-/// cvlog_error!(Verbosity::V, "Critical error: {}", error_msg);
-/// ```
-#[macro_export]
-macro_rules! cvlog_error {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Error, $verbosity, $($arg)*) };
-}
-
-/// Logs a warning message with verbosity control and warning styling.
-///
-/// This is a convenience macro that applies warning role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Warning, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_warning;
-/// use thag_rs::logging::Verbosity;
-/// let warning_msg = "Oi!";
-/// cvlog_warning!(Verbosity::V, "Potential issue: {}", warning_msg);
-/// ```
-#[macro_export]
-macro_rules! cvlog_warning {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Warning, $verbosity, $($arg)*) };
-}
-
-/// Logs a heading message with verbosity control and heading1 styling.
-///
-/// This is a convenience macro that applies heading1 role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Heading1, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_heading1;
-/// use thag_rs::logging::Verbosity;
-/// let section_name = "midsection";
-/// cvlog_heading1!(Verbosity::V, "Main Section: {}", section_name);
-/// ```
-#[macro_export]
-macro_rules! cvlog_heading1 {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Heading1, $verbosity, $($arg)*) };
-}
-
-/// Logs a subheading message with verbosity control and heading2 styling.
-///
-/// This is a convenience macro that applies heading2 role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Heading2, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_heading2;
-/// use thag_rs::logging::Verbosity;
-/// let subsection_name = "subsection_name";
-/// cvlog_heading2!(Verbosity::V, "Subsection: {}", subsection_name);
-/// ```
-#[macro_export]
-macro_rules! cvlog_heading2 {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Heading2, $verbosity, $($arg)*) };
-}
-
-/// Logs an emphasis message with verbosity control and emphasis styling.
-///
-/// This is a convenience macro that applies emphasis role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Emphasis, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_emphasis;
-/// use thag_rs::logging::Verbosity;
-/// let important_msg = "spam";
-/// cvlog_emphasis!(Verbosity::V, "Important: {}", important_msg);
-/// ```
-#[macro_export]
-macro_rules! cvlog_emphasis {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Emphasis, $verbosity, $($arg)*) };
-}
-
-/// Logs a bright/info message with verbosity control and info styling.
-///
-/// This is a convenience macro that applies info role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Info, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_info;
-/// use thag_rs::logging::Verbosity;
-/// let info_msg = "Random info";
-/// cvlog_info!(Verbosity::V, "Highlighted info: {}", info_msg);
-/// ```
-#[macro_export]
-macro_rules! cvlog_info {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Info, $verbosity, $($arg)*) };
-}
-
-/// Logs a normal message with verbosity control and normal styling.
-///
-/// This is a convenience macro that applies normal role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Normal, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_normal;
-/// use thag_rs::logging::Verbosity;
-/// let msg = "Pleease call back";
-/// cvlog_normal!(Verbosity::V, "Standard message: {}", msg);
-/// ```
-#[macro_export]
-macro_rules! cvlog_normal {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Normal, $verbosity, $($arg)*) };
-}
-
-/// Logs a debug message with verbosity control and debug styling.
-///
-/// This is a convenience macro that applies debug role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Debug, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_debug;
-/// use thag_rs::logging::Verbosity;
-/// let debug_data = "Bug begone";
-/// cvlog_debug!(Verbosity::VV, "Debug info: {}", debug_data);
-/// ```
-#[macro_export]
-macro_rules! cvlog_debug {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Debug, $verbosity, $($arg)*) };
-}
-
-/// Logs a ghost/hint message with verbosity control and hint styling.
-///
-/// This is a convenience macro that applies hint role styling to the message
-/// with verbosity control. It's equivalent to calling `cvprtln!(Role::Hint, ...)`.
-///
-/// # Examples
-/// ```
-/// use thag_rs::cvlog_hint;
-/// use thag_rs::logging::Verbosity;
-/// let hint_msg = "Ahem";
-/// cvlog_hint!(Verbosity::VV, "Subtle hint: {}", hint_msg);
-/// ```
-#[macro_export]
-macro_rules! cvlog_hint {
-    ($verbosity:expr, $($arg:tt)*) => { thag_rs::cvprtln!(thag_rs::styling::Role::Hint, $verbosity, $($arg)*) };
-}
-
-// pub fn main() -> ThagResult<()> {
-//     let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
-//     let color_support = term_attrs.color_support;
-//     let theme = &term_attrs.theme;
-//     let header_style = Style::for_role(Role::Normal).underline();
-//     let print_header = |arg| println!("{}", header_style.clone().paint(arg));
-
-//     // Section 1: ANSI / Xterm 256 color palette
-//     if color_support >= ColorSupport::Color256 {
-//         println!();
-//         let col_width = 25;
-//         print_header("ANSI / Xterm 256 color palette:\n");
-//         let color = Color::fixed(u8::from(&Role::HD1));
-//         println!(
-//             "{}{}{}{}",
-//             color.clone().paint(format!("{:<col_width$}", "Normal")),
-//             color
-//                 .clone()
-//                 .italic()
-//                 .paint(format!("{:<col_width$}", "Italic")),
-//             color
-//                 .clone()
-//                 .bold()
-//                 .paint(format!("{:<col_width$}", "Bold")),
-//             color
-//                 .clone()
-//                 .bold()
-//                 .italic()
-//                 .paint(format!("{:<col_width$}", "Bold Italic")),
-//             // color.paint(format!("{:<col_width$}", "Normal"))
-//         );
-//         let dash_line = "─".repeat(col_width * 4);
-//         cvprtln!(Role::HD2, V::Q, "{dash_line}");
-//         XtermColor::iter().for_each(|variant| {
-//             let color_string = variant.to_string();
-//             let pad_color_string = format!("{color_string:<col_width$}");
-//             let color = Color::fixed(u8::from(&variant));
-//             println!(
-//                 "{}{}{}{}",
-//                 color.clone().paint(pad_color_string.clone()),
-//                 color.clone().italic().paint(pad_color_string.clone()),
-//                 color.clone().bold().paint(pad_color_string.clone()),
-//                 color.bold().italic().paint(pad_color_string)
-//             );
-//         });
-//         println!();
-//     }
-
-//     let theme_name = match theme.term_bg_luma {
-//         TermBgLuma::Light => "basic_light",
-//         TermBgLuma::Dark | TermBgLuma::Undetermined => "basic_dark",
-//     };
-//     let theme = Theme::get_builtin(theme_name)?;
-
-//     // Section 2: ANSI-16 color palette using basic styles
-//     let header = format!("ANSI-16 color palette in use for {theme_name} theme:\n");
-//     print_header(&header);
-//     for role in Role::iter() {
-//         let style = theme.style_for(role);
-//         let content = format!("{role} message: role={role}, style={style:?}");
-//         println!("{}", style.paint(content));
-//     }
-
-//     println!();
-
-//     // Section 3: ANSI-16 palette using u8 colors
-//     let header = format!("ANSI-16 color palette in use for {theme_name} theme (converted via u8 and missing bold/dimmed/italic):\n");
-//     print_header(&header);
-//     for role in Role::iter() {
-//         let style = theme.style_for(role);
-//         // eprintln!("style={style:?}");
-//         if let Some(color_info) = style.foreground {
-//             let index: u8 = color_info.index;
-//             let color = Color::fixed(index);
-//             let content = format!("{role} message: role={role:?}, index={index}, color={color:?}");
-//             println!("{}", color.paint(content));
-//         }
-//     }
-
-//     println!();
-
-//     // Section 4: Current terminal color palette
-//     let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
-//     let theme = &term_attrs.theme;
-//     // let user_config = maybe_config();
-//     // let current = user_config.clone().unwrap_or_default();
-//     print_header("Color palette in use on this terminal:\n");
-//     display_theme_roles(theme);
-//     display_theme_details(theme);
-//     println!();
-
-//     // Section 5: Current terminal attributes
-//     print_header("This terminal's color attributes:\n");
-//     vprtln!(
-//         V::N,
-//         "Color support={color_support}, theme={}: {}\n",
-//         theme.name,
-//         theme.description
-//     );
-
-//     Ok(())
-// }

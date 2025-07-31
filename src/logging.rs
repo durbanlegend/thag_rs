@@ -87,16 +87,3 @@ fn configure_simplelog() {
         eprintln!("Logger already initialized: {}", e);
     }
 }
-
-/// A line print macro that prints a styled and coloured message.
-///
-/// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
-#[macro_export]
-macro_rules! cprtln {
-    ($style:expr, $($arg:tt)*) => {{
-        let content = format!("{}", format_args!($($arg)*));
-        let painted = $style.paint(content);
-        let verbosity = $crate::shared::get_verbosity();
-        $crate::vprtln!(verbosity, "{painted}");
-    }};
-}

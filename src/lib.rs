@@ -146,9 +146,9 @@ pub use {
     log, // re-export log crate for debug_log
     shared::{
         debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, get_verbosity,
-        set_global_verbosity, thousands, TermBgLuma, Verbosity, V,
+        set_global_verbosity, thousands, ColorSupport, TermBgLuma, Verbosity, V,
     },
-    styling::{Color, ColorSupport, Lvl, Role, Style},
+    styling::{Color, Lvl, Role, Style},
 };
 
 // pub use thag_profiler::*; // Re-export everything from profiler

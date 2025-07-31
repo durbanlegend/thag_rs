@@ -2,7 +2,7 @@
 //! This module handles detection of terminal capabilities while preserving terminal state.
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 
-use crate::styling::ColorSupport;
+use crate::ColorSupport;
 use crate::{lazy_static_var, vprtln, TermBgLuma, ThagError, ThagResult, V};
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use std::io::{stdout, Write};

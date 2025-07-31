@@ -1,7 +1,7 @@
 use crate::styling::Role;
 use crate::{
-    clog, clog_error, cprtln, cvprtln, debug_log, lazy_static_var, Color, ColorSupport, TermBgLuma,
-    ThagError, ThagResult, Verbosity, V,
+    cprtln, debug_log, lazy_static_var, ColorSupport, Style, TermBgLuma, ThagError, ThagResult,
+    Verbosity,
 };
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
@@ -378,15 +378,12 @@ impl Dependencies {
                     if all_features.contains(feature) {
                         config_features.push(feature.clone());
                     } else {
-                        cvprtln!(
-                            Role::WARN,
-                            V::QQ,
-                            "Configured feature `{}` does not exist in crate {}. Available features are:",
-                            feature,
-                            crate_name
+                        cprtln!(
+                            Style::for_role(Role::WARN),
+                            "Configured feature `{feature}` does not exist in crate {crate_name}. Available features are:"
                         );
                         for available in all_features {
-                            cvprtln!(Role::INFO, V::QQ, "{}", available);
+                            cprtln!(Style::for_role(Role::INFO), "{available}");
                         }
                     }
                 }
@@ -717,7 +714,7 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
         Err(e) => {
-            clog_error!("Failed to load config: {e}");
+            cprtln!(Style::for_role(Role::Error), "Failed to load config: {e}");
             // sleep(Duration::from_secs(1));
             // println!("Failed to load config: {e}");
             std::process::exit(1);
@@ -762,8 +759,8 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     debug_log!("config_path={config_path:?}");
 
     if !config_path.exists() {
-        clog!(
-            Role::Warning,
+        cprtln!(
+            Style::for_role(Role::Warning),
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
         );
@@ -794,7 +791,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
         fs::create_dir_all(dir_path)?;
 
         cprtln!(
-            &Color::yellow().bold(), // using our Color type
+            Style::for_role(Role::Warning),
             "No configuration file found at {}. Creating one using system defaults...",
             config_path.display()
         );

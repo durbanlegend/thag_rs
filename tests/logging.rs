@@ -8,10 +8,8 @@ mod tests {
         sync::Once,
     };
     use thag_proc_macros::safe_eprintln;
-    use thag_rs::{
-        debug_log,
-        logging::{set_global_verbosity, Logger, Verbosity, LOGGER},
-    };
+    use thag_rs::shared::OUTPUT_MANAGER;
+    use thag_rs::{debug_log, set_global_verbosity, Verbosity};
 
     #[cfg(feature = "simplelog")]
     use simplelog::{
@@ -61,22 +59,8 @@ mod tests {
     fn reset_global_logger() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
-            drop(LOGGER.lock().unwrap());
+            drop(OUTPUT_MANAGER.lock().unwrap());
         });
-    }
-
-    #[test]
-    #[parallel]
-    fn test_logging_logger_new() {
-        set_up();
-        let logger = Logger::new(Verbosity::Quiet);
-        assert_eq!(logger.verbosity, Verbosity::Quiet);
-
-        let logger = Logger::new(Verbosity::Normal);
-        assert_eq!(logger.verbosity, Verbosity::Normal);
-
-        let logger = Logger::new(Verbosity::Verbose);
-        assert_eq!(logger.verbosity, Verbosity::Verbose);
     }
 
     // #[test]
@@ -119,27 +103,9 @@ fn main() {{
         let output = run(input);
         debug_log!("output={output:?}");
 
-        assert!(String::from_utf8_lossy(&output.stdout)
-            .ends_with("Quieter message\nQuiet message\nNormal message\n"));
-    }
-
-    #[test]
-    #[parallel]
-    fn test_logging_global_logger() {
-        set_up();
-        reset_global_logger();
-
-        set_global_verbosity(Verbosity::Verbose).expect("Error setting global verbosity");
-        {
-            let logger = LOGGER.lock().unwrap();
-            assert_eq!(logger.verbosity, Verbosity::Verbose);
-        }
-
-        set_global_verbosity(Verbosity::Quiet).expect("Error setting global verbosity");
-        {
-            let logger = LOGGER.lock().unwrap();
-            assert_eq!(logger.verbosity, Verbosity::Quiet);
-        }
+        let out_str = String::from_utf8_lossy(&output.stdout);
+        eprintln!("out_str=[{out_str}]");
+        assert!(out_str.ends_with("Quieter message\nQuiet message\nNormal message\n"));
     }
 
     #[test]

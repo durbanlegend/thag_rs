@@ -60,6 +60,58 @@ impl V {
     pub const D: Self = Self::Debug;
 }
 
+/// An enum to categorise the current terminal's level of colour support as detected, configured
+/// or defaulted.
+///
+/// We fold `TrueColor` into Xterm256 as we're not interested in more than 256
+/// colours just for messages.
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Display,
+    Documented,
+    DocumentedVariants,
+    EnumIter,
+    EnumString,
+    IntoStaticStr,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Serialize,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum ColorSupport {
+    /// Still to be determined or defaulted
+    Undetermined = 0,
+    /// No color support
+    None = 1,
+    /// Basic 16-color support
+    #[serde(alias = "ansi16")] // Accept old "ansi16" value
+    Basic = 2,
+    /// Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
+    #[serde(alias = "xterm256")] // Accept old "256" value
+    Color256 = 3,
+    /// Full color support, 24 bits -> 16 million colors.
+    TrueColor = 4,
+}
+
+impl Default for ColorSupport {
+    fn default() -> Self {
+        #[cfg(feature = "color_detect")]
+        {
+            Self::Undetermined
+        }
+
+        #[cfg(not(feature = "color_detect"))]
+        {
+            Self::Basic // Safe default when detection isn't available
+        }
+    }
+}
+
 /// Manages user message output with verbosity control and thread-safe locking
 #[derive(Debug)]
 pub struct OutputManager {
@@ -76,7 +128,8 @@ impl OutputManager {
 
     /// Output a message if it passes the verbosity filter.
     #[profiled]
-    pub fn log(&self, verbosity: Verbosity, message: &str) {
+    pub fn prtln(&self, verbosity: Verbosity, message: &str) {
+        eprintln!("verbosity={verbosity}, self.verbosity={}", self.verbosity);
         if verbosity as u8 <= self.verbosity as u8 {
             println!("{}", message);
         }
@@ -130,12 +183,25 @@ pub fn get_verbosity() -> Verbosity {
     OUTPUT_MANAGER.lock().unwrap().verbosity
 }
 
+/// A line print macro that prints a styled and coloured message.
+///
+/// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+#[macro_export]
+macro_rules! cprtln {
+    ($style:expr, $($arg:tt)*) => {{
+        let content = format!("{}", format_args!($($arg)*));
+        let painted = $style.paint(content);
+        let verbosity = $crate::shared::get_verbosity();
+        $crate::vprtln!(verbosity, "{painted}");
+    }};
+}
+
 /// Verbosity-gated print line macro for user messages
 #[macro_export]
 macro_rules! vprtln {
     ($verbosity:expr, $($arg:tt)*) => {
         {
-            $crate::shared::OUTPUT_MANAGER.lock().unwrap().log($verbosity, &format!($($arg)*))
+            $crate::shared::OUTPUT_MANAGER.lock().unwrap().prtln($verbosity, &format!($($arg)*))
         }
     };
 }

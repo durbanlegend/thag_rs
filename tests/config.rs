@@ -9,7 +9,7 @@ mod tests {
             RealContext,
         },
         load,
-        logging::Verbosity,
+        shared::Verbosity,
         ColorSupport, Context, TermBgLuma, ThagResult,
     };
 

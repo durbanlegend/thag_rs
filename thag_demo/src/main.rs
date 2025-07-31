@@ -13,7 +13,7 @@ use std::process;
 use std::{env, fs, io};
 use thag_rs::{
     builder::execute, configure_log, cvprtln, get_verbosity, set_global_verbosity,
-    styling::create_theme_aware_inquire_config, Cli, Role, V,
+    styling::themed_inquire_config, Cli, Role, V,
 };
 
 pub mod visualization;
@@ -673,7 +673,7 @@ fn manage_demo_directory() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    set_global_render_config(create_theme_aware_inquire_config());
+    set_global_render_config(themed_inquire_config());
 
     let args = DemoArgs::parse();
 
@@ -1032,7 +1032,7 @@ fn print_demo_info(demo_name: &str) {
     println!();
 }
 
-// Theme-aware inquire configuration is now handled by thag_rs::styling::create_theme_aware_inquire_config()
+// Theme-aware inquire configuration is now handled by thag_rs::styling::themed_inquire_config()
 // This respects the configured theme (Black Metal, Base16, etc.) by mapping:
 // - selected_option → Role::Emphasis (your theme's emphasis color)
 // - help_message → Role::Info (your theme's info color)

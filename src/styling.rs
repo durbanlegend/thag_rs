@@ -1,5 +1,5 @@
 use crate::errors::ThemeError;
-use crate::{lazy_static_var, vlog, ThagError, ThagResult, V};
+use crate::{lazy_static_var, vlog, TermBgLuma, ThagError, ThagResult, V};
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -9,12 +9,9 @@ use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 use thag_proc_macros::{preload_themes, PaletteMethods};
-use thag_profiler::{enable_profiling, end, profile, profiled};
 
 #[cfg(feature = "color_detect")]
 use crate::terminal::{self, get_term_bg_rgb, is_light_color};
-
-use crate::shared::TermBgLuma;
 
 #[cfg(feature = "config")]
 use crate::config::maybe_config;
@@ -112,7 +109,7 @@ use crate::debug_log;
 /// Create an inquire `RenderConfig` that respects the current `thag_rs` theme
 #[cfg(all(feature = "color_detect", feature = "tools"))]
 #[must_use]
-pub fn create_theme_aware_inquire_config() -> inquire::ui::RenderConfig<'static> {
+pub fn themed_inquire_config() -> inquire::ui::RenderConfig<'static> {
     use inquire::ui::{RenderConfig, StyleSheet};
 
     let term_attrs = TermAttributes::get_or_init();
@@ -382,7 +379,6 @@ impl ColorInfo {
     /// * `ansi` - The ANSI escape sequence for this color
     /// * `index` - The color palette index (0-15 for basic colors)
     #[must_use]
-    #[profiled]
     pub fn basic(ansi: &'static str, index: u8) -> Self {
         Self {
             value: ColorValue::Basic {
@@ -398,7 +394,6 @@ impl ColorInfo {
     /// # Arguments
     /// * `index` - The color index in the 256-color palette (0-255)
     #[must_use]
-    #[profiled]
     pub fn color256(index: u8) -> Self {
         Self {
             value: ColorValue::Color256 { color256: index },
@@ -414,7 +409,6 @@ impl ColorInfo {
     /// * `g` - Green component (0-255)
     /// * `b` - Blue component (0-255)
     #[must_use]
-    #[profiled]
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self {
             value: ColorValue::TrueColor { rgb: [r, g, b] },
@@ -429,7 +423,6 @@ impl ColorInfo {
     /// * `rgb` - RGB color values as a tuple (r, g, b)
     /// * `support` - The color support level of the terminal
     #[must_use]
-    #[profiled]
     pub fn with_support(rgb: (u8, u8, u8), support: ColorSupport) -> Self {
         match support {
             ColorSupport::TrueColor => Self::rgb(rgb.0, rgb.1, rgb.2),
@@ -469,7 +462,6 @@ impl Style {
     }
 
     // Used by proc macro palette_methods.
-    #[profiled]
     fn from_config(config: &StyleConfig) -> ThagResult<Self> {
         let mut style = match &config.color {
             ColorValue::Basic {
@@ -514,7 +506,6 @@ impl Style {
     ///
     /// This function will return an error if it encounters an invalid hex RGB value.
     #[cfg(feature = "config")]
-    #[profiled]
     pub fn from_fg_hex(hex: &str) -> ThagResult<Self> {
         let hex = hex.trim_start_matches('#');
         if hex.len() == 6 {
@@ -536,7 +527,6 @@ impl Style {
 
     /// Creates a new Style with the specified foreground color
     #[must_use]
-    #[profiled]
     pub fn fg(color_info: ColorInfo) -> Self {
         Self {
             foreground: Some(color_info),
@@ -580,7 +570,6 @@ impl Style {
 
     /// Resets all text formatting flags to their default (false) state
     #[allow(clippy::missing_const_for_fn)]
-    #[profiled]
     pub fn reset(&mut self) {
         self.bold = false;
         self.italic = false;
@@ -589,7 +578,6 @@ impl Style {
     }
 
     /// Applies this style's formatting to the given displayable value and returns the formatted string
-    #[profiled]
     pub fn paint<D>(&self, val: D) -> String
     where
         D: std::fmt::Display,
@@ -642,7 +630,6 @@ impl Style {
 
     /// Creates a new Style with the specified 256-color palette index
     #[must_use]
-    #[profiled]
     pub fn with_color_index(index: u8) -> Self {
         Self {
             foreground: Some(ColorInfo::color256(index)),
@@ -652,14 +639,12 @@ impl Style {
 
     #[must_use]
     /// Get the `Style` for a `Role` from the currently loaded theme.
-    #[profiled]
     pub fn for_role(role: Role) -> Self {
         TermAttributes::get_or_init().theme.style_for(role)
     }
 }
 
 impl Default for Style {
-    #[profiled]
     fn default() -> Self {
         Self::new()
     }
@@ -692,7 +677,6 @@ impl Color {
 
     /// Creates a new Style with black foreground color
     #[must_use]
-    #[profiled]
     pub fn black() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::BLACK, 0)),
@@ -702,7 +686,6 @@ impl Color {
 
     /// Creates a new Style with red foreground color
     #[must_use]
-    #[profiled]
     pub fn red() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::RED, 1)),
@@ -712,7 +695,6 @@ impl Color {
 
     /// Creates a new Style with green foreground color
     #[must_use]
-    #[profiled]
     pub fn green() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::GREEN, 2)),
@@ -722,7 +704,6 @@ impl Color {
 
     /// Creates a new Style with yellow foreground color
     #[must_use]
-    #[profiled]
     pub fn yellow() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::YELLOW, 3)),
@@ -732,7 +713,6 @@ impl Color {
 
     /// Creates a new Style with blue foreground color
     #[must_use]
-    #[profiled]
     pub fn blue() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::BLUE, 4)),
@@ -742,7 +722,6 @@ impl Color {
 
     /// Creates a new Style with magenta foreground color
     #[must_use]
-    #[profiled]
     pub fn magenta() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::MAGENTA, 5)),
@@ -752,7 +731,6 @@ impl Color {
 
     /// Creates a new Style with cyan foreground color
     #[must_use]
-    #[profiled]
     pub fn cyan() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::CYAN, 6)),
@@ -762,7 +740,6 @@ impl Color {
 
     /// Creates a new Style with white foreground color
     #[must_use]
-    #[profiled]
     pub fn white() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::WHITE, 7)),
@@ -772,7 +749,6 @@ impl Color {
 
     /// Creates a new Style with dark gray foreground color
     #[must_use]
-    #[profiled]
     pub fn dark_gray() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::DARK_GRAY, 8)),
@@ -782,7 +758,6 @@ impl Color {
 
     /// Creates a new Style with light yellow foreground color
     #[must_use]
-    #[profiled]
     pub fn light_yellow() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::LIGHT_YELLOW, 11)),
@@ -792,7 +767,6 @@ impl Color {
 
     /// Creates a new Style with light cyan foreground color
     #[must_use]
-    #[profiled]
     pub fn light_cyan() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::LIGHT_CYAN, 14)),
@@ -802,7 +776,6 @@ impl Color {
 
     /// Creates a new Style with light gray foreground color
     #[must_use]
-    #[profiled]
     pub fn light_gray() -> Style {
         Style {
             foreground: Some(ColorInfo::basic(Self::LIGHT_GRAY, 15)),
@@ -815,7 +788,6 @@ impl Color {
     /// # Arguments
     /// * `index` - Color index (0-15 for basic colors, 16-255 for extended colors)
     #[must_use]
-    #[profiled]
     pub fn fixed(index: u8) -> Style {
         if index < 16 {
             // Basic colours
@@ -872,7 +844,6 @@ pub enum ColorSupport {
 }
 
 impl Default for ColorSupport {
-    #[profiled]
     fn default() -> Self {
         #[cfg(feature = "color_detect")]
         {
@@ -932,7 +903,6 @@ impl Role {
     /// # Returns
     /// The color palette index (0-255) for this role's foreground color
     #[must_use]
-    #[profiled]
     pub fn color_index(&self) -> u8 {
         let style = Style::for_role(*self);
         style.foreground.map_or(7, |color_info| color_info.index) // 7 = white as fallback
@@ -941,7 +911,6 @@ impl Role {
 
 // We can implement conversions to u8 directly here
 impl From<&Role> for u8 {
-    #[profiled]
     fn from(role: &Role) -> Self {
         role.color_index()
     }
@@ -993,7 +962,6 @@ impl ColorInitStrategy {
     /// - With config only: Uses `Configure` or `Match` based on configuration completeness
     /// - No features: Uses `Default` strategy
     #[must_use]
-    #[profiled]
     pub fn determine() -> &'static Self {
         lazy_static_var!(ColorInitStrategy, {
             // `color_detect` feature overrides configured colour support.
@@ -1054,7 +1022,6 @@ impl ColorInitStrategy {
 }
 
 #[cfg(feature = "color_detect")]
-#[profiled]
 fn resolve_config_term_bg_rgb(config: &crate::Config) -> Option<(u8, u8, u8)> {
     let term_bg_rgb = config.styling.term_bg_rgb;
     match term_bg_rgb {
@@ -1131,7 +1098,6 @@ impl TermAttributes {
     /// * Built-in theme loading fails (which should never happen with correct installation)
     /// * Theme conversion fails during initialization
     #[allow(clippy::too_many_lines)]
-    #[profiled]
     pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
             #[cfg(feature = "config")]
@@ -1262,13 +1228,11 @@ impl TermAttributes {
     }
 
     /// Checks if `TermAttributes` has been initialized
-    #[profiled]
     pub fn is_initialized() -> bool {
         INSTANCE.get().is_some()
     }
 
     /// Attempts to get the `TermAttributes` instance, returning None if not initialized
-    #[profiled]
     pub fn try_get() -> Option<&'static Self> {
         INSTANCE.get()
     }
@@ -1284,7 +1248,6 @@ impl TermAttributes {
     ///
     /// # Panics
     /// Panics if theme initialization fails
-    #[profiled]
     pub fn get_or_init() -> &'static Self {
         // eprintln!(
         //     "strategy={strategy:?}. initialized={}",
@@ -1334,7 +1297,6 @@ impl TermAttributes {
     /// * The theme file is corrupted or invalid
     /// * The theme is incompatible with current terminal capabilities
     /// * Theme validation fails
-    #[profiled]
     pub fn with_theme(mut self, theme_name: &str, support: ColorSupport) -> ThagResult<Self> {
         self.theme = Theme::get_theme_with_color_support(theme_name, support)?;
         Ok(self)
@@ -1374,7 +1336,6 @@ impl TermAttributes {
 /// let styled_error = paint_for_role(Role::Error, "This is an error message");
 /// println!("{}", styled_error); // Prints in error styling
 /// ```
-#[profiled]
 pub fn paint_for_role(role: Role, string: &str) -> String {
     Style::for_role(role).paint(string)
 }
@@ -1391,7 +1352,6 @@ pub fn paint_for_role(role: Role, string: &str) -> String {
 ///
 /// # Returns
 /// A `Style` instance configured for the specified role in the given theme
-#[profiled]
 pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
     theme.style_for_role(role)
 }
@@ -1509,7 +1469,6 @@ impl Palette {
     /// # Returns
     /// A `Style` instance configured for the specified role
     #[must_use]
-    #[profiled]
     pub fn style_for_role(&self, role: Role) -> Style {
         match role {
             Role::Heading1 => self.heading1.clone(),
@@ -1559,28 +1518,24 @@ pub struct ThemeDefinition {
 impl ThemeDefinition {
     /// Get the background luminance requirement
     #[must_use]
-    #[profiled]
     pub fn term_bg_luma(&self) -> &str {
         &self.term_bg_luma
     }
 
     /// Get the minimum color support requirement
     #[must_use]
-    #[profiled]
     pub fn min_color_support(&self) -> &str {
         &self.min_color_support
     }
 
     /// Get the background color if specified
     #[must_use]
-    #[profiled]
     pub fn backgrounds(&self) -> Vec<String> {
         self.backgrounds.clone()
     }
 }
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 /// Represents a complete theme configuration with color palette and styling information
 ///
 /// A `Theme` encapsulates all the styling information needed to consistently format
@@ -1622,7 +1577,6 @@ pub struct Theme {
 }
 
 impl Theme {
-    #[profiled]
     fn from_toml(theme_name: &str, theme_toml: &str) -> Result<Self, ThagError> {
         // vlog!(V::VV, "About to call toml::from_str(theme_toml)");
         let mut def: ThemeDefinition = toml::from_str(theme_toml)?;
@@ -1642,7 +1596,6 @@ impl Theme {
     /// This function will bubble up any `termbg` error encountered.
     // #[cfg(feature = "color_detect")]
     #[allow(clippy::too_many_lines, clippy::cognitive_complexity, unused_variables)]
-    #[profiled]
     pub fn auto_detect(
         color_support: ColorSupport,
         term_bg_luma: TermBgLuma,
@@ -1855,7 +1808,6 @@ impl Theme {
     /// let theme = Theme::load_from_file(Path::new("themes/built_in/basic_light.toml"))?;
     /// # Ok::<(), ThagError>(())
     /// ```
-    #[profiled]
     pub fn load_from_file(path: &Path) -> ThagResult<Self> {
         let content = fs::read_to_string(path)?;
         let mut def: ThemeDefinition = toml::from_str(&content)?;
@@ -1891,7 +1843,6 @@ impl Theme {
     /// let theme = Theme::get_builtin("dracula")?;
     /// # Ok::<(), ThagError>(())
     /// ```
-    #[profiled]
     pub fn get_builtin(theme_name: &str) -> ThagResult<Self> {
         let maybe_theme_index = THEME_INDEX.get(theme_name);
         let Some(theme_index) = maybe_theme_index else {
@@ -1918,7 +1869,6 @@ impl Theme {
     /// # Errors
     /// Returns `ThagError` if the specified theme name is not recognized
     ///
-    #[profiled]
     fn get_theme_with_color_support(
         theme_name: &str,
         color_support: ColorSupport,
@@ -1948,7 +1898,6 @@ impl Theme {
     /// - Color support string cannot be parsed
     /// - Background luminance string cannot be parsed
     /// - Palette configuration is invalid
-    #[profiled]
     fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
         // vlog!(V::VV, "def.min_color_support={:?}", def.min_color_support);
         let color_support = ColorSupport::from_str(&def.min_color_support);
@@ -2001,13 +1950,12 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::ThagError;
-    /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
+    /// use thag_rs::{TermBgLuma, ThagError};
+    /// use thag_rs::styling::{ColorSupport, Theme};
     /// let theme = Theme::get_builtin("dracula")?;
     /// theme.validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)?;
     /// # Ok::<(), ThagError>(())
     /// ```
-    #[profiled]
     pub fn validate(
         &self,
         available_support: &ColorSupport,
@@ -2039,7 +1987,6 @@ impl Theme {
         Ok(())
     }
 
-    #[profiled]
     fn validate_palette(&self) -> ThagResult<()> {
         self.palette.validate_styles(self.min_color_support)?;
         Ok(())
@@ -2047,7 +1994,6 @@ impl Theme {
 
     /// Validates a theme definition before creating a Theme
     #[allow(dead_code)]
-    #[profiled]
     fn validate_definition(def: &ThemeDefinition) -> ThagResult<()> {
         // Validate term_bg_luma value
         if !["light", "dark"].contains(&def.term_bg_luma.as_str()) {
@@ -2111,8 +2057,8 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::ThagError;
-    /// use thag_rs::styling::{ColorSupport, TermBgLuma, Theme};
+    /// use thag_rs::{TermBgLuma, ThagError};
+    /// use thag_rs::styling::{ColorSupport, Theme};
     /// let theme = Theme::load(
     ///     Path::new("themes/built_in/basic_light.toml"),
     ///     ColorSupport::Basic,
@@ -2120,7 +2066,6 @@ impl Theme {
     /// )?;
     /// # Ok::<(), ThagError>(())
     /// ```
-    #[profiled]
     pub fn load(
         path: &Path,
         available_support: ColorSupport,
@@ -2133,7 +2078,6 @@ impl Theme {
 
     /// Get this theme's `Style` for a `Role`.
     #[must_use]
-    #[profiled]
     pub fn style_for(&self, role: Role) -> Style {
         let palette = &self.palette;
 
@@ -2157,7 +2101,6 @@ impl Theme {
 
     /// Returns information about the theme suitable for display
     #[must_use]
-    #[profiled]
     pub fn info(&self) -> String {
         format!(
             "Theme: {}\nType: {}\nFile: {}\nDescription: {}\nBackground: {} = ({}, {}, {})\nMinimum Color Support: {:?}\nBackground Luminance: {:?}",
@@ -2174,13 +2117,11 @@ impl Theme {
 
     /// Returns a list of all available built-in themes
     #[must_use]
-    #[profiled]
     pub fn list_builtin() -> Vec<String> {
         THEME_INDEX.keys().map(ToString::to_string).collect()
     }
 
     #[must_use]
-    #[profiled]
     fn style_for_role(&self, role: Role) -> Style {
         self.palette.style_for_role(role)
     }
@@ -2191,7 +2132,6 @@ impl Theme {
     ///
     /// Panics if the color index cannot be converted to a u8.
     #[must_use]
-    #[profiled]
     pub fn convert_rgb_to_ansi(r: u8, g: u8, b: u8) -> u8 {
         // Basic ANSI colors:
         // 0: Black   (0,0,0)
@@ -2248,7 +2188,6 @@ impl Theme {
     ///
     /// # Arguments
     /// * `target` - The target color support level to convert to
-    #[profiled]
     pub fn convert_to_color_support(&mut self, target: ColorSupport) {
         match target {
             ColorSupport::TrueColor => (), // No conversion needed
@@ -2258,7 +2197,6 @@ impl Theme {
         }
     }
 
-    #[profiled]
     fn convert_to_256(&mut self) {
         // Convert each color in the palette
         for style in self.palette.iter_mut() {
@@ -2274,7 +2212,6 @@ impl Theme {
         }
         self.min_color_support = ColorSupport::Color256;
     }
-    #[profiled]
     fn convert_to_basic(&mut self) {
         // Convert each color in the palette
         for style in self.palette.iter_mut() {
@@ -2312,7 +2249,6 @@ impl Theme {
         self.min_color_support = ColorSupport::Basic;
     }
 
-    #[profiled]
     fn convert_to_none(&mut self) {
         // Convert each color in the palette
         for style in self.palette.iter_mut() {
@@ -2326,7 +2262,6 @@ impl Theme {
     }
 }
 
-#[profiled]
 fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     if index < 16 {
         // Standard ANSI colors
@@ -2365,7 +2300,6 @@ fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     (r, g, b)
 }
 
-#[profiled]
 fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
     let name = if term_bg_luma == TermBgLuma::Light {
         "basic_light"
@@ -2384,7 +2318,6 @@ fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
 
 #[allow(clippy::missing_const_for_fn)]
 #[cfg(feature = "config")]
-#[profiled]
 fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.preferred_light,
@@ -2401,7 +2334,6 @@ fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &V
 
 #[allow(clippy::missing_const_for_fn)]
 #[cfg(feature = "config")]
-#[profiled]
 fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Vec<String> {
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.fallback_light,
@@ -2455,7 +2387,6 @@ fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &crate::Config) -> &Ve
 #[allow(clippy::items_after_statements)]
 // #[cfg(feature = "color_detect")]
 #[must_use]
-#[profiled]
 fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
     let dr = (f32::from(c1.0) - f32::from(c2.0)).powi(2);
     let dg = (f32::from(c1.1) - f32::from(c2.1)).powi(2);
@@ -2469,7 +2400,6 @@ fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
 ///
 /// This function will return an error if the input string is not a valid hex color.
 // #[cfg(feature = "color_detect")]
-#[profiled]
 fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
@@ -2488,7 +2418,6 @@ fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
 }
 
 // Helper to check a single style
-#[profiled]
 fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
     style.foreground.as_ref().map_or_else(
         || Ok(()),
@@ -2575,20 +2504,6 @@ macro_rules! cvprtln {
     }};
 }
 
-// #[allow(dead_code)]
-// fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8), is_system: bool) -> u32 {
-//     let base_distance = base_distance(c1, c2);
-
-//     // Give a slight preference to system colors when they're close matches
-//     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-//     if is_system {
-//         (f64::from(base_distance) * 0.9) as u32
-//     } else {
-//         base_distance
-//     }
-// }
-
-#[profiled]
 fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
     let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;
     let dg = f64::from(i32::from(c1.1) - i32::from(c2.1)) * 0.59;
@@ -2628,7 +2543,6 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
 /// assert!(gray_index >= 232 && gray_index <= 255);
 /// ```
 #[must_use]
-#[profiled]
 pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
@@ -2651,7 +2565,6 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     }
 
     // Find closest color in the 6x6x6 color cube (16-231)
-    profile!(find_closest_section, time);
     let find_closest = |v: u8| {
         u8::try_from(
             STEPS
@@ -2662,7 +2575,6 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
         )
         .map_or(0, |v| v)
     };
-    end!(find_closest_section);
 
     let r_idx = find_closest(r);
     let g_idx = find_closest(g);
@@ -2678,7 +2590,6 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     16 + (36 * r_idx) + (6 * g_idx) + b_idx
 }
 
-#[profiled]
 fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
     // Use weighted Euclidean distance for better perceptual matching
 
@@ -2724,7 +2635,6 @@ fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
 /// let gray = get_rgb(244); // Mid-gray
 /// assert_eq!(gray, (128, 128, 128));
 /// ```
-#[profiled]
 pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
     match color {
@@ -2745,7 +2655,6 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
 
 // Usage:
 #[allow(dead_code)]
-#[enable_profiling]
 fn main() -> ThagResult<()> {
     // Load built-in theme
     let _dracula = Theme::get_builtin("dracula")?;
@@ -2793,7 +2702,6 @@ const BASIC_COLORS: [(u8, u8, u8); 16] = [
 /// display_theme_roles(&theme);
 /// # Ok::<(), thag_rs::ThagError>(())
 /// ```
-#[profiled]
 pub fn display_theme_roles(theme: &Theme) {
     // Role descriptions
     const ROLE_DOCS: &[(&str, &str)] = &[
@@ -2883,7 +2791,6 @@ pub fn display_theme_roles(theme: &Theme) {
 /// display_theme_details(&theme);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
-#[profiled]
 pub fn display_theme_details(theme: &Theme) {
     let theme_bgs = &theme.bg_rgbs;
     let theme_bgs = if theme_bgs.is_empty() {
@@ -2972,7 +2879,6 @@ pub fn display_theme_details(theme: &Theme) {
 /// use thag_rs::styling::display_terminal_attributes;
 /// display_terminal_attributes();
 /// ```
-#[profiled]
 pub fn display_terminal_attributes() {
     let term_attrs = TermAttributes::get_or_init();
 
@@ -3015,7 +2921,6 @@ pub fn display_terminal_attributes() {
     println!("\t{}\n", "─".repeat(flower_box_len));
 }
 
-#[profiled]
 fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
 }
@@ -3403,7 +3308,6 @@ mod tests {
     static BLACK_BG: &(u8, u8, u8) = &(0, 0, 0);
 
     impl TermAttributes {
-        #[profiled]
         fn with_mock_theme(color_support: ColorSupport, term_bg_luma: TermBgLuma) -> Self {
             MOCK_THEME_DETECTION.store(true, Ordering::SeqCst);
             let theme_name = match (color_support, term_bg_luma) {

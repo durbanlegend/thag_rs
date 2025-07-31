@@ -1,6 +1,5 @@
 use crate::shared::disentangle;
-use crate::shared::TermBgLuma;
-use crate::ColorSupport;
+use crate::{ColorSupport, TermBgLuma};
 use std::borrow::Cow;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;

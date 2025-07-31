@@ -19,7 +19,7 @@
    /// This function creates an inquire RenderConfig with basic terminal-aware theming.
     ///
     /// Note: For full theme integration (respects Black Metal, Base16, etc.),
-    /// tools should use `thag_rs::styling::create_theme_aware_inquire_config()` directly
+    /// tools should use `thag_rs::styling::themed_inquire_config()` directly
     /// instead of depending on thag_profiler (to avoid circular dependencies).
 
 Fix most recent git commit message:

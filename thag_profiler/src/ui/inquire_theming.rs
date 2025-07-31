@@ -275,7 +275,7 @@ mod themed {
     pub fn get_render_config_with_strategy(strategy: ThemingStrategy) -> RenderConfig<'static> {
         match strategy {
             ThemingStrategy::FullThagRs => {
-                // Note: Full thag_rs integration should use thag_rs::styling::create_theme_aware_inquire_config()
+                // Note: Full thag_rs integration should use thag_rs::styling::themed_inquire_config()
                 // This strategy is for tools that have their own theme integration
                 create_lightweight_render_config()
             }
@@ -292,7 +292,7 @@ mod themed {
     ///
     /// This function creates an inquire `RenderConfig` with basic terminal-aware theming.
     /// For full theme integration (respects Black Metal, Base16, etc.),
-    /// use `thag_rs::styling::create_theme_aware_inquire_config()` instead.
+    /// use `thag_rs::styling::themed_inquire_config()` instead.
     ///
     /// # Returns
     /// A configured `RenderConfig` with improved color contrast for basic terminals
@@ -347,9 +347,11 @@ mod themed {
     pub const fn describe_strategy(strategy: ThemingStrategy) -> &'static str {
         match strategy {
             ThemingStrategy::FullThagRs => {
-                "Use with external theme integration (thag_rs::styling::create_theme_aware_inquire_config)"
+                "Use with external theme integration (thag_rs::styling::themed_inquire_config)"
             }
-            ThemingStrategy::Lightweight => "Self-contained terminal-aware colors with improved contrast",
+            ThemingStrategy::Lightweight => {
+                "Self-contained terminal-aware colors with improved contrast"
+            }
             ThemingStrategy::Default => "Default inquire colors (no theming)",
             ThemingStrategy::Auto => "Lightweight theming with automatic terminal detection",
         }

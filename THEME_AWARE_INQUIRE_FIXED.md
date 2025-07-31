@@ -28,7 +28,7 @@ selected: theme.style_for(Role::Emphasis).to_inquire_color(),
 ```rust
 // In thag_rs/src/styling.rs
 #[cfg(all(feature = "color_detect", feature = "tools"))]
-pub fn create_theme_aware_inquire_config() -> inquire::ui::RenderConfig<'static>
+pub fn themed_inquire_config() -> inquire::ui::RenderConfig<'static>
 ```
 
 This function:
@@ -53,13 +53,13 @@ This function:
 fn get_render_config() -> RenderConfig<'static> { /* ... */ }
 
 // New: Simple one-line call that respects theme
-inquire::set_global_render_config(thag_rs::styling::create_theme_aware_inquire_config());
+inquire::set_global_render_config(thag_rs::styling::themed_inquire_config());
 ```
 
 ## 🎨 Now Works With ALL Themes
 
 ✅ **Black Metal (Bathory) Base16** - Uses theme's actual colors
-✅ **Dracula** - Uses theme's purple/pink palette  
+✅ **Dracula** - Uses theme's purple/pink palette
 ✅ **Solarized** - Uses theme's distinctive colors
 ✅ **Gruvbox** - Uses theme's earth tones
 ✅ **Any custom theme** - Automatically respects the color scheme
@@ -86,7 +86,7 @@ inquire::set_global_render_config(thag_rs::styling::create_theme_aware_inquire_c
 ### For thag_demo (Full Theme Integration)
 ```rust
 // Simple one-line setup - respects Black Metal, Base16, etc.
-inquire::set_global_render_config(thag_rs::styling::create_theme_aware_inquire_config());
+inquire::set_global_render_config(thag_rs::styling::themed_inquire_config());
 
 // Now all inquire prompts use your theme's actual colors
 let selection = Select::new("Choose:", options).prompt()?;
@@ -134,7 +134,7 @@ inquire_theming::apply_external_theme_colors(
 ## 📊 Code Changes Summary
 
 ### Files Modified
-1. **thag_rs/src/styling.rs** - Added `create_theme_aware_inquire_config()`
+1. **thag_rs/src/styling.rs** - Added `themed_inquire_config()`
 2. **thag_demo/src/main.rs** - Simplified to use theme-aware function
 3. **thag_demo/Cargo.toml** - Added `tools` feature
 4. **thag_profiler/src/ui/inquire_theming.rs** - Enhanced with theme provider system
@@ -146,11 +146,11 @@ inquire_theming::apply_external_theme_colors(
 
 ## 🎉 Result
 
-**Perfect theme integration!** 
+**Perfect theme integration!**
 
 When you run thag_demo with Black Metal (Bathory) Base16:
 - Selected options use your theme's emphasis color (not generic green)
-- Help messages use your theme's info color (not generic blue)  
+- Help messages use your theme's info color (not generic blue)
 - Error messages use your theme's error color
 - Everything matches your beautiful theme perfectly
 

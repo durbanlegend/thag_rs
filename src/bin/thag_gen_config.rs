@@ -244,7 +244,7 @@ fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
 fn extract_use_path(use_item: &ItemUse) -> Option<(String, String)> {
     fn process_use_tree(tree: &UseTree, base_path: &str) -> Vec<(String, String)> {
         match tree {
-            // Simple path like "use crate::logging::Verbosity"
+            // Simple path like "use crate::Verbosity"
             UseTree::Path(use_path) => {
                 let new_base = if base_path.is_empty() {
                     use_path.ident.to_string()
@@ -254,12 +254,12 @@ fn extract_use_path(use_item: &ItemUse) -> Option<(String, String)> {
                 process_use_tree(&use_path.tree, &new_base)
             }
 
-            // Named item like "use crate::logging::Verbosity as VerbosityLevel"
+            // Named item like "use crate::Verbosity as VerbosityLevel"
             UseTree::Rename(rename) => {
                 vec![(rename.rename.to_string(), base_path.to_string())]
             }
 
-            // Simple name like the "Verbosity" in "use crate::logging::Verbosity"
+            // Simple name like the "Verbosity" in "use crate::Verbosity"
             UseTree::Name(name) => {
                 vec![(name.ident.to_string(), base_path.to_string())]
             }
@@ -1045,7 +1045,7 @@ mod tests {
     #[test]
     fn test_simple_use() {
         let use_item: ItemUse = parse_quote! {
-            use crate::logging::Verbosity;
+            use crate::Verbosity;
         };
         let result = extract_use_path(&use_item);
         assert_eq!(
@@ -1057,14 +1057,14 @@ mod tests {
     #[test]
     fn test_renamed_use() {
         let use_item: ItemUse = parse_quote! {
-            use crate::logging::Verbosity as VerbosityLevel;
+            use crate::Verbosity as VerbosityLevel;
         };
         let result = extract_use_path(&use_item);
         assert_eq!(
             result,
             Some((
                 "VerbosityLevel".to_string(),
-                "crate::logging::Verbosity".to_string()
+                "crate::Verbosity".to_string()
             ))
         );
     }

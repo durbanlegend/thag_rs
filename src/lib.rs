@@ -148,7 +148,7 @@ pub use {
         debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, get_verbosity,
         set_global_verbosity, thousands, ColorSupport, TermBgLuma, Verbosity, V,
     },
-    styling::{Color, Lvl, Role, Style},
+    styling::{Color, Lvl, Role, Style, Theme},
 };
 
 // pub use thag_profiler::*; // Re-export everything from profiler

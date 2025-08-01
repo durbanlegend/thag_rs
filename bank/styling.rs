@@ -22,6 +22,7 @@ tools = ["thag_rs/tools"]
 use log;
 use phf;
 use serde::Deserialize;
+use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -2457,7 +2458,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 /// # Examples
 /// ```
 /// use thag_rs::cvprtln;
-/// use thag_rs::logging::Verbosity;
+/// use thag_rs::Verbosity;
 /// use thag_rs::styling::Role;
 /// let details = "todos los detalles";
 /// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
@@ -2728,9 +2729,10 @@ pub fn main() -> ThagResult<()> {
     print_header("This terminal's color attributes:\n");
     vprtln!(
         V::N,
-        "Color support={color_support}, theme={}: {}\n",
-        theme.name,
-        theme.description
+        "Color support={}, theme={}: {}\n",
+        color_support.effect().bold().underline().dim(),
+        theme.name.effect().italic(),
+        theme.description.effect().reversed()
     );
 
     Ok(())
@@ -2994,6 +2996,125 @@ pub fn display_terminal_attributes() {
 
 fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
+}
+
+// ANSI text styles
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+enum Effect {
+    Bold,
+    Dim,
+    Italic,
+    Reversed,
+    Underline,
+}
+
+struct Styled<T> {
+    text: T,
+    effects: Vec<Effect>,
+}
+
+// trait AnsiStyleExt<'a> {
+//     fn effect(self) -> Styled<'a>;
+// }
+
+// impl<'a> AnsiStyleExt<'a> for &'a str {
+//     fn effect(self) -> Styled<'a> {
+//         Styled {
+//             text: self,
+//             effects: Vec::new(),
+//         }
+//     }
+// }
+
+// impl<'a> AnsiStyleExt<'a> for &'a String {
+//     fn effect(self) -> Styled<'a> {
+//         self.as_str().effect()
+//     }
+// }
+
+trait AnsiStyleExt {
+    fn effect(&self) -> Styled<String>;
+}
+
+impl<T> AnsiStyleExt for T
+where
+    T: fmt::Display,
+{
+    fn effect(&self) -> Styled<String> {
+        Styled {
+            text: format!("{}", self),
+            effects: Vec::new(),
+        }
+    }
+}
+
+impl<T> Styled<T> {
+    fn bold(mut self) -> Self {
+        self.effects.push(Effect::Bold);
+        self
+    }
+
+    fn dim(mut self) -> Self {
+        self.effects.push(Effect::Dim);
+        self
+    }
+
+    fn underline(mut self) -> Self {
+        self.effects.push(Effect::Underline);
+        self
+    }
+
+    fn italic(mut self) -> Self {
+        self.effects.push(Effect::Italic);
+        self
+    }
+
+    fn reversed(mut self) -> Self {
+        self.effects.push(Effect::Reversed);
+        self
+    }
+
+    fn to_ansi_code(&self) -> String {
+        let mut codes = Vec::new();
+
+        for style in &self.effects {
+            codes.push(match style {
+                Effect::Bold => "1",
+                Effect::Dim => "2",
+                Effect::Italic => "3",
+                Effect::Reversed => "7",
+                Effect::Underline => "4",
+            });
+        }
+
+        format!("\x1b[{}m", codes.join(";"))
+    }
+}
+
+// impl fmt::Display for Styled<'_> {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
+//     }
+// }
+
+impl fmt::Display for Styled<String> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
+    }
+}
+
+/// A line print macro that prints a styled and coloured message.
+///
+/// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+#[macro_export]
+macro_rules! cprtln {
+    ($style:expr, $($arg:tt)*) => {{
+        let content = format!("{}", format_args!($($arg)*));
+        let painted = $style.paint(content);
+        let verbosity = $crate::shared::get_verbosity();
+        $crate::vprtln!(verbosity, "{painted}");
+    }};
 }
 
 #[cfg(test)]

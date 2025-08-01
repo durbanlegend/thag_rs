@@ -7,8 +7,8 @@ color_detect = ["thag_rs/color_detect"]
 default = ["color_detect"]
 */
 use thag_rs::cprtln;
-use thag_rs::logging::Verbosity;
 use thag_rs::styling::Role;
+use thag_rs::Verbosity;
 
 fn main() {
     let details = "todos los detalles";

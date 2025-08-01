@@ -1208,28 +1208,6 @@ impl TermAttributes {
         INSTANCE.get().unwrap()
     }
 
-    // /// Returns the appropriate style for the given message role
-    // ///
-    // /// The style is determined by the current color support level and theme.
-    // ///
-    // /// # Examples
-    // ///
-    // /// ```
-    // /// #![allow(deprecated)]
-    // /// use thag_rs::styling::{AnsiCode, Role, TermAttributes};
-    // ///
-    // /// let attrs = TermAttributes::get_or_init();
-    // /// let error_style = attrs.style_for_level(Role::Error);
-    // /// println!("{}", error_style.paint("This is an error message"));
-    // /// ```
-    // #[must_use]
-    // #[deprecated = "Use `Style::for_role`"]
-    // #[allow(unused_variables)]
-    // #[profiled]
-    // pub fn style_for_role(&self, role: Role) -> Style {
-    //     Style::for_role(role)
-    // }
-
     /// Updates the current theme to the specified built-in theme.
     ///
     /// # Arguments
@@ -1492,7 +1470,7 @@ impl ThemeDefinition {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::styling::{Role, Theme, ColorSupport};
+/// use thag_rs::{Role, Theme, ColorSupport};
 ///
 /// // Load a built-in theme
 /// let theme = Theme::get_builtin("dracula")?;
@@ -1897,8 +1875,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::{TermBgLuma, ThagError};
-    /// use thag_rs::styling::{ColorSupport, Theme};
+    /// use thag_rs::{ColorSupport, TermBgLuma, ThagError, Theme};
     /// let theme = Theme::get_builtin("dracula")?;
     /// theme.validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)?;
     /// # Ok::<(), ThagError>(())
@@ -2004,8 +1981,7 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::{TermBgLuma, ThagError};
-    /// use thag_rs::styling::{ColorSupport, Theme};
+    /// use thag_rs::{ColorSupport, TermBgLuma, ThagError, Theme};
     /// let theme = Theme::load(
     ///     Path::new("themes/built_in/basic_light.toml"),
     ///     ColorSupport::Basic,
@@ -2434,7 +2410,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 /// # Examples
 /// ```
 /// use thag_rs::cvprtln;
-/// use thag_rs::logging::Verbosity;
+/// use thag_rs::Verbosity;
 /// use thag_rs::styling::Role;
 /// let details = "todos los detalles";
 /// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
@@ -2870,6 +2846,19 @@ pub fn display_terminal_attributes() {
 
 fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
+}
+
+/// A line print macro that prints a styled and coloured message.
+///
+/// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+#[macro_export]
+macro_rules! cprtln {
+    ($style:expr, $($arg:tt)*) => {{
+        let content = format!("{}", format_args!($($arg)*));
+        let painted = $style.paint(content);
+        let verbosity = $crate::shared::get_verbosity();
+        $crate::vprtln!(verbosity, "{painted}");
+    }};
 }
 
 #[cfg(test)]

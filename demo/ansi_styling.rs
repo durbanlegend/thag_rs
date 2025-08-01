@@ -107,11 +107,39 @@ impl<'a> Styled<'a> {
 
         format!("\x1b[{}m", codes.join(";"))
     }
+
+    fn to_ansi_reset_codes(&self) -> String {
+        let mut codes = Vec::new();
+
+        for style in &self.styles {
+            codes.push(match style {
+                Style::Bold => "22",
+                Style::Underline => "24",
+                Style::Italic => "23",
+                Style::Reversed => "27",
+            });
+        }
+
+        if self.fg.is_some() {
+            codes.push("39"); // Reset foreground
+        }
+
+        format!("\x1b[{}m", codes.join(";"))
+    }
 }
 
 impl fmt::Display for Styled<'_> {
+    // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    //     write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
+    // }
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
+        write!(
+            f,
+            "{}{}{}",
+            self.to_ansi_code(),
+            self.text,
+            self.to_ansi_reset_codes()
+        )
     }
 }
 

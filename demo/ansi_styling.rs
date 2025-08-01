@@ -3,8 +3,12 @@
 ///
 /// E.g. `thag demo/ansi_styling.rs`
 //# Purpose: Demonstrate styling text via traits.
-//# Categories: ansi, color, demo, learning, reference, styling, technique, terminal, trait_implementation, xterm
+//# Categories: ansi, color, demo, dsl, learning, reference, styling, technique, terminal, trait_implementation, xterm
 use std::fmt;
+use std::fmt::Display;
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
+use thag_demo_proc_macros::styled;
 
 // ANSI color codes
 #[derive(Clone, Copy)]
@@ -143,11 +147,34 @@ impl fmt::Display for Styled<'_> {
     }
 }
 
+// impl<T: Display> Styled<'_> {
+//     pub fn embed(&self, inner: impl Display) -> String {
+//         format!(
+//             "{}{}{}",
+//             inner,
+//             self.to_ansi_reset_codes(),
+//             self.to_ansi_code()
+//         )
+//     }
+// }
+impl<'a> Styled<'a> {
+    pub fn embed(&self, inner: impl Display) -> String {
+        format!(
+            "{}{}{}",
+            self.to_ansi_code(),
+            inner,
+            // self.to_ansi_reset_codes()
+            ""
+        )
+    }
+}
+
 fn main() {
     println!("{}", "Bold Red".style().bold().fg(Color::Red));
     println!(
         "{}",
-        "Underlined Green".style().underline().fg(Color::Green)
+        // "Underlined Green".style().underline().fg(Color::Green)
+        styled!(fg=Green, underline, => "Underlined Green")
     );
     println!("{}", "Italic Blue".style().italic().fg(Color::Blue));
     println!(
@@ -158,5 +185,34 @@ fn main() {
             .underline()
             .fg(Color::Magenta)
     );
+    println!(
+        "{}",
+        styled!(
+            italic,
+            underline,
+            fg = Yellow,
+            reversed,
+                => "Italic, Underlined, Yellow, Reversed"
+        )
+    );
     println!("{}", "Normal text".style());
+
+    let name = "Error";
+    println!("{}", styled!(bold, fg=Red, => name));
+    println!(
+        "{}",
+        styled!(fg=Blue, underline, => format!("User: {}", "alice"))
+    );
+
+    println!(
+        "{}{}{}",
+        styled!(fg=Red, => "outer "),
+        styled!(fg=Green, => "inner"),
+        " still red (not 😕)"
+    );
+
+    let outer = styled!(fg=Red, => "outer ");
+    let inner = styled!(fg=Green, => "inner");
+    // Doesn't work either - to revert to the previous colour we must track and reinstate it or split the message printing.
+    println!("{}{} world", outer, outer.embed(inner));
 }

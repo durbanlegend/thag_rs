@@ -267,9 +267,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_
 
 **Purpose:** Demonstrate styling text via traits.
 
+**Crates:** `thag_demo_proc_macros`
+
 **Type:** Program
 
-**Categories:** ansi, color, demo, learning, reference, styling, technique, terminal, trait_implementation, xterm
+**Categories:** ansi, color, demo, dsl, learning, reference, styling, technique, terminal, trait_implementation, xterm
 
 **Link:** [ansi_styling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling.rs)
 

@@ -493,7 +493,7 @@ For more details, see the comments in demo scripts or the thag documentation.",
         // Style::for_role(Role::EMPH)
         //     .bold()
         //     .paint("export THAG_DEV_PATH=$PWD")
-        "\x1b[1mexport THAG_DEV_PATH=$PWD\x1b[0m"
+        "\x1b[1mexport THAG_DEV_PATH=$PWD\x1b[22m"
     );
 }
 

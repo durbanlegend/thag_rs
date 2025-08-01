@@ -33,6 +33,11 @@ use thag_proc_macros::{preload_themes, PaletteMethods};
 use thag_rs::errors::ThemeError;
 use thag_rs::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagError, ThagResult, V};
 
+// TODO temp location
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
+// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
+use thag_demo_proc_macros::styled;
+
 #[cfg(feature = "color_detect")]
 use thag_rs::terminal::{self, get_term_bg_rgb, is_light_color};
 
@@ -2730,9 +2735,22 @@ pub fn main() -> ThagResult<()> {
     vprtln!(
         V::N,
         "Color support={}, theme={}: {}\n",
-        color_support.effect().bold().underline().dim(),
-        theme.name.effect().italic(),
-        theme.description.effect().reversed()
+        color_support.style().bold().underline().dim(),
+        theme.name.style().italic(),
+        theme.description.style().reversed()
+    );
+
+    let name = "Error";
+    println!("{}", styled!(bold, => name));
+
+    cvprtln!(
+        Role::Heading2,
+        V::N,
+        "Color support={}, theme={}: {}\nMore text to check if styling disrupted",
+        // color_support.style().bold().underline().dim(),
+        styled!(italic, underline, => name),
+        theme.name.style().italic(),
+        theme.description.style().reversed()
     );
 
     Ok(())
@@ -3015,11 +3033,11 @@ struct Styled<T> {
 }
 
 // trait AnsiStyleExt<'a> {
-//     fn effect(self) -> Styled<'a>;
+//     fn style(self) -> Styled<'a>;
 // }
 
 // impl<'a> AnsiStyleExt<'a> for &'a str {
-//     fn effect(self) -> Styled<'a> {
+//     fn style(self) -> Styled<'a> {
 //         Styled {
 //             text: self,
 //             effects: Vec::new(),
@@ -3028,20 +3046,20 @@ struct Styled<T> {
 // }
 
 // impl<'a> AnsiStyleExt<'a> for &'a String {
-//     fn effect(self) -> Styled<'a> {
-//         self.as_str().effect()
+//     fn style(self) -> Styled<'a> {
+//         self.as_str().style()
 //     }
 // }
 
 trait AnsiStyleExt {
-    fn effect(&self) -> Styled<String>;
+    fn style(&self) -> Styled<String>;
 }
 
 impl<T> AnsiStyleExt for T
 where
     T: fmt::Display,
 {
-    fn effect(&self) -> Styled<String> {
+    fn style(&self) -> Styled<String> {
         Styled {
             text: format!("{}", self),
             effects: Vec::new(),
@@ -3090,6 +3108,25 @@ impl<T> Styled<T> {
 
         format!("\x1b[{}m", codes.join(";"))
     }
+
+    fn to_ansi_reset_codes(&self) -> String {
+        let mut codes = Vec::new();
+
+        for style in &self.effects {
+            codes.push(match style {
+                Effect::Bold | Effect::Dim => "22",
+                Effect::Underline => "24",
+                Effect::Italic => "23",
+                Effect::Reversed => "27",
+            });
+        }
+
+        // if self.fg.is_some() {
+        //     codes.push("39"); // Reset foreground
+        // }
+
+        format!("\x1b[{}m", codes.join(";"))
+    }
 }
 
 // impl fmt::Display for Styled<'_> {
@@ -3098,9 +3135,21 @@ impl<T> Styled<T> {
 //     }
 // }
 
+// impl fmt::Display for Styled<String> {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
+//     }
+// }
+
 impl fmt::Display for Styled<String> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
+        write!(
+            f,
+            "{}{}{}",
+            self.to_ansi_code(),
+            self.text,
+            self.to_ansi_reset_codes()
+        )
     }
 }
 

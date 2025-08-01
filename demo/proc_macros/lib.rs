@@ -524,6 +524,85 @@ pub fn generate_tests(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "generate_tests", &input, generate_tests_impl)
 }
 
+struct StyleArgs {
+    styles: Vec<StyleEntry>,
+    expr: Expr,
+}
+
+enum StyleEntry {
+    Flag(Ident),            // e.g. bold
+    KeyValue(Ident, Ident), // e.g. fg = Red
+}
+
+impl Parse for StyleArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut styles = Vec::new();
+
+        while !input.peek(Token![=>]) {
+            if input.peek(Ident) && input.peek2(Token![=]) {
+                let key: Ident = input.parse()?;
+                input.parse::<Token![=]>()?;
+                let val: Ident = input.parse()?;
+                styles.push(StyleEntry::KeyValue(key, val));
+            } else if input.peek(Ident) {
+                let flag: Ident = input.parse()?;
+                styles.push(StyleEntry::Flag(flag));
+            }
+
+            if input.peek(Token![,]) {
+                input.parse::<Token![,]>()?;
+            }
+        }
+
+        input.parse::<Token![=>]>()?;
+        let expr: Expr = input.parse()?;
+
+        Ok(StyleArgs { styles, expr })
+    }
+}
+
+// #[proc_macro]
+// pub fn styled(input: TokenStream) -> TokenStream {
+//     let StyleArgs { styles, expr } = parse_macro_input!(input as StyleArgs);
+
+//     let mut expr_tokens = quote! { (#expr).style() };
+
+//     for style in styles {
+//         match style {
+//             StyleEntry::Flag(flag) => {
+//                 expr_tokens = quote! { #expr_tokens.#flag() };
+//             }
+//             StyleEntry::KeyValue(key, val) => {
+//                 expr_tokens = quote! { #expr_tokens.#key(Color::#val) };
+//             }
+//         }
+//     }
+
+//     TokenStream::from(quote! { #expr_tokens })
+// }
+
+#[proc_macro]
+pub fn styled(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(true, "styled", &input, |input| {
+        let StyleArgs { styles, expr } = parse_macro_input!(input as StyleArgs);
+
+        let mut expr_tokens = quote! { (#expr).style() };
+
+        for style in styles {
+            match style {
+                StyleEntry::Flag(flag) => {
+                    expr_tokens = quote! { #expr_tokens.#flag() };
+                }
+                StyleEntry::KeyValue(key, val) => {
+                    expr_tokens = quote! { #expr_tokens.#key(Color::#val) };
+                }
+            }
+        }
+
+        TokenStream::from(quote! { #expr_tokens })
+    })
+}
+
 /// Conditionally expands proc macros for debugging.
 ///
 /// Utility function for displaying generated code during development.

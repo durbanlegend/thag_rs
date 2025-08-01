@@ -14,23 +14,8 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 //# Purpose: Test the proof of concept and potentially the implementation.
 use thag_proc_macros::category_enum;
 
-macro_rules! lazy_static_var {
-    ($type:ty, $init_fn:expr, deref) => {{
-        use std::sync::OnceLock;
-        static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
-        *GENERIC_LAZY.get_or_init(|| $init_fn)
-    }};
-    ($type:ty, $init_fn:expr) => {{
-        use std::sync::OnceLock;
-        static GENERIC_LAZY: OnceLock<$type> = OnceLock::new();
-        GENERIC_LAZY.get_or_init(|| $init_fn)
-    }};
-}
-
 fn main() {
-    category_enum! {
-        #[expand_macro]
-    };
+    category_enum! {};
 
     let variant = Category::from_str("learning");
     println!("variant={variant:#?}");

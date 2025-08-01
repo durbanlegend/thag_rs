@@ -41,8 +41,8 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    clog, clog_error, cprtln, cvprtln, lazy_static_var, logging, Color, ColorSupport, Role,
-    TermBgLuma, ThagError, ThagResult, Verbosity, V,
+    cprtln, cvprtln, lazy_static_var, logging, Color, ColorSupport, Role, Style, TermBgLuma,
+    ThagError, ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
 
@@ -619,7 +619,7 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
         Err(e) => {
-            clog_error!("Failed to load config: {e}");
+            cprtln!(Style::for_role(Role::Error), "Failed to load config: {e}");
             // sleep(Duration::from_secs(1));
             // println!("Failed to load config: {e}");
             std::process::exit(1);
@@ -662,8 +662,8 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     debug!("config_path={config_path:?}");
 
     if !config_path.exists() {
-        clog!(
-            Role::Warning,
+        cprtln!(
+            Style::for_role(Role::Warning),
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
         );
@@ -803,9 +803,7 @@ mod tests {
         sync::{Arc, OnceLock},
     };
     use tempfile::TempDir;
-    use thag_rs::{
-        cvprtln, debug_log, logging::Verbosity, ColorSupport, Role, TermBgLuma, ThagResult, V,
-    };
+    use thag_rs::{cvprtln, debug_log, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V};
 
     static LOGGER: OnceLock<()> = OnceLock::new();
 

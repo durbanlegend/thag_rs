@@ -129,9 +129,13 @@ impl OutputManager {
     /// Output a message if it passes the verbosity filter.
     #[profiled]
     pub fn prtln(&self, verbosity: Verbosity, message: &str) {
-        eprintln!("verbosity={verbosity}, self.verbosity={}", self.verbosity);
+        // eprintln!(
+        //     "verbosity={verbosity}, self.verbosity={}, printing={}, message={message}",
+        //     self.verbosity,
+        //     verbosity as u8 <= self.verbosity as u8
+        // );
         if verbosity as u8 <= self.verbosity as u8 {
-            println!("{}", message);
+            println!("{message}");
         }
     }
 

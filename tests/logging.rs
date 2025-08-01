@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
     use std::{
         env,
         io::Write,
@@ -56,7 +56,7 @@ mod tests {
     }
 
     // A utility function to reset the global logger for testing.
-    fn reset_global_logger() {
+    fn reset_global_output_manager() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
             drop(OUTPUT_MANAGER.lock().unwrap());
@@ -88,7 +88,7 @@ thag_rs = {{ path = {thag_rs_path:#?}, features = ["core", "simplelog"]}}
 */
 
 use thag_rs::vprtln;
-use thag_rs::logging::Verbosity;
+use thag_rs::Verbosity;
 
 fn main() {{
     vprtln!(Verbosity::Quieter, "Quieter message");
@@ -122,7 +122,7 @@ thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 
 use thag_rs::vprtln;
-use thag_rs::logging::Verbosity;
+use thag_rs::Verbosity;
 
 fn main() {{
     vprtln!(Verbosity::Quieter, "Macro quieter message");
@@ -138,8 +138,11 @@ fn main() {{
         let output = run(input);
         safe_eprintln!("output={output:?}");
 
-        assert!(String::from_utf8_lossy(&output.stdout)
-            .ends_with("Macro quieter message\nMacro quiet message\nMacro normal message\n"));
+        let result = String::from_utf8_lossy(&output.stdout);
+        safe_eprintln!("result={result}");
+        assert!(
+            result.ends_with("Macro quieter message\nMacro quiet message\nMacro normal message\n")
+        );
     }
 
     #[test]
@@ -157,7 +160,7 @@ thag_rs = {{ path = {thag_rs_path:#?}, default-features = false, features = ["co
 */
 
 use thag_rs::vprtln;
-use thag_rs::logging::Verbosity;
+use thag_rs::Verbosity;
 
 fn main() {{
     vprtln!(Verbosity::Quieter, "Macro quieter message");
@@ -198,7 +201,7 @@ fn main() {{
 
         let output = child.wait_with_output().expect("Failed to read stdout");
 
-        reset_global_logger();
+        reset_global_output_manager();
         set_global_verbosity(Verbosity::Normal).expect("Error setting global verbosity");
         output
     }

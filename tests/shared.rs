@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use serial_test::{parallel, serial};
+    use serial_test::parallel;
     use std::sync::Once;
     use thag_rs::shared::escape_path_for_windows;
     use thag_rs::shared::{set_global_verbosity, OutputManager, Verbosity, OUTPUT_MANAGER};
@@ -33,8 +33,8 @@ mod tests {
         }
     }
 
-    // A utility function to reset the global logger for testing.
-    fn reset_global_logger() {
+    // A utility function to reset the global output manager for testing.
+    fn reset_global_output_manager() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
             drop(OUTPUT_MANAGER.lock().unwrap());
@@ -43,23 +43,23 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_logging_logger_new() {
+    fn test_shared_output_manager_new() {
         set_up();
         let output_manager = OutputManager::new(Verbosity::Quiet);
         assert_eq!(output_manager.verbosity, Verbosity::Quiet);
 
-        let logger = OutputManager::new(Verbosity::Normal);
-        assert_eq!(logger.verbosity, Verbosity::Normal);
+        let output_manager = OutputManager::new(Verbosity::Normal);
+        assert_eq!(output_manager.verbosity, Verbosity::Normal);
 
-        let logger = OutputManager::new(Verbosity::Verbose);
-        assert_eq!(logger.verbosity, Verbosity::Verbose);
+        let output_manager = OutputManager::new(Verbosity::Verbose);
+        assert_eq!(output_manager.verbosity, Verbosity::Verbose);
     }
 
     #[test]
     #[parallel]
-    fn test_shared_global_logger() {
+    fn test_shared_global_output_manager() {
         set_up();
-        reset_global_logger();
+        reset_global_output_manager();
 
         set_global_verbosity(Verbosity::Verbose).expect("Error setting global verbosity");
         {
@@ -69,8 +69,8 @@ mod tests {
 
         set_global_verbosity(Verbosity::Quiet).expect("Error setting global verbosity");
         {
-            let logger = OUTPUT_MANAGER.lock().unwrap();
-            assert_eq!(logger.verbosity, Verbosity::Quiet);
+            let output_manager = OUTPUT_MANAGER.lock().unwrap();
+            assert_eq!(output_manager.verbosity, Verbosity::Quiet);
         }
     }
 }

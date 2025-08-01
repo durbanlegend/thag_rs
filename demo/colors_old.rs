@@ -16,7 +16,7 @@ use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
-use thag_rs::{logging::Verbosity, vprtln};
+use thag_rs::{vprtln, Verbosity};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {

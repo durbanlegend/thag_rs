@@ -12,7 +12,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["s
 //# Purpose: Document demo scripts in a demo/README.md as a guide for the user, and the same for tools/ scripts.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
-use inquire;
+use inquire::set_global_render_config;
 use regex;
 use std::{
     collections::HashMap,
@@ -26,7 +26,9 @@ use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     auto_help, code_utils, cvprtln, find_crates, find_metadata,
     help_system::check_help_and_exit,
-    lazy_static_var, re, Role, V,
+    lazy_static_var, re,
+    styling::themed_inquire_config,
+    Role, V,
 };
 
 file_navigator! {}
@@ -323,17 +325,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let help = auto_help!("thag_gen_readme");
     check_help_and_exit(&help);
 
-    let mut navigator = FileNavigator::new();
-    // ... use the navigator to select a directory
-    let scripts_dir = select_directory(&mut navigator, false)?;
+    let args: Vec<String> = env::args().collect();
 
-    let current_dir = env::current_dir().expect("Failed to get current working directory");
+    let scripts_dir: PathBuf = if args.len() > 1 {
+        let input_path = Path::new(&args[1]);
+        if !input_path.exists() {
+            eprintln!(
+                "Error: Input directory does not exist: {}",
+                input_path.display()
+            );
+            std::process::exit(1);
+        }
+        if !input_path.is_dir() {
+            eprintln!(
+                "Error: Input file is not a directory: {}",
+                input_path.display()
+            );
+            std::process::exit(1);
+        }
+        input_path.to_path_buf()
+    } else {
+        set_global_render_config(themed_inquire_config());
 
-    // Convert to a relative path
-    let scripts_dir = pathdiff::diff_paths(&scripts_dir, &current_dir).unwrap_or_else(|| {
-        eprintln!("Could not compute relative path.");
-        std::process::exit(1);
-    });
+        let mut navigator = FileNavigator::new();
+        // ... use the navigator to select a directory
+        let scripts_dir = select_directory(&mut navigator, false)?;
+
+        let current_dir = env::current_dir().expect("Failed to get current working directory");
+
+        // Convert to a relative path
+        let scripts_dir = pathdiff::diff_paths(&scripts_dir, &current_dir).unwrap_or_else(|| {
+            eprintln!("Could not compute relative path.");
+            std::process::exit(1);
+        });
+        scripts_dir
+    };
 
     let output_path = scripts_dir.join("README.md");
     let boilerplate_path = determine_boilerplate_path(&scripts_dir);

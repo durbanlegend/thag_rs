@@ -15,6 +15,7 @@
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
 - [ ]  Consider a tool to show the current theme and switch via OSC?
 - [ ]  Improve filtering algo in thag_demo browse (inquire Scorer).
+- [ ]  Don't check features in crates.io when using local or git version of thag_rs.
 
    /// This function creates an inquire RenderConfig with basic terminal-aware theming.
     ///

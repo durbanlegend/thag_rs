@@ -259,6 +259,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_
 
 ---
 
+### Script: ansi_styling.rs
+
+**Description:**  Demonstrates simple RYO styling of `&str` and `String` types for output via a trait.
+
+ E.g. `thag demo/ansi_styling.rs`
+
+**Purpose:** Demonstrate styling text via traits.
+
+**Type:** Program
+
+**Categories:** ansi, color, demo, learning, reference, styling, technique, terminal, trait_implementation, xterm
+
+**Link:** [ansi_styling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling.rs
+```
+
+---
+
 ### Script: any.rs
 
 **Description:**  Demo determining at run-time whether an expression returns a unit value
@@ -989,7 +1011,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `edit`, `firestorm`, `home`, `mockall`, `serde`, `serde_with`, `thag_rs`, `toml`
+**Crates:** `edit`, `firestorm`, `home`, `log`, `mockall`, `serde`, `serde_with`, `thag_rs`, `toml`
 
 **Type:** Program
 
@@ -1837,7 +1859,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_depen
 
 **Purpose:** Prototype for `thag_get_demo_dir`.
 
-**Crates:** `inquire`, `thag_proc_macros`
+**Crates:** `colored`, `inquire`, `thag_proc_macros`
 
 **Type:** Program
 
@@ -2118,8 +2140,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_p
 
 ### Script: factorial_ibig_product_instr.rs
 
-**Description:**  A version of `demo/factorial_ibig_product.rs` converted to a program and instrumented for profiling using
- `tools/profile_instr.rs`.
+**Description:**  A version of `demo/factorial_ibig_product.rs` instrumented for profiling.
 
  Run this version in the normal way, then run `tools/thag_profile.rs` to analyse the profiling data.
 
@@ -2127,7 +2148,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_p
 
 **Crates:** `ibig`, `thag_profiler`
 
-**Type:** Program
+**Type:** Snippet
 
 **Categories:** profiling
 
@@ -4214,7 +4235,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_compi
 
 ### Script: proc_macro_derive_builder.rs
 
-**Description:**  Demo of the DeriveBuilder proc macro that generates builder pattern implementations.
+**Description:**  Demo of the `DeriveBuilder` proc macro that generates builder pattern implementations.
 
  This macro demonstrates advanced derive macro techniques by generating a complete
  builder pattern implementation including:
@@ -4427,6 +4448,25 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_
  test functions from a list of test data. It reduces boilerplate in test suites
  and shows how macros can automate common development tasks.
 
+ Note that the expansion is not picked up by `cargo expand`, for reasons unknown.
+ To compensate, the proc macro `generate_tests` prints the test source to `stderr`.
+
+ Also, the expansions of the individual `generate_tests!` invocations are visible
+ if the `expand` argument of the call to fn `maybe_expand_proc_macro` from the proc
+ macro function fn `generate_tests` in `lib.rs` iis set to `true`. So if you prefer
+ to use this, you can remove the hard-coded debugging from `generate_tests.rs`.
+
+ To perform the tests and see the results, simply run:
+
+ ```bash
+ thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+
+ ```
+
+ # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+
+ See also: `demo/test_profile_extract_timestamp.rs`
+
 **Purpose:** Demonstrate automatic test case generation from data
 
 **Crates:** `thag_demo_proc_macros`
@@ -4522,7 +4562,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timin
 
 **Type:** Program
 
-**Categories:** Learning, Technique
+**Categories:** learning, technique
 
 **Link:** [process_results.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.rs)
 
@@ -5348,7 +5388,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_mat
 
 **Purpose:** Demonstrate building a `thag`-style REPL.
 
-**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `tui_textarea`
+**Crates:** `clap`, `edit`, `log`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `tui_textarea`
 
 **Type:** Program
 
@@ -6481,6 +6521,51 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_t
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs -- --write --show-hex
+```
+
+---
+
+### Script: test_profile_extract_timestamp.rs
+
+**Description:**  Demo of the generate_tests function-like macro for automatic test generation.
+
+ This macro demonstrates repetitive code generation patterns by creating multiple
+ test functions from a list of test data. It reduces boilerplate in test suites
+ and shows how macros can automate common development tasks.
+
+ Note that the expansion is not picked up by `cargo expand`, for reasons unknown.
+ To compensate, the proc macro `generate_tests` prints the test source to `stderr`.
+
+ Also, the expansions of the individual `generate_tests!` invocations are visible
+ if the `expand` argument of the call to fn `maybe_expand_proc_macro` from the proc
+ macro function fn `generate_tests` in `lib.rs` iis set to `true`. So if you prefer
+ to use this, you can remove the hard-coded debugging from `generate_tests.rs`.
+
+ To perform the tests and see the results, simply run:
+
+ ```bash
+ thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+
+ ```
+
+ # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+
+ See also: `demo/proc_macro_generate_tests.rs`
+
+**Purpose:** Demonstrate automatic test case generation from data
+
+**Crates:** `thag_demo_proc_macros`, `thag_profiler`
+
+**Type:** Snippet
+
+**Categories:** technique, proc_macros, function_like_macros, testing, automation
+
+**Link:** [test_profile_extract_timestamp.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profile_extract_timestamp.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profile_extract_timestamp.rs
 ```
 
 ---

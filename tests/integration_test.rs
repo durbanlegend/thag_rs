@@ -36,7 +36,7 @@ fn test_script_runner_with_dependencies() -> Result<(), Box<dyn std::error::Erro
 thag_rs = {{ path = {thag_rs_path:#?} }}
 */
 use thag_rs::{{vprtln, Color}};
-use thag_rs::logging::Verbosity;
+use thag_rs::Verbosity;
 fn main() {{
     vprtln!(Verbosity::Normal, "Color::light_cyan().bold()={{:#?}}", Color::light_cyan().bold());
 }}"#

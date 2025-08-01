@@ -477,6 +477,8 @@ on crates.io yet. To fix this, you have several options:
 1. DEVELOPMENT (recommended): Set environment variable to use local path
    export THAG_DEV_PATH=/absolute/path/to/thag_rs
 
+   e.g.: {}
+
 2. GIT DEPENDENCY: Use git reference to get the latest version
    export THAG_GIT_REF=main
 
@@ -487,7 +489,11 @@ The thag-auto system is designed to work with crates.io by default, falling back
 to git or local paths when environment variables are set. This allows the same
 script to work in different environments without modification.
 
-For more details, see the comments in demo scripts or the thag documentation."
+For more details, see the comments in demo scripts or the thag documentation.",
+        // Style::for_role(Role::EMPH)
+        //     .bold()
+        //     .paint("export THAG_DEV_PATH=$PWD")
+        "\x1b[1mexport THAG_DEV_PATH=$PWD\x1b[0m"
     );
 }
 

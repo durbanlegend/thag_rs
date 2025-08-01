@@ -6,7 +6,7 @@
 
 use crate::{
     cvprtln, debug_log, re, shared::V, vprtln, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    TEMP_SCRIPT_NAME, TMPDIR,
+    TEMP_SCRIPT_NAME, TMPDIR, Role,
 };
 use regex::Regex;
 use std::{
@@ -36,7 +36,7 @@ use {
 use crate::escape_path_for_windows;
 
 #[cfg(debug_assertions)]
-use {crate::styling::Role, std::time::Instant};
+use {std::time::Instant};
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {

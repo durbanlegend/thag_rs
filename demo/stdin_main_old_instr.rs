@@ -54,7 +54,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::io::{self, BufRead, IsTerminal};
 use std::{collections::VecDeque, fs, path::PathBuf};
-use thag_rs::{errors::ThagError, logging::Verbosity, vprtln};
+use thag_rs::{errors::ThagError, vprtln, Verbosity};
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 use thag_profiler::*;

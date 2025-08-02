@@ -3770,6 +3770,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f18aa187839b2bdb1ad2fa35ead8c4c2976b64e4363c386d45ac0f7ee85c9233"
 
 [[package]]
+name = "thag_common"
+version = "0.2.0"
+dependencies = [
+ "dirs",
+ "documented",
+ "log",
+ "regex",
+ "serde",
+ "strum 0.27.1",
+ "thag_profiler",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "thag_demo"
 version = "0.1.0"
 dependencies = [
@@ -3896,8 +3910,10 @@ dependencies = [
  "termbg",
  "terminal-light",
  "test-generator",
+ "thag_common",
  "thag_proc_macros",
  "thag_profiler",
+ "thag_styling",
  "tinyget",
  "tokio",
  "toml",
@@ -3907,6 +3923,26 @@ dependencies = [
  "warp",
  "win32console",
  "winapi",
+]
+
+[[package]]
+name = "thag_styling"
+version = "0.2.0"
+dependencies = [
+ "inquire",
+ "phf 0.12.1",
+ "ratatui",
+ "regex",
+ "scopeguard",
+ "serde",
+ "strum 0.27.1",
+ "supports-color",
+ "tempfile",
+ "termbg",
+ "thag_common",
+ "thag_proc_macros",
+ "thiserror 2.0.12",
+ "toml",
 ]
 
 [[package]]

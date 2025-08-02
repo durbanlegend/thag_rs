@@ -14,14 +14,20 @@
 - [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
 - [ ]  Consider a tool to show the current theme and switch via OSC?
-- [ ]  Improve filtering algo in thag_demo browse (inquire Scorer).
+- [ ]  ?Improve filtering algo in thag_demo browse (inquire Scorer).
 - [ ]  Don't check features in crates.io when using local or git version of thag_rs.
+- [ ]  Consider error enum per module/subcrate with module entries in main errors enum.
+- [ ]  Make a plan for styling dependencies to be in thag_proc_macros or common subcrate? - lazy_static_var, vprtln, ColorSupport, TermBgLuma, [ThagError, ThagResult], V. All not bracketed are in shared.rs.
 
-   /// This function creates an inquire RenderConfig with basic terminal-aware theming.
-    ///
-    /// Note: For full theme integration (respects Black Metal, Base16, etc.),
-    /// tools should use `thag_rs::styling::themed_inquire_config()` directly
-    /// instead of depending on thag_profiler (to avoid circular dependencies).
+In the thread excerpted in the first attachment, you endorsed my idea of splitting off thag's styling module into a separate subcrate. Since then we completed Phase 1 - NB TermBgLuma ended up in module `shared`. Now it looks as though styling depends on shared, errors, terminal and config, while errors, terminal and config depend on shared, except that terminal uses styling::Style for styling messages, creating a minor circular dependency. We can always break that by using simpler messsage styling for config if we can't find a better way. So I think we're about ready for Phase 2. I've attached what is a working clone of mod styling.rs in bank/, with the addition of exploratory code (lines 2997-3132) to support non-colour attributes such as bold and italics with the help of a small DSL temporarily implemented in demo/proc_macros and planned to move to thag_proc_macros and maybe reimplemented as non-DSL proc macro. (I would love to embed colour, but there is no ANSI instruction to revert to the previous colour, only code 39 to revert to the default.) So I'm thinking the attached styling.rs could form the basis of a thag_styling subcrate. I can't see any alternative to also implementin
+
+donf@MacBook-Air thag_rs % thag bank/styling.rs -fb
+[src/bin/thag_rs.rs:32:5]
+[src/bin/thag_rs.rs:34:5]
+cargo_manifest_dir=Err(NotPresent)
+[src/bin/thag_rs.rs:36:5]
+env::current_dir()=Ok("/Users/donf/projects/thag_rs")
+[src/bin/thag_rs.rs:38:5]
 
 Fix most recent git commit message:
 

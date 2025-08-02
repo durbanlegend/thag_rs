@@ -78,12 +78,6 @@ pub mod help_system;
 /// Core: Basic logging
 #[cfg(feature = "core")]
 pub mod logging;
-/// Core: Shared functionality
-#[cfg(feature = "core")]
-pub mod shared;
-/// Core: Message styling
-#[cfg(feature = "core")]
-pub mod styling;
 
 //-----------------------------------------------------------------------------
 // AST Analysis:
@@ -144,11 +138,12 @@ pub mod repl;
 pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
-    shared::{
-        debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string, get_verbosity,
-        set_global_verbosity, thousands, ColorSupport, TermBgLuma, Verbosity, V,
+    thag_common::{
+        debug_timings, debug_log, escape_path_for_windows, get_home_dir, get_home_dir_string,
+        get_verbosity, lazy_static_var, re, set_global_verbosity, static_lazy, thousands,
+        vprtln, ColorSupport, TermBgLuma, Verbosity, V,
     },
-    styling::{Color, Lvl, Role, Style, Theme},
+    thag_styling::{Color, Lvl, Role, Style, Theme, paint_for_role},
 };
 
 // pub use thag_profiler::*; // Re-export everything from profiler
@@ -183,7 +178,7 @@ pub use {
 pub use termbg;
 
 #[cfg(all(feature = "color_detect", feature = "tools"))]
-pub use styling::inquire_theming;
+pub use thag_styling::inquire_theming;
 
 #[cfg(feature = "config")]
 pub use config::{

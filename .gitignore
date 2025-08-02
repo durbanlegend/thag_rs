@@ -36,6 +36,7 @@ obsolete/
 profile.json
 rs_stdin_history.json
 test_output.log
+test_phase2/target/
 tests/assets/hist_staging.txt
 thag_demo/*.svg
 thag_profiler/README_orig.md

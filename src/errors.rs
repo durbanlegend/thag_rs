@@ -1,11 +1,11 @@
-use crate::shared::disentangle;
-use crate::{ColorSupport, TermBgLuma};
 use std::borrow::Cow;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 use std::sync::{MutexGuard, PoisonError as LockError};
 use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
+use thag_common::disentangle;
+use thag_common::{ColorSupport, TermBgLuma};
 use thag_profiler::profiled;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
@@ -38,6 +38,11 @@ pub type ThagResult<T> = Result<T, ThagError>;
 /// during Thag's execution, including I/O errors, parsing errors,
 /// configuration errors, and errors from external dependencies.
 pub enum ThagError {
+    /// Error from thag_common operations
+    Common(thag_common::ThagCommonError),
+    /// Error from thag_styling operations
+    #[cfg(feature = "thag_styling")]
+    Styling(thag_styling::StylingError),
     #[cfg(feature = "bitflags")]
     /// Error parsing bitflags values
     BitFlagsParse(BitFlagsParseError), // For bitflags parse error
@@ -331,6 +336,9 @@ impl std::fmt::Display for ThagError {
             Self::UnsupportedTerm(e) => write!(f, "Unsupported terminal type {e}"),
             Self::Validation(e) => write!(f, "{e}"),
             Self::VarError(e) => write!(f, "{e}"),
+            Self::Common(e) => write!(f, "Common error: {e}"),
+            #[cfg(feature = "thag_styling")]
+            Self::Styling(e) => write!(f, "Styling error: {e}"),
         }
     }
 }
@@ -375,6 +383,9 @@ impl Error for ThagError {
             Self::UnsupportedTerm(_) => None,
             Self::Validation(_) => None,
             Self::VarError(e) => Some(e),
+            Self::Common(e) => Some(e),
+            #[cfg(feature = "thag_styling")]
+            Self::Styling(e) => Some(e),
         };
         result
     }
@@ -462,3 +473,17 @@ impl std::fmt::Display for ThemeError {
 }
 
 impl std::error::Error for ThemeError {}
+
+// From trait implementations for new error types
+impl From<thag_common::ThagCommonError> for ThagError {
+    fn from(err: thag_common::ThagCommonError) -> Self {
+        Self::Common(err)
+    }
+}
+
+#[cfg(feature = "thag_styling")]
+impl From<thag_styling::StylingError> for ThagError {
+    fn from(err: thag_styling::StylingError) -> Self {
+        Self::Styling(err)
+    }
+}

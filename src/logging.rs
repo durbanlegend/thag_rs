@@ -4,8 +4,8 @@ use thag_profiler::profiled;
 
 #[cfg(feature = "simplelog")]
 use {
-    crate::shared::V,
     crate::vprtln,
+    crate::V,
     simplelog::{
         ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     },

@@ -1,0 +1,30 @@
+[package]
+name = "thag_common"
+version = "0.2.0"
+authors = ["Don Forbes <don.forbes3@gmail.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Common types, macros, and utilities shared across thag_rs subcrates"
+repository = "https://github.com/durbanlegend/thag_rs"
+categories = ["development-tools"]
+keywords = ["utilities", "macros", "common"]
+rust-version = "1.82"
+
+[dependencies]
+dirs = "6.0"
+documented = "0.9.1"
+log = "0.4.27"
+regex = "1.11.1"
+serde = { version = "1.0.219", features = ["derive"] }
+strum = { version = "0.27", features = ["derive", "phf"] }
+thag_profiler = { path = "../thag_profiler", version = "0.1" }
+thiserror = "2.0"
+
+[features]
+default = []
+# Enable debug logging at compile time
+debug-logs = []
+
+[lib]
+name = "thag_common"
+path = "src/lib.rs"

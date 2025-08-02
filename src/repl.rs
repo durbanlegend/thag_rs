@@ -2,20 +2,14 @@
 use crate::{
     builder::process_expr,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
-    cvprtln, get_verbosity, key, lazy_static_var,
+    key, lazy_static_var,
     manifest::extract,
-    re,
-    styling::{
-        display_terminal_attributes, display_theme_details, display_theme_roles, ColorInfo,
-        Role::{self, Success},
-        Style, TermAttributes,
-    },
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
     },
-    vprtln, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
-    KeyDisplayLine, ProcFlags, ThagError, ThagResult, V,
+    BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
+    KeyDisplayLine, ProcFlags, ThagError, ThagResult,
 };
 use clap::{CommandFactory, Parser};
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
@@ -41,7 +35,13 @@ use std::{
     time::Instant,
 };
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use thag_common::{get_verbosity, re, vprtln, V};
 use thag_profiler::profiled;
+use thag_styling::{
+    cvprtln, display_terminal_attributes, display_theme_details, display_theme_roles, ColorInfo,
+    Role::{self, Success},
+    Style, TermAttributes,
+};
 use tui_textarea::{Input, TextArea};
 
 impl From<&ColorInfo> for NuColor {

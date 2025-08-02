@@ -2,7 +2,7 @@ use crate::{
     debug_log, flush_debug_log, internal_doc,
     mem_tracking::write_detailed_stack_alloc,
     profiling::{clean_function_name, strip_hex_suffix_slice, Profile},
-    re, safe_alloc, static_lazy, ProfileError, ProfileResult,
+    safe_alloc, ProfileError, ProfileResult,
 };
 use backtrace::{resolve_frame, trace};
 use dashmap::{DashMap, DashSet};
@@ -10,6 +10,7 @@ use regex::Regex;
 use std::{
     clone::Clone, collections::HashSet, convert::AsRef, ops::Range, string::ToString, sync::Arc,
 };
+use thag_common::{re, static_lazy};
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 struct ProfileKey {

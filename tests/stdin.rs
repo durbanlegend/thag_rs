@@ -190,7 +190,7 @@ fn test_stdin_read_stdin() {
 
     let mut child = Command::new("cargo")
         .arg("run")
-        // .arg("--features=debug-logs")
+        // .arg("--features=debug_logging")
         .arg("--")
         .arg("-qq")
         .arg("-s")

@@ -12,7 +12,7 @@ termbg = "0.6.0"
 #termbg = { path = "/Users/donforbes/Documents/GitHub/termbg" }
 
 [features]
-debug-logs = []
+debug_logging = []
 nightly = []
 default = ["simplelog"]
 simplelog = []

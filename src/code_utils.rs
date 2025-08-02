@@ -4,10 +4,7 @@
     clippy::missing_trait_methods
 )]
 
-use crate::{
-    cvprtln, debug_log, re, shared::V, vprtln, Ast, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    TEMP_SCRIPT_NAME, TMPDIR, Role,
-};
+use crate::{Ast, ThagError, ThagResult, DYNAMIC_SUBDIR, TEMP_SCRIPT_NAME, TMPDIR};
 use regex::Regex;
 use std::{
     fs::{self, remove_dir_all, remove_file, OpenOptions},
@@ -21,7 +18,9 @@ use syn::{
     visit_mut::{self, VisitMut},
     AttrStyle, Expr, ExprBlock,
 };
+use thag_common::{debug_log, re, vprtln, V};
 use thag_profiler::profiled;
+use thag_styling::{cvprtln, Role};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -36,7 +35,7 @@ use {
 use crate::escape_path_for_windows;
 
 #[cfg(debug_assertions)]
-use {std::time::Instant};
+use std::time::Instant;
 
 // To move inner attributes out of a syn AST for a snippet.
 struct RemoveInnerAttributes {

@@ -48,14 +48,12 @@ use crate::code_utils::{
 use crate::config::{self, DependencyInference, RealContext};
 use crate::crossterm::terminal;
 use crate::manifest::extract;
-use crate::styling::{paint_for_role, ColorInitStrategy, TermAttributes};
 use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::{
-    cvprtln, debug_log, get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config,
-    modified_since_compiled, re, repeat_dash, shared, validate_args, vprtln, Ast, Cli,
-    ColorSupport, Dependencies, ProcFlags, Role, ThagError, ThagResult, DYNAMIC_SUBDIR,
-    FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, TEMP_DIR_NAME,
-    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME, V,
+    get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config, modified_since_compiled,
+    repeat_dash, validate_args, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
+    ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
+    RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -69,7 +67,9 @@ use std::{
     string::ToString,
     time::Instant,
 };
+use thag_common::{self, debug_log, re, vprtln, V};
 use thag_profiler::profiled;
+use thag_styling::{cvprtln, paint_for_role, ColorInitStrategy, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{

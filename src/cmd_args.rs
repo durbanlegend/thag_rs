@@ -1,11 +1,11 @@
 use crate::{
     config::{maybe_config, DependencyInference},
-    shared::{set_global_verbosity, Verbosity, V},
     ThagError, ThagResult, RS_SUFFIX,
 };
 use bitflags::bitflags;
 use clap::{ArgGroup /*, ColorChoice */, Parser};
 use std::{fmt, str};
+use thag_common::{set_global_verbosity, Verbosity, V};
 use thag_profiler::{end, profile, profiled};
 
 /// The `clap` command-line interface for the `thag_rs` script runner and REPL.

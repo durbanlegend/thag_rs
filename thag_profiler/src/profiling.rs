@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::{debug_log, internal_doc, re, safe_alloc, static_lazy, ProfileError, ProfileResult};
+use crate::{debug_log, internal_doc, safe_alloc, ProfileError, ProfileResult};
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use parking_lot::{Mutex, RwLock};
 use std::{
@@ -13,6 +13,7 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
     time::{Duration, Instant},
 };
+use thag_common::{re, static_lazy};
 
 #[cfg(feature = "time_profiling")]
 use std::collections::HashSet;

@@ -3779,7 +3779,6 @@ dependencies = [
  "regex",
  "serde",
  "strum 0.27.1",
- "thag_profiler",
  "thiserror 2.0.12",
 ]
 
@@ -3847,6 +3846,7 @@ dependencies = [
  "serial_test",
  "smol",
  "strum 0.27.1",
+ "thag_common",
  "thag_proc_macros",
  "tokio",
 ]

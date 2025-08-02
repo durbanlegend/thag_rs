@@ -288,21 +288,21 @@ impl Default for TermBgLuma {
 
 /// Debugging logger.
 ///
-/// Logs if the `debug-logs` feature is enabled or if runtime debug logging is enabled (e.g., via `-vv`).
+/// Logs if the `debug_logging` feature is enabled or if runtime debug logging is enabled (e.g., via `-vv`).
 /// Should not be used outside the `thag_rs` crat due to the feature dependencies. Note that per Rust, messages,
 /// "using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate".
 ///
 #[macro_export]
 macro_rules! debug_log {
     ($($arg:tt)*) => {
-        // If the `debug-logs` feature is enabled, always log
-        #[cfg(any(feature = "debug-logs", feature = "simplelog"))]
+        // If the `debug_logging` feature is enabled, always log
+        #[cfg(any(feature = "debug_logging", feature = "simplelog"))]
         {
             log::debug!($($arg)*);
         }
 
         // In all builds, log if runtime debug logging is enabled (e.g., via `-vv`)
-        #[cfg(not(any(feature = "debug-logs", feature = "simplelog")))]
+        #[cfg(not(any(feature = "debug_logging", feature = "simplelog")))]
         {
             if $crate::logging::is_debug_logging_enabled() {
                 log::debug!($($arg)*);

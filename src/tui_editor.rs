@@ -1,10 +1,8 @@
 use crate::{
     code_utils::write_source,
-    debug_log,
     file_dialog::{DialogMode, FileDialog, Status},
-    key, re,
+    key,
     stdin::edit_history,
-    styling::Role,
     KeyCombination, ThagError, ThagResult,
 };
 // use crokey::key;
@@ -40,6 +38,8 @@ use std::{
     path::PathBuf,
     time::Duration,
 };
+use thag_common::{debug_log, re};
+use thag_styling::Role;
 // import without risk of name clashing
 use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, TextArea};

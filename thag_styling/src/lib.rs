@@ -1,4 +1,4 @@
-//! Terminal styling system with theme support and color detection for thag_rs.
+//! Terminal styling system with theme support and color detection for `thag_rs` and third party applications.
 //!
 //! This crate provides a comprehensive styling system for terminal applications, including:
 //! - Color detection and terminal capability assessment
@@ -8,6 +8,8 @@
 //! - Built-in theme collection
 
 #![warn(clippy::pedantic, missing_docs)]
+
+pub mod styling;
 
 use serde::Deserialize;
 
@@ -27,7 +29,7 @@ pub enum StylingError {
     /// Theme-related errors
     #[error("Theme error: {0}")]
     Theme(#[from] ThemeError),
-    /// Common errors from thag_common
+    /// Common errors from `thag_common`
     #[error("Common error: {0}")]
     Common(#[from] thag_common::ThagCommonError),
     /// IO errors
@@ -182,6 +184,7 @@ pub mod inquire_theming {
     }
 }
 
+#[allow(dead_code)]
 const THRESHOLD: f64 = 0.5;
 
 /// Enum representing different color value types for terminal styling
@@ -204,6 +207,7 @@ pub enum ColorValue {
     },
 }
 
+#[allow(dead_code)]
 struct StyleConfig {
     color: String,
     style: Option<String>,
@@ -254,6 +258,7 @@ impl ColorInfo {
     /// Convert this color to the specified color support level
     #[must_use]
     pub fn with_support(self, support: ColorSupport) -> Self {
+        #[allow(clippy::match_same_arms)]
         match support {
             ColorSupport::TrueColor => self,
             ColorSupport::Color256 => match self.value {
@@ -281,6 +286,7 @@ impl ColorInfo {
 
 /// A styling configuration that includes foreground color and text attributes
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Style {
     /// Foreground color information
     pub foreground: Option<ColorInfo>,
@@ -308,6 +314,10 @@ impl Style {
     }
 
     /// Create a style from a hex color string
+    ///
+    /// # Errors
+    ///
+    /// Any errors from calling `hex_to_rgb` on the hex value string.
     pub fn from_fg_hex(hex: &str) -> StylingResult<Self> {
         let (r, g, b) = hex_to_rgb(hex)?;
         Ok(Self {
@@ -412,13 +422,14 @@ impl Style {
     /// Create a style for a specific role using the current theme
     #[must_use]
     pub fn for_role(role: Role) -> Self {
-        if let Some(term_attrs) = TermAttributes::try_get() {
-            term_attrs.theme.style_for(role)
-        } else {
-            // Fallback to basic role-based styling without full theme system
-            let color_index = role.color_index();
-            Self::new().fg(Color::fixed(color_index))
-        }
+        TermAttributes::try_get().map_or_else(
+            || {
+                // Fallback to basic role-based styling without full theme system
+                let color_index = role.color_index();
+                Self::new().fg(Color::fixed(color_index))
+            },
+            |term_attrs| term_attrs.theme.style_for(role),
+        )
     }
 }
 
@@ -442,11 +453,16 @@ impl Color {
     const CYAN: u8 = 6;
     const WHITE: u8 = 7;
     // Bright color constants
+    #[allow(dead_code)]
     const DARK_GRAY: u8 = 8;
+    #[allow(dead_code)]
     const LIGHT_RED: u8 = 9;
+    #[allow(dead_code)]
     const LIGHT_GREEN: u8 = 10;
     const LIGHT_YELLOW: u8 = 11;
+    #[allow(dead_code)]
     const LIGHT_BLUE: u8 = 12;
+    #[allow(dead_code)]
     const LIGHT_MAGENTA: u8 = 13;
     const LIGHT_CYAN: u8 = 14;
     const LIGHT_GRAY: u8 = 15;
@@ -609,27 +625,29 @@ impl Role {
     /// Get the color index for this role (for fallback purposes)
     #[must_use]
     pub const fn color_index(&self) -> u8 {
+        #[allow(clippy::match_same_arms)]
         match self {
-            Role::Heading1 => 4, // Blue
-            Role::Heading2 => 6, // Cyan
-            Role::Heading3 => 2, // Green
-            Role::Error => 1,    // Red
-            Role::Warning => 3,  // Yellow
-            Role::Success => 2,  // Green
-            Role::Info => 6,     // Cyan
-            Role::Emphasis => 5, // Magenta
-            Role::Code => 11,    // Light Yellow
-            Role::Normal => 7,   // White/Default
-            Role::Subtle => 8,   // Dark Gray
-            Role::Hint => 14,    // Light Cyan
-            Role::Debug => 13,   // Light Magenta
-            Role::Trace => 8,    // Dark Gray
+            Self::Heading1 => 4, // Blue
+            Self::Heading2 => 6, // Cyan
+            Self::Heading3 => 2, // Green
+            Self::Error => 1,    // Red
+            Self::Warning => 3,  // Yellow
+            Self::Success => 2,  // Green
+            Self::Info => 6,     // Cyan
+            Self::Emphasis => 5, // Magenta
+            Self::Code => 11,    // Light Yellow
+            Self::Normal => 7,   // White/Default
+            Self::Subtle => 8,   // Dark Gray
+            Self::Hint => 14,    // Light Cyan
+            Self::Debug => 13,   // Light Magenta
+            Self::Trace => 8,    // Dark Gray
         }
     }
 }
 
 impl From<&Role> for u8 {
     fn from(role: &Role) -> Self {
+        #[allow(clippy::match_same_arms)]
         match role {
             Role::Heading1 => 4, // Blue
             Role::Heading2 => 6, // Cyan
@@ -650,7 +668,7 @@ impl From<&Role> for u8 {
 }
 
 /// Strategy for initializing color settings
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ColorInitStrategy {
     /// Use configured values from config file
     Configure,
@@ -708,7 +726,7 @@ impl ColorInitStrategy {
 fn detect_color_support() -> ColorSupport {
     use supports_color::Stream;
 
-    if let Some(level) = supports_color::on(Stream::Stdout) {
+    supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |level| {
         if level.has_16m {
             ColorSupport::TrueColor
         } else if level.has_256 {
@@ -718,23 +736,21 @@ fn detect_color_support() -> ColorSupport {
         } else {
             ColorSupport::None
         }
-    } else {
-        ColorSupport::None
-    }
+    })
 }
 
 /// Detect terminal background using termbg crate
 #[cfg(feature = "color_detect")]
 fn detect_terminal_background() -> TermBgLuma {
+    #[allow(clippy::match_same_arms)]
     match termbg::theme(std::time::Duration::from_millis(100)) {
         Ok(termbg::Theme::Light) => TermBgLuma::Light,
-        Ok(termbg::Theme::Dark) => TermBgLuma::Dark,
-        Err(_) => TermBgLuma::Dark, // Default to dark on detection failure
+        Ok(termbg::Theme::Dark) | Err(_) => TermBgLuma::Dark, // Default to dark on detection failure
     }
 }
 
 /// How the terminal attributes were initialized
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HowInitialized {
     /// From configuration file
     Configured,
@@ -767,6 +783,7 @@ static INSTANCE: OnceLock<TermAttributes> = OnceLock::new();
 pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(false);
 
 impl TermAttributes {
+    #[allow(dead_code)]
     const fn new() -> Self {
         Self {
             how_initialized: HowInitialized::Defaulted,
@@ -779,6 +796,10 @@ impl TermAttributes {
     }
 
     /// Initialize terminal attributes with a config provider
+    ///
+    /// # Errors
+    ///
+    /// Any auto-detect errors.
     pub fn initialize<T: StylingConfigProvider>(provider: &T) -> StylingResult<&'static Self> {
         let (color_support, term_bg_luma) = ColorInitStrategy::determine(provider);
 
@@ -867,7 +888,7 @@ pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
 }
 
 /// Theme palette configuration from TOML
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct PaletteConfig {
     heading1: Option<String>,
     heading2: Option<String>,
@@ -886,7 +907,7 @@ pub struct PaletteConfig {
 }
 
 /// Runtime theme palette with resolved styles
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Palette {
     /// Heading 1 style
     pub heading1: Style,
@@ -944,15 +965,23 @@ impl Palette {
 /// Theme definition loaded from TOML
 #[derive(Clone, Debug, Deserialize)]
 pub struct ThemeDefinition {
+    #[allow(dead_code)]
     name: String,
     #[serde(default)]
+    /// Path to the theme file (e.g., "`themes/built_in/dracula.toml`")
     pub filename: Option<String>,
+    /// Whether this is a built-in theme or a custom theme
     #[serde(default)]
-    pub is_builtin: bool,
+    pub is_builtin: bool, // true for built-in themes, false for custom    pub term_bg_luma: TermBgLuma,
+    /// Light or dark background requirement
     pub term_bg_luma: String,
+    /// Minimum color support required
     pub min_color_support: String,
-    pub backgrounds: Vec<String>,
+    /// All possible Hex RGB values for theme background
+    pub backgrounds: Vec<String>, // Keep as hex strings in TOML
+    /// Theme description
     pub description: String,
+    /// Color palette configuration
     pub palette: PaletteConfig,
 }
 
@@ -1032,6 +1061,10 @@ impl Theme {
     }
 
     /// Auto-detect and load appropriate theme
+    ///
+    /// # Errors
+    ///
+    /// TODO: Supposedly will bubble up any errors encountered.
     pub fn auto_detect<T: StylingConfigProvider>(
         color_support: ColorSupport,
         term_bg_luma: TermBgLuma,
@@ -1043,6 +1076,7 @@ impl Theme {
     }
 
     /// Create a basic theme with default colors
+    #[must_use]
     pub fn create_basic_theme(color_support: ColorSupport, term_bg_luma: TermBgLuma) -> Self {
         let palette = Palette {
             heading1: Style::new()
@@ -1116,7 +1150,7 @@ fn hex_to_rgb(hex: &str) -> StylingResult<(u8, u8, u8)> {
 
 /// Find the closest color in the 256-color palette
 #[must_use]
-pub fn find_closest_color(rgb: &[u8; 3]) -> u8 {
+pub const fn find_closest_color(rgb: &[u8; 3]) -> u8 {
     // Simple implementation - return a reasonable default
     // TODO: Implement proper color distance calculation
     match (rgb[0], rgb[1], rgb[2]) {
@@ -1138,6 +1172,7 @@ pub fn find_closest_basic_color(rgb: &[u8; 3]) -> u8 {
 }
 
 /// Get RGB values for a 256-color index
+#[allow(clippy::match_same_arms)]
 #[must_use]
 pub const fn get_rgb(color256: u8) -> [u8; 3] {
     // Basic colors (0-15)

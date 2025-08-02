@@ -8,7 +8,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 default = ["color_detect", "simplelog", "tools"]
 color_detect = ["config", "thag_rs/color_detect"]
 config = ["thag_rs/config"]
-debug-logs = []
+debug_logging = []
 simplelog = ["thag_rs/simplelog"]
 tools = ["thag_rs/tools"]
 */
@@ -2449,11 +2449,11 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 #[macro_export]
 macro_rules! cvprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
-        if $verbosity <= thag_rs::shared::get_verbosity() {
+        let verbosity = thag_common::get_verbosity();
+        if $verbosity <= verbosity {
             let style = Style::for_role($role);
             let content = format!($($arg)*);
-            let verbosity = thag_rs::shared::get_verbosity();
-            thag_rs::vprtln!(verbosity, "{}", style.paint(content));
+            thag_common::vprtln!(verbosity, "{}", style.paint(content));
         }
     }};
 }

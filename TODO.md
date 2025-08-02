@@ -285,6 +285,17 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
         the pull request.
 
 
+export feature_sets=()
+
+export feature_sets=(
+    "basic"
+    "color_detect"
+    "inquire_theming"
+    "color_detect,inquire_theming"
+    "ratatui_support"
+    "full"
+)
+
 export feature_sets=(
     "demo,"
     "demo,debug_logging"

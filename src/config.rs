@@ -1,8 +1,4 @@
-use crate::styling::Role;
-use crate::{
-    cprtln, debug_log, lazy_static_var, ColorSupport, Style, TermBgLuma, ThagError, ThagResult,
-    Verbosity,
-};
+use crate::{ThagError, ThagResult};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use mockall::{automock, predicate::str};
@@ -22,7 +18,9 @@ use std::{
     sync::Arc,
 };
 use strum::{Display, EnumString};
+use thag_common::{debug_log, lazy_static_var, re, ColorSupport, TermBgLuma, Verbosity, V};
 use thag_profiler::{enable_profiling, profiled};
+use thag_styling::{cprtln, Role, Style};
 use toml::Value;
 use toml_edit::DocumentMut;
 

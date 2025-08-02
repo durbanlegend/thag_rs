@@ -14,7 +14,7 @@ thag_profiler = { version = "0.1, thag-auto", default-features = false }
 thag_rs = { version = "0.2, thag-auto", features = ["repl", "reedline", "simplelog"] }
 
 [features]
-debug-logs = ["thag_rs/debug-logs"]
+debug_logging = ["thag_rs/debug_logging"]
 default = ["reedline", "simplelog"]
 reedline = ["thag_rs/reedline"]
 simplelog = ["thag_rs/simplelog"]

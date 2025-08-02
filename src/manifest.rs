@@ -3,9 +3,7 @@ use crate::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     code_utils::get_source_path,
     config::DependencyInference,
-    cvprtln, debug_log, get_verbosity, maybe_config, re,
-    styling::Role,
-    vprtln, Ast, BuildState, Dependencies, Style, ThagError, ThagResult, V,
+    maybe_config, Ast, BuildState, Dependencies, Style, ThagError, ThagResult,
 };
 use cargo_lookup::Query;
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
@@ -14,7 +12,9 @@ use semver::VersionReq;
 use serde_merge::omerge;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
+use thag_common::{debug_log, get_verbosity, re, vprtln, V};
 use thag_profiler::{end, profile, profiled};
+use thag_styling::{cvprtln, Role};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;

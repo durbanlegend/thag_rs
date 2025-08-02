@@ -13,7 +13,7 @@ thag_rs = { path = "/Users/donf/projects/thag_rs" }
 tui-textarea = "0.6.1"
 
 [features]
-debug-logs = []
+debug_logging = []
 nightly = []
 default = ["simplelog"]
 simplelog = []

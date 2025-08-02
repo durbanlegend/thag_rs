@@ -8,7 +8,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 default = ["color_detect", "simplelog", "tools"]
 color_detect = ["config", "thag_rs/color_detect"]
 config = ["thag_rs/config"]
-debug-logs = []
+debug_logging = []
 simplelog = ["thag_rs/simplelog"]
 tools = ["thag_rs/tools"]
 */

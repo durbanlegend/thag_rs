@@ -7,7 +7,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 [features]
 simplelog = []
 default=["env_logger"]
-debug-logs = []
+debug_logging = []
 env_logger = ["dep:env_logger"]
 */
 use env_logger;

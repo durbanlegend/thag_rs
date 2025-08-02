@@ -183,7 +183,7 @@ fn main() {{
     fn run(input: String) -> std::process::Output {
         let mut child = Command::new("cargo")
             .arg("run")
-            .arg("--features=debug-logs")
+            .arg("--features=debug_logging")
             .arg("--")
             .arg("-qq")
             .arg("-s")

@@ -1,6 +1,8 @@
-use crate::styling::Role;
+/// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
+/// Copyright (c) 2023 Philipp Krones
+/// Licence: MIT
 use crate::{
-    debug_log, key, key_mappings, lazy_static_var,
+    key, key_mappings,
     tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
     KeyCombination,
 };
@@ -24,10 +26,9 @@ use std::{
     iter,
     path::{Path, PathBuf},
 };
-/// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
-/// Copyright (c) 2023 Philipp Krones
-/// Licence: MIT
+use thag_common::{debug_log, lazy_static_var, re, V};
 use thag_profiler::profiled;
+use thag_styling::{Lvl, Role};
 use tui_textarea::{Input, TextArea};
 
 /// File dialog mode to distinguish between Open and Save dialogs

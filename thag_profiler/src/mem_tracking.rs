@@ -13,14 +13,14 @@
 
 use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, fn_name,
-    get_global_profile_type, get_root_module, internal_doc, is_detailed_memory, lazy_static_var,
+    get_global_profile_type, get_root_module, internal_doc, is_detailed_memory,
     mem_attribution::{DetailedAddressRegistry, ProfileReg},
     profiling::{
         build_stack, clean_function_name, extract_detailed_alloc_callstack,
         get_memory_detail_dealloc_path, get_memory_detail_path, get_memory_path,
         is_profiling_state_enabled, MemoryDetailDeallocFile, MemoryDetailFile, MemoryProfileFile,
     },
-    re, safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
+    safe_alloc, warn_once, Profile, ProfileRef, ProfileType,
 };
 use backtrace::{resolve_frame, trace};
 use parking_lot::Mutex;
@@ -36,6 +36,7 @@ use std::{
     },
     time::Instant,
 };
+use thag_common::{lazy_static_var, re};
 
 use std::{cell::Cell, thread_local};
 

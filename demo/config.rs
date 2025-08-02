@@ -10,7 +10,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 
 [features]
 default = ["simplelog"]
-debug-logs = []
+debug_logging = []
 simplelog = ["dep:simplelog"]
 */
 

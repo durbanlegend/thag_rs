@@ -1,7 +1,7 @@
 //!
 //! AST analysis and dependency inference capability for `thag_rs`.
 //!
-use crate::{cvprtln, debug_log, re, Role, ThagResult, BUILT_IN_CRATES, V};
+use crate::{ThagResult, BUILT_IN_CRATES};
 use phf::phf_set;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
@@ -26,7 +26,9 @@ use syn::{
     Type::Tuple,
     TypePath, UseRename, UseTree,
 };
+use thag_common::{debug_log, re, V};
 use thag_profiler::profiled;
+use thag_styling::{cvprtln, Role};
 
 #[cfg(debug_assertions)]
 use {crate::debug_timings, std::time::Instant};

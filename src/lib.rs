@@ -72,12 +72,17 @@
 /// Core: Error handling
 #[cfg(feature = "core")]
 pub mod errors;
-/// Core: Lightweight help system for tools
-#[cfg(feature = "core")]
-pub mod help_system;
+
 /// Core: Basic logging
 #[cfg(feature = "core")]
 pub mod logging;
+
+//-----------------------------------------------------------------------------
+// Tool support:
+//-----------------------------------------------------------------------------
+/// Tools: Lightweight help system for tools
+#[cfg(feature = "tools")]
+pub mod help_system;
 
 //-----------------------------------------------------------------------------
 // AST Analysis:
@@ -146,10 +151,12 @@ pub use {
     },
     thag_styling::{
         cprtln, cvprtln, display_theme_details, display_theme_roles, find_closest_color,
-        paint_for_role, themed_inquire_config, Color, Lvl, Palette, Role, Style, TermAttributes,
-        Theme,
+        paint_for_role, Color, Lvl, Palette, Role, Style, TermAttributes, Theme,
     },
 };
+
+#[cfg(feature = "tools")]
+pub use thag_styling::themed_inquire_config;
 
 pub use thag_proc_macros::repeat_dash;
 

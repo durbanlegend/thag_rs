@@ -321,8 +321,8 @@ full = ["color_detect", "repl"] # Simplified as repl includes everything
 
 ## Tools feature - includes all dependencies needed by tools
 tools = [
+    "clipboard",
     "dep:anyhow",
-    "dep:arboard",
     "dep:atty",
     "dep:colored",
     "dep:convert_case",

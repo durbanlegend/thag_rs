@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
 */
 
 /// Tool to help migrate existing tools from tools/ to src/bin/ with auto-help integration.
@@ -13,7 +13,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Purpose: Migrate tools from tools/ directory to src/bin/ with auto-help integration
 //# Categories: tools
 //# Usage: thag_migrate_tool [--help|-h]
-use inquire::{Confirm, Select};
+use inquire::{set_global_render_config, Confirm, Select};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;

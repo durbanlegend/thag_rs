@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
@@ -12,6 +12,8 @@ use std::{
     env,
     process::{Command, Stdio},
 };
+
+#[cfg(feature = "tools")]
 use thag_rs::{auto_help, help_system::check_help_and_exit};
 use thag_styling::{cvprtln, Role, Style, V};
 
@@ -23,54 +25,64 @@ struct TestCase {
 
 const TEST_CASES: &[TestCase] = &[
     TestCase {
-        name: "AnsiCodeDerive",
-        file: "demo/proc_macro_ansi_code_derive.rs",
-        description: "Derive macro for ANSI color enums",
+        name: "DeriveConstructor",
+        file: "demo/proc_macro_derive_constructor.rs",
+        description: "Derive macro for basic constructor generation",
     },
     TestCase {
-        name: "DeriveBasic",
-        file: "demo/proc_macro_derive_basic.rs",
-        description: "Basic derive macro with constructor generation",
+        name: "DeriveGetters",
+        file: "demo/proc_macro_derive_getters.rs",
+        description: "Derive macro for getter method generation",
     },
     TestCase {
-        name: "AttributeBasic",
-        file: "demo/proc_macro_attribute_basic.rs",
-        description: "Basic attribute macro demonstration",
+        name: "DeriveBuilder",
+        file: "demo/proc_macro_derive_builder.rs",
+        description: "Derive macro for builder pattern implementation",
     },
     TestCase {
-        name: "ConstDemo",
-        file: "demo/proc_macro_const_demo.rs",
-        description: "Compile-time constant generation",
+        name: "DeriveDisplay",
+        file: "demo/proc_macro_derive_display.rs",
+        description: "Derive macro for display trait implementation",
     },
     TestCase {
-        name: "FunctionLikeBasic",
-        file: "demo/proc_macro_functionlike_basic.rs",
-        description: "Basic function-like macro",
+        name: "DeriveDocComment",
+        file: "demo/proc_macro_derive_doc_comment.rs",
+        description: "Derive macro for documentation extraction",
     },
     TestCase {
-        name: "RepeatDash",
-        file: "demo/proc_macro_repeat_dash.rs",
-        description: "Function-like macro for text generation",
+        name: "AttributeCached",
+        file: "demo/proc_macro_cached.rs",
+        description: "Attribute macro for function memoization",
     },
     TestCase {
-        name: "StringConcat",
-        file: "demo/proc_macro_string_concat.rs",
-        description: "Compile-time string concatenation",
+        name: "AttributeTiming",
+        file: "demo/proc_macro_timing.rs",
+        description: "Attribute macro for execution time measurement",
     },
     TestCase {
-        name: "HostPortConst",
-        file: "demo/proc_macro_host_port_const.rs",
-        description: "Derive macro for network constants",
+        name: "AttributeRetry",
+        file: "demo/proc_macro_retry.rs",
+        description: "Attribute macro for automatic retry logic",
     },
     TestCase {
-        name: "DeriveCustomModel",
-        file: "demo/proc_macro_derive_custom_model.rs",
-        description: "Advanced custom model derive macro",
+        name: "FunctionLikeFileNavigator",
+        file: "demo/proc_macro_file_navigator.rs",
+        description: "Function-like macro for file system navigation",
     },
     TestCase {
-        name: "LoadStaticMap",
-        file: "demo/proc_macro_load_static_map.rs",
-        description: "Embed directory contents as static maps",
+        name: "FunctionLikeCompileTimeAssert",
+        file: "demo/proc_macro_compile_time_assert.rs",
+        description: "Function-like macro for compile-time validation",
+    },
+    TestCase {
+        name: "FunctionLikeEnvOrDefault",
+        file: "demo/proc_macro_env_or_default.rs",
+        description: "Function-like macro for environment variable access",
+    },
+    TestCase {
+        name: "FunctionLikeGenerateTests",
+        file: "demo/proc_macro_generate_tests.rs",
+        description: "Function-like macro for test case generation",
     },
 ];
 
@@ -116,8 +128,11 @@ fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, Stri
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
-    let help = auto_help!("test_proc_macro_examples");
-    check_help_and_exit(&help);
+    #[cfg(feature = "tools")]
+    {
+        let help = auto_help!("test_proc_macro_examples");
+        check_help_and_exit(&help);
+    }
 
     // Get the current directory as THAG_DEV_PATH
     let current_dir = env::current_dir()?;

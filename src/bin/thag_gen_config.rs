@@ -25,7 +25,7 @@ use convert_case::{Converter, Pattern};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::error::CustomUserError;
 use inquire::validator::{StringValidator, Validation};
-use inquire::Confirm;
+use inquire::{set_global_render_config, Confirm};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs;
@@ -35,8 +35,9 @@ use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTr
 use thag_proc_macros::file_navigator;
 use thag_rs::config::{DependencyInference, RealContext};
 use thag_rs::{
-    auto_help, help_system::check_help_and_exit, maybe_config, ColorSupport, Config, Context,
-    Dependencies, FeatureOverride, Logging, Misc, ProcMacros, Styling, TermBgLuma, Verbosity,
+    auto_help, help_system::check_help_and_exit, maybe_config, themed_inquire_config, ColorSupport,
+    Config, Context, Dependencies, FeatureOverride, Logging, Misc, ProcMacros, Styling, TermBgLuma,
+    Verbosity,
 };
 type Error = CustomUserError;
 
@@ -1001,6 +1002,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("{}", "Welcome to thag config builder!".bold());
 
+    set_global_render_config(themed_inquire_config());
+
     let config_path = dirs::config_dir()
         .ok_or("Could not determine config directory")?
         .join("thag_rs")
@@ -1062,10 +1065,7 @@ mod tests {
         let result = extract_use_path(&use_item);
         assert_eq!(
             result,
-            Some((
-                "VerbosityLevel".to_string(),
-                "crate::Verbosity".to_string()
-            ))
+            Some(("VerbosityLevel".to_string(), "crate::Verbosity".to_string()))
         );
     }
 

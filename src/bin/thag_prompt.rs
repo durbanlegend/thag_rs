@@ -1,17 +1,19 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
 */
 
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 use clap::CommandFactory;
 use colored::Colorize;
-use inquire::MultiSelect;
+use inquire::{set_global_render_config, MultiSelect};
 use regex;
 use std::collections::HashMap;
 use std::process::Command;
 use thag_proc_macros::file_navigator;
+use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;
@@ -226,6 +228,12 @@ fn is_interactive() -> bool {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_prompt");
+    check_help_and_exit(&help);
+
+    set_global_render_config(themed_inquire_config());
+
     println!(
         "🚀 {} - Interactive Thag Builder",
         "Thag Prompt".bright_cyan()

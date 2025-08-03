@@ -3,6 +3,7 @@
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog"] }
 */
+use inquire::set_global_render_config;
 /// Select demo scripts and generate and serve HTML report.
 ///
 /// Strategy and grunt work thanks to `ChatGPT`.
@@ -20,7 +21,7 @@ use strum;
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::code_utils::to_ast;
 use thag_rs::help_system::check_help_and_exit;
-use thag_rs::{ast, auto_help, re};
+use thag_rs::{ast, auto_help, re, themed_inquire_config};
 use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
@@ -332,6 +333,8 @@ async fn main() {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!("thag_find_demos");
     check_help_and_exit(&help);
+
+    set_global_render_config(themed_inquire_config());
 
     let scripts_dir = Path::new("demo");
 

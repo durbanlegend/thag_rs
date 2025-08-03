@@ -16,9 +16,9 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Purpose: Facilitate generation and enhancement of custom error modules.
 //# Categories: technique, tools
 use heck::ToSnakeCase;
-use inquire::{Confirm, MultiSelect, Select, Text};
+use inquire::{set_global_render_config, Confirm, MultiSelect, Select, Text};
 use std::{error::Error, fs, path::PathBuf};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 
 #[derive(Debug)]
 struct ErrorVariant {
@@ -357,8 +357,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let help = auto_help!("thag_gen_errors");
     check_help_and_exit(&help);
 
-    let module_name = Text::new("Error module name:")
+    set_global_render_config(themed_inquire_config());
+
+    let enum_name = Text::new("Error Enum name:")
         .with_default("MyError")
+        .with_help_message("New or existing enum to hold the error types as variants")
         .prompt()?;
 
     // First, select from common errors
@@ -423,7 +426,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let module = ErrorModule {
-        name: module_name.clone(),
+        name: enum_name.clone(),
         variants,
     };
 
@@ -445,7 +448,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_default(true)
         .prompt()?
     {
-        let path = get_save_location(&module_name)?;
+        let path = get_save_location(&enum_name)?;
         fs::write(&path, code)?;
         println!("Code saved to: {}", path.display());
     }

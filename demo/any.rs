@@ -30,5 +30,5 @@ let is_unit = {
 eprintln!("expr=`{expr:?}`, is_unit={is_unit}");
 
 if is_unit {
-    println!("Printing unit type as `Display`: expr={}", expr.to_string());
+    println!("Printing unit type as `Display`: expr={expr}");
 }

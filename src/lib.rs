@@ -144,18 +144,12 @@ pub use {
         get_verbosity, lazy_static_var, re, set_global_verbosity, static_lazy, thousands, vprtln,
         ColorSupport, TermBgLuma, Verbosity, V,
     },
-    thag_styling::{cprtln, cvprtln, paint_for_role, Color, Lvl, Role, Style, Theme},
+    thag_styling::{
+        cprtln, cvprtln, display_theme_details, display_theme_roles, find_closest_color,
+        paint_for_role, themed_inquire_config, Color, Lvl, Palette, Role, Style, TermAttributes,
+        Theme,
+    },
 };
-
-// pub use thag_profiler::*; // Re-export everything from profiler
-
-// // Re-exports for convenience
-// // These are minimal and don't force users to go through thag_rs
-// pub use thag_profiler::{profile, profiled};
-// // Or if you prefer not to re-export at all, that's fine too
-
-// #[cfg(not(feature = "profiling"))]
-// pub use thag_proc_macros::profiled;
 
 pub use thag_proc_macros::repeat_dash;
 

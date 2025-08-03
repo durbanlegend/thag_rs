@@ -1,9 +1,7 @@
 use inquire::Select;
 use std::{env, io};
 use thag_rs::{
-    auto_help,
-    styling::{display_theme_details, display_theme_roles, TermAttributes, Theme},
-    ThagResult,
+    auto_help, display_theme_details, display_theme_roles, TermAttributes, ThagResult, Theme,
 };
 
 /// Display built-in themes and their styling with terminal setup instructions

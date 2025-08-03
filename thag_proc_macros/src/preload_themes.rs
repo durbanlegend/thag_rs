@@ -2,23 +2,19 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use std::collections::HashMap;
+use std::{collections::HashMap, env};
 use syn::Ident;
 
 #[allow(clippy::too_many_lines)]
 pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
-    eprintln!("current_dir={:?}", std::env::current_dir());
-    let themes_dir = "themes/built_in";
-    // let themes_dir = "/Users/donf/projects/thag_rs/thag_styling/themes/built_in";
+    // eprintln!("\ncurrent_dir={:?}", env::current_dir());
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    // eprintln!("The project manifest directory is: {manifest_dir}");
+    let themes_dir = manifest_dir + "/themes/built_in";
 
     let mut theme_indices = Vec::new();
     let mut bg_to_names: HashMap<(u8, u8, u8), Vec<String>> = HashMap::new();
 
-    // use std::path::PathBuf;
-    // let themes_dir_path = PathBuf::from(themes_dir);
-    // eprintln!("themes_dir_path={}", themes_dir_path.display());
-    // let themes_dir_path = PathBuf::from(themes_dir).canonicalize();
-    // eprintln!("themes_dir_path={themes_dir_path:?}");
     #[allow(clippy::map_unwrap_or, clippy::unnecessary_map_or)]
     for entry in std::fs::read_dir(themes_dir).unwrap() {
         let path = entry.unwrap().path();

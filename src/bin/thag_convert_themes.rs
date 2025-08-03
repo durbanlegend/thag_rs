@@ -37,11 +37,9 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use thag_rs::{
-    auto_help,
-    styling::{find_closest_color, ColorValue, Palette, Style, Theme},
-    ColorSupport, TermBgLuma,
-};
+use thag_common::{ColorSupport, TermBgLuma};
+use thag_rs::auto_help;
+use thag_styling::{find_closest_color, ColorValue, Palette, Style, Theme};
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]

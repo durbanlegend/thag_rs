@@ -17,7 +17,7 @@ use inquire::{set_global_render_config, Confirm, MultiSelect};
 use std::{env, error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::file_navigator;
 use thag_rs::{
-    auto_help, cvprtln, help_system::check_help_and_exit, styling::themed_inquire_config, Role, V,
+    auto_help, cvprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style, V,
 };
 
 file_navigator! {}

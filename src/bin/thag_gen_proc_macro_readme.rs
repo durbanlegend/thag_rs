@@ -13,7 +13,7 @@ use std::{
     path::Path,
 };
 use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
-use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, V};
+use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, Style, V};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]

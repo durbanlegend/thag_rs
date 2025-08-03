@@ -39,14 +39,15 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, Token,
+    parse_file, parse_macro_input, parse_str, DeriveInput, Expr, ExprArray, Ident, LitInt, Token,
 };
 
 #[proc_macro_attribute]
-pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    intercept_and_debug(
+pub fn attribute_basic(attr: TokenStream, input: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(
         cfg!(feature = "expand"),
         "attribute_basic",
+        &attr,
         &input,
         attribute_basic_impl,
     )
@@ -246,4 +247,69 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
         };
         TokenStream::from(expanded)
     })
+}
+
+#[proc_macro]
+pub fn current_dir(input: TokenStream) -> TokenStream {
+    eprintln!("current_dir={:?}", std::env::current_dir());
+    input
+}
+
+/// Conditionally expands attribute macros for debugging.
+///
+/// Utility function for displaying generated code from attribute macros.
+fn maybe_expand_attr_macro<F>(
+    expand: bool,
+    name: &str,
+    attr: &TokenStream,
+    item: &TokenStream,
+    attr_macro: F,
+) -> TokenStream
+where
+    F: Fn(TokenStream, TokenStream) -> TokenStream,
+{
+    let output = attr_macro(attr.clone(), item.clone());
+
+    if expand {
+        expand_output(name, &output);
+    }
+
+    output
+}
+
+fn expand_output(name: &str, output: &TokenStream) {
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
+    let output: proc_macro2::TokenStream = output.clone().into();
+    let token_str = output.to_string();
+    let dash_line = "─".repeat(70);
+
+    match parse_file(&token_str) {
+        Ok(syn_file) => {
+            let pretty_output = prettyplease::unparse(&syn_file);
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+            eprintln!(
+                "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+            );
+            eprint!("{pretty_output}");
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+        }
+        Err(_) => match parse_str::<Expr>(&token_str) {
+            Ok(expr) => {
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
+                );
+                eprintln!("{}", quote!(#expr));
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+            Err(_) => {
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
+                );
+                eprintln!("{token_str}");
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+        },
+    }
 }

@@ -3775,11 +3775,19 @@ version = "0.2.0"
 dependencies = [
  "dirs",
  "documented",
+ "edit",
  "log",
+ "mockall",
+ "ratatui",
  "regex",
+ "scopeguard",
  "serde",
  "strum 0.27.1",
+ "supports-color",
+ "termbg",
  "thiserror 2.0.12",
+ "toml",
+ "toml_edit",
 ]
 
 [[package]]
@@ -3930,11 +3938,14 @@ name = "thag_styling"
 version = "0.2.0"
 dependencies = [
  "inquire",
+ "log",
+ "nu-ansi-term",
  "phf 0.12.1",
  "ratatui",
  "regex",
  "scopeguard",
  "serde",
+ "serial_test",
  "strum 0.27.1",
  "supports-color",
  "tempfile",

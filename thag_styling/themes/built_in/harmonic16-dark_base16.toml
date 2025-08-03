@@ -1,0 +1,117 @@
+name = "Harmonic16 Dark Base16"
+description = "Converted from Harmonic16 Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0b1c2c"]
+bg_rgbs = [[
+    11,
+    28,
+    44,
+]]
+
+[palette.heading1]
+rgb = [
+    191,
+    139,
+    86,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    139,
+    86,
+    191,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    86,
+    139,
+    191,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    191,
+    139,
+    86,
+]
+
+[palette.warning]
+rgb = [
+    139,
+    191,
+    86,
+]
+
+[palette.success]
+rgb = [
+    86,
+    191,
+    139,
+]
+
+[palette.info]
+rgb = [
+    139,
+    86,
+    191,
+]
+
+[palette.emphasis]
+rgb = [
+    191,
+    86,
+    139,
+]
+
+[palette.code]
+rgb = [
+    86,
+    191,
+    139,
+]
+
+[palette.normal]
+rgb = [
+    203,
+    214,
+    226,
+]
+
+[palette.subtle]
+rgb = [
+    98,
+    126,
+    153,
+]
+
+[palette.hint]
+rgb = [
+    98,
+    126,
+    153,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    86,
+    191,
+    139,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    139,
+    86,
+    191,
+]
+style = [
+    "italic",
+    "dim",
+]

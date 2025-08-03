@@ -1,0 +1,117 @@
+name = "Grayscale Light Base16"
+description = "Converted from Grayscale Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f7f7f7"]
+bg_rgbs = [[
+    247,
+    247,
+    247,
+]]
+
+[palette.heading1]
+rgb = [
+    124,
+    124,
+    124,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    104,
+    104,
+    104,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    134,
+    134,
+    134,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    124,
+    124,
+    124,
+]
+
+[palette.warning]
+rgb = [
+    160,
+    160,
+    160,
+]
+
+[palette.success]
+rgb = [
+    142,
+    142,
+    142,
+]
+
+[palette.info]
+rgb = [
+    104,
+    104,
+    104,
+]
+
+[palette.emphasis]
+rgb = [
+    116,
+    116,
+    116,
+]
+
+[palette.code]
+rgb = [
+    142,
+    142,
+    142,
+]
+
+[palette.normal]
+rgb = [
+    70,
+    70,
+    70,
+]
+
+[palette.subtle]
+rgb = [
+    171,
+    171,
+    171,
+]
+
+[palette.hint]
+rgb = [
+    171,
+    171,
+    171,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    142,
+    142,
+    142,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    104,
+    104,
+    104,
+]
+style = [
+    "italic",
+    "dim",
+]

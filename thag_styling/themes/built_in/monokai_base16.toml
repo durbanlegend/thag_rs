@@ -1,0 +1,117 @@
+name = "Monokai Base16"
+description = "Converted from Monokai theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#272822"]
+bg_rgbs = [[
+    39,
+    40,
+    34,
+]]
+
+[palette.heading1]
+rgb = [
+    249,
+    38,
+    114,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    102,
+    217,
+    239,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    161,
+    239,
+    228,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    38,
+    114,
+]
+
+[palette.warning]
+rgb = [
+    244,
+    191,
+    117,
+]
+
+[palette.success]
+rgb = [
+    166,
+    226,
+    46,
+]
+
+[palette.info]
+rgb = [
+    102,
+    217,
+    239,
+]
+
+[palette.emphasis]
+rgb = [
+    174,
+    129,
+    255,
+]
+
+[palette.code]
+rgb = [
+    166,
+    226,
+    46,
+]
+
+[palette.normal]
+rgb = [
+    248,
+    248,
+    242,
+]
+
+[palette.subtle]
+rgb = [
+    117,
+    113,
+    94,
+]
+
+[palette.hint]
+rgb = [
+    117,
+    113,
+    94,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    166,
+    226,
+    46,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    102,
+    217,
+    239,
+]
+style = [
+    "italic",
+    "dim",
+]

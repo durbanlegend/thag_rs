@@ -1,0 +1,117 @@
+name = "Vesper Base16"
+description = "Converted from Vesper theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#101010"]
+bg_rgbs = [[
+    16,
+    16,
+    16,
+]]
+
+[palette.heading1]
+rgb = [
+    222,
+    110,
+    110,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    142,
+    170,
+    170,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    96,
+    165,
+    146,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    222,
+    110,
+    110,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    199,
+    153,
+]
+
+[palette.success]
+rgb = [
+    95,
+    135,
+    135,
+]
+
+[palette.info]
+rgb = [
+    142,
+    170,
+    170,
+]
+
+[palette.emphasis]
+rgb = [
+    214,
+    144,
+    148,
+]
+
+[palette.code]
+rgb = [
+    95,
+    135,
+    135,
+]
+
+[palette.normal]
+rgb = [
+    183,
+    183,
+    183,
+]
+
+[palette.subtle]
+rgb = [
+    51,
+    51,
+    51,
+]
+
+[palette.hint]
+rgb = [
+    51,
+    51,
+    51,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    95,
+    135,
+    135,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    142,
+    170,
+    170,
+]
+style = [
+    "italic",
+    "dim",
+]

@@ -1,0 +1,117 @@
+name = "emil Base16"
+description = "Converted from emil theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#efefef"]
+bg_rgbs = [[
+    239,
+    239,
+    239,
+]]
+
+[palette.heading1]
+rgb = [
+    244,
+    57,
+    121,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    71,
+    19,
+    151,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    33,
+    85,
+    214,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    244,
+    57,
+    121,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    102,
+    155,
+]
+
+[palette.success]
+rgb = [
+    0,
+    115,
+    168,
+]
+
+[palette.info]
+rgb = [
+    71,
+    19,
+    151,
+]
+
+[palette.emphasis]
+rgb = [
+    105,
+    22,
+    182,
+]
+
+[palette.code]
+rgb = [
+    0,
+    115,
+    168,
+]
+
+[palette.normal]
+rgb = [
+    49,
+    49,
+    69,
+]
+
+[palette.subtle]
+rgb = [
+    124,
+    124,
+    152,
+]
+
+[palette.hint]
+rgb = [
+    124,
+    124,
+    152,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    0,
+    115,
+    168,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    71,
+    19,
+    151,
+]
+style = [
+    "italic",
+    "dim",
+]

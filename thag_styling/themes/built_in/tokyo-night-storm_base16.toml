@@ -1,0 +1,117 @@
+name = "Tokyo Night Storm Base16"
+description = "Converted from Tokyo Night Storm theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#24283b"]
+bg_rgbs = [[
+    36,
+    40,
+    59,
+]]
+
+[palette.heading1]
+rgb = [
+    192,
+    202,
+    245,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    42,
+    195,
+    222,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    180,
+    249,
+    248,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    192,
+    202,
+    245,
+]
+
+[palette.warning]
+rgb = [
+    13,
+    185,
+    215,
+]
+
+[palette.success]
+rgb = [
+    158,
+    206,
+    106,
+]
+
+[palette.info]
+rgb = [
+    42,
+    195,
+    222,
+]
+
+[palette.emphasis]
+rgb = [
+    187,
+    154,
+    247,
+]
+
+[palette.code]
+rgb = [
+    158,
+    206,
+    106,
+]
+
+[palette.normal]
+rgb = [
+    169,
+    177,
+    214,
+]
+
+[palette.subtle]
+rgb = [
+    68,
+    75,
+    106,
+]
+
+[palette.hint]
+rgb = [
+    68,
+    75,
+    106,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    158,
+    206,
+    106,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    42,
+    195,
+    222,
+]
+style = [
+    "italic",
+    "dim",
+]

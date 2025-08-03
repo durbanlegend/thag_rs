@@ -1,0 +1,117 @@
+name = "Gruvbox Material Light, Hard Base16"
+description = "Converted from Gruvbox Material Light, Hard theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f9f5d7"]
+bg_rgbs = [[
+    249,
+    245,
+    215,
+]]
+
+[palette.heading1]
+rgb = [
+    193,
+    74,
+    74,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    69,
+    112,
+    122,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    76,
+    122,
+    93,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    193,
+    74,
+    74,
+]
+
+[palette.warning]
+rgb = [
+    180,
+    113,
+    9,
+]
+
+[palette.success]
+rgb = [
+    108,
+    120,
+    46,
+]
+
+[palette.info]
+rgb = [
+    69,
+    112,
+    122,
+]
+
+[palette.emphasis]
+rgb = [
+    148,
+    94,
+    128,
+]
+
+[palette.code]
+rgb = [
+    108,
+    120,
+    46,
+]
+
+[palette.normal]
+rgb = [
+    101,
+    71,
+    53,
+]
+
+[palette.subtle]
+rgb = [
+    168,
+    153,
+    132,
+]
+
+[palette.hint]
+rgb = [
+    168,
+    153,
+    132,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    108,
+    120,
+    46,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    69,
+    112,
+    122,
+]
+style = [
+    "italic",
+    "dim",
+]

@@ -1,0 +1,117 @@
+name = "Terracotta Base16"
+description = "Converted from Terracotta theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#efeae8"]
+bg_rgbs = [[
+    239,
+    234,
+    232,
+]]
+
+[palette.heading1]
+rgb = [
+    167,
+    80,
+    69,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    98,
+    85,
+    116,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    132,
+    127,
+    158,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    167,
+    80,
+    69,
+]
+
+[palette.warning]
+rgb = [
+    206,
+    148,
+    62,
+]
+
+[palette.success]
+rgb = [
+    122,
+    137,
+    74,
+]
+
+[palette.info]
+rgb = [
+    98,
+    85,
+    116,
+]
+
+[palette.emphasis]
+rgb = [
+    141,
+    89,
+    104,
+]
+
+[palette.code]
+rgb = [
+    122,
+    137,
+    74,
+]
+
+[palette.normal]
+rgb = [
+    71,
+    55,
+    49,
+]
+
+[palette.subtle]
+rgb = [
+    192,
+    172,
+    164,
+]
+
+[palette.hint]
+rgb = [
+    192,
+    172,
+    164,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    122,
+    137,
+    74,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    98,
+    85,
+    116,
+]
+style = [
+    "italic",
+    "dim",
+]

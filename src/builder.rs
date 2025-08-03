@@ -69,7 +69,7 @@ use std::{
 };
 use thag_common::{self, debug_log, re, vprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, paint_for_role, ColorInitStrategy, TermAttributes};
+use thag_styling::{cvprtln, paint_for_role, ColorInitStrategy, Style, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -1076,7 +1076,7 @@ pub fn generate(
 
     debug_log!(
         "cargo_manifest_str: {}",
-        shared::disentangle(cargo_manifest_str)
+        thag_common::disentangle(cargo_manifest_str)
     );
 
     // Create or truncate the Cargo.toml file and write the content

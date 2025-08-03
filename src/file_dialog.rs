@@ -26,9 +26,9 @@ use std::{
     iter,
     path::{Path, PathBuf},
 };
-use thag_common::{debug_log, lazy_static_var, re, V};
+use thag_common::{debug_log, lazy_static_var};
 use thag_profiler::profiled;
-use thag_styling::{Lvl, Role};
+use thag_styling::Role;
 use tui_textarea::{Input, TextArea};
 
 /// File dialog mode to distinguish between Open and Save dialogs

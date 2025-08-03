@@ -1,0 +1,117 @@
+name = "darkmoss Base16"
+description = "Converted from darkmoss theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#171e1f"]
+bg_rgbs = [[
+    23,
+    30,
+    31,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    70,
+    88,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    73,
+    128,
+    145,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    102,
+    217,
+    239,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    70,
+    88,
+]
+
+[palette.warning]
+rgb = [
+    253,
+    177,
+    31,
+]
+
+[palette.success]
+rgb = [
+    73,
+    145,
+    128,
+]
+
+[palette.info]
+rgb = [
+    73,
+    128,
+    145,
+]
+
+[palette.emphasis]
+rgb = [
+    155,
+    192,
+    200,
+]
+
+[palette.code]
+rgb = [
+    73,
+    145,
+    128,
+]
+
+[palette.normal]
+rgb = [
+    199,
+    199,
+    165,
+]
+
+[palette.subtle]
+rgb = [
+    85,
+    94,
+    95,
+]
+
+[palette.hint]
+rgb = [
+    85,
+    94,
+    95,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    73,
+    145,
+    128,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    73,
+    128,
+    145,
+]
+style = [
+    "italic",
+    "dim",
+]

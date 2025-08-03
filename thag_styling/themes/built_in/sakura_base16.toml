@@ -1,0 +1,117 @@
+name = "Sakura Base16"
+description = "Converted from Sakura theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#feedf3"]
+bg_rgbs = [[
+    254,
+    237,
+    243,
+]]
+
+[palette.heading1]
+rgb = [
+    223,
+    45,
+    82,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    110,
+    147,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    29,
+    137,
+    145,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    223,
+    45,
+    82,
+]
+
+[palette.warning]
+rgb = [
+    194,
+    148,
+    97,
+]
+
+[palette.success]
+rgb = [
+    46,
+    145,
+    109,
+]
+
+[palette.info]
+rgb = [
+    0,
+    110,
+    147,
+]
+
+[palette.emphasis]
+rgb = [
+    94,
+    33,
+    128,
+]
+
+[palette.code]
+rgb = [
+    46,
+    145,
+    109,
+]
+
+[palette.normal]
+rgb = [
+    86,
+    68,
+    72,
+]
+
+[palette.subtle]
+rgb = [
+    117,
+    95,
+    100,
+]
+
+[palette.hint]
+rgb = [
+    117,
+    95,
+    100,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    46,
+    145,
+    109,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    0,
+    110,
+    147,
+]
+style = [
+    "italic",
+    "dim",
+]

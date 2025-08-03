@@ -1,0 +1,117 @@
+name = "Primer Light Base16"
+description = "Converted from Primer Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fafbfc"]
+bg_rgbs = [[
+    250,
+    251,
+    252,
+]]
+
+[palette.heading1]
+rgb = [
+    215,
+    58,
+    73,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    3,
+    102,
+    214,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    121,
+    184,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    215,
+    58,
+    73,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    211,
+    61,
+]
+
+[palette.success]
+rgb = [
+    40,
+    167,
+    69,
+]
+
+[palette.info]
+rgb = [
+    3,
+    102,
+    214,
+]
+
+[palette.emphasis]
+rgb = [
+    234,
+    74,
+    170,
+]
+
+[palette.code]
+rgb = [
+    40,
+    167,
+    69,
+]
+
+[palette.normal]
+rgb = [
+    47,
+    54,
+    61,
+]
+
+[palette.subtle]
+rgb = [
+    149,
+    157,
+    165,
+]
+
+[palette.hint]
+rgb = [
+    149,
+    157,
+    165,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    40,
+    167,
+    69,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    3,
+    102,
+    214,
+]
+style = [
+    "italic",
+    "dim",
+]

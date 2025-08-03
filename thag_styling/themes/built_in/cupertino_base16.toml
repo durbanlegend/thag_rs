@@ -1,0 +1,117 @@
+name = "Cupertino Base16"
+description = "Converted from Cupertino theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[
+    255,
+    255,
+    255,
+]]
+
+[palette.heading1]
+rgb = [
+    196,
+    26,
+    21,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    0,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    49,
+    132,
+    149,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    196,
+    26,
+    21,
+]
+
+[palette.warning]
+rgb = [
+    130,
+    107,
+    40,
+]
+
+[palette.success]
+rgb = [
+    0,
+    116,
+    0,
+]
+
+[palette.info]
+rgb = [
+    0,
+    0,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    169,
+    13,
+    145,
+]
+
+[palette.code]
+rgb = [
+    0,
+    116,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    64,
+    64,
+    64,
+]
+
+[palette.subtle]
+rgb = [
+    128,
+    128,
+    128,
+]
+
+[palette.hint]
+rgb = [
+    128,
+    128,
+    128,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    0,
+    116,
+    0,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    0,
+    0,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

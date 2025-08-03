@@ -2,7 +2,7 @@
 use crate::{
     debug_log,
     tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
-    vprtln, CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V,
+    vprtln, CrosstermEventReader, EventReader, ThagError, ThagResult, V,
 };
 use edit::edit_file;
 use ratatui::style::{Color, Style};
@@ -86,7 +86,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     // ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
-        title_style: Style::new().fg(Color::from(&Role::Heading3)),
+        title_style: Style::new().fg(Color::from(&thag_styling::Role::Heading3)),
         remove_keys: &[""; 0],
         add_keys: &[],
     };

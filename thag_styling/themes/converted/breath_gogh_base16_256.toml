@@ -1,0 +1,61 @@
+name = "Breath (Gogh) Base16 256"
+description = "Converted from Breath (Gogh) theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1e2229"]
+bg_rgbs = [[
+    30,
+    34,
+    41,
+]]
+
+[palette.heading1]
+color256 = 102
+style = ["bold"]
+
+[palette.heading2]
+color256 = 97
+style = ["bold"]
+
+[palette.heading3]
+color256 = 74
+style = ["bold"]
+
+[palette.error]
+color256 = 102
+
+[palette.warning]
+color256 = 71
+
+[palette.success]
+color256 = 215
+
+[palette.info]
+color256 = 97
+
+[palette.emphasis]
+color256 = 36
+
+[palette.code]
+color256 = 215
+
+[palette.normal]
+color256 = 97
+
+[palette.subtle]
+color256 = 208
+
+[palette.hint]
+color256 = 208
+style = ["italic"]
+
+[palette.debug]
+color256 = 215
+style = ["dim"]
+
+[palette.trace]
+color256 = 97
+style = [
+    "italic",
+    "dim",
+]

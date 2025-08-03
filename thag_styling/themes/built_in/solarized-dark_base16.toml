@@ -1,0 +1,117 @@
+name = "Solarized Dark Base16"
+description = "Converted from Solarized Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#002b36"]
+bg_rgbs = [[
+    0,
+    43,
+    54,
+]]
+
+[palette.heading1]
+rgb = [
+    220,
+    50,
+    47,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    38,
+    139,
+    210,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    42,
+    161,
+    152,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    220,
+    50,
+    47,
+]
+
+[palette.warning]
+rgb = [
+    181,
+    137,
+    0,
+]
+
+[palette.success]
+rgb = [
+    133,
+    153,
+    0,
+]
+
+[palette.info]
+rgb = [
+    38,
+    139,
+    210,
+]
+
+[palette.emphasis]
+rgb = [
+    108,
+    113,
+    196,
+]
+
+[palette.code]
+rgb = [
+    133,
+    153,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    147,
+    161,
+    161,
+]
+
+[palette.subtle]
+rgb = [
+    101,
+    123,
+    131,
+]
+
+[palette.hint]
+rgb = [
+    101,
+    123,
+    131,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    133,
+    153,
+    0,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    38,
+    139,
+    210,
+]
+style = [
+    "italic",
+    "dim",
+]

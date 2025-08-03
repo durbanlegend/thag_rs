@@ -1,0 +1,117 @@
+name = "Silk Dark Base16"
+description = "Converted from Silk Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0e3c46"]
+bg_rgbs = [[
+    14,
+    60,
+    70,
+]]
+
+[palette.heading1]
+rgb = [
+    251,
+    105,
+    83,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    70,
+    189,
+    221,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    63,
+    178,
+    185,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    105,
+    83,
+]
+
+[palette.warning]
+rgb = [
+    252,
+    227,
+    128,
+]
+
+[palette.success]
+rgb = [
+    115,
+    216,
+    173,
+]
+
+[palette.info]
+rgb = [
+    70,
+    189,
+    221,
+]
+
+[palette.emphasis]
+rgb = [
+    117,
+    107,
+    138,
+]
+
+[palette.code]
+rgb = [
+    115,
+    216,
+    173,
+]
+
+[palette.normal]
+rgb = [
+    199,
+    219,
+    221,
+]
+
+[palette.subtle]
+rgb = [
+    88,
+    112,
+    115,
+]
+
+[palette.hint]
+rgb = [
+    88,
+    112,
+    115,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    115,
+    216,
+    173,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    70,
+    189,
+    221,
+]
+style = [
+    "italic",
+    "dim",
+]

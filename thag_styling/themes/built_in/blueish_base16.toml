@@ -1,0 +1,117 @@
+name = "Blueish Base16"
+description = "Converted from Blueish theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#182430"]
+bg_rgbs = [[
+    24,
+    36,
+    48,
+]]
+
+[palette.heading1]
+rgb = [
+    76,
+    229,
+    135,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    130,
+    170,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    95,
+    209,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    76,
+    229,
+    135,
+]
+
+[palette.warning]
+rgb = [
+    130,
+    170,
+    255,
+]
+
+[palette.success]
+rgb = [
+    195,
+    232,
+    141,
+]
+
+[palette.info]
+rgb = [
+    130,
+    170,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    255,
+    132,
+    221,
+]
+
+[palette.code]
+rgb = [
+    195,
+    232,
+    141,
+]
+
+[palette.normal]
+rgb = [
+    200,
+    225,
+    248,
+]
+
+[palette.subtle]
+rgb = [
+    97,
+    109,
+    120,
+]
+
+[palette.hint]
+rgb = [
+    97,
+    109,
+    120,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    195,
+    232,
+    141,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    130,
+    170,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

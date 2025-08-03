@@ -1,0 +1,117 @@
+name = "Chalk "
+description = "Converted from Chalk theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#151515"]
+bg_rgbs = [[
+    21,
+    21,
+    21,
+]]
+
+[palette.heading1]
+rgb = [
+    250,
+    133,
+    156,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    90,
+    185,
+    237,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    16,
+    188,
+    173,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    133,
+    156,
+]
+
+[palette.warning]
+rgb = [
+    234,
+    153,
+    113,
+]
+
+[palette.success]
+rgb = [
+    161,
+    187,
+    84,
+]
+
+[palette.info]
+rgb = [
+    90,
+    185,
+    237,
+]
+
+[palette.emphasis]
+rgb = [
+    219,
+    143,
+    234,
+]
+
+[palette.code]
+rgb = [
+    161,
+    187,
+    84,
+]
+
+[palette.normal]
+rgb = [
+    208,
+    208,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    172,
+    194,
+    103,
+]
+
+[palette.hint]
+rgb = [
+    237,
+    169,
+    135,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    161,
+    187,
+    84,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    90,
+    185,
+    237,
+]
+style = [
+    "italic",
+    "dim",
+]

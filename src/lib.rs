@@ -108,7 +108,8 @@ pub mod manifest;
 //-----------------------------------------------------------------------------
 /// Configuration loader
 #[cfg(feature = "config")]
-pub mod config;
+pub use thag_common::config;
+// pub mod config;
 /// Assess terminal capabilities and current theme
 #[cfg(feature = "color_detect")]
 pub mod terminal; // Colour support and theme detection
@@ -139,11 +140,11 @@ pub use {
     errors::{ThagError, ThagResult},
     log, // re-export log crate for debug_log
     thag_common::{
-        debug_timings, debug_log, escape_path_for_windows, get_home_dir, get_home_dir_string,
-        get_verbosity, lazy_static_var, re, set_global_verbosity, static_lazy, thousands,
-        vprtln, ColorSupport, TermBgLuma, Verbosity, V,
+        debug_log, debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string,
+        get_verbosity, lazy_static_var, re, set_global_verbosity, static_lazy, thousands, vprtln,
+        ColorSupport, TermBgLuma, Verbosity, V,
     },
-    thag_styling::{Color, Lvl, Role, Style, Theme, paint_for_role},
+    thag_styling::{cprtln, cvprtln, paint_for_role, Color, Lvl, Role, Style, Theme},
 };
 
 // pub use thag_profiler::*; // Re-export everything from profiler

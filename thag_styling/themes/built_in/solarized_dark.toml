@@ -1,0 +1,54 @@
+# 1. Uses exactly the same accent colors in both themes
+# 2. Carefully designed for both light and dark backgrounds
+# 3. Based on CIELAB color space for perceptual uniformity
+# 4. Color values maintain precise contrast ratios
+# 5. Reduced blue light component for eye comfort
+
+# Base Colors (Dark to Light):
+# Base03:  #002b36  (Dark background)
+# Base02:  #073642  (Dark highlights)
+# Base01:  #586e75  (Optional emphasized content)
+# Base00:  #657b83  (Body text)
+# Base0:   #839496  (Primary content)
+# Base1:   #93a1a1  (Optional emphasized content)
+# Base2:   #eee8d5  (Light highlights)
+# Base3:   #fdf6e3  (Light background)
+
+# Accent Colors:
+# Yellow:  #b58900
+# Orange:  #cb4b16
+# Red:     #dc322f
+# Magenta: #d33682
+# Violet:  #6c71c4
+# Blue:    #268bd2
+# Cyan:    #2aa198
+# Green:   #859900
+
+name = "Solarized Dark"
+description = "Precision colors for machines and people"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#002b36"]                                # Base03: Dark background
+
+[palette]
+# Headers and Structure
+heading1 = { rgb = [38, 139, 210], style = ["bold"] } # Blue
+heading2 = { rgb = [42, 161, 152], style = ["bold"] } # Cyan
+heading3 = { rgb = [133, 153, 0], style = ["bold"] }  # Green
+
+# Status/Alerts
+error = { rgb = [220, 50, 47] }   # Red
+warning = { rgb = [203, 75, 22] } # Orange
+success = { rgb = [133, 153, 0] } # Green
+info = { rgb = [38, 139, 210] }   # Blue
+
+# Emphasis levels
+emphasis = { rgb = [108, 113, 196] }                 # Violet
+code = { rgb = [42, 161, 152] }                      # Cyan
+normal = { rgb = [147, 161, 161] }                   # Base1: Emphasized content
+subtle = { rgb = [88, 110, 117] }                    # Base01: Optional emphasized content
+hint = { rgb = [131, 148, 150], style = ["italic"] } # Base0: Primary content
+
+# Development
+debug = { rgb = [88, 110, 117] } # Base01
+trace = { rgb = [7, 54, 66] }    # Base02: Background highlights

@@ -1,0 +1,117 @@
+name = "Ayu Light Base16"
+description = "Converted from Ayu Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fafafa"]
+bg_rgbs = [[
+    250,
+    250,
+    250,
+]]
+
+[palette.heading1]
+rgb = [
+    240,
+    113,
+    120,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    54,
+    163,
+    217,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    76,
+    191,
+    153,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    240,
+    113,
+    120,
+]
+
+[palette.warning]
+rgb = [
+    242,
+    174,
+    73,
+]
+
+[palette.success]
+rgb = [
+    134,
+    179,
+    0,
+]
+
+[palette.info]
+rgb = [
+    54,
+    163,
+    217,
+]
+
+[palette.emphasis]
+rgb = [
+    163,
+    122,
+    204,
+]
+
+[palette.code]
+rgb = [
+    134,
+    179,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    92,
+    103,
+    115,
+]
+
+[palette.subtle]
+rgb = [
+    171,
+    176,
+    182,
+]
+
+[palette.hint]
+rgb = [
+    171,
+    176,
+    182,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    134,
+    179,
+    0,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    54,
+    163,
+    217,
+]
+style = [
+    "italic",
+    "dim",
+]

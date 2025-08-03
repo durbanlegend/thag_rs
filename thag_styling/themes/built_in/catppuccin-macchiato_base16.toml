@@ -1,0 +1,117 @@
+name = "Catppuccin Macchiato Base16"
+description = "Converted from Catppuccin Macchiato theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#24273a"]
+bg_rgbs = [[
+    36,
+    39,
+    58,
+]]
+
+[palette.heading1]
+rgb = [
+    237,
+    135,
+    150,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    138,
+    173,
+    244,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    139,
+    213,
+    202,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    237,
+    135,
+    150,
+]
+
+[palette.warning]
+rgb = [
+    238,
+    212,
+    159,
+]
+
+[palette.success]
+rgb = [
+    166,
+    218,
+    149,
+]
+
+[palette.info]
+rgb = [
+    138,
+    173,
+    244,
+]
+
+[palette.emphasis]
+rgb = [
+    198,
+    160,
+    246,
+]
+
+[palette.code]
+rgb = [
+    166,
+    218,
+    149,
+]
+
+[palette.normal]
+rgb = [
+    202,
+    211,
+    245,
+]
+
+[palette.subtle]
+rgb = [
+    73,
+    77,
+    100,
+]
+
+[palette.hint]
+rgb = [
+    73,
+    77,
+    100,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    166,
+    218,
+    149,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    138,
+    173,
+    244,
+]
+style = [
+    "italic",
+    "dim",
+]

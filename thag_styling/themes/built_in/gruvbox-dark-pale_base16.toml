@@ -1,0 +1,117 @@
+name = "Gruvbox dark, pale Base16"
+description = "Converted from Gruvbox dark, pale theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#262626"]
+bg_rgbs = [[
+    38,
+    38,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    215,
+    95,
+    95,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    131,
+    173,
+    173,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    133,
+    173,
+    133,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    215,
+    95,
+    95,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    175,
+    0,
+]
+
+[palette.success]
+rgb = [
+    175,
+    175,
+    0,
+]
+
+[palette.info]
+rgb = [
+    131,
+    173,
+    173,
+]
+
+[palette.emphasis]
+rgb = [
+    212,
+    133,
+    173,
+]
+
+[palette.code]
+rgb = [
+    175,
+    175,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    218,
+    185,
+    151,
+]
+
+[palette.subtle]
+rgb = [
+    138,
+    138,
+    138,
+]
+
+[palette.hint]
+rgb = [
+    138,
+    138,
+    138,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    175,
+    175,
+    0,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    131,
+    173,
+    173,
+]
+style = [
+    "italic",
+    "dim",
+]

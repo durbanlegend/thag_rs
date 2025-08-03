@@ -13,6 +13,8 @@ use std::sync::{LazyLock, Mutex};
 use std::{path::PathBuf, time::Instant};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
+pub use crate::config::{ConfigError, ConfigResult};
+
 /// Result type alias for `thag_common` operations
 pub type ThagCommonResult<T> = Result<T, ThagCommonError>;
 
@@ -464,3 +466,11 @@ pub fn thousands<T: Display>(n: T) -> String {
         .unwrap()
         .join(",")
 }
+
+/// Configuration management module
+#[cfg(feature = "config")]
+pub mod config;
+
+/// Terminal detection and capabilities module
+#[cfg(feature = "color_detect")]
+pub mod terminal;

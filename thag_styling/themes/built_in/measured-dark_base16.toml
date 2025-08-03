@@ -1,0 +1,117 @@
+name = "Measured Dark Base16"
+description = "Converted from Measured Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#00211f"]
+bg_rgbs = [[
+    0,
+    33,
+    31,
+]]
+
+[palette.heading1]
+rgb = [
+    206,
+    126,
+    142,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    136,
+    176,
+    218,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    98,
+    192,
+    190,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    206,
+    126,
+    142,
+]
+
+[palette.warning]
+rgb = [
+    191,
+    172,
+    78,
+]
+
+[palette.success]
+rgb = [
+    86,
+    193,
+    111,
+]
+
+[palette.info]
+rgb = [
+    136,
+    176,
+    218,
+]
+
+[palette.emphasis]
+rgb = [
+    179,
+    155,
+    224,
+]
+
+[palette.code]
+rgb = [
+    86,
+    193,
+    111,
+]
+
+[palette.normal]
+rgb = [
+    220,
+    220,
+    220,
+]
+
+[palette.subtle]
+rgb = [
+    171,
+    171,
+    171,
+]
+
+[palette.hint]
+rgb = [
+    171,
+    171,
+    171,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    86,
+    193,
+    111,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    136,
+    176,
+    218,
+]
+style = [
+    "italic",
+    "dim",
+]

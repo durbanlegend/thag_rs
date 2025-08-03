@@ -1,0 +1,117 @@
+name = "Windows 10 Base16"
+description = "Converted from Windows 10 theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0c0c0c"]
+bg_rgbs = [[
+    12,
+    12,
+    12,
+]]
+
+[palette.heading1]
+rgb = [
+    231,
+    72,
+    86,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    59,
+    120,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    97,
+    214,
+    214,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    231,
+    72,
+    86,
+]
+
+[palette.warning]
+rgb = [
+    249,
+    241,
+    165,
+]
+
+[palette.success]
+rgb = [
+    22,
+    198,
+    12,
+]
+
+[palette.info]
+rgb = [
+    59,
+    120,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    180,
+    0,
+    158,
+]
+
+[palette.code]
+rgb = [
+    22,
+    198,
+    12,
+]
+
+[palette.normal]
+rgb = [
+    204,
+    204,
+    204,
+]
+
+[palette.subtle]
+rgb = [
+    118,
+    118,
+    118,
+]
+
+[palette.hint]
+rgb = [
+    118,
+    118,
+    118,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    22,
+    198,
+    12,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    59,
+    120,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

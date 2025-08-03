@@ -1,0 +1,117 @@
+name = "caroline Base16"
+description = "Converted from caroline theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1c1213"]
+bg_rgbs = [[
+    28,
+    18,
+    19,
+]]
+
+[palette.heading1]
+rgb = [
+    194,
+    79,
+    87,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    104,
+    76,
+    89,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    107,
+    101,
+    102,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    194,
+    79,
+    87,
+]
+
+[palette.warning]
+rgb = [
+    242,
+    129,
+    113,
+]
+
+[palette.success]
+rgb = [
+    128,
+    108,
+    97,
+]
+
+[palette.info]
+rgb = [
+    104,
+    76,
+    89,
+]
+
+[palette.emphasis]
+rgb = [
+    166,
+    54,
+    80,
+]
+
+[palette.code]
+rgb = [
+    128,
+    108,
+    97,
+]
+
+[palette.normal]
+rgb = [
+    168,
+    117,
+    105,
+]
+
+[palette.subtle]
+rgb = [
+    109,
+    71,
+    69,
+]
+
+[palette.hint]
+rgb = [
+    109,
+    71,
+    69,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    128,
+    108,
+    97,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    104,
+    76,
+    89,
+]
+style = [
+    "italic",
+    "dim",
+]

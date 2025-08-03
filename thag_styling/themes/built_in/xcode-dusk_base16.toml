@@ -1,0 +1,117 @@
+name = "XCode Dusk Base16"
+description = "Converted from XCode Dusk theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#282b35"]
+bg_rgbs = [[
+    40,
+    43,
+    53,
+]]
+
+[palette.heading1]
+rgb = [
+    178,
+    24,
+    137,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    121,
+    14,
+    173,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    160,
+    190,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    178,
+    24,
+    137,
+]
+
+[palette.warning]
+rgb = [
+    67,
+    130,
+    136,
+]
+
+[palette.success]
+rgb = [
+    223,
+    0,
+    2,
+]
+
+[palette.info]
+rgb = [
+    121,
+    14,
+    173,
+]
+
+[palette.emphasis]
+rgb = [
+    178,
+    24,
+    137,
+]
+
+[palette.code]
+rgb = [
+    223,
+    0,
+    2,
+]
+
+[palette.normal]
+rgb = [
+    147,
+    149,
+    153,
+]
+
+[palette.subtle]
+rgb = [
+    104,
+    106,
+    113,
+]
+
+[palette.hint]
+rgb = [
+    104,
+    106,
+    113,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    223,
+    0,
+    2,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    121,
+    14,
+    173,
+]
+style = [
+    "italic",
+    "dim",
+]

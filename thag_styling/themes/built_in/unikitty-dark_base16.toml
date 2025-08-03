@@ -1,0 +1,117 @@
+name = "Unikitty Dark Base16"
+description = "Converted from Unikitty Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2e2a31"]
+bg_rgbs = [[
+    46,
+    42,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    216,
+    19,
+    127,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    121,
+    106,
+    245,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    20,
+    155,
+    218,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    216,
+    19,
+    127,
+]
+
+[palette.warning]
+rgb = [
+    220,
+    138,
+    14,
+]
+
+[palette.success]
+rgb = [
+    23,
+    173,
+    152,
+]
+
+[palette.info]
+rgb = [
+    121,
+    106,
+    245,
+]
+
+[palette.emphasis]
+rgb = [
+    187,
+    96,
+    234,
+]
+
+[palette.code]
+rgb = [
+    23,
+    173,
+    152,
+]
+
+[palette.normal]
+rgb = [
+    188,
+    186,
+    190,
+]
+
+[palette.subtle]
+rgb = [
+    131,
+    128,
+    133,
+]
+
+[palette.hint]
+rgb = [
+    131,
+    128,
+    133,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    23,
+    173,
+    152,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    121,
+    106,
+    245,
+]
+style = [
+    "italic",
+    "dim",
+]

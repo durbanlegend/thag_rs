@@ -1,0 +1,117 @@
+name = "Aztec Base16"
+description = "Converted from Aztec theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#101600"]
+bg_rgbs = [[
+    16,
+    22,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    238,
+    46,
+    0,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    91,
+    74,
+    159,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    61,
+    148,
+    165,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    238,
+    46,
+    0,
+]
+
+[palette.warning]
+rgb = [
+    238,
+    187,
+    0,
+]
+
+[palette.success]
+rgb = [
+    99,
+    217,
+    50,
+]
+
+[palette.info]
+rgb = [
+    91,
+    74,
+    159,
+]
+
+[palette.emphasis]
+rgb = [
+    136,
+    62,
+    159,
+]
+
+[palette.code]
+rgb = [
+    99,
+    217,
+    50,
+]
+
+[palette.normal]
+rgb = [
+    255,
+    218,
+    81,
+]
+
+[palette.subtle]
+rgb = [
+    46,
+    46,
+    5,
+]
+
+[palette.hint]
+rgb = [
+    46,
+    46,
+    5,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    99,
+    217,
+    50,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    91,
+    74,
+    159,
+]
+style = [
+    "italic",
+    "dim",
+]

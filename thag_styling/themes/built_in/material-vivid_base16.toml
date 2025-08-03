@@ -1,0 +1,117 @@
+name = "Material Vivid Base16"
+description = "Converted from Material Vivid theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#202124"]
+bg_rgbs = [[
+    32,
+    33,
+    36,
+]]
+
+[palette.heading1]
+rgb = [
+    244,
+    67,
+    54,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    33,
+    150,
+    243,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    188,
+    212,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    244,
+    67,
+    54,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    235,
+    59,
+]
+
+[palette.success]
+rgb = [
+    0,
+    230,
+    118,
+]
+
+[palette.info]
+rgb = [
+    33,
+    150,
+    243,
+]
+
+[palette.emphasis]
+rgb = [
+    103,
+    58,
+    183,
+]
+
+[palette.code]
+rgb = [
+    0,
+    230,
+    118,
+]
+
+[palette.normal]
+rgb = [
+    128,
+    134,
+    139,
+]
+
+[palette.subtle]
+rgb = [
+    68,
+    70,
+    77,
+]
+
+[palette.hint]
+rgb = [
+    68,
+    70,
+    77,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    0,
+    230,
+    118,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    33,
+    150,
+    243,
+]
+style = [
+    "italic",
+    "dim",
+]

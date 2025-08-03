@@ -592,37 +592,6 @@ pub struct EditData<'a> {
     pub history: Option<History>,
 }
 
-impl From<&crate::styling::Style> for RataStyle {
-    #[profiled]
-    fn from(style: &crate::styling::Style) -> Self {
-        let mut rata_style = Self::default();
-
-        if let Some(color_info) = &style.foreground {
-            rata_style = rata_style.fg(ratatui::style::Color::Indexed(color_info.index));
-        }
-
-        if style.bold {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::BOLD);
-        }
-        if style.italic {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::ITALIC);
-        }
-        if style.dim {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::DIM);
-        }
-
-        rata_style
-    }
-}
-
-// Implement conversion to ratatui's Color
-impl From<&Role> for Color {
-    #[profiled]
-    fn from(role: &Role) -> Self {
-        Self::Indexed(u8::from(role))
-    }
-}
-
 /// Struct to hold display-related parameters for the TUI editor
 #[derive(Debug)]
 pub struct KeyDisplay<'a> {
@@ -696,7 +665,7 @@ where
 {
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_fg: Role = Role::EMPH;
+    let mut tui_highlight_fg: Role = Role::Emphasis;
     let mut saved = false;
     let mut status_message: String = String::default(); // Add status message variable
 
@@ -1000,12 +969,12 @@ where
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
                     tui_highlight_fg = match tui_highlight_fg {
-                        Role::EMPH => Role::INFO,
-                        Role::INFO => Role::ERR,
-                        Role::ERR => Role::WARN,
-                        Role::WARN => Role::HD1,
-                        Role::HD1 => Role::HD2,
-                        _ => Role::EMPH,
+                        Role::Emphasis => Role::Info,
+                        Role::Info => Role::Error,
+                        Role::Error => Role::Warning,
+                        Role::Warning => Role::Heading1,
+                        Role::Heading1 => Role::Heading2,
+                        _ => Role::Emphasis,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]

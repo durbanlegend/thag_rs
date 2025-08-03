@@ -11,6 +11,8 @@ keywords = ["styling", "terminal", "themes", "colors", "ansi"]
 rust-version = "1.82"
 
 [dependencies]
+log = "0.4.27"
+nu-ansi-term = { version = "0.50.1", optional = true }
 phf = { version = "0.12", features = ["macros"] }
 regex = "1.11.1"
 serde = { version = "1.0.219", features = ["derive"] }
@@ -40,7 +42,21 @@ default = ["basic"]
 basic = []
 
 # Terminal color detection and background detection
-color_detect = ["supports-color", "termbg", "scopeguard"]
+color_detect = [
+    "thag_common/color_detect",
+    "supports-color",
+    "termbg",
+    "scopeguard",
+]
+
+# Configuration support (uses thag_common config module)
+config = ["thag_common/config"]
+
+# Tools integration
+tools = []
+
+# Debug logging support
+debug_logging = ["thag_common/debug_logging"]
 
 # Inquire integration for themed UI
 inquire_theming = ["inquire"]
@@ -48,9 +64,15 @@ inquire_theming = ["inquire"]
 # Full ratatui integration
 ratatui_support = ["ratatui", "scopeguard"]
 
+# Support for thag REPL
+repl_support = ["nu-ansi-term"]
+
 # All advanced features
-full = ["color_detect", "inquire_theming", "ratatui_support"]
+full = ["color_detect", "config", "tools", "inquire_theming", "ratatui_support"]
 
 [lib]
 name = "thag_styling"
 path = "src/lib.rs"
+
+[dev-dependencies]
+serial_test = "3.2.0"

@@ -1,0 +1,117 @@
+name = "Darktooth Base16"
+description = "Converted from Darktooth theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1d2021"]
+bg_rgbs = [[
+    29,
+    32,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    251,
+    84,
+    63,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    13,
+    102,
+    120,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    139,
+    165,
+    155,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    84,
+    63,
+]
+
+[palette.warning]
+rgb = [
+    250,
+    192,
+    59,
+]
+
+[palette.success]
+rgb = [
+    149,
+    192,
+    133,
+]
+
+[palette.info]
+rgb = [
+    13,
+    102,
+    120,
+]
+
+[palette.emphasis]
+rgb = [
+    143,
+    70,
+    115,
+]
+
+[palette.code]
+rgb = [
+    149,
+    192,
+    133,
+]
+
+[palette.normal]
+rgb = [
+    168,
+    153,
+    132,
+]
+
+[palette.subtle]
+rgb = [
+    102,
+    92,
+    84,
+]
+
+[palette.hint]
+rgb = [
+    102,
+    92,
+    84,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    149,
+    192,
+    133,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    13,
+    102,
+    120,
+]
+style = [
+    "italic",
+    "dim",
+]

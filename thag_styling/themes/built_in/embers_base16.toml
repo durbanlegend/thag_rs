@@ -1,0 +1,117 @@
+name = "Embers Base16"
+description = "Converted from Embers theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#16130f"]
+bg_rgbs = [[
+    22,
+    19,
+    15,
+]]
+
+[palette.heading1]
+rgb = [
+    130,
+    109,
+    87,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    109,
+    87,
+    130,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    87,
+    109,
+    130,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    130,
+    109,
+    87,
+]
+
+[palette.warning]
+rgb = [
+    109,
+    130,
+    87,
+]
+
+[palette.success]
+rgb = [
+    87,
+    130,
+    109,
+]
+
+[palette.info]
+rgb = [
+    109,
+    87,
+    130,
+]
+
+[palette.emphasis]
+rgb = [
+    130,
+    87,
+    109,
+]
+
+[palette.code]
+rgb = [
+    87,
+    130,
+    109,
+]
+
+[palette.normal]
+rgb = [
+    163,
+    154,
+    144,
+]
+
+[palette.subtle]
+rgb = [
+    90,
+    80,
+    71,
+]
+
+[palette.hint]
+rgb = [
+    90,
+    80,
+    71,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    87,
+    130,
+    109,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    109,
+    87,
+    130,
+]
+style = [
+    "italic",
+    "dim",
+]

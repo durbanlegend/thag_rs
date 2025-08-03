@@ -272,7 +272,7 @@ ast = [
 ]
 
 ## Configuration
-config = ["core", "edit", "mockall", "toml_edit"]
+config = ["core", "edit", "mockall", "toml_edit", "thag_styling/config"]
 
 ## Terminal color support
 color_detect = [
@@ -300,18 +300,20 @@ build = [
 
 ## TUI editing
 tui = [
-    "build",                # Full build capabilities
+    "build",                        # Full build capabilities
     "scopeguard",
     "serde_json",
     "tui-textarea",
     "thag_proc_macros/tui",
+    "thag_styling/ratatui_support",
 ] # UI Features
 
 ## REPL capability
 repl = [
-    "tui",          # Includes all TUI features
+    "tui",                       # Includes all TUI features
     "nu-ansi-term",
     "reedline",
+    "thag_styling/repl_support",
 ]
 
 ## All features

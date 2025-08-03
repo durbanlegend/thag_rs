@@ -12,15 +12,11 @@ debug_logging = []
 simplelog = ["thag_rs/simplelog"]
 tools = ["thag_rs/tools"]
 */
-/// Demo version of `styling` options of `thag_rs`.
-/// Currently requires themes/built_in dir and contents to be manually copied into $TMPDIR/thag_rs/styling
-///
-///
-/// E.g. `thag demo/styling_demo.rs`
-//# Purpose: Investigate possibility of spltting off `styling` into an independent subcrate.
-//# Categories: prototype, reference, testing
-use log;
-use phf;
+use crate::{StylingError, StylingResult, ThemeError};
+
+// Type alias for compatibility with PaletteMethods proc macro
+type ThagResult<T> = StylingResult<T>;
+
 use serde::Deserialize;
 use std::fmt;
 use std::fs;
@@ -29,20 +25,22 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, IntoEnumIterator};
+use thag_common::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, V};
 use thag_proc_macros::{preload_themes, PaletteMethods};
-use thag_rs::errors::ThemeError;
-use thag_rs::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagError, ThagResult, V};
 
 // TODO temp location
 // "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::styled;
+// use thag_demo_proc_macros::styled;
 
 #[cfg(feature = "color_detect")]
-use thag_rs::terminal::{self, get_term_bg_rgb, is_light_color};
+use thag_common::terminal::{self, get_term_bg_rgb, is_light_color};
 
 #[cfg(feature = "config")]
-use thag_rs::config::maybe_config;
+use thag_common::config::maybe_config;
+
+#[cfg(feature = "ratatui_support")]
+use ratatui::style::Style as RataStyle;
 
 /// Trait for providing styling configuration to break circular dependency
 pub trait StylingConfigProvider {
@@ -132,10 +130,10 @@ impl StylingConfigProvider for ConfigProvider {
 
 #[allow(unused_imports)]
 #[cfg(debug_assertions)]
-use thag_rs::debug_log;
+use thag_common::debug_log;
 
 /// Create an inquire `RenderConfig` that respects the current `thag_rs` theme
-#[cfg(all(feature = "color_detect", feature = "tools"))]
+#[cfg(all(feature = "color_detect", feature = "config", feature = "tools"))]
 #[must_use]
 pub fn themed_inquire_config() -> inquire::ui::RenderConfig<'static> {
     use inquire::ui::{RenderConfig, StyleSheet};
@@ -490,7 +488,7 @@ impl Style {
     }
 
     // Used by proc macro palette_methods.
-    fn from_config(config: &StyleConfig) -> ThagResult<Self> {
+    fn from_config(config: &StyleConfig) -> StylingResult<Self> {
         let mut style = match &config.color {
             ColorValue::Basic {
                 basic: [_name, index],
@@ -534,7 +532,7 @@ impl Style {
     ///
     /// This function will return an error if it encounters an invalid hex RGB value.
     #[cfg(feature = "config")]
-    pub fn from_fg_hex(hex: &str) -> ThagResult<Self> {
+    pub fn from_fg_hex(hex: &str) -> StylingResult<Self> {
         let hex = hex.trim_start_matches('#');
         if hex.len() == 6 {
             if let (Ok(r), Ok(g), Ok(b)) = (
@@ -546,10 +544,10 @@ impl Style {
                 color_info.index = find_closest_color((r, g, b));
                 Ok(Self::fg(color_info))
             } else {
-                Err(ThagError::Parse)
+                Err(StylingError::Parse)
             }
         } else {
-            Err(ThagError::Parse)
+            Err(StylingError::Parse)
         }
     }
 
@@ -947,6 +945,7 @@ impl ColorInitStrategy {
                 debug_log!("Avoiding colour detection for testing");
                 Self::Default
             } else if cfg!(target_os = "windows") {
+                #[cfg(feature = "config")]
                 if let Some(config) = maybe_config() {
                     let term_bg_luma = config.styling.term_bg_luma;
                     let term_bg_luma = match term_bg_luma {
@@ -961,6 +960,8 @@ impl ColorInitStrategy {
                 } else {
                     Self::Default
                 }
+                #[cfg(not(feature = "config"))]
+                Self::Default
             } else {
                 Self::Match
             };
@@ -997,8 +998,9 @@ impl ColorInitStrategy {
     }
 }
 
-#[cfg(feature = "color_detect")]
-fn resolve_config_term_bg_rgb(config: &thag_rs::Config) -> Option<(u8, u8, u8)> {
+// #[cfg(feature = "color_detect")]
+#[cfg(all(feature = "color_detect", feature = "config"))]
+fn resolve_config_term_bg_rgb(config: &thag_common::config::Config) -> Option<(u8, u8, u8)> {
     let term_bg_rgb = config.styling.term_bg_rgb;
     match term_bg_rgb {
         None => get_term_bg_rgb().map_or(None, |rgb| Some(*rgb)),
@@ -1123,7 +1125,7 @@ impl TermAttributes {
                     #[cfg(feature = "color_detect")]
                     {
                         let (color_support, term_bg_rgb_ref) =
-                            thag_rs::terminal::detect_term_capabilities();
+                            thag_common::terminal::detect_term_capabilities();
                         // let term_bg_rgb_ref = terminal::get_term_bg_rgb().ok();
                         let term_bg_rgb = Some(*term_bg_rgb_ref);
                         let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
@@ -1251,7 +1253,7 @@ impl TermAttributes {
     /// * The theme file is corrupted or invalid
     /// * The theme is incompatible with current terminal capabilities
     /// * Theme validation fails
-    pub fn with_theme(mut self, theme_name: &str, support: ColorSupport) -> ThagResult<Self> {
+    pub fn with_theme(mut self, theme_name: &str, support: ColorSupport) -> StylingResult<Self> {
         self.theme = Theme::get_theme_with_color_support(theme_name, support)?;
         Ok(self)
     }
@@ -1446,6 +1448,83 @@ impl Palette {
 // ThemeIndex, THEME_INDEX and BG_LOOKUP
 preload_themes! {}
 
+/*
+// Stub implementations for theme loading - TODO: implement proper theme loading
+use phf::{phf_map, Map};
+
+#[derive(Debug, Clone)]
+pub struct ThemeIndex {
+    pub content: &'static str,
+    pub bg_rgbs: &'static [(u8, u8, u8)],
+    pub term_bg_luma: TermBgLuma,
+    pub min_color_support: ColorSupport,
+}
+
+pub static THEME_INDEX: Map<&'static str, ThemeIndex> = phf_map! {
+    "basic_dark" => ThemeIndex {
+        content: r#"
+name = "basic_dark"
+description = "Basic dark theme"
+term_bg_luma = "dark"
+min_color_support = "basic"
+backgrounds = ["000000"]
+
+[palette]
+heading1 = "0000FF"
+heading2 = "00FFFF"
+heading3 = "00FF00"
+error = "FF0000"
+warning = "FFFF00"
+success = "00FF00"
+info = "00FFFF"
+emphasis = "FF00FF"
+code = "FFFF80"
+normal = "FFFFFF"
+subtle = "808080"
+hint = "80FFFF"
+debug = "C0C0C0"
+trace = "808080"
+"#,
+        bg_rgbs: &[(0, 0, 0)],
+        term_bg_luma: TermBgLuma::Dark,
+        min_color_support: ColorSupport::Basic,
+    },
+    "basic_light" => ThemeIndex {
+        content: r#"
+name = "basic_light"
+description = "Basic light theme"
+term_bg_luma = "light"
+min_color_support = "basic"
+backgrounds = ["FFFFFF"]
+
+[palette]
+heading1 = "0000AA"
+heading2 = "008888"
+heading3 = "008800"
+error = "AA0000"
+warning = "AA8800"
+success = "008800"
+info = "008888"
+emphasis = "AA00AA"
+code = "666600"
+normal = "000000"
+subtle = "666666"
+hint = "006666"
+debug = "444444"
+trace = "666666"
+"#,
+        bg_rgbs: &[(255, 255, 255)],
+        term_bg_luma: TermBgLuma::Light,
+        min_color_support: ColorSupport::Basic,
+    },
+};
+
+pub static BG_LOOKUP: Map<&'static str, &'static [&'static str]> = phf_map! {
+    "000000" => &["basic_dark"],
+    "ffffff" => &["basic_light"],
+};
+
+*/
 /// Theme definition loaded from TOML files
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -1507,7 +1586,7 @@ impl ThemeDefinition {
 /// // Get styling for a specific role
 /// let error_style = theme.style_for(Role::Error);
 /// println!("{}", error_style.paint("This is an error message"));
-/// # Ok::<(), thag_rs::ThagError>(())
+/// # Ok::<(), thag_rs::StylingError>(())
 /// ```
 pub struct Theme {
     /// The human-readable name of the theme (e.g., "Dracula", "GitHub Light")
@@ -1531,7 +1610,7 @@ pub struct Theme {
 }
 
 impl Theme {
-    fn from_toml(theme_name: &str, theme_toml: &str) -> Result<Self, ThagError> {
+    fn from_toml(theme_name: &str, theme_toml: &str) -> Result<Self, StylingError> {
         // vprtln!(V::VV, "About to call toml::from_str(theme_toml)");
         let mut def: ThemeDefinition = toml::from_str(theme_toml)?;
         // vprtln!(V::VV, "Done! def={def:?}");
@@ -1554,7 +1633,7 @@ impl Theme {
         color_support: ColorSupport,
         term_bg_luma: TermBgLuma,
         maybe_term_bg: Option<&(u8, u8, u8)>,
-    ) -> ThagResult<Self> {
+    ) -> StylingResult<Self> {
         // NB: don't call `TermAttributes::get_or_init()` here because it will cause a tight loop
         // since we're called from the TermAttributes::initialize.
         vprtln!(V::VV, "maybe_term_bg={maybe_term_bg:?}");
@@ -1564,7 +1643,10 @@ impl Theme {
 
         // let signatures = get_theme_signatures();
         // vprtln!(V::VV, "signatures={signatures:?}");
-        let hex = rgb_to_bare_hex(term_bg_rgb);
+        let hex = format!(
+            "{:02x}{:02x}{:02x}",
+            term_bg_rgb.0, term_bg_rgb.1, term_bg_rgb.2
+        );
         let exact_matches = BG_LOOKUP
             .get(&hex)
             .map(|names| Vec::from(*names))
@@ -1584,9 +1666,9 @@ impl Theme {
             .filter(|(_, idx)| {
                 let mut min_distance = f32::MAX;
                 for rgb in idx.bg_rgbs {
-                    let color_distance = color_distance(*term_bg_rgb, *rgb);
-                    if color_distance < min_distance {
-                        min_distance = color_distance;
+                    let distance = color_distance(*term_bg_rgb, *rgb);
+                    if distance < min_distance {
+                        min_distance = distance;
                     }
                 }
                 idx.term_bg_luma == term_bg_luma
@@ -1709,9 +1791,9 @@ impl Theme {
             let mut best_match = None;
             for (theme, idx) in &eligible_themes {
                 for rgb in idx.bg_rgbs {
-                    let color_distance = color_distance(*term_bg_rgb, *rgb);
-                    if color_distance < min_distance {
-                        min_distance = color_distance;
+                    let distance = color_distance(*term_bg_rgb, *rgb);
+                    if distance < min_distance {
+                        min_distance = distance;
                         best_match = Some(theme);
                     }
                 }
@@ -1747,7 +1829,7 @@ impl Theme {
     /// A new `Theme` instance configured according to the TOML definition
     ///
     /// # Errors
-    /// Returns `ThagError` if:
+    /// Returns `StylingError` if:
     /// - The file cannot be read
     /// - The file contains invalid TOML syntax
     /// - The theme definition is incomplete or invalid
@@ -1757,12 +1839,12 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::ThagError;
+    /// use thag_rs::StylingError;
     /// use thag_rs::styling::Theme;
     /// let theme = Theme::load_from_file(Path::new("themes/built_in/basic_light.toml"))?;
-    /// # Ok::<(), ThagError>(())
+    /// # Ok::<(), StylingError>(())
     /// ```
-    pub fn load_from_file(path: &Path) -> ThagResult<Self> {
+    pub fn load_from_file(path: &Path) -> StylingResult<Self> {
         let content = fs::read_to_string(path)?;
         let mut def: ThemeDefinition = toml::from_str(&content)?;
         def.filename = path.to_path_buf();
@@ -1784,7 +1866,7 @@ impl Theme {
     /// A new `Theme` instance configured according to the named theme
     ///
     /// # Errors
-    /// Returns `ThagError` if:
+    /// Returns `StylingError` if:
     /// - The specified theme name is not recognized
     /// - The theme definition contains invalid color values
     /// - The theme definition contains invalid style attributes
@@ -1792,15 +1874,15 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::ThagError;
+    /// use thag_rs::StylingError;
     /// use thag_rs::styling::Theme;
     /// let theme = Theme::get_builtin("dracula")?;
-    /// # Ok::<(), ThagError>(())
+    /// # Ok::<(), StylingError>(())
     /// ```
-    pub fn get_builtin(theme_name: &str) -> ThagResult<Self> {
+    pub fn get_builtin(theme_name: &str) -> StylingResult<Self> {
         let maybe_theme_index = THEME_INDEX.get(theme_name);
         let Some(theme_index) = maybe_theme_index else {
-            return Err(ThagError::FromStr(
+            return Err(StylingError::FromStr(
                 format!("No theme found for name {theme_name}").into(),
             ));
         };
@@ -1821,12 +1903,12 @@ impl Theme {
     /// A new `Theme` instance with colors adjusted for the specified support level
     ///
     /// # Errors
-    /// Returns `ThagError` if the specified theme name is not recognized
+    /// Returns `StylingError` if the specified theme name is not recognized
     ///
     fn get_theme_with_color_support(
         theme_name: &str,
         color_support: ColorSupport,
-    ) -> ThagResult<Self> {
+    ) -> StylingResult<Self> {
         let mut theme = Self::get_builtin(theme_name)?;
         if color_support != ColorSupport::TrueColor {
             vprtln!(V::VV, "Converting to {color_support:?}");
@@ -1848,11 +1930,11 @@ impl Theme {
     /// A new `Theme` instance based on the definition
     ///
     /// # Errors
-    /// Returns `ThagError` if:
+    /// Returns `StylingError` if:
     /// - Color support string cannot be parsed
     /// - Background luminance string cannot be parsed
     /// - Palette configuration is invalid
-    fn from_definition(def: ThemeDefinition) -> ThagResult<Self> {
+    fn from_definition(def: ThemeDefinition) -> StylingResult<Self> {
         // vprtln!(V::VV, "def.min_color_support={:?}", def.min_color_support);
         let color_support = ColorSupport::from_str(&def.min_color_support);
         // vprtln!(V::VV, "color_support={color_support:?})");
@@ -1895,7 +1977,7 @@ impl Theme {
     /// `Ok(())` if the theme is compatible with the terminal
     ///
     /// # Errors
-    /// Returns `ThagError` if:
+    /// Returns `StylingError` if:
     /// - The terminal's color support is insufficient for the theme
     ///   (e.g., trying to use a 256-color theme in a basic terminal)
     /// - The terminal's background luminance doesn't match the theme's requirements
@@ -1904,17 +1986,17 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::{TermBgLuma, ThagError};
+    /// use thag_rs::{TermBgLuma, StylingError};
     /// use thag_rs::styling::{ColorSupport, Theme};
     /// let theme = Theme::get_builtin("dracula")?;
     /// theme.validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)?;
-    /// # Ok::<(), ThagError>(())
+    /// # Ok::<(), StylingError>(())
     /// ```
     pub fn validate(
         &self,
         available_support: &ColorSupport,
         term_bg_luma: &TermBgLuma,
-    ) -> ThagResult<()> {
+    ) -> StylingResult<()> {
         // Check color support
         // vprtln!(V::VV, "self.min_color_support={:?}", self.min_color_support);
         // vprtln!(V::VV, "available_support={available_support:?}");
@@ -1941,14 +2023,14 @@ impl Theme {
         Ok(())
     }
 
-    fn validate_palette(&self) -> ThagResult<()> {
+    fn validate_palette(&self) -> StylingResult<()> {
         self.palette.validate_styles(self.min_color_support)?;
         Ok(())
     }
 
     /// Validates a theme definition before creating a Theme
     #[allow(dead_code)]
-    fn validate_definition(def: &ThemeDefinition) -> ThagResult<()> {
+    fn validate_definition(def: &ThemeDefinition) -> StylingResult<()> {
         // Validate term_bg_luma value
         if !["light", "dark"].contains(&def.term_bg_luma.as_str()) {
             return Err(ThemeError::InvalidTermBgLuma(def.term_bg_luma.clone()).into());
@@ -2001,7 +2083,7 @@ impl Theme {
     /// A new validated `Theme` instance configured according to the TOML definition
     ///
     /// # Errors
-    /// Returns `ThagError` if:
+    /// Returns `StylingError` if:
     /// - The file cannot be read or contains invalid TOML syntax
     /// - The theme definition is incomplete or invalid
     /// - The terminal's color support is insufficient for the theme
@@ -2011,20 +2093,20 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::{TermBgLuma, ThagError};
+    /// use thag_rs::{TermBgLuma, StylingError};
     /// use thag_rs::styling::{ColorSupport, Theme};
     /// let theme = Theme::load(
     ///     Path::new("themes/built_in/basic_light.toml"),
     ///     ColorSupport::Basic,
     ///     TermBgLuma::Light
     /// )?;
-    /// # Ok::<(), ThagError>(())
+    /// # Ok::<(), StylingError>(())
     /// ```
     pub fn load(
         path: &Path,
         available_support: ColorSupport,
         term_bg_luma: TermBgLuma,
-    ) -> ThagResult<Self> {
+    ) -> StylingResult<Self> {
         let theme = Self::load_from_file(path)?;
         theme.validate(&available_support, &term_bg_luma)?;
         Ok(theme)
@@ -2063,6 +2145,7 @@ impl Theme {
             self.filename.display(),
             self.description,
             rgb_to_hex(&self.bg_rgbs[0]),
+            // format!("#{:02x}{:02x}{:02x}", self.bg_rgbs[0].0, self.bg_rgbs[0].1, self.bg_rgbs[0].2),
             self.bg_rgbs[0].0, self.bg_rgbs[0].1, self.bg_rgbs[0].2,
             self.min_color_support,
             self.term_bg_luma,
@@ -2254,7 +2337,7 @@ fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     (r, g, b)
 }
 
-fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
+fn fallback_theme(term_bg_luma: TermBgLuma) -> StylingResult<Theme> {
     let name = if term_bg_luma == TermBgLuma::Light {
         "basic_light"
     } else {
@@ -2272,7 +2355,10 @@ fn fallback_theme(term_bg_luma: TermBgLuma) -> ThagResult<Theme> {
 
 #[allow(clippy::missing_const_for_fn)]
 #[cfg(feature = "config")]
-fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &thag_rs::Config) -> &Vec<String> {
+fn get_preferred_styling(
+    term_bg_luma: TermBgLuma,
+    config: &thag_common::config::Config,
+) -> &Vec<String> {
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.preferred_light,
         TermBgLuma::Dark => &config.styling.preferred_dark,
@@ -2288,7 +2374,10 @@ fn get_preferred_styling(term_bg_luma: TermBgLuma, config: &thag_rs::Config) -> 
 
 #[allow(clippy::missing_const_for_fn)]
 #[cfg(feature = "config")]
-fn get_fallback_styling(term_bg_luma: TermBgLuma, config: &thag_rs::Config) -> &Vec<String> {
+fn get_fallback_styling(
+    term_bg_luma: TermBgLuma,
+    config: &thag_common::config::Config,
+) -> &Vec<String> {
     match term_bg_luma {
         TermBgLuma::Light => &config.styling.fallback_light,
         TermBgLuma::Dark => &config.styling.fallback_dark,
@@ -2354,7 +2443,7 @@ fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
 ///
 /// This function will return an error if the input string is not a valid hex color.
 // #[cfg(feature = "color_detect")]
-fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
+fn hex_to_rgb(hex: &str) -> StylingResult<(u8, u8, u8)> {
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
         if let (Ok(r), Ok(g), Ok(b)) = (
@@ -2364,15 +2453,19 @@ fn hex_to_rgb(hex: &str) -> ThagResult<(u8, u8, u8)> {
         ) {
             Ok((r, g, b))
         } else {
-            Err(ThagError::Parse)
+            Err(StylingError::Parse)
         }
     } else {
-        Err(ThagError::Parse)
+        Err(StylingError::Parse)
     }
 }
 
+// fn rgb_to_hex(rgb: &(u8, u8, u8)) -> String {
+//     format!("#{:02x}{:02x}{:02x}", rgb.0, rgb.1, rgb.2)
+// }
+
 // Helper to check a single style
-fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
+fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()> {
     style.foreground.as_ref().map_or_else(
         || Ok(()),
         |color_info| match &color_info.value {
@@ -2402,7 +2495,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 }
 
 // // #[cfg(feature = "color_detect")]
-// fn matches_background(bg: (u8, u8, u8)) -> ThagResult<bool> {
+// fn matches_background(bg: (u8, u8, u8)) -> StylingResult<bool> {
 //     if let Some(config) = maybe_config() {
 //         let mut found = false;
 //         for hex in &config.styling.backgrounds {
@@ -2449,11 +2542,11 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 #[macro_export]
 macro_rules! cvprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
-        let verbosity = thag_common::get_verbosity();
+        let verbosity = $crate::get_verbosity();
         if $verbosity <= verbosity {
             let style = Style::for_role($role);
             let content = format!($($arg)*);
-            thag_common::vprtln!(verbosity, "{}", style.paint(content));
+            $crate::vprtln!(verbosity, "{}", style.paint(content));
         }
     }};
 }
@@ -2607,8 +2700,8 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     }
 }
 
-// #[allow(dead_code)]
-// fn main() -> ThagResult<()> {
+#[allow(dead_code)]
+// fn main() -> StylingResult<()> {
 //     // Load built-in theme
 //     let _dracula = Theme::get_builtin("dracula")?;
 
@@ -2618,7 +2711,9 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
 //     Ok(())
 // }
 
-pub fn main() -> ThagResult<()> {
+/// Main method for testing purposes
+#[allow(dead_code)]
+pub fn main() -> StylingResult<()> {
     let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
     let color_support = term_attrs.color_support;
     let theme = &term_attrs.theme;
@@ -2719,14 +2814,14 @@ pub fn main() -> ThagResult<()> {
     );
 
     let name = "Error";
-    println!("{}", styled!(bold, => name));
+    println!("{}", name); // styled!(bold, => name));
 
     cvprtln!(
         Role::Heading2,
         V::N,
         "Color support={}, theme={}: {}\nMore text to check if styling disrupted",
         // color_support.style().bold().underline().dim(),
-        styled!(italic, underline, => name),
+        name, // styled!(italic, underline, => name),
         theme.name.style().italic(),
         theme.description.style().reversed()
     );
@@ -2769,7 +2864,7 @@ const BASIC_COLORS: [(u8, u8, u8); 16] = [
 ///
 /// let theme = Theme::get_builtin("dracula")?;
 /// display_theme_roles(&theme);
-/// # Ok::<(), thag_rs::ThagError>(())
+/// # Ok::<(), thag_rs::StylingError>(())
 /// ```
 pub fn display_theme_roles(theme: &Theme) {
     // Role descriptions
@@ -3131,6 +3226,44 @@ impl fmt::Display for Styled<String> {
     }
 }
 
+#[cfg(feature = "ratatui_support")]
+impl From<&Style> for RataStyle {
+    fn from(style: &Style) -> Self {
+        let mut rata_style = Self::default();
+
+        if let Some(color_info) = &style.foreground {
+            rata_style = rata_style.fg(ratatui::style::Color::Indexed(color_info.index));
+        }
+
+        if style.bold {
+            rata_style = rata_style.add_modifier(ratatui::style::Modifier::BOLD);
+        }
+        if style.italic {
+            rata_style = rata_style.add_modifier(ratatui::style::Modifier::ITALIC);
+        }
+        if style.dim {
+            rata_style = rata_style.add_modifier(ratatui::style::Modifier::DIM);
+        }
+
+        rata_style
+    }
+}
+
+#[cfg(feature = "ratatui_support")]
+// Implement conversion to ratatui's Color
+impl From<&Role> for ratatui::style::Color {
+    fn from(role: &Role) -> Self {
+        Self::Indexed(u8::from(role))
+    }
+}
+
+#[cfg(feature = "repl_support")]
+impl From<&ColorInfo> for nu_ansi_term::Color {
+    fn from(color_info: &ColorInfo) -> Self {
+        Self::Fixed(color_info.index)
+    }
+}
+
 /// A line print macro that prints a styled and coloured message.
 ///
 /// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
@@ -3139,7 +3272,7 @@ macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
         let painted = $style.paint(content);
-        let verbosity = $crate::shared::get_verbosity();
+        let verbosity = $crate::get_verbosity();
         $crate::vprtln!(verbosity, "{painted}");
     }};
 }
@@ -3323,7 +3456,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_styling_load_dracula_theme() -> ThagResult<()> {
+    fn test_styling_load_dracula_theme() -> StylingResult<()> {
         init_test_output();
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 
@@ -3359,7 +3492,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_styling_dracula_validation() -> ThagResult<()> {
+    fn test_styling_dracula_validation() -> StylingResult<()> {
         init_test_output();
         let theme = Theme::load_from_file(Path::new("themes/built_in/dracula.toml"))?;
 

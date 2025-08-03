@@ -1,0 +1,117 @@
+name = "Hopscotch Base16"
+description = "Converted from Hopscotch theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#322931"]
+bg_rgbs = [[
+    50,
+    41,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    221,
+    70,
+    76,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    18,
+    144,
+    191,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    20,
+    155,
+    147,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    221,
+    70,
+    76,
+]
+
+[palette.warning]
+rgb = [
+    253,
+    204,
+    89,
+]
+
+[palette.success]
+rgb = [
+    143,
+    193,
+    62,
+]
+
+[palette.info]
+rgb = [
+    18,
+    144,
+    191,
+]
+
+[palette.emphasis]
+rgb = [
+    200,
+    94,
+    124,
+]
+
+[palette.code]
+rgb = [
+    143,
+    193,
+    62,
+]
+
+[palette.normal]
+rgb = [
+    185,
+    181,
+    184,
+]
+
+[palette.subtle]
+rgb = [
+    121,
+    115,
+    121,
+]
+
+[palette.hint]
+rgb = [
+    121,
+    115,
+    121,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    143,
+    193,
+    62,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    18,
+    144,
+    191,
+]
+style = [
+    "italic",
+    "dim",
+]

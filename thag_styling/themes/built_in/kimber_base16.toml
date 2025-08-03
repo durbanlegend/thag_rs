@@ -1,0 +1,117 @@
+name = "Kimber Base16"
+description = "Converted from Kimber theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#222222"]
+bg_rgbs = [[
+    34,
+    34,
+    34,
+]]
+
+[palette.heading1]
+rgb = [
+    200,
+    140,
+    140,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    83,
+    124,
+    156,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    120,
+    180,
+    180,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    200,
+    140,
+    140,
+]
+
+[palette.warning]
+rgb = [
+    216,
+    181,
+    109,
+]
+
+[palette.success]
+rgb = [
+    153,
+    200,
+    153,
+]
+
+[palette.info]
+rgb = [
+    83,
+    124,
+    156,
+]
+
+[palette.emphasis]
+rgb = [
+    134,
+    202,
+    205,
+]
+
+[palette.code]
+rgb = [
+    153,
+    200,
+    153,
+]
+
+[palette.normal]
+rgb = [
+    222,
+    222,
+    231,
+]
+
+[palette.subtle]
+rgb = [
+    100,
+    70,
+    70,
+]
+
+[palette.hint]
+rgb = [
+    100,
+    70,
+    70,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    153,
+    200,
+    153,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    83,
+    124,
+    156,
+]
+style = [
+    "italic",
+    "dim",
+]

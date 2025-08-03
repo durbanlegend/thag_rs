@@ -1,0 +1,117 @@
+name = "Material Palenight Base16"
+description = "Converted from Material Palenight theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#292d3e"]
+bg_rgbs = [[
+    41,
+    45,
+    62,
+]]
+
+[palette.heading1]
+rgb = [
+    240,
+    113,
+    120,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    130,
+    170,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    137,
+    221,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    240,
+    113,
+    120,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    203,
+    107,
+]
+
+[palette.success]
+rgb = [
+    195,
+    232,
+    141,
+]
+
+[palette.info]
+rgb = [
+    130,
+    170,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    199,
+    146,
+    234,
+]
+
+[palette.code]
+rgb = [
+    195,
+    232,
+    141,
+]
+
+[palette.normal]
+rgb = [
+    149,
+    157,
+    203,
+]
+
+[palette.subtle]
+rgb = [
+    103,
+    110,
+    149,
+]
+
+[palette.hint]
+rgb = [
+    103,
+    110,
+    149,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    195,
+    232,
+    141,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    130,
+    170,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

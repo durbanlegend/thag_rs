@@ -7,10 +7,18 @@ use syn::Ident;
 
 #[allow(clippy::too_many_lines)]
 pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
+    eprintln!("current_dir={:?}", std::env::current_dir());
     let themes_dir = "themes/built_in";
-    let mut theme_indices = Vec::new();
-    let mut bg_to_names = HashMap::new();
+    // let themes_dir = "/Users/donf/projects/thag_rs/thag_styling/themes/built_in";
 
+    let mut theme_indices = Vec::new();
+    let mut bg_to_names: HashMap<(u8, u8, u8), Vec<String>> = HashMap::new();
+
+    // use std::path::PathBuf;
+    // let themes_dir_path = PathBuf::from(themes_dir);
+    // eprintln!("themes_dir_path={}", themes_dir_path.display());
+    // let themes_dir_path = PathBuf::from(themes_dir).canonicalize();
+    // eprintln!("themes_dir_path={themes_dir_path:?}");
     #[allow(clippy::map_unwrap_or, clippy::unnecessary_map_or)]
     for entry in std::fs::read_dir(themes_dir).unwrap() {
         let path = entry.unwrap().path();

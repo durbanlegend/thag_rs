@@ -20,7 +20,7 @@ use syn::{
 };
 use thag_common::{debug_log, re, vprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, Role};
+use thag_styling::{cvprtln, Role, Style};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;

@@ -1,0 +1,61 @@
+name = "Brogrammer Base 16 Base16 256"
+description = "Converted from Brogrammer Base 16 theme"
+term_bg_luma = "dark"
+min_color_support = "color256"
+backgrounds = ["#1f1f1f"]
+bg_rgbs = [[
+    31,
+    31,
+    31,
+]]
+
+[palette.heading1]
+color256 = 188
+style = ["bold"]
+
+[palette.heading2]
+color256 = 61
+style = ["bold"]
+
+[palette.heading3]
+color256 = 32
+style = ["bold"]
+
+[palette.error]
+color256 = 188
+
+[palette.warning]
+color256 = 41
+
+[palette.success]
+color256 = 214
+
+[palette.info]
+color256 = 61
+
+[palette.emphasis]
+color256 = 32
+
+[palette.code]
+color256 = 214
+
+[palette.normal]
+color256 = 61
+
+[palette.subtle]
+color256 = 214
+
+[palette.hint]
+color256 = 214
+style = ["italic"]
+
+[palette.debug]
+color256 = 214
+style = ["dim"]
+
+[palette.trace]
+color256 = 61
+style = [
+    "italic",
+    "dim",
+]

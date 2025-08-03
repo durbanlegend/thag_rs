@@ -1,0 +1,117 @@
+name = "Atelier Cave Base16"
+description = "Converted from Atelier Cave theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#19171c"]
+bg_rgbs = [[
+    25,
+    23,
+    28,
+]]
+
+[palette.heading1]
+rgb = [
+    190,
+    70,
+    120,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    87,
+    109,
+    219,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    57,
+    139,
+    198,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    190,
+    70,
+    120,
+]
+
+[palette.warning]
+rgb = [
+    160,
+    110,
+    59,
+]
+
+[palette.success]
+rgb = [
+    42,
+    146,
+    146,
+]
+
+[palette.info]
+rgb = [
+    87,
+    109,
+    219,
+]
+
+[palette.emphasis]
+rgb = [
+    149,
+    90,
+    231,
+]
+
+[palette.code]
+rgb = [
+    42,
+    146,
+    146,
+]
+
+[palette.normal]
+rgb = [
+    139,
+    135,
+    146,
+]
+
+[palette.subtle]
+rgb = [
+    101,
+    95,
+    109,
+]
+
+[palette.hint]
+rgb = [
+    101,
+    95,
+    109,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    42,
+    146,
+    146,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    87,
+    109,
+    219,
+]
+style = [
+    "italic",
+    "dim",
+]

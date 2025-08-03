@@ -1,0 +1,117 @@
+name = "Breath Light (Gogh) Base16"
+description = "Converted from Breath Light (Gogh) theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#e8e8e8"]
+bg_rgbs = [[
+    232,
+    232,
+    232,
+]]
+
+[palette.heading1]
+rgb = [
+    127,
+    140,
+    141,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    142,
+    68,
+    173,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    61,
+    174,
+    233,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    127,
+    140,
+    141,
+]
+
+[palette.warning]
+rgb = [
+    85,
+    166,
+    73,
+]
+
+[palette.success]
+rgb = [
+    253,
+    188,
+    75,
+]
+
+[palette.info]
+rgb = [
+    142,
+    68,
+    173,
+]
+
+[palette.emphasis]
+rgb = [
+    22,
+    160,
+    133,
+]
+
+[palette.code]
+rgb = [
+    253,
+    188,
+    75,
+]
+
+[palette.normal]
+rgb = [
+    155,
+    89,
+    182,
+]
+
+[palette.subtle]
+rgb = [
+    246,
+    116,
+    0,
+]
+
+[palette.hint]
+rgb = [
+    246,
+    116,
+    0,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    253,
+    188,
+    75,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    142,
+    68,
+    173,
+]
+style = [
+    "italic",
+    "dim",
+]

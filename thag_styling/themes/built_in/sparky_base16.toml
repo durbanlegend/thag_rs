@@ -1,0 +1,117 @@
+name = "Sparky Base16"
+description = "Converted from Sparky theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#072b31"]
+bg_rgbs = [[
+    7,
+    43,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    88,
+    93,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    70,
+    152,
+    203,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    45,
+    204,
+    211,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    88,
+    93,
+]
+
+[palette.warning]
+rgb = [
+    251,
+    221,
+    64,
+]
+
+[palette.success]
+rgb = [
+    120,
+    214,
+    75,
+]
+
+[palette.info]
+rgb = [
+    70,
+    152,
+    203,
+]
+
+[palette.emphasis]
+rgb = [
+    213,
+    158,
+    215,
+]
+
+[palette.code]
+rgb = [
+    120,
+    214,
+    75,
+]
+
+[palette.normal]
+rgb = [
+    244,
+    245,
+    240,
+]
+
+[palette.subtle]
+rgb = [
+    0,
+    59,
+    73,
+]
+
+[palette.hint]
+rgb = [
+    0,
+    59,
+    73,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    120,
+    214,
+    75,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    70,
+    152,
+    203,
+]
+style = [
+    "italic",
+    "dim",
+]

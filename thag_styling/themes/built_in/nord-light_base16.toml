@@ -1,0 +1,117 @@
+name = "Nord Light Base16"
+description = "Converted from Nord Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#e5e9f0"]
+bg_rgbs = [[
+    229,
+    233,
+    240,
+]]
+
+[palette.heading1]
+rgb = [
+    153,
+    50,
+    75,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    59,
+    110,
+    168,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    57,
+    142,
+    172,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    153,
+    50,
+    75,
+]
+
+[palette.warning]
+rgb = [
+    154,
+    117,
+    0,
+]
+
+[palette.success]
+rgb = [
+    79,
+    137,
+    76,
+]
+
+[palette.info]
+rgb = [
+    59,
+    110,
+    168,
+]
+
+[palette.emphasis]
+rgb = [
+    151,
+    54,
+    91,
+]
+
+[palette.code]
+rgb = [
+    79,
+    137,
+    76,
+]
+
+[palette.normal]
+rgb = [
+    46,
+    52,
+    64,
+]
+
+[palette.subtle]
+rgb = [
+    174,
+    186,
+    207,
+]
+
+[palette.hint]
+rgb = [
+    174,
+    186,
+    207,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    79,
+    137,
+    76,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    59,
+    110,
+    168,
+]
+style = [
+    "italic",
+    "dim",
+]

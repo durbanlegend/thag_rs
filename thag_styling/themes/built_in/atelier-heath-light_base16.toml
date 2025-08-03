@@ -1,0 +1,117 @@
+name = "Atelier Heath Light Base16"
+description = "Converted from Atelier Heath Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f7f3f7"]
+bg_rgbs = [[
+    247,
+    243,
+    247,
+]]
+
+[palette.heading1]
+rgb = [
+    202,
+    64,
+    43,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    81,
+    106,
+    236,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    21,
+    147,
+    147,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    202,
+    64,
+    43,
+]
+
+[palette.warning]
+rgb = [
+    187,
+    138,
+    53,
+]
+
+[palette.success]
+rgb = [
+    145,
+    139,
+    59,
+]
+
+[palette.info]
+rgb = [
+    81,
+    106,
+    236,
+]
+
+[palette.emphasis]
+rgb = [
+    123,
+    89,
+    192,
+]
+
+[palette.code]
+rgb = [
+    145,
+    139,
+    59,
+]
+
+[palette.normal]
+rgb = [
+    105,
+    93,
+    105,
+]
+
+[palette.subtle]
+rgb = [
+    158,
+    143,
+    158,
+]
+
+[palette.hint]
+rgb = [
+    158,
+    143,
+    158,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    145,
+    139,
+    59,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    81,
+    106,
+    236,
+]
+style = [
+    "italic",
+    "dim",
+]

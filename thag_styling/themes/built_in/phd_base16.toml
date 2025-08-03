@@ -1,0 +1,117 @@
+name = "PhD Base16"
+description = "Converted from PhD theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#061229"]
+bg_rgbs = [[
+    6,
+    18,
+    41,
+]]
+
+[palette.heading1]
+rgb = [
+    208,
+    115,
+    70,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    82,
+    153,
+    191,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    114,
+    185,
+    191,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    208,
+    115,
+    70,
+]
+
+[palette.warning]
+rgb = [
+    251,
+    212,
+    97,
+]
+
+[palette.success]
+rgb = [
+    153,
+    191,
+    82,
+]
+
+[palette.info]
+rgb = [
+    82,
+    153,
+    191,
+]
+
+[palette.emphasis]
+rgb = [
+    153,
+    137,
+    204,
+]
+
+[palette.code]
+rgb = [
+    153,
+    191,
+    82,
+]
+
+[palette.normal]
+rgb = [
+    184,
+    187,
+    194,
+]
+
+[palette.subtle]
+rgb = [
+    113,
+    120,
+    133,
+]
+
+[palette.hint]
+rgb = [
+    113,
+    120,
+    133,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    153,
+    191,
+    82,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    82,
+    153,
+    191,
+]
+style = [
+    "italic",
+    "dim",
+]

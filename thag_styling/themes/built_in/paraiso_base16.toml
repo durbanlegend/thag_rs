@@ -1,0 +1,117 @@
+name = "Paraiso Base16"
+description = "Converted from Paraiso theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2f1e2e"]
+bg_rgbs = [[
+    47,
+    30,
+    46,
+]]
+
+[palette.heading1]
+rgb = [
+    239,
+    97,
+    85,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    6,
+    182,
+    239,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    91,
+    196,
+    191,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    239,
+    97,
+    85,
+]
+
+[palette.warning]
+rgb = [
+    254,
+    196,
+    24,
+]
+
+[palette.success]
+rgb = [
+    72,
+    182,
+    133,
+]
+
+[palette.info]
+rgb = [
+    6,
+    182,
+    239,
+]
+
+[palette.emphasis]
+rgb = [
+    129,
+    91,
+    164,
+]
+
+[palette.code]
+rgb = [
+    72,
+    182,
+    133,
+]
+
+[palette.normal]
+rgb = [
+    163,
+    158,
+    155,
+]
+
+[palette.subtle]
+rgb = [
+    119,
+    110,
+    113,
+]
+
+[palette.hint]
+rgb = [
+    119,
+    110,
+    113,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    72,
+    182,
+    133,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    6,
+    182,
+    239,
+]
+style = [
+    "italic",
+    "dim",
+]

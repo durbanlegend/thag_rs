@@ -1,0 +1,117 @@
+name = "Primer Dark Base16"
+description = "Converted from Primer Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#010409"]
+bg_rgbs = [[
+    1,
+    4,
+    9,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    123,
+    114,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    88,
+    166,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    165,
+    214,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    123,
+    114,
+]
+
+[palette.warning]
+rgb = [
+    210,
+    153,
+    34,
+]
+
+[palette.success]
+rgb = [
+    63,
+    185,
+    80,
+]
+
+[palette.info]
+rgb = [
+    88,
+    166,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    247,
+    120,
+    186,
+]
+
+[palette.code]
+rgb = [
+    63,
+    185,
+    80,
+]
+
+[palette.normal]
+rgb = [
+    177,
+    186,
+    196,
+]
+
+[palette.subtle]
+rgb = [
+    72,
+    79,
+    88,
+]
+
+[palette.hint]
+rgb = [
+    72,
+    79,
+    88,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    63,
+    185,
+    80,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    88,
+    166,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

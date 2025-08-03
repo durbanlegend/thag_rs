@@ -1,0 +1,117 @@
+name = "Cupcake Base16"
+description = "Converted from Cupcake theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fbf1f2"]
+bg_rgbs = [[
+    251,
+    241,
+    242,
+]]
+
+[palette.heading1]
+rgb = [
+    213,
+    126,
+    133,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    114,
+    151,
+    185,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    105,
+    169,
+    167,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    213,
+    126,
+    133,
+]
+
+[palette.warning]
+rgb = [
+    220,
+    177,
+    108,
+]
+
+[palette.success]
+rgb = [
+    163,
+    179,
+    103,
+]
+
+[palette.info]
+rgb = [
+    114,
+    151,
+    185,
+]
+
+[palette.emphasis]
+rgb = [
+    187,
+    153,
+    180,
+]
+
+[palette.code]
+rgb = [
+    163,
+    179,
+    103,
+]
+
+[palette.normal]
+rgb = [
+    139,
+    129,
+    152,
+]
+
+[palette.subtle]
+rgb = [
+    191,
+    185,
+    198,
+]
+
+[palette.hint]
+rgb = [
+    191,
+    185,
+    198,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    163,
+    179,
+    103,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    114,
+    151,
+    185,
+]
+style = [
+    "italic",
+    "dim",
+]

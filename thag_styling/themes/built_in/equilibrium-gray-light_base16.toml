@@ -1,0 +1,117 @@
+name = "Equilibrium Gray Light Base16"
+description = "Converted from Equilibrium Gray Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f1f1f1"]
+bg_rgbs = [[
+    241,
+    241,
+    241,
+]]
+
+[palette.heading1]
+rgb = [
+    208,
+    32,
+    35,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    115,
+    181,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    122,
+    114,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    208,
+    32,
+    35,
+]
+
+[palette.warning]
+rgb = [
+    157,
+    111,
+    0,
+]
+
+[palette.success]
+rgb = [
+    99,
+    114,
+    0,
+]
+
+[palette.info]
+rgb = [
+    0,
+    115,
+    181,
+]
+
+[palette.emphasis]
+rgb = [
+    78,
+    102,
+    182,
+]
+
+[palette.code]
+rgb = [
+    99,
+    114,
+    0,
+]
+
+[palette.normal]
+rgb = [
+    71,
+    71,
+    71,
+]
+
+[palette.subtle]
+rgb = [
+    119,
+    119,
+    119,
+]
+
+[palette.hint]
+rgb = [
+    119,
+    119,
+    119,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    99,
+    114,
+    0,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    0,
+    115,
+    181,
+]
+style = [
+    "italic",
+    "dim",
+]

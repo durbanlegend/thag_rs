@@ -1,0 +1,117 @@
+name = "Atelier Dune Base16"
+description = "Converted from Atelier Dune theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#20201d"]
+bg_rgbs = [[
+    32,
+    32,
+    29,
+]]
+
+[palette.heading1]
+rgb = [
+    215,
+    55,
+    55,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    102,
+    132,
+    225,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    31,
+    173,
+    131,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    215,
+    55,
+    55,
+]
+
+[palette.warning]
+rgb = [
+    174,
+    149,
+    19,
+]
+
+[palette.success]
+rgb = [
+    96,
+    172,
+    57,
+]
+
+[palette.info]
+rgb = [
+    102,
+    132,
+    225,
+]
+
+[palette.emphasis]
+rgb = [
+    184,
+    84,
+    212,
+]
+
+[palette.code]
+rgb = [
+    96,
+    172,
+    57,
+]
+
+[palette.normal]
+rgb = [
+    166,
+    162,
+    140,
+]
+
+[palette.subtle]
+rgb = [
+    125,
+    122,
+    104,
+]
+
+[palette.hint]
+rgb = [
+    125,
+    122,
+    104,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    96,
+    172,
+    57,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    102,
+    132,
+    225,
+]
+style = [
+    "italic",
+    "dim",
+]

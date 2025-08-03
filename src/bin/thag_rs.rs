@@ -10,11 +10,11 @@ use thag_profiler::profiling;
 #[cfg(feature = "build")]
 use thag_rs::cmd_args::set_verbosity;
 
-use thag_rs::cprtln;
-use thag_rs::cvprtln;
 #[cfg(debug_assertions)]
 #[cfg(feature = "core")]
 use thag_rs::debug_timings;
+
+use thag_styling::{cprtln, cvprtln, Style};
 
 #[cfg(feature = "core")]
 use thag_rs::logging::configure_log;

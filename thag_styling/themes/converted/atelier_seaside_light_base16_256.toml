@@ -1,0 +1,61 @@
+name = "Atelier Seaside Light Base16 256"
+description = "Converted from Atelier Seaside Light theme"
+term_bg_luma = "light"
+min_color_support = "color256"
+backgrounds = ["#f4fbf4"]
+bg_rgbs = [[
+    244,
+    251,
+    244,
+]]
+
+[palette.heading1]
+color256 = 161
+style = ["bold"]
+
+[palette.heading2]
+color256 = 63
+style = ["bold"]
+
+[palette.heading3]
+color256 = 31
+style = ["bold"]
+
+[palette.error]
+color256 = 161
+
+[palette.warning]
+color256 = 100
+
+[palette.success]
+color256 = 34
+
+[palette.info]
+color256 = 63
+
+[palette.emphasis]
+color256 = 129
+
+[palette.code]
+color256 = 34
+
+[palette.normal]
+color256 = 59
+
+[palette.subtle]
+color256 = 102
+
+[palette.hint]
+color256 = 102
+style = ["italic"]
+
+[palette.debug]
+color256 = 34
+style = ["dim"]
+
+[palette.trace]
+color256 = 63
+style = [
+    "italic",
+    "dim",
+]

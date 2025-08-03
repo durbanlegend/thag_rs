@@ -1,0 +1,117 @@
+name = "Rebecca Base16"
+description = "Converted from Rebecca theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#292a44"]
+bg_rgbs = [[
+    41,
+    42,
+    68,
+]]
+
+[palette.heading1]
+rgb = [
+    160,
+    160,
+    197,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    45,
+    224,
+    167,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    142,
+    174,
+    224,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    160,
+    160,
+    197,
+]
+
+[palette.warning]
+rgb = [
+    174,
+    129,
+    255,
+]
+
+[palette.success]
+rgb = [
+    109,
+    254,
+    223,
+]
+
+[palette.info]
+rgb = [
+    45,
+    224,
+    167,
+]
+
+[palette.emphasis]
+rgb = [
+    122,
+    165,
+    255,
+]
+
+[palette.code]
+rgb = [
+    109,
+    254,
+    223,
+]
+
+[palette.normal]
+rgb = [
+    241,
+    239,
+    248,
+]
+
+[palette.subtle]
+rgb = [
+    102,
+    102,
+    153,
+]
+
+[palette.hint]
+rgb = [
+    102,
+    102,
+    153,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    109,
+    254,
+    223,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    45,
+    224,
+    167,
+]
+style = [
+    "italic",
+    "dim",
+]

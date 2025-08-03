@@ -38,18 +38,11 @@ use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_common::{get_verbosity, re, vprtln, V};
 use thag_profiler::profiled;
 use thag_styling::{
-    cvprtln, display_terminal_attributes, display_theme_details, display_theme_roles, ColorInfo,
+    cvprtln, display_terminal_attributes, display_theme_details, display_theme_roles,
     Role::{self, Success},
     Style, TermAttributes,
 };
 use tui_textarea::{Input, TextArea};
-
-impl From<&ColorInfo> for NuColor {
-    #[profiled]
-    fn from(color_info: &ColorInfo) -> Self {
-        Self::Fixed(color_info.index)
-    }
-}
 
 /// The filename for the REPL history file.
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";

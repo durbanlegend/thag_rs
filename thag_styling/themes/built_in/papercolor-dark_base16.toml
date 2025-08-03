@@ -1,0 +1,117 @@
+name = "PaperColor Dark Base16"
+description = "Converted from PaperColor Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1c1c1c"]
+bg_rgbs = [[
+    28,
+    28,
+    28,
+]]
+
+[palette.heading1]
+rgb = [
+    88,
+    88,
+    88,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    255,
+    95,
+    175,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    255,
+    175,
+    0,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    88,
+    88,
+    88,
+]
+
+[palette.warning]
+rgb = [
+    175,
+    215,
+    0,
+]
+
+[palette.success]
+rgb = [
+    175,
+    135,
+    215,
+]
+
+[palette.info]
+rgb = [
+    255,
+    95,
+    175,
+]
+
+[palette.emphasis]
+rgb = [
+    0,
+    175,
+    175,
+]
+
+[palette.code]
+rgb = [
+    175,
+    135,
+    215,
+]
+
+[palette.normal]
+rgb = [
+    128,
+    128,
+    128,
+]
+
+[palette.subtle]
+rgb = [
+    215,
+    175,
+    95,
+]
+
+[palette.hint]
+rgb = [
+    215,
+    175,
+    95,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    175,
+    135,
+    215,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    255,
+    95,
+    175,
+]
+style = [
+    "italic",
+    "dim",
+]

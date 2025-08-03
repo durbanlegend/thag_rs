@@ -1,0 +1,117 @@
+name = "Hardcore "
+description = "Converted from Hardcore theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#111111"]
+bg_rgbs = [[
+    17,
+    17,
+    17,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    85,
+    85,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    0,
+    170,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    136,
+    221,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    85,
+    85,
+]
+
+[palette.warning]
+rgb = [
+    255,
+    204,
+    51,
+]
+
+[palette.success]
+rgb = [
+    152,
+    236,
+    101,
+]
+
+[palette.info]
+rgb = [
+    0,
+    170,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    170,
+    136,
+    255,
+]
+
+[palette.code]
+rgb = [
+    152,
+    236,
+    101,
+]
+
+[palette.normal]
+rgb = [
+    169,
+    169,
+    169,
+]
+
+[palette.subtle]
+rgb = [
+    182,
+    242,
+    146,
+]
+
+[palette.hint]
+rgb = [
+    255,
+    217,
+    102,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    152,
+    236,
+    101,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    0,
+    170,
+    255,
+]
+style = [
+    "italic",
+    "dim",
+]

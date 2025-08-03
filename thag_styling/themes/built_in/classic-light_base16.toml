@@ -1,0 +1,117 @@
+name = "Classic Light Base16"
+description = "Converted from Classic Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f5f5f5"]
+bg_rgbs = [[
+    245,
+    245,
+    245,
+]]
+
+[palette.heading1]
+rgb = [
+    172,
+    65,
+    66,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    106,
+    159,
+    181,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    117,
+    181,
+    170,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    172,
+    65,
+    66,
+]
+
+[palette.warning]
+rgb = [
+    244,
+    191,
+    117,
+]
+
+[palette.success]
+rgb = [
+    144,
+    169,
+    89,
+]
+
+[palette.info]
+rgb = [
+    106,
+    159,
+    181,
+]
+
+[palette.emphasis]
+rgb = [
+    170,
+    117,
+    159,
+]
+
+[palette.code]
+rgb = [
+    144,
+    169,
+    89,
+]
+
+[palette.normal]
+rgb = [
+    48,
+    48,
+    48,
+]
+
+[palette.subtle]
+rgb = [
+    176,
+    176,
+    176,
+]
+
+[palette.hint]
+rgb = [
+    176,
+    176,
+    176,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    144,
+    169,
+    89,
+]
+style = ["dim"]
+
+[palette.trace]
+rgb = [
+    106,
+    159,
+    181,
+]
+style = [
+    "italic",
+    "dim",
+]

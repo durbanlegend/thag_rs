@@ -45,6 +45,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140", optional = true }
 smol = { version = "2", optional = true }
 strum = { version = "0.27.1", features = ["derive", "phf"] }
+thag_common = { path = "../thag_common", version = "0.2.0" }
 thag_proc_macros = { version = "0.2", path = "../thag_proc_macros", default-features = false }
 
 [dev-dependencies]

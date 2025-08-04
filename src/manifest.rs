@@ -328,7 +328,13 @@ pub fn extract(
 #[profiled]
 pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
     if let Some(ref mut rs_manifest) = build_state.rs_manifest {
-        let thag_crates = ["thag_rs", "thag_proc_macros", "thag_profiler"];
+        let thag_crates = [
+            "thag_common",
+            "thag_rs",
+            "thag_proc_macros",
+            "thag_profiler",
+            "thag_styling",
+        ];
 
         for crate_name in &thag_crates {
             if let Some(dependency) = rs_manifest.dependencies.get(*crate_name) {
@@ -403,8 +409,10 @@ fn resolve_thag_dependency(
     if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
         // Development: use local path
         let crate_path = match crate_name {
+            "thag_common" => format!("{}/thag_common", dev_path),
             "thag_proc_macros" => format!("{}/thag_proc_macros", dev_path),
             "thag_profiler" => format!("{}/thag_profiler", dev_path),
+            "thag_styling" => format!("{}/thag_styling", dev_path),
             _ => dev_path,
         };
 
@@ -467,7 +475,7 @@ fn display_thag_auto_help() {
         Role::EMPH,
         V::N,
         r"
-This script uses thag dependencies (thag_rs, thag_proc_macros, or thag_profiler)
+This script uses thag dependencies (thag_common, thag_rs, thag_proc_macros, thag_profiler or thag_styling)
 with the 'thag-auto' keyword, which automatically resolves to the appropriate
 dependency source based on your environment.
 

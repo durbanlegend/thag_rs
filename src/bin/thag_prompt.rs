@@ -4,6 +4,7 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
 */
 
+/// Basic prompted front-end to build and run a `thag` command.
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 use clap::CommandFactory;
@@ -13,7 +14,9 @@ use regex;
 use std::collections::HashMap;
 use std::process::Command;
 use thag_proc_macros::file_navigator;
-use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
+use thag_rs::{
+    auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style,
+};
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;
@@ -234,9 +237,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     set_global_render_config(themed_inquire_config());
 
-    println!(
-        "🚀 {} - Interactive Thag Builder",
-        "Thag Prompt".bright_cyan()
+    cprtln!(
+        Style::for_role(Role::Heading3),
+        "🚀 Thag Prompt - Interactive Thag Builder",
     );
     println!("{}\n", "═".repeat(41));
 
@@ -272,7 +275,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         // Script mode - select a file
         let mut navigator = FileNavigator::new();
-        println!("\n{}", "Step: Select a script file".bright_green());
+        cprtln!(
+            Style::for_role(Role::Emphasis),
+            "\nStep: Select a script file"
+        );
 
         match select_file(&mut navigator, Some("rs"), false) {
             Ok(path) => (Some(path), false),
@@ -290,10 +296,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .find(|g| g.name == "Command Type")
             .unwrap();
 
+        eprintln!("dynamic_group={dynamic_group:#?}");
+
         if !dynamic_group.options.is_empty() {
             let dynamic_choices: Vec<String> = dynamic_group
                 .options
                 .iter()
+                .filter(|v| v.name != "script")
                 .map(|opt| format_option_display(opt))
                 .collect();
 
@@ -303,13 +312,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 let idx = dynamic_choices.iter().position(|c| c == &choice).unwrap();
                 let selected_option = &dynamic_group.options[idx];
+                dbg!(selected_option.name.clone());
                 selected_options.push(selected_option.name.clone());
 
                 // Handle options that take values
                 match selected_option.name.as_str() {
                     "expression" => {
                         let expr = Text::new("Enter Rust expression:")
-                            .with_help_message(r#"e.g. 2 + 2, println!("Hello");, std::env::args().collect::<Vec<_>>()"#)
+                            .with_help_message(r#"e.g. 5 + 3, "Hi", println!("Hello world!");, std::env::args().collect::<Vec<_>>(), '(1..=20).product::<usize>()' "#)
                             .prompt()?;
                         selected_values.insert(selected_option.name.clone(), expr);
                     }
@@ -327,7 +337,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Step 3: Select other options
     for group in &option_groups {
-        if group.name == "Command Type" {
+        if group.name == "Command Type" || group.name == "Output Options" {
             continue; // Already handled
         }
 
@@ -339,7 +349,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Handle verbosity specially - it's a single choice with count options
         if group.name == "Verbosity" {
             let verbosity_choices = vec![
-                "Normal verbosity",
+                "Default: Normal verbosity (-n)",
                 "Verbose (-v)",
                 "Debug (-vv)",
                 "Quiet (-q)",
@@ -656,103 +666,114 @@ serde = "1.0""#,
     // Step 7: Build the command
     let mut cmd = Command::new("thag");
 
+    // eprintln!("selected_options={selected_options:#?}");
+
     // Add selected options as arguments
     for option in &selected_options {
         match option.as_str() {
             "expression" => {
-                cmd.arg("--expr");
+                cmd.arg("-e");
                 if let Some(expr) = selected_values.get(option) {
-                    cmd.arg(expr);
+                    eprintln!("expr={expr}");
+                    // cmd.arg(expr);
+                    // cmd.arg(expr.strip_prefix("'").unwrap_or(expr).strip_suffix("'"));
+                    cmd.arg(expr.trim_matches('\''));
                 }
             }
             "filter" => {
-                cmd.arg("--loop");
+                cmd.arg("-l");
                 if let Some(filter) = selected_values.get(option) {
                     cmd.arg(filter);
                 }
             }
             "toml" => {
-                cmd.arg("--toml");
+                cmd.arg("-M");
                 if let Some(toml_val) = selected_values.get(option) {
                     cmd.arg(toml_val);
                 }
             }
             "begin" => {
-                cmd.arg("--begin");
+                cmd.arg("-B");
                 if let Some(begin_val) = selected_values.get(option) {
                     cmd.arg(begin_val);
                 }
             }
             "end" => {
-                cmd.arg("--end");
+                cmd.arg("-E");
                 if let Some(end_val) = selected_values.get(option) {
                     cmd.arg(end_val);
                 }
             }
             "repl" => {
-                cmd.arg("--repl");
+                cmd.arg("-r");
             }
             "stdin" => {
-                cmd.arg("--stdin");
+                cmd.arg("-s");
             }
             "edit" => {
-                cmd.arg("--edit");
+                cmd.arg("-d");
             }
             "config" => {
-                cmd.arg("--config");
+                cmd.arg("-C");
             }
             "verbose" => {
                 if let Some(count) = selected_values.get(option) {
                     let count: u8 = count.parse().unwrap_or(1);
-                    for _ in 0..count {
-                        cmd.arg("--verbose");
+                    // for _ in 0..count {
+                    //     cmd.arg("--verbose");
+                    // }
+                    if count > 1 {
+                        cmd.arg("-vv");
                     }
                 } else {
-                    cmd.arg("--verbose");
+                    cmd.arg("-v");
                 }
             }
             "quiet" => {
                 if let Some(count) = selected_values.get(option) {
                     let count: u8 = count.parse().unwrap_or(1);
-                    for _ in 0..count {
-                        cmd.arg("--quiet");
+                    // for _ in 0..count {
+                    //     cmd.arg("--quiet");
+                    // }
+                    if count > 1 {
+                        cmd.arg("-qq");
                     }
                 } else {
-                    cmd.arg("--quiet");
+                    cmd.arg("-q");
                 }
             }
             "normal_verbosity" => {
-                cmd.arg("--normal");
+                cmd.arg("-n");
             }
             "force" => {
-                cmd.arg("--force");
+                cmd.arg("-f");
             }
             "generate" => {
-                cmd.arg("--gen");
+                cmd.arg("-g");
             }
             "build" => {
-                cmd.arg("--build");
+                cmd.arg("-b");
             }
             "check" => {
-                cmd.arg("--check");
+                cmd.arg("-c");
             }
             "executable" => {
-                cmd.arg("--executable");
+                cmd.arg("-x");
             }
             "expand" => {
-                cmd.arg("--expand");
+                cmd.arg("-X");
             }
             "cargo" => {
-                cmd.arg("--cargo");
+                cmd.arg("-A");
             }
             "test_only" => {
-                cmd.arg("--test-only");
+                cmd.arg("-T");
             }
             "multimain" => {
-                cmd.arg("--multimain");
+                cmd.arg("-m");
             }
             "timings" => {
-                cmd.arg("--timings");
+                cmd.arg("-t");
             }
             "features" => {
                 cmd.arg("--features");
@@ -761,13 +782,13 @@ serde = "1.0""#,
                 }
             }
             "infer" => {
-                cmd.arg("--infer");
+                cmd.arg("-i");
                 if let Some(infer) = selected_values.get(option) {
                     cmd.arg(infer);
                 }
             }
             "unquote" => {
-                cmd.arg("--unquote");
+                cmd.arg("-u");
             }
             _ => {} // Handle other options as needed
         }
@@ -856,40 +877,39 @@ serde = "1.0""#,
                 }
             }
 
-            println!(
-                "\n{} {}",
-                "Running:".bright_green(),
-                cmd_display.bright_cyan()
-            );
+            cprtln!(Style::for_role(Role::Heading3), "\n{}", "Running:".bold());
+            cprtln!(Style::for_role(Role::Code), "{cmd_display}");
 
             let status = cmd.status()?;
 
             if !status.success() {
-                println!(
-                    "\n{} Command failed with exit code: {:?}",
-                    "Error:".bright_red(),
+                cprtln!(
+                    Style::for_role(Role::Error),
+                    "\nError: Command failed with exit code: {:?}",
                     status.code()
                 );
             }
         }
         "Copy command to clipboard" => {
             let shell_command = format!("{}{}", env_prefix, cmd_display);
-            println!("\n{} Command copied to clipboard:", "Info:".bright_blue());
-            println!("{}", shell_command.bright_cyan());
+            cprtln!(
+                Style::for_role(Role::Info),
+                "\nInfo: Command copied to clipboard:",
+            );
+            cprtln!(Style::for_role(Role::Code), "{shell_command}");
 
             // Try to copy to clipboard (cross-platform)
             if let Err(e) = copy_to_clipboard(&shell_command) {
-                println!(
-                    "{} Failed to copy to clipboard: {}",
-                    "Warning:".bright_yellow(),
-                    e
+                cprtln!(
+                    Style::for_role(Role::Warning),
+                    "Warning: Failed to copy to clipboard: {e}"
                 );
                 println!("Please copy the command above manually.");
             }
         }
         "Print command to stdout" => {
             let shell_command = format!("{}{}", env_prefix, cmd_display);
-            println!("{}", shell_command);
+            cprtln!(Style::for_role(Role::Code), "{shell_command}");
         }
         _ => {}
     }
@@ -898,7 +918,7 @@ serde = "1.0""#,
 }
 
 fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Running in test mode: {}", test_mode);
+    println!("Running in test mode: {test_mode}");
 
     let mut cmd = Command::new("thag");
 
@@ -1132,13 +1152,24 @@ fn format_command_display(cmd: &Command) -> String {
         let arg_str = arg.to_string_lossy();
         display.push(' ');
 
+        // eprintln!("arg_str={arg_str}");
+
         // Quote arguments that contain spaces or special characters
-        if arg_str.contains(' ') || arg_str.contains('"') || arg_str.contains('\'') {
-            display.push('\'');
-            display.push_str(&arg_str.replace('\'', r#"'"'"'"#));
-            display.push('\'');
+        let in_single_quotes = arg_str.starts_with('\'') && arg_str.ends_with('\'');
+        if in_single_quotes {
+            // let arg_str = arg_str.trim_matches('\'');
+            display.push_str(&format!("'{arg_str}'"));
+            // eprintln!("1. display={display}");
         } else {
-            display.push_str(&arg_str);
+            if arg_str.contains(' ') || arg_str.contains('"') || arg_str.contains('\'') {
+                display.push('\'');
+                display.push_str(&arg_str.replace('\'', r#"'"'"'"#));
+                display.push('\'');
+                // eprintln!("2. display={display}");
+            } else {
+                display.push_str(&format!("'{arg_str}'"));
+                // eprintln!("3. display={display}");
+            }
         }
     }
 

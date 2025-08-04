@@ -6,6 +6,14 @@
 
 #![warn(clippy::pedantic, missing_docs)]
 
+/// Configuration management module
+#[cfg(feature = "config")]
+pub mod config;
+
+/// Terminal detection and capabilities module
+#[cfg(feature = "color_detect")]
+pub mod terminal;
+
 use documented::{Documented, DocumentedVariants};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -13,6 +21,7 @@ use std::sync::{LazyLock, Mutex};
 use std::{path::PathBuf, time::Instant};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
+#[cfg(feature = "config")]
 pub use crate::config::{ConfigError, ConfigResult};
 
 /// Result type alias for `thag_common` operations
@@ -466,11 +475,3 @@ pub fn thousands<T: Display>(n: T) -> String {
         .unwrap()
         .join(",")
 }
-
-/// Configuration management module
-#[cfg(feature = "config")]
-pub mod config;
-
-/// Terminal detection and capabilities module
-#[cfg(feature = "color_detect")]
-pub mod terminal;

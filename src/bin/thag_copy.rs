@@ -1,6 +1,9 @@
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 
+#[cfg(feature = "clipboard")]
+use std::io::Read;
+
 #[cfg_attr(not(feature = "clipboard"), allow(clippy::unnecessary_wraps))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(not(feature = "clipboard"))]
@@ -13,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         // Read all input from stdin
         let mut input = String::new();
-        io::stdin().read_to_string(&mut input)?;
+        std::io::stdin().read_to_string(&mut input)?;
 
         // Don't copy empty input
         if input.trim().is_empty() {

@@ -1,3 +1,9 @@
+/*[toml]
+[dependencies]
+thag_proc_macros = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2", path = "/Users/donf/projects/thag_rs/thag_styling" }
+*/
+
 #![allow(dead_code)]
 /// Demonstrates simple RYO styling of `&str` and `String` types for output via a trait.
 ///
@@ -6,9 +12,8 @@
 //# Categories: ansi, color, demo, dsl, learning, reference, styling, technique, terminal, trait_implementation, xterm
 use std::fmt;
 use std::fmt::Display;
-// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::styled;
+use thag_proc_macros::styled;
+use thag_styling::{cvprtln, Role, Style, V};
 
 // ANSI color codes
 #[derive(Clone, Copy)]
@@ -23,9 +28,9 @@ enum Color {
     White,
 }
 
-// ANSI text styles
+// ANSI text effects
 #[derive(Clone, Copy)]
-enum Style {
+enum Effect {
     Bold,
     Underline,
     Italic,
@@ -35,7 +40,7 @@ enum Style {
 struct Styled<'a> {
     text: &'a str,
     fg: Option<Color>,
-    styles: Vec<Style>,
+    effects: Vec<Effect>,
 }
 
 trait AnsiStyleExt<'a> {
@@ -47,7 +52,7 @@ impl<'a> AnsiStyleExt<'a> for &'a str {
         Styled {
             text: self,
             fg: None,
-            styles: Vec::new(),
+            effects: Vec::new(),
         }
     }
 }
@@ -65,34 +70,34 @@ impl<'a> Styled<'a> {
     }
 
     fn bold(mut self) -> Self {
-        self.styles.push(Style::Bold);
+        self.effects.push(Effect::Bold);
         self
     }
 
     fn underline(mut self) -> Self {
-        self.styles.push(Style::Underline);
+        self.effects.push(Effect::Underline);
         self
     }
 
     fn italic(mut self) -> Self {
-        self.styles.push(Style::Italic);
+        self.effects.push(Effect::Italic);
         self
     }
 
     fn reversed(mut self) -> Self {
-        self.styles.push(Style::Reversed);
+        self.effects.push(Effect::Reversed);
         self
     }
 
     fn to_ansi_code(&self) -> String {
         let mut codes = Vec::new();
 
-        for style in &self.styles {
-            codes.push(match style {
-                Style::Bold => "1",
-                Style::Underline => "4",
-                Style::Italic => "3",
-                Style::Reversed => "7",
+        for effect in &self.effects {
+            codes.push(match effect {
+                Effect::Bold => "1",
+                Effect::Underline => "4",
+                Effect::Italic => "3",
+                Effect::Reversed => "7",
             });
         }
 
@@ -115,12 +120,12 @@ impl<'a> Styled<'a> {
     fn to_ansi_reset_codes(&self) -> String {
         let mut codes = Vec::new();
 
-        for style in &self.styles {
-            codes.push(match style {
-                Style::Bold => "22",
-                Style::Underline => "24",
-                Style::Italic => "23",
-                Style::Reversed => "27",
+        for effect in &self.effects {
+            codes.push(match effect {
+                Effect::Bold => "22",
+                Effect::Underline => "24",
+                Effect::Italic => "23",
+                Effect::Reversed => "27",
             });
         }
 
@@ -215,4 +220,6 @@ fn main() {
     let inner = styled!(fg=Green, => "inner");
     // Doesn't work either - to revert to the previous colour we must track and reinstate it or split the message printing.
     println!("{}{} world", outer, outer.embed(inner));
+
+    cvprtln!(Role::WARN, V::N, "Hello {}, how are you?", styled!(bold, => "world"));
 }

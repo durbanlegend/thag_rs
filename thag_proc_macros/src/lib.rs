@@ -23,6 +23,7 @@ mod palette_methods;
 mod preload_themes;
 mod repeat_dash;
 mod safe_print;
+mod styled;
 mod timing;
 mod tool_errors;
 
@@ -57,6 +58,7 @@ use crate::repeat_dash::repeat_dash_impl;
 use crate::safe_print::{
     safe_eprint_impl, safe_eprintln_impl, safe_osc_impl, safe_print_impl, safe_println_impl,
 };
+use crate::styled::styled_impl;
 use crate::timing::timing_impl;
 use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
@@ -796,6 +798,23 @@ pub fn safe_eprintln(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn safe_osc(input: TokenStream) -> TokenStream {
     safe_osc_impl(input)
+}
+
+/// Applies styling to text using inline color and style codes.
+///
+/// This macro processes styling directives to format text output with colors and styles.
+/// It supports various color and style combinations for terminal output formatting.
+///
+/// # Usage
+///
+/// ```rust
+/// use thag_proc_macros::styled;
+///
+/// styled!("Hello, world!");
+/// ```
+#[proc_macro]
+pub fn styled(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(false, "styled", &input, styled_impl)
 }
 
 /// Measures and displays function execution time.

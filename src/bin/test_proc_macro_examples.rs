@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
-thag_styling = { version = "0.2, thag-auto" }
 */
 
 /// Test script to validate that proc macro examples work correctly.
@@ -13,9 +12,8 @@ use std::{
     process::{Command, Stdio},
 };
 
-#[cfg(feature = "tools")]
-use thag_rs::{auto_help, help_system::check_help_and_exit};
-use thag_styling::{cvprtln, Role, Style, V};
+// #[cfg(feature = "tools")]
+use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, Style, V};
 
 struct TestCase {
     name: &'static str,

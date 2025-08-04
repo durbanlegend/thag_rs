@@ -2676,7 +2676,7 @@ pub fn display_theme_roles(theme: &Theme) {
     // println!("\n\tRole Styles:");
     println!(
         "\n\t{} {}",
-        paint_for_role(Role::Normal, "Role styles:"),
+        theme.style_for(Role::Normal).paint("Role styles:"),
         theme.style_for(Role::Heading1).paint(&theme.name)
     );
     // println!("\t{}", "═".repeat(80));
@@ -2791,11 +2791,14 @@ pub fn display_theme_details(theme: &Theme) {
 
     let flower_box_len = 80;
 
-    println!("\n\t{}", paint_for_role(Role::Normal, "Theme attributes:"));
+    println!(
+        "\n\t{}",
+        theme.style_for(Role::Normal).paint("Theme attributes:")
+    );
     println!("\t{}", "─".repeat(flower_box_len));
 
     for (attr, description) in theme_docs {
-        let styled_name = paint_for_role(Role::Info, attr);
+        let styled_name = theme.style_for(Role::Info).paint(attr);
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{styled_name}{padding}");
@@ -2824,7 +2827,7 @@ pub fn display_theme_details(theme: &Theme) {
 /// use thag_rs::styling::display_terminal_attributes;
 /// display_terminal_attributes();
 /// ```
-pub fn display_terminal_attributes() {
+pub fn display_terminal_attributes(theme: &Theme) {
     let term_attrs = TermAttributes::get_or_init();
 
     let how_initialized = term_attrs.how_initialized.to_string();
@@ -2851,12 +2854,12 @@ pub fn display_terminal_attributes() {
 
     println!(
         "\n\t{}",
-        paint_for_role(Role::Normal, "Terminal attributes:")
+        theme.style_for(Role::Normal).paint("Terminal attributes:")
     );
     println!("\t{}", "─".repeat(flower_box_len));
 
     for (attr, description) in terminal_docs {
-        let styled_name = paint_for_role(Role::Info, attr);
+        let styled_name = theme.style_for(Role::Info).paint(attr);
         let padding = " ".repeat(col1_width.saturating_sub(attr.len()));
 
         print!("\t{styled_name}{padding}");
@@ -2881,31 +2884,62 @@ enum Effect {
     Underline,
 }
 
-struct Styled<T> {
+/// A styled text container that applies ANSI terminal effects to text.
+///
+/// This struct wraps text content with a collection of visual effects that can be
+/// applied when the text is displayed in a terminal. Effects include bold, italic,
+/// underline, dim, and reversed styling.
+///
+/// # Type Parameters
+/// * `T` - The type of the text content to be styled
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::{Styled, Effect};
+///
+/// let styled = "Hello".style().bold().italic();
+/// println!("{}", styled); // Prints "Hello" in bold italic
+/// ```
+pub struct Styled<T> {
     text: T,
     effects: Vec<Effect>,
 }
 
-// trait AnsiStyleExt<'a> {
-//     fn style(self) -> Styled<'a>;
-// }
-
-// impl<'a> AnsiStyleExt<'a> for &'a str {
-//     fn style(self) -> Styled<'a> {
-//         Styled {
-//             text: self,
-//             effects: Vec::new(),
-//         }
-//     }
-// }
-
-// impl<'a> AnsiStyleExt<'a> for &'a String {
-//     fn style(self) -> Styled<'a> {
-//         self.as_str().style()
-//     }
-// }
-
-trait AnsiStyleExt {
+/// Extension trait for applying ANSI terminal styling to any displayable type.
+///
+/// This trait provides a convenient way to add terminal styling effects to any type
+/// that implements `Display`. It converts the value to a string and wraps it in
+/// a `Styled` container that can then have effects like bold, italic, underline,
+/// etc. applied to it.
+///
+/// # Examples
+/// ```
+/// use thag_rs::styling::AnsiStyleExt;
+///
+/// let styled = "Hello".style().bold().underline();
+/// println!("{}", styled); // Prints "Hello" with bold and underline effects
+///
+/// let number = 42;
+/// let styled_number = number.style().italic();
+/// println!("{}", styled_number); // Prints "42" in italics
+/// ```
+pub trait AnsiStyleExt {
+    /// Creates a `Styled` wrapper around the string representation of this value.
+    ///
+    /// This method converts the value to a string using its `Display` implementation
+    /// and wraps it in a `Styled` container with no initial effects applied.
+    /// Effects can then be chained using the methods on `Styled`.
+    ///
+    /// # Returns
+    /// A `Styled<String>` that can have terminal effects applied to it
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::styling::AnsiStyleExt;
+    ///
+    /// let basic = "text".style();
+    /// let enhanced = "text".style().bold().italic();
+    /// ```
     fn style(&self) -> Styled<String>;
 }
 
@@ -2922,27 +2956,82 @@ where
 }
 
 impl<T> Styled<T> {
-    fn bold(mut self) -> Self {
+    /// Applies bold styling to the text.
+    ///
+    /// # Returns
+    /// A new `Styled` instance with bold effect added to the existing effects.
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::styling::AnsiStyleExt;
+    /// let styled = "Hello".style().bold();
+    /// println!("{}", styled); // Prints "Hello" in bold
+    /// ```
+    pub fn bold(mut self) -> Self {
         self.effects.push(Effect::Bold);
         self
     }
 
-    fn dim(mut self) -> Self {
+    /// Applies dim (faint) styling to the text.
+    ///
+    /// # Returns
+    /// A new `Styled` instance with dim effect added to the existing effects.
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::styling::AnsiStyleExt;
+    /// let styled = "Hello".style().dim();
+    /// println!("{}", styled); // Prints "Hello" in dim/faint text
+    /// ```
+    pub fn dim(mut self) -> Self {
         self.effects.push(Effect::Dim);
         self
     }
 
-    fn underline(mut self) -> Self {
+    /// Applies underline styling to the text.
+    ///
+    /// # Returns
+    /// A new `Styled` instance with underline effect added to the existing effects.
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::styling::AnsiStyleExt;
+    /// let styled = "Hello".style().underline();
+    /// println!("{}", styled); // Prints "Hello" with underline
+    /// ```
+    pub fn underline(mut self) -> Self {
         self.effects.push(Effect::Underline);
         self
     }
 
-    fn italic(mut self) -> Self {
+    /// Applies italic styling to the text.
+    ///
+    /// # Returns
+    /// A new `Styled` instance with italic effect added to the existing effects.
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::styling::AnsiStyleExt;
+    /// let styled = "Hello".style().italic();
+    /// println!("{}", styled); // Prints "Hello" in italics
+    /// ```
+    pub fn italic(mut self) -> Self {
         self.effects.push(Effect::Italic);
         self
     }
 
-    fn reversed(mut self) -> Self {
+    /// Applies reversed (inverted foreground/background) styling to the text.
+    ///
+    /// # Returns
+    /// A new `Styled` instance with reversed effect added to the existing effects.
+    ///
+    /// # Examples
+    /// ```
+    /// use thag_rs::styling::AnsiStyleExt;
+    /// let styled = "Hello".style().reversed();
+    /// println!("{}", styled); // Prints "Hello" with inverted colors
+    /// ```
+    pub fn reversed(mut self) -> Self {
         self.effects.push(Effect::Reversed);
         self
     }
@@ -2966,8 +3055,8 @@ impl<T> Styled<T> {
     fn to_ansi_reset_codes(&self) -> String {
         let mut codes = Vec::new();
 
-        for style in &self.effects {
-            codes.push(match style {
+        for effect in &self.effects {
+            codes.push(match effect {
                 Effect::Bold | Effect::Dim => "22",
                 Effect::Underline => "24",
                 Effect::Italic => "23",

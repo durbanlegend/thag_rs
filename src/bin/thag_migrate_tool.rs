@@ -17,12 +17,14 @@ use inquire::{set_global_render_config, Confirm, Select};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
     let help = auto_help!("thag_migrate_tool");
     check_help_and_exit(&help);
+
+    set_global_render_config(themed_inquire_config());
 
     println!("🔧 Tool Migration Helper");
     println!("This tool helps migrate existing tools from tools/ to src/bin/\n");

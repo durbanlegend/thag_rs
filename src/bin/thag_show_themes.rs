@@ -1,7 +1,13 @@
-use inquire::Select;
+/*[toml]
+[dependencies]
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
+*/
+
+use inquire::{set_global_render_config, Select};
 use std::{env, io};
 use thag_rs::{
-    auto_help, display_theme_details, display_theme_roles, TermAttributes, ThagResult, Theme,
+    auto_help, display_theme_details, display_theme_roles, themed_inquire_config, TermAttributes,
+    ThagResult, Theme,
 };
 
 /// Display built-in themes and their styling with terminal setup instructions
@@ -242,6 +248,8 @@ fn main() -> ThagResult<()> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!("thag_show_themes");
     let _ = &help.check_help();
+
+    set_global_render_config(themed_inquire_config());
 
     let args: Vec<String> = env::args().collect();
 

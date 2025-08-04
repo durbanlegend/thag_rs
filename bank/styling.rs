@@ -29,14 +29,9 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, IntoEnumIterator};
-use thag_proc_macros::{preload_themes, PaletteMethods};
+use thag_proc_macros::{preload_themes, styled, PaletteMethods};
 use thag_rs::errors::ThemeError;
 use thag_rs::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagError, ThagResult, V};
-
-// TODO temp location
-// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-use thag_demo_proc_macros::styled;
 
 #[cfg(feature = "color_detect")]
 use thag_rs::terminal::{self, get_term_bg_rgb, is_light_color};

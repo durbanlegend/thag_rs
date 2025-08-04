@@ -576,7 +576,7 @@ pub fn run_repl(
 
                         display_theme_roles(theme);
                         display_theme_details(theme);
-                        display_terminal_attributes();
+                        display_terminal_attributes(theme);
                     }
                 }
                 continue;

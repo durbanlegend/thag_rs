@@ -13,8 +13,9 @@ use serde_merge::omerge;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
 use thag_common::{debug_log, get_verbosity, re, vprtln, V};
+use thag_proc_macros::styled;
 use thag_profiler::{end, profile, profiled};
-use thag_styling::{cvprtln, Role};
+use thag_styling::{cvprtln, AnsiStyleExt, Role};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -498,10 +499,8 @@ to git or local paths when environment variables are set. This allows the same
 script to work in different environments without modification.
 
 For more details, see the comments in demo scripts or the thag documentation.",
-        // Style::for_role(Role::EMPH)
-        //     .bold()
-        //     .paint("export THAG_DEV_PATH=$PWD")
-        "\x1b[1mexport THAG_DEV_PATH=$PWD\x1b[22m"
+        // "\x1b[1mexport THAG_DEV_PATH=$PWD\x1b[22m"
+        styled!(bold, reversed, => "export THAG_DEV_PATH=$PWD")
     );
 }
 

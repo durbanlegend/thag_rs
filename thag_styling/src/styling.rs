@@ -3044,18 +3044,6 @@ impl<T> Styled<T> {
     }
 }
 
-// impl fmt::Display for Styled<'_> {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
-//     }
-// }
-
-// impl fmt::Display for Styled<String> {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(f, "{}{}{}", self.to_ansi_code(), self.text, "\x1b[0m")
-//     }
-// }
-
 impl fmt::Display for Styled<String> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

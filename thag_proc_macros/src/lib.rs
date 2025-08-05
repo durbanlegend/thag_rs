@@ -14,6 +14,7 @@
 //! - `instrument_tool`:    Include dependencies required only for `thag_instrument` and `thag_uninstrument` binaries.
 //!
 
+mod ansi_styling_support;
 mod category_enum;
 mod file_navigator;
 mod fn_name;
@@ -47,6 +48,7 @@ mod profile;
 #[cfg(feature = "time_profiling")]
 mod end;
 
+use crate::ansi_styling_support::ansi_styling_support_impl;
 use crate::category_enum::category_enum_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
@@ -343,6 +345,24 @@ pub fn palette_methods(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn file_navigator(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "file_navigator", &input, file_navigator_impl)
+}
+
+/// Generate ANSI styling support including trait and implementation.
+///
+/// Syntax:
+///
+/// ```Rust
+///     ansi_styling_support! {}
+/// ```
+///
+#[proc_macro]
+pub fn ansi_styling_support(input: TokenStream) -> TokenStream {
+    maybe_expand_proc_macro(
+        false,
+        "ansi_styling_support",
+        &input,
+        ansi_styling_support_impl,
+    )
 }
 
 #[doc(hidden)]

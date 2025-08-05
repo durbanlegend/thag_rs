@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
+thag_styling = { version = "0.1, thag-auto" }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.
@@ -9,13 +10,10 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Purpose: Demonstrate and test the look of available colour palettes and styling settings.
 //# Categories: prototype, reference, testing
 use strum::{Display, EnumIter, IntoEnumIterator};
-use thag_rs::{
-    cvprtln,
-    styling::{
-        display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
-        Theme,
-    },
-    vprtln, ColorSupport, Style, TermBgLuma, ThagResult, V,
+use thag_rs::{cvprtln, vprtln, ColorSupport, Style, TermBgLuma, ThagResult, V};
+use thag_styling::{
+    display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
+    Theme,
 };
 
 pub fn main() -> ThagResult<()> {

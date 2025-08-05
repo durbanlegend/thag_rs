@@ -12,6 +12,7 @@ tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
 
 thag_profiler = { version = "0.1, thag-auto", default-features = false }
 thag_rs = { version = "0.2, thag-auto", features = ["repl", "reedline", "simplelog"] }
+thag_styling = { version = "0.1, thag-auto" }
 
 [features]
 debug_logging = ["thag_rs/debug_logging"]
@@ -27,7 +28,6 @@ simplelog = ["thag_rs/simplelog"]
 //# Categories: demo, REPL, technique
 use clap::{CommandFactory, Parser};
 use edit::edit_file;
-use log;
 use nu_ansi_term::Color as NuColor;
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use ratatui::style::Color;
@@ -60,11 +60,6 @@ use thag_rs::{
     logging::configure_log,
     manifest::extract,
     re,
-    styling::{
-        display_terminal_attributes, display_theme_details, display_theme_roles, ColorInitStrategy,
-        Role::{self, Success},
-        Style, TermAttributes,
-    },
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
@@ -72,6 +67,11 @@ use thag_rs::{
     vprtln, Ast, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
     KeyDisplayLine, ProcFlags, ScriptState, ThagError, ThagResult, REPL_SCRIPT_NAME, REPL_SUBDIR,
     TMPDIR, V,
+};
+use thag_styling::{
+    display_terminal_attributes, display_theme_details, display_theme_roles, ColorInitStrategy,
+    Role::{self, Success},
+    Style, TermAttributes,
 };
 use tui_textarea::{Input, TextArea};
 
@@ -650,7 +650,7 @@ pub fn run_repl(
 
                         display_theme_roles(theme);
                         display_theme_details(theme);
-                        display_terminal_attributes();
+                        display_terminal_attributes(theme);
                     }
                 }
                 continue;

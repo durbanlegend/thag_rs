@@ -283,6 +283,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling.rs
 
 ---
 
+### Script: ansi_styling_support.rs
+
+**Description:**  Demonstrates using the ansi_styling_support! macro to generate ANSI styling capabilities
+
+ E.g. `thag demo/ansi_styling_support.rs`
+
+**Purpose:** Demonstrate the ansi_styling_support! macro for standalone ANSI styling.
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** ansi, color, demo, macros, proc_macros, styling, terminal
+
+**Link:** [ansi_styling_support.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling_support.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling_support.rs
+```
+
+---
+
 ### Script: any.rs
 
 **Description:**  Demo determining at run-time whether an expression returns a unit value
@@ -4521,15 +4545,15 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry
 
 ### Script: proc_macro_styled.rs
 
-**Description:**  Testing the `styled` proc macro
+**Description:**  Testing the `styled` proc macro with ansi_styling_support
 
-**Purpose:** Test the proof of concept and potentially the implementation.
+**Purpose:** Test the styled! macro with generated ANSI styling support.
 
-**Crates:** `thag_styling`
+**Crates:** `thag_proc_macros`, `thag_styling`
 
 **Type:** Program
 
-**Categories:** missing
+**Categories:** ansi, color, demo, macros, proc_macros, styling, terminal
 
 **Link:** [proc_macro_styled.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_styled.rs)
 
@@ -5412,7 +5436,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_mat
 
 **Purpose:** Demonstrate building a `thag`-style REPL.
 
-**Crates:** `clap`, `edit`, `log`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `tui_textarea`
+**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `thag_styling`, `tui_textarea`
 
 **Type:** Program
 
@@ -6019,7 +6043,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gp
 
 **Purpose:** Demonstrate and test the look of available colour palettes and styling settings.
 
-**Crates:** `strum`, `thag_rs`
+**Crates:** `strum`, `thag_rs`, `thag_styling`
 
 **Type:** Program
 

@@ -5,7 +5,7 @@
 # - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
 # - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
 # E.g. from `thag_rs` project dir: `THAG_DEV_PATH=$PWD thag demo/proc_macro_category_enum.rs`
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_profiler = { version = "0.1, thag-auto" }
 */

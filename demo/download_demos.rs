@@ -6,7 +6,7 @@
 # - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
 # E.g. from `thag_rs` project dir: `THAG_DEV_PATH=$PWD thag demo/download_demos.rs`
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 */
 
 /// Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`

@@ -150,16 +150,6 @@ impl fmt::Display for Styled<'_> {
     }
 }
 
-// impl<T: Display> Styled<'_> {
-//     pub fn embed(&self, inner: impl Display) -> String {
-//         format!(
-//             "{}{}{}",
-//             inner,
-//             self.to_ansi_reset_codes(),
-//             self.to_ansi_code()
-//         )
-//     }
-// }
 impl<'a> Styled<'a> {
     pub fn embed(&self, inner: impl Display) -> String {
         format!(

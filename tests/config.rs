@@ -8,9 +8,7 @@ mod tests {
             self, validate_config_format, Config, Dependencies, FeatureOverride, MockContext,
             RealContext,
         },
-        load,
-        shared::Verbosity,
-        ColorSupport, Context, TermBgLuma, ThagResult,
+        load, ColorSupport, Context, TermBgLuma, ThagResult, Verbosity,
     };
 
     #[cfg(feature = "simplelog")]

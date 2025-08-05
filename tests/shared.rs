@@ -2,8 +2,9 @@
 mod tests {
     use serial_test::parallel;
     use std::sync::Once;
-    use thag_rs::shared::escape_path_for_windows;
-    use thag_rs::shared::{set_global_verbosity, OutputManager, Verbosity, OUTPUT_MANAGER};
+    use thag_common::{
+        escape_path_for_windows, set_global_verbosity, OutputManager, Verbosity, OUTPUT_MANAGER,
+    };
 
     // Set environment variables before running tests
     fn set_up() {

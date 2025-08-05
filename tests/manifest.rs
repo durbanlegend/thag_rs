@@ -2,11 +2,11 @@
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest, Product};
     use semver::Version;
-    use std::{collections::BTreeMap, sync::Once, path::PathBuf, time::Instant};
+    use std::{collections::BTreeMap, path::PathBuf, sync::Once, time::Instant};
     use thag_rs::code_utils::to_ast;
     use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
-    use thag_rs::styling::{ColorInitStrategy, TermAttributes};
     use thag_rs::{find_crates, find_metadata, BuildState};
+    use thag_styling::{ColorInitStrategy, TermAttributes};
 
     // Set environment variables before running tests
     fn set_up() {

@@ -14,8 +14,8 @@ pub mod styling;
 
 // Re-export common types
 pub use thag_common::{
-    get_verbosity, prtln, vprtln, ColorSupport, TermBgLuma, ThagCommonResult, Verbosity,
-    OUTPUT_MANAGER, V,
+    debug_log, get_verbosity, prtln, re, vprtln, ColorSupport, TermBgLuma, ThagCommonResult,
+    Verbosity, OUTPUT_MANAGER, V,
 };
 
 pub use styling::{

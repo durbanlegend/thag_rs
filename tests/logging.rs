@@ -8,8 +8,7 @@ mod tests {
         sync::Once,
     };
     use thag_proc_macros::safe_eprintln;
-    use thag_rs::shared::OUTPUT_MANAGER;
-    use thag_rs::{debug_log, set_global_verbosity, Verbosity};
+    use thag_rs::{debug_log, set_global_verbosity, Verbosity, OUTPUT_MANAGER};
 
     #[cfg(feature = "simplelog")]
     use simplelog::{

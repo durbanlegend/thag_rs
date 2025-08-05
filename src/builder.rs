@@ -69,7 +69,7 @@ use std::{
 };
 use thag_common::{self, debug_log, re, vprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, paint_for_role, ColorInitStrategy, Style, TermAttributes};
+use thag_styling::{cvprtln, paint_for_role, ColorInitStrategy, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{

@@ -4,10 +4,10 @@ syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
 */
 
-use quote::quote;
 /// Tries to convert input to a `syn` abstract syntax tree (`syn::File` or `syn::Expr`).
 //# Purpose: Debugging
 //# Categories: AST, crates, technique, tools
+use quote::quote;
 use std::io::{self, Read};
 use thag_rs::{auto_help, help_system::check_help_and_exit};
 

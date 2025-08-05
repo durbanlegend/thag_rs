@@ -966,7 +966,7 @@ impl TermAttributes {
                             }
                         }
                     }
-                    #[cfg(not(feature = "config"))]
+                    #[cfg(all(not(feature = "config"), not(feature = "color_detect")))]
                     {
                         let theme =
                             Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
@@ -1686,7 +1686,7 @@ impl Theme {
     /// # Errors
     /// Returns `StylingError` if the specified theme name is not recognized
     ///
-    fn get_theme_with_color_support(
+    pub fn get_theme_with_color_support(
         theme_name: &str,
         color_support: ColorSupport,
     ) -> StylingResult<Self> {
@@ -2768,12 +2768,13 @@ pub fn display_theme_details(theme: &Theme) {
 
     let theme_docs: &[(&str, &str)] = &[
         ("Theme", &theme.name),
+        ("Luminance", &theme.term_bg_luma.to_string()),
         (
             "Type",
             if theme.is_builtin {
-                "Built-in"
+                "built-in"
             } else {
-                "Custom"
+                "custom"
             },
         ),
         ("File", &theme.filename.display().to_string()),

@@ -45,6 +45,7 @@ fn list_themes() -> ThagResult<()> {
 fn interactive_theme_browser() -> ThagResult<()> {
     // Initialize terminal attributes to ensure styling works
     let _term_attrs = TermAttributes::get_or_init();
+    // eprintln!("_term_attrs={_term_attrs:#?}");
 
     let mut themes = Theme::list_builtin();
     themes.sort();
@@ -129,7 +130,14 @@ fn interactive_theme_browser() -> ThagResult<()> {
 }
 
 fn show_theme(theme_name: &str) -> ThagResult<()> {
-    let theme = Theme::get_builtin(theme_name)?;
+    let term_attrs = TermAttributes::get_or_init();
+
+    // let theme = Theme::get_builtin(theme_name)?;
+    let theme = Theme::get_theme_with_color_support(theme_name, term_attrs.color_support)
+        .unwrap_or_else(|_| {
+            // Fallback in case theme can't be loaded
+            Theme::get_builtin("none").expect("Failed to load fallback theme")
+        });
 
     // Initialize terminal attributes to ensure styling works
     let _term_attrs = TermAttributes::get_or_init();

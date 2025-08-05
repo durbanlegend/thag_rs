@@ -5,7 +5,7 @@ use inferno::flamegraph::{
     Options, Palette,
 };
 use inline_colorization::{color_cyan, color_reset};
-use inquire::{InquireError, MultiSelect, Select};
+use inquire::{set_global_render_config, InquireError, MultiSelect, Select};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -20,8 +20,9 @@ use strum::Display;
 use thag_proc_macros::timing;
 use thag_profiler::{
     enhance_svg_accessibility, extract_filename_timestamp, profiling::ProfileStats, thousands,
-    ui::inquire_theming, ProfileError, ProfileResult,
+    ProfileError, ProfileResult,
 };
+use thag_styling::themed_inquire_config;
 
 #[derive(Debug, Default, Clone)]
 pub struct ProcessedProfile {
@@ -101,7 +102,8 @@ impl ChartType {
 /// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Apply theme-aware styling to inquire prompts
-    inquire_theming::apply_global_theming();
+    // inquire_theming::apply_global_theming();
+    set_global_render_config(themed_inquire_config());
 
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {

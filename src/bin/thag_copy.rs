@@ -1,3 +1,10 @@
+/// Copies text input from `stdin` to the system clipboard.
+///
+/// A cross-platform equivalent to macOS's `pbcopy`. See also `src/bin/thag_paste.rs`.
+/// May not work in Linux environments owing to the X11 and Wayland requiring the copying
+/// app to be open when pasting from the system clipboard. See `arboard` Readme.
+//# Purpose: Utility
+//# Categories: tools
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 
@@ -10,6 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         eprintln!("Error: thag_copy requires the 'clipboard' feature to be enabled");
         eprintln!("Please run with: cargo run --bin thag_copy --features clipboard");
+        Err("Missing clipboard feature".into())
     }
 
     #[cfg(feature = "clipboard")]
@@ -29,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         clipboard.set_text(&input)?;
 
         println!("Text copied to clipboard successfully");
-    }
 
-    Ok(())
+        Ok(())
+    }
 }

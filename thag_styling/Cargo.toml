@@ -59,7 +59,7 @@ tools = []
 debug_logging = ["thag_common/debug_logging"]
 
 # Inquire integration for themed UI
-inquire_theming = ["inquire"]
+inquire_theming = ["color_detect", "config", "inquire"]
 
 # Full ratatui integration
 ratatui_support = ["ratatui", "scopeguard"]

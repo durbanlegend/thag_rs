@@ -70,7 +70,7 @@ syn = { version = "2.0.104", features = [
 ] }
 termbg = "0.6.2"
 thag_proc_macros = { version = "0.1.1", path = "src/proc_macros" }
-toml = "0.9.4"
+toml = "0.9.5"
 toml_edit = "0.23.3"
 tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
 [target.'cfg(windows)'.dependencies]

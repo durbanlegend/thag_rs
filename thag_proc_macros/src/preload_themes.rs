@@ -71,7 +71,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
             for bg_rgb in backgrounds {
                 bg_to_names
                     .entry(bg_rgb)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(name.clone());
             }
         }

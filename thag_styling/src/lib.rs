@@ -14,7 +14,8 @@ pub mod styling;
 
 // Re-export common types
 pub use thag_common::{
-    get_verbosity, vprtln, ColorSupport, TermBgLuma, ThagCommonResult, Verbosity, V,
+    get_verbosity, prtln, vprtln, ColorSupport, TermBgLuma, ThagCommonResult, Verbosity,
+    OUTPUT_MANAGER, V,
 };
 
 pub use styling::{
@@ -22,6 +23,8 @@ pub use styling::{
     paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue, HowInitialized,
     Lvl, Palette, PaletteConfig, Role, Style, Styled, TermAttributes, Theme,
 };
+
+pub use thag_proc_macros::styled;
 
 /// Result type alias for styling operations
 pub type StylingResult<T> = Result<T, StylingError>;
@@ -32,7 +35,7 @@ pub enum StylingError {
     /// Theme-related errors
     #[error("Theme error: {0}")]
     Theme(#[from] ThemeError),
-    /// Common errors from thag_common
+    /// Common errors from `thag_common`
     #[error("Common error: {0}")]
     Common(#[from] thag_common::ThagCommonError),
     /// IO errors
@@ -50,7 +53,7 @@ pub enum StylingError {
     /// Parse error
     #[error("Parse error")]
     Parse,
-    /// FromStr error
+    /// `FromStr` error
     #[error("FromStr error: {0}")]
     FromStr(String),
     /// Generic error with message

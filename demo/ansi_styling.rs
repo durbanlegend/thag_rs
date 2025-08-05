@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2", path = "/Users/donf/projects/thag_rs/thag_styling" }
+thag_styling = { version = "0.2, thag-auto" }
 */
 
 #![allow(dead_code)]
@@ -12,8 +11,7 @@ thag_styling = { version = "0.2", path = "/Users/donf/projects/thag_rs/thag_styl
 //# Categories: ansi, color, demo, dsl, learning, reference, styling, technique, terminal, trait_implementation, xterm
 use std::fmt;
 use std::fmt::Display;
-use thag_proc_macros::styled;
-use thag_styling::{cvprtln, Role, Style, V};
+use thag_styling::{cvprtln, styled, Role, V};
 
 // ANSI color codes
 #[derive(Clone, Copy)]
@@ -179,7 +177,7 @@ fn main() {
     println!(
         "{}",
         // "Underlined Green".style().underline().fg(Color::Green)
-        styled!(fg=Green, underline, => "Underlined Green")
+        styled!("Underlined Green", fg = Green, underline)
     );
     println!("{}", "Italic Blue".style().italic().fg(Color::Blue));
     println!(
@@ -193,33 +191,38 @@ fn main() {
     println!(
         "{}",
         styled!(
+            "Italic, Underlined, Yellow, Reversed",
             italic,
             underline,
             fg = Yellow,
-            reversed,
-                => "Italic, Underlined, Yellow, Reversed"
+            reversed
         )
     );
     println!("{}", "Normal text".style());
 
     let name = "Error";
-    println!("{}", styled!(bold, fg=Red, => name));
+    println!("{}", styled!(name, bold, fg = Red));
     println!(
         "{}",
-        styled!(fg=Blue, underline, => format!("User: {}", "alice"))
+        styled!(format!("User: {}", "alice"), fg = Blue, underline)
     );
 
     println!(
         "{}{}{}",
-        styled!(fg=Red, => "outer "),
-        styled!(fg=Green, => "inner"),
+        styled!("outer ", fg = Red),
+        styled!("inner", fg = Green),
         " still red (not 😕)"
     );
 
-    let outer = styled!(fg=Red, => "outer ");
-    let inner = styled!(fg=Green, => "inner");
+    let outer = styled!("outer ", fg = Red);
+    let inner = styled!("inner", fg = Green);
     // Doesn't work either - to revert to the previous colour we must track and reinstate it or split the message printing.
     println!("{}{} world", outer, outer.embed(inner));
 
-    cvprtln!(Role::WARN, V::N, "Hello {}, how are you?", styled!(bold, => "world"));
+    cvprtln!(
+        Role::WARN,
+        V::N,
+        "Hello {}, how are you?",
+        styled!("world", bold)
+    );
 }

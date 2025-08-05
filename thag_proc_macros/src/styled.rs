@@ -6,40 +6,43 @@ use syn::{
     parse_macro_input, Expr, Ident, Token,
 };
 
-pub(crate) struct StyleArgs {
-    pub(crate) styles: Vec<StyleEntry>,
-    pub(crate) expr: Expr,
+struct StyleArgs {
+    styles: Vec<StyleEntry>,
+    expr: Expr,
 }
 
-pub(crate) enum StyleEntry {
+enum StyleEntry {
     Flag(Ident),            // e.g. bold
     KeyValue(Ident, Ident), // e.g. fg = Red
 }
 
 impl Parse for StyleArgs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        // Parse the first argument as the expression
+        let expr: Expr = input.parse()?;
+
         let mut styles = Vec::new();
 
-        while !input.peek(Token![=>]) {
+        // If there's a comma, consume it and continue parsing style entries
+        while input.peek(Token![,]) {
+            input.parse::<Token![,]>()?;
+
             if input.peek(Ident) && input.peek2(Token![=]) {
+                // key = value
                 let key: Ident = input.parse()?;
                 input.parse::<Token![=]>()?;
                 let val: Ident = input.parse()?;
                 styles.push(StyleEntry::KeyValue(key, val));
             } else if input.peek(Ident) {
+                // single flag
                 let flag: Ident = input.parse()?;
                 styles.push(StyleEntry::Flag(flag));
-            }
-
-            if input.peek(Token![,]) {
-                input.parse::<Token![,]>()?;
+            } else {
+                return Err(input.error("Expected identifier or key=value style entry"));
             }
         }
 
-        input.parse::<Token![=>]>()?;
-        let expr: Expr = input.parse()?;
-
-        Ok(StyleArgs { styles, expr })
+        Ok(Self { styles, expr })
     }
 }
 

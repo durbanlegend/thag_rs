@@ -191,8 +191,13 @@ impl OutputManager {
         Self { verbosity }
     }
 
+    /// Output a message whether or not it passes the verbosity filter.
+    pub fn prtln(&self, message: &str) {
+        println!("{message}");
+    }
+
     /// Output a message if it passes the verbosity filter.
-    pub fn prtln(&self, verbosity: Verbosity, message: &str) {
+    pub fn vprtln(&self, verbosity: Verbosity, message: &str) {
         if verbosity as u8 <= self.verbosity as u8 {
             println!("{message}");
         }
@@ -238,12 +243,22 @@ pub fn get_verbosity() -> Verbosity {
     OUTPUT_MANAGER.lock().unwrap().verbosity
 }
 
+/// Ungated print line macro for user messages
+#[macro_export]
+macro_rules! prtln {
+    ($($arg:tt)*) => {
+        {
+            $crate::OUTPUT_MANAGER.lock().unwrap().prtln(&format!($($arg)*))
+        }
+    };
+}
+
 /// Verbosity-gated print line macro for user messages
 #[macro_export]
 macro_rules! vprtln {
     ($verbosity:expr, $($arg:tt)*) => {
         {
-            $crate::OUTPUT_MANAGER.lock().unwrap().prtln($verbosity, &format!($($arg)*))
+            $crate::OUTPUT_MANAGER.lock().unwrap().vprtln($verbosity, &format!($($arg)*))
         }
     };
 }

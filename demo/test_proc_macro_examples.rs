@@ -1,18 +1,17 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog", "tools"] }
 */
 
 /// Test script to validate that proc macro examples work correctly.
 /// This script runs a selection of proc macro examples to ensure they compile and execute properly.
 //# Purpose: Test proc macro examples to ensure they work correctly
-//# Categories: testing, proc_macros, tools
+//# Categories: proc_macros, testing, tools
 use std::{
     env,
     process::{Command, Stdio},
 };
 
-// #[cfg(feature = "tools")]
 use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, Style, V};
 
 struct TestCase {
@@ -88,7 +87,7 @@ fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, Stri
     cvprtln!(
         Role::INFO,
         V::N,
-        "Testing {}: {}",
+        "\nTesting {}: {}",
         test_case.name,
         test_case.description
     );
@@ -126,11 +125,8 @@ fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, Stri
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
-    #[cfg(feature = "tools")]
-    {
-        let help = auto_help!("test_proc_macro_examples");
-        check_help_and_exit(&help);
-    }
+    let help = auto_help!("test_proc_macro_examples");
+    check_help_and_exit(&help);
 
     // Get the current directory as THAG_DEV_PATH
     let current_dir = env::current_dir()?;
@@ -165,7 +161,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cvprtln!(
         Role::INFO,
         V::N,
-        "Running {} test cases...\n",
+        "Running {} test cases...",
         TEST_CASES.len()
     );
 

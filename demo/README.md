@@ -267,7 +267,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_
 
 **Purpose:** Demonstrate styling text via traits.
 
-**Crates:** `thag_demo_proc_macros`
+**Crates:** `thag_styling`
 
 **Type:** Program
 
@@ -4519,6 +4519,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry
 
 ---
 
+### Script: proc_macro_styled.rs
+
+**Description:**  Testing the `styled` proc macro
+
+**Purpose:** Test the proof of concept and potentially the implementation.
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** missing
+
+**Link:** [proc_macro_styled.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_styled.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_styled.rs
+```
+
+---
+
 ### Script: proc_macro_timing.rs
 
 **Description:**  Demo of the timing attribute macro that adds automatic execution time measurement.
@@ -6523,6 +6545,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_t
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs -- --write --show-hex
+```
+
+---
+
+### Script: test_proc_macro_examples.rs
+
+**Description:**  Test script to validate that proc macro examples work correctly.
+ This script runs a selection of proc macro examples to ensure they compile and execute properly.
+
+**Purpose:** Test proc macro examples to ensure they work correctly
+
+**Crates:** `thag_rs`
+
+**Type:** Program
+
+**Categories:** proc_macros, testing, tools
+
+**Link:** [test_proc_macro_examples.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_proc_macro_examples.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_proc_macro_examples.rs
 ```
 
 ---

@@ -2714,14 +2714,14 @@ pub fn main() -> ThagResult<()> {
     );
 
     let name = "Error";
-    println!("{}", styled!(bold, => name));
+    println!("{}", styled!(name, bold));
 
     cvprtln!(
         Role::Heading2,
         V::N,
         "Color support={}, theme={}: {}\nMore text to check if styling disrupted",
         // color_support.style().bold().underline().dim(),
-        styled!(italic, underline, => name),
+        styled!(name, italic, underline),
         theme.name.style().italic(),
         theme.description.style().reversed()
     );

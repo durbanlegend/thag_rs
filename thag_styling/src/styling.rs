@@ -1663,9 +1663,9 @@ impl Theme {
     pub fn get_builtin(theme_name: &str) -> StylingResult<Self> {
         let maybe_theme_index = THEME_INDEX.get(theme_name);
         let Some(theme_index) = maybe_theme_index else {
-            return Err(StylingError::FromStr(
-                format!("No theme found for name {theme_name}").into(),
-            ));
+            return Err(StylingError::FromStr(format!(
+                "No theme found for name {theme_name}"
+            )));
         };
         Self::from_toml(theme_name, theme_index.content)
     }
@@ -2275,30 +2275,6 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
     )
 }
 
-// // #[cfg(feature = "color_detect")]
-// fn matches_background(bg: (u8, u8, u8)) -> StylingResult<bool> {
-//     if let Some(config) = maybe_config() {
-//         let mut found = false;
-//         for hex in &config.styling.backgrounds {
-//             // vprtln!(V::VV, "name=");
-//             let theme_bg = hex_to_rgb(hex)?;
-//             // if color_distance(bg, theme_bg) < THRESHOLD {
-//             if bg == theme_bg {
-//                 found = true;
-//                 break;
-//             }
-//         }
-//         Ok(found)
-//     } else {
-//         Ok(false)
-//     }
-// }
-
-// #[must_use]
-// pub fn rgb_to_hex((r, g, b): &(u8, u8, u8)) -> String {
-//     format!("#{r:02x}{g:02x}{b:02x}")
-// }
-
 // Convenience macros
 /// Conditionally logs a message with verbosity control and styling.
 ///
@@ -2325,7 +2301,7 @@ macro_rules! cvprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
         let verbosity = $crate::get_verbosity();
         if $verbosity <= verbosity {
-            let style = Style::for_role($role);
+            let style = $crate::Style::for_role($role);
             let content = format!($($arg)*);
             $crate::vprtln!(verbosity, "{}", style.paint(content));
         }
@@ -2481,7 +2457,7 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     }
 }
 
-#[allow(dead_code)]
+// #[allow(dead_code)]
 // fn main() -> StylingResult<()> {
 //     // Load built-in theme
 //     let _dracula = Theme::get_builtin("dracula")?;
@@ -2493,6 +2469,10 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
 // }
 
 /// Main method for testing purposes
+///
+/// # Errors
+///
+/// Returns any errors encountered.
 #[allow(dead_code)]
 pub fn main() -> StylingResult<()> {
     let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
@@ -2524,20 +2504,6 @@ pub fn main() -> StylingResult<()> {
                 .paint(format!("{:<col_width$}", "Bold Italic")),
             // color.paint(format!("{:<col_width$}", "Normal"))
         );
-        // let dash_line = "─".repeat(col_width * 4);
-        // cvprtln!(Role::HD2, V::Q, "{dash_line}");
-        // XtermColor::iter().for_each(|variant| {
-        //     let color_string = variant.to_string();
-        //     let pad_color_string = format!("{color_string:<col_width$}");
-        //     let color = Color::fixed(u8::from(&variant));
-        //     println!(
-        //         "{}{}{}{}",
-        //         color.clone().paint(pad_color_string.clone()),
-        //         color.clone().italic().paint(pad_color_string.clone()),
-        //         color.clone().bold().paint(pad_color_string.clone()),
-        //         color.bold().italic().paint(pad_color_string)
-        //     );
-        // });
         println!();
     }
 
@@ -2595,14 +2561,14 @@ pub fn main() -> StylingResult<()> {
     );
 
     let name = "Error";
-    println!("{}", name); // styled!(bold, => name));
+    println!("{name}"); // styled!(name), bold);
 
     cvprtln!(
         Role::Heading2,
         V::N,
         "Color support={}, theme={}: {}\nMore text to check if styling disrupted",
         // color_support.style().bold().underline().dim(),
-        name, // styled!(italic, underline, => name),
+        name, // styled!(name, italic, underline),
         theme.name.style().italic(),
         theme.description.style().reversed()
     );
@@ -2950,7 +2916,7 @@ where
 {
     fn style(&self) -> Styled<String> {
         Styled {
-            text: format!("{}", self),
+            text: format!("{self}"),
             effects: Vec::new(),
         }
     }
@@ -2968,6 +2934,7 @@ impl<T> Styled<T> {
     /// let styled = "Hello".style().bold();
     /// println!("{}", styled); // Prints "Hello" in bold
     /// ```
+    #[must_use]
     pub fn bold(mut self) -> Self {
         self.effects.push(Effect::Bold);
         self
@@ -2984,6 +2951,7 @@ impl<T> Styled<T> {
     /// let styled = "Hello".style().dim();
     /// println!("{}", styled); // Prints "Hello" in dim/faint text
     /// ```
+    #[must_use]
     pub fn dim(mut self) -> Self {
         self.effects.push(Effect::Dim);
         self
@@ -3000,6 +2968,7 @@ impl<T> Styled<T> {
     /// let styled = "Hello".style().underline();
     /// println!("{}", styled); // Prints "Hello" with underline
     /// ```
+    #[must_use]
     pub fn underline(mut self) -> Self {
         self.effects.push(Effect::Underline);
         self
@@ -3016,6 +2985,7 @@ impl<T> Styled<T> {
     /// let styled = "Hello".style().italic();
     /// println!("{}", styled); // Prints "Hello" in italics
     /// ```
+    #[must_use]
     pub fn italic(mut self) -> Self {
         self.effects.push(Effect::Italic);
         self
@@ -3032,6 +3002,7 @@ impl<T> Styled<T> {
     /// let styled = "Hello".style().reversed();
     /// println!("{}", styled); // Prints "Hello" with inverted colors
     /// ```
+    #[must_use]
     pub fn reversed(mut self) -> Self {
         self.effects.push(Effect::Reversed);
         self
@@ -3135,7 +3106,7 @@ impl From<&ColorInfo> for nu_ansi_term::Color {
     }
 }
 
-/// A line print macro that prints a styled and coloured message.
+/// A line print macro that prints a styled and colored message, without verbosity gating..
 ///
 /// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
@@ -3143,8 +3114,11 @@ macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
         let painted = $style.paint(content);
-        let verbosity = $crate::get_verbosity();
-        $crate::vprtln!(verbosity, "{painted}");
+        // let verbosity = $crate::get_verbosity();
+        $crate::prtln!("{painted}");
+        // $crate::OUTPUT_MANAGER.lock().unwrap().prtln(&$style.paint(content));
+        // $crate::prtln!("{painted}");
+        // dbg!();
     }};
 }
 

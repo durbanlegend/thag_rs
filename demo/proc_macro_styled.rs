@@ -1,21 +1,20 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
 /// Testing the `styled` proc macro
 //# Purpose: Test the proof of concept and potentially the implementation.
-use thag_demo_proc_macros::styled;
-use thag_styling::{cprtln, Role, Style, V};
+use thag_styling::{cprtln, styled, AnsiStyleExt, Role, Style};
 
 fn main() {
-    let name = "Error";
-    println!("{}", styled!(bold, => name));
+    let name = "Should be bold";
+    // println!("{}", styled!((name), bold);
+    println!("Should be normal {} Should be normal", styled!(name, bold));
 
     cprtln!(
-        Style::for_role(Role::Heading2),
-        "error={}",
-        styled!(bold, italic, underlined, => name)
+        Style::for_role(Role::Success),
+        "error={}, now for some boilerplate",
+        styled!(name, italic, underline)
     );
 }

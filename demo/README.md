@@ -6043,7 +6043,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gp
 
 **Purpose:** Demonstrate and test the look of available colour palettes and styling settings.
 
-**Crates:** `strum`, `thag_rs`, `thag_styling`
+**Crates:** `strum`, `thag_styling`
 
 **Type:** Program
 
@@ -6798,6 +6798,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_ben
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_prompt.rs
+```
+
+---
+
+### Script: thag_theme.rs
+
+**Description:**  Displays the current theme palette and attributes.
+
+ E.g. `thag demo/thag_theme.rs`
+
+**Purpose:** Show current theme.
+
+**Crates:** `thag_styling`
+
+**Type:** Snippet
+
+**Categories:** tools
+
+**Link:** [thag_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_theme.rs
 ```
 
 ---

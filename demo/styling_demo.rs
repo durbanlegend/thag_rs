@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "profiling", "simplelog"] }
 thag_styling = { version = "0.1, thag-auto" }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
@@ -10,13 +9,12 @@ thag_styling = { version = "0.1, thag-auto" }
 //# Purpose: Demonstrate and test the look of available colour palettes and styling settings.
 //# Categories: prototype, reference, testing
 use strum::{Display, EnumIter, IntoEnumIterator};
-use thag_rs::{cvprtln, vprtln, ColorSupport, Style, TermBgLuma, ThagResult, V};
 use thag_styling::{
-    display_theme_details, display_theme_roles, Color, ColorInitStrategy, Role, TermAttributes,
-    Theme,
+    cvprtln, display_theme_details, display_theme_roles, vprtln, Color, ColorInitStrategy,
+    ColorSupport, Role, Style, TermAttributes, TermBgLuma, Theme, V,
 };
 
-pub fn main() -> ThagResult<()> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
     let color_support = term_attrs.color_support;
     let theme = &term_attrs.theme;

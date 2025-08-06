@@ -69,10 +69,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
 
             // Build bg->names mapping
             for bg_rgb in backgrounds {
-                bg_to_names
-                    .entry(bg_rgb)
-                    .or_default()
-                    .push(name.clone());
+                bg_to_names.entry(bg_rgb).or_default().push(name.clone());
             }
         }
     }
@@ -177,7 +174,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         ///
         /// # Examples
         /// ```
-        /// use thag_rs::styling::rgb_to_hex;
+        /// use thag_styling::styling::rgb_to_hex;
         /// let hex = rgb_to_hex(&(255, 128, 0));
         /// assert_eq!(hex, "#ff8000");
         /// ```
@@ -196,7 +193,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         ///
         /// # Examples
         /// ```
-        /// use thag_rs::styling::rgb_to_bare_hex;
+        /// use thag_styling::styling::rgb_to_bare_hex;
         /// let hex = rgb_to_bare_hex(&(255, 128, 0));
         /// assert_eq!(hex, "ff8000");
         /// ```

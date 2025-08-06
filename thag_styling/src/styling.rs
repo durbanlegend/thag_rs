@@ -1,17 +1,3 @@
-/*[toml]
-[dependencies]
-phf = { version = "0.12", features = ["macros"] }
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
-
-[features]
-default = ["color_detect", "simplelog", "tools"]
-color_detect = ["config", "thag_rs/color_detect"]
-config = ["thag_rs/config"]
-debug_logging = []
-simplelog = ["thag_rs/simplelog"]
-tools = ["thag_rs/tools"]
-*/
 use crate::{StylingError, StylingResult, ThemeError};
 
 // Type alias for compatibility with PaletteMethods proc macro
@@ -404,32 +390,48 @@ impl Style {
 
         let mut result = String::new();
         let mut needs_reset = false;
+        let mut full_reset = false;
+        let mut reset_string: String = String::new();
 
         if let Some(color_info) = &self.foreground {
             result.push_str(color_info.ansi);
             needs_reset = true;
+            full_reset = true;
+            reset_string.push_str("\x1b[0m");
         }
         if self.bold {
             result.push_str("\x1b[1m");
             needs_reset = true;
+            if !full_reset {
+                reset_string.push_str("\x1b[22m");
+            }
         }
         if self.italic {
             result.push_str("\x1b[3m");
             needs_reset = true;
+            if !full_reset {
+                reset_string.push_str("\x1b[23m");
+            }
         }
         if self.dim {
             result.push_str("\x1b[2m");
             needs_reset = true;
+            if !full_reset {
+                reset_string.push_str("\x1b[22m");
+            }
         }
         if self.underline {
             result.push_str("\x1b[4m");
             needs_reset = true;
+            if !full_reset {
+                reset_string.push_str("\x1b[24m");
+            }
         }
 
         result.push_str(&val.to_string());
 
         if needs_reset {
-            result.push_str("\x1b[0m");
+            result.push_str(&reset_string);
         }
 
         result
@@ -454,6 +456,12 @@ impl Style {
 impl Default for Style {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl From<Role> for Style {
+    fn from(role: Role) -> Self {
+        TermAttributes::get_or_init().theme.style_for(role)
     }
 }
 
@@ -1068,7 +1076,7 @@ impl TermAttributes {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::{paint_for_role, Role};
+/// use thag_styling::{paint_for_role, Role};
 ///
 /// let styled_error = paint_for_role(Role::Error, "This is an error message");
 /// println!("{}", styled_error); // Prints in error styling
@@ -1359,7 +1367,7 @@ impl ThemeDefinition {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::styling::{Role, Theme, ColorSupport};
+/// use thag_styling::{Role, Theme, ColorSupport};
 ///
 /// // Load a built-in theme
 /// let theme = Theme::get_builtin("dracula")?;
@@ -1367,7 +1375,7 @@ impl ThemeDefinition {
 /// // Get styling for a specific role
 /// let error_style = theme.style_for(Role::Error);
 /// println!("{}", error_style.paint("This is an error message"));
-/// # Ok::<(), thag_rs::StylingError>(())
+/// # Ok::<(), thag_styling::StylingError>(())
 /// ```
 pub struct Theme {
     /// The human-readable name of the theme (e.g., "Dracula", "GitHub Light")
@@ -1620,8 +1628,8 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::StylingError;
-    /// use thag_rs::styling::Theme;
+    /// use thag_styling::StylingError;
+    /// use thag_styling::Theme;
     /// let theme = Theme::load_from_file(Path::new("themes/built_in/basic_light.toml"))?;
     /// # Ok::<(), StylingError>(())
     /// ```
@@ -1655,8 +1663,8 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::StylingError;
-    /// use thag_rs::styling::Theme;
+    /// use thag_styling::StylingError;
+    /// use thag_styling::Theme;
     /// let theme = Theme::get_builtin("dracula")?;
     /// # Ok::<(), StylingError>(())
     /// ```
@@ -1767,8 +1775,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::{TermBgLuma, StylingError};
-    /// use thag_rs::styling::{ColorSupport, Theme};
+    /// use thag_styling::{ColorSupport, StylingError, TermBgLuma, Theme};
     /// let theme = Theme::get_builtin("dracula")?;
     /// theme.validate(&ColorSupport::TrueColor, &TermBgLuma::Dark)?;
     /// # Ok::<(), StylingError>(())
@@ -1874,8 +1881,7 @@ impl Theme {
     /// # Examples
     /// ```
     /// use std::path::Path;
-    /// use thag_rs::{TermBgLuma, StylingError};
-    /// use thag_rs::styling::{ColorSupport, Theme};
+    /// use thag_styling::{ColorSupport, StylingError, TermBgLuma, Theme};
     /// let theme = Theme::load(
     ///     Path::new("themes/built_in/basic_light.toml"),
     ///     ColorSupport::Basic,
@@ -2290,20 +2296,21 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
 ///
 /// # Examples
 /// ```
-/// use thag_rs::cvprtln;
-/// use thag_rs::Verbosity;
-/// use thag_rs::styling::Role;
+/// use thag_styling::cvprtln;
+/// use thag_styling::Verbosity;
+/// use thag_styling::Role;
 /// let details = "todos los detalles";
 /// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
 /// ```
 #[macro_export]
 macro_rules! cvprtln {
-    ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
+    ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
         let verbosity = $crate::get_verbosity();
         if $verbosity <= verbosity {
-            let style = $crate::Style::for_role($role);
-            let content = format!($($arg)*);
-            $crate::vprtln!(verbosity, "{}", style.paint(content));
+            // let content = format!($($arg)*);
+            // let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
+            // $crate::prtln!("{painted}");
+            $crate::cprtln!($style, $($arg)*)
         }
     }};
 }
@@ -2336,7 +2343,7 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::find_closest_color;
+/// use thag_styling::find_closest_color;
 ///
 /// // Pure red should map to a red in the color cube
 /// let red_index = find_closest_color((255, 0, 0));
@@ -2344,7 +2351,7 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
 ///
 /// // Gray should map to the grayscale range
 /// let gray_index = find_closest_color((128, 128, 128));
-/// assert!(gray_index >= 232 && gray_index <= 255);
+/// assert!(gray_index >= 232);
 /// ```
 #[must_use]
 pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
@@ -2425,7 +2432,7 @@ fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::get_rgb;
+/// use thag_styling::get_rgb;
 ///
 /// // Basic colors
 /// assert_eq!(get_rgb(0), (0, 0, 0));     // Black
@@ -2607,11 +2614,11 @@ const BASIC_COLORS: [(u8, u8, u8); 16] = [
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::{Theme, display_theme_roles};
+/// use thag_styling::{Theme, display_theme_roles};
 ///
 /// let theme = Theme::get_builtin("dracula")?;
 /// display_theme_roles(&theme);
-/// # Ok::<(), thag_rs::StylingError>(())
+/// # Ok::<(), thag_styling::StylingError>(())
 /// ```
 pub fn display_theme_roles(theme: &Theme) {
     // Role descriptions
@@ -2697,7 +2704,7 @@ pub fn display_theme_roles(theme: &Theme) {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::{display_theme_details, Theme};
+/// use thag_styling::{display_theme_details, Theme};
 /// let theme = Theme::get_builtin("black-metal-bathory_base16")?;
 /// display_theme_details(&theme);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -2791,8 +2798,10 @@ pub fn display_theme_details(theme: &Theme) {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::display_terminal_attributes;
-/// display_terminal_attributes();
+/// use thag_styling::{display_terminal_attributes, ColorInitStrategy, TermAttributes};
+/// let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+/// let theme = &term_attrs.theme;
+/// display_terminal_attributes(theme);
 /// ```
 pub fn display_terminal_attributes(theme: &Theme) {
     let term_attrs = TermAttributes::get_or_init();
@@ -2862,10 +2871,10 @@ enum Effect {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::{Styled, Effect};
+/// use thag_styling::{AnsiStyleExt, Styled};
 ///
 /// let styled = "Hello".style().bold().italic();
-/// println!("{}", styled); // Prints "Hello" in bold italic
+/// println!("{styled}"); // Prints "Hello" in bold italic
 /// ```
 pub struct Styled<T> {
     text: T,
@@ -2881,7 +2890,7 @@ pub struct Styled<T> {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::styling::AnsiStyleExt;
+/// use thag_styling::AnsiStyleExt;
 ///
 /// let styled = "Hello".style().bold().underline();
 /// println!("{}", styled); // Prints "Hello" with bold and underline effects
@@ -2902,7 +2911,7 @@ pub trait AnsiStyleExt {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::styling::AnsiStyleExt;
+    /// use thag_styling::AnsiStyleExt;
     ///
     /// let basic = "text".style();
     /// let enhanced = "text".style().bold().italic();
@@ -2930,7 +2939,7 @@ impl<T> Styled<T> {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::styling::AnsiStyleExt;
+    /// use thag_styling::AnsiStyleExt;
     /// let styled = "Hello".style().bold();
     /// println!("{}", styled); // Prints "Hello" in bold
     /// ```
@@ -2947,7 +2956,7 @@ impl<T> Styled<T> {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::styling::AnsiStyleExt;
+    /// use thag_styling::AnsiStyleExt;
     /// let styled = "Hello".style().dim();
     /// println!("{}", styled); // Prints "Hello" in dim/faint text
     /// ```
@@ -2964,7 +2973,7 @@ impl<T> Styled<T> {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::styling::AnsiStyleExt;
+    /// use thag_styling::AnsiStyleExt;
     /// let styled = "Hello".style().underline();
     /// println!("{}", styled); // Prints "Hello" with underline
     /// ```
@@ -2981,7 +2990,7 @@ impl<T> Styled<T> {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::styling::AnsiStyleExt;
+    /// use thag_styling::AnsiStyleExt;
     /// let styled = "Hello".style().italic();
     /// println!("{}", styled); // Prints "Hello" in italics
     /// ```
@@ -2998,7 +3007,7 @@ impl<T> Styled<T> {
     ///
     /// # Examples
     /// ```
-    /// use thag_rs::styling::AnsiStyleExt;
+    /// use thag_styling::AnsiStyleExt;
     /// let styled = "Hello".style().reversed();
     /// println!("{}", styled); // Prints "Hello" with inverted colors
     /// ```
@@ -3095,18 +3104,44 @@ impl From<&ColorInfo> for nu_ansi_term::Color {
 }
 
 /// A line print macro that prints a styled and colored message, without verbosity gating..
-///
+/// Trait that allows both Style and Role to be used interchangeably with styling macros
+pub trait StyleLike {
+    /// Convert this item to a Style for use with styling macros
+    fn to_style(&self) -> Style;
+}
+
+impl StyleLike for Style {
+    fn to_style(&self) -> Style {
+        self.clone()
+    }
+}
+
+impl StyleLike for &Style {
+    fn to_style(&self) -> Style {
+        (*self).clone()
+    }
+}
+
+impl StyleLike for Role {
+    fn to_style(&self) -> Style {
+        Style::from(*self)
+    }
+}
+
+impl StyleLike for &Role {
+    fn to_style(&self) -> Style {
+        Style::from(**self)
+    }
+}
+
 /// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+/// Also accepts Role: `cprtln!(Role::Code, "Hello {}", "world");`
 #[macro_export]
 macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        let painted = $style.paint(content);
-        // let verbosity = $crate::get_verbosity();
+        let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
         $crate::prtln!("{painted}");
-        // $crate::OUTPUT_MANAGER.lock().unwrap().prtln(&$style.paint(content));
-        // $crate::prtln!("{painted}");
-        // dbg!();
     }};
 }
 
@@ -3377,6 +3412,37 @@ mod tests {
                 supports[i + 1]
             );
         }
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_stylelike_trait() {
+        init_test_output();
+
+        // Test that Role implements StyleLike
+        let role = Role::Code;
+        let style_from_role = role.to_style();
+        assert_eq!(style_from_role, Style::from(Role::Code));
+
+        // Test that &Role implements StyleLike
+        let role_ref = &Role::Error;
+        let style_from_role_ref = role_ref.to_style();
+        assert_eq!(style_from_role_ref, Style::from(Role::Error));
+
+        // Test that Style implements StyleLike
+        let original_style = Style::from(Role::Success).bold();
+        let style_from_style = original_style.to_style();
+        assert_eq!(style_from_style, original_style);
+
+        // Test that &Style implements StyleLike
+        let style_ref = &Style::from(Role::Warning).italic();
+        let style_from_style_ref = style_ref.to_style();
+        assert_eq!(style_from_style_ref, *style_ref);
 
         let output = get_test_output();
         flush_test_output(); // Write captured output to stdout

@@ -14,6 +14,6 @@ let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
 let theme = &term_attrs.theme;
 
 print!("\t");
-cprtln!(Style::for_role(Role::NORM).underline(), "Current theme on this terminal: {}\n", Style::for_role(Role::HD1).underline().paint(&theme.name));
+cprtln!(Style::from(Role::NORM).underline(), "Current theme on this terminal\x1b[24m: {}\n", Style::from(Role::HD1).underline().paint(&theme.name));
 display_theme_roles(theme);
 display_theme_details(theme);

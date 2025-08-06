@@ -93,10 +93,9 @@ impl Config {
         );
 
         if !config_path.exists() {
-            let path = config_path.parent().ok_or(ConfigError::Generic(format!(
-                "No parent for {}",
-                config_path.display()
-            )))?;
+            let path = config_path.parent().ok_or_else(|| {
+                ConfigError::Generic(format!("No parent for {}", config_path.display()))
+            })?;
             fs::create_dir_all(path)?;
 
             // Try to find default config in different locations
@@ -783,7 +782,7 @@ pub fn open(context: &dyn Context) -> ConfigResult<Option<String>> {
     if !exists {
         let dir_path = &config_path
             .parent()
-            .ok_or(ConfigError::Generic("Can't create directory".to_string()))?;
+            .ok_or_else(|| ConfigError::Generic("Can't create directory".to_string()))?;
         fs::create_dir_all(dir_path)?;
 
         println!(
@@ -845,7 +844,6 @@ pub fn validate_config_format(content: &str) -> ConfigResult<()> {
 
 /// Main function for use by testing or the script runner.
 #[allow(dead_code, unused_variables)]
-
 fn main() {
     let maybe_config = load(&get_context());
 

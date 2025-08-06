@@ -38,11 +38,11 @@ pub type ThagResult<T> = Result<T, ThagError>;
 /// during Thag's execution, including I/O errors, parsing errors,
 /// configuration errors, and errors from external dependencies.
 pub enum ThagError {
-    /// Error from thag_common operations
+    /// Error from `thag_common` operations
     Common(thag_common::ThagCommonError),
-    /// Error from thag_common::config
+    /// Error from `thag_common::config`
     Config(thag_common::ConfigError),
-    /// Error from thag_styling operations
+    /// Error from `thag_styling` operations
     #[cfg(feature = "thag_styling")]
     Styling(thag_styling::StylingError),
     #[cfg(feature = "bitflags")]
@@ -51,7 +51,7 @@ pub enum ThagError {
     /// User cancelled the operation
     Cancelled, // For user electing to cancel
     #[cfg(feature = "clap")]
-    /// Error from clap command-line parsing
+    /// Error from `clap` command-line parsing
     ClapError(ClapError), // For clap errors
     /// Error during Cargo build or program execution
     Command(&'static str), // For errors during Cargo build or program execution

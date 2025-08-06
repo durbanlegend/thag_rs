@@ -4,11 +4,11 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Testing the `styled` proc macro with ansi_styling_support
+/// Testing the `styled` proc macro with `ansi_styling_support`
 //# Purpose: Test the styled! macro with generated ANSI styling support.
 //# Categories: ansi, color, demo, macros, proc_macros, styling, terminal
 use thag_proc_macros::{ansi_styling_support, styled};
-use thag_styling::{cprtln, Role, Style};
+use thag_styling::{cprtln, Role};
 
 // Generate ANSI styling support - no need to import AnsiStyleExt!
 ansi_styling_support! {}
@@ -18,7 +18,7 @@ fn main() {
     println!("Should be normal {} Should be normal", styled!(name, bold));
 
     cprtln!(
-        Style::for_role(Role::Success),
+        Role::Success,
         "error={}, now for some boilerplate",
         styled!(name, italic, underline)
     );

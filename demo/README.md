@@ -4545,7 +4545,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry
 
 ### Script: proc_macro_styled.rs
 
-**Description:**  Testing the `styled` proc macro with ansi_styling_support
+**Description:**  Testing the `styled` proc macro with `ansi_styling_support`
 
 **Purpose:** Test the styled! macro with generated ANSI styling support.
 
@@ -6569,6 +6569,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_t
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs -- --write --show-hex
+```
+
+---
+
+### Script: test_cprtln.rs
+
+**Description:**  Test script to verify cprtln macro works with both Style and Role
+
+**Purpose:** Testing
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** macros, styling, technique, testing
+
+**Link:** [test_cprtln.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_cprtln.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_cprtln.rs
 ```
 
 ---

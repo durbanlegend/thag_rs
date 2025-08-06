@@ -619,7 +619,7 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
         Err(e) => {
-            cprtln!(Style::for_role(Role::Error), "Failed to load config: {e}");
+            cprtln!(Role::Error, "Failed to load config: {e}");
             // sleep(Duration::from_secs(1));
             // println!("Failed to load config: {e}");
             std::process::exit(1);
@@ -663,7 +663,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
 
     if !config_path.exists() {
         cprtln!(
-            Style::for_role(Role::Warning),
+            Role::Warning,
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
         );

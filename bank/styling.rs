@@ -828,12 +828,7 @@ impl Color {
     }
 }
 
-/// An enum to categorise the current terminal's light or dark theme as detected, configured
-/// or defaulted.
-/// Type alias for `Role` - provides shorter naming for role constants
-pub type Lvl = Role;
-
-impl Lvl {
+impl Role {
     /// Short alias for `Role::Heading1`
     pub const HD1: Self = Self::Heading1;
     /// Short alias for `Role::Heading2`

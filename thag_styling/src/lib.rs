@@ -21,7 +21,7 @@ pub use thag_common::{
 pub use styling::{
     display_terminal_attributes, display_theme_details, display_theme_roles, find_closest_color,
     get_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue,
-    HowInitialized, Lvl, Palette, PaletteConfig, Role, Style, Styled, TermAttributes, Theme,
+    HowInitialized, Palette, PaletteConfig, Role, Style, Styled, TermAttributes, Theme,
 };
 
 pub use thag_proc_macros::styled;

@@ -151,7 +151,7 @@ pub use {
     },
     thag_styling::{
         cprtln, cvprtln, display_theme_details, display_theme_roles, find_closest_color,
-        paint_for_role, Color, Lvl, Palette, Role, Style, TermAttributes, Theme,
+        paint_for_role, Color, Palette, Role, Style, TermAttributes, Theme,
     },
 };
 

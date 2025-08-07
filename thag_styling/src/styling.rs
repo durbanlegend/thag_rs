@@ -1480,34 +1480,6 @@ impl Theme {
                 }
             }
 
-            // vprtln!(
-            //     V::V,
-            //     "2. If TrueColor, look for exact RGB match of a preferred Color256 theme."
-            // );
-            // if color_support == ColorSupport::TrueColor {
-            //     // Look for matching 256-color theme
-            //     let next_best_matches = eligible_themes
-            //         .iter()
-            //         .filter(|(_, idx)| {
-            //             idx.matches_background(*term_bg_rgb)
-            //                 && idx.min_color_support == ColorSupport::Color256
-            //         })
-            //         .map(|(name, _)| (*name).to_string())
-            //         .collect::<Vec<String>>();
-            //     vprtln!(V::VV, "next_best_matches={next_best_matches:#?}");
-
-            //     for preferred_name in preferred_styling {
-            //         vprtln!(V::VV, "preferred_name={preferred_name}");
-            //         if next_best_matches.contains(preferred_name) {
-            //             vprtln!(
-            //                 V::V,
-            //                 "Found an exact match at reduced color in {preferred_name}"
-            //             );
-            //             return Self::1910(preferred_name);
-            //         }
-            //     }
-            // }
-
             vprtln!(V::VV, "2. Look for any theme exactly matching colour support and terminal background colour, in hopes of matching existing theme colours.");
             vprtln!(V::VV, "a. Try exact match on fallback names");
             let fallback_styling = get_fallback_styling(term_bg_luma, &config);
@@ -2081,7 +2053,36 @@ impl Theme {
     }
 }
 
-fn index_to_rgb(index: u8) -> (u8, u8, u8) {
+/// Converts a 256-color palette index to RGB values.
+///
+/// This function maps color indices (0-255) to their corresponding RGB values:
+/// - 0-15: Standard ANSI colors (black, red, green, etc.)
+/// - 16-231: 6×6×6 RGB color cube
+/// - 232-255: Grayscale colors from dark to light
+///
+/// # Arguments
+/// * `index` - The color index (0-255) to convert to RGB
+///
+/// # Returns
+/// A tuple of (red, green, blue) values, each in the range 0-255
+///
+/// # Examples
+/// ```
+/// use thag_styling::index_to_rgb;
+///
+/// // Basic colors
+/// assert_eq!(index_to_rgb(0), (0, 0, 0));     // Black
+/// assert_eq!(index_to_rgb(15), (255, 255, 255)); // White
+///
+/// // Color cube
+/// let rgb = index_to_rgb(196); // Bright red in 256-color palette
+/// assert_eq!(rgb, (255, 0, 0));
+///
+/// // Grayscale
+/// let gray = index_to_rgb(244); // Mid-gray
+/// assert_eq!(gray, (128, 128, 128));
+/// ```
+pub fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     if index < 16 {
         // Standard ANSI colors
         return match index {
@@ -2173,41 +2174,6 @@ fn get_fallback_styling(
     }
 }
 
-// fn get_exact_matches(
-//     eligible_themes: &Vec<&str>,
-//     term_bg_rgb: (u8, u8, u8),
-//     color_support: ColorSupport,
-// ) -> Vec<String> {
-//     eligible_themes
-//         .iter()
-//         .map(|theme_name| (theme_name, THEME_INDEX.get(theme_name)))
-//         .filter_map(|(theme_name, maybe_idx)| {
-//             if let Some(idx) = maybe_idx {
-//                 if idx.matches_background(term_bg_rgb) && idx.min_color_support == color_support {
-//                     Some((theme_name, idx))
-//                 } else {
-//                     None
-//                 }
-//             } else {
-//                 None
-//             }
-//         })
-//         .map(|(name, _)| (*name).to_string())
-//         .collect::<Vec<String>>()
-// }
-
-// #[cfg(feature = "config")]
-// fn get_reduced_palette_matches(
-//     eligible_themes: &Vec<(&str, &ThemeIndex)>,
-//     term_bg_rgb: (u8, u8, u8),
-// ) -> Vec<String> {
-//     eligible_themes
-//         .iter()
-//         .filter(|(_, idx)| idx.matches_background(term_bg_rgb))
-//         .map(|(name, _)| (*name).to_string())
-//         .collect()
-// }
-
 // Helper to calculate color distance
 #[allow(clippy::items_after_statements)]
 // #[cfg(feature = "color_detect")]
@@ -2241,10 +2207,6 @@ fn hex_to_rgb(hex: &str) -> StylingResult<(u8, u8, u8)> {
         Err(StylingError::Parse)
     }
 }
-
-// fn rgb_to_hex(rgb: &(u8, u8, u8)) -> String {
-//     format!("#{:02x}{:02x}{:02x}", rgb.0, rgb.1, rgb.2)
-// }
 
 // Helper to check a single style
 fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()> {

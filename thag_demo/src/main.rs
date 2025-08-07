@@ -13,7 +13,7 @@ use std::process;
 use std::{env, fs, io};
 use thag_rs::{
     builder::execute, configure_log, cvprtln, get_verbosity, set_global_verbosity,
-    styling::themed_inquire_config, Cli, Role, V,
+    themed_inquire_config, Cli, Role, V,
 };
 
 pub mod visualization;

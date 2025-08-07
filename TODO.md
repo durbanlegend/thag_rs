@@ -52,6 +52,30 @@ bg=24273a
 printf "\x1b]11;#$bg\x1b\\"
 Reset: printf "\x1b]104;\x1b\\"
 
+bg=1c2023
+fg=c7ccd1
+bg=262626
+fg=333366
+bg=000000; fg=c6c6c6
+fg=cccccc, bg=1c2023
+printf '\x1b]10;#c7ccd1\x07\x1b]11;#1c2023\x07'
+printf "\x1b]10;#${fg}\x07\x1b]11;#${bg}\x07"
+printf "\x1b]10;#${fg}\x07\\x1b]12;#${fg}\x07\x1b]11;#${bg}\x07\x1b[0 q\07"
+# Set cursor color (code 12) and cursor to block ([0 q)
+printf "\x1b]12;#${fg}\x07\x1b[0 q"
+
+# Set cursor visible
+printf "\x1b[?25h"
+
+    eprintln!("\tfg={fg}, bg={bg}");
+    eprintln!(
+        r#"
+        OSC string=
+        printf "\x1b]10;{fg}\x07\x1b]11;{bg}\x07""#
+    );
+
+base_16_gruvbox_light_hard
+
 iterm only:
 bg=f9f5d7 # Gruvbox light hard
 bg=24273a # Catppuccin Macchiato

@@ -6,9 +6,10 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["t
 use inquire::{set_global_render_config, Select};
 use std::{env, io};
 use thag_rs::{
-    auto_help, display_theme_details, display_theme_roles, themed_inquire_config, TermAttributes,
-    ThagResult, Theme,
+    auto_help, cprtln, display_theme_details, display_theme_roles, themed_inquire_config, Role,
+    TermAttributes, ThagResult, Theme,
 };
+use thag_styling::styling;
 
 /// Display built-in themes and their styling with terminal setup instructions
 ///
@@ -76,13 +77,17 @@ fn interactive_theme_browser() -> ThagResult<()> {
         println!("💡 Start typing to filter themes by name");
         println!("{}", "═".repeat(80));
 
-        let selection: InquireResult<ListOption<String>> =
-            Select::new("🔍 Select a theme to preview:", theme_options.clone())
-                .with_page_size(24)
-                .with_help_message("↑↓ navigate • type to filter • Enter to select • Esc to quit")
-                .with_reset_cursor(false)
-                .with_starting_cursor(cursor)
-                .raw_prompt();
+        let selection: InquireResult<ListOption<String>> = Select::new(
+            "🔍 Select a theme to preview:",
+            theme_options.clone(),
+        )
+        .with_page_size(24)
+        .with_help_message(
+            "↑↓, PageUp, PageDown: navigate • type to filter • Enter to select • Esc to quit",
+        )
+        .with_reset_cursor(false)
+        .with_starting_cursor(cursor)
+        .raw_prompt();
 
         match selection {
             Ok(selected) => {
@@ -132,7 +137,6 @@ fn interactive_theme_browser() -> ThagResult<()> {
 fn show_theme(theme_name: &str) -> ThagResult<()> {
     let term_attrs = TermAttributes::get_or_init();
 
-    // let theme = Theme::get_builtin(theme_name)?;
     let theme = Theme::get_theme_with_color_support(theme_name, term_attrs.color_support)
         .unwrap_or_else(|_| {
             // Fallback in case theme can't be loaded
@@ -144,7 +148,7 @@ fn show_theme(theme_name: &str) -> ThagResult<()> {
 
     println!("\n{} Theme", theme.name);
     println!("{}", "═".repeat(theme.name.len() + 6));
-    println!("{}\n", theme.description);
+    println!("{}", theme.description);
 
     // Display the theme's role styles
     display_theme_roles(&theme);
@@ -159,7 +163,11 @@ fn show_theme(theme_name: &str) -> ThagResult<()> {
 }
 
 fn show_terminal_instructions(theme: &Theme) {
-    println!("\n\t{}", "Terminal Setup Instructions:");
+    cprtln!(
+        theme.style_for(Role::HD2).bold(),
+        "\t{}",
+        "Terminal Setup Instructions:"
+    );
     println!("\t{}", "─".repeat(80));
 
     if theme.backgrounds.is_empty() {
@@ -170,15 +178,47 @@ fn show_terminal_instructions(theme: &Theme) {
 
     let bg_color = &theme.backgrounds[0]; // Use first background color
 
-    println!(
-        "\tFor optimal display, set your terminal background to: {}",
-        bg_color
+    let palette = &theme.palette;
+    let color_info = palette.normal.foreground.clone().unwrap();
+    let value = color_info.value;
+
+    #[allow(unused_variables)]
+    let fg_rgb = match value {
+        thag_styling::ColorValue::Basic { basic } => styling::index_to_rgb(color_info.index),
+        thag_styling::ColorValue::Color256 { color256 } => styling::index_to_rgb(color256),
+        thag_styling::ColorValue::TrueColor { rgb } => rgb.into(),
+    };
+
+    let fg = styling::rgb_to_hex(&fg_rgb);
+    let bg = &bg_color;
+
+    cprtln!(
+        theme.style_for(Role::Normal),
+        r#"        To view the colors clearly, set your terminal background to {bg} and foreground and cursor to {fg}."#
+    );
+
+    cprtln!(
+        theme.style_for(Role::Normal),
+        "\tCommand-line shortcut for *nix and other OSC-compliant terminals do this:"
+    );
+    cprtln!(
+        theme.style_for(Role::Code),
+        r#"
+        printf "\x1b]10;{fg}\x07\x1b]12;{fg}\x07\x1b]11;{bg}\x07""#
+    );
+    println!();
+    cprtln!(
+        theme.style_for(Role::Normal),
+        r#"        For best results, rather configure the desired theme in your terminal settings.
+        To be sure that `thag` will identify the desired theme from the background color, edit your configuration with `thag -C`.
+        Add this theme to the `preferred_dark` or `preferred_light` list above any other themes that use the same
+        background, and save the configuration."#
     );
     println!();
 
     // Detect environment and provide specific instructions
     let instructions = get_terminal_setup_instructions(bg_color, &theme.term_bg_luma.to_string());
-    println!("{}", instructions);
+    cprtln!(theme.style_for(Role::Normal), "{}", instructions);
 }
 
 fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
@@ -187,21 +227,22 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
     match env_type {
         TerminalEnv::ITerm => format!(
             "\tiTerm2 Setup:\n\
-            \t1. Open iTerm2 Preferences (Cmd + ,)\n\
+            \t1. Open iTerm2 Settings (Cmd + ,)\n\
             \t2. Go to Profiles → Colors\n\
-            \t3. Set Background Color to: {}\n\
-            \t4. Recommended: Use {} background themes\n\
-            \t5. Ensure 'Minimum Contrast' is set to 0\n",
+            \t3. Recommended: Install desired theme from Color Presets per `https://iterm2colorschemes.com/`\n\
+            \t4. Otherwise Set Background Color to {}.",
             bg_color,
-            luma.to_lowercase()
+            // luma.to_lowercase()
         ),
 
         TerminalEnv::AppleTerminal => format!(
-            "\tApple Terminal Setup:\n\
-            \t1. Terminal → Preferences → Profiles\n\
-            \t2. Select your profile or create new\n\
-            \t3. Set Background Color to: {}\n\
-            \t4. Recommended for {} backgrounds\n",
+            r#"	Apple Terminal Setup:
+	1. Terminal → Settings → Profiles
+	2. Recommended: Import .terminal file from bottom left drop-down menu.
+	       See e.g. `https://github.com/lysyi3m/macos-terminal-themes/tree/master`.
+    3. Select your profile or create new.
+	4. Ensure Background Color is set to {}
+	5. Recommended for {} backgrounds"#,
             bg_color,
             luma.to_lowercase()
         ),
@@ -211,7 +252,7 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
             \t1. Edit → Preferences → Profiles\n\
             \t2. Select your profile\n\
             \t3. Colors tab → Background Color: {}\n\
-            \t4. Optimized for {} backgrounds\n",
+            \t4. Optimized for {} backgrounds",
             bg_color,
             luma.to_lowercase()
         ),
@@ -221,7 +262,7 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
             \t1. Look for Color/Appearance settings in Preferences\n\
             \t2. Set Background Color to: {}\n\
             \t3. This theme works best with {} backgrounds\n\
-            \t4. Ensure true color support is enabled if available\n",
+            \t4. Ensure true color support is enabled if available",
             bg_color,
             luma.to_lowercase()
         ),

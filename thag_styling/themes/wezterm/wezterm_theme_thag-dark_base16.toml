@@ -1,0 +1,43 @@
+[colors]
+ansi = [
+    "#2daeea", # base08 - electric blue
+    "#3cb0ff", # base09 - sky blue
+    "#a36f40", # base0B - rich coffee brown
+    "#ffbb33", # base0A - golden orange
+    "#64d6ff", # base0D - electric pale blue
+    "#ffaa00", # base0E - amber
+    "#4fc0e8", # base0C - cyan blue
+    "#d7b87d", # base05 - main foreground
+]
+background = "#000000" # base00
+brights = [
+    "#3a3a3a", # base03 - comment/dimmed
+    "#2daeea", # base08
+    "#a36f40", # base0B
+    "#ffbb33", # base0A
+    "#64d6ff", # base0D
+    "#ffaa00", # base0E
+    "#4fc0e8", # base0C
+    "#ffffff", # base07 - white
+]
+cursor_bg = "#d7b87d" # base05
+cursor_border = "#d7b87d"
+cursor_fg = "#000000" # base00
+foreground = "#d7b87d" # base05
+selection_bg = "#2a2a2a" # base02
+selection_fg = "#d7b87d" # base05
+
+[colors.indexed]
+16 = "#3cb0ff" # base09
+17 = "#5a4b3f" # base0F - dark coffee brown
+18 = "#1a1a1a" # base01
+19 = "#2a2a2a" # base02
+20 = "#806550" # base04
+21 = "#ffcc66" # base06
+
+[metadata]
+aliases = ["thag-dark (base16)"]
+author = "Don Forbes"
+name = "thag-dark"
+origin_url = "local-generated"
+wezterm_version = "20240203-110809-5046fc22"

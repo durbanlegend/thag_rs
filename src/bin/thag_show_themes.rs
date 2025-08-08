@@ -247,12 +247,22 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
             luma.to_lowercase()
         ),
 
+        TerminalEnv::WezTerm => format!(
+            r#"	WezTerm Setup:
+	1. Edit ~/.wezterm.lua
+	2. Refer to https://wezterm.org/config/appearance.html and https://wezterm.org/colorschemes/index.html
+	3. Ensure background is set to {}
+    4. Optimized for {} backgrounds"#,
+            bg_color,
+            luma.to_lowercase()
+        ),
+
         TerminalEnv::GnomeTerminal => format!(
-            "\tGNOME Terminal Setup:\n\
-            \t1. Edit → Preferences → Profiles\n\
-            \t2. Select your profile\n\
-            \t3. Colors tab → Background Color: {}\n\
-            \t4. Optimized for {} backgrounds",
+            r#"	GNOME Terminal Setup:
+	1. Edit → Preferences → Profiles
+	2. Select your profile
+	3. Colors tab → Background Color: {}
+	4. Optimized for {} backgrounds"#,
             bg_color,
             luma.to_lowercase()
         ),
@@ -275,6 +285,7 @@ enum TerminalEnv {
     AppleTerminal,
     GnomeTerminal,
     Generic,
+    WezTerm,
 }
 
 fn detect_environment() -> TerminalEnv {
@@ -282,6 +293,7 @@ fn detect_environment() -> TerminalEnv {
         match term_program.as_str() {
             "iTerm.app" => return TerminalEnv::ITerm,
             "Apple_Terminal" => return TerminalEnv::AppleTerminal,
+            "WezTerm" => return TerminalEnv::WezTerm,
             _ => {}
         }
     }

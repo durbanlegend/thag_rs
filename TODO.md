@@ -22,13 +22,12 @@
 - [ ]  DONE: thag_paste tool?
 - [ ]  Convert all inquire interfaces to use theming.
 - [ ]  RYO cargo-lookup?.
-- [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term is thag_styling ... others?
+- [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Add thag_theme tool to show current theme?
 - [ ]  Demo script for styled! proc macro using thag_styling?
-- [ ]  Moe internal
+- [ ]  Moe internal=???
+- [ ]  thag_show_themes.rs - detect Wezterm and give instructions accordingly. alacritty etc?
 
-
-In the thread excerpted in the first attachment, you endorsed my idea of splitting off thag's styling module into a separate subcrate. Since then we completed Phase 1 - NB TermBgLuma ended up in module `shared`. Now it looks as though styling depends on shared, errors, terminal and config, while errors, terminal and config depend on shared, except that terminal uses styling::Style for styling messages, creating a minor circular dependency. We can always break that by using simpler messsage styling for config if we can't find a better way. So I think we're about ready for Phase 2. I've attached what is a working clone of mod styling.rs in bank/, with the addition of exploratory code (lines 2997-3132) to support non-colour attributes such as bold and italics with the help of a small DSL temporarily implemented in demo/proc_macros and planned to move to thag_proc_macros and maybe reimplemented as non-DSL proc macro. (I would love to embed colour, but there is no ANSI instruction to revert to the previous colour, only code 39 to revert to the default.) So I'm thinking the attached styling.rs could form the basis of a thag_styling subcrate. I can't see any alternative to also implementin
 
 donf@MacBook-Air thag_rs % thag bank/styling.rs -fb
 [src/bin/thag_rs.rs:32:5]

@@ -2082,6 +2082,7 @@ impl Theme {
 /// let gray = index_to_rgb(244); // Mid-gray
 /// assert_eq!(gray, (128, 128, 128));
 /// ```
+#[must_use]
 pub fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     if index < 16 {
         // Standard ANSI colors

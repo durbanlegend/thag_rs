@@ -3,52 +3,115 @@ description = "Converted from Thag Dark Base 16 theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#000000"]
-bg_rgbs = [[0, 0, 0]]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
 
 [palette.heading1]
-rgb = [45, 174, 234]
+rgb = [
+    16,
+    112,
+    239,
+]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [100, 214, 255]
+rgb = [
+    45,
+    174,
+    234,
+]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [79, 192, 232]
+rgb = [
+    100,
+    214,
+    255,
+]
 style = ["bold"]
 
 [palette.error]
-rgb = [45, 174, 234]
+rgb = [
+    16,
+    112,
+    239,
+]
 
 [palette.warning]
-rgb = [255, 187, 51]
+rgb = [
+    255,
+    170,
+    0,
+]
 
 [palette.success]
-rgb = [163, 111, 64]
+rgb = [
+    163,
+    111,
+    64,
+]
 
 [palette.info]
-rgb = [100, 214, 255]
+rgb = [
+    45,
+    174,
+    234,
+]
 
 [palette.emphasis]
-rgb = [255, 170, 0]
+rgb = [
+    255,
+    187,
+    51,
+]
 
 [palette.code]
-rgb = [163, 111, 64]
+rgb = [
+    163,
+    111,
+    64,
+]
 
 [palette.normal]
-rgb = [215, 184, 125]
+rgb = [
+    215,
+    184,
+    125,
+]
 
 [palette.subtle]
-rgb = [58, 58, 58]
+rgb = [
+    58,
+    58,
+    58,
+]
 
 [palette.hint]
-rgb = [58, 58, 58]
+rgb = [
+    58,
+    58,
+    58,
+]
 style = ["italic"]
 
 [palette.debug]
-rgb = [163, 111, 64]
+rgb = [
+    163,
+    111,
+    64,
+]
 style = ["dim"]
 
 [palette.trace]
-rgb = [100, 214, 255]
-style = ["italic", "dim"]
+rgb = [
+    45,
+    174,
+    234,
+]
+style = [
+    "italic",
+    "dim",
+]

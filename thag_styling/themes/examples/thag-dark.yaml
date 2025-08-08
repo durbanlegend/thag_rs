@@ -11,11 +11,11 @@ palette:
   base05: "d7b87d" # golden tan / light coffee foam (main foreground)
   base06: "ffcc66" # warm intense yellow
   base07: "ffffff" # white, used for upper boundary
-  base08: "2daeea" # vibrant electric blue (was red)
+  base08: "1070EF" # cobalt blue (was red)
   base09: "3cb0ff" # softer sky blue (was orange)
-  base0A: "ffbb33" # golden orange (was yellow)
+  base0A: "ffaa00" # golden orange (was magenta)
   base0B: "a36f40" # rich coffee brown (was green)
-  base0C: "4fc0e8" # cyan-blue (accent, was cyan)
-  base0D: "64d6ff" # electric pale blue (was blue)
-  base0E: "ffaa00" # intense amber-orange (was magenta)
+  base0C: "64d6ff" # electric pale blue (accent, was cyan)
+  base0D: "2daeea" # vibrant electric blue (was blue)
+  base0E: "ffbb33" # intense amber-orange (was yellow)
   base0F: "5a4b3f" # coffee ground dark brown (was brown)

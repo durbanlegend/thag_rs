@@ -1,13 +1,13 @@
 system: "base16"
-scheme: "Thag Morning Coffee Dark Base 16"
+scheme: "Thag Morning Coffee Dark"
 author: "Don Forbes (http://github.com/durbanlegend)"
 variant: "dark"
 palette:
   base00: "000000" # black background
   base01: "2b2c2f" # Gray 6, used for lighter background (optional)
-  base02: "4b4c50" # Gray 5, selection background
+  base02: "929398" # Gray 3, selection background
   base03: "b8b9bc" # Gray 2, comments, etc.
-  base04: "929398" # Gray 3
+  base04: "6D6E74" # Gray 4
   base09: "e5a444" # Brown 2
   base06: "ffcc66" # warm intense yellow
   base07: "ffffff" # white, used for upper boundary

@@ -31,9 +31,10 @@ rgb = [128, 191, 255]
 
 [palette.emphasis]
 rgb = [255, 121, 198]
+style = ["bold"]
 
 [palette.code]
-rgb = [80, 250, 123]
+rgb = [255, 121, 198]
 
 [palette.normal]
 rgb = [248, 248, 242]

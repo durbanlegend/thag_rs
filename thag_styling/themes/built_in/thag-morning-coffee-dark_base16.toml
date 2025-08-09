@@ -1,5 +1,5 @@
-name = "Thag Morning Coffee Dark Base 16"
-description = "Converted from Thag Morning Coffee Dark Base 16 theme"
+name = "Thag Morning Coffee Dark Base16"
+description = "Converted from Thag Morning Coffee Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#000000"]
@@ -31,9 +31,10 @@ rgb = [95, 147, 236]
 
 [palette.emphasis]
 rgb = [229, 164, 68]
+style = ["bold"]
 
 [palette.code]
-rgb = [181, 129, 51]
+rgb = [229, 164, 68]
 
 [palette.normal]
 rgb = [250, 209, 168]
@@ -42,7 +43,7 @@ rgb = [250, 209, 168]
 rgb = [184, 185, 188]
 
 [palette.hint]
-rgb = [146, 147, 152]
+rgb = [184, 185, 188]
 style = ["italic"]
 
 [palette.debug]

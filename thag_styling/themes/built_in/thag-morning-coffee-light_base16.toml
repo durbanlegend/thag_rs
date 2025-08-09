@@ -1,9 +1,9 @@
-name = "Thag Morning Coffee Light Base 16 Base16"
-description = "Converted from Thag Morning Coffee Light Base 16 theme"
+name = "Thag Morning Coffee Light Base16"
+description = "Converted from Thag Morning Coffee Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
-backgrounds = ["#fad1a8"]
-bg_rgbs = [[250, 209, 168]]
+backgrounds = ["#fdeddc"]
+bg_rgbs = [[253, 237, 220]]
 
 [palette.heading1]
 rgb = [55, 110, 192]
@@ -37,13 +37,13 @@ style = ["bold"]
 rgb = [181, 129, 51]
 
 [palette.normal]
-rgb = [92, 63, 21]
+rgb = [107, 70, 16]
 
 [palette.subtle]
-rgb = [146, 147, 152]
+rgb = [184, 185, 188]
 
 [palette.hint]
-rgb = [146, 147, 152]
+rgb = [184, 185, 188]
 style = ["italic"]
 
 [palette.debug]

@@ -152,8 +152,8 @@ impl BaseTheme {
             warning: Style::from_fg_hex(&self.palette.base0_a)?,        // Yellow
             success: Style::from_fg_hex(&self.palette.base0_b)?,        // Green
             info: Style::from_fg_hex(&self.palette.base0_d)?,           // Blue
-            emphasis: Style::from_fg_hex(&self.palette.base0_e)?,       // Magenta
-            code: Style::from_fg_hex(&self.palette.base0_b)?,           // Green
+            emphasis: Style::from_fg_hex(&self.palette.base0_e)?.bold(), // Magenta
+            code: Style::from_fg_hex(&self.palette.base0_e)?,           // Green
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(&self.palette.base03)?,          // Comments color
             hint: Style::from_fg_hex(&self.palette.base03)?.italic(),

@@ -1,4 +1,4 @@
-name = "Thag Dark Base16"
+name = "Thag Dark Base 16 Base16"
 description = "Converted from Thag Dark Base 16 theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -11,9 +11,9 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    16,
-    112,
-    239,
+    100,
+    214,
+    255,
 ]
 style = ["bold"]
 
@@ -27,17 +27,17 @@ style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    100,
-    214,
-    255,
+    79,
+    192,
+    232,
 ]
 style = ["bold"]
 
 [palette.error]
 rgb = [
-    16,
-    112,
-    239,
+    100,
+    214,
+    255,
 ]
 
 [palette.warning]
@@ -84,16 +84,16 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    58,
-    58,
-    58,
+    60,
+    176,
+    255,
 ]
 
 [palette.hint]
 rgb = [
-    58,
-    58,
-    58,
+    60,
+    176,
+    255,
 ]
 style = ["italic"]
 

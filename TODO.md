@@ -26,7 +26,9 @@
 - [ ]  Add thag_theme tool to show current theme?
 - [ ]  Demo script for styled! proc macro using thag_styling?
 - [ ]  Moe internal=???
-- [ ]  thag_show_themes.rs - detect Wezterm and give instructions accordingly. alacritty etc?
+- [ ]  DONE thag_show_themes.rs - detect Wezterm and give instructions accordingly. alacritty etc?
+- [ ]  StyleLike add prtln and embed trait methods to allow styles to embed styles.
+
 
 
 donf@MacBook-Air thag_rs % thag bank/styling.rs -fb

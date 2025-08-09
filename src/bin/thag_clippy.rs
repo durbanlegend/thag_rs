@@ -16,9 +16,7 @@ use colored::Colorize;
 use inquire::{set_global_render_config, Confirm, MultiSelect};
 use std::{env, error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::file_navigator;
-use thag_rs::{
-    auto_help, cvprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style, V,
-};
+use thag_rs::{auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role};
 
 file_navigator! {}
 
@@ -197,7 +195,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
-            cvprtln!(Role::Error, V::QQ, "This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            cprtln!(Role::Error, "This tool cannot be run with stdin input. Please provide a file path or run interactively.");
             std::process::exit(1);
         }
         ScriptMode::File => {
@@ -211,20 +209,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    cvprtln!(Role::Heading1, V::QQ, "\nSelect lint groups to apply:");
+    cprtln!(Role::Heading1, "\nSelect lint groups to apply:");
     match select_lint_groups() {
         Ok(selected_groups) => {
             if selected_groups.is_empty() {
-                cvprtln!(
+                cprtln!(
                     Role::Warning,
-                    V::QQ,
                     "{}",
                     "\nNo lint groups selected. Using default Clippy checks."
                 );
-                cvprtln!(Role::Heading3, V::QQ, "\n{}", "Running command:".bold());
-                cvprtln!(
+                cprtln!(Role::Heading3, "\n{}", "Running command:".bold());
+                cprtln!(
                     Role::Code,
-                    V::QQ,
                     "thag --cargo {} -- clippy",
                     script_path.display()
                 );
@@ -257,12 +253,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                cvprtln!(
-                    Role::Heading3,
-                    V::QQ,
-                    "\n{}",
-                    "Selected lint groups:".bold()
-                );
+                cprtln!(Role::Heading3, "\n{}", "Selected lint groups:".bold());
                 for (level_name, groups) in &by_level {
                     println!("  {}", level_name.bold());
                     for group in groups {
@@ -282,8 +273,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     script_path.display(),
                     warn_flags.join(" ")
                 );
-                cvprtln!(Role::Heading3, V::QQ, "\n{}", "Command to run:".bold());
-                cvprtln!(Role::Code, V::QQ, "{command}");
+                cprtln!(Role::Heading3, "\n{}", "Command to run:".bold());
+                cprtln!(Role::Code, "{command}");
 
                 let script_path = script_path.display().to_string();
                 // Execute the command
@@ -293,13 +284,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let status = Command::new("thag").args(&thag_args).status()?;
 
                 if !status.success() {
-                    cvprtln!(Role::Error, V::QQ, "Clippy check failed");
+                    cprtln!(Role::Error, "Clippy check failed");
                     return Err("Clippy check failed".into());
                 }
             }
         }
         Err(e) => {
-            cvprtln!(Role::Error, V::QQ, "Error selecting lint groups: {e}");
+            cprtln!(Role::Error, "Error selecting lint groups: {e}");
             return Err(e);
         }
     }

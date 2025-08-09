@@ -1,0 +1,56 @@
+name = "Thag Morning Coffee Light Base 16 Base16"
+description = "Converted from Thag Morning Coffee Light Base 16 theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fad1a8"]
+bg_rgbs = [[250, 209, 168]]
+
+[palette.heading1]
+rgb = [55, 110, 192]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [95, 147, 236]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [161, 185, 243]
+style = ["bold"]
+
+[palette.error]
+rgb = [55, 110, 192]
+style = ["bold"]
+
+[palette.warning]
+rgb = [52, 34, 8]
+
+[palette.success]
+rgb = [92, 63, 21]
+
+[palette.info]
+rgb = [95, 147, 236]
+
+[palette.emphasis]
+rgb = [181, 129, 51]
+style = ["bold"]
+
+[palette.code]
+rgb = [92, 63, 21]
+
+[palette.normal]
+rgb = [25, 15, 2]
+
+[palette.subtle]
+rgb = [184, 185, 188]
+
+[palette.hint]
+rgb = [146, 147, 152]
+style = ["italic"]
+
+[palette.debug]
+rgb = [92, 63, 21]
+style = ["dim"]
+
+[palette.trace]
+rgb = [95, 147, 236]
+style = ["italic", "dim"]

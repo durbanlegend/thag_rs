@@ -252,7 +252,7 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
 	1. Edit ~/.wezterm.lua
 	2. Refer to https://wezterm.org/config/appearance.html and https://wezterm.org/colorschemes/index.html
 	3. Ensure background is set to {}
-    4. Optimized for {} backgrounds"#,
+	4. Optimized for {} backgrounds"#,
             bg_color,
             luma.to_lowercase()
         ),

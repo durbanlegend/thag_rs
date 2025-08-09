@@ -156,7 +156,7 @@ impl BaseTheme {
             code: Style::from_fg_hex(&self.palette.base0_b)?,           // Green
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(&self.palette.base03)?,          // Comments color
-            hint: Style::from_fg_hex(&self.palette.base03)?.italic(),
+            hint: Style::from_fg_hex(&self.palette.base04)?.italic(),
             debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
             trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
         })
@@ -311,7 +311,7 @@ struct Cli {
     input: PathBuf,
 
     /// Output directory for converted themes
-    #[arg(short, long, default_value = "themes/converted")]
+    #[arg(short, long, default_value = "thag_styling/themes/built_in")]
     output: PathBuf,
 
     /// Force overwrite existing files

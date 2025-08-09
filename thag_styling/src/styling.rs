@@ -2290,9 +2290,6 @@ macro_rules! cvprtln {
     ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
         let verbosity = $crate::get_verbosity();
         if $verbosity <= verbosity {
-            // let content = format!($($arg)*);
-            // let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
-            // $crate::prtln!("{painted}");
             $crate::cprtln!($style, $($arg)*)
         }
     }};
@@ -3101,9 +3098,27 @@ pub trait StyleLike {
     /// (Role::Info).prtln("Using parentheses for disambiguation");
     /// ```
     fn prtln(&self, args: std::fmt::Arguments<'_>) {
-        let content = format!("{}", args);
+        let content = format!("{args}");
         let painted = self.to_style().paint(content);
-        crate::prtln!("{}", painted);
+        println!("{painted}");
+    }
+
+    /// Print a styled line using this style with embedded styled content
+    ///
+    /// # Examples
+    /// ```ignore
+    /// let code_embed = Role::Code.embed("println!(\"Hello\")");
+    /// let error_embed = Role::Error.embed("Error 404");
+    /// Role::Normal.prtln_with_embeds (
+    ///     "Code: {} and status: {}",
+    ///     &[code_embed, error_embed]
+    /// );
+    /// ```
+    fn prtln_with_embeds(&self, format_str: &str, embeds: &[Embedded]) {
+        let outer_style = &self.to_style();
+        let formatted = format_with_embeds(outer_style, format_str, embeds);
+        let painted = outer_style.paint(formatted);
+        println!("{painted}");
     }
 
     /// Print a styled line with verbosity gating using this style
@@ -3263,7 +3278,7 @@ macro_rules! cprtln_with_embeds {
         let outer_style = $crate::styling::StyleLike::to_style(&$style);
         let formatted = $crate::styling::format_with_embeds(&outer_style, $format_str, $embeds);
         let painted = outer_style.paint(formatted);
-        $crate::prtln!("{}", painted);
+        println!("{painted}");
     }};
 }
 
@@ -3296,7 +3311,7 @@ macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
         let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
-        $crate::prtln!("{painted}");
+        println!("{painted}");
     }};
 }
 

@@ -65,7 +65,7 @@ fn main() {
     );
 
     println!("\n7. Multiple embeds in sequence:");
-    let embeds = vec![
+    let embeds = &[
         Role::Success.embed("OK"),
         Role::Warning.embed("WARN"),
         Role::Error.embed("FAIL"),
@@ -73,7 +73,16 @@ fn main() {
     cprtln_with_embeds!(
         Style::from(Role::Info).underline(),
         "Status: {} or {} or {} - all within underlined text",
-        &embeds
+        embeds
+    );
+    Style::from(Role::Info).underline().prtln_with_embeds(
+        "Same trick using trait method `{}`: Status: {} or {} or {} - all within underlined text",
+        &[
+            Role::Emphasis.embed("prtln_with_embeds"),
+            Role::Success.embed("OK"),
+            Role::Warning.embed("WARN"),
+            Role::Error.embed("FAIL"),
+        ],
     );
 
     println!("\n8. Style chaining with methods:");
@@ -92,15 +101,15 @@ fn main() {
     println!("\nKey observations:");
     cprtln!(
         Role::Success,
-        "✓ Macro syntax: cprtln!(Role::Code, \"message\")"
+        r#"✓ Macro syntax: cprtln!(Role::Code, "message")"#
     );
     prtln_method!(
         Role::Success,
-        "✓ Method syntax: Role::Code.prtln(format_args!(\"message\"))"
+        r#"✓ Method syntax: Role::Code.prtln(format_args!("message"))"#
     );
     prtln_method!(
         Role::Success,
-        "✓ Helper macro: prtln_method!(Role::Code, \"message\")"
+        r#"✓ Helper macro: prtln_method!(Role::Code, "message")"#
     );
     cprtln!(
         Role::Info,

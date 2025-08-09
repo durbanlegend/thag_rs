@@ -156,7 +156,7 @@ impl BaseTheme {
             code: Style::from_fg_hex(&self.palette.base0_b)?,           // Green
             normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
             subtle: Style::from_fg_hex(&self.palette.base03)?,          // Comments color
-            hint: Style::from_fg_hex(&self.palette.base04)?.italic(),
+            hint: Style::from_fg_hex(&self.palette.base03)?.italic(),
             debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
             trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
         })

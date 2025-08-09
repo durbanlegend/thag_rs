@@ -12,7 +12,7 @@ palette:
   base06: "ffcc66" # warm intense yellow
   base07: "ffffff" # white, used for upper boundary
   base08: "376ec0" # Blue 4
-  base05: "190f02" # Brown 7 (main foreground)
+  base05: "342208" # Brown 6 (main foreground)
   base0A: "342208" # Brown 5
   base0B: "5C3F15" # Brown 4
   base0C: "a1b9f3" # Blue 2

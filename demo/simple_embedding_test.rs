@@ -9,12 +9,13 @@ thag_styling = { version = "0.2, thag-auto" }
 /// This demonstrates:
 /// 1. Traditional macro syntax: cprtln!(Role::Code, "message")
 /// 2. New method syntax: Role::Code.prtln(format_args!("message"))
-/// 3. Convenient helper macros: prtln_method!(Role::Code, "message")
-/// 4. Embedding with style preservation
+/// 3. Embedding with style preservation
 //# Purpose: Demo both macro and method approaches for styling
 //# Categories: styling, embedding, methods, ergonomics
-use thag_styling::{cprtln, cprtln_with_embeds, cvprtln, prtln_method, vprtln_method, Verbosity};
-use thag_styling::{ColorInitStrategy, Role, Style, StyleLike, TermAttributes};
+use thag_styling::{
+    cprtln, cprtln_with_embeds, cvprtln, ColorInitStrategy, Role, Style, StyleLike, TermAttributes,
+    Verbosity,
+};
 
 fn main() {
     // Initialize styling system
@@ -30,17 +31,13 @@ fn main() {
     println!("\n2. New method syntax (verbose):");
     Role::Code.prtln(format_args!("Hello from method: {}", "world"));
     Role::Debug.vprtln(Verbosity::Normal, format_args!("Debug from method: {}", 42));
-
-    println!("\n3. Convenient method macros:");
-    prtln_method!(Role::Success, "Hello from method macro: {}", "world");
-    vprtln_method!(
-        Role::Warning,
+    Role::Success.prtln(format_args!("Hello from method macro: {}", "world"));
+    Role::Warning.vprtln(
         Verbosity::Normal,
-        "Warning from method macro: {}",
-        "careful"
+        format_args!("Warning from method macro: {}", "careful"),
     );
 
-    println!("\n4. Method syntax with parentheses for disambiguation:");
+    println!("\n3. Method syntax with parentheses for disambiguation:");
     (Role::Info).prtln(format_args!("Info with parentheses: {}", "clear"));
     (Role::Error).vprtln(
         Verbosity::Normal,
@@ -75,10 +72,10 @@ fn main() {
         "Status: {} or {} or {} - all within underlined text",
         embeds
     );
-    Style::from(Role::Info).underline().prtln_with_embeds(
+    Style::from(Role::Info).underline().prtln_embed(
         "Same trick using trait method `{}`: Status: {} or {} or {} - all within underlined text",
         &[
-            Role::Emphasis.embed("prtln_with_embeds"),
+            Role::Emphasis.embed("prtln_embed"),
             Role::Success.embed("OK"),
             Role::Warning.embed("WARN"),
             Role::Error.embed("FAIL"),
@@ -91,7 +88,7 @@ fn main() {
         .italic()
         .prtln(format_args!("This is bold italic: {}", "chained"));
 
-    prtln_method!(
+    cprtln!(
         Style::from(Role::Warning).underline(),
         "This is underlined warning: {}",
         "be careful"
@@ -103,13 +100,13 @@ fn main() {
         Role::Success,
         r#"✓ Macro syntax: cprtln!(Role::Code, "message")"#
     );
-    prtln_method!(
+    cprtln!(
         Role::Success,
         r#"✓ Method syntax: Role::Code.prtln(format_args!("message"))"#
     );
-    prtln_method!(
+    cprtln!(
         Role::Success,
-        r#"✓ Helper macro: prtln_method!(Role::Code, "message")"#
+        r#"✓ Helper macro: cprtln!(Role::Code, "message")"#
     );
     cprtln!(
         Role::Info,

@@ -3109,12 +3109,12 @@ pub trait StyleLike {
     /// ```ignore
     /// let code_embed = Role::Code.embed("println!(\"Hello\")");
     /// let error_embed = Role::Error.embed("Error 404");
-    /// Role::Normal.prtln_with_embeds (
+    /// Role::Normal.prtln_embed (
     ///     "Code: {} and status: {}",
     ///     &[code_embed, error_embed]
     /// );
     /// ```
-    fn prtln_with_embeds(&self, format_str: &str, embeds: &[Embedded]) {
+    fn prtln_embed(&self, format_str: &str, embeds: &[Embedded]) {
         let outer_style = &self.to_style();
         let formatted = format_with_embeds(outer_style, format_str, embeds);
         let painted = outer_style.paint(formatted);
@@ -3148,34 +3148,6 @@ pub trait StyleLike {
             content: content.to_string(),
         }
     }
-}
-
-/// Convenient macro for calling prtln method on StyleLike types
-///
-/// # Examples
-/// ```ignore
-/// prtln_method!(Role::Code, "Hello {}", "world");
-/// prtln_method!(Style::from(Role::Error).bold(), "Error: {}", message);
-/// ```
-#[macro_export]
-macro_rules! prtln_method {
-    ($style:expr, $($arg:tt)*) => {{
-        $style.prtln(format_args!($($arg)*));
-    }};
-}
-
-/// Convenient macro for calling vprtln method on StyleLike types
-///
-/// # Examples
-/// ```ignore
-/// vprtln_method!(Role::Debug, Verbosity::Verbose, "Debug: {}", value);
-/// vprtln_method!(Style::from(Role::Info), Verbosity::Normal, "Info: {}", message);
-/// ```
-#[macro_export]
-macro_rules! vprtln_method {
-    ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
-        $style.vprtln($verbosity, format_args!($($arg)*));
-    }};
 }
 
 impl StyleLike for Style {

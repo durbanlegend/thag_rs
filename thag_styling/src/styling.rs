@@ -451,7 +451,9 @@ impl Style {
     pub fn for_role(role: Role) -> Self {
         TermAttributes::get_or_init().theme.style_for(role)
     }
-}
+
+    /// Generate only the ANSI codes for this style without any content or reset
+    ///}
 
 impl Default for Style {
     fn default() -> Self {
@@ -3066,6 +3068,20 @@ impl From<&ColorInfo> for nu_ansi_term::Color {
 pub trait StyleLike {
     /// Convert this item to a Style for use with styling macros
     fn to_style(&self) -> Style;
+
+    /// Create an embedded styled text that can be nested within other styled content
+    ///
+    /// # Example
+    /// ```ignore
+    /// let embedded = Role::Code.embed("embedded code");
+    /// Role::Normal.prtln_with_embeds("This contains {} here", &[embedded]);
+    /// ```
+    fn embed(&self, content: &str) -> Embedded {
+        Embedded {
+            style: self.to_style(),
+            content: content.to_string(),
+        }
+    }
 }
 
 impl StyleLike for Style {
@@ -3092,14 +3108,147 @@ impl StyleLike for &Role {
     }
 }
 
+/// Represents styled text that can be embedded within other styled content
+#[derive(Clone, Debug)]
+pub struct Embedded {
+    style: Style,
+    content: String,
+}
+
+impl Embedded {
+    /// Create a new embedded styled text
+    pub fn new<S: StyleLike>(style: S, content: &str) -> Self {
+        Self {
+            style: style.to_style(),
+            content: content.to_string(),
+        }
+    }
+
+    /// Get the styled content with proper ANSI codes for embedding
+    /// This includes reset codes to avoid interfering with outer styles
+    pub fn render(&self, outer_style: Option<&Style>) -> String {
+        let embedded_painted = self.style.paint(&self.content);
+        if let Some(outer) = outer_style {
+            // After embedded content, restore the outer style using only ANSI codes
+            // This avoids the reset that paint("") would add
+            format!("{}{}", embedded_painted, outer.ansi_codes())
+        } else {
+            // No outer style to restore, embedded content handles its own reset
+            embedded_painted
+        }
+    }
+}
+
+/// Format a string with embedded styled content
+///
+/// This function processes format strings that contain `{}` placeholders
+/// and replaces them with properly styled embedded content, ensuring
+/// that outer styles are preserved after each embedding.
+pub fn format_with_embeds(outer_style: &Style, format_str: &str, embeds: &[Embedded]) -> String {
+    let mut result = String::new();
+    let mut embed_index = 0;
+    let mut chars = format_str.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '{' && chars.peek() == Some(&'}') {
+            chars.next(); // consume the '}'
+            if embed_index < embeds.len() {
+                result.push_str(&embeds[embed_index].render(Some(outer_style)));
+                embed_index += 1;
+            } else {
+                result.push_str("{}"); // No more embeds available
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+
+    result
+}
+
+/// Print styled text with embedded styled content
+///
+/// # Examples
+/// ```ignore
+/// let code_embed = Role::Code.embed("println!(\"Hello\")");
+/// let error_embed = Role::Error.embed("Error 404");
+/// sprtln_with_embeds!(
+///     Role::Normal,
+///     "Code: {} and status: {}",
+///     &[code_embed, error_embed]
+/// );
+/// ```
+#[macro_export]
+macro_rules! sprtln_with_embeds {
+    ($style:expr, $format_str:expr, $embeds:expr) => {{
+        let outer_style = $crate::styling::StyleLike::to_style(&$style);
+        let formatted = $crate::styling::format_with_embeds(&outer_style, $format_str, $embeds);
+        let painted = outer_style.paint(formatted);
+        $crate::prtln!("{}", painted);
+    }};
+}
+
+/// Verbosity-gated print with embedded styled content
+///
+/// # Examples
+/// ```ignore
+/// let debug_embed = Role::Debug.embed("debug info");
+/// svprtln_with_embeds!(
+///     Role::Info,
+///     Verbosity::Verbose,
+///     "Info with debug: {}",
+///     &[debug_embed]
+/// );
+/// ```
+#[macro_export]
+macro_rules! svprtln_with_embeds {
+    ($style:expr, $verbosity:expr, $format_str:expr, $embeds:expr) => {{
+        let current_verbosity = thag_common::get_verbosity();
+        if $verbosity <= current_verbosity {
+            $crate::sprtln_with_embeds!($style, $format_str, $embeds);
+        }
+    }};
+}
+
+/// Ergonomic print macro that works with StyleLike types
+///
+/// # Examples
+/// ```ignore
+/// sprtln!(Role::Code, "Hello {}", "world");
+/// sprtln!(Style::from(Role::Error).bold(), "Error: {}", message);
+/// ```
+#[macro_export]
+macro_rules! sprtln {
+    ($style:expr, $($arg:tt)*) => {{
+        let content = format!("{}", format_args!($($arg)*));
+        let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
+        $crate::prtln!("{painted}");
+    }};
+}
+
 /// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
 /// Also accepts Role: `cprtln!(Role::Code, "Hello {}", "world");`
 #[macro_export]
 macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
-        let content = format!("{}", format_args!($($arg)*));
-        let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
-        $crate::prtln!("{painted}");
+        $crate::sprtln!($style, $($arg)*)
+    }};
+}
+
+/// Ergonomic verbosity-gated print macro that works with StyleLike types
+///
+/// # Examples
+/// ```ignore
+/// svprtln!(Role::Debug, Verbosity::Verbose, "Debug: {}", value);
+/// svprtln!(Style::from(Role::Info).italic(), Verbosity::Normal, "Info: {}", message);
+/// ```
+#[macro_export]
+macro_rules! svprtln {
+    ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
+        let current_verbosity = thag_common::get_verbosity();
+        if $verbosity <= current_verbosity {
+            $crate::sprtln!($style, $($arg)*)
+        }
     }};
 }
 
@@ -3401,6 +3550,116 @@ mod tests {
         let style_ref = &Style::from(Role::Warning).italic();
         let style_from_style_ref = style_ref.to_style();
         assert_eq!(style_from_style_ref, *style_ref);
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_sprtln_and_svprtln_macros() {
+        init_test_output();
+
+        // Test sprtln with Role
+        sprtln!(Role::Code, "Testing sprtln with Role: {}", "code");
+
+        // Test sprtln with Style
+        sprtln!(
+            Style::from(Role::Error).bold(),
+            "Testing sprtln with Style: {}",
+            "error"
+        );
+
+        // Test sprtln with modified style
+        sprtln!(
+            Color::yellow().italic(),
+            "Testing sprtln with Color: {}",
+            "warning"
+        );
+
+        // Test svprtln with Role and different verbosity levels
+        svprtln!(
+            Role::Debug,
+            thag_common::Verbosity::Verbose,
+            "Debug message: {}",
+            "debug"
+        );
+        svprtln!(
+            Role::Info,
+            thag_common::Verbosity::Normal,
+            "Info message: {}",
+            "info"
+        );
+
+        // Test that lower verbosity messages are filtered out
+        svprtln!(
+            Role::Trace,
+            thag_common::Verbosity::Debug,
+            "This should be filtered: {}",
+            "trace"
+        );
+
+        let output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+        assert!(!output.is_empty());
+        flush_test_output(); // Write captured output to stdout
+    }
+
+    #[test]
+    #[serial]
+    fn test_embedded_styling() {
+        init_test_output();
+
+        // Test basic embed creation
+        let code_embed = Role::Code.embed("println!(\"Hello\")");
+        let error_embed = Role::Error.embed("Error 404");
+
+        // Test sprtln_with_embeds macro
+        sprtln_with_embeds!(
+            Role::Normal,
+            "This contains code {} and an error {}",
+            &[code_embed.clone(), error_embed.clone()]
+        );
+
+        // Test with Style instead of Role
+        sprtln_with_embeds!(
+            Style::from(Role::Info).bold(),
+            "Bold info with embedded {}: {}",
+            &[
+                Role::Warning.embed("warning"),
+                Role::Success.embed("success")
+            ]
+        );
+
+        // Test with verbosity gating
+        svprtln_with_embeds!(
+            Role::Debug,
+            thag_common::Verbosity::Normal,
+            "Debug message with embedded {}",
+            &[Role::Trace.embed("trace data")]
+        );
+
+        // Test Embedded::new method
+        let custom_embed = Embedded::new(Style::from(Role::Emphasis).italic(), "custom text");
+        sprtln_with_embeds!(
+            Role::Normal,
+            "Normal text with custom embed: {}",
+            &[custom_embed]
+        );
+
+        // Test nested different styles
+        let complex_embeds = vec![
+            Role::Code.embed("fn main()"),
+            Role::Error.embed("panic!"),
+            Role::Success.embed("Ok(())"),
+        ];
+        sprtln_with_embeds!(
+            Style::from(Role::Info).underline(),
+            "Function {} can {} or return {}",
+            &complex_embeds
+        );
 
         let output = get_test_output();
         flush_test_output(); // Write captured output to stdout

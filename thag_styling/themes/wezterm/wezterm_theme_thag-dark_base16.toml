@@ -24,14 +24,14 @@ cursor_bg = "#d7b87d" # base05
 cursor_border = "#d7b87d"
 cursor_fg = "#000000" # base00
 foreground = "#d7b87d" # base05
-selection_bg = "#2a2a2a" # base02
+selection_bg = "#376EC0" # base02
 selection_fg = "#d7b87d" # base05
 
 [colors.indexed]
 16 = "#3cb0ff" # base09
 17 = "#5a4b3f" # base0F - dark coffee brown
 18 = "#1a1a1a" # base01
-19 = "#2a2a2a" # base02
+19 = "#376EC0" # base02
 20 = "#806550" # base04
 21 = "#ffcc66" # base06
 

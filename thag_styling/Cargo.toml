@@ -65,7 +65,7 @@ inquire_theming = ["color_detect", "config", "inquire"]
 ratatui_support = ["ratatui", "scopeguard"]
 
 # Support for thag REPL
-repl_support = ["nu-ansi-term"]
+nu_ansi_term_support = ["nu-ansi-term"]
 
 # All advanced features
 full = ["color_detect", "config", "tools", "inquire_theming", "ratatui_support"]

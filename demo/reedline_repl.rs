@@ -21,7 +21,7 @@
 /// thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/subcommands.rs
 /// ```
 ///
-/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+/// This requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
 //# Categories: crates, REPL, technique

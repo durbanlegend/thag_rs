@@ -12,10 +12,9 @@ use crate::{
     KeyDisplayLine, ProcFlags, ThagError, ThagResult,
 };
 use clap::{CommandFactory, Parser};
-use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
-// use crokey::key;
 use edit::edit_file;
 use nu_ansi_term::Color as NuColor;
+use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use ratatui::style::Color;
 use reedline::{
     default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
@@ -429,13 +428,9 @@ pub fn run_repl(
         line_editor_builder = line_editor_builder.with_highlighter(highlighter);
 
         // Add styled hinter
-        let our_ghost = Style::for_role(Role::Hint);
-        let nu_ghost = our_ghost
-            .foreground
-            .as_ref()
-            .map_or(NuColor::LightGray, NuColor::from);
+        let nu_hint = nu_ansi_term::Style::from(&Role::Hint);
         line_editor_builder = line_editor_builder.with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_ghost.italic()),
+            DefaultHinter::default().with_style(nu_hint.italic()),
         ));
     }
 

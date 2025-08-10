@@ -3076,10 +3076,32 @@ impl From<&Role> for ratatui::style::Color {
     }
 }
 
-#[cfg(feature = "repl_support")]
+#[cfg(feature = "nu_ansi_term_support")]
 impl From<&ColorInfo> for nu_ansi_term::Color {
     fn from(color_info: &ColorInfo) -> Self {
         Self::Fixed(color_info.index)
+    }
+}
+
+#[cfg(feature = "nu_ansi_term_support")]
+impl From<&Role> for nu_ansi_term::Style {
+    fn from(role: &Role) -> Self {
+        let style = Style::from(*role);
+        Self {
+            foreground: style.foreground.and_then(|color_info| {
+                Some(nu_ansi_term::Color::Fixed(u8::from(color_info.index)))
+            }),
+            background: None,
+            is_bold: style.bold,
+            is_dimmed: style.dim,
+            is_italic: style.italic,
+            is_underline: style.underline,
+            is_blink: false,
+            is_reverse: false,
+            is_hidden: false,
+            is_strikethrough: false,
+            prefix_with_reset: false,
+        }
     }
 }
 

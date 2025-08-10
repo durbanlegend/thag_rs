@@ -310,10 +310,10 @@ tui = [
 
 ## REPL capability
 repl = [
-    "tui",                       # Includes all TUI features
+    "tui",                               # Includes all TUI features
     "nu-ansi-term",
     "reedline",
-    "thag_styling/repl_support",
+    "thag_styling/nu_ansi_term_support",
 ]
 
 ## All features

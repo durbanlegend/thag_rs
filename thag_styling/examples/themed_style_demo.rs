@@ -5,20 +5,26 @@
 //!
 //! Run with different features to see different integrations:
 //! ```bash
-//! # Basic demo with all integrations
-//! cargo run --example themed_style_demo --features "crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
+//! # Basic demo with all integrations (REQUIRES color_detect + config for rich colors!)
+//! cargo run --example themed_style_demo --features "color_detect,config,crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
 //!
-//! # Just crossterm
+//! # Just crossterm (with rich colors)
+//! cargo run --example themed_style_demo --features "color_detect,config,crossterm_support"
+//!
+//! # Just ratatui (with rich colors)
+//! cargo run --example themed_style_demo --features "color_detect,config,ratatui_support"
+//!
+//! # Without color_detect+config (falls back to basic ANSI colors)
 //! cargo run --example themed_style_demo --features "crossterm_support"
-//!
-//! # Just ratatui
-//! cargo run --example themed_style_demo --features "ratatui_support"
 //! ```
 
 use thag_styling::{Role, ThemedStyle};
 
 fn main() {
     println!("🎨 Thag Styling ThemedStyle Trait Demo\n");
+
+    // Check theme status
+    check_theme_status();
 
     // Demonstrate role-based theming
     demonstrate_roles();
@@ -56,6 +62,45 @@ fn demonstrate_roles() {
             "  {role:12}: {}",
             thag_styling::paint_for_role(role, message)
         );
+    }
+    println!();
+}
+
+/// Check what theme was selected and provide guidance
+fn check_theme_status() {
+    use thag_styling::{ColorSupport, TermAttributes};
+
+    let term_attrs = TermAttributes::get_or_init();
+
+    println!("🎭 Theme Status:");
+    println!(
+        "   Theme: {} ({})",
+        term_attrs.theme.name, term_attrs.color_support
+    );
+
+    // If we ended up with basic theme despite having good color support, explain why
+    if term_attrs.theme.name.contains("Basic") && term_attrs.color_support >= ColorSupport::Color256
+    {
+        println!(
+            "   ⚠️  Note: You have {:?} color support but got a basic theme.",
+            term_attrs.color_support
+        );
+        println!(
+            "   ⚠️  Note: You have {:?} color support but got a basic theme.",
+            term_attrs.color_support
+        );
+        println!("      This is likely because the 'config' feature is not enabled.");
+        println!("      Without 'config', thag_styling falls back to basic themes.");
+        println!("      The integration colors will work, but they'll be basic ANSI colors");
+        println!("      instead of rich themed colors.");
+        println!();
+        println!("   💡 Solution: Add required features to Cargo.toml:");
+        println!("      [dependencies.thag_styling]");
+        println!("      features = [\"color_detect\", \"config\", \"your_integration_support\"]");
+        println!();
+        println!("      Then run: cargo run --example themed_style_demo --features \"color_detect,config,crossterm_support\"");
+    } else {
+        println!("   ✅ Good theme detected!");
     }
     println!();
 }

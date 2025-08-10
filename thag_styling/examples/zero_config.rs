@@ -5,6 +5,8 @@
 //!
 //! Run with:
 //! ```bash
+//! cargo run --example zero_config --features "color_detect,config,crossterm_support,ratatui_support,nu_ansi_term_support"
+//! # Or use the full feature set:
 //! cargo run --example zero_config --features "full"
 //! ```
 

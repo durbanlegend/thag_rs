@@ -9,7 +9,7 @@ Get started with thag_styling's theme-aware terminal styling in under 5 minutes!
 ```toml
 # Cargo.toml
 [dependencies]
-thag_styling = { version = "0.2.0", features = ["crossterm_support"] }
+thag_styling = { version = "0.2.0", features = ["crossterm_support", "color_detect", "config"] }
 crossterm = "0.28.1"
 ```
 
@@ -37,6 +37,8 @@ Choose the integrations you need:
 [dependencies.thag_styling]
 version = "0.2.0"
 features = [
+    "color_detect",         # Essential: Enables terminal color detection
+    "config",               # Essential: Enables sophisticated theme selection
     "crossterm_support",    # Cross-platform terminal (recommended)
     "ratatui_support",      # Terminal UI applications
     "nu_ansi_term_support", # Nu shell / reedline
@@ -255,6 +257,17 @@ Your application automatically gets professional themes:
 ## ❓ Troubleshooting
 
 ### Colors Not Appearing?
+
+**Most common issue**: Missing required features. You need both `color_detect` and `config`:
+
+```toml
+[dependencies.thag_styling]
+features = ["color_detect", "config", "your_integration_support"]
+```
+
+Without these features, thag_styling falls back to basic ANSI colors instead of rich themed colors.
+
+Check what was detected:
 ```bash
 # Check what thag detected
 cargo run --example zero_config --features "full"
@@ -262,9 +275,9 @@ cargo run --example zero_config --features "full"
 
 ### Compilation Errors?
 ```toml
-# Make sure you have the right features enabled
+# Make sure you have the required core features plus your integration
 [dependencies.thag_styling]
-features = ["crossterm_support"]  # Add the integration you're using
+features = ["color_detect", "config", "crossterm_support"]
 
 [dependencies.crossterm]
 version = "0.28.1"  # Make sure you have the actual library too
@@ -272,19 +285,28 @@ version = "0.28.1"  # Make sure you have the actual library too
 
 ### Performance Issues?
 ```toml
-# Use minimal features for production
+# Use minimal features for production (but keep color_detect + config for good colors)
 [dependencies.thag_styling]
-features = ["basic", "crossterm_support"]
+features = ["color_detect", "config", "crossterm_support"]
 ```
 
 ## 🌟 Benefits
 
-- **Zero Configuration**: Works out of the box
+- **Zero Configuration**: Works out of the box (with `color_detect` + `config` features)
 - **Background Sensitive**: Colors adapt to light/dark terminals
+- **Rich Theme Selection**: Automatic selection from 200+ professional themes
 - **Performance Optimized**: Cached color calculations
 - **Cross-Library Consistent**: Same colors everywhere
 - **Capability Aware**: Automatically uses best available colors
 - **Professional Themes**: Carefully designed color schemes
+
+## ⚠️ Important: Required Features
+
+For the best experience with rich themed colors, always include:
+- `color_detect` - Enables automatic terminal capability detection
+- `config` - Enables sophisticated theme selection from the full theme database
+
+Without these features, thag_styling falls back to basic ANSI colors instead of the rich themed colors shown in examples.
 
 ## 📖 Next Steps
 

@@ -80,9 +80,9 @@ console_support = ["console"]
 # All advanced features
 full = [
     "color_detect",
-    "config",
     "tools",
     "inquire_theming",
+    "nu_ansi_term_support",
     "ratatui_support",
     "crossterm_support",
     "console_support",

@@ -3051,7 +3051,12 @@ impl From<&Style> for RataStyle {
         let mut rata_style = Self::default();
 
         if let Some(color_info) = &style.foreground {
-            rata_style = rata_style.fg(ratatui::style::Color::Indexed(color_info.index));
+            let ratatui_color = match &color_info.value {
+                ColorValue::TrueColor { rgb } => ratatui::style::Color::Rgb(rgb[0], rgb[1], rgb[2]),
+                ColorValue::Color256 { color256 } => ratatui::style::Color::Indexed(*color256),
+                ColorValue::Basic { .. } => ratatui::style::Color::Indexed(color_info.index),
+            };
+            rata_style = rata_style.fg(ratatui_color);
         }
 
         if style.bold {
@@ -3072,7 +3077,17 @@ impl From<&Style> for RataStyle {
 // Implement conversion to ratatui's Color
 impl From<&Role> for ratatui::style::Color {
     fn from(role: &Role) -> Self {
-        Self::Indexed(u8::from(role))
+        let style = Style::from(*role);
+        if let Some(color_info) = &style.foreground {
+            match &color_info.value {
+                ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+                ColorValue::Color256 { color256 } => Self::Indexed(*color256),
+                ColorValue::Basic { .. } => Self::Indexed(color_info.index),
+            }
+        } else {
+            // Fallback to basic role mapping only if no theme color available
+            Self::Indexed(u8::from(role))
+        }
     }
 }
 

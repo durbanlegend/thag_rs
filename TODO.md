@@ -26,8 +26,10 @@
 - [ ]  Add thag_theme tool to show current theme?
 - [ ]  Demo script for styled! proc macro using thag_styling?
 - [ ]  Moe internal=???
-- [ ]  DONE thag_show_themes.rs - detect Wezterm and give instructions accordingly. alacritty etc?
+- [ ]  thag_show_themes.rs - detect alacritty etc and give instructions accordingly. alacritty etc?
 - [ ]  StyleLike add prtln and embed trait methods to allow styles to embed styles.
+- [ ]  Incorporate bank/rata.rs example?
+- [ ]  Make detection or at least config mandatory.
 
 
 /// Convert ColorInfo to nu-ansi-term Color

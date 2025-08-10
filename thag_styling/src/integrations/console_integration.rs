@@ -22,10 +22,7 @@ impl ThemedStyle<ConsoleStyle> for ConsoleStyle {
             console_style = console_style.fg(ConsoleColor::from(color_info));
         }
 
-        // Apply background color
-        if let Some(color_info) = &style.background {
-            console_style = console_style.bg(ConsoleColor::from(color_info));
-        }
+        // Note: Background color not supported in current Style struct
 
         // Apply style attributes
         if style.bold {
@@ -69,11 +66,9 @@ impl ThemedStyle<ConsoleColor> for ConsoleColor {
 impl From<&ColorInfo> for ConsoleColor {
     fn from(color_info: &ColorInfo) -> Self {
         match &color_info.value {
-            ColorValue::TrueColor { rgb } => Self::TrueColor {
-                r: rgb[0],
-                g: rgb[1],
-                b: rgb[2],
-            },
+            ColorValue::TrueColor { rgb } => {
+                Self::Color256(16 + (36 * (rgb[0] / 51) + 6 * (rgb[1] / 51) + (rgb[2] / 51)) as u8)
+            }
             ColorValue::Color256 { color256 } => Self::Color256(*color256),
             ColorValue::Basic { .. } => {
                 // Map basic colors to console's named colors
@@ -137,38 +132,17 @@ impl ConsoleStyleExt for ConsoleStyle {
     fn with_role(self, role: Role) -> Self {
         let themed = Self::themed(role);
         // Console styles are immutable, so we need to combine them
-        let mut combined = self;
-
-        // Apply themed foreground if not already set
-        if let Some(fg) = themed.get_fg() {
-            combined = combined.fg(fg);
-        }
-
-        // Apply themed background if not already set
-        if let Some(bg) = themed.get_bg() {
-            combined = combined.bg(bg);
-        }
-
-        // Combine attributes
-        if themed.get_bold() {
-            combined = combined.bold();
-        }
-        if themed.get_italic() {
-            combined = combined.italic();
-        }
-        if themed.get_dim() {
-            combined = combined.dim();
-        }
-        if themed.get_underlined() {
-            combined = combined.underlined();
-        }
-
-        combined
+        // Console styles are immutable, so we need to layer them
+        // Apply the themed style over the existing style
+        // Note: Console Style doesn't expose getters for easy composition
+        // Return the themed style since console doesn't support easy layering
+        themed
     }
 
     fn with_thag_style(self, style: &Style) -> Self {
-        let themed = Self::from_thag_style(style);
-        self.with_role(Role::Normal) // Use the style conversion logic
+        let _themed = Self::from_thag_style(style);
+        // Console doesn't provide easy style composition, return the themed style
+        _themed
     }
 }
 
@@ -178,44 +152,51 @@ pub mod console_helpers {
     use console::Term;
 
     /// Print themed content to stdout
-    pub fn print_themed(role: Role, content: &str) -> console::Result<()> {
+    pub fn print_themed(role: Role, content: &str) -> std::io::Result<()> {
         let style = ConsoleStyle::themed(role);
         let term = Term::stdout();
         term.write_line(&style.apply_to(content).to_string())
     }
 
     /// Print themed content to stderr
-    pub fn eprint_themed(role: Role, content: &str) -> console::Result<()> {
+    pub fn eprint_themed(role: Role, content: &str) -> std::io::Result<()> {
         let style = ConsoleStyle::themed(role);
         let term = Term::stderr();
         term.write_line(&style.apply_to(content).to_string())
     }
 
     /// Create themed styles for common UI elements
+    /// Create themed style for success messages
     pub fn success_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Success)
     }
 
+    /// Create themed style for error messages
     pub fn error_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Error)
     }
 
+    /// Create themed style for warning messages
     pub fn warning_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Warning)
     }
 
+    /// Create themed style for informational messages
     pub fn info_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Info)
     }
 
+    /// Create themed style for code content
     pub fn code_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Code)
     }
 
+    /// Create themed style for emphasized text
     pub fn emphasis_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Emphasis)
     }
 
+    /// Create themed style for subtle/less important text
     pub fn subtle_style() -> ConsoleStyle {
         ConsoleStyle::themed(Role::Subtle)
     }
@@ -231,19 +212,19 @@ pub mod console_helpers {
 /// Extension trait for console's Term to support themed output
 pub trait TermThemedExt {
     /// Write themed content
-    fn write_themed(&self, role: Role, content: &str) -> console::Result<()>;
+    fn write_themed(&self, role: Role, content: &str) -> std::io::Result<()>;
 
     /// Write themed line
-    fn write_line_themed(&self, role: Role, content: &str) -> console::Result<()>;
+    fn write_line_themed(&self, role: Role, content: &str) -> std::io::Result<()>;
 }
 
 impl TermThemedExt for Term {
-    fn write_themed(&self, role: Role, content: &str) -> console::Result<()> {
+    fn write_themed(&self, role: Role, content: &str) -> std::io::Result<()> {
         let style = ConsoleStyle::themed(role);
         self.write_str(&style.apply_to(content).to_string())
     }
 
-    fn write_line_themed(&self, role: Role, content: &str) -> console::Result<()> {
+    fn write_line_themed(&self, role: Role, content: &str) -> std::io::Result<()> {
         let style = ConsoleStyle::themed(role);
         self.write_line(&style.apply_to(content).to_string())
     }

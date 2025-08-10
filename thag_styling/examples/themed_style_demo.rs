@@ -2,19 +2,24 @@
 //!
 //! This example shows how to use thag_styling's ThemedStyle trait to create
 //! consistent, theme-aware styling across different terminal UI libraries.
+/*[toml]
+[dependencies]
+thag_styling = { version = "0.2, thag-auto" }
+thag_common = { version = "0.2, thag-auto" }
+*/
 //!
 //! Run with different features to see different integrations:
 //! ```bash
-//! # Basic demo with all integrations (REQUIRES color_detect + config for rich colors!)
-//! cargo run --example themed_style_demo --features "color_detect,config,crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
+//! # Basic demo with all integrations (REQUIRES color_detect for rich colors!)
+//! cargo run --example themed_style_demo --features "color_detect,crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
 //!
 //! # Just crossterm (with rich colors)
-//! cargo run --example themed_style_demo --features "color_detect,config,crossterm_support"
+//! cargo run --example themed_style_demo --features "color_detect,crossterm_support"
 //!
 //! # Just ratatui (with rich colors)
-//! cargo run --example themed_style_demo --features "color_detect,config,ratatui_support"
+//! cargo run --example themed_style_demo --features "color_detect,ratatui_support"
 //!
-//! # Without color_detect+config (falls back to basic ANSI colors)
+//! # Without color_detect (falls back to basic ANSI colors)
 //! cargo run --example themed_style_demo --features "crossterm_support"
 //! ```
 
@@ -85,20 +90,16 @@ fn check_theme_status() {
             "   ⚠️  Note: You have {:?} color support but got a basic theme.",
             term_attrs.color_support
         );
-        println!(
-            "   ⚠️  Note: You have {:?} color support but got a basic theme.",
-            term_attrs.color_support
-        );
-        println!("      This is likely because the 'config' feature is not enabled.");
-        println!("      Without 'config', thag_styling falls back to basic themes.");
+        println!("      This is likely because the 'color_detect' feature is not enabled.");
+        println!("      Without 'color_detect', thag_styling falls back to basic themes.");
         println!("      The integration colors will work, but they'll be basic ANSI colors");
         println!("      instead of rich themed colors.");
         println!();
-        println!("   💡 Solution: Add required features to Cargo.toml:");
+        println!("   💡 Solution: Add required feature to Cargo.toml:");
         println!("      [dependencies.thag_styling]");
-        println!("      features = [\"color_detect\", \"config\", \"your_integration_support\"]");
+        println!("      features = [\"color_detect\", \"your_integration_support\"]");
         println!();
-        println!("      Then run: cargo run --example themed_style_demo --features \"color_detect,config,crossterm_support\"");
+        println!("      Then run: cargo run --example themed_style_demo --features \"color_detect,crossterm_support\"");
     } else {
         println!("   ✅ Good theme detected!");
     }

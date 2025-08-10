@@ -1,21 +1,20 @@
-//! Demo script showcasing StyleLike trait extensions for ergonomic printing and embedding
-//!
-//! This script demonstrates:
-//! 1. sprtln! - ergonomic styled printing macro
-//! 2. svprtln! - verbosity-gated styled printing macro
-//! 3. sprtln_with_embeds! - styled printing with embedded styled content
-//! 4. svprtln_with_embeds! - verbosity-gated embedded styled printing
-//!
-//! The StyleLike trait allows both Role and Style to be used interchangeably,
-//! and the embedding feature preserves outer styles when nesting different styles.
-//# Purpose: Demo StyleLike extensions for ergonomic styling and embedding
-//# Categories: styling, ergonomics, embedding
-
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
 thag_common = { version = "0.2, thag-auto" }
 */
+/// Demo script showcasing StyleLike trait extensions for ergonomic printing and embedding
+///
+/// This script demonstrates:
+/// 1. cprtln! - ergonomic styled printing macro
+/// 2. cvprtln! - verbosity-gated styled printing macro
+/// 3. sprtln_with_embeds! - styled printing with embedded styled content
+/// 4. svprtln_with_embeds! - verbosity-gated embedded styled printing
+///
+/// The StyleLike trait allows both Role and Style to be used interchangeably,
+/// and the embedding feature preserves outer styles when nesting different styles.
+//# Purpose: Demo StyleLike extensions for ergonomic styling and embedding
+//# Categories: styling, ergonomics, embedding
 use thag_common::Verbosity;
 use thag_styling::styling::{Color, Embedded, Role, Style, StyleLike, TermAttributes};
 use thag_styling::{sprtln, sprtln_with_embeds, svprtln, svprtln_with_embeds, ColorInitStrategy};

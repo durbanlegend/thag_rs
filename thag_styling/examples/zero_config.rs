@@ -1,15 +1,71 @@
-//! Zero-configuration setup example for thag_styling
-//!
-//! This example demonstrates how thag_styling can be used with zero configuration
-//! while automatically detecting terminal capabilities and choosing appropriate themes.
-//!
-//! Run with:
-//! ```bash
-//! cargo run --example zero_config --features "color_detect,config,crossterm_support,ratatui_support,nu_ansi_term_support"
-//! # Or use the full feature set:
-//! cargo run --example zero_config --features "full"
-//! ```
+/*[toml]
+[dependencies]
+console = { version = "0.15.8", optional = true }
+crossterm = { version = "0.28.1", optional = true }
+inquire = { version = "0.7.5", optional = true }
+nu-ansi-term = { version = "0.50.1", optional = true }
+ratatui = { version = "0.29.0", optional = true }
+scopeguard = { version = "1.2.0", optional = true }
+supports-color = { version = "3.0.2", optional = true }
+termbg = { version = "0.6.2", optional = true }
+thag_styling = { version = "0.2, thag-auto" }
+thag_common = { version = "0.2, thag-auto" }
 
+[features]
+default = ["full"]
+
+# Core styling without external dependencies
+basic = []
+
+# Terminal color detection and background detection
+color_detect = ["thag_common/color_detect"]
+
+config = ["thag_common/config"]
+
+# Tools integration
+tools = []
+
+# Debug logging support
+debug_logging = ["thag_common/debug_logging"]
+
+# Inquire integration for themed UI
+inquire_theming = ["thag_styling/inquire_theming"]
+
+# Full ratatui integration
+ratatui_support = ["thag_styling/ratatui_support"]
+
+# Support for thag REPL
+nu_ansi_term_support = ["thag_styling/nu_ansi_term_support"]
+
+# Crossterm integration for cross-platform terminal manipulation
+crossterm_support = ["thag_styling/crossterm_support"]
+
+# Console integration for popular styling library
+console_support = ["thag_styling/console_support"]
+
+# All advanced features
+full = [
+    "color_detect",
+    "config",
+    "tools",
+    "inquire_theming",
+    "ratatui_support",
+    "crossterm_support",
+    "console_support",
+]
+
+*/
+/// Zero-configuration setup example for thag_styling
+///
+/// This example demonstrates how thag_styling can be used with zero configuration
+/// while automatically detecting terminal capabilities and choosing appropriate themes.
+///
+/// Run with:
+/// ```bash
+/// cargo run --example zero_config --features "color_detect,crossterm_support,ratatui_support,nu_ansi_term_support"
+/// # Or use the full feature set:
+/// cargo run --example zero_config --features "full"
+/// ```
 use std::io::{self};
 use thag_styling::{paint_for_role, Role, TermAttributes, ThemedStyle};
 

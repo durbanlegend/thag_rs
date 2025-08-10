@@ -1,14 +1,18 @@
-//! Debug example to check what ColorInitStrategy and theme are being used
-//!
-//! This example helps diagnose why the integration modules might not be
-//! getting the correct themed colors.
-//!
-//! Run with:
-//! ```bash
-//! cargo run --example debug_theme_selection --features "color_detect"
-//! cargo run --example debug_theme_selection --features "basic"
-//! ```
+/*[toml]
+[dependencies]
+thag_styling = { version = "0.2, thag-auto" }
+*/
 
+/// Debug example to check what ColorInitStrategy and theme are being used
+///
+/// This example helps diagnose why the integration modules might not be
+/// getting the correct themed colors.
+///
+/// Run with:
+/// ```bash
+/// cargo run --example debug_theme_selection --features "color_detect"
+/// cargo run --example debug_theme_selection --features "basic"
+/// ```
 use thag_styling::{paint_for_role, Role, Style, TermAttributes};
 
 #[cfg(feature = "color_detect")]

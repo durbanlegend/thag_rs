@@ -45,6 +45,8 @@ basic = []
 
 # Terminal color detection and background detection
 color_detect = [
+    "config",
+    "ratatui_support",
     "thag_common/color_detect",
     "supports-color",
     "termbg",

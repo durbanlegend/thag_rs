@@ -12,6 +12,9 @@
 /// Message styling
 pub mod styling;
 
+/// Third-party crate integrations
+pub mod integrations;
+
 // Re-export common types
 pub use thag_common::{
     debug_log, get_verbosity, prtln, re, vprtln, ColorSupport, TermBgLuma, ThagCommonResult,
@@ -23,6 +26,18 @@ pub use styling::{
     get_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue,
     HowInitialized, Palette, PaletteConfig, Role, Style, StyleLike, Styled, TermAttributes, Theme,
 };
+
+// Re-export integration traits and types
+pub use integrations::ThemedStyle;
+
+#[cfg(feature = "ratatui_support")]
+pub use integrations::ratatui_integration::RatatuiStyleExt;
+
+#[cfg(feature = "nu_ansi_term_support")]
+pub use integrations::nu_ansi_term_integration::NuAnsiTermStyleExt;
+
+#[cfg(feature = "crossterm_support")]
+pub use integrations::crossterm_integration::{CrosstermStyleExt, ThemedStylize};
 
 pub use thag_proc_macros::styled;
 

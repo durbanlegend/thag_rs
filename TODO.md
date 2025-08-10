@@ -30,6 +30,28 @@
 - [ ]  StyleLike add prtln and embed trait methods to allow styles to embed styles.
 
 
+/// Convert ColorInfo to nu-ansi-term Color
+impl From<&ColorInfo> for NuColor {
+    fn from(color_info: &ColorInfo) -> Self {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+            ColorValue::Color256 { color256 } => Self::Fixed(*color256),
+            ColorValue::Basic { .. } => Self::Fixed(color_info.index),
+        }
+    }
+}
+
+// Convert ColorInfo to ratatui Color
+impl From<&ColorInfo> for RataColor {
+    fn from(color_info: &ColorInfo) -> Self {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+            ColorValue::Color256 { color256 } => Self::Indexed(*color256),
+            ColorValue::Basic { .. } => Self::Indexed(color_info.index),
+        }
+    }
+}
+
 
 donf@MacBook-Air thag_rs % thag bank/styling.rs -fb
 [src/bin/thag_rs.rs:32:5]

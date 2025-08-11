@@ -327,6 +327,15 @@ impl Style {
         }
     }
 
+    /// Creates a new Style with RGB foreground color
+    #[must_use]
+    pub fn with_rgb(mut self, rgb: [u8; 3]) -> Self {
+        let mut color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
+        color_info.index = find_closest_color((rgb[0], rgb[1], rgb[2]));
+        self.foreground = Some(color_info);
+        self
+    }
+
     /// Returns a new Style with bold formatting enabled
     #[must_use]
     pub const fn bold(mut self) -> Self {
@@ -1124,7 +1133,7 @@ pub fn style_for_theme_and_role(theme: &Theme, role: Role) -> Style {
 // New structures for Themes
 
 /// Defines the role (purpose and relative prominence) of a piece of text
-#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, EnumIter, Display, PartialEq, Eq, Hash)]
 pub enum Role {
     /// Primary heading, highest prominence
     Heading1,

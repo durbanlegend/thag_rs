@@ -31,6 +31,12 @@ scopeguard = { version = "1.2.0", optional = true }
 supports-color = { version = "3.0.2", optional = true }
 termbg = { version = "0.6.2", optional = true }
 
+# Image processing dependencies for theme generation
+image = { version = "0.25", optional = true }
+kmeans_colors = { version = "0.7", optional = true, default-features = false }
+auto-palette = { version = "0.9", optional = true }
+palette = { version = "0.7", optional = true }
+
 [build-dependencies]
 phf = { version = "0.12", features = ["macros"] }
 tempfile = "3.20"
@@ -77,6 +83,9 @@ crossterm_support = ["crossterm"]
 # Console integration for popular styling library
 console_support = ["console"]
 
+# Image theme generation
+image_themes = ["image", "kmeans_colors", "auto-palette", "palette"]
+
 # All advanced features
 full = [
     "color_detect",
@@ -86,6 +95,7 @@ full = [
     "ratatui_support",
     "crossterm_support",
     "console_support",
+    "image_themes",
 ]
 
 [lib]

@@ -15,6 +15,10 @@ pub mod styling;
 /// Third-party crate integrations
 pub mod integrations;
 
+/// Image-based theme generation
+#[cfg(feature = "image_themes")]
+pub mod image_themes;
+
 // Re-export common types
 pub use thag_common::{
     debug_log, get_verbosity, prtln, re, vprtln, ColorSupport, TermBgLuma, ThagCommonResult,
@@ -40,6 +44,13 @@ pub use integrations::nu_ansi_term_integration::NuAnsiTermStyleExt;
 pub use integrations::crossterm_integration::{CrosstermStyleExt, ThemedStylize};
 
 pub use thag_proc_macros::styled;
+
+// Re-export image theme generation types
+#[cfg(feature = "image_themes")]
+pub use image_themes::{
+    generate_theme_from_image, generate_theme_from_image_with_config, ImageThemeConfig,
+    ImageThemeGenerator,
+};
 
 /// Result type alias for styling operations
 pub type StylingResult<T> = Result<T, StylingError>;

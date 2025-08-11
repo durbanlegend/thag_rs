@@ -48,3 +48,4 @@ themes/converted
 !*/.svg
 base16_builder.py
 base24_builder.py
+thag_styling/themes/built_in/thag-sunset-light.toml

@@ -416,6 +416,167 @@ pub fn generate_theme_from_image_with_config<P: AsRef<Path>>(
     generator.generate_from_file(image_path)
 }
 
+/// Save a theme directly to a TOML file
+pub fn save_theme_to_file<P: AsRef<Path>>(theme: &Theme, file_path: P) -> StylingResult<()> {
+    let toml_content = theme_to_toml(theme)?;
+    std::fs::write(file_path, toml_content).map_err(|e| StylingError::Io(e))?;
+    Ok(())
+}
+
+/// Generate a theme from an image and save it directly to a TOML file
+pub fn generate_and_save_theme<P: AsRef<Path>, Q: AsRef<Path>>(
+    image_path: P,
+    output_path: Q,
+    config: Option<ImageThemeConfig>,
+) -> StylingResult<Theme> {
+    let config = config.unwrap_or_default();
+    let generator = ImageThemeGenerator::with_config(config);
+    let theme = generator.generate_from_file(&image_path)?;
+    save_theme_to_file(&theme, output_path)?;
+    Ok(theme)
+}
+
+/// Generate TOML representation of a theme matching the format of built-in themes
+pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
+    let mut toml = String::new();
+
+    // Header information - match the format of existing themes
+    toml.push_str(&format!("name = {:?}\n", theme.name));
+    toml.push_str(&format!("description = {:?}\n", theme.description));
+    toml.push_str(&format!(
+        "term_bg_luma = {:?}\n",
+        format!("{:?}", theme.term_bg_luma).to_lowercase()
+    ));
+    toml.push_str(&format!(
+        "min_color_support = {:?}\n",
+        match theme.min_color_support {
+            crate::ColorSupport::TrueColor => "true_color",
+            crate::ColorSupport::Color256 => "color256",
+            crate::ColorSupport::Basic => "basic",
+            _ => "true_color",
+        }
+    ));
+    toml.push_str(&format!("backgrounds = {:?}\n", theme.backgrounds));
+
+    // Format bg_rgbs to match existing theme format
+    toml.push_str("bg_rgbs = [[\n");
+    for rgb in &theme.bg_rgbs {
+        toml.push_str(&format!("    {},\n", rgb.0));
+        toml.push_str(&format!("    {},\n", rgb.1));
+        toml.push_str(&format!("    {},\n", rgb.2));
+    }
+    toml.push_str("]]\n\n");
+
+    // Palette section - match existing theme format exactly
+    let palette_items = [
+        ("heading1", &theme.palette.heading1),
+        ("heading2", &theme.palette.heading2),
+        ("heading3", &theme.palette.heading3),
+        ("error", &theme.palette.error),
+        ("warning", &theme.palette.warning),
+        ("success", &theme.palette.success),
+        ("info", &theme.palette.info),
+        ("emphasis", &theme.palette.emphasis),
+        ("code", &theme.palette.code),
+        ("normal", &theme.palette.normal),
+        ("subtle", &theme.palette.subtle),
+        ("hint", &theme.palette.hint),
+        ("debug", &theme.palette.debug),
+        ("trace", &theme.palette.trace),
+    ];
+
+    for (role_name, style) in palette_items {
+        toml.push_str(&format!("[palette.{}]\n", role_name));
+
+        if let Some(color_info) = &style.foreground {
+            match &color_info.value {
+                crate::ColorValue::TrueColor { rgb } => {
+                    toml.push_str("rgb = [\n");
+                    toml.push_str(&format!("    {},\n", rgb[0]));
+                    toml.push_str(&format!("    {},\n", rgb[1]));
+                    toml.push_str(&format!("    {},\n", rgb[2]));
+                    toml.push_str("]\n");
+                }
+                crate::ColorValue::Color256 { color256 } => {
+                    let rgb = color_256_to_rgb(*color256);
+                    toml.push_str("rgb = [\n");
+                    toml.push_str(&format!("    {},\n", rgb[0]));
+                    toml.push_str(&format!("    {},\n", rgb[1]));
+                    toml.push_str(&format!("    {},\n", rgb[2]));
+                    toml.push_str("]\n");
+                }
+                crate::ColorValue::Basic { .. } => {
+                    toml.push_str("rgb = [\n");
+                    toml.push_str("    128,\n");
+                    toml.push_str("    128,\n");
+                    toml.push_str("    128,\n");
+                    toml.push_str("]\n");
+                }
+            }
+        }
+
+        // Add style attributes
+        let mut style_attrs = Vec::new();
+        if style.bold {
+            style_attrs.push("\"bold\"");
+        }
+        if style.italic {
+            style_attrs.push("\"italic\"");
+        }
+        if style.dim {
+            style_attrs.push("\"dim\"");
+        }
+        if style.underline {
+            style_attrs.push("\"underline\"");
+        }
+
+        if !style_attrs.is_empty() {
+            toml.push_str(&format!("style = [{}]\n", style_attrs.join(", ")));
+        }
+
+        toml.push('\n');
+    }
+
+    Ok(toml)
+}
+
+fn color_256_to_rgb(color: u8) -> [u8; 3] {
+    match color {
+        0..=15 => {
+            let colors = [
+                [0, 0, 0],
+                [128, 0, 0],
+                [0, 128, 0],
+                [128, 128, 0],
+                [0, 0, 128],
+                [128, 0, 128],
+                [0, 128, 128],
+                [192, 192, 192],
+                [128, 128, 128],
+                [255, 0, 0],
+                [0, 255, 0],
+                [255, 255, 0],
+                [0, 0, 255],
+                [255, 0, 255],
+                [0, 255, 255],
+                [255, 255, 255],
+            ];
+            colors[color as usize]
+        }
+        16..=231 => {
+            let n = color - 16;
+            let r = (n / 36) * 51;
+            let g = ((n % 36) / 6) * 51;
+            let b = (n % 6) * 51;
+            [r, g, b]
+        }
+        232..=255 => {
+            let gray = 8 + (color - 232) * 10;
+            [gray, gray, gray]
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -476,5 +637,105 @@ mod tests {
         // Check that frequencies sum to approximately 1.0
         let total_frequency: f32 = colors.iter().map(|(_, freq)| freq).sum();
         assert!((total_frequency - 1.0).abs() < 0.2); // More lenient threshold
+    }
+
+    #[test]
+    fn test_toml_generation_validity() {
+        let generator = ImageThemeGenerator::new();
+        let test_image = create_test_image();
+
+        let theme = generator
+            .generate_from_image(test_image, "toml-test".to_string())
+            .expect("Should generate theme successfully");
+
+        let toml_content = theme_to_toml(&theme).expect("Should generate TOML successfully");
+
+        // Test that the generated TOML is valid by parsing it back
+        let parsed: toml::Value =
+            toml::from_str(&toml_content).expect("Generated TOML should be valid and parseable");
+
+        // Verify key sections exist
+        assert!(parsed.get("name").is_some());
+        assert!(parsed.get("description").is_some());
+        assert!(parsed.get("term_bg_luma").is_some());
+        assert!(parsed.get("min_color_support").is_some());
+        assert!(parsed.get("backgrounds").is_some());
+        assert!(parsed.get("bg_rgbs").is_some());
+        assert!(parsed.get("palette").is_some());
+
+        // Verify palette has expected roles
+        let palette = parsed.get("palette").unwrap().as_table().unwrap();
+        assert!(palette.contains_key("normal"));
+        assert!(palette.contains_key("error"));
+        assert!(palette.contains_key("success"));
+        assert!(palette.contains_key("heading1"));
+
+        // Verify color format
+        let normal = palette.get("normal").unwrap().as_table().unwrap();
+        assert!(normal.contains_key("rgb"));
+        let rgb = normal.get("rgb").unwrap().as_array().unwrap();
+        assert_eq!(rgb.len(), 3);
+    }
+
+    #[test]
+    fn test_save_theme_to_file() {
+        let generator = ImageThemeGenerator::new();
+        let test_image = create_test_image();
+
+        let theme = generator
+            .generate_from_image(test_image, "file-test".to_string())
+            .expect("Should generate theme successfully");
+
+        // Save to a temporary file
+        let temp_file = "test_generated_theme.toml";
+        save_theme_to_file(&theme, temp_file).expect("Should save theme to file");
+
+        // Read back and validate
+        let content = std::fs::read_to_string(temp_file).expect("Should read saved file");
+
+        // Validate it's proper TOML
+        let parsed: toml::Value =
+            toml::from_str(&content).expect("Saved file should be valid TOML");
+
+        // Check structure
+        assert!(parsed.get("name").is_some());
+        assert!(parsed.get("palette").is_some());
+
+        // Clean up
+        let _ = std::fs::remove_file(temp_file);
+    }
+
+    #[test]
+    fn test_generate_light_theme_toml() {
+        let config = ImageThemeConfig {
+            force_theme_type: Some(TermBgLuma::Light),
+            color_count: 10,
+            theme_name_prefix: Some("test".to_string()),
+            ..Default::default()
+        };
+
+        let generator = ImageThemeGenerator::with_config(config);
+        let test_image = create_test_image();
+
+        let theme = generator
+            .generate_from_image(test_image, "light-comparison".to_string())
+            .expect("Should generate light theme successfully");
+
+        let toml_content = theme_to_toml(&theme).expect("Should generate TOML successfully");
+
+        // Save for comparison
+        let light_file = "test_light_theme.toml";
+        std::fs::write(light_file, &toml_content).expect("Should save light theme");
+
+        // Validate it's proper TOML
+        let parsed: toml::Value =
+            toml::from_str(&toml_content).expect("Generated TOML should be valid and parseable");
+
+        // Verify it's a light theme
+        let term_bg_luma = parsed.get("term_bg_luma").unwrap().as_str().unwrap();
+        assert_eq!(term_bg_luma, "light");
+
+        // Clean up
+        let _ = std::fs::remove_file(light_file);
     }
 }

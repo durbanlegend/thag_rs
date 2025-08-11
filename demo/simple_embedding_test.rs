@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
@@ -11,7 +10,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// 2. New method syntax: Role::Code.prtln(format_args!("message"))
 /// 3. Embedding with style preservation
 //# Purpose: Demo both macro and method approaches for styling
-//# Categories: styling, embedding, methods, ergonomics
+//# Categories: styling, techniques
 use thag_styling::{
     cprtln, cprtln_with_embeds, cvprtln, ColorInitStrategy, Role, Style, StyleLike, TermAttributes,
     Verbosity,

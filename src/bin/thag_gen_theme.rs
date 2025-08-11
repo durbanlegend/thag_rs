@@ -8,7 +8,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use thag_rs::{auto_help, cprtln, Role, ThagResult};
-use thag_styling::{generate_theme_from_image, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
+use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
 
 /// Generate terminal color themes from images
 ///
@@ -155,7 +155,8 @@ fn main() -> ThagResult<()> {
     display_palette(&theme);
 
     // Generate TOML content
-    let toml_content = theme_to_toml(&theme)?;
+    let toml_content =
+        theme_to_toml(&theme).map_err(|e| format!("TOML generation failed: {}", e))?;
 
     // Save to file if specified, otherwise print to stdout
     if let Some(output_path) = output_file {
@@ -274,84 +275,5 @@ fn color_256_to_rgb(color: u8) -> [u8; 3] {
     }
 }
 
-fn theme_to_toml(theme: &thag_styling::Theme) -> ThagResult<String> {
-    let mut toml = String::new();
-
-    // Header information
-    toml.push_str(&format!("name = {:?}\n", theme.name));
-    toml.push_str(&format!("description = {:?}\n", theme.description));
-    toml.push_str(&format!(
-        "term_bg_luma = {:?}\n",
-        format!("{:?}", theme.term_bg_luma).to_lowercase()
-    ));
-    toml.push_str(&format!(
-        "min_color_support = {:?}\n",
-        format!("{:?}", theme.min_color_support).to_lowercase()
-    ));
-    toml.push_str(&format!("backgrounds = {:?}\n", theme.backgrounds));
-    toml.push_str("bg_rgbs = [\n");
-    for rgb in &theme.bg_rgbs {
-        toml.push_str(&format!("    [{}, {}, {}],\n", rgb.0, rgb.1, rgb.2));
-    }
-    toml.push_str("]\n\n");
-
-    // Palette section
-    let palette_items = [
-        ("normal", &theme.palette.normal),
-        ("subtle", &theme.palette.subtle),
-        ("emphasis", &theme.palette.emphasis),
-        ("heading1", &theme.palette.heading1),
-        ("heading2", &theme.palette.heading2),
-        ("heading3", &theme.palette.heading3),
-        ("error", &theme.palette.error),
-        ("warning", &theme.palette.warning),
-        ("success", &theme.palette.success),
-        ("info", &theme.palette.info),
-        ("code", &theme.palette.code),
-        ("hint", &theme.palette.hint),
-        ("debug", &theme.palette.debug),
-        ("trace", &theme.palette.trace),
-    ];
-
-    for (role_name, style) in palette_items {
-        toml.push_str(&format!("[palette.{}]\n", role_name));
-
-        if let Some(color_info) = &style.foreground {
-            match &color_info.value {
-                thag_styling::ColorValue::TrueColor { rgb } => {
-                    toml.push_str(&format!("rgb = [{}, {}, {}]\n", rgb[0], rgb[1], rgb[2]));
-                }
-                thag_styling::ColorValue::Color256 { color256 } => {
-                    let rgb = color_256_to_rgb(*color256);
-                    toml.push_str(&format!("rgb = [{}, {}, {}]\n", rgb[0], rgb[1], rgb[2]));
-                }
-                thag_styling::ColorValue::Basic { .. } => {
-                    toml.push_str("rgb = [128, 128, 128]  # Basic color fallback\n");
-                }
-            }
-        }
-
-        // Add style attributes
-        let mut style_attrs = Vec::new();
-        if style.bold {
-            style_attrs.push("\"bold\"");
-        }
-        if style.italic {
-            style_attrs.push("\"italic\"");
-        }
-        if style.dim {
-            style_attrs.push("\"dim\"");
-        }
-        if style.underline {
-            style_attrs.push("\"underline\"");
-        }
-
-        if !style_attrs.is_empty() {
-            toml.push_str(&format!("style = [{}]\n", style_attrs.join(", ")));
-        }
-
-        toml.push('\n');
-    }
-
-    Ok(toml)
-}
+// Use the theme_to_toml function from the library
+// (function moved to the library for better maintainability)

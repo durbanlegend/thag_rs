@@ -217,12 +217,11 @@ impl FileDialog<'_> {
             // Split the area into two parts: one for the file list and one for the input field.
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(
-                    [
+                .constraints::<&[Constraint]>(
+                    &[
                         Constraint::Length(3),            // Input field area
                         Constraint::Min(self.height - 3), // File list area
-                    ]
-                    .as_ref(),
+                    ], // .as_ref(),
                 )
                 .split(area);
 

@@ -48,8 +48,8 @@ pub use thag_proc_macros::styled;
 // Re-export image theme generation types
 #[cfg(feature = "image_themes")]
 pub use image_themes::{
-    generate_theme_from_image, generate_theme_from_image_with_config, ImageThemeConfig,
-    ImageThemeGenerator,
+    generate_and_save_theme, generate_theme_from_image, generate_theme_from_image_with_config,
+    save_theme_to_file, theme_to_toml, ImageThemeConfig, ImageThemeGenerator,
 };
 
 /// Result type alias for styling operations

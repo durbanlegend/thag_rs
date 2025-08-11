@@ -735,8 +735,8 @@ where
                         if area.height > 1 {
                             let chunks = Layout::default()
                                 .direction(Direction::Vertical)
-                                .constraints(
-                                    [
+                                .constraints::<&[Constraint]>(
+                                    &[
                                         Constraint::Min(area.height - 3), // Editor area takes up the rest
                                         Constraint::Length(3),            // Status line gets 1 line
                                     ]
@@ -1359,8 +1359,8 @@ pub fn display_popup(
     for (i, row) in rows.iter().enumerate() {
         let col_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(
-                [
+            .constraints::<&[Constraint]>(
+                &[
                     Constraint::Length(max_key_len + 1),
                     Constraint::Length(max_desc_len),
                 ]

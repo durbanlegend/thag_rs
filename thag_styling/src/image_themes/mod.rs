@@ -11,6 +11,16 @@ use image::{DynamicImage, ImageReader};
 use palette::{FromColor, Hsl, IntoColor, Lab, Srgb};
 use std::path::{Path, PathBuf};
 
+/// Struct to hold semantic color assignments
+struct SemanticColors<'a> {
+    error: &'a ColorAnalysis,
+    warning: &'a ColorAnalysis,
+    success: &'a ColorAnalysis,
+    info: &'a ColorAnalysis,
+    code: &'a ColorAnalysis,
+    emphasis: &'a ColorAnalysis,
+}
+
 /// Configuration for image theme generation
 #[derive(Debug, Clone)]
 pub struct ImageThemeConfig {
@@ -76,23 +86,29 @@ impl ColorAnalysis {
     /// Check if this color is suitable as a background color
     fn is_background_suitable(&self) -> bool {
         // Background colors should be neutral (low saturation) and either very light or very dark
-        self.saturation < 0.3 && (self.lightness < 0.2 || self.lightness > 0.8)
+        self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85)
     }
 
     /// Check if this color is suitable for text (good contrast potential)
     fn is_text_suitable(&self, is_light_theme: bool) -> bool {
         if is_light_theme {
-            // For light themes, text should be dark
-            self.lightness < 0.4
+            // For light themes, text should be dark but not too dark (avoid pure black)
+            self.lightness > 0.15 && self.lightness < 0.6
         } else {
-            // For dark themes, text should be light
-            self.lightness > 0.6
+            // For dark themes, text should be light but not too light (avoid pure white)
+            self.lightness > 0.6 && self.lightness < 0.95
         }
+    }
+
+    /// Check contrast against background
+    fn has_good_contrast_against(&self, background: &ColorAnalysis) -> bool {
+        let lightness_diff = (self.lightness - background.lightness).abs();
+        lightness_diff > 0.5 // Minimum contrast requirement
     }
 
     /// Check if this color is suitable as an accent color
     fn is_accent_suitable(&self, saturation_threshold: f32) -> bool {
-        self.saturation >= saturation_threshold
+        self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9
     }
 
     /// Calculate perceptual distance to another color using Delta E
@@ -169,7 +185,7 @@ impl ImageThemeGenerator {
         })
     }
 
-    /// Extract dominant colors from an image using simple k-means-like clustering
+    /// Extract dominant colors from an image ensuring diversity and contrast
     fn extract_dominant_colors(&self, image: &DynamicImage) -> StylingResult<Vec<([u8; 3], f32)>> {
         let rgb_image = image.to_rgb8();
         let pixels: Vec<[u8; 3]> = rgb_image.pixels().map(|p| [p[0], p[1], p[2]]).collect();
@@ -180,42 +196,92 @@ impl ImageThemeGenerator {
             ));
         }
 
-        // Simple color quantization by reducing the color space
+        // More aggressive quantization to reduce similar colors
         let mut color_counts: std::collections::HashMap<[u8; 3], usize> =
             std::collections::HashMap::new();
 
-        // Quantize colors to reduce noise
+        // Quantize colors with more aggressive reduction
         for pixel in &pixels {
             let quantized = [
-                (pixel[0] / 16) * 16, // Reduce to 16 levels per channel
-                (pixel[1] / 16) * 16,
-                (pixel[2] / 16) * 16,
+                (pixel[0] / 24) * 24, // Reduce to ~10 levels per channel
+                (pixel[1] / 24) * 24,
+                (pixel[2] / 24) * 24,
             ];
             *color_counts.entry(quantized).or_insert(0) += 1;
         }
 
-        // Sort colors by frequency and take the most common ones
+        // Sort colors by frequency
         let mut colors_by_frequency: Vec<_> = color_counts.into_iter().collect();
         colors_by_frequency.sort_by(|a, b| b.1.cmp(&a.1));
 
         let total_pixels = pixels.len() as f32;
         let mut result = Vec::new();
 
-        for (color, count) in colors_by_frequency
-            .into_iter()
-            .take(self.config.color_count)
-        {
+        // Select diverse colors with minimum distance requirement
+        for (color, count) in colors_by_frequency.into_iter() {
             let frequency = count as f32 / total_pixels;
-            result.push((color, frequency));
+
+            // Check if this color is sufficiently different from already selected colors
+            let is_diverse = result.is_empty()
+                || result.iter().all(|(existing_color, _)| {
+                    self.color_distance_euclidean(*existing_color, color) > 60.0
+                    // Minimum distance threshold
+                });
+
+            if is_diverse {
+                result.push((color, frequency));
+                if result.len() >= self.config.color_count {
+                    break;
+                }
+            }
         }
 
-        // If we don't have enough colors, add some default ones
-        while result.len() < 8 {
-            let gray_level = (result.len() * 32) as u8;
-            result.push(([gray_level, gray_level, gray_level], 0.01));
-        }
+        // Ensure we have good color diversity - add contrasting colors if needed
+        self.ensure_color_diversity(&mut result, total_pixels);
 
         Ok(result)
+    }
+
+    /// Calculate Euclidean distance between two RGB colors
+    fn color_distance_euclidean(&self, color1: [u8; 3], color2: [u8; 3]) -> f32 {
+        let dr = f32::from(color1[0]) - f32::from(color2[0]);
+        let dg = f32::from(color1[1]) - f32::from(color2[1]);
+        let db = f32::from(color1[2]) - f32::from(color2[2]);
+        (dr * dr + dg * dg + db * db).sqrt()
+    }
+
+    /// Ensure extracted colors have good diversity by adding contrasting colors if needed
+    fn ensure_color_diversity(&self, colors: &mut Vec<([u8; 3], f32)>, _total_pixels: f32) {
+        let min_colors = 8;
+
+        if colors.len() < min_colors {
+            // Add strategically chosen contrasting colors
+            let fallback_colors = [
+                [240, 240, 240], // Light gray
+                [60, 60, 60],    // Dark gray
+                [200, 80, 80],   // Red
+                [80, 200, 80],   // Green
+                [80, 80, 200],   // Blue
+                [200, 200, 80],  // Yellow
+                [200, 80, 200],  // Magenta
+                [80, 200, 200],  // Cyan
+            ];
+
+            for &fallback in &fallback_colors {
+                if colors.len() >= min_colors {
+                    break;
+                }
+
+                // Only add if sufficiently different from existing colors
+                let is_different = colors
+                    .iter()
+                    .all(|(existing, _)| self.color_distance_euclidean(*existing, fallback) > 80.0);
+
+                if is_different {
+                    colors.push((fallback, 0.01)); // Low frequency for fallback colors
+                }
+            }
+        }
     }
 
     /// Analyze colors and create ColorAnalysis structures
@@ -253,95 +319,453 @@ impl ImageThemeGenerator {
         weighted_lightness > self.config.light_threshold
     }
 
-    /// Map extracted colors to semantic roles
+    /// Map extracted colors to semantic roles with improved contrast and diversity
     fn map_colors_to_roles(
         &self,
         colors: &[ColorAnalysis],
         is_light_theme: bool,
     ) -> StylingResult<Palette> {
-        // Find suitable colors for different categories
+        // Find suitable colors for different categories with better filtering
         let text_colors: Vec<&ColorAnalysis> = colors
             .iter()
             .filter(|c| c.is_text_suitable(is_light_theme))
             .collect();
 
-        let accent_colors: Vec<&ColorAnalysis> = colors
+        let _accent_colors: Vec<&ColorAnalysis> = colors
             .iter()
             .filter(|c| c.is_accent_suitable(self.config.saturation_threshold))
             .collect();
 
-        // Select normal text color (highest frequency suitable text color)
-        let normal_color = if let Some(best_text) = text_colors.iter().max_by(|a, b| {
-            a.frequency
-                .partial_cmp(&b.frequency)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        }) {
-            *best_text
-        } else if let Some(first_color) = colors.first() {
-            first_color
-        } else {
-            return Err(StylingError::Generic(
-                "No suitable colors found".to_string(),
-            ));
-        };
+        // If we don't have enough diverse colors, create synthetic ones
+        let enhanced_colors = self.enhance_color_palette(colors, is_light_theme);
 
-        // Select subtle color (lower contrast version of normal)
-        let subtle_color = if let Some(best_subtle) = text_colors
+        // Select normal text color ensuring proper contrast with background
+        let background_color = enhanced_colors
             .iter()
-            .filter(|c| {
-                c.lightness > normal_color.lightness || c.saturation < normal_color.saturation
-            })
-            .min_by(|a, b| {
-                normal_color
-                    .distance_to(a)
-                    .partial_cmp(&normal_color.distance_to(b))
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            }) {
-            *best_subtle
+            .find(|c| c.is_background_suitable())
+            .or_else(|| enhanced_colors.first())
+            .unwrap_or(&enhanced_colors[0]);
+
+        let normal_color = if let Some(best_text) = self.select_best_text_color(
+            &text_colors,
+            &enhanced_colors,
+            is_light_theme,
+            Some(background_color),
+        ) {
+            // Ensure the selected text color is actually different from background
+            if best_text.distance_to(background_color) < 50.0 {
+                self.ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
+            } else {
+                best_text
+            }
         } else {
-            normal_color
+            // Ensure we have a proper text color with good contrast
+            self.ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
         };
 
-        // Map accent colors to semantic roles by hue
-        let error_color = self.find_color_by_hue(&accent_colors, 0.0, 60.0, normal_color); // Red range
-        let warning_color = self.find_color_by_hue(&accent_colors, 30.0, 90.0, normal_color); // Orange/Yellow range
-        let success_color = self.find_color_by_hue(&accent_colors, 90.0, 150.0, normal_color); // Green range
-        let info_color = self.find_color_by_hue(&accent_colors, 180.0, 240.0, normal_color); // Cyan/Blue range
-        let code_color = self.find_color_by_hue(&accent_colors, 240.0, 300.0, normal_color); // Blue/Purple range
-        let emphasis_color = self.find_color_by_hue(&accent_colors, 300.0, 360.0, normal_color); // Purple/Magenta range
+        // Create a comprehensive unique color assignment
+        let mut used_colors = vec![normal_color];
 
-        // Heading colors - use accent colors with bold styling
-        let heading1_color = accent_colors.first().copied().unwrap_or(normal_color);
-        let heading2_color = accent_colors.get(1).copied().unwrap_or(normal_color);
-        let heading3_color = accent_colors.get(2).copied().unwrap_or(normal_color);
+        let subtle_color = self.find_most_different_color(&enhanced_colors, &used_colors);
+        used_colors.push(subtle_color);
+
+        let hint_color = self.find_most_different_color(&enhanced_colors, &used_colors);
+        used_colors.push(hint_color);
+
+        // Map colors to semantic roles with better contrast and diversity
+        let semantic_colors =
+            self.assign_semantic_colors(&enhanced_colors, normal_color, is_light_theme);
+
+        // Ensure semantic colors are also unique from normal/subtle
+        used_colors.extend(&[
+            semantic_colors.error,
+            semantic_colors.warning,
+            semantic_colors.success,
+            semantic_colors.info,
+            semantic_colors.code,
+            semantic_colors.emphasis,
+        ]);
+
+        // Select heading colors with good contrast and uniqueness
+        let heading_colors = self.select_unique_heading_colors(&enhanced_colors, &used_colors);
+
+        // Debug and trace should be different from subtle and hint
+        let debug_color = self.find_most_different_color(&enhanced_colors, &used_colors);
+        let trace_color = if debug_color.distance_to(hint_color) > 30.0 {
+            hint_color
+        } else {
+            self.find_most_different_color(&enhanced_colors, &[debug_color])
+        };
 
         Ok(Palette {
             normal: Style::new().with_rgb(normal_color.rgb),
             subtle: Style::new().with_rgb(subtle_color.rgb),
-            hint: Style::new().with_rgb(subtle_color.rgb).italic(),
-            heading1: Style::new().with_rgb(heading1_color.rgb).bold(),
-            heading2: Style::new().with_rgb(heading2_color.rgb).bold(),
-            heading3: Style::new().with_rgb(heading3_color.rgb).bold(),
-            error: Style::new().with_rgb(error_color.rgb),
-            warning: Style::new().with_rgb(warning_color.rgb),
-            success: Style::new().with_rgb(success_color.rgb),
-            info: Style::new().with_rgb(info_color.rgb),
-            code: Style::new().with_rgb(code_color.rgb),
-            emphasis: Style::new().with_rgb(emphasis_color.rgb),
-            debug: Style::new().with_rgb(subtle_color.rgb).dim(),
-            trace: Style::new().with_rgb(subtle_color.rgb).italic().dim(),
+            hint: Style::new().with_rgb(hint_color.rgb).italic(),
+            heading1: Style::new().with_rgb(heading_colors.0.rgb).bold(),
+            heading2: Style::new().with_rgb(heading_colors.1.rgb).bold(),
+            heading3: Style::new().with_rgb(heading_colors.2.rgb).bold(),
+            error: Style::new().with_rgb(semantic_colors.error.rgb),
+            warning: Style::new().with_rgb(semantic_colors.warning.rgb),
+            success: Style::new().with_rgb(semantic_colors.success.rgb),
+            info: Style::new().with_rgb(semantic_colors.info.rgb),
+            code: Style::new().with_rgb(semantic_colors.code.rgb),
+            emphasis: Style::new().with_rgb(semantic_colors.emphasis.rgb),
+            debug: Style::new().with_rgb(debug_color.rgb).dim(),
+            trace: Style::new().with_rgb(trace_color.rgb).italic().dim(),
         })
     }
 
-    /// Find the best color within a hue range
-    fn find_color_by_hue<'a>(
+    /// Enhance color palette with synthetic colors if diversity is lacking
+    fn enhance_color_palette(
         &self,
-        accent_colors: &[&'a ColorAnalysis],
+        colors: &[ColorAnalysis],
+        is_light_theme: bool,
+    ) -> Vec<ColorAnalysis> {
+        let mut enhanced = colors.to_vec();
+
+        // Check if we need more diversity
+        if self.needs_color_enhancement(&enhanced, is_light_theme) {
+            let synthetic_colors = self.generate_synthetic_colors(is_light_theme);
+            for synthetic in synthetic_colors {
+                // Only add if different enough from existing colors
+                if enhanced
+                    .iter()
+                    .all(|existing| existing.distance_to(&synthetic) > 50.0)
+                {
+                    enhanced.push(synthetic);
+                }
+            }
+        }
+
+        enhanced
+    }
+
+    /// Check if the color palette needs enhancement
+    fn needs_color_enhancement(&self, colors: &[ColorAnalysis], _is_light_theme: bool) -> bool {
+        // Check for lack of contrast
+        let avg_lightness: f32 =
+            colors.iter().map(|c| c.lightness).sum::<f32>() / colors.len() as f32;
+        let lightness_variance: f32 = colors
+            .iter()
+            .map(|c| (c.lightness - avg_lightness).powi(2))
+            .sum::<f32>()
+            / colors.len() as f32;
+
+        // Need enhancement if colors are too similar in lightness or too few colors
+        lightness_variance < 0.1 || colors.len() < 6
+    }
+
+    /// Generate synthetic colors to improve palette diversity
+    fn generate_synthetic_colors(&self, is_light_theme: bool) -> Vec<ColorAnalysis> {
+        let base_colors = if is_light_theme {
+            vec![
+                [180, 30, 30],  // Red
+                [30, 150, 30],  // Green
+                [30, 30, 180],  // Blue
+                [150, 120, 30], // Orange
+                [120, 30, 150], // Purple
+                [30, 120, 150], // Teal
+                [60, 60, 60],   // Dark gray
+            ]
+        } else {
+            vec![
+                [220, 80, 80],   // Light red
+                [80, 220, 80],   // Light green
+                [80, 80, 220],   // Light blue
+                [220, 180, 80],  // Yellow
+                [180, 80, 220],  // Light purple
+                [80, 180, 220],  // Light cyan
+                [200, 200, 200], // Light gray
+            ]
+        };
+
+        base_colors
+            .into_iter()
+            .map(|rgb| ColorAnalysis::new(rgb, 0.05)) // Low frequency for synthetic colors
+            .collect()
+    }
+
+    /// Select the best text color with contrast consideration
+    fn select_best_text_color<'a>(
+        &self,
+        text_colors: &[&'a ColorAnalysis],
+        all_colors: &'a [ColorAnalysis],
+        is_light_theme: bool,
+        background: Option<&ColorAnalysis>,
+    ) -> Option<&'a ColorAnalysis> {
+        // First try to find text colors with good background contrast
+        if let Some(bg) = background {
+            if let Some(best) = text_colors
+                .iter()
+                .filter(|c| c.has_good_contrast_against(bg))
+                .max_by(|a, b| {
+                    a.frequency
+                        .partial_cmp(&b.frequency)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            {
+                return Some(*best);
+            }
+        }
+
+        // Fallback to any suitable text color
+        if let Some(best) = text_colors.iter().max_by(|a, b| {
+            a.frequency
+                .partial_cmp(&b.frequency)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        }) {
+            Some(*best)
+        } else {
+            // Final fallback: find any color with good contrast
+            all_colors
+                .iter()
+                .find(|c| c.is_text_suitable(is_light_theme))
+        }
+    }
+
+    /// Ensure we have a text color with proper contrast
+    fn ensure_text_contrast<'a>(
+        &self,
+        colors: &'a [ColorAnalysis],
+        background: &ColorAnalysis,
+        is_light_theme: bool,
+    ) -> &'a ColorAnalysis {
+        // First, find colors with good contrast that are also different enough
+        if let Some(good_contrast) = colors
+            .iter()
+            .filter(|c| c.has_good_contrast_against(background) && c.distance_to(background) > 50.0)
+            .max_by(|a, b| {
+                let contrast_a = (a.lightness - background.lightness).abs();
+                let contrast_b = (b.lightness - background.lightness).abs();
+                contrast_a
+                    .partial_cmp(&contrast_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        {
+            return good_contrast;
+        }
+
+        // If no good contrast found, create synthetic text color
+        // For light theme background, we need a darker text
+        // For dark theme background, we need a lighter text
+        if is_light_theme {
+            // Find the darkest available color that's not too close to background
+            colors
+                .iter()
+                .filter(|c| c.lightness < 0.5 && c.distance_to(background) > 30.0)
+                .min_by(|a, b| {
+                    a.lightness
+                        .partial_cmp(&b.lightness)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .unwrap_or_else(|| {
+                    // Ultimate fallback: find any dark-ish color
+                    colors
+                        .iter()
+                        .min_by(|a, b| {
+                            a.lightness
+                                .partial_cmp(&b.lightness)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        })
+                        .unwrap_or(&colors[0])
+                })
+        } else {
+            // Find the lightest available color that's not too close to background
+            colors
+                .iter()
+                .filter(|c| c.lightness > 0.5 && c.distance_to(background) > 30.0)
+                .max_by(|a, b| {
+                    a.lightness
+                        .partial_cmp(&b.lightness)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .unwrap_or_else(|| {
+                    // Ultimate fallback: find any light-ish color
+                    colors
+                        .iter()
+                        .max_by(|a, b| {
+                            a.lightness
+                                .partial_cmp(&b.lightness)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        })
+                        .unwrap_or(&colors[0])
+                })
+        }
+    }
+
+    // /// Select subtle color with proper contrast relationship
+    // fn select_subtle_color<'a>(
+    //     &self,
+    //     colors: &'a [ColorAnalysis],
+    //     normal_color: &'a ColorAnalysis,
+    //     is_light_theme: bool,
+    // ) -> &'a ColorAnalysis {
+    //     // Find a color that's similar in hue but different in lightness/saturation
+    //     colors
+    //         .iter()
+    //         .filter(|c| {
+    //             let hue_diff = (c.hue - normal_color.hue)
+    //                 .abs()
+    //                 .min(360.0 - (c.hue - normal_color.hue).abs());
+    //             hue_diff < 60.0 && // Similar hue
+    //             ((is_light_theme && c.lightness > normal_color.lightness) ||
+    //              (!is_light_theme && c.lightness < normal_color.lightness) ||
+    //              c.saturation < normal_color.saturation)
+    //         })
+    //         .min_by(|a, b| {
+    //             normal_color
+    //                 .distance_to(a)
+    //                 .partial_cmp(&normal_color.distance_to(b))
+    //                 .unwrap_or(std::cmp::Ordering::Equal)
+    //         })
+    //         .unwrap_or(normal_color)
+    // }
+
+    /// Assign colors to semantic roles with better diversity
+    fn assign_semantic_colors<'a>(
+        &self,
+        colors: &'a [ColorAnalysis],
+        normal_color: &'a ColorAnalysis,
+        _is_light_theme: bool,
+    ) -> SemanticColors<'a> {
+        // Create a more diverse color assignment
+        let mut available_colors: Vec<_> = colors.iter().collect();
+
+        // Sort by distance from normal color to ensure variety
+        available_colors.sort_by(|a, b| {
+            normal_color
+                .distance_to(b)
+                .partial_cmp(&normal_color.distance_to(a))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        // Ensure all semantic colors are unique and different from each other
+        let error_color =
+            self.find_color_by_hue_improved(&available_colors, 0.0, 60.0, normal_color);
+        let mut used_colors = vec![error_color];
+
+        let warning_color = self.find_unique_color_by_hue(
+            &available_colors,
+            30.0,
+            90.0,
+            normal_color,
+            &used_colors,
+        );
+        used_colors.push(warning_color);
+
+        let success_color = self.find_unique_color_by_hue(
+            &available_colors,
+            90.0,
+            150.0,
+            normal_color,
+            &used_colors,
+        );
+        used_colors.push(success_color);
+
+        let info_color = self.find_unique_color_by_hue(
+            &available_colors,
+            180.0,
+            240.0,
+            normal_color,
+            &used_colors,
+        );
+        used_colors.push(info_color);
+
+        let code_color = self.find_unique_color_by_hue(
+            &available_colors,
+            240.0,
+            300.0,
+            normal_color,
+            &used_colors,
+        );
+        used_colors.push(code_color);
+
+        let emphasis_color = self.find_unique_color_by_hue(
+            &available_colors,
+            300.0,
+            360.0,
+            normal_color,
+            &used_colors,
+        );
+
+        SemanticColors {
+            error: error_color,
+            warning: warning_color,
+            success: success_color,
+            info: info_color,
+            code: code_color,
+            emphasis: emphasis_color,
+        }
+    }
+
+    /// Find the color most different from all used colors
+    fn find_most_different_color<'a>(
+        &self,
+        colors: &'a [ColorAnalysis],
+        used_colors: &[&ColorAnalysis],
+    ) -> &'a ColorAnalysis {
+        colors
+            .iter()
+            .filter(|c| !used_colors.iter().any(|used| used.distance_to(c) < 20.0))
+            .max_by(|a, b| {
+                let min_dist_a = used_colors
+                    .iter()
+                    .map(|used| used.distance_to(a))
+                    .fold(f32::INFINITY, f32::min);
+                let min_dist_b = used_colors
+                    .iter()
+                    .map(|used| used.distance_to(b))
+                    .fold(f32::INFINITY, f32::min);
+                min_dist_a
+                    .partial_cmp(&min_dist_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .unwrap_or(&colors[0])
+    }
+
+    /// Select heading colors ensuring they're different from all used colors
+    fn select_unique_heading_colors<'a>(
+        &self,
+        colors: &'a [ColorAnalysis],
+        used_colors: &[&'a ColorAnalysis],
+    ) -> (&'a ColorAnalysis, &'a ColorAnalysis, &'a ColorAnalysis) {
+        let mut available: Vec<_> = colors
+            .iter()
+            .filter(|c| !used_colors.iter().any(|used| used.distance_to(c) < 25.0))
+            .collect();
+
+        // Sort by visual distinctiveness (combination of saturation and contrast)
+        available.sort_by(|a, b| {
+            let score_a = a.saturation + (a.lightness - 0.5).abs();
+            let score_b = b.saturation + (b.lightness - 0.5).abs();
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        let h1 = available.get(0).copied().unwrap_or(&colors[0]);
+        let h2 = available
+            .get(1)
+            .copied()
+            .unwrap_or(&colors[1 % colors.len()]);
+        let h3 = available
+            .get(2)
+            .copied()
+            .unwrap_or(&colors[2 % colors.len()]);
+
+        (h1, h2, h3)
+    }
+
+    /// Improved hue-based color finding with better fallbacks
+    fn find_color_by_hue_improved<'a>(
+        &self,
+        colors: &[&'a ColorAnalysis],
         hue_start: f32,
         hue_end: f32,
         fallback: &'a ColorAnalysis,
     ) -> &'a ColorAnalysis {
-        accent_colors
+        // First try: exact hue match
+        if let Some(color) = colors
             .iter()
             .filter(|c| {
                 let hue = c.hue;
@@ -352,30 +776,147 @@ impl ImageThemeGenerator {
                     .partial_cmp(&b.frequency)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
-            .copied()
-            .or_else(|| accent_colors.first().copied())
-            .unwrap_or(fallback)
+        {
+            return color;
+        }
+
+        // Second try: colors with good contrast to fallback
+        if let Some(color) = colors
+            .iter()
+            .filter(|c| c.distance_to(fallback) > 40.0)
+            .max_by(|a, b| {
+                a.distance_to(fallback)
+                    .partial_cmp(&b.distance_to(fallback))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        {
+            return color;
+        }
+
+        // Final fallback
+        colors.first().copied().unwrap_or(fallback)
     }
 
-    /// Select the best background color
+    /// Find unique color by hue that doesn't conflict with already used colors
+    fn find_unique_color_by_hue<'a>(
+        &self,
+        colors: &[&'a ColorAnalysis],
+        hue_start: f32,
+        hue_end: f32,
+        fallback: &'a ColorAnalysis,
+        used_colors: &[&ColorAnalysis],
+    ) -> &'a ColorAnalysis {
+        // First try: exact hue match that's not already used
+        if let Some(color) = colors
+            .iter()
+            .filter(|c| {
+                let hue = c.hue;
+                hue >= hue_start
+                    && hue < hue_end
+                    && !used_colors.iter().any(|used| used.distance_to(c) < 30.0)
+            })
+            .max_by(|a, b| {
+                a.frequency
+                    .partial_cmp(&b.frequency)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        {
+            return color;
+        }
+
+        // Second try: any color that's different enough from used colors
+        if let Some(color) = colors
+            .iter()
+            .filter(|c| !used_colors.iter().any(|used| used.distance_to(c) < 40.0))
+            .max_by(|a, b| {
+                // Prefer colors that are maximally different from all used colors
+                let min_dist_a = used_colors
+                    .iter()
+                    .map(|used| used.distance_to(a))
+                    .fold(f32::INFINITY, f32::min);
+                let min_dist_b = used_colors
+                    .iter()
+                    .map(|used| used.distance_to(b))
+                    .fold(f32::INFINITY, f32::min);
+                min_dist_a
+                    .partial_cmp(&min_dist_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+        {
+            return color;
+        }
+
+        // Final fallback
+        colors.first().copied().unwrap_or(fallback)
+    }
+
+    // /// Find the best color within a hue range
+    // fn find_color_by_hue<'a>(
+    //     &self,
+    //     accent_colors: &[&'a ColorAnalysis],
+    //     hue_start: f32,
+    //     hue_end: f32,
+    //     fallback: &'a ColorAnalysis,
+    // ) -> &'a ColorAnalysis {
+    //     accent_colors
+    //         .iter()
+    //         .filter(|c| {
+    //             let hue = c.hue;
+    //             hue >= hue_start && hue < hue_end
+    //         })
+    //         .max_by(|a, b| {
+    //             a.frequency
+    //                 .partial_cmp(&b.frequency)
+    //                 .unwrap_or(std::cmp::Ordering::Equal)
+    //         })
+    //         .copied()
+    //         .or_else(|| accent_colors.first().copied())
+    //         .unwrap_or(fallback)
+    // }
+
+    /// Select the best background color ensuring good contrast
     fn select_background_color(
         &self,
         colors: &[ColorAnalysis],
         is_light_theme: bool,
     ) -> (u8, u8, u8) {
-        let background_candidates: Vec<&ColorAnalysis> = colors
-            .iter()
-            .filter(|c| c.is_background_suitable())
-            .collect();
+        // Force background to match theme type expectation
+        if is_light_theme {
+            // Light theme should have light background
+            let light_candidates: Vec<&ColorAnalysis> = colors
+                .iter()
+                .filter(|c| c.lightness > 0.8 && c.saturation < 0.2)
+                .collect();
 
-        if let Some(bg_color) = background_candidates.first() {
-            (bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2])
-        } else {
-            // Fallback to default background based on theme type
-            if is_light_theme {
-                (248, 248, 248) // Light gray
+            if let Some(bg_color) = light_candidates.first() {
+                (bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2])
             } else {
-                (32, 32, 32) // Dark gray
+                (248, 248, 248) // Light gray background
+            }
+        } else {
+            // Dark theme should have dark background
+            let dark_candidates: Vec<&ColorAnalysis> = colors
+                .iter()
+                .filter(|c| c.lightness < 0.2 && c.saturation < 0.3)
+                .collect();
+
+            if let Some(bg_color) = dark_candidates.first() {
+                (bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2])
+            } else {
+                // Smart dark background based on dominant colors
+                let avg_hue: f32 = colors
+                    .iter()
+                    .filter(|c| c.saturation > 0.1)
+                    .map(|c| c.hue)
+                    .sum::<f32>()
+                    / colors.len().max(1) as f32;
+
+                if avg_hue >= 0.0 && avg_hue <= 60.0 {
+                    // Warm dominant colors - use cool dark background
+                    (20, 25, 30) // Cool dark blue-gray
+                } else {
+                    (25, 25, 25) // Standard dark gray
+                }
             }
         }
     }

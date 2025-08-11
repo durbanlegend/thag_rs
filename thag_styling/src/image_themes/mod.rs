@@ -85,30 +85,61 @@ impl ColorAnalysis {
 
     /// Check if this color is suitable as a background color
     fn is_background_suitable(&self) -> bool {
+        // dbg!(self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85));
         // Background colors should be neutral (low saturation) and either very light or very dark
-        self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85)
+        let is_background_suitable =
+            self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85);
+        // dbg!(is_background_suitable);
+        eprintln!(
+            "self.rgb={},{},{}, is_background_suitable={is_background_suitable}",
+            self.rgb[0], self.rgb[1], self.rgb[2]
+        );
+        is_background_suitable
     }
 
     /// Check if this color is suitable for text (good contrast potential)
     fn is_text_suitable(&self, is_light_theme: bool) -> bool {
-        if is_light_theme {
+        let is_text_suitable = if is_light_theme {
             // For light themes, text should be dark but not too dark (avoid pure black)
             self.lightness > 0.15 && self.lightness < 0.6
         } else {
             // For dark themes, text should be light but not too light (avoid pure white)
             self.lightness > 0.6 && self.lightness < 0.95
-        }
+        };
+        eprintln!(
+            "is_light_theme={is_light_theme}, self.rgb={},{},{}, self.lightness={}, is_text_suitable={is_text_suitable}",
+            self.rgb[0], self.rgb[1], self.rgb[2], self.lightness
+        );
+        // dbg!(is_text_suitable);
+        is_text_suitable
     }
 
     /// Check contrast against background
     fn has_good_contrast_against(&self, background: &ColorAnalysis) -> bool {
         let lightness_diff = (self.lightness - background.lightness).abs();
-        lightness_diff > 0.5 // Minimum contrast requirement
+        // dbg!(lightness_diff);
+        let has_good_contrast_against = lightness_diff > 0.5; // Minimum contrast requirement
+                                                              // dbg!(has_good_contrast_against);
+        eprintln!("self.rgb={},{},{}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", self.rgb[0], self.rgb[1], self.rgb[2], background.lightness);
+        has_good_contrast_against
     }
 
     /// Check if this color is suitable as an accent color
     fn is_accent_suitable(&self, saturation_threshold: f32) -> bool {
-        self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9
+        // dbg!(self.saturation);
+        // dbg!(self.lightness);
+        // dbg!(
+        //     self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9
+        // );
+
+        let is_accent_suitable =
+            self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9;
+        // dbg!(is_accent_suitable);
+        eprintln!(
+            "self.rgb={},{},{}, is_accent_suitable={is_accent_suitable}",
+            self.rgb[0], self.rgb[1], self.rgb[2]
+        );
+        is_accent_suitable
     }
 
     /// Calculate perceptual distance to another color using Delta E
@@ -161,9 +192,10 @@ impl ImageThemeGenerator {
         let color_analysis = self.analyze_colors(dominant_colors);
 
         let is_light_theme = self.determine_theme_type(&color_analysis);
-        let palette = self.map_colors_to_roles(&color_analysis, is_light_theme)?;
+        let background_color = self.select_background_color(&color_analysis, is_light_theme);
 
-        let background_rgb = self.select_background_color(&color_analysis, is_light_theme);
+        let palette =
+            self.map_colors_to_roles(&background_color, &color_analysis, is_light_theme)?;
 
         Ok(Theme {
             name: theme_name,
@@ -178,9 +210,13 @@ impl ImageThemeGenerator {
             min_color_support: ColorSupport::TrueColor,
             backgrounds: vec![format!(
                 "#{:02x}{:02x}{:02x}",
-                background_rgb.0, background_rgb.1, background_rgb.2
+                background_color.rgb[0], background_color.rgb[1], background_color.rgb[2]
             )],
-            bg_rgbs: vec![background_rgb],
+            bg_rgbs: vec![(
+                background_color.rgb[0],
+                background_color.rgb[1],
+                background_color.rgb[2],
+            )],
             palette,
         })
     }
@@ -294,9 +330,12 @@ impl ImageThemeGenerator {
 
     /// Determine if the theme should be light or dark
     fn determine_theme_type(&self, colors: &[ColorAnalysis]) -> bool {
+        dbg!(self.config.force_theme_type);
         if let Some(forced_type) = &self.config.force_theme_type {
             return *forced_type == TermBgLuma::Light;
         }
+
+        dbg!(self.config.auto_detect_theme_type);
 
         if !self.config.auto_detect_theme_type {
             // Default to dark theme if not auto-detecting
@@ -305,6 +344,7 @@ impl ImageThemeGenerator {
 
         // Calculate weighted average lightness of all colors
         let total_weight: f32 = colors.iter().map(|c| c.frequency).sum();
+        dbg!(total_weight);
         if total_weight == 0.0 {
             return false;
         }
@@ -315,6 +355,9 @@ impl ImageThemeGenerator {
             .sum::<f32>()
             / total_weight;
 
+        dbg!(weighted_lightness);
+        dbg!(self.config.light_threshold);
+
         // Theme is light if average lightness is above threshold
         weighted_lightness > self.config.light_threshold
     }
@@ -322,6 +365,7 @@ impl ImageThemeGenerator {
     /// Map extracted colors to semantic roles with improved contrast and diversity
     fn map_colors_to_roles(
         &self,
+        background_color: &ColorAnalysis,
         colors: &[ColorAnalysis],
         is_light_theme: bool,
     ) -> StylingResult<Palette> {
@@ -339,12 +383,19 @@ impl ImageThemeGenerator {
         // If we don't have enough diverse colors, create synthetic ones
         let enhanced_colors = self.enhance_color_palette(colors, is_light_theme);
 
-        // Select normal text color ensuring proper contrast with background
-        let background_color = enhanced_colors
-            .iter()
-            .find(|c| c.is_background_suitable())
-            .or_else(|| enhanced_colors.first())
-            .unwrap_or(&enhanced_colors[0]);
+        //         // Select normal text color ensuring proper contrast with background
+        // x        let background_color = enhanced_colors
+        //             .iter()
+        //             .find(|c| c.is_background_suitable())
+        //             .or_else(|| {
+        //                 eprintln!("No suitable bg colours found, trying enhanced_colors.first()");
+        //                 enhanced_colors.first()
+        //             })
+        //             .unwrap_or_else(|| {
+        //                 eprintln!("No suitable bg colours found, trying enhanced_colors[0]");
+        //                 &enhanced_colors[0]
+        //             });
+        //         eprintln!("background_color={:?}", background_color.rgb);
 
         let normal_color = if let Some(best_text) = self.select_best_text_color(
             &text_colors,
@@ -354,14 +405,18 @@ impl ImageThemeGenerator {
         ) {
             // Ensure the selected text color is actually different from background
             if best_text.distance_to(background_color) < 50.0 {
+                eprintln!("Distance < 50, calling ensure_text_contrast");
                 self.ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
             } else {
+                eprintln!("Going with best_text");
                 best_text
             }
         } else {
             // Ensure we have a proper text color with good contrast
+            eprintln!("Calling ensure_text_contrast");
             self.ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
         };
+        dbg!(normal_color);
 
         // Create a comprehensive unique color assignment
         let mut used_colors = vec![normal_color];
@@ -504,6 +559,7 @@ impl ImageThemeGenerator {
                         .unwrap_or(std::cmp::Ordering::Equal)
                 })
             {
+                eprintln!("Found best text color {:?}", best.rgb);
                 return Some(*best);
             }
         }
@@ -514,9 +570,11 @@ impl ImageThemeGenerator {
                 .partial_cmp(&b.frequency)
                 .unwrap_or(std::cmp::Ordering::Equal)
         }) {
+            eprintln!("Falling back to text color {:?}", best.rgb);
             Some(*best)
         } else {
             // Final fallback: find any color with good contrast
+            eprintln!("Falling back to any color with good contrast");
             all_colors
                 .iter()
                 .find(|c| c.is_text_suitable(is_light_theme))
@@ -542,8 +600,11 @@ impl ImageThemeGenerator {
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {
+            eprintln!("Found good contrast: {:?}", good_contrast.rgb);
             return good_contrast;
         }
+
+        eprintln!("Falling back to synthetic text color");
 
         // If no good contrast found, create synthetic text color
         // For light theme background, we need a darker text
@@ -743,15 +804,18 @@ impl ImageThemeGenerator {
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        let h1 = available.get(0).copied().unwrap_or(&colors[0]);
-        let h2 = available
-            .get(1)
-            .copied()
-            .unwrap_or(&colors[1 % colors.len()]);
-        let h3 = available
-            .get(2)
-            .copied()
-            .unwrap_or(&colors[2 % colors.len()]);
+        let h1 = available.get(0).copied().unwrap_or_else(|| {
+            eprintln!("Defaulting HD1");
+            &colors[0]
+        });
+        let h2 = available.get(1).copied().unwrap_or_else(|| {
+            eprintln!("Defaulting HD2");
+            &colors[1 % colors.len()]
+        });
+        let h3 = available.get(2).copied().unwrap_or_else(|| {
+            eprintln!("Defaulting HD3");
+            &colors[2 % colors.len()]
+        });
 
         (h1, h2, h3)
     }
@@ -879,7 +943,7 @@ impl ImageThemeGenerator {
         &self,
         colors: &[ColorAnalysis],
         is_light_theme: bool,
-    ) -> (u8, u8, u8) {
+    ) -> ColorAnalysis {
         // Force background to match theme type expectation
         if is_light_theme {
             // Light theme should have light background
@@ -889,9 +953,9 @@ impl ImageThemeGenerator {
                 .collect();
 
             if let Some(bg_color) = light_candidates.first() {
-                (bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2])
+                (*bg_color).clone()
             } else {
-                (248, 248, 248) // Light gray background
+                ColorAnalysis::new([248, 248, 248], 0.5) // Light gray background
             }
         } else {
             // Dark theme should have dark background
@@ -901,7 +965,7 @@ impl ImageThemeGenerator {
                 .collect();
 
             if let Some(bg_color) = dark_candidates.first() {
-                (bg_color.rgb[0], bg_color.rgb[1], bg_color.rgb[2])
+                (*bg_color).clone()
             } else {
                 // Smart dark background based on dominant colors
                 let avg_hue: f32 = colors
@@ -913,9 +977,9 @@ impl ImageThemeGenerator {
 
                 if avg_hue >= 0.0 && avg_hue <= 60.0 {
                     // Warm dominant colors - use cool dark background
-                    (20, 25, 30) // Cool dark blue-gray
+                    ColorAnalysis::new([20, 25, 30], 0.5) // Cool dark blue-gray
                 } else {
-                    (25, 25, 25) // Standard dark gray
+                    ColorAnalysis::new([25, 25, 25], 0.5) // Standard dark gray
                 }
             }
         }

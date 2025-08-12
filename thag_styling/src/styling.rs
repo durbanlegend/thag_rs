@@ -327,7 +327,7 @@ impl Style {
         }
     }
 
-    /// Creates a new Style with RGB foreground color
+    /// Returns the Style with RGB foreground color
     #[must_use]
     pub fn with_rgb(mut self, rgb: [u8; 3]) -> Self {
         let mut color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
@@ -336,14 +336,14 @@ impl Style {
         self
     }
 
-    /// Returns a new Style with bold formatting enabled
+    /// Returns the Style with bold formatting enabled
     #[must_use]
     pub const fn bold(mut self) -> Self {
         self.bold = true;
         self
     }
 
-    /// Returns a new Style with italic formatting enabled
+    /// Returns the Style with italic formatting enabled
     #[must_use]
     pub const fn italic(mut self) -> Self {
         self.italic = true;
@@ -356,14 +356,14 @@ impl Style {
         self
     }
 
-    /// Returns a new Style with dim/faint formatting enabled
+    /// Returns the Style with dim/faint formatting enabled
     #[must_use]
     pub const fn dim(mut self) -> Self {
         self.dim = true;
         self
     }
 
-    /// Returns a new Style with underline formatting enabled
+    /// Returns the Style with underline formatting enabled
     #[must_use]
     pub const fn underline(mut self) -> Self {
         self.underline = true;

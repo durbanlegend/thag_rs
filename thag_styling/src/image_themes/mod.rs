@@ -6,7 +6,9 @@
 
 #![cfg(feature = "image_themes")]
 
-use crate::{ColorSupport, Palette, Style, StylingError, StylingResult, TermBgLuma, Theme};
+use crate::{
+    cprtln, ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma, Theme,
+};
 use image::{DynamicImage, ImageReader};
 use palette::{FromColor, Hsl, IntoColor, Lab, Srgb};
 use std::path::{Path, PathBuf};
@@ -64,14 +66,7 @@ struct ColorAnalysis {
 
 impl ColorAnalysis {
     fn new(rgb: [u8; 3], frequency: f32) -> Self {
-        let srgb = Srgb::new(
-            f32::from(rgb[0]) / 255.0,
-            f32::from(rgb[1]) / 255.0,
-            f32::from(rgb[2]) / 255.0,
-        );
-
-        let lab: Lab = srgb.into_color();
-        let hsl: Hsl = Hsl::from_color(srgb);
+        let (lab, hsl) = to_lab_hsl(rgb);
 
         Self {
             rgb,
@@ -83,19 +78,19 @@ impl ColorAnalysis {
         }
     }
 
-    /// Check if this color is suitable as a background color
-    fn is_background_suitable(&self) -> bool {
-        // dbg!(self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85));
-        // Background colors should be neutral (low saturation) and either very light or very dark
-        let is_background_suitable =
-            self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85);
-        // dbg!(is_background_suitable);
-        eprintln!(
-            "self.rgb={},{},{}, is_background_suitable={is_background_suitable}",
-            self.rgb[0], self.rgb[1], self.rgb[2]
-        );
-        is_background_suitable
-    }
+    // /// Check if this color is suitable as a background color
+    // fn is_background_suitable(&self) -> bool {
+    //     // dbg!(self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85));
+    //     // Background colors should be neutral (low saturation) and either very light or very dark
+    //     let is_background_suitable =
+    //         self.saturation < 0.2 && (self.lightness < 0.15 || self.lightness > 0.85);
+    //     // dbg!(is_background_suitable);
+    //     eprintln!(
+    //         "self.rgb={},{},{}, is_background_suitable={is_background_suitable}",
+    //         self.rgb[0], self.rgb[1], self.rgb[2]
+    //     );
+    //     is_background_suitable
+    // }
 
     /// Check if this color is suitable for text (good contrast potential)
     fn is_text_suitable(&self, is_light_theme: bool) -> bool {
@@ -107,8 +102,8 @@ impl ColorAnalysis {
             self.lightness > 0.6 && self.lightness < 0.95
         };
         eprintln!(
-            "is_light_theme={is_light_theme}, self.rgb={},{},{}, self.lightness={}, is_text_suitable={is_text_suitable}",
-            self.rgb[0], self.rgb[1], self.rgb[2], self.lightness
+            "is_light_theme={is_light_theme}, self.rgb={}, self.lightness={}, is_text_suitable={is_text_suitable}",
+            Style::new().with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), self.lightness
         );
         // dbg!(is_text_suitable);
         is_text_suitable
@@ -120,7 +115,7 @@ impl ColorAnalysis {
         // dbg!(lightness_diff);
         let has_good_contrast_against = lightness_diff > 0.5; // Minimum contrast requirement
                                                               // dbg!(has_good_contrast_against);
-        eprintln!("self.rgb={},{},{}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", self.rgb[0], self.rgb[1], self.rgb[2], background.lightness);
+        eprintln!("self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", Style::new().with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), background.lightness);
         has_good_contrast_against
     }
 
@@ -136,8 +131,10 @@ impl ColorAnalysis {
             self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9;
         // dbg!(is_accent_suitable);
         eprintln!(
-            "self.rgb={},{},{}, is_accent_suitable={is_accent_suitable}",
-            self.rgb[0], self.rgb[1], self.rgb[2]
+            "self.rgb={}, is_accent_suitable={is_accent_suitable}",
+            Style::new()
+                .with_rgb(self.rgb)
+                .paint(format!("{:?}", self.rgb))
         );
         is_accent_suitable
     }
@@ -151,6 +148,18 @@ impl ColorAnalysis {
         // Simplified Delta E calculation
         (delta_l * delta_l + delta_a * delta_a + delta_b * delta_b).sqrt()
     }
+}
+
+fn to_lab_hsl(rgb: [u8; 3]) -> (Lab, Hsl) {
+    let srgb = Srgb::new(
+        f32::from(rgb[0]) / 255.0,
+        f32::from(rgb[1]) / 255.0,
+        f32::from(rgb[2]) / 255.0,
+    );
+
+    let lab: Lab = srgb.into_color();
+    let hsl: Hsl = Hsl::from_color(srgb);
+    (lab, hsl)
 }
 
 /// Theme generator from images
@@ -189,10 +198,28 @@ impl ImageThemeGenerator {
         theme_name: String,
     ) -> StylingResult<Theme> {
         let dominant_colors = self.extract_dominant_colors(&image)?;
+        cprtln!(Role::HD1, "Dominant colors:");
+        for (color, freq) in &dominant_colors {
+            let (__lab, hsl) = to_lab_hsl(*color);
+            eprintln!(
+                "{} with frequency {freq}",
+                Style::new().with_rgb(*color).paint(format!(
+                    "{color:?} = hue: {:.0}",
+                    hsl.hue.into_positive_degrees()
+                ))
+            );
+        }
+
         let color_analysis = self.analyze_colors(dominant_colors);
 
         let is_light_theme = self.determine_theme_type(&color_analysis);
         let background_color = self.select_background_color(&color_analysis, is_light_theme);
+        eprintln!(
+            "Selected background color={}",
+            Style::new()
+                .with_rgb(background_color.rgb)
+                .paint(format!("{:?}", background_color.rgb))
+        );
 
         let palette =
             self.map_colors_to_roles(&background_color, &color_analysis, is_light_theme)?;
@@ -559,18 +586,28 @@ impl ImageThemeGenerator {
                         .unwrap_or(std::cmp::Ordering::Equal)
                 })
             {
-                eprintln!("Found best text color {:?}", best.rgb);
+                eprintln!(
+                    "Found best text color {}",
+                    Style::new()
+                        .with_rgb(best.rgb)
+                        .paint(format!("{:?}", best.rgb))
+                );
                 return Some(*best);
             }
         }
 
         // Fallback to any suitable text color
-        if let Some(best) = text_colors.iter().max_by(|a, b| {
+        let best_text = if let Some(best) = text_colors.iter().max_by(|a, b| {
             a.frequency
                 .partial_cmp(&b.frequency)
                 .unwrap_or(std::cmp::Ordering::Equal)
         }) {
-            eprintln!("Falling back to text color {:?}", best.rgb);
+            eprintln!(
+                "Falling back to text color {}",
+                Style::new()
+                    .with_rgb(best.rgb)
+                    .paint(format!("{:?}", best.rgb))
+            );
             Some(*best)
         } else {
             // Final fallback: find any color with good contrast
@@ -578,7 +615,14 @@ impl ImageThemeGenerator {
             all_colors
                 .iter()
                 .find(|c| c.is_text_suitable(is_light_theme))
-        }
+        };
+        eprintln!(
+            "Selected best_text {}",
+            Style::new()
+                .with_rgb(best_text.unwrap().rgb)
+                .paint(format!("{:?}", best_text.unwrap().rgb))
+        );
+        best_text
     }
 
     /// Ensure we have a text color with proper contrast
@@ -805,15 +849,30 @@ impl ImageThemeGenerator {
         });
 
         let h1 = available.get(0).copied().unwrap_or_else(|| {
-            eprintln!("Defaulting HD1");
+            eprintln!(
+                "Defaulting HD1 to {}",
+                Style::new()
+                    .with_rgb(colors[0].rgb)
+                    .paint(format!("{:?}", &colors[0].rgb))
+            );
             &colors[0]
         });
         let h2 = available.get(1).copied().unwrap_or_else(|| {
-            eprintln!("Defaulting HD2");
+            eprintln!(
+                "Defaulting HD2 to {}",
+                Style::new()
+                    .with_rgb(colors[1 % colors.len()].rgb)
+                    .paint(format!("{:?}", &colors[1 % colors.len()].rgb))
+            );
             &colors[1 % colors.len()]
         });
         let h3 = available.get(2).copied().unwrap_or_else(|| {
-            eprintln!("Defaulting HD3");
+            eprintln!(
+                "Defaulting HD3 to {}",
+                Style::new()
+                    .with_rgb(colors[2 % colors.len()].rgb)
+                    .paint(format!("{:?}", &colors[2 % colors.len()].rgb))
+            );
             &colors[2 % colors.len()]
         });
 

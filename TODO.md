@@ -30,6 +30,7 @@
 - [ ]  StyleLike add prtln and embed trait methods to allow styles to embed styles.
 - [ ]  Incorporate bank/rata.rs example?
 - [ ]  Make detection or at least config mandatory.
+- [ ]  Debug success, emphasis, code and subtle all getting the same colour.
 
 
 /// Convert ColorInfo to nu-ansi-term Color

@@ -96,10 +96,10 @@ impl ColorAnalysis {
     fn is_text_suitable(&self, is_light_theme: bool) -> bool {
         let is_text_suitable = if is_light_theme {
             // For light themes, text should be dark but not too dark (avoid pure black)
-            self.lightness > 0.15 && self.lightness < 0.6
+            self.lightness > 0.25 && self.lightness < 0.6
         } else {
             // For dark themes, text should be light but not too light (avoid pure white)
-            self.lightness > 0.6 && self.lightness < 0.95
+            self.lightness > 0.6 && self.lightness < 0.75
         };
         eprintln!(
             "is_light_theme={is_light_theme}, self.rgb={}, self.lightness={}, is_text_suitable={is_text_suitable}",
@@ -113,8 +113,8 @@ impl ColorAnalysis {
     fn has_good_contrast_against(&self, background: &ColorAnalysis) -> bool {
         let lightness_diff = (self.lightness - background.lightness).abs();
         // dbg!(lightness_diff);
-        let has_good_contrast_against = lightness_diff > 0.5; // Minimum contrast requirement
-                                                              // dbg!(has_good_contrast_against);
+        let has_good_contrast_against = lightness_diff > 0.4 && lightness_diff < 0.7; // Minimum contrast requirement
+                                                                                      // dbg!(has_good_contrast_against);
         eprintln!("self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", Style::new().with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), background.lightness);
         has_good_contrast_against
     }
@@ -202,7 +202,7 @@ impl ImageThemeGenerator {
         for (color, freq) in &dominant_colors {
             let (__lab, hsl) = to_lab_hsl(*color);
             eprintln!(
-                "{} with frequency {freq}",
+                "{} with frequency {freq:.3}",
                 Style::new().with_rgb(*color).paint(format!(
                     "{color:?} = hue: {:.0}",
                     hsl.hue.into_positive_degrees()
@@ -215,10 +215,11 @@ impl ImageThemeGenerator {
         let is_light_theme = self.determine_theme_type(&color_analysis);
         let background_color = self.select_background_color(&color_analysis, is_light_theme);
         eprintln!(
-            "Selected background color={}",
+            "Selected background color={} ({:?})",
             Style::new()
                 .with_rgb(background_color.rgb)
-                .paint(format!("{:?}", background_color.rgb))
+                .paint(format!("{:?}", background_color.rgb)),
+            background_color.rgb
         );
 
         let palette =
@@ -317,33 +318,70 @@ impl ImageThemeGenerator {
     fn ensure_color_diversity(&self, colors: &mut Vec<([u8; 3], f32)>, _total_pixels: f32) {
         let min_colors = 8;
 
-        if colors.len() < min_colors {
-            // Add strategically chosen contrasting colors
-            let fallback_colors = [
-                [240, 240, 240], // Light gray
-                [60, 60, 60],    // Dark gray
-                [200, 80, 80],   // Red
-                [80, 200, 80],   // Green
-                [80, 80, 200],   // Blue
-                [200, 200, 80],  // Yellow
-                [200, 80, 200],  // Magenta
-                [80, 200, 200],  // Cyan
-            ];
+        if colors.len() >= min_colors {
+            return;
+        }
 
-            for &fallback in &fallback_colors {
+        // Find the lowest existing frequency among dominants
+        let min_freq = colors
+            .iter()
+            .map(|(_, freq)| *freq)
+            .fold(f32::INFINITY, f32::min);
+        let artificial_freq = if min_freq.is_finite() {
+            (min_freq * 0.9).max(0.0001) // just under the smallest real freq
+        } else {
+            0.0001
+        };
+
+        self.generate_more_colors(colors, min_colors, artificial_freq);
+    }
+
+    fn generate_more_colors(
+        &self,
+        colors: &mut Vec<([u8; 3], f32)>,
+        min_colors: usize,
+        artificial_freq: f32,
+    ) {
+        // Go through existing colours in order
+        let mut idx = 0;
+        while colors.len() < min_colors && idx < colors.len() {
+            let base_rgb = colors[idx].0;
+            let (h, s, l) = rgb_to_hsl(base_rgb);
+
+            // lighter
+            let lighter_l = (l + 0.15).min(1.0);
+            let lighter = hsl_to_rgb(h, s, lighter_l);
+            if colors
+                .iter()
+                .all(|(c, _)| self.color_distance_euclidean(*c, lighter) > 20.0)
+            {
+                eprintln!(
+                    "New color {}",
+                    Style::new()
+                        .with_rgb(lighter)
+                        .paint(format!("{:?}", lighter))
+                );
+                colors.push((lighter, artificial_freq));
                 if colors.len() >= min_colors {
                     break;
                 }
-
-                // Only add if sufficiently different from existing colors
-                let is_different = colors
-                    .iter()
-                    .all(|(existing, _)| self.color_distance_euclidean(*existing, fallback) > 80.0);
-
-                if is_different {
-                    colors.push((fallback, 0.01)); // Low frequency for fallback colors
-                }
             }
+
+            // darker
+            let darker_l = (l - 0.15).max(0.0);
+            let darker = hsl_to_rgb(h, s, darker_l);
+            if colors
+                .iter()
+                .all(|(c, _)| self.color_distance_euclidean(*c, darker) > 20.0)
+            {
+                eprintln!(
+                    "New color {}",
+                    Style::new().with_rgb(darker).paint(format!("{:?}", darker))
+                );
+                colors.push((darker, artificial_freq));
+            }
+
+            idx += 1;
         }
     }
 
@@ -402,16 +440,32 @@ impl ImageThemeGenerator {
             .filter(|c| c.is_text_suitable(is_light_theme))
             .collect();
 
-        let _accent_colors: Vec<&ColorAnalysis> = colors
-            .iter()
-            .filter(|c| c.is_accent_suitable(self.config.saturation_threshold))
-            .collect();
+        // let _accent_colors: Vec<&ColorAnalysis> = colors
+        //     .iter()
+        //     .filter(|c| c.is_accent_suitable(self.config.saturation_threshold))
+        //     .collect();
 
         // If we don't have enough diverse colors, create synthetic ones
-        let enhanced_colors = self.enhance_color_palette(colors, is_light_theme);
+        let enhanced_colors = self.enhance_color_palette(colors);
+
+        let enhanced_colors: Vec<ColorAnalysis> = enhanced_colors
+            .iter()
+            .filter(|color| color.has_good_contrast_against(&background_color))
+            .cloned()
+            .collect();
+
+        cprtln!(Role::HD1, "Selected colors:");
+        for color in &enhanced_colors {
+            eprintln!(
+                "{}",
+                Style::new()
+                    .with_rgb(color.rgb)
+                    .paint(format!("{:?} = hue: {:.0}", color.rgb, color.hue))
+            );
+        }
 
         //         // Select normal text color ensuring proper contrast with background
-        // x        let background_color = enhanced_colors
+        //         let background_color = enhanced_colors
         //             .iter()
         //             .find(|c| c.is_background_suitable())
         //             .or_else(|| {
@@ -497,74 +551,75 @@ impl ImageThemeGenerator {
         })
     }
 
-    /// Enhance color palette with synthetic colors if diversity is lacking
-    fn enhance_color_palette(
-        &self,
-        colors: &[ColorAnalysis],
-        is_light_theme: bool,
-    ) -> Vec<ColorAnalysis> {
+    /// Enhance color palette with derived colors if diversity is lacking
+    fn enhance_color_palette(&self, colors: &[ColorAnalysis]) -> Vec<ColorAnalysis> {
         let mut enhanced = colors.to_vec();
 
-        // Check if we need more diversity
-        if self.needs_color_enhancement(&enhanced, is_light_theme) {
-            let synthetic_colors = self.generate_synthetic_colors(is_light_theme);
-            for synthetic in synthetic_colors {
-                // Only add if different enough from existing colors
-                if enhanced
-                    .iter()
-                    .all(|existing| existing.distance_to(&synthetic) > 50.0)
-                {
-                    enhanced.push(synthetic);
-                }
-            }
-        }
+        self.generate_derived_colors(&mut enhanced);
 
         enhanced
     }
 
-    /// Check if the color palette needs enhancement
-    fn needs_color_enhancement(&self, colors: &[ColorAnalysis], _is_light_theme: bool) -> bool {
-        // Check for lack of contrast
-        let avg_lightness: f32 =
-            colors.iter().map(|c| c.lightness).sum::<f32>() / colors.len() as f32;
-        let lightness_variance: f32 = colors
-            .iter()
-            .map(|c| (c.lightness - avg_lightness).powi(2))
-            .sum::<f32>()
-            / colors.len() as f32;
+    /// Generate derived colors to improve palette diversity
+    fn generate_derived_colors(&self, colors: &mut Vec<ColorAnalysis>) {
+        // Go through existing colours in order
+        let mut idx = 0;
+        let min_colors = colors.len() * 2;
+        let mut new_count = 0;
+        let adjust_perc = 0.10;
 
-        // Need enhancement if colors are too similar in lightness or too few colors
-        lightness_variance < 0.1 || colors.len() < 6
-    }
+        while new_count < min_colors && idx < colors.len() {
+            eprintln!(
+                "Existing color {}",
+                Style::new()
+                    .with_rgb(colors[idx].rgb)
+                    .paint(format!("{:?}", colors[idx].rgb))
+            );
 
-    /// Generate synthetic colors to improve palette diversity
-    fn generate_synthetic_colors(&self, is_light_theme: bool) -> Vec<ColorAnalysis> {
-        let base_colors = if is_light_theme {
-            vec![
-                [180, 30, 30],  // Red
-                [30, 150, 30],  // Green
-                [30, 30, 180],  // Blue
-                [150, 120, 30], // Orange
-                [120, 30, 150], // Purple
-                [30, 120, 150], // Teal
-                [60, 60, 60],   // Dark gray
-            ]
-        } else {
-            vec![
-                [220, 80, 80],   // Light red
-                [80, 220, 80],   // Light green
-                [80, 80, 220],   // Light blue
-                [220, 180, 80],  // Yellow
-                [180, 80, 220],  // Light purple
-                [80, 180, 220],  // Light cyan
-                [200, 200, 200], // Light gray
-            ]
-        };
+            let l = colors[idx].lightness;
 
-        base_colors
-            .into_iter()
-            .map(|rgb| ColorAnalysis::new(rgb, 0.05)) // Low frequency for synthetic colors
-            .collect()
+            // lighter
+            let lighter_l = (l + adjust_perc).min(1.0);
+            let lighter = hsl_to_rgb(colors[idx].hue, colors[idx].saturation, lighter_l);
+            if colors
+                .iter()
+                .map(|color| color.rgb)
+                .all(|rgb| self.color_distance_euclidean(rgb, lighter) > 20.0)
+            {
+                eprintln!(
+                    "New color {}",
+                    Style::new()
+                        .with_rgb(lighter)
+                        .paint(format!("{:?}", lighter))
+                );
+                colors.push(ColorAnalysis::new(lighter, 0.0));
+                new_count += 1;
+                if new_count >= min_colors {
+                    break;
+                }
+            }
+
+            // darker
+            let darker_l = (l - adjust_perc).max(0.0);
+            let darker = hsl_to_rgb(colors[idx].hue, colors[idx].saturation, darker_l);
+            if colors
+                .iter()
+                .map(|color| color.rgb)
+                .all(|rgb| self.color_distance_euclidean(rgb, darker) > 20.0)
+            {
+                eprintln!(
+                    "New color {}",
+                    Style::new().with_rgb(darker).paint(format!("{:?}", darker))
+                );
+                colors.push(ColorAnalysis::new(darker, 0.0));
+                new_count += 1;
+                if new_count >= min_colors {
+                    break;
+                }
+            }
+
+            idx += 1;
+        }
     }
 
     /// Select the best text color with contrast consideration
@@ -1063,6 +1118,72 @@ impl Default for ImageThemeGenerator {
     fn default() -> Self {
         Self::new()
     }
+}
+
+// Helper: RGB -> HSL
+fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
+    let r = rgb[0] as f32 / 255.0;
+    let g = rgb[1] as f32 / 255.0;
+    let b = rgb[2] as f32 / 255.0;
+
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let delta = max - min;
+
+    let l = (max + min) / 2.0;
+    let s;
+    let mut h;
+
+    if delta == 0.0 {
+        h = 0.0;
+        s = 0.0;
+    } else {
+        s = if l > 0.5 {
+            delta / (2.0 - max - min)
+        } else {
+            delta / (max + min)
+        };
+
+        h = if max == r {
+            ((g - b) / delta) % 6.0
+        } else if max == g {
+            ((b - r) / delta) + 2.0
+        } else {
+            ((r - g) / delta) + 4.0
+        } * 60.0;
+
+        // Ensure hue is positive
+        if h < 0.0 {
+            h += 360.0;
+        }
+    }
+
+    (h, s, l)
+}
+
+// Helper: HSL -> RGB
+fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
+    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+    let h_prime = h / 60.0;
+    let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
+
+    let (r1, g1, b1) = match h_prime as u32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+
+    let m = l - c / 2.0;
+    let (r, g, b) = (r1 + m, g1 + m, b1 + m);
+
+    [
+        (r * 255.0).round() as u8,
+        (g * 255.0).round() as u8,
+        (b * 255.0).round() as u8,
+    ]
 }
 
 /// Convenience function to generate a theme from an image file with default settings

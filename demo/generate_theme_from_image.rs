@@ -9,8 +9,10 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
 use thag_styling::{ImageThemeGenerator,save_theme_to_file};
 
 let generator = ImageThemeGenerator::new();
-// let theme = generator.generate_from_file("PastedGraphic-1.png")?;
-let theme = generator.generate_from_file("/Users/donf/projects/thag_rs/assets/Munch_The_Scream.png")?;
+let image_path_str = "/Users/donf/projects/thag_rs/assets/Munch_The_Scream.png";
+// let image_path_str = "PastedGraphic-1.png";
+eprintln!("Generating from image {image_path_str}");
+let theme = generator.generate_from_file(image_path_str)?;
 
 println!("{theme:#?}");
 

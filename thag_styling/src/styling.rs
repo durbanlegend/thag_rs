@@ -131,8 +131,13 @@ const THRESHOLD: f32 = 30.0; // Adjust this value as needed
 pub enum ColorValue {
     /// Basic ANSI color with code and index
     Basic {
-        /// Array containing ANSI code and index as strings
-        basic: [String; 2],
+        // /// Array containing ANSI code and index as strings
+        // basic: [String; 2],
+        // ansi: &'static str,  // Causes serde deserialization flatten issue
+        /// ANSI code for string highlighting
+        ansi: String,
+        /// Basic color index
+        index: u8,
     }, // [ANSI code, index]
     /// 256-color palette index
     Color256 {
@@ -151,7 +156,7 @@ struct StyleConfig {
     #[serde(flatten)]
     color: ColorValue,
     #[serde(default)]
-    style: Vec<String>, // ["bold", "italic", etc.]
+    style: Vec<String>, // ["bold".to_string(), "italic".to_string(), etc.]
 }
 
 /// Contains color information including the color value, ANSI escape sequence, and palette index
@@ -175,7 +180,8 @@ impl ColorInfo {
     pub fn basic(ansi: &'static str, index: u8) -> Self {
         Self {
             value: ColorValue::Basic {
-                basic: [ansi.to_string(), index.to_string()], // This won't work with const fn
+                ansi: ansi.to_string(),
+                index, // This won't work with const fn
             },
             ansi,
             index,
@@ -257,17 +263,9 @@ impl Style {
     // Used by proc macro palette_methods.
     fn from_config(config: &StyleConfig) -> StylingResult<Self> {
         let mut style = match &config.color {
-            ColorValue::Basic {
-                basic: [_name, index],
-            } => {
-                // Use the index directly to get the AnsiCode
-                let index = index.parse::<u8>()?;
-                let code = if index <= 7 {
-                    index + 30
-                } else {
-                    index + 90 - 8
-                };
-                let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
+            ColorValue::Basic { index, .. } => {
+                let index = *index;
+                let ansi = basic_index_to_ansi(index);
                 Self::fg(ColorInfo::basic(ansi, index))
             }
             ColorValue::Color256 { color256 } => Self::fg(ColorInfo::color256(*color256)),
@@ -468,7 +466,7 @@ impl Style {
         let mut result = String::new();
 
         if let Some(color_info) = &self.foreground {
-            result.push_str(&color_info.ansi);
+            result.push_str(color_info.ansi);
         }
         if self.bold {
             result.push_str("\x1b[1m");
@@ -485,6 +483,18 @@ impl Style {
 
         result
     }
+}
+
+/// Use the index directly to get the `AnsiCode`
+#[must_use]
+pub fn basic_index_to_ansi(index: u8) -> &'static str {
+    let code = if index <= 7 {
+        index + 30
+    } else {
+        index + 90 - 8
+    };
+    let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
+    ansi
 }
 
 impl Default for Style {
@@ -1266,83 +1276,6 @@ impl Palette {
 // ThemeIndex, THEME_INDEX and BG_LOOKUP
 preload_themes! {}
 
-/*
-// Stub implementations for theme loading - TODO: implement proper theme loading
-use phf::{phf_map, Map};
-
-#[derive(Debug, Clone)]
-pub struct ThemeIndex {
-    pub content: &'static str,
-    pub bg_rgbs: &'static [(u8, u8, u8)],
-    pub term_bg_luma: TermBgLuma,
-    pub min_color_support: ColorSupport,
-}
-
-pub static THEME_INDEX: Map<&'static str, ThemeIndex> = phf_map! {
-    "basic_dark" => ThemeIndex {
-        content: r#"
-name = "basic_dark"
-description = "Basic dark theme"
-term_bg_luma = "dark"
-min_color_support = "basic"
-backgrounds = ["000000"]
-
-[palette]
-heading1 = "0000FF"
-heading2 = "00FFFF"
-heading3 = "00FF00"
-error = "FF0000"
-warning = "FFFF00"
-success = "00FF00"
-info = "00FFFF"
-emphasis = "FF00FF"
-code = "FFFF80"
-normal = "FFFFFF"
-subtle = "808080"
-hint = "80FFFF"
-debug = "C0C0C0"
-trace = "808080"
-"#,
-        bg_rgbs: &[(0, 0, 0)],
-        term_bg_luma: TermBgLuma::Dark,
-        min_color_support: ColorSupport::Basic,
-    },
-    "basic_light" => ThemeIndex {
-        content: r#"
-name = "basic_light"
-description = "Basic light theme"
-term_bg_luma = "light"
-min_color_support = "basic"
-backgrounds = ["FFFFFF"]
-
-[palette]
-heading1 = "0000AA"
-heading2 = "008888"
-heading3 = "008800"
-error = "AA0000"
-warning = "AA8800"
-success = "008800"
-info = "008888"
-emphasis = "AA00AA"
-code = "666600"
-normal = "000000"
-subtle = "666666"
-hint = "006666"
-debug = "444444"
-trace = "666666"
-"#,
-        bg_rgbs: &[(255, 255, 255)],
-        term_bg_luma: TermBgLuma::Light,
-        min_color_support: ColorSupport::Basic,
-    },
-};
-
-pub static BG_LOOKUP: Map<&'static str, &'static [&'static str]> = phf_map! {
-    "000000" => &["basic_dark"],
-    "ffffff" => &["basic_light"],
-};
-
-*/
 /// Theme definition loaded from TOML files
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -2055,8 +1988,7 @@ impl Theme {
                         style.foreground = Some(ColorInfo::basic(ansi, index));
                     }
                     ColorValue::Color256 { color256 } => {
-                        let rgb = index_to_rgb(*color256);
-                        let index = Self::convert_rgb_to_ansi(rgb.0, rgb.1, rgb.2);
+                        let index = *color256;
                         // Use the index directly to get the AnsiCode
                         let code = if index <= 7 {
                             index + 30
@@ -2248,7 +2180,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
     style.foreground.as_ref().map_or_else(
         || Ok(()),
         |color_info| match &color_info.value {
-            ColorValue::Basic { basic: _ } => Ok(()), // Basic is always valid
+            ColorValue::Basic { .. } => Ok(()), // Basic is always valid
             ColorValue::Color256 { color256: _ } => {
                 if min_support < ColorSupport::Color256 {
                     Err(ThemeError::InvalidColorValue(
@@ -2670,9 +2602,23 @@ pub fn display_theme_roles(theme: &Theme) {
 
         // Print role name in its style, followed by description
         let styled_name = style.paint(role_name);
-        let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
+        let rgb = style
+            .foreground
+            .as_ref()
+            .map(|color_info| match &color_info.value {
+                ColorValue::TrueColor { rgb } => *rgb,
+                ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
+                ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
+            });
 
-        print!("\t{styled_name}{padding}");
+        // let styled_rgb = style.paint(format!("{:?}", style.foreground.and_then(|v| v.value)));
+        let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
+        let hex = rgb.map_or("N/A".to_string(), |rgb| {
+            format!("{}", rgb_to_hex(&rgb.into()))
+        });
+        let styled_hex = style.paint(hex);
+
+        print!("\t{styled_hex} {styled_name} {padding}");
         println!("│ {description}");
     }
     println!("\t{}", "─".repeat(80));
@@ -3087,16 +3033,14 @@ impl From<&Style> for RataStyle {
 impl From<&Role> for ratatui::style::Color {
     fn from(role: &Role) -> Self {
         let style = Style::from(*role);
-        if let Some(color_info) = &style.foreground {
-            match &color_info.value {
+        style.foreground.as_ref().map_or_else(
+            || Self::Indexed(u8::from(role)),
+            |color_info| match &color_info.value {
                 ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
                 ColorValue::Color256 { color256 } => Self::Indexed(*color256),
                 ColorValue::Basic { .. } => Self::Indexed(color_info.index),
-            }
-        } else {
-            // Fallback to basic role mapping only if no theme color available
-            Self::Indexed(u8::from(role))
-        }
+            },
+        )
     }
 }
 
@@ -3229,7 +3173,7 @@ pub struct Embedded {
 
 impl Embedded {
     /// Create a new embedded styled text
-    pub fn new<S: StyleLike>(style: S, content: &str) -> Self {
+    pub fn new<S: StyleLike>(style: &S, content: &str) -> Self {
         Self {
             style: style.to_style(),
             content: content.to_string(),
@@ -3238,6 +3182,7 @@ impl Embedded {
 
     /// Get the styled content with proper ANSI codes for embedding
     /// This includes reset codes to avoid interfering with outer styles
+    #[must_use]
     pub fn render(&self, outer_style: Option<&Style>) -> String {
         let embedded_painted = self.style.paint(&self.content);
         if let Some(outer) = outer_style {
@@ -3256,6 +3201,7 @@ impl Embedded {
 /// This function processes format strings that contain `{}` placeholders
 /// and replaces them with properly styled embedded content, ensuring
 /// that outer styles are preserved after each embedding.
+#[must_use]
 pub fn format_with_embeds(outer_style: &Style, format_str: &str, embeds: &[Embedded]) -> String {
     let mut result = String::new();
     let mut embed_index = 0;
@@ -3716,7 +3662,7 @@ mod tests {
         );
 
         // Test Embedded::new method
-        let custom_embed = Embedded::new(Style::from(Role::Emphasis).italic(), "custom text");
+        let custom_embed = Embedded::new(&Style::from(Role::Emphasis).italic(), "custom text");
         cprtln_with_embeds!(
             Role::Normal,
             "Normal text with custom embed: {}",

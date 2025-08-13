@@ -30,7 +30,14 @@
 - [ ]  StyleLike add prtln and embed trait methods to allow styles to embed styles.
 - [ ]  Incorporate bank/rata.rs example?
 - [ ]  Make detection or at least config mandatory.
+- [ ]  Add further attributes such as reversed to Style.
 - [ ]  Debug success, emphasis, code and subtle all getting the same colour.
+
+rgb: [u8; 3]
+
+        let r = rgb[0];
+        let g = rgb[1];
+        let b = rgb[2];
 
 
 /// Convert ColorInfo to nu-ansi-term Color
@@ -346,13 +353,19 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 
 export feature_sets=()
 
+# thag_styling
 export feature_sets=(
     "basic"
-    "color_detect"
-    "inquire_theming"
+    "color_detect",
     "color_detect,inquire_theming"
-    "ratatui_support"
+    "console_support",
+    "crossterm_support",
     "full"
+    "image_themes",
+    "inquire_theming",
+    "nu_ansi_term_support",
+    "ratatui_support",
+    "tools",
 )
 
 export feature_sets=(

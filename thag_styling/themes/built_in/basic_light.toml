@@ -6,23 +6,23 @@ backgrounds = []
 
 [palette]
 # Headers and Structure
-heading1 = { basic = ["red", "1"], style = ["bold"] }  # Red
-heading2 = { basic = ["blue", "4"], style = ["bold"] } # Blue
-heading3 = { basic = ["cyan", "6"], style = ["bold"] } # Cyan
+heading1 = { ansi = "red", index = 1, style = ["bold"] }  # Red
+heading2 = { ansi = "blue", index = 4, style = ["bold"] } # Blue
+heading3 = { ansi = "cyan", index = 6, style = ["bold"] } # Cyan
 
 # Status/Alerts
-error = { basic = ["red", "1"] }       # Red
-warning = { basic = ["magenta", "5"] } # Magenta
-success = { basic = ["green", "2"] }   # Green
-info = { basic = ["cyan", "6"] }       # Cyan
+error = { ansi = "red", index = 1 }       # Red
+warning = { ansi = "magenta", index = 5 } # Magenta
+success = { ansi = "green", index = 2 }   # Green
+info = { ansi = "cyan", index = 6 }       # Cyan
 
 # Emphasis levels
-emphasis = { basic = ["green", "2"], style = ["bold"] } # Green
-code = { basic = ["blue", "4"] }                        # Blue
-normal = { basic = ["black", "0"] }                     # Black
-subtle = { basic = ["gray", "8"] }                      # Gray
-hint = { basic = ["cyan", "6"], style = ["italic"] }    # Cyan
+code = { ansi = "blue", index = 4 }                        # Blue
+normal = { ansi = "black", index = 0 }                     # Black
+subtle = { ansi = "gray", index = 8 }                      # Gray
+emphasis = { ansi = "green", index = 2, style = ["bold"] } # Green
+hint = { ansi = "cyan", index = 6, style = ["italic"] }    # Cyan
 
 # Development
-debug = { basic = ["cyan", "6"] } # Cyan
-trace = { basic = ["gray", "8"] } # Gray
+debug = { ansi = "cyan", index = 6 } # Cyan
+trace = { ansi = "gray", index = 8 } # Gray

@@ -10,10 +10,11 @@ use thag_styling::{ImageThemeGenerator,save_theme_to_file};
 
 let generator = ImageThemeGenerator::new();
 let image_path_str = "/Users/donf/projects/thag_rs/assets/Munch_The_Scream.png";
-// let image_path_str = "PastedGraphic-1.png";
+// let image_path_str = "/Users/donf/projects/thag_rs/monet-woman-with-parasol.png";
 eprintln!("Generating from image {image_path_str}");
 let theme = generator.generate_from_file(image_path_str)?;
 
 println!("{theme:#?}");
 
-save_theme_to_file(&theme, "thag_styling/themes/built_in/my_theme.toml")?;
+save_theme_to_file(&theme, "thag_styling/themes/built_in/thag-munch-the-scream.toml")?;
+// save_theme_to_file(&theme, "thag_styling/themes/built_in/thag-monet-woman-with-parasol.toml")?;

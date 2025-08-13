@@ -232,6 +232,8 @@ impl TermThemedExt for Term {
 
 #[cfg(test)]
 mod tests {
+    use crate::styling::basic_index_to_ansi;
+
     use super::*;
 
     #[test]
@@ -271,11 +273,12 @@ mod tests {
 
     #[test]
     fn test_color_conversion() {
+        let index = 42;
+        let ansi = basic_index_to_ansi(index);
         let color_info = ColorInfo {
-            index: 42,
-            value: ColorValue::Color256 { color256: 42 },
-            hex: "#ff0000".to_string(),
-            name: "test".to_string(),
+            index,
+            value: ColorValue::Color256 { color256: index },
+            ansi,
         };
 
         let console_color = ConsoleColor::from(&color_info);
@@ -312,11 +315,15 @@ mod tests {
 
     #[test]
     fn test_basic_color_mapping() {
+        let index = 1;
+        let ansi = basic_index_to_ansi(index);
         let red_info = ColorInfo {
-            index: 1,
-            value: ColorValue::Basic { basic: 1 },
-            hex: "#ff0000".to_string(),
-            name: "red".to_string(),
+            index,
+            value: ColorValue::Basic {
+                ansi: ansi.to_string(),
+                index,
+            },
+            ansi,
         };
 
         let console_color = ConsoleColor::from(&red_info);

@@ -7,7 +7,9 @@
 #![cfg(feature = "image_themes")]
 
 use crate::{
-    cprtln, ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma, Theme,
+    cprtln,
+    styling::{self, rgb_to_hex},
+    ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma, Theme,
 };
 use image::{DynamicImage, ImageReader};
 use palette::{FromColor, Hsl, IntoColor, Lab, Srgb};
@@ -54,7 +56,7 @@ impl Default for ImageThemeConfig {
 }
 
 /// Represents a color with its HSL properties for easier analysis
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct ColorAnalysis {
     rgb: [u8; 3],
     lab: Lab,
@@ -119,25 +121,25 @@ impl ColorAnalysis {
         has_good_contrast_against
     }
 
-    /// Check if this color is suitable as an accent color
-    fn is_accent_suitable(&self, saturation_threshold: f32) -> bool {
-        // dbg!(self.saturation);
-        // dbg!(self.lightness);
-        // dbg!(
-        //     self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9
-        // );
+    // /// Check if this color is suitable as an accent color
+    // fn is_accent_suitable(&self, saturation_threshold: f32) -> bool {
+    //     // dbg!(self.saturation);
+    //     // dbg!(self.lightness);
+    //     // dbg!(
+    //     //     self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9
+    //     // );
 
-        let is_accent_suitable =
-            self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9;
-        // dbg!(is_accent_suitable);
-        eprintln!(
-            "self.rgb={}, is_accent_suitable={is_accent_suitable}",
-            Style::new()
-                .with_rgb(self.rgb)
-                .paint(format!("{:?}", self.rgb))
-        );
-        is_accent_suitable
-    }
+    //     let is_accent_suitable =
+    //         self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9;
+    //     // dbg!(is_accent_suitable);
+    //     eprintln!(
+    //         "self.rgb={}, is_accent_suitable={is_accent_suitable}",
+    //         Style::new()
+    //             .with_rgb(self.rgb)
+    //             .paint(format!("{:?}", self.rgb))
+    //     );
+    //     is_accent_suitable
+    // }
 
     /// Calculate perceptual distance to another color using Delta E
     fn distance_to(&self, other: &ColorAnalysis) -> f32 {
@@ -458,9 +460,12 @@ impl ImageThemeGenerator {
         for color in &enhanced_colors {
             eprintln!(
                 "{}",
-                Style::new()
-                    .with_rgb(color.rgb)
-                    .paint(format!("{:?} = hue: {:.0}", color.rgb, color.hue))
+                Style::new().with_rgb(color.rgb).paint(format!(
+                    "{} {:?} = hue: {:.0}",
+                    rgb_to_hex(&color.rgb.into()),
+                    color.rgb,
+                    color.hue
+                ))
             );
         }
 
@@ -502,15 +507,28 @@ impl ImageThemeGenerator {
         // Create a comprehensive unique color assignment
         let mut used_colors = vec![normal_color];
 
-        let subtle_color = self.find_most_different_color(&enhanced_colors, &used_colors);
-        used_colors.push(subtle_color);
+        // let subtle_color = self.find_most_different_color(&enhanced_colors, &used_colors);
+        // used_colors.push(subtle_color);
 
-        let hint_color = self.find_most_different_color(&enhanced_colors, &used_colors);
-        used_colors.push(hint_color);
+        // let hint_color = self.find_most_different_color(&enhanced_colors, &used_colors);
+        // used_colors.push(hint_color);
+
+        // Select heading colors with good contrast and uniqueness
+        let heading_colors = self.select_unique_heading_colors(&enhanced_colors, &used_colors);
+        let (hd1, hd2, hd3) = heading_colors;
+        used_colors.push(hd1);
+        used_colors.push(hd2);
+        used_colors.push(hd3);
+
+        let mut used_colors_clone = used_colors.clone();
 
         // Map colors to semantic roles with better contrast and diversity
-        let semantic_colors =
-            self.assign_semantic_colors(&enhanced_colors, normal_color, is_light_theme);
+        let semantic_colors = self.assign_semantic_colors(
+            &enhanced_colors,
+            &mut used_colors_clone,
+            normal_color,
+            is_light_theme,
+        );
 
         // Ensure semantic colors are also unique from normal/subtle
         used_colors.extend(&[
@@ -522,15 +540,23 @@ impl ImageThemeGenerator {
             semantic_colors.emphasis,
         ]);
 
-        // Select heading colors with good contrast and uniqueness
-        let heading_colors = self.select_unique_heading_colors(&enhanced_colors, &used_colors);
+        eprintln!("");
+        assert!(used_colors.contains(&semantic_colors.error));
+        let subtle_color =
+            self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+        used_colors.push(subtle_color);
+
+        let hint_color =
+            self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+        used_colors.push(hint_color);
 
         // Debug and trace should be different from subtle and hint
-        let debug_color = self.find_most_different_color(&enhanced_colors, &used_colors);
-        let trace_color = if debug_color.distance_to(hint_color) > 30.0 {
+        let debug_color =
+            self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+        let trace_color = if debug_color.distance_to(hint_color) > 20.0 {
             hint_color
         } else {
-            self.find_most_different_color(&enhanced_colors, &[debug_color])
+            self.find_most_different_color(&enhanced_colors, &[debug_color], &background_color)
         };
 
         Ok(Palette {
@@ -785,6 +811,7 @@ impl ImageThemeGenerator {
     fn assign_semantic_colors<'a>(
         &self,
         colors: &'a [ColorAnalysis],
+        used_colors: &'a mut Vec<&'a ColorAnalysis>,
         normal_color: &'a ColorAnalysis,
         _is_light_theme: bool,
     ) -> SemanticColors<'a> {
@@ -802,7 +829,12 @@ impl ImageThemeGenerator {
         // Ensure all semantic colors are unique and different from each other
         let error_color =
             self.find_color_by_hue_improved(&available_colors, 0.0, 60.0, normal_color);
-        let mut used_colors = vec![error_color];
+        eprintln!("error_color={}", rgb_to_hex(&error_color.rgb.into()));
+        // let mut used_colors = vec![error_color];
+        // let mut used_colors = used_colors.to_vec();
+        used_colors.push(error_color);
+
+        assert!(used_colors.contains(&error_color));
 
         let warning_color = self.find_unique_color_by_hue(
             &available_colors,
@@ -811,7 +843,11 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
+        eprintln!("warning_color={}", rgb_to_hex(&warning_color.rgb.into()));
+
         used_colors.push(warning_color);
+        assert!(used_colors.contains(&error_color));
+        assert!(used_colors.contains(&warning_color));
 
         let success_color = self.find_unique_color_by_hue(
             &available_colors,
@@ -820,7 +856,12 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
+        eprintln!("success_color={}", rgb_to_hex(&success_color.rgb.into()));
+
         used_colors.push(success_color);
+        assert!(used_colors.contains(&error_color));
+        assert!(used_colors.contains(&warning_color));
+        assert!(used_colors.contains(&success_color));
 
         let info_color = self.find_unique_color_by_hue(
             &available_colors,
@@ -829,7 +870,12 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
+        eprintln!("info_color={}", rgb_to_hex(&info_color.rgb.into()));
         used_colors.push(info_color);
+        assert!(used_colors.contains(&error_color));
+        assert!(used_colors.contains(&warning_color));
+        assert!(used_colors.contains(&success_color));
+        assert!(used_colors.contains(&info_color));
 
         let code_color = self.find_unique_color_by_hue(
             &available_colors,
@@ -838,7 +884,13 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
+        eprintln!("code_color={}", rgb_to_hex(&code_color.rgb.into()));
         used_colors.push(code_color);
+        assert!(used_colors.contains(&error_color));
+        assert!(used_colors.contains(&warning_color));
+        assert!(used_colors.contains(&success_color));
+        assert!(used_colors.contains(&info_color));
+        assert!(used_colors.contains(&code_color));
 
         let emphasis_color = self.find_unique_color_by_hue(
             &available_colors,
@@ -847,6 +899,14 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
+        eprintln!("emphasis_color={}", rgb_to_hex(&emphasis_color.rgb.into()));
+        used_colors.push(emphasis_color);
+        assert!(used_colors.contains(&error_color));
+        assert!(used_colors.contains(&warning_color));
+        assert!(used_colors.contains(&success_color));
+        assert!(used_colors.contains(&info_color));
+        assert!(used_colors.contains(&code_color));
+        assert!(used_colors.contains(&emphasis_color));
 
         SemanticColors {
             error: error_color,
@@ -858,15 +918,29 @@ impl ImageThemeGenerator {
         }
     }
 
-    /// Find the color most different from all used colors
+    /// For the most discreet colors: ind the color most different from all used colors but still not bright.
     fn find_most_different_color<'a>(
         &self,
         colors: &'a [ColorAnalysis],
         used_colors: &[&ColorAnalysis],
+        background: &'a ColorAnalysis,
     ) -> &'a ColorAnalysis {
+        eprintln!("1. used_colors.len()={}", used_colors.len());
         colors
             .iter()
-            .filter(|c| !used_colors.iter().any(|used| used.distance_to(c) < 20.0))
+            .filter(|c| {
+                !used_colors.iter().any(|&used| {
+                    let lightness_diff = (c.lightness - background.lightness).abs();
+                    eprintln!(
+                        "c={}, used={}, distance={}, lightness_diff={lightness_diff}",
+                        styling::rgb_to_hex(&c.rgb.into()),
+                        styling::rgb_to_hex(&used.rgb.into()),
+                        used.distance_to(c)
+                    );
+                    used == *c /* || used.distance_to(c) < 20.0 */
+                    || lightness_diff > 15.0
+                })
+            })
             .max_by(|a, b| {
                 let min_dist_a = used_colors
                     .iter()
@@ -961,7 +1035,7 @@ impl ImageThemeGenerator {
         // Second try: colors with good contrast to fallback
         if let Some(color) = colors
             .iter()
-            .filter(|c| c.distance_to(fallback) > 40.0)
+            .filter(|c| c.distance_to(fallback) > 10.0)
             .max_by(|a, b| {
                 a.distance_to(fallback)
                     .partial_cmp(&b.distance_to(fallback))
@@ -989,23 +1063,49 @@ impl ImageThemeGenerator {
             .iter()
             .filter(|c| {
                 let hue = c.hue;
-                hue >= hue_start
-                    && hue < hue_end
-                    && !used_colors.iter().any(|used| used.distance_to(c) < 30.0)
+                /* hue >= hue_start
+                && hue < hue_end
+                && */
+                !used_colors.iter().any(|used| {
+                    let distance_to = used.distance_to(c);
+                    eprintln!(
+                        "c={}, used={}, distance_to={distance_to}, distance_to < 15.0? {}",
+                        rgb_to_hex(&c.rgb.into()),
+                        rgb_to_hex(&used.rgb.into()),
+                        distance_to < 15.0
+                    );
+                    used == *c || distance_to < 15.0
+                })
             })
+            .inspect(|c| eprintln!("{} made the cut on 1st try", rgb_to_hex(&c.rgb.into())))
             .max_by(|a, b| {
                 a.frequency
                     .partial_cmp(&b.frequency)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {
+            eprintln!("1. Returning {}", rgb_to_hex(&color.rgb.into()));
             return color;
         }
 
         // Second try: any color that's different enough from used colors
+        eprintln!("2. used_colors.len()={}", used_colors.len());
         if let Some(color) = colors
             .iter()
-            .filter(|c| !used_colors.iter().any(|used| used.distance_to(c) < 40.0))
+            .filter(|c| !used_colors.contains(c))
+            .filter(|c| {
+                !used_colors.iter().any(|used| {
+                    let distance_to = used.distance_to(c);
+                    eprintln!(
+                        "c={}, used={}, distance_to={distance_to}, distance_to < 10.0? {}",
+                        rgb_to_hex(&c.rgb.into()),
+                        rgb_to_hex(&used.rgb.into()),
+                        distance_to < 10.0
+                    );
+                    distance_to < 10.0
+                })
+            })
+            .inspect(|c| eprintln!("{} made the cut on 2nd try", rgb_to_hex(&c.rgb.into())))
             .max_by(|a, b| {
                 // Prefer colors that are maximally different from all used colors
                 let min_dist_a = used_colors
@@ -1021,10 +1121,15 @@ impl ImageThemeGenerator {
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {
+            eprintln!("2. Returning {}", rgb_to_hex(&color.rgb.into()));
             return color;
         }
 
         // Final fallback
+        eprintln!(
+            "3. Final fallback: Returning {}",
+            rgb_to_hex(&colors.first().unwrap_or(&fallback).rgb.into())
+        );
         colors.first().copied().unwrap_or(fallback)
     }
 

@@ -71,7 +71,7 @@ fn color_info_to_ratatui_color(color_info: &ColorInfo) -> RataColor {
     }
 }
 
-/// Note: From implementations are provided in the main styling.rs file to avoid conflicts
+// Note: From implementations are provided in the main styling.rs file to avoid conflicts
 
 /// Convenience methods for ratatui styling
 pub trait RatatuiStyleExt {

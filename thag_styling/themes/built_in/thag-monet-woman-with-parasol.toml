@@ -3,113 +3,52 @@ description = "Generated from image analysis"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#181818"]
-bg_rgbs = [[
-    24,
-    24,
-    24,
-]]
+bg_rgbs = [[24, 24, 24]]
 
 [palette.heading1]
-rgb = [
-    144,
-    192,
-    216,
-]
+rgb = [120, 144, 168]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [
-    205,
-    205,
-    110,
-]
+rgb = [151, 170, 188]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [
-    106,
-    171,
-    203,
-]
+rgb = [144, 192, 216]
 style = ["bold"]
 
 [palette.error]
-rgb = [
-    168,
-    144,
-    120,
-]
+rgb = [168, 144, 120]
 
 [palette.warning]
-rgb = [
-    120,
-    144,
-    168,
-]
+rgb = [192, 192, 72]
 
 [palette.success]
-rgb = [
-    192,
-    192,
-    72,
-]
+rgb = [205, 205, 110]
 
 [palette.info]
-rgb = [
-    182,
-    195,
-    208,
-]
+rgb = [106, 171, 203]
 
 [palette.emphasis]
-rgb = [
-    192,
-    192,
-    72,
-]
+rgb = [188, 170, 151]
 
 [palette.code]
-rgb = [
-    151,
-    170,
-    188,
-]
+rgb = [182, 195, 208]
 
 [palette.normal]
-rgb = [
-    192,
-    192,
-    168,
-]
+rgb = [192, 192, 168]
 
 [palette.subtle]
-rgb = [
-    120,
-    144,
-    168,
-]
+rgb = [171, 171, 138]
 
 [palette.hint]
-rgb = [
-    120,
-    144,
-    168,
-]
+rgb = [120, 144, 168]
 style = ["italic"]
 
 [palette.debug]
-rgb = [
-    120,
-    144,
-    168,
-]
+rgb = [120, 144, 168]
 style = ["dim"]
 
 [palette.trace]
-rgb = [
-    192,
-    192,
-    72,
-]
+rgb = [192, 192, 72]
 style = ["italic", "dim"]
-

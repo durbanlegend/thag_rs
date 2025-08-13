@@ -1,4 +1,4 @@
-name = "image-Munch_The_Scream"
+name = "thag-botticelli-birth-of-venus"
 description = "Generated from image analysis"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -6,49 +6,49 @@ backgrounds = ["#181818"]
 bg_rgbs = [[24, 24, 24]]
 
 [palette.heading1]
-rgb = [72, 144, 216]
+rgb = [192, 72, 120]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [144, 168, 192]
+rgb = [205, 110, 148]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [114, 170, 225]
+rgb = [233, 161, 124]
 style = ["bold"]
 
 [palette.error]
-rgb = [201, 66, 66]
+rgb = [174, 93, 93]
 
 [palette.warning]
-rgb = [144, 144, 120]
+rgb = [208, 173, 155]
 
 [palette.success]
-rgb = [224, 129, 91]
+rgb = [96, 168, 168]
 
 [palette.info]
-rgb = [216, 216, 144]
+rgb = [146, 146, 146]
 
 [palette.emphasis]
-rgb = [201, 174, 66]
+rgb = [192, 144, 120]
 
 [palette.code]
-rgb = [216, 96, 48]
+rgb = [176, 115, 85]
 
 [palette.normal]
-rgb = [216, 168, 96]
+rgb = [168, 192, 192]
 
 [palette.subtle]
-rgb = [232, 162, 134]
+rgb = [108, 150, 150]
 
 [palette.hint]
-rgb = [226, 190, 137]
+rgb = [172, 172, 172]
 style = ["italic"]
 
 [palette.debug]
-rgb = [206, 146, 55]
+rgb = [138, 171, 171]
 style = ["dim"]
 
 [palette.trace]
-rgb = [226, 190, 137]
+rgb = [192, 72, 120]
 style = ["italic", "dim"]

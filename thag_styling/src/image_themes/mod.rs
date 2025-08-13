@@ -7,9 +7,8 @@
 #![cfg(feature = "image_themes")]
 
 use crate::{
-    cprtln,
-    styling::{self, rgb_to_hex},
-    ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma, Theme,
+    cprtln, styling::rgb_to_hex, ColorSupport, Palette, Role, Style, StylingError, StylingResult,
+    TermBgLuma, Theme,
 };
 use image::{DynamicImage, ImageReader};
 use palette::{FromColor, Hsl, IntoColor, Lab, Srgb};
@@ -516,6 +515,36 @@ impl ImageThemeGenerator {
         // Select heading colors with good contrast and uniqueness
         let heading_colors = self.select_unique_heading_colors(&enhanced_colors, &used_colors);
         let (hd1, hd2, hd3) = heading_colors;
+        eprintln!(
+            "Heading1={}",
+            Style::new().with_rgb(hd1.rgb).bold().paint(format!(
+                "{}, hue: {}, saturation: {}, lightness: {}",
+                rgb_to_hex(&hd1.rgb.into()),
+                hd1.hue,
+                hd1.saturation,
+                hd1.lightness
+            ))
+        );
+        eprintln!(
+            "Heading2={}",
+            Style::new().with_rgb(hd2.rgb).bold().paint(format!(
+                "{}, hue: {}, saturation: {}, lightness: {}",
+                rgb_to_hex(&hd2.rgb.into()),
+                hd2.hue,
+                hd2.saturation,
+                hd2.lightness
+            ))
+        );
+        eprintln!(
+            "Heading3={}",
+            Style::new().with_rgb(hd3.rgb).bold().paint(format!(
+                "{}, hue: {}, saturation: {}, lightness: {}",
+                rgb_to_hex(&hd3.rgb.into()),
+                hd3.hue,
+                hd3.saturation,
+                hd3.lightness
+            ))
+        );
         used_colors.push(hd1);
         used_colors.push(hd2);
         used_colors.push(hd3);
@@ -544,20 +573,55 @@ impl ImageThemeGenerator {
         assert!(used_colors.contains(&semantic_colors.error));
         let subtle_color =
             self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+        eprintln!(
+            "subtle_color={}",
+            Style::new().with_rgb(subtle_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&subtle_color.rgb.into()),
+                subtle_color.hue
+            ))
+        );
+
         used_colors.push(subtle_color);
 
         let hint_color =
             self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+        eprintln!(
+            "hint_color={}",
+            Style::new().with_rgb(hint_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&hint_color.rgb.into()),
+                hint_color.hue
+            ))
+        );
+
         used_colors.push(hint_color);
 
         // Debug and trace should be different from subtle and hint
         let debug_color =
             self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+        eprintln!(
+            "debug_color={}",
+            Style::new().with_rgb(debug_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&debug_color.rgb.into()),
+                debug_color.hue
+            ))
+        );
+
         let trace_color = if debug_color.distance_to(hint_color) > 20.0 {
             hint_color
         } else {
             self.find_most_different_color(&enhanced_colors, &[debug_color], &background_color)
         };
+        eprintln!(
+            "trace_color={}",
+            Style::new().with_rgb(trace_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&trace_color.rgb.into()),
+                trace_color.hue
+            ))
+        );
 
         Ok(Palette {
             normal: Style::new().with_rgb(normal_color.rgb),
@@ -829,7 +893,14 @@ impl ImageThemeGenerator {
         // Ensure all semantic colors are unique and different from each other
         let error_color =
             self.find_color_by_hue_improved(&available_colors, 0.0, 60.0, normal_color);
-        eprintln!("error_color={}", rgb_to_hex(&error_color.rgb.into()));
+        eprintln!(
+            "error_color={}",
+            Style::new().with_rgb(error_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&error_color.rgb.into()),
+                error_color.hue
+            ))
+        );
         // let mut used_colors = vec![error_color];
         // let mut used_colors = used_colors.to_vec();
         used_colors.push(error_color);
@@ -843,7 +914,14 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
-        eprintln!("warning_color={}", rgb_to_hex(&warning_color.rgb.into()));
+        eprintln!(
+            "warning_color={}",
+            Style::new().with_rgb(warning_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&warning_color.rgb.into()),
+                warning_color.hue
+            ))
+        );
 
         used_colors.push(warning_color);
         assert!(used_colors.contains(&error_color));
@@ -856,7 +934,14 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
-        eprintln!("success_color={}", rgb_to_hex(&success_color.rgb.into()));
+        eprintln!(
+            "success_color={}",
+            Style::new().with_rgb(success_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&success_color.rgb.into()),
+                success_color.hue
+            ))
+        );
 
         used_colors.push(success_color);
         assert!(used_colors.contains(&error_color));
@@ -870,7 +955,15 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
-        eprintln!("info_color={}", rgb_to_hex(&info_color.rgb.into()));
+        eprintln!(
+            "info_color={}",
+            Style::new().with_rgb(info_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&info_color.rgb.into()),
+                info_color.hue
+            ))
+        );
+
         used_colors.push(info_color);
         assert!(used_colors.contains(&error_color));
         assert!(used_colors.contains(&warning_color));
@@ -884,7 +977,15 @@ impl ImageThemeGenerator {
             normal_color,
             &used_colors,
         );
-        eprintln!("code_color={}", rgb_to_hex(&code_color.rgb.into()));
+        eprintln!(
+            "code_color={}",
+            Style::new().with_rgb(code_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&code_color.rgb.into()),
+                code_color.hue
+            ))
+        );
+
         used_colors.push(code_color);
         assert!(used_colors.contains(&error_color));
         assert!(used_colors.contains(&warning_color));
@@ -894,12 +995,20 @@ impl ImageThemeGenerator {
 
         let emphasis_color = self.find_unique_color_by_hue(
             &available_colors,
-            300.0,
-            360.0,
+            0.0,
+            120.0,
             normal_color,
             &used_colors,
         );
-        eprintln!("emphasis_color={}", rgb_to_hex(&emphasis_color.rgb.into()));
+        eprintln!(
+            "emphasis_color={}",
+            Style::new().with_rgb(emphasis_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&emphasis_color.rgb.into()),
+                emphasis_color.hue
+            ))
+        );
+
         used_colors.push(emphasis_color);
         assert!(used_colors.contains(&error_color));
         assert!(used_colors.contains(&warning_color));
@@ -931,12 +1040,12 @@ impl ImageThemeGenerator {
             .filter(|c| {
                 !used_colors.iter().any(|&used| {
                     let lightness_diff = (c.lightness - background.lightness).abs();
-                    eprintln!(
-                        "c={}, used={}, distance={}, lightness_diff={lightness_diff}",
-                        styling::rgb_to_hex(&c.rgb.into()),
-                        styling::rgb_to_hex(&used.rgb.into()),
-                        used.distance_to(c)
-                    );
+                    // eprintln!(
+                    //     "c={}, used={}, distance={}, lightness_diff={lightness_diff}",
+                    //     styling::rgb_to_hex(&c.rgb.into()),
+                    //     styling::rgb_to_hex(&used.rgb.into()),
+                    //     used.distance_to(c)
+                    // );
                     used == *c /* || used.distance_to(c) < 20.0 */
                     || lightness_diff > 15.0
                 })
@@ -970,14 +1079,29 @@ impl ImageThemeGenerator {
 
         // Sort by visual distinctiveness (combination of saturation and contrast)
         available.sort_by(|a, b| {
-            let score_a = a.saturation + (a.lightness - 0.5).abs();
-            let score_b = b.saturation + (b.lightness - 0.5).abs();
-            score_b
-                .partial_cmp(&score_a)
+            // let score_a = a.saturation + (a.lightness - 0.5).abs();
+            // let score_b = b.saturation + (b.lightness - 0.5).abs();
+            // score_b
+            //     .partial_cmp(&score_a)
+            //     .unwrap_or(std::cmp::Ordering::Equal)
+            b.hue
+                .partial_cmp(&a.hue)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        let h1 = available.get(0).copied().unwrap_or_else(|| {
+        let mut headings = available
+            .iter()
+            .take(3)
+            .cloned()
+            .collect::<Vec<&ColorAnalysis>>();
+
+        headings.sort_by(|a, b| {
+            a.lightness
+                .partial_cmp(&b.lightness)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        let h1 = headings.get(0).copied().unwrap_or_else(|| {
             eprintln!(
                 "Defaulting HD1 to {}",
                 Style::new()
@@ -986,7 +1110,7 @@ impl ImageThemeGenerator {
             );
             &colors[0]
         });
-        let h2 = available.get(1).copied().unwrap_or_else(|| {
+        let h2 = headings.get(1).copied().unwrap_or_else(|| {
             eprintln!(
                 "Defaulting HD2 to {}",
                 Style::new()
@@ -995,7 +1119,7 @@ impl ImageThemeGenerator {
             );
             &colors[1 % colors.len()]
         });
-        let h3 = available.get(2).copied().unwrap_or_else(|| {
+        let h3 = headings.get(2).copied().unwrap_or_else(|| {
             eprintln!(
                 "Defaulting HD3 to {}",
                 Style::new()
@@ -1023,9 +1147,14 @@ impl ImageThemeGenerator {
                 let hue = c.hue;
                 hue >= hue_start && hue < hue_end
             })
-            .max_by(|a, b| {
-                a.frequency
-                    .partial_cmp(&b.frequency)
+            // .max_by(|a, b| {
+            //     a.frequency
+            //         .partial_cmp(&b.frequency)
+            //         .unwrap_or(std::cmp::Ordering::Equal)
+            // })
+            .min_by(|a, b| {
+                a.hue
+                    .partial_cmp(&b.hue)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {
@@ -1063,19 +1192,22 @@ impl ImageThemeGenerator {
             .iter()
             .filter(|c| {
                 let hue = c.hue;
-                /* hue >= hue_start
-                && hue < hue_end
-                && */
-                !used_colors.iter().any(|used| {
-                    let distance_to = used.distance_to(c);
-                    eprintln!(
-                        "c={}, used={}, distance_to={distance_to}, distance_to < 15.0? {}",
-                        rgb_to_hex(&c.rgb.into()),
-                        rgb_to_hex(&used.rgb.into()),
-                        distance_to < 15.0
-                    );
-                    used == *c || distance_to < 15.0
-                })
+                hue >= hue_start
+                    && hue < hue_end
+                    && !used_colors.iter().any(|used| {
+                        let distance_to = used.distance_to(c);
+                        eprintln!(
+                            "c={}, used={}, distance_to={distance_to}, eligible: {}",
+                            Style::new()
+                                .with_rgb(c.rgb)
+                                .paint(rgb_to_hex(&c.rgb.into())),
+                            Style::new()
+                                .with_rgb(used.rgb)
+                                .paint(rgb_to_hex(&used.rgb.into())),
+                            distance_to >= 15.0
+                        );
+                        used == *c || distance_to < 15.0
+                    })
             })
             .inspect(|c| eprintln!("{} made the cut on 1st try", rgb_to_hex(&c.rgb.into())))
             .max_by(|a, b| {
@@ -1090,6 +1222,7 @@ impl ImageThemeGenerator {
 
         // Second try: any color that's different enough from used colors
         eprintln!("2. used_colors.len()={}", used_colors.len());
+        let min_distance = 5.0;
         if let Some(color) = colors
             .iter()
             .filter(|c| !used_colors.contains(c))
@@ -1097,12 +1230,12 @@ impl ImageThemeGenerator {
                 !used_colors.iter().any(|used| {
                     let distance_to = used.distance_to(c);
                     eprintln!(
-                        "c={}, used={}, distance_to={distance_to}, distance_to < 10.0? {}",
+                        "c={}, used={}, distance_to={distance_to}, eligible: {}",
                         rgb_to_hex(&c.rgb.into()),
                         rgb_to_hex(&used.rgb.into()),
-                        distance_to < 10.0
+                        distance_to >= min_distance
                     );
-                    distance_to < 10.0
+                    distance_to < min_distance
                 })
             })
             .inspect(|c| eprintln!("{} made the cut on 2nd try", rgb_to_hex(&c.rgb.into())))

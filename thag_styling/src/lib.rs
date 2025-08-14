@@ -15,6 +15,9 @@ pub mod styling;
 /// Third-party crate integrations
 pub mod integrations;
 
+/// Runtime terminal palette synchronization using OSC sequences
+pub mod palette_sync;
+
 /// Image-based theme generation
 #[cfg(feature = "image_themes")]
 pub mod image_themes;
@@ -33,6 +36,9 @@ pub use styling::{
 
 // Re-export integration traits and types
 pub use integrations::ThemedStyle;
+
+// Re-export palette sync functionality
+pub use palette_sync::PaletteSync;
 
 #[cfg(feature = "ratatui_support")]
 pub use integrations::ratatui_integration::RatatuiStyleExt;

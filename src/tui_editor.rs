@@ -105,7 +105,7 @@ impl ManagedTerminal<'_> {
     ///
     /// This function will return an error if there is an issue drawing to the terminal.
     #[profiled]
-    pub fn draw<F>(&mut self, f: F) -> std::io::Result<CompletedFrame>
+    pub fn draw<F>(&mut self, f: F) -> std::io::Result<CompletedFrame<'_>>
     where
         F: FnOnce(&mut Frame<'_>),
     {

@@ -42,7 +42,7 @@ pub fn main() {
 
     #[cfg(not(feature = "build"))]
     {
-        println!("Feature `build` not specified - exiting")
+        println!("Feature `build` not specified - exiting");
     }
 }
 

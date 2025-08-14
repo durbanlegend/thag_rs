@@ -32,6 +32,7 @@
 - [ ]  Make detection or at least config mandatory.
 - [ ]  Add further attributes such as reversed to Style.
 - [ ]  Debug success, emphasis, code and subtle all getting the same colour.
+- [ ]  Thag tool for setting terminal theme to a thag theme.
 
 rgb: [u8; 3]
 

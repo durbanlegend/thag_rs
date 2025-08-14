@@ -11,12 +11,42 @@ use nu_ansi_term::{Color as NuColor, Style as NuStyle};
 impl ThemedStyle<Self> for NuStyle {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
-        Self::from_thag_style(&thag_style)
+        Self::from(&thag_style)
     }
 
     fn from_thag_style(style: &Style) -> Self {
+        Self::from(style)
+    }
+}
+
+impl ThemedStyle<Self> for NuColor {
+    fn themed(role: Role) -> Self {
+        Self::from(&role)
+    }
+
+    fn from_thag_style(style: &Style) -> Self {
+        style
+            .foreground
+            .as_ref()
+            .map_or(Self::Fixed(7), NuColor::from) // Default to white
+    }
+}
+
+// From implementations for nu-ansi-term types
+impl From<&ColorInfo> for NuColor {
+    fn from(color_info: &ColorInfo) -> Self {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+            ColorValue::Color256 { color256 } => Self::Fixed(*color256),
+            ColorValue::Basic { .. } => Self::Fixed(color_info.index),
+        }
+    }
+}
+
+impl From<&Style> for NuStyle {
+    fn from(style: &Style) -> Self {
         Self {
-            foreground: style.foreground.as_ref().map(color_info_to_nu_color),
+            foreground: style.foreground.as_ref().map(NuColor::from),
             background: None, // Background color not supported in current Style struct
             is_bold: style.bold,
             is_dimmed: style.dim,
@@ -31,33 +61,22 @@ impl ThemedStyle<Self> for NuStyle {
     }
 }
 
-impl ThemedStyle<Self> for NuColor {
-    fn themed(role: Role) -> Self {
-        let thag_style = Style::from(role);
-        thag_style
-            .foreground
-            .as_ref()
-            .map_or_else(|| Self::Fixed(u8::from(&role)), color_info_to_nu_color)
+impl From<&Role> for NuStyle {
+    fn from(role: &Role) -> Self {
+        let style = Style::from(*role);
+        Self::from(&style)
     }
+}
 
-    fn from_thag_style(style: &Style) -> Self {
+impl From<&Role> for NuColor {
+    fn from(role: &Role) -> Self {
+        let style = Style::from(*role);
         style
             .foreground
             .as_ref()
-            .map_or(Self::Fixed(7), color_info_to_nu_color) // Default to white
+            .map_or_else(|| Self::Fixed(u8::from(role)), NuColor::from)
     }
 }
-
-/// Convert `ColorInfo` to `nu-ansi-term` Color
-const fn color_info_to_nu_color(color_info: &ColorInfo) -> NuColor {
-    match &color_info.value {
-        ColorValue::TrueColor { rgb } => NuColor::Rgb(rgb[0], rgb[1], rgb[2]),
-        ColorValue::Color256 { color256 } => NuColor::Fixed(*color256),
-        ColorValue::Basic { .. } => NuColor::Fixed(color_info.index),
-    }
-}
-
-// Note: From implementations are provided in the main styling.rs file to avoid conflicts
 
 /// Convenience methods for nu-ansi-term styling
 pub trait NuAnsiTermStyleExt {
@@ -89,7 +108,7 @@ impl NuAnsiTermStyleExt for NuStyle {
     }
 
     fn with_thag_style(self, style: &Style) -> Self {
-        let themed = Self::from_thag_style(style);
+        let themed = Self::from(style);
         Self {
             foreground: themed.foreground.or(self.foreground),
             background: themed.background.or(self.background),
@@ -188,5 +207,36 @@ mod tests {
         assert_ne!(completion, selection);
         assert_ne!(selection, error);
         assert_ne!(error, hint);
+    }
+
+    #[test]
+    fn test_from_implementations() {
+        use crate::{ColorInfo, ColorValue, Style};
+
+        // Test ColorInfo to NuColor conversion
+        let color_info = ColorInfo {
+            value: ColorValue::TrueColor { rgb: [255, 0, 0] },
+            ansi: "31",
+            index: 1,
+        };
+        let nu_color = NuColor::from(&color_info);
+        match nu_color {
+            NuColor::Rgb(255, 0, 0) => (),
+            _ => panic!("Expected RGB color"),
+        }
+
+        // Test Role to NuStyle conversion
+        let nu_style = NuStyle::from(&Role::Error);
+        assert!(nu_style.foreground.is_some());
+
+        // Test Style to NuStyle conversion
+        let style = Style::from(Role::Warning);
+        let nu_style = NuStyle::from(&style);
+        assert!(nu_style.foreground.is_some());
+
+        // Test using .into() syntax
+        let role = Role::Success;
+        let _color: NuColor = (&role).into();
+        let _style: NuStyle = (&role).into();
     }
 }

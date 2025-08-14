@@ -11,15 +11,45 @@ use ratatui::style::{Color as RataColor, Modifier, Style as RataStyle};
 impl ThemedStyle<Self> for RataStyle {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
-        Self::from_thag_style(&thag_style)
+        Self::from(&thag_style)
     }
 
     fn from_thag_style(style: &Style) -> Self {
+        Self::from(style)
+    }
+}
+
+impl ThemedStyle<Self> for RataColor {
+    fn themed(role: Role) -> Self {
+        Self::from(&role)
+    }
+
+    fn from_thag_style(style: &Style) -> Self {
+        style
+            .foreground
+            .as_ref()
+            .map_or(Self::Reset, RataColor::from)
+    }
+}
+
+// From implementations for ratatui types
+impl From<&ColorInfo> for RataColor {
+    fn from(color_info: &ColorInfo) -> Self {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+            ColorValue::Color256 { color256 } => Self::Indexed(*color256),
+            ColorValue::Basic { .. } => Self::Indexed(color_info.index),
+        }
+    }
+}
+
+impl From<&Style> for RataStyle {
+    fn from(style: &Style) -> Self {
         let mut rata_style = Self::default();
 
         // Apply foreground color
         if let Some(color_info) = &style.foreground {
-            rata_style = rata_style.fg(color_info_to_ratatui_color(color_info));
+            rata_style = rata_style.fg(RataColor::from(color_info));
         }
 
         // Note: Background color not supported in current Style struct
@@ -43,33 +73,22 @@ impl ThemedStyle<Self> for RataStyle {
     }
 }
 
-impl ThemedStyle<Self> for RataColor {
-    fn themed(role: Role) -> Self {
-        let thag_style = Style::from(role);
-        thag_style.foreground.as_ref().map_or_else(
-            || Self::Indexed(u8::from(&role)),
-            color_info_to_ratatui_color,
-        )
+impl From<&Role> for RataStyle {
+    fn from(role: &Role) -> Self {
+        let style = Style::from(*role);
+        Self::from(&style)
     }
+}
 
-    fn from_thag_style(style: &Style) -> Self {
+impl From<&Role> for RataColor {
+    fn from(role: &Role) -> Self {
+        let style = Style::from(*role);
         style
             .foreground
             .as_ref()
-            .map_or(Self::Reset, color_info_to_ratatui_color)
+            .map_or_else(|| Self::Indexed(u8::from(role)), RataColor::from)
     }
 }
-
-/// Convert `ColorInfo` to `ratatui` Color
-const fn color_info_to_ratatui_color(color_info: &ColorInfo) -> RataColor {
-    match &color_info.value {
-        ColorValue::TrueColor { rgb } => RataColor::Rgb(rgb[0], rgb[1], rgb[2]),
-        ColorValue::Color256 { color256 } => RataColor::Indexed(*color256),
-        ColorValue::Basic { .. } => RataColor::Indexed(color_info.index),
-    }
-}
-
-// Note: From implementations are provided in the main styling.rs file to avoid conflicts
 
 /// Convenience methods for ratatui styling
 pub trait RatatuiStyleExt {
@@ -89,7 +108,7 @@ impl RatatuiStyleExt for RataStyle {
     }
 
     fn with_thag_style(self, style: &Style) -> Self {
-        let themed = Self::from_thag_style(style);
+        let themed = Self::from(style);
         self.patch(themed)
     }
 }
@@ -97,6 +116,7 @@ impl RatatuiStyleExt for RataStyle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ratatui::prelude::Stylize;
 
     #[test]
     fn test_themed_style_creation() {
@@ -119,5 +139,36 @@ mod tests {
 
         // Should preserve the bold modifier
         assert!(themed_style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_from_implementations() {
+        use crate::{ColorInfo, ColorValue, Style};
+
+        // Test ColorInfo to RataColor conversion
+        let color_info = ColorInfo {
+            value: ColorValue::TrueColor { rgb: [255, 0, 0] },
+            ansi: "31",
+            index: 1,
+        };
+        let rata_color = RataColor::from(&color_info);
+        match rata_color {
+            RataColor::Rgb(255, 0, 0) => (),
+            _ => panic!("Expected RGB color"),
+        }
+
+        // Test Role to RataStyle conversion
+        let rata_style = RataStyle::from(&Role::Error);
+        assert!(rata_style.fg.is_some());
+
+        // Test Style to RataStyle conversion
+        let style = Style::from(Role::Warning);
+        let rata_style = RataStyle::from(&style);
+        assert!(rata_style.fg.is_some());
+
+        // Test using .into() syntax
+        let role = Role::Success;
+        let _color: RataColor = (&role).into();
+        let _style: RataStyle = (&role).into();
     }
 }

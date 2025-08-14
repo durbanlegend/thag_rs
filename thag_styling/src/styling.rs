@@ -3,6 +3,7 @@ use crate::{StylingError, StylingResult, ThemeError};
 // Type alias for compatibility with PaletteMethods proc macro
 type ThagResult<T> = StylingResult<T>;
 
+use crate::StylingConfigProvider;
 use serde::Deserialize;
 use std::fmt;
 use std::fs;
@@ -25,54 +26,7 @@ use thag_common::terminal::{self, get_term_bg_rgb, is_light_color};
 #[cfg(feature = "config")]
 use thag_common::config::maybe_config;
 
-#[cfg(feature = "ratatui_support")]
-use ratatui::style::Style as RataStyle;
-
-/// Trait for providing styling configuration to break circular dependency
-pub trait StylingConfigProvider {
-    /// Get color support setting
-    fn color_support(&self) -> ColorSupport;
-    /// Get terminal background luminance setting
-    fn term_bg_luma(&self) -> TermBgLuma;
-    /// Get terminal background RGB setting
-    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)>;
-    /// Get background color list
-    fn backgrounds(&self) -> Vec<String>;
-    /// Get preferred light themes
-    fn preferred_light(&self) -> Vec<String>;
-    /// Get preferred dark themes
-    fn preferred_dark(&self) -> Vec<String>;
-}
-
-/// Default implementation that uses no configuration
-pub struct NoConfigProvider;
-
-impl StylingConfigProvider for NoConfigProvider {
-    fn color_support(&self) -> ColorSupport {
-        ColorSupport::Undetermined
-    }
-
-    fn term_bg_luma(&self) -> TermBgLuma {
-        TermBgLuma::default()
-    }
-
-    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
-        None
-    }
-
-    fn backgrounds(&self) -> Vec<String> {
-        Vec::new()
-    }
-
-    fn preferred_light(&self) -> Vec<String> {
-        Vec::new()
-    }
-
-    fn preferred_dark(&self) -> Vec<String> {
-        Vec::new()
-    }
-}
-
+// #[cfg(feature = "ratatui_support")]
 #[cfg(feature = "config")]
 /// Implementation that uses the actual config
 pub struct ConfigProvider;
@@ -2995,79 +2949,6 @@ impl fmt::Display for Styled<String> {
             self.text,
             self.to_ansi_reset_codes()
         )
-    }
-}
-
-#[cfg(feature = "ratatui_support")]
-impl From<&Style> for RataStyle {
-    fn from(style: &Style) -> Self {
-        let mut rata_style = Self::default();
-
-        if let Some(color_info) = &style.foreground {
-            let ratatui_color = match &color_info.value {
-                ColorValue::TrueColor { rgb } => ratatui::style::Color::Rgb(rgb[0], rgb[1], rgb[2]),
-                ColorValue::Color256 { color256 } => ratatui::style::Color::Indexed(*color256),
-                ColorValue::Basic { .. } => ratatui::style::Color::Indexed(color_info.index),
-            };
-            rata_style = rata_style.fg(ratatui_color);
-        }
-
-        if style.bold {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::BOLD);
-        }
-        if style.italic {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::ITALIC);
-        }
-        if style.dim {
-            rata_style = rata_style.add_modifier(ratatui::style::Modifier::DIM);
-        }
-
-        rata_style
-    }
-}
-
-#[cfg(feature = "ratatui_support")]
-// Implement conversion to ratatui's Color
-impl From<&Role> for ratatui::style::Color {
-    fn from(role: &Role) -> Self {
-        let style = Style::from(*role);
-        style.foreground.as_ref().map_or_else(
-            || Self::Indexed(u8::from(role)),
-            |color_info| match &color_info.value {
-                ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
-                ColorValue::Color256 { color256 } => Self::Indexed(*color256),
-                ColorValue::Basic { .. } => Self::Indexed(color_info.index),
-            },
-        )
-    }
-}
-
-#[cfg(feature = "nu_ansi_term_support")]
-impl From<&ColorInfo> for nu_ansi_term::Color {
-    fn from(color_info: &ColorInfo) -> Self {
-        Self::Fixed(color_info.index)
-    }
-}
-
-#[cfg(feature = "nu_ansi_term_support")]
-impl From<&Role> for nu_ansi_term::Style {
-    fn from(role: &Role) -> Self {
-        let style = Style::from(*role);
-        Self {
-            foreground: style
-                .foreground
-                .map(|color_info| nu_ansi_term::Color::Fixed(color_info.index)),
-            background: None,
-            is_bold: style.bold,
-            is_dimmed: style.dim,
-            is_italic: style.italic,
-            is_underline: style.underline,
-            is_blink: false,
-            is_reverse: false,
-            is_hidden: false,
-            is_strikethrough: false,
-            prefix_with_reset: false,
-        }
     }
 }
 

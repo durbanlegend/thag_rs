@@ -88,9 +88,7 @@ fn apply_theme(theme_name: &str) {
         if let Err(e) = PaletteSync::show_background_info(&theme) {
             eprintln!("Warning: Failed to show background info: {}", e);
         }
-        if let Err(e) = PaletteSync::demonstrate_hybrid_styling(&theme) {
-            eprintln!("Warning: Failed to demonstrate hybrid styling: {}", e);
-        }
+        demonstrate_colors();
     }
 }
 
@@ -124,9 +122,7 @@ fn preview_theme(theme_name: &str) {
         if let Err(e) = PaletteSync::show_background_info(&theme) {
             eprintln!("Warning: Failed to show background info: {}", e);
         }
-        if let Err(e) = PaletteSync::demonstrate_hybrid_styling(&theme) {
-            eprintln!("Warning: Failed to demonstrate hybrid styling: {}", e);
-        }
+        demonstrate_colors();
 
         println!(
             "\n🔄 To make this permanent, run: thag_sync_palette apply {}",
@@ -176,28 +172,35 @@ fn list_themes() {
 }
 
 fn demonstrate_colors() {
-    println!("🌈 Colors using updated ANSI palette:");
+    use thag_styling::{Role, Style, StyleLike};
 
-    // Use direct ANSI codes that correspond to our palette mapping
-    println!("\x1b[95m# Heading 1 - Major sections\x1b[0m (ANSI 13: Bright Magenta)");
-    println!("\x1b[94m## Heading 2 - Subsections\x1b[0m (ANSI 12: Bright Blue)");
-    println!("\x1b[93m### Heading 3 - Minor sections\x1b[0m (ANSI 11: Bright Yellow)");
-    println!("\x1b[31m❌ Error - Something went wrong\x1b[0m (ANSI 1: Red)");
-    println!("\x1b[33m⚠️  Warning - Pay attention\x1b[0m (ANSI 3: Yellow)");
-    println!("\x1b[32m✅ Success - Everything worked!\x1b[0m (ANSI 2: Green)");
-    println!("\x1b[36mℹ️  Info - Informational message\x1b[0m (ANSI 6: Cyan)");
-    println!("\x1b[35m⭐ Emphasis - Important content\x1b[0m (ANSI 5: Magenta)");
-    println!("\x1b[34m💻 Code - `filenames and code blocks`\x1b[0m (ANSI 4: Blue)");
-    println!("\x1b[37m📄 Normal - Regular text content\x1b[0m (ANSI 7: White)");
-    println!("\x1b[90m🔍 Subtle - Secondary information\x1b[0m (ANSI 8: Bright Black)");
-    println!("\x1b[96m💡 Hint - Helpful suggestions\x1b[0m (ANSI 14: Bright Cyan)");
-    println!("\x1b[92m🐛 Debug - Development info\x1b[0m (ANSI 10: Bright Green)");
-    println!("\x1b[91m🔍 Trace - Detailed diagnostic\x1b[0m (ANSI 9: Bright Red)");
+    println!("🌈 Thag styling roles with current theme:");
+
+    let roles_and_messages = [
+        (Role::Heading1, "# Heading 1 - Major sections"),
+        (Role::Heading2, "## Heading 2 - Subsections"),
+        (Role::Heading3, "### Heading 3 - Minor sections"),
+        (Role::Error, "❌ Error - Something went wrong"),
+        (Role::Warning, "⚠️  Warning - Pay attention"),
+        (Role::Success, "✅ Success - Everything worked!"),
+        (Role::Info, "ℹ️  Info - Informational message"),
+        (Role::Emphasis, "⭐ Emphasis - Important content"),
+        (Role::Code, "💻 Code - `filenames and code blocks`"),
+        (Role::Normal, "📄 Normal - Regular text content"),
+        (Role::Subtle, "🔍 Subtle - Secondary information"),
+        (Role::Hint, "💡 Hint - Helpful suggestions"),
+        (Role::Debug, "🐛 Debug - Development info"),
+        (Role::Trace, "🔍 Trace - Detailed diagnostic"),
+    ];
+
+    for (role, message) in roles_and_messages {
+        let style = Style::from(role);
+        style.prtln(format_args!("{}", message));
+    }
 
     println!();
-    println!("🎯 These colors should now match the Botticelli theme!");
+    println!("🎯 The colors above use the updated terminal palette + thag attributes!");
     println!("🔧 Try opening a new terminal tab to see the updated colors in action");
-    println!("📝 Note: Attributes like bold, italic, dim require thag styling system");
 }
 
 fn print_usage() {

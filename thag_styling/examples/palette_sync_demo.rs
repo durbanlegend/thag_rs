@@ -78,7 +78,9 @@ fn apply_theme(theme_name: &str) {
     if let Err(e) = PaletteSync::show_background_info(&theme) {
         eprintln!("Warning: Failed to show background info: {}", e);
     }
-    demonstrate_colors();
+    if let Err(e) = PaletteSync::demonstrate_palette() {
+        eprintln!("Warning: Failed to demonstrate palette: {}", e);
+    }
 }
 
 fn preview_theme(theme_name: &str) {
@@ -106,7 +108,9 @@ fn preview_theme(theme_name: &str) {
     if let Err(e) = PaletteSync::show_background_info(&theme) {
         eprintln!("Warning: Failed to show background info: {}", e);
     }
-    demonstrate_colors();
+    if let Err(e) = PaletteSync::demonstrate_palette() {
+        eprintln!("Warning: Failed to demonstrate palette: {}", e);
+    }
 
     println!(
         "\n🔄 To make this permanent, run: {} apply {}",
@@ -183,7 +187,7 @@ fn demonstrate_colors() {
 
     println!();
     println!("🎯 The colors above use the updated terminal palette + thag attributes!");
-    println!("🔧 Try opening a new terminal tab to see the updated colors in action");
+    println!("📝 Note: Colors only apply to this terminal session (not new tabs/windows)");
 }
 
 fn print_usage() {

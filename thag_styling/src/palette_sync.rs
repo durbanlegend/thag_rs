@@ -2,8 +2,8 @@
 //!
 //! This module provides functionality to update a terminal emulator's color palette
 //! in real-time using OSC (Operating System Command) escape sequences. This allows
-//! thag_styling themes to be applied directly to the terminal's base palette,
-//! ensuring visual consistency between thag-styled output and regular terminal content.
+//! thag_styling themes to be applied directly to the terminal's base palette for
+//! the current session, improving visual consistency with thag-styled output.
 //!
 //! # Supported Terminals
 //!
@@ -46,7 +46,8 @@ impl PaletteSync {
     /// * `Err(io::Error)` if there was an error writing to stdout
     ///
     /// # Note
-    /// Changes are applied immediately but may not persist after the terminal session ends.
+    /// Changes are applied immediately to the current terminal session only.
+    /// New tabs/windows will use the terminal's default palette.
     /// The actual visual change depends on the terminal emulator's OSC support.
     pub fn apply_theme(theme: &Theme) -> io::Result<()> {
         let mut stdout = io::stdout();
@@ -237,20 +238,22 @@ impl PaletteSync {
 
         // Show thag roles mapped to ANSI colors
         println!("🏷️  Thag Styling Roles (using updated ANSI palette):");
-        println!("\x1b[31m● Error\x1b[0m - Something went wrong (ANSI 1: Red)");
-        println!("\x1b[33m● Warning\x1b[0m - Pay attention to this (ANSI 3: Yellow)");
-        println!("\x1b[32m● Success\x1b[0m - Everything worked! (ANSI 2: Green)");
-        println!("\x1b[36m● Info\x1b[0m - Informational message (ANSI 6: Cyan)");
-        println!("\x1b[35m● Emphasis\x1b[0m - Important content (ANSI 5: Magenta)");
-        println!("\x1b[34m● Code\x1b[0m - `code blocks and filenames` (ANSI 4: Blue)");
-        println!("\x1b[37m● Normal\x1b[0m - Regular text (ANSI 7: White)");
-        println!("\x1b[90m● Subtle\x1b[0m - Secondary information (ANSI 8: Bright Black)");
-        println!("\x1b[94m● Hint\x1b[0m - Helpful suggestions (ANSI 14: Bright Cyan)");
-        println!("\x1b[95m● Heading1\x1b[0m - Major sections (ANSI 13: Bright Magenta)");
-        println!("\x1b[94m● Heading2\x1b[0m - Subsections (ANSI 12: Bright Blue)");
-        println!("\x1b[93m● Heading3\x1b[0m - Minor sections (ANSI 11: Bright Yellow)");
-        println!("\x1b[92m● Debug\x1b[0m - Development info (ANSI 10: Bright Green)");
-        println!("\x1b[91m● Trace\x1b[0m - Detailed diagnostic (ANSI 9: Bright Red)");
+        println!("\x1b[31m● Error - Something went wrong (ANSI 1: Red)");
+        println!("\x1b[33m● Warning - Pay attention to this (ANSI 3: Yellow)");
+        println!("\x1b[32m● Success - Everything worked! (ANSI 2: Green)");
+        println!("\x1b[36m● Info - Informational message (ANSI 6: Cyan)");
+        println!("\x1b[35m● Emphasis - Important content (ANSI 5: Magenta)");
+        println!("\x1b[34m● Code - `code blocks and filenames` (ANSI 4: Blue)");
+        println!("\x1b[37m● Normal - Regular text (ANSI 7: White)");
+        println!("\x1b[90m● Subtle - Secondary information (ANSI 8: Bright Black)");
+        println!("\x1b[94m● Hint - Helpful suggestions (ANSI 14: Bright Cyan)");
+        println!("\x1b[95m● Heading1 - Major sections (ANSI 13: Bright Magenta)");
+        println!("\x1b[94m● Heading2 - Subsections (ANSI 12: Bright Blue)");
+        println!("\x1b[93m● Heading3 - Minor sections (ANSI 11: Bright Yellow)");
+        println!("\x1b[92m● Debug - Development info (ANSI 10: Bright Green)");
+        println!("\x1b[91m● Trace - Detailed diagnostic (ANSI 9: Bright Red)");
+        println!();
+        println!("📝 Note: Palette changes only affect this terminal session");
 
         Ok(())
     }
@@ -275,7 +278,7 @@ impl PaletteSync {
     }
 
     /// Show hybrid demonstration: both palette colors and proper styling with attributes
-    pub fn demonstrate_hybrid_styling(theme: &Theme) -> io::Result<()> {
+    pub fn demonstrate_hybrid_styling(_theme: &Theme) -> io::Result<()> {
         println!();
         println!("🎨 Hybrid Color Demonstration:");
         println!("   📋 Left: ANSI palette colors | Right: Thag styling with attributes");

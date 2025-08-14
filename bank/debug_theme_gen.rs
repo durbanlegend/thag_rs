@@ -7,7 +7,7 @@ default = ["image_themes"]
 image_themes = ["thag_styling/image_themes"]
 */
 #[cfg(feature = "image_themes")]
-use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
+use thag_styling::{theme_to_toml, ImageThemeGenerator};
 
 #[cfg(feature = "image_themes")]
 use image::{DynamicImage, Rgb, RgbImage};
@@ -23,13 +23,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Image Theme Generation Example\n");
 
     // Create a sample image for demonstration
-    let sample_image = create_sample_image();
+    let _sample_image = create_sample_image();
 
     // Example 4: Generate theme from a sunset-like image
     println!("🌅 Example 4: Sunset color palette");
     let sunset_image = create_sunset_image();
     let generator4 = ImageThemeGenerator::new();
-    let sunset_theme = generator4.generate_from_image(sunset_image, "sunset-theme".to_string())?;
+    let sunset_theme = generator4.generate_from_image(&sunset_image, "sunset-theme".to_string())?;
 
     println!("Generated theme: {}", sunset_theme.name);
     println!("Theme type: {:?}", sunset_theme.term_bg_luma);
@@ -80,6 +80,7 @@ fn create_sample_image() -> DynamicImage {
 }
 
 #[cfg(feature = "image_themes")]
+#[allow(dead_code)]
 fn create_bright_image() -> DynamicImage {
     let mut img = RgbImage::new(150, 150);
 

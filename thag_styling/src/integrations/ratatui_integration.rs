@@ -8,7 +8,7 @@ use crate::integrations::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use ratatui::style::{Color as RataColor, Modifier, Style as RataStyle};
 
-impl ThemedStyle<RataStyle> for RataStyle {
+impl ThemedStyle<Self> for RataStyle {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
         Self::from_thag_style(&thag_style)
@@ -43,27 +43,25 @@ impl ThemedStyle<RataStyle> for RataStyle {
     }
 }
 
-impl ThemedStyle<RataColor> for RataColor {
+impl ThemedStyle<Self> for RataColor {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
-        thag_style
-            .foreground
-            .as_ref()
-            .map(color_info_to_ratatui_color)
-            .unwrap_or_else(|| Self::Indexed(u8::from(&role)))
+        thag_style.foreground.as_ref().map_or_else(
+            || Self::Indexed(u8::from(&role)),
+            color_info_to_ratatui_color,
+        )
     }
 
     fn from_thag_style(style: &Style) -> Self {
         style
             .foreground
             .as_ref()
-            .map(color_info_to_ratatui_color)
-            .unwrap_or(Self::Reset)
+            .map_or(Self::Reset, color_info_to_ratatui_color)
     }
 }
 
-/// Convert ColorInfo to ratatui Color
-fn color_info_to_ratatui_color(color_info: &ColorInfo) -> RataColor {
+/// Convert `ColorInfo` to `ratatui` Color
+const fn color_info_to_ratatui_color(color_info: &ColorInfo) -> RataColor {
     match &color_info.value {
         ColorValue::TrueColor { rgb } => RataColor::Rgb(rgb[0], rgb[1], rgb[2]),
         ColorValue::Color256 { color256 } => RataColor::Indexed(*color256),
@@ -76,9 +74,11 @@ fn color_info_to_ratatui_color(color_info: &ColorInfo) -> RataColor {
 /// Convenience methods for ratatui styling
 pub trait RatatuiStyleExt {
     /// Apply a thag role to this ratatui style
+    #[must_use]
     fn with_role(self, role: Role) -> Self;
 
     /// Apply a thag style to this ratatui style
+    #[must_use]
     fn with_thag_style(self, style: &Style) -> Self;
 }
 

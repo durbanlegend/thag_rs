@@ -8,7 +8,7 @@ use crate::integrations::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use nu_ansi_term::{Color as NuColor, Style as NuStyle};
 
-impl ThemedStyle<NuStyle> for NuStyle {
+impl ThemedStyle<Self> for NuStyle {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
         Self::from_thag_style(&thag_style)
@@ -31,27 +31,25 @@ impl ThemedStyle<NuStyle> for NuStyle {
     }
 }
 
-impl ThemedStyle<NuColor> for NuColor {
+impl ThemedStyle<Self> for NuColor {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
         thag_style
             .foreground
             .as_ref()
-            .map(color_info_to_nu_color)
-            .unwrap_or_else(|| Self::Fixed(u8::from(&role)))
+            .map_or_else(|| Self::Fixed(u8::from(&role)), color_info_to_nu_color)
     }
 
     fn from_thag_style(style: &Style) -> Self {
         style
             .foreground
             .as_ref()
-            .map(color_info_to_nu_color)
-            .unwrap_or(Self::Fixed(7)) // Default to white
+            .map_or(Self::Fixed(7), color_info_to_nu_color) // Default to white
     }
 }
 
-/// Convert ColorInfo to nu-ansi-term Color
-fn color_info_to_nu_color(color_info: &ColorInfo) -> NuColor {
+/// Convert `ColorInfo` to `nu-ansi-term` Color
+const fn color_info_to_nu_color(color_info: &ColorInfo) -> NuColor {
     match &color_info.value {
         ColorValue::TrueColor { rgb } => NuColor::Rgb(rgb[0], rgb[1], rgb[2]),
         ColorValue::Color256 { color256 } => NuColor::Fixed(*color256),
@@ -59,14 +57,16 @@ fn color_info_to_nu_color(color_info: &ColorInfo) -> NuColor {
     }
 }
 
-/// Note: From implementations are provided in the main styling.rs file to avoid conflicts
+// Note: From implementations are provided in the main styling.rs file to avoid conflicts
 
 /// Convenience methods for nu-ansi-term styling
 pub trait NuAnsiTermStyleExt {
     /// Apply a thag role to this nu-ansi-term style
+    #[must_use]
     fn with_role(self, role: Role) -> Self;
 
     /// Apply a thag style to this nu-ansi-term style
+    #[must_use]
     fn with_thag_style(self, style: &Style) -> Self;
 }
 
@@ -108,30 +108,35 @@ impl NuAnsiTermStyleExt for NuStyle {
 
 /// Helper functions for reedline integration
 pub mod reedline_helpers {
-    use super::*;
+    use super::{Role, ThemedStyle};
     use nu_ansi_term::Style as NuStyle;
 
     /// Create a themed nu-ansi-term style for reedline prompts
+    #[must_use]
     pub fn prompt_style() -> NuStyle {
         NuStyle::themed(Role::Normal)
     }
 
     /// Create a themed nu-ansi-term style for reedline completions
+    #[must_use]
     pub fn completion_style() -> NuStyle {
         NuStyle::themed(Role::Subtle)
     }
 
     /// Create a themed nu-ansi-term style for reedline selections
+    #[must_use]
     pub fn selection_style() -> NuStyle {
         NuStyle::themed(Role::Emphasis)
     }
 
     /// Create a themed nu-ansi-term style for reedline errors
+    #[must_use]
     pub fn error_style() -> NuStyle {
         NuStyle::themed(Role::Error)
     }
 
     /// Create a themed nu-ansi-term style for reedline hints
+    #[must_use]
     pub fn hint_style() -> NuStyle {
         NuStyle::themed(Role::Info)
     }

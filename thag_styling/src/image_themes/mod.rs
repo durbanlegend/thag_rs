@@ -4,14 +4,16 @@
 //! based on the dominant colors found in the image. It uses color clustering to identify
 //! the most prominent colors and intelligently maps them to semantic roles.
 
-#![cfg(feature = "image_themes")]
+// #![cfg(feature = "image_themes")]
 
 use crate::{
-    cprtln, styling::rgb_to_hex, ColorSupport, Palette, Role, Style, StylingError, StylingResult,
-    TermBgLuma, Theme,
+    cprtln,
+    styling::{self, rgb_to_hex},
+    ColorSupport, Palette, Role, Style, StylingError, StylingResult, TermBgLuma, Theme,
 };
 use image::{DynamicImage, ImageReader};
 use palette::{FromColor, Hsl, IntoColor, Lab, Srgb};
+use std::fmt::Write as _; // import without risk of name clashing
 use std::path::{Path, PathBuf};
 
 /// Struct to hold semantic color assignments
@@ -111,7 +113,7 @@ impl ColorAnalysis {
     }
 
     /// Check contrast against background
-    fn has_good_contrast_against(&self, background: &ColorAnalysis) -> bool {
+    fn has_good_contrast_against(&self, background: &Self) -> bool {
         let lightness_diff = (self.lightness - background.lightness).abs();
         // dbg!(lightness_diff);
         let has_good_contrast_against = lightness_diff > 0.4 && lightness_diff < 0.7; // Minimum contrast requirement
@@ -141,13 +143,15 @@ impl ColorAnalysis {
     // }
 
     /// Calculate perceptual distance to another color using Delta E
-    fn distance_to(&self, other: &ColorAnalysis) -> f32 {
+    fn distance_to(&self, other: &Self) -> f32 {
         let delta_l = self.lab.l - other.lab.l;
         let delta_a = self.lab.a - other.lab.a;
         let delta_b = self.lab.b - other.lab.b;
 
         // Simplified Delta E calculation
-        (delta_l * delta_l + delta_a * delta_a + delta_b * delta_b).sqrt()
+        delta_b
+            .mul_add(delta_b, delta_l * delta_l + delta_a * delta_a)
+            .sqrt()
     }
 }
 
@@ -170,6 +174,7 @@ pub struct ImageThemeGenerator {
 
 impl ImageThemeGenerator {
     /// Create a new image theme generator with default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self {
             config: ImageThemeConfig::default(),
@@ -177,25 +182,34 @@ impl ImageThemeGenerator {
     }
 
     /// Create a new image theme generator with custom configuration
-    pub fn with_config(config: ImageThemeConfig) -> Self {
+    #[must_use]
+    pub const fn with_config(config: ImageThemeConfig) -> Self {
         Self { config }
     }
 
     /// Generate a theme from an image file
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any errors encountered.
     pub fn generate_from_file<P: AsRef<Path>>(&self, image_path: P) -> StylingResult<Theme> {
         let image = ImageReader::open(&image_path)
-            .map_err(|e| StylingError::Generic(format!("Failed to open image: {}", e)))?
+            .map_err(|e| StylingError::Generic(format!("Failed to open image: {e}")))?
             .decode()
-            .map_err(|e| StylingError::Generic(format!("Failed to decode image: {}", e)))?;
+            .map_err(|e| StylingError::Generic(format!("Failed to decode image: {e}")))?;
 
         let theme_name = self.generate_theme_name(&image_path);
-        self.generate_from_image(image, theme_name)
+        self.generate_from_image(&image, theme_name)
     }
 
     /// Generate a theme from a loaded image
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered.
     pub fn generate_from_image(
         &self,
-        image: DynamicImage,
+        image: &DynamicImage,
         theme_name: String,
     ) -> StylingResult<Theme> {
         let dominant_colors = self.extract_dominant_colors(&image)?;
@@ -211,10 +225,10 @@ impl ImageThemeGenerator {
             );
         }
 
-        let color_analysis = self.analyze_colors(dominant_colors);
+        let color_analysis = Self::analyze_colors(dominant_colors);
 
         let is_light_theme = self.determine_theme_type(&color_analysis);
-        let background_color = self.select_background_color(&color_analysis, is_light_theme);
+        let background_color = Self::select_background_color(&color_analysis, is_light_theme);
         eprintln!(
             "Selected background color={} ({:?})",
             Style::new()
@@ -223,8 +237,7 @@ impl ImageThemeGenerator {
             background_color.rgb
         );
 
-        let palette =
-            self.map_colors_to_roles(&background_color, &color_analysis, is_light_theme)?;
+        let palette = self.map_colors_to_roles(&background_color, &color_analysis, is_light_theme);
 
         Ok(Theme {
             name: theme_name,
@@ -251,6 +264,7 @@ impl ImageThemeGenerator {
     }
 
     /// Extract dominant colors from an image ensuring diversity and contrast
+    #[allow(clippy::cast_precision_loss)]
     fn extract_dominant_colors(&self, image: &DynamicImage) -> StylingResult<Vec<([u8; 3], f32)>> {
         let rgb_image = image.to_rgb8();
         let pixels: Vec<[u8; 3]> = rgb_image.pixels().map(|p| [p[0], p[1], p[2]]).collect();
@@ -283,13 +297,13 @@ impl ImageThemeGenerator {
         let mut result = Vec::new();
 
         // Select diverse colors with minimum distance requirement
-        for (color, count) in colors_by_frequency.into_iter() {
+        for (color, count) in colors_by_frequency {
             let frequency = count as f32 / total_pixels;
 
             // Check if this color is sufficiently different from already selected colors
             let is_diverse = result.is_empty()
                 || result.iter().all(|(existing_color, _)| {
-                    self.color_distance_euclidean(*existing_color, color) > 60.0
+                    Self::color_distance_euclidean(*existing_color, color) > 60.0
                     // Minimum distance threshold
                 });
 
@@ -308,11 +322,11 @@ impl ImageThemeGenerator {
     }
 
     /// Calculate Euclidean distance between two RGB colors
-    fn color_distance_euclidean(&self, color1: [u8; 3], color2: [u8; 3]) -> f32 {
+    fn color_distance_euclidean(color1: [u8; 3], color2: [u8; 3]) -> f32 {
         let dr = f32::from(color1[0]) - f32::from(color2[0]);
         let dg = f32::from(color1[1]) - f32::from(color2[1]);
         let db = f32::from(color1[2]) - f32::from(color2[2]);
-        (dr * dr + dg * dg + db * db).sqrt()
+        db.mul_add(db, dr * dr + dg * dg).sqrt()
     }
 
     /// Ensure extracted colors have good diversity by adding contrasting colors if needed
@@ -354,13 +368,11 @@ impl ImageThemeGenerator {
             let lighter = hsl_to_rgb(h, s, lighter_l);
             if colors
                 .iter()
-                .all(|(c, _)| self.color_distance_euclidean(*c, lighter) > 20.0)
+                .all(|(c, _)| Self::color_distance_euclidean(*c, lighter) > 20.0)
             {
                 eprintln!(
                     "New color {}",
-                    Style::new()
-                        .with_rgb(lighter)
-                        .paint(format!("{:?}", lighter))
+                    Style::new().with_rgb(lighter).paint(format!("{lighter:?}"))
                 );
                 colors.push((lighter, artificial_freq));
                 if colors.len() >= min_colors {
@@ -373,11 +385,11 @@ impl ImageThemeGenerator {
             let darker = hsl_to_rgb(h, s, darker_l);
             if colors
                 .iter()
-                .all(|(c, _)| self.color_distance_euclidean(*c, darker) > 20.0)
+                .all(|(c, _)| Self::color_distance_euclidean(*c, darker) > 20.0)
             {
                 eprintln!(
                     "New color {}",
-                    Style::new().with_rgb(darker).paint(format!("{:?}", darker))
+                    Style::new().with_rgb(darker).paint(format!("{darker:?}"))
                 );
                 colors.push((darker, artificial_freq));
             }
@@ -386,8 +398,8 @@ impl ImageThemeGenerator {
         }
     }
 
-    /// Analyze colors and create ColorAnalysis structures
-    fn analyze_colors(&self, colors: Vec<([u8; 3], f32)>) -> Vec<ColorAnalysis> {
+    /// Analyze colors and create `ColorAnalysis` structures
+    fn analyze_colors(colors: Vec<([u8; 3], f32)>) -> Vec<ColorAnalysis> {
         colors
             .into_iter()
             .map(|(rgb, freq)| ColorAnalysis::new(rgb, freq))
@@ -429,12 +441,13 @@ impl ImageThemeGenerator {
     }
 
     /// Map extracted colors to semantic roles with improved contrast and diversity
+    #[allow(clippy::too_many_lines)]
     fn map_colors_to_roles(
         &self,
         background_color: &ColorAnalysis,
         colors: &[ColorAnalysis],
         is_light_theme: bool,
-    ) -> StylingResult<Palette> {
+    ) -> styling::Palette {
         // Find suitable colors for different categories with better filtering
         let text_colors: Vec<&ColorAnalysis> = colors
             .iter()
@@ -451,7 +464,7 @@ impl ImageThemeGenerator {
 
         let enhanced_colors: Vec<ColorAnalysis> = enhanced_colors
             .iter()
-            .filter(|color| color.has_good_contrast_against(&background_color))
+            .filter(|color| color.has_good_contrast_against(background_color))
             .cloned()
             .collect();
 
@@ -482,25 +495,33 @@ impl ImageThemeGenerator {
         //             });
         //         eprintln!("background_color={:?}", background_color.rgb);
 
-        let normal_color = if let Some(best_text) = self.select_best_text_color(
-            &text_colors,
-            &enhanced_colors,
-            is_light_theme,
-            Some(background_color),
-        ) {
-            // Ensure the selected text color is actually different from background
-            if best_text.distance_to(background_color) < 50.0 {
-                eprintln!("Distance < 50, calling ensure_text_contrast");
-                self.ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
-            } else {
-                eprintln!("Going with best_text");
-                best_text
-            }
-        } else {
-            // Ensure we have a proper text color with good contrast
-            eprintln!("Calling ensure_text_contrast");
-            self.ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
-        };
+        let normal_color = self
+            .select_best_text_color(
+                &text_colors,
+                &enhanced_colors,
+                is_light_theme,
+                Some(background_color),
+            )
+            .map_or_else(
+                || {
+                    // Ensure we have a proper text color with good contrast
+                    eprintln!("Calling ensure_text_contrast");
+                    Self::ensure_text_contrast(&enhanced_colors, background_color, is_light_theme)
+                },
+                |best_text| {
+                    if best_text.distance_to(background_color) < 50.0 {
+                        eprintln!("Distance < 50, calling ensure_text_contrast");
+                        Self::ensure_text_contrast(
+                            &enhanced_colors,
+                            background_color,
+                            is_light_theme,
+                        )
+                    } else {
+                        eprintln!("Going with best_text");
+                        best_text
+                    }
+                },
+            );
         dbg!(normal_color);
 
         // Create a comprehensive unique color assignment
@@ -569,10 +590,10 @@ impl ImageThemeGenerator {
             semantic_colors.emphasis,
         ]);
 
-        eprintln!("");
+        eprintln!();
         assert!(used_colors.contains(&semantic_colors.error));
         let subtle_color =
-            self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+            self.find_most_different_color(&enhanced_colors, &used_colors, background_color);
         eprintln!(
             "subtle_color={}",
             Style::new().with_rgb(subtle_color.rgb).paint(format!(
@@ -585,7 +606,7 @@ impl ImageThemeGenerator {
         used_colors.push(subtle_color);
 
         let hint_color =
-            self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+            self.find_most_different_color(&enhanced_colors, &used_colors, background_color);
         eprintln!(
             "hint_color={}",
             Style::new().with_rgb(hint_color.rgb).paint(format!(
@@ -599,7 +620,7 @@ impl ImageThemeGenerator {
 
         // Debug and trace should be different from subtle and hint
         let debug_color =
-            self.find_most_different_color(&enhanced_colors, &used_colors, &background_color);
+            self.find_most_different_color(&enhanced_colors, &used_colors, background_color);
         eprintln!(
             "debug_color={}",
             Style::new().with_rgb(debug_color.rgb).paint(format!(
@@ -612,7 +633,7 @@ impl ImageThemeGenerator {
         let trace_color = if debug_color.distance_to(hint_color) > 20.0 {
             hint_color
         } else {
-            self.find_most_different_color(&enhanced_colors, &[debug_color], &background_color)
+            self.find_most_different_color(&enhanced_colors, &[debug_color], background_color)
         };
         eprintln!(
             "trace_color={}",
@@ -623,7 +644,7 @@ impl ImageThemeGenerator {
             ))
         );
 
-        Ok(Palette {
+        Palette {
             normal: Style::new().with_rgb(normal_color.rgb),
             subtle: Style::new().with_rgb(subtle_color.rgb),
             hint: Style::new().with_rgb(hint_color.rgb).italic(),
@@ -638,7 +659,7 @@ impl ImageThemeGenerator {
             emphasis: Style::new().with_rgb(semantic_colors.emphasis.rgb),
             debug: Style::new().with_rgb(debug_color.rgb).dim(),
             trace: Style::new().with_rgb(trace_color.rgb).italic().dim(),
-        })
+        }
     }
 
     /// Enhance color palette with derived colors if diversity is lacking
@@ -674,13 +695,11 @@ impl ImageThemeGenerator {
             if colors
                 .iter()
                 .map(|color| color.rgb)
-                .all(|rgb| self.color_distance_euclidean(rgb, lighter) > 20.0)
+                .all(|rgb| Self::color_distance_euclidean(rgb, lighter) > 20.0)
             {
                 eprintln!(
                     "New color {}",
-                    Style::new()
-                        .with_rgb(lighter)
-                        .paint(format!("{:?}", lighter))
+                    Style::new().with_rgb(lighter).paint(format!("{lighter:?}"))
                 );
                 colors.push(ColorAnalysis::new(lighter, 0.0));
                 new_count += 1;
@@ -695,11 +714,11 @@ impl ImageThemeGenerator {
             if colors
                 .iter()
                 .map(|color| color.rgb)
-                .all(|rgb| self.color_distance_euclidean(rgb, darker) > 20.0)
+                .all(|rgb| Self::color_distance_euclidean(rgb, darker) > 20.0)
             {
                 eprintln!(
                     "New color {}",
-                    Style::new().with_rgb(darker).paint(format!("{:?}", darker))
+                    Style::new().with_rgb(darker).paint(format!("{darker:?}"))
                 );
                 colors.push(ColorAnalysis::new(darker, 0.0));
                 new_count += 1;
@@ -741,26 +760,32 @@ impl ImageThemeGenerator {
             }
         }
 
-        // Fallback to any suitable text color
-        let best_text = if let Some(best) = text_colors.iter().max_by(|a, b| {
-            a.frequency
-                .partial_cmp(&b.frequency)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        }) {
-            eprintln!(
-                "Falling back to text color {}",
-                Style::new()
-                    .with_rgb(best.rgb)
-                    .paint(format!("{:?}", best.rgb))
+        // Fall back to any suitable text color
+        let best_text = text_colors
+            .iter()
+            .max_by(|a, b| {
+                a.frequency
+                    .partial_cmp(&b.frequency)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .map_or_else(
+                || {
+                    // Final fallback: find any color with good contrast
+                    eprintln!("Falling back to any color with good contrast");
+                    all_colors
+                        .iter()
+                        .find(|c| c.is_text_suitable(is_light_theme))
+                },
+                |best| {
+                    eprintln!(
+                        "Falling back to text color {}",
+                        Style::new()
+                            .with_rgb(best.rgb)
+                            .paint(format!("{:?}", best.rgb))
+                    );
+                    Some(*best)
+                },
             );
-            Some(*best)
-        } else {
-            // Final fallback: find any color with good contrast
-            eprintln!("Falling back to any color with good contrast");
-            all_colors
-                .iter()
-                .find(|c| c.is_text_suitable(is_light_theme))
-        };
         eprintln!(
             "Selected best_text {}",
             Style::new()
@@ -772,7 +797,6 @@ impl ImageThemeGenerator {
 
     /// Ensure we have a text color with proper contrast
     fn ensure_text_contrast<'a>(
-        &self,
         colors: &'a [ColorAnalysis],
         background: &ColorAnalysis,
         is_light_theme: bool,
@@ -872,6 +896,7 @@ impl ImageThemeGenerator {
     // }
 
     /// Assign colors to semantic roles with better diversity
+    #[allow(clippy::too_many_lines)]
     fn assign_semantic_colors<'a>(
         &self,
         colors: &'a [ColorAnalysis],
@@ -892,7 +917,7 @@ impl ImageThemeGenerator {
 
         // Ensure all semantic colors are unique and different from each other
         let error_color =
-            self.find_color_by_hue_improved(&available_colors, 0.0, 60.0, normal_color);
+            Self::find_color_by_hue_improved(&available_colors, 0.0, 60.0, normal_color);
         eprintln!(
             "error_color={}",
             Style::new().with_rgb(error_color.rgb).paint(format!(
@@ -907,12 +932,12 @@ impl ImageThemeGenerator {
 
         assert!(used_colors.contains(&error_color));
 
-        let warning_color = self.find_unique_color_by_hue(
+        let warning_color = Self::find_unique_color_by_hue(
             &available_colors,
             30.0,
             90.0,
             normal_color,
-            &used_colors,
+            used_colors,
         );
         eprintln!(
             "warning_color={}",
@@ -927,12 +952,12 @@ impl ImageThemeGenerator {
         assert!(used_colors.contains(&error_color));
         assert!(used_colors.contains(&warning_color));
 
-        let success_color = self.find_unique_color_by_hue(
+        let success_color = Self::find_unique_color_by_hue(
             &available_colors,
             90.0,
             150.0,
             normal_color,
-            &used_colors,
+            used_colors,
         );
         eprintln!(
             "success_color={}",
@@ -948,12 +973,12 @@ impl ImageThemeGenerator {
         assert!(used_colors.contains(&warning_color));
         assert!(used_colors.contains(&success_color));
 
-        let info_color = self.find_unique_color_by_hue(
+        let info_color = Self::find_unique_color_by_hue(
             &available_colors,
             180.0,
             240.0,
             normal_color,
-            &used_colors,
+            used_colors,
         );
         eprintln!(
             "info_color={}",
@@ -970,12 +995,12 @@ impl ImageThemeGenerator {
         assert!(used_colors.contains(&success_color));
         assert!(used_colors.contains(&info_color));
 
-        let code_color = self.find_unique_color_by_hue(
+        let code_color = Self::find_unique_color_by_hue(
             &available_colors,
             240.0,
             300.0,
             normal_color,
-            &used_colors,
+            used_colors,
         );
         eprintln!(
             "code_color={}",
@@ -993,12 +1018,12 @@ impl ImageThemeGenerator {
         assert!(used_colors.contains(&info_color));
         assert!(used_colors.contains(&code_color));
 
-        let emphasis_color = self.find_unique_color_by_hue(
+        let emphasis_color = Self::find_unique_color_by_hue(
             &available_colors,
             0.0,
             120.0,
             normal_color,
-            &used_colors,
+            used_colors,
         );
         eprintln!(
             "emphasis_color={}",
@@ -1101,7 +1126,7 @@ impl ImageThemeGenerator {
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        let h1 = headings.get(0).copied().unwrap_or_else(|| {
+        let h1 = headings.first().copied().unwrap_or_else(|| {
             eprintln!(
                 "Defaulting HD1 to {}",
                 Style::new()
@@ -1134,7 +1159,6 @@ impl ImageThemeGenerator {
 
     /// Improved hue-based color finding with better fallbacks
     fn find_color_by_hue_improved<'a>(
-        &self,
         colors: &[&'a ColorAnalysis],
         hue_start: f32,
         hue_end: f32,
@@ -1180,7 +1204,6 @@ impl ImageThemeGenerator {
 
     /// Find unique color by hue that doesn't conflict with already used colors
     fn find_unique_color_by_hue<'a>(
-        &self,
         colors: &[&'a ColorAnalysis],
         hue_start: f32,
         hue_end: f32,
@@ -1291,11 +1314,7 @@ impl ImageThemeGenerator {
     // }
 
     /// Select the best background color ensuring good contrast
-    fn select_background_color(
-        &self,
-        colors: &[ColorAnalysis],
-        is_light_theme: bool,
-    ) -> ColorAnalysis {
+    fn select_background_color(colors: &[ColorAnalysis], is_light_theme: bool) -> ColorAnalysis {
         // Force background to match theme type expectation
         if is_light_theme {
             // Light theme should have light background
@@ -1359,6 +1378,7 @@ impl Default for ImageThemeGenerator {
 }
 
 // Helper: RGB -> HSL
+#[allow(clippy::many_single_char_names)]
 fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
     let r = rgb[0] as f32 / 255.0;
     let g = rgb[1] as f32 / 255.0;
@@ -1400,6 +1420,7 @@ fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
 }
 
 // Helper: HSL -> RGB
+#[allow(clippy::cast_possible_truncation, clippy::many_single_char_names)]
 fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
     let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
     let h_prime = h / 60.0;
@@ -1442,7 +1463,7 @@ pub fn generate_theme_from_image_with_config<P: AsRef<Path>>(
 /// Save a theme directly to a TOML file
 pub fn save_theme_to_file<P: AsRef<Path>>(theme: &Theme, file_path: P) -> StylingResult<()> {
     let toml_content = theme_to_toml(theme)?;
-    std::fs::write(file_path, toml_content).map_err(|e| StylingError::Io(e))?;
+    std::fs::write(file_path, toml_content).map_err(StylingError::Io)?;
     Ok(())
 }
 
@@ -1460,17 +1481,26 @@ pub fn generate_and_save_theme<P: AsRef<Path>, Q: AsRef<Path>>(
 }
 
 /// Generate TOML representation of a theme matching the format of built-in themes
+///
+/// # Errors
+///
+/// This function will bubble up any i/o errors encountered.
+#[allow(clippy::too_many_lines)]
 pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
     let mut toml = String::new();
 
     // Header information - match the format of existing themes
-    toml.push_str(&format!("name = {:?}\n", theme.name));
-    toml.push_str(&format!("description = {:?}\n", theme.description));
+    let mut s = String::new();
+    let _ = write!(s, "name = {:?}\n", theme.name);
+    let mut s = String::new();
+    let _ = write!(s, "description = {:?}\n", theme.description);
     toml.push_str(&format!(
         "term_bg_luma = {:?}\n",
         format!("{:?}", theme.term_bg_luma).to_lowercase()
     ));
-    toml.push_str(&format!(
+    let mut s = String::new();
+    let _ = write!(
+        s,
         "min_color_support = {:?}\n",
         match theme.min_color_support {
             crate::ColorSupport::TrueColor => "true_color",
@@ -1478,15 +1508,19 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
             crate::ColorSupport::Basic => "basic",
             _ => "true_color",
         }
-    ));
-    toml.push_str(&format!("backgrounds = {:?}\n", theme.backgrounds));
+    );
+    let mut s = String::new();
+    let _ = write!(s, "backgrounds = {:?}\n", theme.backgrounds);
 
     // Format bg_rgbs to match existing theme format
     toml.push_str("bg_rgbs = [[\n");
     for rgb in &theme.bg_rgbs {
-        toml.push_str(&format!("    {},\n", rgb.0));
-        toml.push_str(&format!("    {},\n", rgb.1));
-        toml.push_str(&format!("    {},\n", rgb.2));
+        let mut s = String::new();
+        let _ = writeln!(s, "    {},", rgb.0);
+        let mut s = String::new();
+        let _ = writeln!(s, "    {},", rgb.1);
+        let mut s = String::new();
+        let _ = writeln!(s, "    {},", rgb.2);
     }
     toml.push_str("]]\n\n");
 
@@ -1509,23 +1543,30 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
     ];
 
     for (role_name, style) in palette_items {
-        toml.push_str(&format!("[palette.{}]\n", role_name));
+        let mut s = String::new();
+        let _ = write!(s, "[palette.{}]\n", role_name);
 
         if let Some(color_info) = &style.foreground {
             match &color_info.value {
                 crate::ColorValue::TrueColor { rgb } => {
                     toml.push_str("rgb = [\n");
-                    toml.push_str(&format!("    {},\n", rgb[0]));
-                    toml.push_str(&format!("    {},\n", rgb[1]));
-                    toml.push_str(&format!("    {},\n", rgb[2]));
+                    let mut s = String::new();
+                    let _ = writeln!(s, "    {},", rgb[0]);
+                    let mut s = String::new();
+                    let _ = writeln!(s, "    {},", rgb[1]);
+                    let mut s = String::new();
+                    let _ = writeln!(s, "    {},", rgb[2]);
                     toml.push_str("]\n");
                 }
                 crate::ColorValue::Color256 { color256 } => {
                     let rgb = color_256_to_rgb(*color256);
                     toml.push_str("rgb = [\n");
-                    toml.push_str(&format!("    {},\n", rgb[0]));
-                    toml.push_str(&format!("    {},\n", rgb[1]));
-                    toml.push_str(&format!("    {},\n", rgb[2]));
+                    let mut s = String::new();
+                    let _ = writeln!(s, "    {},", rgb[0]);
+                    let mut s = String::new();
+                    let _ = writeln!(s, "    {},", rgb[1]);
+                    let mut s = String::new();
+                    let _ = writeln!(s, "    {},", rgb[2]);
                     toml.push_str("]\n");
                 }
                 crate::ColorValue::Basic { .. } => {
@@ -1541,20 +1582,21 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
         // Add style attributes
         let mut style_attrs = Vec::new();
         if style.bold {
-            style_attrs.push("\"bold\"");
+            style_attrs.push(r#""bold""#);
         }
         if style.italic {
-            style_attrs.push("\"italic\"");
+            style_attrs.push(r#""italic""#);
         }
         if style.dim {
-            style_attrs.push("\"dim\"");
+            style_attrs.push(r#""dim""#);
         }
         if style.underline {
-            style_attrs.push("\"underline\"");
+            style_attrs.push(r#""underline""#);
         }
 
         if !style_attrs.is_empty() {
-            toml.push_str(&format!("style = [{}]\n", style_attrs.join(", ")));
+            let mut s = String::new();
+            let _ = writeln!(s, "style = [{}]", style_attrs.join(", "));
         }
 
         toml.push('\n');
@@ -1563,7 +1605,7 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
     Ok(toml)
 }
 
-fn color_256_to_rgb(color: u8) -> [u8; 3] {
+const fn color_256_to_rgb(color: u8) -> [u8; 3] {
     match color {
         0..=15 => {
             let colors = [
@@ -1638,7 +1680,7 @@ mod tests {
         let test_image = create_test_image();
 
         let theme = generator
-            .generate_from_image(test_image, "test-theme".to_string())
+            .generate_from_image(&test_image, "test-theme".to_string())
             .expect("Should generate theme successfully");
 
         assert_eq!(theme.name, "test-theme");
@@ -1668,7 +1710,7 @@ mod tests {
         let test_image = create_test_image();
 
         let theme = generator
-            .generate_from_image(test_image, "toml-test".to_string())
+            .generate_from_image(&test_image, "toml-test".to_string())
             .expect("Should generate theme successfully");
 
         let toml_content = theme_to_toml(&theme).expect("Should generate TOML successfully");
@@ -1706,7 +1748,7 @@ mod tests {
         let test_image = create_test_image();
 
         let theme = generator
-            .generate_from_image(test_image, "file-test".to_string())
+            .generate_from_image(&test_image, "file-test".to_string())
             .expect("Should generate theme successfully");
 
         // Save to a temporary file
@@ -1741,7 +1783,7 @@ mod tests {
         let test_image = create_test_image();
 
         let theme = generator
-            .generate_from_image(test_image, "light-comparison".to_string())
+            .generate_from_image(&test_image, "light-comparison".to_string())
             .expect("Should generate light theme successfully");
 
         let toml_content = theme_to_toml(&theme).expect("Should generate TOML successfully");

@@ -27,8 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example 1: Generate theme with default settings
     println!("📸 Example 1: Default theme generation");
     let generator = ImageThemeGenerator::new();
-    let theme1 =
-        generator.generate_from_image(sample_image.clone(), "sample-default".to_string())?;
+    let theme1 = generator.generate_from_image(&sample_image, "sample-default".to_string())?;
 
     println!("Generated theme: {}", theme1.name);
     println!("Description: {}", theme1.description);
@@ -50,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let generator2 = ImageThemeGenerator::with_config(light_config);
     let theme2 =
-        generator2.generate_from_image(create_sample_image(), "light-sample".to_string())?;
+        generator2.generate_from_image(&create_sample_image(), "light-sample".to_string())?;
 
     println!("Generated theme: {}", theme2.name);
     println!("Theme type: {:?}", theme2.term_bg_luma);
@@ -67,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let generator3 = ImageThemeGenerator::with_config(dark_config);
     let theme3 =
-        generator3.generate_from_image(create_bright_image(), "dark-sample".to_string())?;
+        generator3.generate_from_image(&create_bright_image(), "dark-sample".to_string())?;
 
     println!("Generated theme: {}", theme3.name);
     println!("Theme type: {:?}", theme3.term_bg_luma);
@@ -78,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🌅 Example 4: Sunset color palette");
     let sunset_image = create_sunset_image();
     let generator4 = ImageThemeGenerator::new();
-    let sunset_theme = generator4.generate_from_image(sunset_image, "sunset-theme".to_string())?;
+    let sunset_theme = generator4.generate_from_image(&sunset_image, "sunset-theme".to_string())?;
 
     println!("Generated theme: {}", sunset_theme.name);
     println!("Theme type: {:?}", sunset_theme.term_bg_luma);

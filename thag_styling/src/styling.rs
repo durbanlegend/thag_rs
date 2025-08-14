@@ -2613,9 +2613,7 @@ pub fn display_theme_roles(theme: &Theme) {
 
         // let styled_rgb = style.paint(format!("{:?}", style.foreground.and_then(|v| v.value)));
         let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
-        let hex = rgb.map_or("N/A".to_string(), |rgb| {
-            format!("{}", rgb_to_hex(&rgb.into()))
-        });
+        let hex = rgb.map_or("N/A".to_string(), |rgb| rgb_to_hex(&rgb.into()));
         let styled_hex = style.paint(hex);
 
         print!("\t{styled_hex} {styled_name} {padding}");
@@ -3056,9 +3054,9 @@ impl From<&Role> for nu_ansi_term::Style {
     fn from(role: &Role) -> Self {
         let style = Style::from(*role);
         Self {
-            foreground: style.foreground.and_then(|color_info| {
-                Some(nu_ansi_term::Color::Fixed(u8::from(color_info.index)))
-            }),
+            foreground: style
+                .foreground
+                .map(|color_info| nu_ansi_term::Color::Fixed(color_info.index)),
             background: None,
             is_bold: style.bold,
             is_dimmed: style.dim,

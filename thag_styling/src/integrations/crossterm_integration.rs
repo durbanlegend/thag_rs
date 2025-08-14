@@ -8,7 +8,7 @@ use crate::integrations::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use crossterm::style::{Attribute, Color as CrossColor, ContentStyle, SetAttribute};
 
-impl ThemedStyle<ContentStyle> for ContentStyle {
+impl ThemedStyle<Self> for ContentStyle {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
         Self::from_thag_style(&thag_style)
@@ -44,26 +44,21 @@ impl ThemedStyle<ContentStyle> for ContentStyle {
     }
 }
 
-impl ThemedStyle<CrossColor> for CrossColor {
+impl ThemedStyle<Self> for CrossColor {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
         thag_style
             .foreground
             .as_ref()
-            .map(Self::from)
-            .unwrap_or_else(|| Self::AnsiValue(u8::from(&role)))
+            .map_or_else(|| Self::AnsiValue(u8::from(&role)), Self::from)
     }
 
     fn from_thag_style(style: &Style) -> Self {
-        style
-            .foreground
-            .as_ref()
-            .map(Self::from)
-            .unwrap_or(Self::Reset)
+        style.foreground.as_ref().map_or(Self::Reset, Self::from)
     }
 }
 
-/// Convert ColorInfo to crossterm Color
+/// Convert `ColorInfo` to `crossterm` Color
 impl From<&ColorInfo> for CrossColor {
     fn from(color_info: &ColorInfo) -> Self {
         match &color_info.value {
@@ -112,9 +107,11 @@ impl From<Role> for ContentStyle {
 /// Convenience methods for crossterm styling
 pub trait CrosstermStyleExt {
     /// Apply a thag role to this crossterm style
+    #[must_use]
     fn with_role(self, role: Role) -> Self;
 
     /// Apply a thag style to this crossterm style
+    #[must_use]
     fn with_thag_style(self, style: &Style) -> Self;
 }
 
@@ -154,12 +151,16 @@ impl CrosstermStyleExt for ContentStyle {
 
 /// Helper functions for common crossterm operations
 pub mod crossterm_helpers {
-    use super::*;
+    use super::{Attribute, ContentStyle, CrossColor, Role, SetAttribute, ThemedStyle};
 
     use crossterm::QueueableCommand;
     use std::io::{self, Write};
 
     /// Queue a themed print command
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any `crossterm` error writing to the terminal.
     pub fn queue_themed_print<'a, W: Write>(
         writer: &'a mut W,
         role: Role,
@@ -171,7 +172,11 @@ pub mod crossterm_helpers {
             .queue(crossterm::style::Print(content))
     }
 
-    /// Queue a styled print command using a ContentStyle
+    /// Queue a styled print command using a `ContentStyle`
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any `crossterm` error writing to the terminal.
     pub fn queue_styled_print<'a, W: Write>(
         writer: &'a mut W,
         style: &ContentStyle,
@@ -199,36 +204,43 @@ pub mod crossterm_helpers {
     }
 
     /// Create themed styles for common UI elements
+    #[must_use]
     pub fn success_style() -> ContentStyle {
         ContentStyle::themed(Role::Success)
     }
 
     /// Create themed style for error messages
+    #[must_use]
     pub fn error_style() -> ContentStyle {
         ContentStyle::themed(Role::Error)
     }
 
     /// Create themed style for warning messages
+    #[must_use]
     pub fn warning_style() -> ContentStyle {
         ContentStyle::themed(Role::Warning)
     }
 
     /// Create themed style for informational messages
+    #[must_use]
     pub fn info_style() -> ContentStyle {
         ContentStyle::themed(Role::Info)
     }
 
     /// Create themed style for code content
+    #[must_use]
     pub fn code_style() -> ContentStyle {
         ContentStyle::themed(Role::Code)
     }
 
     /// Create themed style for emphasized text
+    #[must_use]
     pub fn emphasis_style() -> ContentStyle {
         ContentStyle::themed(Role::Emphasis)
     }
 
     /// Create themed style for subtle/less important text
+    #[must_use]
     pub fn subtle_style() -> ContentStyle {
         ContentStyle::themed(Role::Subtle)
     }

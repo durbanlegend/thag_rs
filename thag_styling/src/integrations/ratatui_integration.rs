@@ -25,10 +25,7 @@ impl ThemedStyle<Self> for RataColor {
     }
 
     fn from_thag_style(style: &Style) -> Self {
-        style
-            .foreground
-            .as_ref()
-            .map_or(Self::Reset, RataColor::from)
+        style.foreground.as_ref().map_or(Self::Reset, Self::from)
     }
 }
 
@@ -86,7 +83,7 @@ impl From<&Role> for RataColor {
         style
             .foreground
             .as_ref()
-            .map_or_else(|| Self::Indexed(u8::from(role)), RataColor::from)
+            .map_or_else(|| Self::Indexed(u8::from(role)), Self::from)
     }
 }
 

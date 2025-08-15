@@ -182,6 +182,7 @@ fn create_sunset_image() -> DynamicImage {
         *pixel = color;
     }
 
+    // let _ = img.save("sunset.png");
     DynamicImage::ImageRgb8(img)
 }
 

@@ -75,12 +75,9 @@ fn apply_theme(theme_name: &str) {
 
     // Show a quick demonstration
     println!("\n🎭 Color demonstration:");
-    if let Err(e) = PaletteSync::show_background_info(&theme) {
-        eprintln!("Warning: Failed to show background info: {}", e);
-    }
-    if let Err(e) = PaletteSync::demonstrate_palette() {
-        eprintln!("Warning: Failed to demonstrate palette: {}", e);
-    }
+    PaletteSync::show_background_info(&theme);
+
+    PaletteSync::demonstrate_palette();
 }
 
 fn preview_theme(theme_name: &str) {
@@ -105,12 +102,9 @@ fn preview_theme(theme_name: &str) {
     let mut input = String::new();
     let _ = std::io::stdin().read_line(&mut input);
 
-    if let Err(e) = PaletteSync::show_background_info(&theme) {
-        eprintln!("Warning: Failed to show background info: {}", e);
-    }
-    if let Err(e) = PaletteSync::demonstrate_palette() {
-        eprintln!("Warning: Failed to demonstrate palette: {}", e);
-    }
+    PaletteSync::show_background_info(&theme);
+
+    PaletteSync::demonstrate_palette();
 
     println!(
         "\n🔄 To make this permanent, run: {} apply {}",
@@ -135,10 +129,7 @@ fn reset_palette() {
 }
 
 fn demo_palette() {
-    if let Err(e) = PaletteSync::demonstrate_palette() {
-        eprintln!("❌ Failed to demonstrate palette: {}", e);
-        process::exit(1);
-    }
+    PaletteSync::demonstrate_palette();
 }
 
 fn list_themes() {

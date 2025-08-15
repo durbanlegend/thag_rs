@@ -3,7 +3,6 @@ use crate::{StylingError, StylingResult, ThemeError};
 // Type alias for compatibility with PaletteMethods proc macro
 type ThagResult<T> = StylingResult<T>;
 
-use crate::StylingConfigProvider;
 use serde::Deserialize;
 use std::fmt;
 use std::fs;
@@ -15,13 +14,11 @@ use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_common::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, V};
 use thag_proc_macros::{preload_themes, PaletteMethods};
 
-// TODO temp location
-// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
-// use thag_demo_proc_macros::styled;
-
 #[cfg(feature = "color_detect")]
 use thag_common::terminal::{self, get_term_bg_rgb, is_light_color};
+
+#[cfg(feature = "config")]
+use crate::StylingConfigProvider;
 
 #[cfg(feature = "config")]
 use thag_common::config::maybe_config;

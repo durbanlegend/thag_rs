@@ -25,10 +25,7 @@ impl ThemedStyle<Self> for NuColor {
     }
 
     fn from_thag_style(style: &Style) -> Self {
-        style
-            .foreground
-            .as_ref()
-            .map_or(Self::Fixed(7), NuColor::from) // Default to white
+        style.foreground.as_ref().map_or(Self::Fixed(7), Self::from) // Default to white
     }
 }
 
@@ -74,7 +71,7 @@ impl From<&Role> for NuColor {
         style
             .foreground
             .as_ref()
-            .map_or_else(|| Self::Fixed(u8::from(role)), NuColor::from)
+            .map_or_else(|| Self::Fixed(u8::from(role)), Self::from)
     }
 }
 

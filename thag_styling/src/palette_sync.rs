@@ -26,14 +26,17 @@
 //! PaletteSync::reset_palette()?;
 //! ```
 
-use crate::{Role, Theme};
-use std::io::{self, Write};
+use crate::{styling, Role, Theme};
+use std::{
+    convert::Into,
+    io::{self, Write},
+};
 
 /// Terminal palette synchronization using OSC sequences
 pub struct PaletteSync;
 
 impl PaletteSync {
-    /// Apply a thag_styling theme to the terminal's color palette
+    /// Apply a `thag_styling` theme to the terminal's color palette
     ///
     /// This updates both the 16-color ANSI palette (colors 0-15) and the
     /// terminal's default foreground/background colors using OSC sequences.
@@ -44,6 +47,10 @@ impl PaletteSync {
     /// # Returns
     /// * `Ok(())` if the palette was updated successfully
     /// * `Err(io::Error)` if there was an error writing to stdout
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered.
     ///
     /// # Note
     /// Changes are applied immediately to the current terminal session only.
@@ -74,20 +81,15 @@ impl PaletteSync {
         }
 
         // Set default foreground color (OSC 10) - use normal role
-        let normal_rgb = theme
-            .style_for(Role::Normal)
-            .foreground
-            .as_ref()
-            .map(|color_info| match &color_info.value {
+        let normal_rgb = theme.style_for(Role::Normal).foreground.as_ref().map_or(
+            [192, 192, 192],
+            |color_info| match &color_info.value {
                 crate::ColorValue::TrueColor { rgb } => *rgb,
-                crate::ColorValue::Color256 { color256: _ } => {
+                crate::ColorValue::Color256 { color256: _ } | crate::ColorValue::Basic { .. } => {
                     [color_info.index, color_info.index, color_info.index]
                 } // Approximation
-                crate::ColorValue::Basic { .. } => {
-                    [color_info.index, color_info.index, color_info.index]
-                } // Approximation
-            })
-            .unwrap_or([192, 192, 192]); // Default light gray
+            },
+        ); // Default light gray
 
         let osc = format!(
             "\x1b]10;rgb:{:02x}/{:02x}/{:02x}\x07",
@@ -103,6 +105,10 @@ impl PaletteSync {
     ///
     /// This uses OSC 104 to reset all colors and OSC 110/111 to reset
     /// the default foreground and background colors.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered.
     pub fn reset_palette() -> io::Result<()> {
         let mut stdout = io::stdout();
 
@@ -123,6 +129,10 @@ impl PaletteSync {
     ///
     /// This applies the theme and provides instructions for resetting.
     /// Useful for testing themes interactively.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o errors encountered.
     pub fn preview_theme(theme: &Theme) -> io::Result<()> {
         println!("🎨 Applying theme: {}", theme.name);
         println!("📝 Description: {}", theme.description);
@@ -138,7 +148,7 @@ impl PaletteSync {
 
     /// Build a mapping from ANSI color indices (0-15) to RGB values based on theme roles
     ///
-    /// Maps thag_styling semantic roles to traditional ANSI color meanings:
+    /// Maps `thag_styling` semantic roles to traditional ANSI color meanings:
     /// - 0: Black (subtle)
     /// - 1: Red (error)
     /// - 2: Green (success)
@@ -161,29 +171,21 @@ impl PaletteSync {
                 .style_for(role)
                 .foreground
                 .as_ref()
-                .map(|color_info| match &color_info.value {
+                .map_or([128, 128, 128], |color_info| match &color_info.value {
                     crate::ColorValue::TrueColor { rgb } => *rgb,
                     crate::ColorValue::Color256 { .. } => {
                         // Convert color256 index to approximate RGB
-                        let (r, g, b) = crate::styling::get_rgb(color_info.index);
-                        [r, g, b]
+                        styling::get_rgb(color_info.index).into()
                     }
                     crate::ColorValue::Basic { .. } => {
                         // Use basic color mapping
-                        let (r, g, b) = crate::styling::get_rgb(color_info.index);
-                        [r, g, b]
+                        styling::get_rgb(color_info.index).into()
                     }
                 })
-                .unwrap_or([128, 128, 128]) // Default gray
         };
 
         // Get background color for black (0)
-        let bg_rgb = theme
-            .bg_rgbs
-            .first()
-            .copied()
-            .map(|(r, g, b)| [r, g, b])
-            .unwrap_or([0, 0, 0]);
+        let bg_rgb = theme.bg_rgbs.first().copied().map_or([0, 0, 0], Into::into);
 
         [
             bg_rgb,                                          // 0: Black (use theme background)
@@ -206,12 +208,13 @@ impl PaletteSync {
     }
 
     /// Brighten a color by increasing its lightness
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
         let factor = 1.3f32;
         [
-            ((rgb[0] as f32 * factor).min(255.0)) as u8,
-            ((rgb[1] as f32 * factor).min(255.0)) as u8,
-            ((rgb[2] as f32 * factor).min(255.0)) as u8,
+            ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
+            ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
+            ((f32::from(rgb[2]) * factor).min(255.0)) as u8,
         ]
     }
 
@@ -219,7 +222,7 @@ impl PaletteSync {
     ///
     /// This shows how the ANSI colors look after applying a theme,
     /// useful for verifying the palette update worked correctly.
-    pub fn demonstrate_palette() -> io::Result<()> {
+    pub fn demonstrate_palette() {
         println!("🎨 Current Terminal Palette:");
         println!();
 
@@ -254,12 +257,10 @@ impl PaletteSync {
         println!("\x1b[91m● Trace - Detailed diagnostic (ANSI 9: Bright Red)");
         println!();
         println!("📝 Note: Palette changes only affect this terminal session");
-
-        Ok(())
     }
 
     /// Display current background color information
-    pub fn show_background_info(theme: &Theme) -> io::Result<()> {
+    pub fn show_background_info(theme: &Theme) {
         println!();
         println!("🖼️  Background Information:");
         if let Some(bg_rgb) = theme.bg_rgbs.first() {
@@ -271,20 +272,20 @@ impl PaletteSync {
                 "\x1b]11;rgb:{:02x}/{:02x}/{:02x}\x07",
                 bg_rgb.0, bg_rgb.1, bg_rgb.2
             );
-            print!("{}", osc);
+            print!("{osc}");
             println!("   Sample: \x1b[37m█████\x1b[0m (background should match theme)");
         }
-        Ok(())
     }
 
     /// Show hybrid demonstration: both palette colors and proper styling with attributes
-    pub fn demonstrate_hybrid_styling(_theme: &Theme) -> io::Result<()> {
+    #[allow(clippy::too_many_lines)]
+    pub fn demonstrate_hybrid_styling(_theme: &Theme) {
+        use crate::{Role, Style, StyleLike};
+
         println!();
         println!("🎨 Hybrid Color Demonstration:");
         println!("   📋 Left: ANSI palette colors | Right: Thag styling with attributes");
         println!();
-
-        use crate::{Role, Style, StyleLike};
 
         let roles_and_messages = [
             (
@@ -377,22 +378,20 @@ impl PaletteSync {
             let style = Style::from(role);
 
             // Left side: ANSI palette color only
-            print!("{}{}  {}\x1b[0m", ansi_code, "●", ansi_desc);
+            print!("{ansi_code}●  {ansi_desc}\x1b[0m");
 
             // Right side: Thag styling with attributes
             print!("  │  ");
-            style.prtln(format_args!("{}", message));
+            style.prtln(format_args!("{message}"));
         }
 
         println!();
         println!("🎯 Left colors come from updated terminal palette");
         println!("🎯 Right colors/attributes come from thag styling system");
         println!("💡 The combination gives you consistent theming everywhere!");
-
-        Ok(())
     }
 
-    fn color_name(index: u8) -> &'static str {
+    const fn color_name(index: u8) -> &'static str {
         match index {
             0 => "Black",
             1 => "Red",
@@ -406,7 +405,7 @@ impl PaletteSync {
         }
     }
 
-    fn bright_color_name(index: u8) -> &'static str {
+    const fn bright_color_name(index: u8) -> &'static str {
         match index {
             0 => "Bright Black",
             1 => "Bright Red",

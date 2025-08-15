@@ -19,20 +19,19 @@
 - [ ]  Consider error enum per module/subcrate with module entries in main errors enum.
 - [ ]  Make a plan for styling dependencies to be in thag_proc_macros or common subcrate? - lazy_static_var, vprtln, ColorSupport, TermBgLuma, [ThagError, ThagResult], V. All not bracketed are in shared.rs.
 - [ ]  Tools auto_help to accept file!() rather than name as string literal?
-- [ ]  DONE: thag_paste tool?
 - [ ]  Convert all inquire interfaces to use theming.
 - [ ]  RYO cargo-lookup?.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Add thag_theme tool to show current theme?
 - [ ]  Demo script for styled! proc macro using thag_styling?
-- [ ]  Moe internal=???
 - [ ]  thag_show_themes.rs - detect alacritty etc and give instructions accordingly. alacritty etc?
-- [ ]  StyleLike add prtln and embed trait methods to allow styles to embed styles.
+- [ ]  DONE: StyleLike add prtln and embed trait methods to allow styles to embed styles.
 - [ ]  Incorporate bank/rata.rs example?
-- [ ]  Make detection or at least config mandatory.
+- [ ]  DONE: Make detection or at least config mandatory.
 - [ ]  Add further attributes such as reversed to Style.
 - [ ]  Debug success, emphasis, code and subtle all getting the same colour.
 - [ ]  Thag tool for setting terminal theme to a thag theme.
+- [ ]  Thag tool for showing current terminal palette - customize demo/palette_with_vibrant_theme.rs to make it generic.
 
 rgb: [u8; 3]
 

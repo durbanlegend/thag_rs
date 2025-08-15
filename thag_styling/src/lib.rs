@@ -22,6 +22,9 @@ pub mod palette_sync;
 #[cfg(feature = "image_themes")]
 pub mod image_themes;
 
+/// Multi-format theme exporters for various terminal emulators
+pub mod exporters;
+
 // Re-export common types
 pub use thag_common::{
     debug_log, get_verbosity, prtln, re, vprtln, ColorSupport, TermBgLuma, ThagCommonResult,
@@ -56,6 +59,12 @@ pub use thag_proc_macros::styled;
 pub use image_themes::{
     generate_and_save_theme, generate_theme_from_image, generate_theme_from_image_with_config,
     save_theme_to_file, theme_to_toml, ImageThemeConfig, ImageThemeGenerator,
+};
+
+// Re-export theme exporter types
+pub use exporters::{
+    export_all_formats, export_theme_to_file, generate_installation_instructions, ExportFormat,
+    ThemeExporter,
 };
 
 /// Result type alias for styling operations

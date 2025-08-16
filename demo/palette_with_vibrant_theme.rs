@@ -172,50 +172,99 @@ fn display_vibrant_theme_colors(theme: &Theme) {
     println!();
 }
 
-/// Display side-by-side color comparison
+/// Display side-by-side color comparison showing current terminal vs expected thag colors
 fn display_color_comparison(theme: &Theme) {
-    println!("🔄 ANSI vs thag-vibrant-dark Mapping:");
-    println!("=======================================");
+    println!("🔄 ANSI Color Mapping Comparison:");
+    println!("==================================");
 
-    // Map thag semantic colors to ANSI equivalents
+    // CORRECTED mappings that should match thag_sync_palette behavior
     let color_mappings = [
-        ("Black (0)", 0, get_best_dark_color(theme)),
-        ("Red (1)", 1, extract_rgb(&theme.palette.error)),
-        ("Green (2)", 2, extract_rgb(&theme.palette.success)),
-        ("Yellow (3)", 3, extract_rgb(&theme.palette.warning)),
-        ("Blue (4)", 4, extract_rgb(&theme.palette.info)),
-        ("Magenta (5)", 5, extract_rgb(&theme.palette.code)),
-        ("Cyan (6)", 6, extract_rgb(&theme.palette.info)), // Reuse info for cyan
-        ("White (7)", 7, extract_rgb(&theme.palette.normal)),
-        ("Bright Black (8)", 8, extract_rgb(&theme.palette.subtle)),
+        ("Black (0)", 0, "Background", get_best_dark_color(theme)),
+        ("Red (1)", 1, "Error", extract_rgb(&theme.palette.error)),
+        (
+            "Green (2)",
+            2,
+            "Success",
+            extract_rgb(&theme.palette.success),
+        ),
+        (
+            "Yellow (3)",
+            3,
+            "Warning",
+            extract_rgb(&theme.palette.warning),
+        ),
+        ("Blue (4)", 4, "Info", extract_rgb(&theme.palette.info)),
+        (
+            "Magenta (5)",
+            5,
+            "Heading1",
+            extract_rgb(&theme.palette.heading1),
+        ), // CORRECTED: should be heading1 (purple)
+        (
+            "Cyan (6)",
+            6,
+            "Heading3",
+            extract_rgb(&theme.palette.heading3),
+        ), // CORRECTED: should be heading3 (cyan-blue)
+        ("White (7)", 7, "Normal", extract_rgb(&theme.palette.normal)),
+        (
+            "Bright Black (8)",
+            8,
+            "Subtle",
+            extract_rgb(&theme.palette.subtle),
+        ),
         (
             "Bright White (15)",
             15,
+            "Emphasis",
             extract_rgb(&theme.palette.emphasis),
         ),
     ];
 
-    println!("ANSI Color           Terminal           thag-vibrant-dark");
-    println!("─────────────────────────────────────────────────────────");
+    println!(
+        "ANSI Color           Current Terminal      Expected (thag theme)           Semantic Role"
+    );
+    println!(
+        "──────────────────────────────────────────────────────────────────────────────────────"
+    );
 
-    for (name, ansi_index, thag_rgb) in color_mappings {
-        // Terminal color sample
+    for (name, ansi_index, semantic_role, thag_rgb) in color_mappings {
+        // Current terminal color (visual sample only)
         let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
 
-        // thag color sample (if available)
-        let thag_sample = if let Some((r, g, b)) = thag_rgb {
+        // Expected thag color with RGB info in both hex and decimal
+        let thag_display = if let Some((r, g, b)) = thag_rgb {
             format!(
-                "\x1b[38;2;{};{};{}m████\x1b[0m RGB({},{},{})",
-                r, g, b, r, g, b
+                "\x1b[38;2;{};{};{}m████\x1b[0m #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
+                r, g, b, r, g, b, r, g, b
             )
         } else {
             "N/A".to_string()
         };
 
-        println!("{:20} {} {}", name, terminal_sample, thag_sample);
+        println!(
+            "{:16} {:17} {:31} {}",
+            name, terminal_sample, thag_display, semantic_role
+        );
     }
 
     println!();
+    println!("💡 Notes:");
+    println!("• Current Terminal shows what your terminal currently displays");
+    println!("• Expected shows what it should look like with correct thag theme");
+    println!(
+        "• If ANSI 5 (Magenta) is wrong, it should be purple #{:02x}{:02x}{:02x} (Heading1)",
+        extract_rgb(&theme.palette.heading1)
+            .unwrap_or((172, 106, 205))
+            .0,
+        extract_rgb(&theme.palette.heading1)
+            .unwrap_or((172, 106, 205))
+            .1,
+        extract_rgb(&theme.palette.heading1)
+            .unwrap_or((172, 106, 205))
+            .2
+    );
+    println!("• Use thag_sync_palette --apply thag-vibrant-dark to see correct colors");
 }
 
 /// Extract RGB values from a style for display

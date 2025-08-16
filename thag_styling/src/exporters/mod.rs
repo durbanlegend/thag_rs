@@ -116,6 +116,9 @@ pub fn export_all_formats<P: AsRef<Path>>(
             Ok(content) => {
                 // Handle filename conflicts between formats with same extension
                 let filename = match format {
+                    ExportFormat::Alacritty => {
+                        format!("{}_alacritty.{}", base_filename, format.file_extension())
+                    }
                     ExportFormat::WezTerm => {
                         format!("{}_wezterm.{}", base_filename, format.file_extension())
                     }
@@ -174,6 +177,7 @@ pub fn export_theme_to_file<P: AsRef<Path>>(
 pub fn generate_installation_instructions(format: ExportFormat, theme_filename: &str) -> String {
     match format {
         ExportFormat::Alacritty => {
+            let alacritty_filename = theme_filename.replace(".toml", "_alacritty.toml");
             format!(
                 r#"# Alacritty Theme Installation
 
@@ -185,12 +189,12 @@ To use this theme with Alacritty:
 
 2. Add this to your alacritty.yml or alacritty.toml:
    ```toml
-   import = ["themes/{}"]
+   general.import = ["themes/{}"]
    ```
 
 3. Restart Alacritty to apply the theme.
 "#,
-                theme_filename, theme_filename, theme_filename
+                alacritty_filename, alacritty_filename, alacritty_filename
             )
         }
         ExportFormat::WezTerm => {

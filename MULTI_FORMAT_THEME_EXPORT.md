@@ -13,7 +13,7 @@ We have successfully implemented **Phase 1** of the multi-format export system a
 | Terminal Emulator | Format | File Extension | Status |
 |-------------------|--------|----------------|---------|
 | **Alacritty** | TOML | `.toml` | ✅ Implemented |
-| **WezTerm** | Lua | `.lua` | ✅ Implemented |
+| **WezTerm** | TOML | `.toml` | ✅ Implemented |
 | **iTerm2** | JSON | `.json` | ✅ Implemented |
 | **Kitty** | Config | `.conf` | ✅ Implemented |
 | **Windows Terminal** | JSON | `.json` | ✅ Implemented |
@@ -119,13 +119,14 @@ THAG_DEV_PATH=$PWD cargo run -- demo/image_to_multi_format_theme.rs
 ### Alacritty (TOML)
 - Supports primary, normal, bright, and dim color variants
 - Includes cursor, selection, and search highlighting colors
-- Compatible with both legacy YAML and modern TOML configs
+- Uses proper Alacritty TOML structure with [colors.primary], [colors.normal], etc.
+- Compatible with modern Alacritty versions (uses general.import)
 
-### WezTerm (Lua)
-- Full Lua module with metadata
-- Comprehensive tab bar color configuration
-- Split/pane border colors
-- Scrollbar theming support
+### WezTerm (TOML)
+- Uses WezTerm's color scheme TOML format with [metadata] and [colors] sections
+- Includes ansi and brights arrays for 16-color support
+- Supports indexed colors for 256-color palette extension
+- Compatible with WezTerm's color_scheme configuration
 
 ### iTerm2 (JSON)
 - Complete color preset format with normalized float values (0.0-1.0)
@@ -142,6 +143,16 @@ THAG_DEV_PATH=$PWD cargo run -- demo/image_to_multi_format_theme.rs
 - Proper schemes array structure for merging into settings.json
 - All 16 ANSI colors with Windows Terminal naming convention
 - Cursor and selection color support
+
+## Filename Handling
+
+### Avoiding Conflicts
+Since both Alacritty and WezTerm use `.toml` files, the export system uses distinct filenames:
+- **Alacritty**: `theme_name_alacritty.toml`
+- **WezTerm**: `theme_name_wezterm.toml`
+- **Windows Terminal**: `theme_name_windows_terminal.json`
+- **iTerm2**: `theme_name.json`
+- **Kitty**: `theme_name.conf`
 
 ## Color Conversion Features
 
@@ -181,9 +192,14 @@ Tests cover:
 
 ### Additional Terminal Support
 - Hyper terminal
-- Terminator
+- Terminator  
 - GNOME Terminal
 - Konsole
+
+### Debugging Tools
+- **Terminal Palette Display**: Visual inspection of current terminal colors
+- **Theme Comparison**: Side-by-side comparison of terminal vs thag colors
+- **Installation Validation**: Tools to verify theme installation
 
 ## Integration Points
 
@@ -233,13 +249,23 @@ Robust error handling throughout the export process:
 - **Minimal Memory Usage**: Streaming output generation
 - **Parallel Export**: Multiple formats can be exported concurrently
 
+## Demo Tools Available
+
+- **`demo/export_thag_vibrant_dark.rs`**: Export specific thag themes to all formats
+- **`demo/multi_format_theme_export.rs`**: General demonstration of export capabilities
+- **`demo/image_to_multi_format_theme.rs`**: Complete image-to-theme workflow
+- **`demo/terminal_palette_display.rs`**: Visual terminal color inspection
+- **`demo/palette_with_vibrant_theme.rs`**: Side-by-side theme comparison
+
 ## Conclusion
 
 The multi-format theme export system successfully addresses the original problem of theme portability across terminal emulators. Users can now:
 
 1. Generate themes from images using thag's image analysis
-2. Export those themes to any popular terminal emulator
+2. Export those themes to any popular terminal emulator with correct format-specific structure
 3. Get detailed installation instructions for each format
-4. Share themes easily across different platforms and terminals
+4. Avoid filename conflicts with intelligent naming schemes
+5. Share themes easily across different platforms and terminals
+6. Debug theme issues with visual palette inspection tools
 
 This implementation provides a solid foundation for the remaining phases of the multi-format export roadmap.

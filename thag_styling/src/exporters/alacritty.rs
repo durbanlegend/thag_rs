@@ -1,7 +1,7 @@
 //! Alacritty terminal theme exporter
 //!
 //! Exports thag themes to Alacritty's TOML color scheme format.
-//! Alacritty supports both YAML and TOML formats, but TOML is preferred for newer versions.
+//! Alacritty uses a specific TOML structure that differs from other terminals.
 
 use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
 
@@ -66,7 +66,7 @@ impl ThemeExporter for AlacrittyExporter {
             ));
         }
 
-        output.push('\n');
+        output.push_str("\n");
 
         // Normal colors (0-7)
         output.push_str("[colors.normal]\n");
@@ -95,7 +95,7 @@ impl ThemeExporter for AlacrittyExporter {
             }
         }
 
-        output.push('\n');
+        output.push_str("\n");
 
         // Bright colors (8-15) - brighter/more saturated versions
         output.push_str("[colors.bright]\n");
@@ -148,7 +148,7 @@ impl ThemeExporter for AlacrittyExporter {
             }
         }
 
-        output.push('\n');
+        output.push_str("\n");
 
         // Dim colors (optional, for compatibility)
         output.push_str("[colors.dim]\n");
@@ -197,14 +197,7 @@ impl ThemeExporter for AlacrittyExporter {
             }
         }
 
-        output.push('\n');
-
-        // Indexed colors (for 256-color support)
-        output.push_str("# Indexed Colors\n");
-        output.push_str("# You can add custom indexed colors here for 256-color support\n");
-        output.push_str("# [[colors.indexed_colors]]\n");
-        output.push_str("# index = 16\n");
-        output.push_str("# color = \"#ff9900\"\n\n");
+        output.push_str("\n");
 
         // Cursor colors
         output.push_str("[colors.cursor]\n");
@@ -227,7 +220,7 @@ impl ThemeExporter for AlacrittyExporter {
             ));
         }
 
-        output.push('\n');
+        output.push_str("\n");
 
         // Selection colors
         output.push_str("[colors.selection]\n");
@@ -246,7 +239,7 @@ impl ThemeExporter for AlacrittyExporter {
             ));
         }
 
-        output.push('\n');
+        output.push_str("\n");
 
         // Search colors
         output.push_str("[colors.search]\n");

@@ -18,8 +18,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Multi-Format Theme Export Demo");
     println!("==================================\n");
 
-    // Create a sample theme for demonstration
-    let theme = create_sample_theme();
+    // // Create a sample theme for demonstration
+    // let theme = create_sample_theme();
+
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 2 {
+        eprintln!(
+            "Usage: {} <built-in theme name>, e.g. `dracula_official`",
+            args[0]
+        );
+        std::process::exit(1);
+    }
+
+    let theme_name = &args[1];
+
+    // Load the theme
+    let theme = Theme::get_builtin(theme_name)?;
 
     println!("📋 Theme: {}", theme.name);
     println!("📝 Description: {}\n", theme.description);

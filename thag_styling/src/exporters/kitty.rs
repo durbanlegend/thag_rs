@@ -249,7 +249,7 @@ impl ThemeExporter for KittyExporter {
         }
 
         output.push_str("\n# magenta\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.code) {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading1) {
             output.push_str(&format!("color5 #{:02x}{:02x}{:02x}\n", r, g, b));
             let bright = brighten_color((r, g, b));
             output.push_str(&format!(
@@ -259,7 +259,7 @@ impl ThemeExporter for KittyExporter {
         }
 
         output.push_str("\n# cyan\n");
-        let cyan_normal = get_rgb_from_style(&theme.palette.info).unwrap_or((64, 192, 192));
+        let cyan_normal = get_rgb_from_style(&theme.palette.heading3).unwrap_or((64, 192, 192));
         output.push_str(&format!(
             "color6 #{:02x}{:02x}{:02x}\n",
             cyan_normal.0, cyan_normal.1, cyan_normal.2
@@ -276,7 +276,7 @@ impl ThemeExporter for KittyExporter {
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.emphasis)
             .or_else(|| get_rgb_from_style(&theme.palette.normal))
-            .map(brighten_color)
+        // .map(brighten_color)
         {
             output.push_str(&format!("color15 #{:02x}{:02x}{:02x}\n", r, g, b));
         }

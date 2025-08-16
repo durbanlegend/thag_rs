@@ -8,8 +8,9 @@ thag_styling = { path = "/Users/donf/projects/thag_rs/thag_styling" }
 //! This tool displays the current terminal's color palette alongside
 //! the thag-vibrant-dark theme colors for direct comparison.
 
-use std::fmt::Write;
-use thag_styling::{ColorSupport, Style, TermAttributes, TermBgLuma, Theme};
+// use std::fmt::Write;
+use thag_styling::{Style, TermAttributes, Theme};
+// use thag_styling::{ColorSupport, TermBgLuma};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Terminal Palette with thag-vibrant-dark Theme");
@@ -221,12 +222,8 @@ fn display_color_comparison(theme: &Theme) {
         ),
     ];
 
-    println!(
-        "ANSI Color           Current Terminal      Expected (thag theme)           Semantic Role"
-    );
-    println!(
-        "──────────────────────────────────────────────────────────────────────────────────────"
-    );
+    println!("ANSI Color           Terminal   Expected (thag theme)       Semantic Role");
+    println!("─────────────────────────────────────────────────────────────────────────");
 
     for (name, ansi_index, semantic_role, thag_rgb) in color_mappings {
         // Current terminal color (visual sample only)
@@ -243,7 +240,7 @@ fn display_color_comparison(theme: &Theme) {
         };
 
         println!(
-            "{:16} {:17} {:31} {}",
+            "{:20} {:17}       {:31}  {}",
             name, terminal_sample, thag_display, semantic_role
         );
     }

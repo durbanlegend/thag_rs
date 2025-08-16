@@ -123,9 +123,9 @@ fn generate_corrected_alacritty_theme(theme: &Theme) -> Result<String, Box<dyn s
         ("red", extract_rgb(&theme.palette.error)),        // 1: error
         ("green", extract_rgb(&theme.palette.success)),    // 2: success
         ("yellow", extract_rgb(&theme.palette.warning)),   // 3: warning
-        ("blue", extract_rgb(&theme.palette.code)),        // 4: code - CORRECTED
-        ("magenta", extract_rgb(&theme.palette.emphasis)), // 5: emphasis - CORRECTED
-        ("cyan", extract_rgb(&theme.palette.info)),        // 6: info
+        ("blue", extract_rgb(&theme.palette.info)),        // 4: info
+        ("magenta", extract_rgb(&theme.palette.heading1)), // 5: heading1
+        ("cyan", extract_rgb(&theme.palette.heading3)),    // 6: heading3
         ("white", extract_rgb(&theme.palette.normal)),     // 7: normal text
     ];
 
@@ -153,8 +153,9 @@ fn generate_corrected_alacritty_theme(theme: &Theme) -> Result<String, Box<dyn s
         ("cyan", extract_rgb(&theme.palette.hint)),    // 14: hint (bright cyan)
         (
             "white",
-            extract_rgb(&theme.palette.normal).map(brighten_color),
-        ), // 15: brightened normal
+            // extract_rgb(&theme.palette.normal).map(brighten_color),
+            extract_rgb(&theme.palette.emphasis),
+        ), // 15: emphasis
     ];
 
     for (color_name, rgb_opt) in bright_colors {

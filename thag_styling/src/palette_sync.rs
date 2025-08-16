@@ -188,35 +188,36 @@ impl PaletteSync {
         let bg_rgb = theme.bg_rgbs.first().copied().map_or([0, 0, 0], Into::into);
 
         [
-            bg_rgb,                                          // 0: Black (use theme background)
-            extract_rgb(Role::Error),                        // 1: Red
-            extract_rgb(Role::Success),                      // 2: Green
-            extract_rgb(Role::Warning),                      // 3: Yellow
-            extract_rgb(Role::Code),                         // 4: Blue
-            extract_rgb(Role::Emphasis),                     // 5: Magenta
-            extract_rgb(Role::Info),                         // 6: Cyan
-            extract_rgb(Role::Normal),                       // 7: White
-            extract_rgb(Role::Subtle), // 8: Bright Black (use Subtle instead of Debug)
-            extract_rgb(Role::Trace),  // 9: Bright Red (use Trace instead of brightened Error)
-            extract_rgb(Role::Debug),  // 10: Bright Green (use Debug instead of brightened Success)
+            bg_rgb,                      // 0: Black (use theme background)
+            extract_rgb(Role::Error),    // 1: Red
+            extract_rgb(Role::Success),  // 2: Green
+            extract_rgb(Role::Warning),  // 3: Yellow
+            extract_rgb(Role::Info),     // 4: Blue
+            extract_rgb(Role::Heading1), // 5: Magenta
+            extract_rgb(Role::Heading3), // 6: Cyan
+            extract_rgb(Role::Normal),   // 7: White
+            extract_rgb(Role::Subtle),   // 8: Bright Black (use Subtle instead of Debug)
+            extract_rgb(Role::Trace),    // 9: Bright Red (use Trace instead of brightened Error)
+            extract_rgb(Role::Debug), // 10: Bright Green (use Debug instead of brightened Success)
             extract_rgb(Role::Heading3), // 11: Bright Yellow
             extract_rgb(Role::Heading2), // 12: Bright Blue
             extract_rgb(Role::Heading1), // 13: Bright Magenta
-            extract_rgb(Role::Hint),   // 14: Bright Cyan
-            Self::brighten_color(extract_rgb(Role::Normal)), // 15: Bright White
+            extract_rgb(Role::Hint),  // 14: Bright Cyan
+            // Self::brighten_color(extract_rgb(Role::Normal)), // 15: Bright White
+            extract_rgb(Role::Emphasis), // 15: Bright White
         ]
     }
 
-    /// Brighten a color by increasing its lightness
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
-        let factor = 1.3f32;
-        [
-            ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
-            ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
-            ((f32::from(rgb[2]) * factor).min(255.0)) as u8,
-        ]
-    }
+    // /// Brighten a color by increasing its lightness
+    // #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    // fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
+    //     let factor = 1.3f32;
+    //     [
+    //         ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
+    //         ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
+    //         ((f32::from(rgb[2]) * factor).min(255.0)) as u8,
+    //     ]
+    // }
 
     /// Print a color demonstration using the current palette
     ///
@@ -244,9 +245,9 @@ impl PaletteSync {
         println!("\x1b[31m● Error - Something went wrong (ANSI 1: Red)");
         println!("\x1b[33m● Warning - Pay attention to this (ANSI 3: Yellow)");
         println!("\x1b[32m● Success - Everything worked! (ANSI 2: Green)");
-        println!("\x1b[36m● Info - Informational message (ANSI 6: Cyan)");
+        println!("\x1b[36m● Info - Informational message (ANSI 4: Blue)");
         println!("\x1b[35m● Emphasis - Important content (ANSI 5: Magenta)");
-        println!("\x1b[34m● Code - `code blocks and filenames` (ANSI 4: Blue)");
+        println!("\x1b[34m● Code - `code blocks and filenames` (ANSI 4: Blue?)");
         println!("\x1b[37m● Normal - Regular text (ANSI 7: White)");
         println!("\x1b[90m● Subtle - Secondary information (ANSI 8: Bright Black)");
         println!("\x1b[94m● Hint - Helpful suggestions (ANSI 14: Bright Cyan)");

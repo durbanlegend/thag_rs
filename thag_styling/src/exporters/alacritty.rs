@@ -78,20 +78,20 @@ impl ThemeExporter for AlacrittyExporter {
             ("green", get_rgb_from_style(&theme.palette.success)),
             ("yellow", get_rgb_from_style(&theme.palette.warning)),
             ("blue", get_rgb_from_style(&theme.palette.info)),
-            ("magenta", get_rgb_from_style(&theme.palette.code)),
+            ("magenta", get_rgb_from_style(&theme.palette.heading1)),
             (
                 "cyan",
-                get_rgb_from_style(&theme.palette.info).or_else(|| Some((64, 192, 192))),
+                get_rgb_from_style(&theme.palette.heading3).or_else(|| Some((64, 192, 192))),
             ),
             ("white", get_rgb_from_style(&theme.palette.normal)),
         ];
 
+        eprintln!("Normal colors:");
         for (color_name, rgb_opt) in normal_colors {
             if let Some((r, g, b)) = rgb_opt {
-                output.push_str(&format!(
-                    "{} = \"#{:02x}{:02x}{:02x}\"\n",
-                    color_name, r, g, b
-                ));
+                let color = &format!("{} = \"#{:02x}{:02x}{:02x}\"\n", color_name, r, g, b);
+                eprintln!("color={color}");
+                output.push_str(color);
             }
         }
 
@@ -134,17 +134,16 @@ impl ThemeExporter for AlacrittyExporter {
             (
                 "white",
                 get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-                    .map(brighten_color),
+                    .or_else(|| get_rgb_from_style(&theme.palette.emphasis)), // .map(brighten_color),
             ),
         ];
 
+        eprintln!("Bright colors:");
         for (color_name, rgb_opt) in bright_colors {
             if let Some((r, g, b)) = rgb_opt {
-                output.push_str(&format!(
-                    "{} = \"#{:02x}{:02x}{:02x}\"\n",
-                    color_name, r, g, b
-                ));
+                let color = &format!("{} = \"#{:02x}{:02x}{:02x}\"\n", color_name, r, g, b);
+                eprintln!("color={color}");
+                output.push_str(color);
             }
         }
 
@@ -283,6 +282,7 @@ impl ThemeExporter for AlacrittyExporter {
 /// Extract RGB values from a Style's foreground color
 fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
     style.foreground.as_ref().and_then(|color_info| {
+        eprintln!("Color value={:?}", color_info.value);
         match &color_info.value {
             ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
             ColorValue::Color256 { color256 } => {

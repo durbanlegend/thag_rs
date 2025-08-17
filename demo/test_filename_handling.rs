@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { path = "/Users/donf/projects/thag_rs/thag_styling" }
+thag_styling = { version = "0.2", thag-auto = true }
 */
 
 //! Quick test to verify filename handling for different formats

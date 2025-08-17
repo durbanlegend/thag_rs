@@ -7,7 +7,7 @@ thag_styling = { version = "0.2", features = ["image_themes"] }
 use std::env;
 use std::fs;
 use std::path::Path;
-use thag_rs::{auto_help, cprtln, Role, ThagResult};
+use thag_rs::{cprtln, Role, ThagResult};
 use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
 
 /// Generate terminal color themes from images
@@ -40,7 +40,6 @@ fn main() -> ThagResult<()> {
 
     if args.len() < 2 || args.contains(&"help".to_string()) || args.contains(&"--help".to_string())
     {
-        auto_help();
         print_usage();
         return Ok(());
     }
@@ -123,7 +122,7 @@ fn main() -> ThagResult<()> {
 
         let theme_type_suffix = match config.force_theme_type {
             Some(TermBgLuma::Light) => "-light",
-            Some(TermBgLuma::Dark) => "-dark",
+            Some(_) => "-dark",
             None => "",
         };
 

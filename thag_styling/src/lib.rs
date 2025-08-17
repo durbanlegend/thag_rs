@@ -102,6 +102,12 @@ pub enum StylingError {
     Generic(String),
 }
 
+impl From<std::fmt::Error> for StylingError {
+    fn from(err: std::fmt::Error) -> Self {
+        StylingError::Generic(format!("Format error: {}", err))
+    }
+}
+
 /// Theme-related error types
 #[derive(Debug, thiserror::Error)]
 pub enum ThemeError {

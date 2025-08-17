@@ -330,7 +330,7 @@ mod tests {
     fn test_file_extensions() {
         assert_eq!(ExportFormat::Alacritty.file_extension(), "toml");
         assert_eq!(ExportFormat::WezTerm.file_extension(), "toml");
-        assert_eq!(ExportFormat::ITerm2.file_extension(), "json");
+        assert_eq!(ExportFormat::ITerm2.file_extension(), "itermcolors");
         assert_eq!(ExportFormat::Kitty.file_extension(), "conf");
         assert_eq!(ExportFormat::WindowsTerminal.file_extension(), "json");
     }

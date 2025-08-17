@@ -1,116 +1,154 @@
 //! iTerm2 terminal theme exporter
 //!
-//! Exports thag themes to iTerm2's JSON color scheme format.
-//! iTerm2 uses JSON files for color presets that can be imported through the UI.
+//! Exports thag themes to iTerm2's .itermcolors XML format.
+//! iTerm2 uses .itermcolors files (plist XML) for color presets that can be imported through the UI.
 
 use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
-use serde_json::{json, Value};
+use std::fmt::Write;
 
 /// iTerm2 theme exporter
 pub struct ITerm2Exporter;
 
 impl ThemeExporter for ITerm2Exporter {
     fn export_theme(theme: &Theme) -> StylingResult<String> {
+        let mut output = String::new();
+
+        // XML declaration and plist header
+        writeln!(output, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
+        writeln!(
+            output,
+            r#"<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">"#
+        )?;
+        writeln!(output, r#"<plist version="1.0">"#)?;
+        writeln!(output, "<dict>")?;
+
         // Get primary background color
         let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
 
-        // Build the iTerm2 color scheme JSON
-        let color_scheme = json!({
-            "Ansi 0 Color": create_color_dict(get_best_dark_color(theme)),
-            "Ansi 1 Color": create_color_dict(get_rgb_from_style(&theme.palette.error)),
-            "Ansi 2 Color": create_color_dict(get_rgb_from_style(&theme.palette.success)),
-            "Ansi 3 Color": create_color_dict(get_rgb_from_style(&theme.palette.warning)),
-            "Ansi 4 Color": create_color_dict(get_rgb_from_style(&theme.palette.info)),
-            "Ansi 5 Color": create_color_dict(get_rgb_from_style(&theme.palette.code)),
-            "Ansi 6 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.info).or_else(|| Some((64, 192, 192)))
-            ),
-            "Ansi 7 Color": create_color_dict(get_rgb_from_style(&theme.palette.normal)),
-            "Ansi 8 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.subtle).or_else(|| Some((64, 64, 64)))
-            ),
-            "Ansi 9 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.error).map(brighten_color)
-            ),
-            "Ansi 10 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.success).map(brighten_color)
-            ),
-            "Ansi 11 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.warning).map(brighten_color)
-            ),
-            "Ansi 12 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.info).map(brighten_color)
-            ),
-            "Ansi 13 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.code).map(brighten_color)
-            ),
-            "Ansi 14 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.info)
-                    .map(brighten_color)
-                    .or_else(|| Some((128, 255, 255)))
-            ),
-            "Ansi 15 Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-                    .map(brighten_color)
-            ),
+        // ANSI Colors 0-15
+        write_color_entry(&mut output, "Ansi 0 Color", get_best_dark_color(theme))?;
+        write_color_entry(
+            &mut output,
+            "Ansi 1 Color",
+            get_rgb_from_style(&theme.palette.error),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 2 Color",
+            get_rgb_from_style(&theme.palette.success),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 3 Color",
+            get_rgb_from_style(&theme.palette.warning),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 4 Color",
+            get_rgb_from_style(&theme.palette.info),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 5 Color",
+            get_rgb_from_style(&theme.palette.heading1),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 6 Color",
+            get_rgb_from_style(&theme.palette.heading3),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 7 Color",
+            get_rgb_from_style(&theme.palette.normal),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 8 Color",
+            get_rgb_from_style(&theme.palette.subtle),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 9 Color",
+            get_rgb_from_style(&theme.palette.trace),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 10 Color",
+            get_rgb_from_style(&theme.palette.debug),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 11 Color",
+            get_rgb_from_style(&theme.palette.heading3),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 12 Color",
+            get_rgb_from_style(&theme.palette.heading2),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 13 Color",
+            get_rgb_from_style(&theme.palette.heading1),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 14 Color",
+            get_rgb_from_style(&theme.palette.hint),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Ansi 15 Color",
+            get_rgb_from_style(&theme.palette.emphasis),
+        )?;
 
-            // Background and foreground
-            "Background Color": create_color_dict(Some(bg_color)),
-            "Foreground Color": create_color_dict(get_rgb_from_style(&theme.palette.normal)),
+        // Background and foreground
+        write_color_entry(&mut output, "Background Color", Some(bg_color))?;
+        write_color_entry(
+            &mut output,
+            "Foreground Color",
+            get_rgb_from_style(&theme.palette.normal),
+        )?;
 
-            // Bold colors
-            "Bold Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-            ),
+        // Bold color
+        write_color_entry(
+            &mut output,
+            "Bold Color",
+            get_rgb_from_style(&theme.palette.emphasis)
+                .or_else(|| get_rgb_from_style(&theme.palette.normal)),
+        )?;
 
-            // Cursor colors
-            "Cursor Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-            ),
-            "Cursor Text Color": create_color_dict(Some(bg_color)),
+        // Cursor colors
+        write_color_entry(
+            &mut output,
+            "Cursor Color",
+            get_rgb_from_style(&theme.palette.emphasis)
+                .or_else(|| get_rgb_from_style(&theme.palette.normal)),
+        )?;
+        write_color_entry(&mut output, "Cursor Text Color", Some(bg_color))?;
 
-            // Selection colors
-            "Selection Color": create_color_dict(Some(adjust_color_brightness(bg_color, 1.4))),
-            "Selected Text Color": create_color_dict(get_rgb_from_style(&theme.palette.normal)),
+        // Selection colors
+        write_color_entry(
+            &mut output,
+            "Selection Color",
+            Some(adjust_color_brightness(bg_color, 1.4)),
+        )?;
+        write_color_entry(
+            &mut output,
+            "Selected Text Color",
+            get_rgb_from_style(&theme.palette.normal),
+        )?;
 
-            // Link color
-            "Link Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.info)
-                    .or_else(|| Some((0, 122, 255)))
-            ),
+        // Close the plist
+        writeln!(output, "</dict>")?;
+        writeln!(output, "</plist>")?;
 
-            // Badge color
-            "Badge Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.warning)
-                    .or_else(|| Some((255, 193, 7)))
-            ),
-
-            // Tab colors
-            "Tab Color": create_color_dict(Some(adjust_color_brightness(bg_color, 0.9))),
-
-            // Underline color
-            "Underline Color": create_color_dict(
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-            ),
-
-            // Guide color (for rulers, etc.)
-            "Guide Color": create_color_dict(Some(adjust_color_brightness(bg_color, 1.2))),
-
-            // Session name colors
-            "Session Name Color": create_color_dict(get_rgb_from_style(&theme.palette.normal)),
-        });
-
-        // Convert to pretty-printed JSON
-        serde_json::to_string_pretty(&color_scheme)
-            .map_err(|e| crate::StylingError::Generic(format!("JSON serialization error: {}", e)))
+        Ok(output)
     }
 
     fn file_extension() -> &'static str {
-        "json"
+        "itermcolors"
     }
 
     fn format_name() -> &'static str {
@@ -118,18 +156,30 @@ impl ThemeExporter for ITerm2Exporter {
     }
 }
 
-/// Create an iTerm2 color dictionary from RGB values
-fn create_color_dict(rgb_opt: Option<(u8, u8, u8)>) -> Value {
+/// Write a color entry to the XML output
+fn write_color_entry(
+    output: &mut String,
+    key: &str,
+    rgb_opt: Option<(u8, u8, u8)>,
+) -> Result<(), std::fmt::Error> {
     let (r, g, b) = rgb_opt.unwrap_or((128, 128, 128));
 
-    // iTerm2 uses normalized float values (0.0 - 1.0)
-    json!({
-        "Alpha Component": 1.0,
-        "Blue Component": b as f64 / 255.0,
-        "Color Space": "sRGB",
-        "Green Component": g as f64 / 255.0,
-        "Red Component": r as f64 / 255.0
-    })
+    // Convert to normalized float values (0.0 - 1.0)
+    let red = r as f64 / 255.0;
+    let green = g as f64 / 255.0;
+    let blue = b as f64 / 255.0;
+
+    writeln!(output, "\t<key>{}</key>", key)?;
+    writeln!(output, "\t<dict>")?;
+    writeln!(output, "\t\t<key>Blue Component</key>")?;
+    writeln!(output, "\t\t<real>{}</real>", blue)?;
+    writeln!(output, "\t\t<key>Green Component</key>")?;
+    writeln!(output, "\t\t<real>{}</real>", green)?;
+    writeln!(output, "\t\t<key>Red Component</key>")?;
+    writeln!(output, "\t\t<real>{}</real>", red)?;
+    writeln!(output, "\t</dict>")?;
+
+    Ok(())
 }
 
 /// Extract RGB values from a Style's foreground color
@@ -210,16 +260,6 @@ fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
     }
 }
 
-/// Brighten a color by increasing its components
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
-    (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
-    )
-}
-
 /// Adjust color brightness by a factor
 fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
     (
@@ -231,13 +271,8 @@ fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8)
 
 /// Get the best dark color from the theme for black mapping
 fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-    // Try background first, then subtle, then create a dark color
-    theme
-        .bg_rgbs
-        .first()
-        .copied()
-        .or_else(|| get_rgb_from_style(&theme.palette.subtle))
-        .or_else(|| Some((16, 16, 16)))
+    // Use background color as per palette_sync mapping
+    theme.bg_rgbs.first().copied()
 }
 
 #[cfg(test)]
@@ -268,31 +303,38 @@ mod tests {
         assert!(result.is_ok());
         let content = result.unwrap();
 
-        // Check that the content is valid JSON
-        let parsed: Value = serde_json::from_str(&content).unwrap();
+        // Check for XML structure
+        assert!(content.contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
+        assert!(content.contains("<!DOCTYPE plist"));
+        assert!(content.contains("<plist version=\"1.0\">"));
+        assert!(content.contains("<dict>"));
+        assert!(content.contains("</dict>"));
+        assert!(content.contains("</plist>"));
 
         // Check for required iTerm2 color keys
-        assert!(parsed.get("Background Color").is_some());
-        assert!(parsed.get("Foreground Color").is_some());
-        assert!(parsed.get("Ansi 0 Color").is_some());
-        assert!(parsed.get("Ansi 15 Color").is_some());
-        assert!(parsed.get("Cursor Color").is_some());
-        assert!(parsed.get("Selection Color").is_some());
+        assert!(content.contains("<key>Background Color</key>"));
+        assert!(content.contains("<key>Foreground Color</key>"));
+        assert!(content.contains("<key>Ansi 0 Color</key>"));
+        assert!(content.contains("<key>Ansi 15 Color</key>"));
+        assert!(content.contains("<key>Cursor Color</key>"));
+        assert!(content.contains("<key>Selection Color</key>"));
+
+        // Check for color components
+        assert!(content.contains("<key>Red Component</key>"));
+        assert!(content.contains("<key>Green Component</key>"));
+        assert!(content.contains("<key>Blue Component</key>"));
+        assert!(content.contains("<real>"));
     }
 
     #[test]
-    fn test_color_dict_creation() {
-        let color_dict = create_color_dict(Some((255, 128, 64)));
+    fn test_write_color_entry() {
+        let mut output = String::new();
+        let result = write_color_entry(&mut output, "Test Color", Some((255, 128, 64)));
 
-        assert_eq!(color_dict["Alpha Component"], 1.0);
-        assert_eq!(color_dict["Red Component"], 1.0);
-        assert!(
-            (color_dict["Green Component"].as_f64().unwrap() - 0.5019607843137255).abs() < 0.001
-        );
-        assert!(
-            (color_dict["Blue Component"].as_f64().unwrap() - 0.25098039215686274).abs() < 0.001
-        );
-        assert_eq!(color_dict["Color Space"], "sRGB");
+        assert!(result.is_ok());
+        assert!(output.contains("<key>Test Color</key>"));
+        assert!(output.contains("<real>1</real>")); // Red component (255/255 = 1.0)
+        assert!(output.contains("<real>0.25098039215686274</real>")); // Blue component (64/255)
     }
 
     #[test]
@@ -300,7 +342,5 @@ mod tests {
         assert_eq!(color_256_to_rgb(0), (0, 0, 0));
         assert_eq!(color_256_to_rgb(15), (255, 255, 255));
         assert_eq!(basic_color_to_rgb(1), (128, 0, 0));
-
-        assert_eq!(brighten_color((100, 100, 100)), (130, 130, 130));
     }
 }

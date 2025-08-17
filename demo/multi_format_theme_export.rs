@@ -11,7 +11,7 @@ thag_styling = { path = "/Users/donf/projects/thag_rs/thag_styling" }
 use std::path::Path;
 use thag_styling::{
     export_all_formats, export_theme_to_file, generate_installation_instructions, ColorSupport,
-    ExportFormat, Palette, Role, Style, TermBgLuma, Theme, ThemeExporter,
+    ExportFormat, Palette, Style, TermBgLuma, Theme,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -97,42 +97,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Create a sample theme for demonstration purposes
-fn create_sample_theme() -> Theme {
-    use std::path::PathBuf;
-    use thag_styling::{ColorInfo, ColorValue};
+// /// Create a sample theme for demonstration purposes
+// fn create_sample_theme() -> Theme {
+//     use std::path::PathBuf;
+//     use thag_styling::ColorInfo;
 
-    // Create a vibrant color palette
-    let mut palette = Palette::default();
+//     // Create a vibrant color palette
+//     let mut palette = Palette::default();
 
-    // Define colors with RGB values
-    palette.heading1 = Style::fg(ColorInfo::rgb(255, 100, 100)); // Bright red
-    palette.heading2 = Style::fg(ColorInfo::rgb(100, 255, 100)); // Bright green
-    palette.heading3 = Style::fg(ColorInfo::rgb(100, 100, 255)); // Bright blue
-    palette.error = Style::fg(ColorInfo::rgb(255, 50, 50)); // Red
-    palette.warning = Style::fg(ColorInfo::rgb(255, 165, 0)); // Orange
-    palette.success = Style::fg(ColorInfo::rgb(50, 205, 50)); // Green
-    palette.info = Style::fg(ColorInfo::rgb(70, 130, 180)); // Steel blue
-    palette.emphasis = Style::fg(ColorInfo::rgb(255, 20, 147)); // Deep pink
-    palette.code = Style::fg(ColorInfo::rgb(138, 43, 226)); // Blue violet
-    palette.normal = Style::fg(ColorInfo::rgb(220, 220, 220)); // Light gray
-    palette.subtle = Style::fg(ColorInfo::rgb(128, 128, 128)); // Gray
-    palette.hint = Style::fg(ColorInfo::rgb(105, 105, 105)); // Dim gray
-    palette.debug = Style::fg(ColorInfo::rgb(255, 140, 0)); // Dark orange
-    palette.trace = Style::fg(ColorInfo::rgb(192, 192, 192)); // Silver
+//     // Define colors with RGB values
+//     palette.heading1 = Style::fg(ColorInfo::rgb(255, 100, 100)); // Bright red
+//     palette.heading2 = Style::fg(ColorInfo::rgb(100, 255, 100)); // Bright green
+//     palette.heading3 = Style::fg(ColorInfo::rgb(100, 100, 255)); // Bright blue
+//     palette.error = Style::fg(ColorInfo::rgb(255, 50, 50)); // Red
+//     palette.warning = Style::fg(ColorInfo::rgb(255, 165, 0)); // Orange
+//     palette.success = Style::fg(ColorInfo::rgb(50, 205, 50)); // Green
+//     palette.info = Style::fg(ColorInfo::rgb(70, 130, 180)); // Steel blue
+//     palette.emphasis = Style::fg(ColorInfo::rgb(255, 20, 147)); // Deep pink
+//     palette.code = Style::fg(ColorInfo::rgb(138, 43, 226)); // Blue violet
+//     palette.normal = Style::fg(ColorInfo::rgb(220, 220, 220)); // Light gray
+//     palette.subtle = Style::fg(ColorInfo::rgb(128, 128, 128)); // Gray
+//     palette.hint = Style::fg(ColorInfo::rgb(105, 105, 105)); // Dim gray
+//     palette.debug = Style::fg(ColorInfo::rgb(255, 140, 0)); // Dark orange
+//     palette.trace = Style::fg(ColorInfo::rgb(192, 192, 192)); // Silver
 
-    Theme {
-        name: "Vibrant Demo Theme".to_string(),
-        filename: PathBuf::from("vibrant_demo_theme.toml"),
-        is_builtin: false,
-        term_bg_luma: TermBgLuma::Dark,
-        min_color_support: ColorSupport::TrueColor,
-        palette,
-        backgrounds: vec!["#1a1a1a".to_string(), "#2d2d2d".to_string()],
-        bg_rgbs: vec![(26, 26, 26), (45, 45, 45)],
-        description: "A vibrant demonstration theme with bright, saturated colors perfect for showcasing multi-format export capabilities".to_string(),
-    }
-}
+//     Theme {
+//         name: "Vibrant Demo Theme".to_string(),
+//         filename: PathBuf::from("vibrant_demo_theme.toml"),
+//         is_builtin: false,
+//         term_bg_luma: TermBgLuma::Dark,
+//         min_color_support: ColorSupport::TrueColor,
+//         palette,
+//         backgrounds: vec!["#1a1a1a".to_string(), "#2d2d2d".to_string()],
+//         bg_rgbs: vec![(26, 26, 26), (45, 45, 45)],
+//         description: "A vibrant demonstration theme with bright, saturated colors perfect for showcasing multi-format export capabilities".to_string(),
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

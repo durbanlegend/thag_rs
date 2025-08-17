@@ -7,7 +7,7 @@ thag_styling = { version = "0.2", features = ["image_themes"] }
 use std::env;
 use std::fs;
 use std::path::Path;
-use thag_rs::{cprtln, Role, ThagResult};
+use thag_rs::{auto_help, cprtln, Role, ThagResult};
 use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
 
 /// Generate terminal color themes from images

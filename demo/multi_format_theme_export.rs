@@ -10,8 +10,8 @@ thag_styling = { version = "0.2, thag-auto" }
 
 use std::path::Path;
 use thag_styling::{
-    export_all_formats, export_theme_to_file, generate_installation_instructions, ColorSupport,
-    ExportFormat, Palette, Style, TermBgLuma, Theme,
+    export_all_formats, export_theme_to_file, generate_installation_instructions, ExportFormat,
+    Theme,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Export to all formats at once
     println!("🚀 Exporting to all formats...");
-    let exported_files = export_all_formats(&theme, output_dir, &theme.name.replace(' ', "_"))?;
+    let exported_files = export_all_formats(&theme, output_dir, &theme_name.replace(' ', "_"))?;
 
     println!("✅ Successfully exported {} formats:", exported_files.len());
     for file_path in &exported_files {
@@ -60,7 +60,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for format in ExportFormat::all() {
         let filename = format!(
             "{}.{}",
-            theme.name.replace(' ', "_"),
+            // theme.name.replace(' ', "_"),
+            theme_name,
             format.file_extension()
         );
 

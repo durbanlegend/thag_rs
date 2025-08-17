@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2", thag-auto = true }
+thag_styling = { version = "0.2, thag-auto" }
 */
 
 //! Terminal Palette Display Tool
@@ -12,8 +12,7 @@ thag_styling = { version = "0.2", thag-auto = true }
 //! - Terminal background detection
 //! - Current thag theme colors for comparison
 
-use std::fmt::Write;
-use thag_styling::{ColorSupport, Style, TermAttributes, TermBgLuma, Theme};
+use thag_styling::{Style, TermAttributes};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Terminal Palette Display Tool");

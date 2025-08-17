@@ -56,10 +56,10 @@ impl ThemeExporter for WezTermExporter {
             ("Green", get_rgb_from_style(&theme.palette.success)),
             ("Yellow", get_rgb_from_style(&theme.palette.warning)),
             ("Blue", get_rgb_from_style(&theme.palette.info)),
-            ("Magenta", get_rgb_from_style(&theme.palette.code)),
+            ("Magenta", get_rgb_from_style(&theme.palette.heading1)),
             (
                 "Cyan",
-                get_rgb_from_style(&theme.palette.info).or_else(|| Some((64, 192, 192))),
+                get_rgb_from_style(&theme.palette.heading3).or_else(|| Some((64, 192, 192))),
             ),
             ("White", get_rgb_from_style(&theme.palette.normal)),
         ];
@@ -121,8 +121,7 @@ impl ThemeExporter for WezTermExporter {
             (
                 "Bright White",
                 get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-                    .map(brighten_color),
+                    .or_else(|| get_rgb_from_style(&theme.palette.emphasis)), // .map(brighten_color),
             ),
         ];
 

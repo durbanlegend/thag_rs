@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { path = "/Users/donf/projects/thag_rs/thag_styling", features = ["image_themes"] }
+thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 */
 
 //! Demo of generating multi-format themes from images
@@ -13,7 +13,7 @@ thag_styling = { path = "/Users/donf/projects/thag_rs/thag_styling", features = 
 use std::path::Path;
 use thag_styling::{
     export_all_formats, generate_installation_instructions, generate_theme_from_image_with_config,
-    ExportFormat, ImageThemeConfig, TermBgLuma,
+    ExportFormat, ImageThemeConfig,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

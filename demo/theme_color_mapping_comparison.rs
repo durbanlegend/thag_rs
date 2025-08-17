@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2", thag-auto = true }
+thag_styling = { version = "0.2, thag-auto" }
 */
 
 //! Theme Color Mapping Comparison Tool

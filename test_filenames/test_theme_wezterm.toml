@@ -15,7 +15,7 @@ ansi = [
     "#90e090", # green
     "#f0d0b0", # yellow
     "#2080b0", # blue
-    "#6f8cc5", # magenta
+    "#ac6acd", # magenta
     "#2080b0", # cyan
     "#90e090", # white
 ]
@@ -28,7 +28,7 @@ brights = [
     "#29a6e4", # bright blue
     "#90b6ff", # bright magenta
     "#29a6e4", # bright cyan
-    "#ffe4f9", # bright white
+    "#f0b0c0", # bright white
 ]
 
 cursor_bg = "#f0b0c0" # Cursor background

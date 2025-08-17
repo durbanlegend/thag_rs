@@ -484,20 +484,6 @@ impl ImageThemeGenerator {
             );
         }
 
-        //         // Select normal text color ensuring proper contrast with background
-        //         let background_color = enhanced_colors
-        //             .iter()
-        //             .find(|c| c.is_background_suitable())
-        //             .or_else(|| {
-        //                 vprtln!(V::V, "No suitable bg colours found, trying enhanced_colors.first()");
-        //                 enhanced_colors.first()
-        //             })
-        //             .unwrap_or_else(|| {
-        //                 vprtln!(V::V, "No suitable bg colours found, trying enhanced_colors[0]");
-        //                 &enhanced_colors[0]
-        //             });
-        //         vprtln!(V::V, "background_color={:?}", background_color.rgb);
-
         let normal_color = Self::select_best_text_color(
             &text_colors,
             &enhanced_colors,

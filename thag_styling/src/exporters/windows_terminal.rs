@@ -35,9 +35,9 @@ impl ThemeExporter for WindowsTerminalExporter {
             "green": format_color(get_rgb_from_style(&theme.palette.success)),
             "yellow": format_color(get_rgb_from_style(&theme.palette.warning)),
             "blue": format_color(get_rgb_from_style(&theme.palette.info)),
-            "purple": format_color(get_rgb_from_style(&theme.palette.code)),
+            "purple": format_color(get_rgb_from_style(&theme.palette.heading1)),
             "cyan": format_color(
-                get_rgb_from_style(&theme.palette.info).or_else(|| Some((64, 192, 192)))
+                get_rgb_from_style(&theme.palette.heading3).or_else(|| Some((64, 192, 192)))
             ),
             "white": format_color(get_rgb_from_style(&theme.palette.normal)),
 
@@ -67,8 +67,8 @@ impl ThemeExporter for WindowsTerminalExporter {
             ),
             "brightWhite": format_color(
                 get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
-                    .map(brighten_color)
+                    .or_else(|| get_rgb_from_style(&theme.palette.emphasis))
+                    // .map(brighten_color)
             )
         });
 

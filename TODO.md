@@ -32,6 +32,8 @@
 - [ ]  Debug success, emphasis, code and subtle all getting the same colour.
 - [ ]  Thag tool for setting terminal theme to a thag theme.
 - [ ]  Thag tool for showing current terminal palette - customize demo/palette_with_vibrant_theme.rs to make it generic.
+- [ ]  Generate mintty theme for Git Bash - nice and simple, needs bright colours.
+- [ ]  Consolidate tools in thag_rs/src/bin?.
 
 rgb: [u8; 3]
 

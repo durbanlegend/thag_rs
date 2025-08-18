@@ -46,7 +46,7 @@ mockall = "0.13.1"
 nu-ansi-term = "0.50.1"
 phf = { version = "0.12.1", features = ["macros"] }
 prettyplease = "0.2.36"
-proc-macro2 = "1.0.97"
+proc-macro2 = "1.0.101"
 quote = "1.0.40"
 ratatui = "0.29.0"
 reedline = "0.39.0"

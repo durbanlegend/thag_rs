@@ -3,7 +3,11 @@
 //! Exports thag themes to iTerm2's .itermcolors XML format.
 //! iTerm2 uses .itermcolors files (plist XML) for color presets that can be imported through the UI.
 
-use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
+use crate::{
+    exporters::{brighten_color, ThemeExporter},
+    ColorValue, StylingResult, Theme,
+};
+
 use std::fmt::Write;
 
 /// iTerm2 theme exporter
@@ -80,12 +84,12 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 11 Color",
-            get_rgb_from_style(&theme.palette.heading3),
+            get_rgb_from_style(&theme.palette.emphasis),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 12 Color",
-            get_rgb_from_style(&theme.palette.heading2),
+            get_rgb_from_style(&theme.palette.info).map(brighten_color),
         )?;
         write_color_entry(
             &mut output,
@@ -100,7 +104,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 15 Color",
-            get_rgb_from_style(&theme.palette.emphasis),
+            get_rgb_from_style(&theme.palette.normal).map(brighten_color),
         )?;
 
         // Background and foreground

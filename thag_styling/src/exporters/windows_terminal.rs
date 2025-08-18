@@ -3,7 +3,11 @@
 //! Exports thag themes to Windows Terminal's JSON color scheme format.
 //! Windows Terminal uses JSON configuration files for color schemes.
 
-use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
+use crate::{
+    exporters::{brighten_color, ThemeExporter},
+    ColorValue, StylingResult, Theme,
+};
+
 use serde_json::json;
 
 /// Windows Terminal theme exporter
@@ -37,22 +41,22 @@ impl ThemeExporter for WindowsTerminalExporter {
             "blue": format_color(get_rgb_from_style(&theme.palette.info)),
             "purple": format_color(get_rgb_from_style(&theme.palette.heading1)),
             "cyan": format_color(
-                get_rgb_from_style(&theme.palette.heading3).or_else(|| Some((64, 192, 192)))
+                get_rgb_from_style(&theme.palette.heading3)
             ),
             "white": format_color(get_rgb_from_style(&theme.palette.normal)),
 
             // Bright colors (8-15)
             "brightBlack": format_color(
-                get_rgb_from_style(&theme.palette.subtle).or_else(|| Some((64, 64, 64)))
+                get_rgb_from_style(&theme.palette.subtle)
             ),
             "brightRed": format_color(
-                get_rgb_from_style(&theme.palette.error).map(brighten_color)
+                get_rgb_from_style(&theme.palette.trace)
             ),
             "brightGreen": format_color(
-                get_rgb_from_style(&theme.palette.success).map(brighten_color)
+                get_rgb_from_style(&theme.palette.debug)
             ),
             "brightYellow": format_color(
-                get_rgb_from_style(&theme.palette.warning).map(brighten_color)
+                get_rgb_from_style(&theme.palette.emphasis)
             ),
             "brightBlue": format_color(
                 get_rgb_from_style(&theme.palette.info).map(brighten_color)
@@ -61,21 +65,16 @@ impl ThemeExporter for WindowsTerminalExporter {
                 get_rgb_from_style(&theme.palette.code).map(brighten_color)
             ),
             "brightCyan": format_color(
-                get_rgb_from_style(&theme.palette.info)
-                    .map(brighten_color)
-                    .or_else(|| Some((128, 255, 255)))
+                get_rgb_from_style(&theme.palette.hint)
             ),
             "brightWhite": format_color(
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.emphasis))
-                    // .map(brighten_color)
+                get_rgb_from_style(&theme.palette.normal)
+                    .map(brighten_color)
             )
         });
 
         // Create the complete schemes array structure that can be merged into settings.json
-        let schemes_wrapper = json!({
-            "schemes": [color_scheme]
-        });
+        let schemes_wrapper = json!(color_scheme);
 
         // Convert to pretty-printed JSON
         serde_json::to_string_pretty(&schemes_wrapper)
@@ -175,16 +174,6 @@ fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
     }
 }
 
-/// Brighten a color by increasing its components
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
-    (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
-    )
-}
-
 /// Adjust color brightness by a factor
 fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
     (
@@ -207,6 +196,8 @@ fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::Value;
+
     use super::*;
     use crate::{ColorSupport, Palette, TermBgLuma};
     use std::path::PathBuf;

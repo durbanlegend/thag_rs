@@ -3,11 +3,9 @@ use std::{env, fs, path::PathBuf};
 
 fn main() -> anyhow::Result<()> {
     // Path to your Windows Terminal settings.json
-    let mut settings_path = dirs::data_local_dir()
-        .expect("No local data dir found");
-    settings_path.push(
-        r"Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
-    );
+    let mut settings_path = dirs::data_local_dir().expect("No local data dir found");
+    settings_path
+        .push(r"Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json");
 
     dbg!(&settings_path);
     dbg!(&settings_path.exists());
@@ -16,17 +14,36 @@ fn main() -> anyhow::Result<()> {
     // dbg!(&settings);
 
     // Collect new schemes
-    let args: Vec<String> = env::args().skip(1).collect();
-    dbg!(&args);
-
     let mut new_schemes = Vec::new();
 
-    let themes_dir = PathBuf::from("exported_themes");
+    let mut args: Vec<String> = env::args().collect();
+    dbg!(&args);
+
+    let program = PathBuf::from(args.remove(0))
+        .file_name()
+        .unwrap()
+        .display()
+        .to_string();
+
+    if args.is_empty() {
+        eprintln!(
+            "Usage: `thag demo/{program}.rs -- path/to/exported/themes/dir [theme-name.json ...]`"
+        );
+        std::process::exit(0);
+    }
+
+    let themes_dir = args.remove(0);
+    let themes_dir = PathBuf::from(&themes_dir);
     if args.is_empty() {
         // Load all theme files from "themes" dir
         for entry in fs::read_dir(&themes_dir)? {
             let entry = entry?;
-            if entry.path().extension().map(|e| e == "json").unwrap_or(false) {
+            if entry
+                .path()
+                .extension()
+                .map(|e| e == "json")
+                .unwrap_or(false)
+            {
                 let theme: Value = serde_json::from_str(&fs::read_to_string(entry.path())?)?;
                 eprintln!("theme={theme:?}");
                 new_schemes.push(theme);
@@ -55,9 +72,9 @@ fn main() -> anyhow::Result<()> {
 
         for scheme in new_schemes {
             if let Some(name) = scheme.get("name").and_then(|n| n.as_str()) {
-                let exists = array.iter().any(|s| {
-                    s.get("name").and_then(|n| n.as_str()) == Some(name)
-                });
+                let exists = array
+                    .iter()
+                    .any(|s| s.get("name").and_then(|n| n.as_str()) == Some(name));
                 if !exists {
                     array.push(scheme);
                 }
@@ -74,6 +91,9 @@ fn main() -> anyhow::Result<()> {
     // Write updated settings.json
     fs::write(&settings_path, serde_json::to_string_pretty(&settings)?)?;
 
-    println!("✅ Added new schemes, now {} total custom schemes", total_schemes);
+    println!(
+        "✅ Added new schemes, now {} total custom schemes",
+        total_schemes
+    );
     Ok(())
 }

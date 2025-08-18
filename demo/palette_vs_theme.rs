@@ -244,8 +244,8 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Bright Yellow (11)",
             11,
-            "Warning (brighter)",
-            extract_rgb(&theme.palette.warning).map(brighten_color),
+            "Emphasis",
+            extract_rgb(&theme.palette.emphasis),
         ),
         (
             "Bright Blue (12)",
@@ -268,8 +268,8 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Bright White (15)",
             15,
-            "Emphasis",
-            extract_rgb(&theme.palette.emphasis),
+            "Normal (brighter)",
+            extract_rgb(&theme.palette.normal).map(brighten_color),
         ),
     ];
 

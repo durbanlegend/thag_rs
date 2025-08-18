@@ -3,7 +3,10 @@
 //! Exports thag themes to WezTerm's TOML color scheme format.
 //! WezTerm uses TOML files in the colors directory, not Lua for color schemes.
 
-use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
+use crate::{
+    exporters::{brighten_color, ThemeExporter},
+    ColorValue, StylingResult, Theme,
+};
 
 /// WezTerm theme exporter
 pub struct WezTermExporter;
@@ -57,10 +60,7 @@ impl ThemeExporter for WezTermExporter {
             ("Yellow", get_rgb_from_style(&theme.palette.warning)),
             ("Blue", get_rgb_from_style(&theme.palette.info)),
             ("Magenta", get_rgb_from_style(&theme.palette.heading1)),
-            (
-                "Cyan",
-                get_rgb_from_style(&theme.palette.heading3).or_else(|| Some((64, 192, 192))),
-            ),
+            ("Cyan", get_rgb_from_style(&theme.palette.heading3)),
             ("White", get_rgb_from_style(&theme.palette.normal)),
         ];
 
@@ -88,40 +88,22 @@ impl ThemeExporter for WezTermExporter {
         output.push_str("brights = [\n");
 
         let bright_colors = [
-            (
-                "Bright Black",
-                get_rgb_from_style(&theme.palette.subtle).or_else(|| Some((64, 64, 64))),
-            ),
-            (
-                "Bright Red",
-                get_rgb_from_style(&theme.palette.error).map(brighten_color),
-            ),
-            (
-                "Bright Green",
-                get_rgb_from_style(&theme.palette.success).map(brighten_color),
-            ),
-            (
-                "Bright Yellow",
-                get_rgb_from_style(&theme.palette.warning).map(brighten_color),
-            ),
+            ("Bright Black", get_rgb_from_style(&theme.palette.subtle)),
+            ("Bright Red", get_rgb_from_style(&theme.palette.trace)),
+            ("Bright Green", get_rgb_from_style(&theme.palette.debug)),
+            ("Bright Yellow", get_rgb_from_style(&theme.palette.emphasis)),
             (
                 "Bright Blue",
                 get_rgb_from_style(&theme.palette.info).map(brighten_color),
             ),
             (
                 "Bright Magenta",
-                get_rgb_from_style(&theme.palette.code).map(brighten_color),
+                get_rgb_from_style(&theme.palette.heading1).map(brighten_color),
             ),
-            (
-                "Bright Cyan",
-                get_rgb_from_style(&theme.palette.info)
-                    .map(brighten_color)
-                    .or_else(|| Some((128, 255, 255))),
-            ),
+            ("Bright Cyan", get_rgb_from_style(&theme.palette.hint)),
             (
                 "Bright White",
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.emphasis)), // .map(brighten_color),
+                get_rgb_from_style(&theme.palette.normal).map(brighten_color),
             ),
         ];
 
@@ -299,16 +281,6 @@ fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
         15 => (255, 255, 255), // Bright White
         _ => (128, 128, 128),  // Default gray
     }
-}
-
-/// Brighten a color by increasing its components
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
-    (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
-    )
 }
 
 /// Check if a color is considered light

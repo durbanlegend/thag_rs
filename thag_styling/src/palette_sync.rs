@@ -199,11 +199,11 @@ impl PaletteSync {
             extract_rgb(Role::Subtle), // 8: Bright Black (use Subtle instead of Debug)
             extract_rgb(Role::Trace),  // 9: Bright Red (use Trace instead of brightened Error)
             extract_rgb(Role::Debug),  // 10: Bright Green (use Debug instead of brightened Success)
-            Self::brighten_color(extract_rgb(Role::Warning)), // 11: Bright Yellow
+            extract_rgb(Role::Emphasis), // 11: Bright Yellow
             Self::brighten_color(extract_rgb(Role::Info)), // 12: Bright Blue
             Self::brighten_color(extract_rgb(Role::Heading1)), // 13: Bright Magenta
             extract_rgb(Role::Hint),   // 14: Bright Cyan
-            extract_rgb(Role::Emphasis), // 15: Bright White
+            Self::brighten_color(extract_rgb(Role::Normal)), // 15: Bright White
         ]
     }
 

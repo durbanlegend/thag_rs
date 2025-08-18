@@ -3,7 +3,10 @@
 //! Exports thag themes to Kitty's configuration format.
 //! Kitty uses a simple key-value configuration format for color schemes.
 
-use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
+use crate::{
+    exporters::{brighten_color, ThemeExporter},
+    ColorValue, StylingResult, Theme,
+};
 
 /// Kitty theme exporter
 pub struct KittyExporter;
@@ -211,31 +214,31 @@ impl ThemeExporter for KittyExporter {
         output.push_str("\n# red\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.error) {
             output.push_str(&format!("color1 #{:02x}{:02x}{:02x}\n", r, g, b));
-            let bright = brighten_color((r, g, b));
-            output.push_str(&format!(
-                "color9 #{:02x}{:02x}{:02x}\n",
-                bright.0, bright.1, bright.2
-            ));
+        }
+        if let Some((r, g, b)) =
+            get_rgb_from_style(&theme.palette.trace).or_else(|| Some((64, 64, 64)))
+        {
+            output.push_str(&format!("color8 #{:02x}{:02x}{:02x}\n", r, g, b));
         }
 
         output.push_str("\n# green\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.success) {
             output.push_str(&format!("color2 #{:02x}{:02x}{:02x}\n", r, g, b));
-            let bright = brighten_color((r, g, b));
-            output.push_str(&format!(
-                "color10 #{:02x}{:02x}{:02x}\n",
-                bright.0, bright.1, bright.2
-            ));
+        }
+        if let Some((r, g, b)) =
+            get_rgb_from_style(&theme.palette.debug).or_else(|| Some((64, 64, 64)))
+        {
+            output.push_str(&format!("color8 #{:02x}{:02x}{:02x}\n", r, g, b));
         }
 
         output.push_str("\n# yellow\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.warning) {
             output.push_str(&format!("color3 #{:02x}{:02x}{:02x}\n", r, g, b));
-            let bright = brighten_color((r, g, b));
-            output.push_str(&format!(
-                "color11 #{:02x}{:02x}{:02x}\n",
-                bright.0, bright.1, bright.2
-            ));
+        }
+        if let Some((r, g, b)) =
+            get_rgb_from_style(&theme.palette.emphasis).or_else(|| Some((64, 64, 64)))
+        {
+            output.push_str(&format!("color8 #{:02x}{:02x}{:02x}\n", r, g, b));
         }
 
         output.push_str("\n# blue\n");
@@ -264,7 +267,7 @@ impl ThemeExporter for KittyExporter {
             "color6 #{:02x}{:02x}{:02x}\n",
             cyan_normal.0, cyan_normal.1, cyan_normal.2
         ));
-        let cyan_bright = brighten_color(cyan_normal);
+        let cyan_bright = get_rgb_from_style(&theme.palette.hint).unwrap_or((64, 192, 192));
         output.push_str(&format!(
             "color14 #{:02x}{:02x}{:02x}\n",
             cyan_bright.0, cyan_bright.1, cyan_bright.2
@@ -274,10 +277,7 @@ impl ThemeExporter for KittyExporter {
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal) {
             output.push_str(&format!("color7 #{:02x}{:02x}{:02x}\n", r, g, b));
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.emphasis)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal))
-        // .map(brighten_color)
-        {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal).map(brighten_color) {
             output.push_str(&format!("color15 #{:02x}{:02x}{:02x}\n", r, g, b));
         }
 
@@ -371,16 +371,6 @@ fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
         15 => (255, 255, 255), // Bright White
         _ => (128, 128, 128),  // Default gray
     }
-}
-
-/// Brighten a color by increasing its components
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
-    (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
-    )
 }
 
 /// Dim a color by reducing its components

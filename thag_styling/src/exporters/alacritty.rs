@@ -3,7 +3,10 @@
 //! Exports thag themes to Alacritty's TOML color scheme format.
 //! Alacritty uses a specific TOML structure that differs from other terminals.
 
-use crate::{exporters::ThemeExporter, ColorValue, StylingResult, Theme};
+use crate::{
+    exporters::{brighten_color, ThemeExporter},
+    ColorValue, StylingResult, Theme,
+};
 
 /// Alacritty theme exporter
 pub struct AlacrittyExporter;
@@ -107,34 +110,25 @@ impl ThemeExporter for AlacrittyExporter {
             ),
             (
                 "red",
-                get_rgb_from_style(&theme.palette.error).map(brighten_color),
+                get_rgb_from_style(&theme.palette.trace).map(brighten_color),
             ),
             (
                 "green",
-                get_rgb_from_style(&theme.palette.success).map(brighten_color),
+                get_rgb_from_style(&theme.palette.debug).map(brighten_color),
             ),
-            (
-                "yellow",
-                get_rgb_from_style(&theme.palette.warning).map(brighten_color),
-            ),
+            ("yellow", get_rgb_from_style(&theme.palette.emphasis)),
             (
                 "blue",
                 get_rgb_from_style(&theme.palette.info).map(brighten_color),
             ),
             (
                 "magenta",
-                get_rgb_from_style(&theme.palette.code).map(brighten_color),
+                get_rgb_from_style(&theme.palette.heading1).map(brighten_color),
             ),
-            (
-                "cyan",
-                get_rgb_from_style(&theme.palette.info)
-                    .map(brighten_color)
-                    .or_else(|| Some((128, 255, 255))),
-            ),
+            ("cyan", get_rgb_from_style(&theme.palette.hint)),
             (
                 "white",
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.emphasis)), // .map(brighten_color),
+                get_rgb_from_style(&theme.palette.normal).map(brighten_color),
             ),
         ];
 
@@ -358,16 +352,6 @@ fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
     }
 }
 
-/// Brighten a color by increasing its components
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
-    (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
-    )
-}
-
 /// Dim a color by reducing its components
 fn dim_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
     let factor = 0.6;
@@ -424,7 +408,7 @@ fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ColorSupport, Palette, TermBgLuma};
+    use crate::{exporters::brighten_color, ColorSupport, Palette, TermBgLuma};
     use std::path::PathBuf;
 
     fn create_test_theme() -> Theme {

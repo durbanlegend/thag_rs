@@ -270,6 +270,7 @@ To use this theme with Kitty:
 
 To use this theme with Windows Terminal:
 
+TODO: Formalise: Run `thag demo/windows_terminal_add_theme.rs <json`
 1. Open Windows Terminal
 2. Open Settings (Ctrl+,)
 3. Go to "Open JSON file" in the bottom left
@@ -283,6 +284,16 @@ Alternatively, you can merge the JSON content directly into your settings.json f
             )
         }
     }
+}
+
+/// Brighten a color by increasing its components
+fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
+    let factor = 1.3;
+    (
+        ((r as f32 * factor).min(255.0)) as u8,
+        ((g as f32 * factor).min(255.0)) as u8,
+        ((b as f32 * factor).min(255.0)) as u8,
+    )
 }
 
 #[cfg(test)]

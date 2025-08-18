@@ -150,17 +150,20 @@ fn display_theme_colors(theme: &Theme) {
 
     // Display semantic colors
     let semantic_colors = [
-        ("Normal", &theme.palette.normal),
+        ("Heading1", &theme.palette.heading1),
+        ("Heading2", &theme.palette.heading2),
+        ("Heading3", &theme.palette.heading3),
         ("Error", &theme.palette.error),
         ("Warning", &theme.palette.warning),
         ("Success", &theme.palette.success),
         ("Info", &theme.palette.info),
-        ("Code", &theme.palette.code),
         ("Emphasis", &theme.palette.emphasis),
+        ("Code", &theme.palette.code),
+        ("Normal", &theme.palette.normal),
         ("Subtle", &theme.palette.subtle),
-        ("Heading1", &theme.palette.heading1),
-        ("Heading2", &theme.palette.heading2),
-        ("Heading3", &theme.palette.heading3),
+        ("Hint", &theme.palette.hint),
+        ("Debug", &theme.palette.debug),
+        ("Trace", &theme.palette.trace),
     ];
 
     println!("Semantic Colors:");
@@ -212,19 +215,55 @@ fn display_color_comparison(theme: &Theme) {
             5,
             "Heading1",
             extract_rgb(&theme.palette.heading1),
-        ), // CORRECTED: should be heading1 (purple)
+        ),
         (
             "Cyan (6)",
             6,
             "Heading3",
             extract_rgb(&theme.palette.heading3),
-        ), // CORRECTED: should be heading3 (cyan-blue)
+        ),
         ("White (7)", 7, "Normal", extract_rgb(&theme.palette.normal)),
         (
             "Bright Black (8)",
             8,
             "Subtle",
             extract_rgb(&theme.palette.subtle),
+        ),
+        (
+            "Bright Red (9)",
+            9,
+            "Trace",
+            extract_rgb(&theme.palette.trace),
+        ),
+        (
+            "Bright Green (10)",
+            10,
+            "Debug",
+            extract_rgb(&theme.palette.debug),
+        ),
+        (
+            "Bright Yellow (11)",
+            11,
+            "Warning (brighter)",
+            extract_rgb(&theme.palette.warning).map(brighten_color),
+        ),
+        (
+            "Bright Blue (12)",
+            12,
+            "Info (brighter)",
+            extract_rgb(&theme.palette.info).map(brighten_color),
+        ),
+        (
+            "Bright Magenta (13)",
+            13,
+            "Heading1 (brighter)",
+            extract_rgb(&theme.palette.heading1).map(brighten_color),
+        ),
+        (
+            "Bright Cyan (14)",
+            14,
+            "Hint",
+            extract_rgb(&theme.palette.hint),
         ),
         (
             "Bright White (15)",
@@ -314,6 +353,16 @@ fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
         .copied()
         .or_else(|| extract_rgb(&theme.palette.subtle))
         .or_else(|| Some((16, 16, 16)))
+}
+
+/// Brighten a color by increasing its components
+fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
+    let factor = 1.3;
+    (
+        ((r as f32 * factor).min(255.0)) as u8,
+        ((g as f32 * factor).min(255.0)) as u8,
+        ((b as f32 * factor).min(255.0)) as u8,
+    )
 }
 
 #[cfg(test)]

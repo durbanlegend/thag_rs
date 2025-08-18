@@ -484,7 +484,7 @@ The most likely issue is that the version specified in the script doesn't exist
 on crates.io yet. To fix this, you have several options:
 
 1. DEVELOPMENT (recommended): Set environment variable to use local path
-   export THAG_DEV_PATH=/absolute/path/to/thag_rs, e.g.:
+    {}, e.g.:
 
    {}
 
@@ -499,8 +499,9 @@ to git or local paths when environment variables are set. This allows the same
 script to work in different environments without modification.
 
 For more details, see the comments in demo scripts or the thag documentation.",
-        // "\x1b[1mexport THAG_DEV_PATH=$PWD\x1b[22m"
-        styled!("export THAG_DEV_PATH=$PWD", bold, reversed)
+        if cfg!(target_os = "windows") {"$env:THAG_DEV_PATH = \\absolute\\path\\to\\thag_rs"} else {"export THAG_DEV_PATH=/absolute/path/to/thag_rs"},
+        styled!(
+        if cfg!(target_os = "windows") {"$env:THAG_DEV_PATH = $PWD"} else { "export THAG_DEV_PATH=$PWD" }, bold, reversed)
     );
 }
 

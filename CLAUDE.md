@@ -11,6 +11,34 @@
 - Flamegraph: `cargo flamegraph`
 - Profile: `cargo run --features profiling -- [args]`
 
+## Demo and sample scripts
+- Unless there's a strong case for placing these in a subcrate's `examples` dir, prefer the demo subdirectory.
+Run with `cargo run demo/script_name.rs`. Any valid Cargo.toml info can be placed in the normal format in a toml block at the top of the program, like this:
+```Rust
+/*[toml]
+ [dependencies]
+ ...
+ [features]
+ ...
+  */
+ ```
+The [toml] marker must be adjacent to the '/*' comment opener, not on the next line.
+Usually thag will infer dependencies, so unless special features of dependencies are required, normally the only toml information is for the thag_rs crate or its subcrates if used, in the following format (pick crate/subcrate/s as needed):
+```Rust
+/*[toml]
+[dependencies]
+thag_proc_macros = { version = "0.2, thag-auto" } # features if needed
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] } # features if needed
+thag_rs = { version = "0.2, thag-auto", features = [...] }  # features if needed
+thag_styling = { version = "0.2, thag-auto", features = [...] }  # features if needed
+*/
+ ```
+The thag-auto is used by thag to decide whether to use crates.io, git or a local path. Generally as we are testing new thag functionality, any script with a thag-auto dependency should be run with the env var THAG_DEV_PATH=$PWD from the project dir. The thag-auto must be specified exactly as shown, not as thag-auto = true.
+
+These scripts need full doc comments (/// or //:, not //!) a `//# Purpose:` one-liner and a `//# Categories: xxx, xxx, xxx, ...` one-liner where the categories are the lower-case versions listed in lines 82ff of thag_proc_macros/src/category_enum.rs, unquoted. See existing scripts for the format.
+
+Scripts that are evolved into particularly useful generic tools may be promoted to thag_rs/src/bin for inclusion as binaries in the main project. This should be done only in consultation with me. Their .toml blocks should normally be left in place, but they will need entries in Cargo.toml - see existing tools.
+
 ## Code Style Guidelines
 - **Imports**: Group std imports first, then external crates, then internal modules
 - **Conditional imports**: Use `#[cfg(feature = "feature_name")]` for feature-gated imports

@@ -299,7 +299,7 @@ fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ColorSupport, Palette, Role, Style, TermBgLuma};
+    use crate::{ColorSupport, Palette, TermBgLuma};
     use std::path::PathBuf;
 
     fn create_test_theme() -> Theme {

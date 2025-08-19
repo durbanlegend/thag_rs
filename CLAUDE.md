@@ -49,3 +49,7 @@ Scripts that are evolved into particularly useful generic tools may be promoted 
 - **Features**: Clearly mark feature-dependent code with `#[cfg(feature = "feature_name")]`
 - **Testing**: Write unit tests for modules, with integration tests for full workflows
 - **Formatting**: Follow rustfmt conventions; run `cargo fmt` before committing
+
+## thag_styling file formats
+- **thag_styling themes**: Filenames and `name` field should be (lower) kebab case. The files should be in TOML format with the .toml suffix, and the file name stem should start with `thag-`, end in `-light` or `-dark` as appropriate.
+- **generated terminal themes**: The file name stem should consist of or start with the stem of the source thag_styling theme. Since Alacritty and WezTerm both have the same .toml extension, _alacritty or _wezterm should be appended to the stem as appropriate for these 2 formats to distinguish between them. These should all be exported to the appropriate subdirectories of ./exported_themes

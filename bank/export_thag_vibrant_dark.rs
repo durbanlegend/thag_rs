@@ -1,14 +1,13 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 dirs = "5.0"
 */
 
-//! Export the thag-vibrant-dark theme to all supported terminal formats
-//!
-//! This script loads the actual thag-vibrant-dark theme from the built-in themes
-//! and exports it to all supported terminal emulator formats for comparison.
-
+/// Export the thag-vibrant-dark theme to WezTerm
+///
+/// This script loads the actual thag-vibrant-dark theme from the built-in themes
+/// and exports it to the WezTerm themes directory.
 use std::path::Path;
 use thag_styling::{
     export_all_formats, export_theme_to_file, generate_installation_instructions, ExportFormat,

@@ -1,15 +1,16 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect","image_themes"] }
 */
 
-//! Demo of generating multi-format themes from images
-//!
-//! This example demonstrates the complete workflow:
-//! 1. Generate a theme from an image using image analysis
-//! 2. Export that theme to all supported terminal emulator formats
-//! 3. Provide installation instructions for each format
-
+/// Demo of generating multi-format terminal themes from images
+///
+/// This example demonstrates the complete workflow:
+/// 1. Generate a theme from an image using image analysis
+/// 2. Export that theme to all supported terminal emulator formats
+/// 3. Provide installation instructions for each format
+//# Purpose: Generate multi-format terminal themes from an image
+//# Categories: ansi, color, demo, styling, technique, terminal, xterm
 use std::path::Path;
 use thag_styling::{
     export_all_formats, generate_installation_instructions, generate_theme_from_image_with_config,

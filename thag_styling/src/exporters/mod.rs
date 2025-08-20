@@ -177,41 +177,38 @@ pub fn export_theme_to_file<P: AsRef<Path>>(
 pub fn generate_installation_instructions(format: ExportFormat, theme_filename: &str) -> String {
     match format {
         ExportFormat::Alacritty => {
-            let alacritty_filename = theme_filename.replace(".toml", "_alacritty.toml");
             format!(
                 r#"# Alacritty Theme Installation
 
 To use this theme with Alacritty:
 
 1. Copy the theme file to your Alacritty config directory:
-   - Linux/macOS: `~/.config/alacritty/themes/{}`
-   - Windows: `%APPDATA%\alacritty\themes\{}`
+   - Linux/macOS: `~/.config/alacritty/themes/.`
+   - Windows: `%APPDATA%\alacritty\themes\.`
 
 2. Add this to your alacritty.yml or alacritty.toml:
    ```toml
-   general.import = ["themes/{}"]
+   general.import = ["themes/{theme_filename}"]
    ```
 
 3. Restart Alacritty to apply the theme.
-"#,
-                alacritty_filename, alacritty_filename, alacritty_filename
+"#
             )
         }
         ExportFormat::WezTerm => {
-            let wezterm_filename = theme_filename.replace(".toml", "_wezterm.toml");
             format!(
                 r#"# WezTerm Theme Installation
 
 To use this theme with WezTerm:
 
 1. Copy the theme file to your WezTerm config directory:
-   - Linux/macOS: `~/.config/wezterm/colors/{}`
-   - Windows: `%USERPROFILE%\.config\wezterm\colors\{}`
+   - Linux/macOS: `~/.config/wezterm/colors/.`
+   - Windows: `%USERPROFILE%\.config\wezterm\colors\.`
 
 2. Add this to your wezterm.lua config file:
    ```lua
    local config = wezterm.config_builder()
-   config.color_scheme = '{}'
+   config.color_scheme = '{theme_filename}'
    return config
    ```
 
@@ -219,10 +216,7 @@ To use this theme with WezTerm:
 
 Note: The theme name should match the filename without extension.
 WezTerm will use this TOML file format, which is different from Alacritty's TOML structure.
-"#,
-                wezterm_filename,
-                wezterm_filename,
-                wezterm_filename.trim_end_matches(".toml")
+"#
             )
         }
         ExportFormat::ITerm2 => {
@@ -235,12 +229,11 @@ To use this theme with iTerm2:
 2. Go to Preferences > Profiles > Colors
 3. Click "Color Presets..." dropdown
 4. Select "Import..."
-5. Choose the {} file
+5. Choose the {theme_filename} file
 6. Select the imported theme from the dropdown
 
 The theme will be applied to your current profile.
-"#,
-                theme_filename
+"#
             )
         }
         ExportFormat::Kitty => {
@@ -250,21 +243,19 @@ The theme will be applied to your current profile.
 To use this theme with Kitty:
 
 1. Copy the theme file to your Kitty config directory:
-   - Linux/macOS: `~/.config/kitty/themes/{}`
-   - Windows: `%APPDATA%\kitty\themes\{}`
+   - Linux/macOS: `~/.config/kitty/themes/.`
+   - Windows: `%APPDATA%\kitty\themes\.`
 
 2. Add this to your kitty.conf:
    ```
-   include themes/{}
+   include themes/{theme_filename}
    ```
 
 3. Reload Kitty config with Ctrl+Shift+F5 or restart Kitty.
-"#,
-                theme_filename, theme_filename, theme_filename
+"#
             )
         }
         ExportFormat::WindowsTerminal => {
-            let wt_filename = theme_filename.replace(".json", "_windows_terminal.json");
             format!(
                 r#"# Windows Terminal Theme Installation
 
@@ -274,13 +265,11 @@ TODO: Formalise: Run `thag demo/windows_terminal_add_theme.rs <json`
 1. Open Windows Terminal
 2. Open Settings (Ctrl+,)
 3. Go to "Open JSON file" in the bottom left
-4. Copy the color scheme from {} into the "schemes" array
-5. Add "colorScheme": "{}" to your profile settings
+4. Copy the color scheme from {theme_filename} into the "schemes" array
+5. Add "colorScheme": "{theme_filename}" to your profile settings
 
 Alternatively, you can merge the JSON content directly into your settings.json file.
-"#,
-                wt_filename,
-                wt_filename.trim_end_matches("_windows_terminal.json")
+"#
             )
         }
     }

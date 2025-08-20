@@ -226,7 +226,7 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
             // Try to load the built-in theme and create a temporary file
             match Theme::get_builtin(&theme_name) {
                 Ok(theme) => {
-                    let temp_file = std::env::temp_dir().join(format!("{}.toml", theme.name));
+                    let temp_file = std::env::temp_dir().join(format!("{}.toml", theme_name));
                     let toml_content = thag_styling::theme_to_toml(&theme)
                         .map_err(|e| format!("Failed to serialize theme: {}", e))?;
 
@@ -245,8 +245,8 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
 
             // Convert themes to temporary files for processing
             let mut temp_files = Vec::new();
-            for theme in selected_themes {
-                let temp_file = std::env::temp_dir().join(format!("{}.toml", theme.name));
+            for (theme_name, theme) in selected_themes {
+                let temp_file = std::env::temp_dir().join(format!("{}.toml", theme_name));
                 let toml_content = thag_styling::theme_to_toml(&theme)
                     .map_err(|e| format!("Failed to serialize theme: {}", e))?;
 
@@ -282,7 +282,7 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
 }
 
 /// Interactive theme browser similar to thag_show_themes
-fn select_themes_interactively() -> Result<Vec<Theme>, Box<dyn Error>> {
+fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>> {
     use inquire::MultiSelect;
 
     // Set up themed inquire config
@@ -317,7 +317,7 @@ fn select_themes_interactively() -> Result<Vec<Theme>, Box<dyn Error>> {
         .prompt()?;
 
     let mut selected_themes = Vec::new();
-    for selected_option in selected_options {
+    for selected_option in &selected_options {
         // Extract theme name (before the " - " separator)
         let theme_name = selected_option
             .split(" - ")
@@ -327,7 +327,7 @@ fn select_themes_interactively() -> Result<Vec<Theme>, Box<dyn Error>> {
         match Theme::get_builtin(theme_name) {
             Ok(theme) => {
                 println!("   📋 Added: {}", theme.name.bright_cyan());
-                selected_themes.push(theme);
+                selected_themes.push((theme_name.to_string(), theme));
             }
             Err(e) => {
                 println!("   ❌ Failed to load theme '{}': {}", theme_name, e);
@@ -342,6 +342,7 @@ fn select_themes_interactively() -> Result<Vec<Theme>, Box<dyn Error>> {
 
     println!("\n✅ Selected {} themes for export", selected_themes.len());
     Ok(selected_themes)
+    // Ok(selected_options)
 }
 
 /// Get export configuration from user

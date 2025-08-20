@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
-dirs = "5.0"
 */
 
 //! Alacritty Theme Installation Script

@@ -1,9 +1,7 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto" }
-dirs = "5.0"
 */
 
 /// Install thag themes for Alacritty terminal emulator
@@ -19,6 +17,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use thag_proc_macros::file_navigator;
 use thag_styling::Theme;
+use toml_edit::{DocumentMut, Item, Value};
 
 file_navigator! {}
 
@@ -88,9 +87,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("   ✅ {}", theme.name.bright_green());
             }
             Err(e) => {
-                let error_msg = e.to_string();
+                let e_str = (&e).to_string();
                 installation_errors.push((theme.name.clone(), e));
-                println!("   ❌ {}: {}", theme.name.bright_red(), error_msg.red());
+                println!("   ❌ {}: {}", theme.name.bright_red(), e_str.red());
             }
         }
     }
@@ -157,12 +156,12 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Er
 
     match selection_method {
         "Select theme files (.toml)" => {
-            let _extensions = vec!["toml", "TOML"];
+            let extensions = "toml,TOML";
             let mut selected_themes = Vec::new();
 
             loop {
                 println!("\n📁 Select a theme file:");
-                match select_file(navigator, Some("toml"), false) {
+                match select_file(navigator, Some(extensions), false) {
                     Ok(theme_file) => {
                         match Theme::load_from_file(&theme_file) {
                             Ok(theme) => {
@@ -230,10 +229,9 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Er
                             .map(|t| format!("{} - {}", t.name, t.description))
                             .collect();
 
-                        let theme_names_len = theme_names.len();
                         let selected_names =
                             MultiSelect::new("Select themes to install:", theme_names.clone())
-                                .with_default(&(0..theme_names_len).collect::<Vec<_>>())
+                                .with_default(&(0..theme_names.len()).collect::<Vec<_>>())
                                 .prompt()?;
 
                         let selected_themes = themes
@@ -559,9 +557,30 @@ fn update_config_with_theme(
     if config.config_file.exists() {
         let existing_config = fs::read_to_string(&config.config_file)?;
 
-        // Simple approach: prepend the import to existing config
-        let new_config = format!("[general]\n{}\n{}", import_line, existing_config);
-        fs::write(&config.config_file, new_config)?;
+        // Parse as a mutable TOML document
+        let doc = &mut existing_config.parse::<DocumentMut>()?;
+
+        // Navigate to general.import
+        if let Some(imports) = doc["general"]["import"].as_array_mut() {
+            // Remove duplicates of new_value
+            imports.retain(|item| item.as_str() != Some(theme_filename));
+
+            // Push the new value at the end
+            imports.push(Value::from(theme_filename));
+        } else {
+            // If the array doesn't exist, create it
+            let mut arr = toml_edit::Array::default();
+            arr.push(Value::from(theme_filename));
+            doc["general"]["import"] = Item::Value(Value::Array(arr));
+        }
+
+        // Write back the modified TOML
+        fs::write(&config.config_file, doc.to_string())?;
+
+        println!(
+            "✅ Updated {}, moved {theme_filename} to the end of [general.import]",
+            config.config_file.display()
+        );
     } else {
         // Create new config
         let new_config = format!(

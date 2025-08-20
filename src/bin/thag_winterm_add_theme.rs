@@ -163,7 +163,7 @@ fn select_individual_toml_themes(
         println!("\n📁 Select a theme file (.toml format):");
         match select_file(navigator, Some("toml"), false) {
             Ok(theme_file) => {
-                match Theme::from_toml_file(&theme_file) {
+                match Theme::load_from_file(&theme_file) {
                     Ok(theme) => {
                         println!(
                             "   📋 Loaded: {} - {}",
@@ -216,7 +216,7 @@ fn select_themes_from_directory(
 
             let mut themes = Vec::new();
             for theme_file in &theme_files {
-                match Theme::from_toml_file(theme_file) {
+                match Theme::load_from_file(theme_file) {
                     Ok(theme) => themes.push(theme),
                     Err(e) => {
                         println!(

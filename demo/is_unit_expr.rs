@@ -11,21 +11,22 @@
 //# Categories: exploration, type_identification, technique
 use std::any::Any;
 
-let expr = ();
-
-let is_unit = {
-    let expr_any: &dyn Any = &expr;
-    !expr_any.is::<()>()
+let is_unit_expr = |expr: &dyn Any| {
+    expr.is::<()>()
 };
 
+let expr = ();
+let is_unit = is_unit_expr(&expr);
 eprintln!("expr=`{expr:?}`, is_unit={is_unit}");
+
+if is_unit {
+    println!("Printing unit type as `Display`: expr={expr:?}");
+    println!();
+}
 
 let expr = 2 + 3;
 
-let is_unit = {
-    let expr_any: &dyn Any = &expr;
-    !expr_any.is::<()>()
-};
+let is_unit = is_unit_expr(&expr);
 
 eprintln!("expr=`{expr:?}`, is_unit={is_unit}");
 

@@ -13,9 +13,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquir
 //# Categories: color, styling, terminal, theming, tools
 use colored::Colorize;
 use inquire::set_global_render_config;
-use std::error::Error;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{error::Error, fs, path::{Path, PathBuf}};
 use thag_proc_macros::file_navigator;
 use thag_styling::{
     export_theme_to_file, generate_installation_instructions, themed_inquire_config, ExportFormat,

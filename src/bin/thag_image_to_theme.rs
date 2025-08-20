@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect","image_themes"] }
+# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
 */
 
 /// Generate thag_styling themes from image files using file navigator
@@ -17,8 +17,10 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 use thag_proc_macros::file_navigator;
-use thag_rs::{cprtln, Role, ThagResult};
-use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma, Theme};
+use thag_styling::{
+    cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, StylingError,
+    StylingResult, TermBgLuma, Theme,
+};
 
 file_navigator! {}
 
@@ -253,14 +255,14 @@ fn extract_rgb_info(style: &thag_styling::Style) -> String {
 }
 
 /// Save theme to a TOML file using file navigator
-fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> ThagResult<()> {
+fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> StylingResult<()> {
     use inquire::{Confirm, Text};
 
     // Ask if user wants to save the theme
     let should_save = Confirm::new("Save theme to file?")
         .with_default(true)
         .prompt()
-        .map_err(|e| format!("Input error: {}", e))?;
+        .map_err(|e| StylingError::FromStr(format!("Input error: {}", e)))?;
 
     if !should_save {
         println!("Theme not saved.");
@@ -283,7 +285,7 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> ThagResult<(
         .with_default(&default_filename)
         .with_help_message("Will be saved with .toml extension")
         .prompt()
-        .map_err(|e| format!("Input error: {}", e))?;
+        .map_err(|e| StylingError::FromStr(format!("Input error: {}", e)))?;
 
     let filename = if filename.ends_with(".toml") {
         filename
@@ -298,7 +300,7 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> ThagResult<(
         let overwrite = Confirm::new(&format!("File '{}' already exists. Overwrite?", filename))
             .with_default(false)
             .prompt()
-            .map_err(|e| format!("Input error: {}", e))?;
+            .map_err(|e| StylingError::FromStr(format!("Input error: {}", e)))?;
 
         if !overwrite {
             println!("Theme not saved.");
@@ -307,12 +309,12 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> ThagResult<(
     }
 
     // Generate TOML content
-    let toml_content =
-        theme_to_toml(theme).map_err(|e| format!("TOML generation failed: {}", e))?;
+    let toml_content = theme_to_toml(theme)
+        .map_err(|e| StylingError::FromStr(format!("TOML generation failed: {}", e)))?;
 
     // Write to file
     fs::write(&output_path, &toml_content)
-        .map_err(|e| format!("Failed to write theme file: {}", e))?;
+        .map_err(|e| StylingError::FromStr(format!("Failed to write theme file: {}", e)))?;
 
     println!(
         "💾 Theme saved to: {}",
@@ -323,7 +325,7 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> ThagResult<(
     let show_toml = Confirm::new("Display TOML content?")
         .with_default(false)
         .prompt()
-        .map_err(|e| format!("Input error: {}", e))?;
+        .map_err(|e| StylingError::FromStr(format!("Input error: {}", e)))?;
 
     if show_toml {
         println!();

@@ -1,15 +1,16 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog", "tools"] }
+thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
 */
 
 use inquire::{set_global_render_config, Select};
 use std::{env, io};
-use thag_rs::{
-    auto_help, cprtln, display_theme_details, display_theme_roles, themed_inquire_config, Role,
-    TermAttributes, ThagResult, Theme,
+use thag_rs::{auto_help, ThagResult};
+use thag_styling::{
+    cprtln, display_theme_details, display_theme_roles, styling, themed_inquire_config, Role,
+    TermAttributes, Theme,
 };
-use thag_styling::styling;
 
 /// Display built-in themes and their styling with terminal setup instructions
 ///

@@ -45,6 +45,8 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 dirs.sort();
                 items.extend(dirs.into_iter().map(|d| format!("📁 {d}")));
 
+                // let includes: Vec<String> = include_ext.is_some_and(|incl| incl.split(",").map(String::from).collect());
+                let includes = include_ext.map(|incl| incl.split(",").map(String::from).collect::<Vec<_>>());
                 // Add .<include_ext> files
                 let mut files: Vec<_> = std::fs::read_dir(&self.current_dir)
                     .into_iter()
@@ -52,7 +54,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     .flatten()
                     .filter(|entry| {
                         entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                            && entry.path().extension().is_some_and(|ext| include_ext.is_some_and(|incl| incl == ext))
+                            && entry.path().extension().is_some_and(|ext| includes.as_ref().is_some_and(|incl| incl.contains(&ext.to_string_lossy().to_string())))
                     })
                     .map(|entry| entry.file_name().to_string_lossy().into_owned())
                     .collect();

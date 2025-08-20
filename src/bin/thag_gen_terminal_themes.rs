@@ -1,24 +1,26 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
+thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquire_theming"] }
 */
 
 /// Export thag_styling themes to multiple terminal emulator formats
 ///
 /// This tool exports thag_styling theme files to various terminal emulator formats
-/// including Alacritty, WezTerm, iTerm2, Kitty, Windows Terminal, Apple Terminal, and Mintty.
+/// including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.
 /// Themes are exported to organized subdirectories in ./exported_themes/
 //# Purpose: Export thag themes to multiple terminal emulator formats
 //# Categories: color, styling, terminal, theming, tools
 use colored::Colorize;
+use inquire::set_global_render_config;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 use thag_proc_macros::file_navigator;
-
-use thag_styling::{export_theme_to_file, generate_installation_instructions, ExportFormat, Theme};
+use thag_styling::{
+    export_theme_to_file, generate_installation_instructions, themed_inquire_config, ExportFormat,
+    TermAttributes, Theme,
+};
 
 file_navigator! {}
 
@@ -133,17 +135,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 struct ExportConfiguration {
     formats: Vec<ExportFormat>,
     show_instructions: bool,
-    organize_by_format: bool,
 }
 
 /// Select theme files using file navigator
 fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    use inquire::{Confirm, MultiSelect, Select};
+    use inquire::{Confirm, MultiSelect, Select, Text};
 
     let selection_options = vec![
         "Select individual theme files",
-        "Select all themes from a directory",
+        "Select all themes from directory",
         "Select built-in theme by name",
+        "Browse built-in themes interactively",
     ];
 
     let selection_method =
@@ -217,8 +219,6 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
             }
         }
         "Select built-in theme by name" => {
-            use inquire::Text;
-
             let theme_name = Text::new("Enter built-in theme name:")
                 .with_help_message("e.g., 'thag-vibrant-dark', 'dracula_official'")
                 .prompt()?;
@@ -238,6 +238,23 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
                     Ok(vec![])
                 }
             }
+        }
+        "Browse built-in themes interactively" => {
+            // Use interactive theme browser
+            let selected_themes = select_themes_interactively()?;
+
+            // Convert themes to temporary files for processing
+            let mut temp_files = Vec::new();
+            for theme in selected_themes {
+                let temp_file = std::env::temp_dir().join(format!("{}.toml", theme.name));
+                let toml_content = thag_styling::theme_to_toml(&theme)
+                    .map_err(|e| format!("Failed to serialize theme: {}", e))?;
+
+                fs::write(&temp_file, toml_content)?;
+                temp_files.push(temp_file);
+            }
+
+            Ok(temp_files)
         }
         _ => Ok(vec![]),
     }
@@ -262,6 +279,69 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
 
     theme_files.sort();
     Ok(theme_files)
+}
+
+/// Interactive theme browser similar to thag_show_themes
+fn select_themes_interactively() -> Result<Vec<Theme>, Box<dyn Error>> {
+    use inquire::MultiSelect;
+
+    // Set up themed inquire config
+    set_global_render_config(themed_inquire_config());
+
+    // Initialize terminal attributes for theming
+    let _term_attrs = TermAttributes::get_or_init();
+
+    let mut themes = Theme::list_builtin();
+    themes.sort();
+
+    // Create theme options with descriptions
+    let theme_options: Vec<String> = themes
+        .iter()
+        .map(|theme_name| {
+            let theme = Theme::get_builtin(theme_name).unwrap_or_else(|_| {
+                Theme::get_builtin("none").expect("Failed to load fallback theme")
+            });
+            format!("{} - {}", theme_name, theme.description)
+        })
+        .collect();
+
+    println!(
+        "\n🎨 {} Built-in themes browser",
+        "Interactive".bright_blue()
+    );
+    println!("{}", "═".repeat(50).dimmed());
+
+    let selected_options = MultiSelect::new("Select themes to export:", theme_options.clone())
+        .with_page_size(15)
+        .with_help_message("Space to select • ↑↓ to navigate • Enter to confirm")
+        .prompt()?;
+
+    let mut selected_themes = Vec::new();
+    for selected_option in selected_options {
+        // Extract theme name (before the " - " separator)
+        let theme_name = selected_option
+            .split(" - ")
+            .next()
+            .unwrap_or(&selected_option);
+
+        match Theme::get_builtin(theme_name) {
+            Ok(theme) => {
+                println!("   📋 Added: {}", theme.name.bright_cyan());
+                selected_themes.push(theme);
+            }
+            Err(e) => {
+                println!("   ❌ Failed to load theme '{}': {}", theme_name, e);
+            }
+        }
+    }
+
+    if selected_themes.is_empty() {
+        println!("❌ No themes selected");
+        return Ok(vec![]);
+    }
+
+    println!("\n✅ Selected {} themes for export", selected_themes.len());
+    Ok(selected_themes)
 }
 
 /// Get export configuration from user
@@ -295,14 +375,9 @@ fn get_export_configuration() -> Result<ExportConfiguration, Box<dyn Error>> {
         .with_default(true)
         .prompt()?;
 
-    let organize_by_format = Confirm::new("Organize exports by format in subdirectories?")
-        .with_default(true)
-        .prompt()?;
-
     Ok(ExportConfiguration {
         formats: selected_formats,
         show_instructions,
-        organize_by_format,
     })
 }
 
@@ -325,35 +400,20 @@ fn process_theme_file(
 
     // Export to each selected format
     for format in &config.formats {
-        let output_path = if config.organize_by_format {
-            // Create format-specific subdirectory
-            let format_dir = match format {
-                ExportFormat::Alacritty => export_base_dir.join("alacritty"),
-                ExportFormat::WezTerm => export_base_dir.join("wezterm"),
-                ExportFormat::ITerm2 => export_base_dir.join("iterm2"),
-                ExportFormat::Kitty => export_base_dir.join("kitty"),
-                ExportFormat::WindowsTerminal => export_base_dir.join("windows"),
-            };
-
-            fs::create_dir_all(&format_dir)?;
-
-            let filename = match format {
-                ExportFormat::Alacritty => format!("{}.toml", theme_base_name),
-                ExportFormat::WezTerm => format!("{}_wezterm.toml", theme_base_name),
-                _ => format!("{}.{}", theme_base_name, format.file_extension()),
-            };
-
-            format_dir.join(filename)
-        } else {
-            // All files in the same directory with format-specific names
-            let filename = match format {
-                ExportFormat::Alacritty => format!("{}_alacritty.toml", theme_base_name),
-                ExportFormat::WezTerm => format!("{}_wezterm.toml", theme_base_name),
-                _ => format!("{}.{}", theme_base_name, format.file_extension()),
-            };
-
-            export_base_dir.join(filename)
+        // Always organize by format in subdirectories
+        let format_dir = match format {
+            ExportFormat::Alacritty => export_base_dir.join("alacritty"),
+            ExportFormat::WezTerm => export_base_dir.join("wezterm"),
+            ExportFormat::ITerm2 => export_base_dir.join("iterm2"),
+            ExportFormat::Kitty => export_base_dir.join("kitty"),
+            ExportFormat::WindowsTerminal => export_base_dir.join("windows"),
         };
+
+        fs::create_dir_all(&format_dir)?;
+
+        // Use simple filenames since we have subdirectories
+        let filename = format!("{}.{}", theme_base_name, format.file_extension());
+        let output_path = format_dir.join(filename);
 
         export_theme_to_file(&theme, *format, &output_path)
             .map_err(|e| format!("Failed to export {} format: {}", format.format_name(), e))?;
@@ -364,7 +424,7 @@ fn process_theme_file(
     Ok(exported_count)
 }
 
-/// Show installation instructions for selected formats
+/// Show installation instructions for selected formats with actual theme names
 fn show_installation_instructions(formats: &[ExportFormat]) {
     println!("\n📖 {} Instructions:", "Installation".bright_blue());
     println!("{}", "=".repeat(70).dimmed());
@@ -373,8 +433,15 @@ fn show_installation_instructions(formats: &[ExportFormat]) {
         println!("\n🔧 {}", format.format_name().bright_cyan());
         println!("{}", "─".repeat(30).dimmed());
 
-        let instructions = generate_installation_instructions(*format, "theme_name");
+        // Use a generic placeholder since we don't know the specific theme name here
+        let instructions = generate_installation_instructions(*format, "<theme-name>");
         println!("{}", instructions);
+
+        println!(
+            "\n💡 {} Replace {} with your actual theme filename",
+            "Note:".bright_yellow(),
+            "<theme-name>".bright_cyan()
+        );
     }
 }
 
@@ -431,12 +498,10 @@ mod tests {
         let config = ExportConfiguration {
             formats: vec![ExportFormat::Alacritty, ExportFormat::WezTerm],
             show_instructions: true,
-            organize_by_format: true,
         };
 
         assert_eq!(config.formats.len(), 2);
         assert!(config.show_instructions);
-        assert!(config.organize_by_format);
     }
 
     #[test]

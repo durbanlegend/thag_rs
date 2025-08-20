@@ -90,13 +90,13 @@ image_themes = ["image", "kmeans_colors", "auto-palette", "palette"]
 # All advanced features
 full = [
     "color_detect",
-    "tools",
+    "console_support",
+    "crossterm_support",
+    "image_themes",
     "inquire_theming",
     "nu_ansi_term_support",
     "ratatui_support",
-    "crossterm_support",
-    "console_support",
-    "image_themes",
+    "tools",
 ]
 
 [lib]

@@ -369,7 +369,6 @@ tools = [
     "dep:url",
     "dep:warp",
     "thag_styling/full",
-    "thag_styling/image_themes",
 ]
 
 ## Default Configuration

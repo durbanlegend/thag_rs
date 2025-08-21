@@ -27,10 +27,13 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                 }
             }
 
-            fn list_items(&self, include_ext: Option<&str>, hidden: bool, new_subdir: bool) -> Vec<String> {
-                let mut items = vec!["*SELECT CURRENT DIRECTORY*".to_string(), "*TYPE PATH TO NAVIGATE*".to_string(), "..".to_string()];
-                if new_subdir {
-                    items.insert(2, "*CREATE NEW SUBDIRECTORY*".to_string());
+            fn list_items(&self, include_ext: Option<&str>, hidden: bool, new_subdir_opt: bool, use_current_opt: bool) -> Vec<String> {
+                let mut items = vec!["*TYPE PATH TO NAVIGATE*".to_string(), "..".to_string()];
+                if new_subdir_opt {
+                    items.insert(1, "*CREATE NEW SUBDIRECTORY*".to_string());
+                }
+                if use_current_opt {
+                    items.insert(0, "*SELECT CURRENT DIRECTORY*".to_string());
                 }
 
                 // Add directories
@@ -176,7 +179,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
 
             loop {
                 let current_path = navigator.current_path().display();
-                let items = navigator.list_items(None, hidden, true);
+                let items = navigator.list_items(None, hidden, true, true);
                 let selection = Select::new(
                     &format!("Current directory: {current_path}", ),
                     items,
@@ -232,7 +235,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             println!("Select a file (use arrow keys and Enter to navigate):");
 
             loop {
-                let items = navigator.list_items(include_ext, hidden, false);
+                let items = navigator.list_items(include_ext, hidden, false, false);
                 let selection = Select::new(
                     &format!("Current directory: {}", navigator.current_path().display()),
                     items,
@@ -274,7 +277,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
             println!("Select destination directory (use arrow keys and Enter to navigate):");
 
             let selected_dir = loop {
-                let items = navigator.list_items(include_ext, hidden, true);
+                let items = navigator.list_items(include_ext, hidden, true, true);
                 let selection = Select::new(
                     &format!("Current directory: {}", navigator.current_path().display()),
                     items,

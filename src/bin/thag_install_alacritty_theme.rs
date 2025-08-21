@@ -1,14 +1,14 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto" }
+# thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Install thag themes for Alacritty terminal emulator
+/// Install generated themes for Alacritty terminal emulator
 ///
-/// This tool installs thag themes into Alacritty's configuration directory,
-/// creates proper theme files with corrected color mappings, and updates
-/// the Alacritty configuration file with appropriate import statements.
+/// This tool installs Alacritty themes into Alacritty's configuration directory
+/// and updates the Alacritty configuration file with appropriate import statements.
+/// The themes will typically have been created by `thag_gen_terminal_themes.rs`.
 //# Purpose: Install and configure thag themes for Alacritty terminal
 //# Categories: color, styling, terminal, theming, tools
 use colored::Colorize;
@@ -16,7 +16,6 @@ use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 use thag_proc_macros::file_navigator;
-use thag_styling::Theme;
 use toml_edit::{DocumentMut, Item, Value};
 
 file_navigator! {}
@@ -76,43 +75,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("🎨 Installing {} theme(s)...", themes.len());
     println!();
 
-    let mut installed_themes = Vec::new();
-    let mut installation_errors = Vec::new();
-
-    // Install each theme
-    for theme in &themes {
-        match install_theme(theme, &alacritty_config) {
-            Ok(theme_filename) => {
-                installed_themes.push((theme.name.clone(), theme_filename));
-                println!("   ✅ {}", theme.name.bright_green());
-            }
-            Err(e) => {
-                let e_str = (&e).to_string();
-                installation_errors.push((theme.name.clone(), e));
-                println!("   ❌ {}: {}", theme.name.bright_red(), e_str.red());
-            }
-        }
-    }
-
     // Update Alacritty configuration
-    if !installed_themes.is_empty() {
-        println!();
-        match update_alacritty_config(&alacritty_config, &installed_themes) {
-            Ok(()) => {
-                println!("✅ Alacritty configuration updated successfully");
-            }
-            Err(e) => {
-                println!(
-                    "⚠️  Failed to update configuration: {}",
-                    e.to_string().yellow()
-                );
-                show_manual_config_instructions(&installed_themes);
-            }
+    println!();
+    let themes: Vec<String> = themes
+        .iter()
+        .map(|path| path.file_name().and_then(|f| f.to_str()))
+        .filter_map(|opt| opt)
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+    match update_alacritty_config(&alacritty_config, &themes) {
+        Ok(()) => {
+            println!("✅ Alacritty configuration updated successfully");
+        }
+        Err(e) => {
+            println!(
+                "⚠️  Failed to update configuration: {}",
+                e.to_string().yellow()
+            );
+            show_manual_config_instructions(&themes);
         }
     }
 
     // Show summary and next steps
-    show_installation_summary(&installed_themes, &installation_errors);
+    show_installation_summary(&themes);
     show_verification_steps(&themes);
 
     println!("\n🎉 Theme installation completed!");
@@ -141,15 +126,15 @@ fn get_alacritty_config_info() -> Result<AlacrittyConfig, Box<dyn Error>> {
 }
 
 /// Select themes to install using file navigator
-fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{Confirm, MultiSelect, Select, Text};
+fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    use inquire::{Confirm, MultiSelect, Select};
 
     let selection_options = vec![
-        "Select theme files (.toml)",
-        "Select all themes from directory",
-        "Install built-in theme by name",
-        // "Select from multiple built-in themes",
+        "Select theme files (.toml) individually",
+        "Select theme files in bulk from directory",
     ];
+
+    let mut selected_themes = Vec::new();
 
     // Make an attempt to find the most likely path
     let _ = navigator.navigate_to_path("exported_themes/alacritty");
@@ -160,26 +145,12 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Er
     match selection_method {
         "Select theme files (.toml)" => {
             let extensions = "toml,TOML";
-            let mut selected_themes = Vec::new();
 
             loop {
                 println!("\n📁 Select a theme file:");
                 match select_file(navigator, Some(extensions), false) {
                     Ok(theme_file) => {
-                        match Theme::load_from_file(&theme_file) {
-                            Ok(theme) => {
-                                println!(
-                                    "   📋 Loaded: {} - {}",
-                                    theme.name.bright_cyan(),
-                                    theme.description.dimmed()
-                                );
-                                selected_themes.push(theme);
-                            }
-                            Err(e) => {
-                                println!("   ❌ Failed to load theme: {}", e.to_string().red());
-                                continue;
-                            }
-                        }
+                        selected_themes.push(theme_file);
 
                         let add_more = Confirm::new("Add another theme file?")
                             .with_default(false)
@@ -211,65 +182,32 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Er
                         return Ok(vec![]);
                     }
 
-                    let mut themes = Vec::new();
-                    for theme_file in &theme_files {
-                        match Theme::load_from_file(theme_file) {
-                            Ok(theme) => themes.push(theme),
-                            Err(e) => {
-                                println!(
-                                    "⚠️  Skipping {}: {}",
-                                    theme_file.file_name().unwrap_or_default().to_string_lossy(),
-                                    e.to_string().yellow()
-                                );
-                            }
-                        }
+                    // let mut themes = Vec::new();
+                    for theme_file in theme_files {
+                        selected_themes.push(theme_file);
                     }
 
                     // Let user confirm which themes to install
-                    if themes.len() > 1 {
-                        let theme_names: Vec<String> = themes
+                    if selected_themes.len() > 1 {
+                        let selected_themes = MultiSelect::new(
+                            "Confirm themes to install:",
+                            selected_themes // .clone()
+                                .iter()
+                                .map(|v| v.display().to_string())
+                                .collect::<Vec<_>>(),
+                        )
+                        .with_default(&(0..selected_themes.len()).collect::<Vec<_>>())
+                        .prompt()?;
+
+                        Ok(selected_themes
                             .iter()
-                            .map(|t| format!("{} - {}", t.name, t.description))
-                            .collect();
-
-                        let selected_names =
-                            MultiSelect::new("Select themes to install:", theme_names.clone())
-                                .with_default(&(0..theme_names.len()).collect::<Vec<_>>())
-                                .prompt()?;
-
-                        let selected_themes = themes
-                            .into_iter()
-                            .enumerate()
-                            .filter(|(i, _)| selected_names.contains(&theme_names[*i]))
-                            .map(|(_, theme)| theme)
-                            .collect();
-
-                        Ok(selected_themes)
+                            .map(|v| PathBuf::from(v))
+                            .collect::<Vec<_>>())
                     } else {
-                        Ok(themes)
+                        Ok(vec![])
                     }
                 }
                 Err(_) => Ok(vec![]),
-            }
-        }
-        "Install built-in theme by name" => {
-            let theme_name = Text::new("Enter built-in theme name:")
-                .with_help_message("e.g., 'thag-vibrant-dark', 'dracula_official'")
-                .prompt()?;
-
-            match Theme::get_builtin(&theme_name) {
-                Ok(theme) => {
-                    println!(
-                        "📋 Found: {} - {}",
-                        theme.name.bright_cyan(),
-                        theme.description.dimmed()
-                    );
-                    Ok(vec![theme])
-                }
-                Err(e) => {
-                    println!("❌ Failed to load built-in theme '{}': {}", theme_name, e);
-                    Ok(vec![])
-                }
             }
         }
         _ => Ok(vec![]),
@@ -297,159 +235,10 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
     Ok(theme_files)
 }
 
-/// Install a single theme for Alacritty
-fn install_theme(theme: &Theme, config: &AlacrittyConfig) -> Result<String, Box<dyn Error>> {
-    // Generate Alacritty-compatible theme content
-    let theme_content = generate_corrected_alacritty_theme(theme)?;
-
-    // Create theme filename
-    let theme_filename = format!("{}.toml", theme.name.replace(' ', "_").to_lowercase());
-    let theme_path = config.themes_dir.join(&theme_filename);
-
-    // Write theme file
-    fs::write(&theme_path, &theme_content)
-        .map_err(|e| format!("Failed to write theme file: {}", e))?;
-
-    Ok(theme_filename)
-}
-
-/// Generate corrected Alacritty theme with proper color mappings
-fn generate_corrected_alacritty_theme(theme: &Theme) -> Result<String, Box<dyn Error>> {
-    let mut output = String::new();
-
-    // Header
-    output.push_str(&format!(
-        "# Alacritty Color Scheme: {}\n# Generated from thag theme with corrected mappings\n# {}\n\n",
-        theme.name, theme.description
-    ));
-
-    let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
-
-    // Start colors section
-    output.push_str("[colors]\n\n");
-
-    // Primary colors
-    output.push_str("[colors.primary]\n");
-    output.push_str(&format!(
-        "background = \"#{:02x}{:02x}{:02x}\"\n",
-        bg_color.0, bg_color.1, bg_color.2
-    ));
-
-    if let Some(fg_color) = extract_rgb(&theme.palette.normal) {
-        output.push_str(&format!(
-            "foreground = \"#{:02x}{:02x}{:02x}\"\n",
-            fg_color.0, fg_color.1, fg_color.2
-        ));
-    }
-
-    if let Some(bright_fg) = extract_rgb(&theme.palette.emphasis) {
-        output.push_str(&format!(
-            "bright_foreground = \"#{:02x}{:02x}{:02x}\"\n",
-            bright_fg.0, bright_fg.1, bright_fg.2
-        ));
-    }
-
-    if let Some(dim_fg) = extract_rgb(&theme.palette.subtle) {
-        output.push_str(&format!(
-            "dim_foreground = \"#{:02x}{:02x}{:02x}\"\n",
-            dim_fg.0, dim_fg.1, dim_fg.2
-        ));
-    }
-
-    output.push_str("\n");
-
-    // Normal colors (0-7) - CORRECTED MAPPINGS
-    output.push_str("[colors.normal]\n");
-
-    let normal_colors = [
-        ("black", Some(bg_color)),                         // 0: background
-        ("red", extract_rgb(&theme.palette.error)),        // 1: error
-        ("green", extract_rgb(&theme.palette.success)),    // 2: success
-        ("yellow", extract_rgb(&theme.palette.warning)),   // 3: warning
-        ("blue", extract_rgb(&theme.palette.info)),        // 4: info
-        ("magenta", extract_rgb(&theme.palette.heading1)), // 5: heading1
-        ("cyan", extract_rgb(&theme.palette.heading3)),    // 6: heading3
-        ("white", extract_rgb(&theme.palette.normal)),     // 7: normal text
-    ];
-
-    for (color_name, rgb_opt) in normal_colors {
-        if let Some((r, g, b)) = rgb_opt {
-            output.push_str(&format!(
-                "{} = \"#{:02x}{:02x}{:02x}\"\n",
-                color_name, r, g, b
-            ));
-        }
-    }
-
-    output.push_str("\n");
-
-    // Bright colors (8-15) - CORRECTED MAPPINGS
-    output.push_str("[colors.bright]\n");
-
-    let bright_colors = [
-        ("black", extract_rgb(&theme.palette.subtle)), // 8: subtle
-        ("red", extract_rgb(&theme.palette.trace)),    // 9: trace (bright red)
-        ("green", extract_rgb(&theme.palette.debug)),  // 10: debug (bright green)
-        ("yellow", extract_rgb(&theme.palette.heading3)), // 11: heading3 (bright yellow)
-        ("blue", extract_rgb(&theme.palette.heading2)), // 12: heading2 (bright blue)
-        ("magenta", extract_rgb(&theme.palette.heading1)), // 13: heading1 (bright magenta)
-        ("cyan", extract_rgb(&theme.palette.hint)),    // 14: hint (bright cyan)
-        ("white", extract_rgb(&theme.palette.emphasis)), // 15: emphasis
-    ];
-
-    for (color_name, rgb_opt) in bright_colors {
-        if let Some((r, g, b)) = rgb_opt {
-            output.push_str(&format!(
-                "{} = \"#{:02x}{:02x}{:02x}\"\n",
-                color_name, r, g, b
-            ));
-        }
-    }
-
-    output.push_str("\n");
-
-    // Cursor colors
-    output.push_str("[colors.cursor]\n");
-    if let Some(cursor_color) = extract_rgb(&theme.palette.emphasis) {
-        output.push_str(&format!(
-            "cursor = \"#{:02x}{:02x}{:02x}\"\n",
-            cursor_color.0, cursor_color.1, cursor_color.2
-        ));
-        let cursor_text = if is_light_color(cursor_color) {
-            (0, 0, 0)
-        } else {
-            (255, 255, 255)
-        };
-        output.push_str(&format!(
-            "text = \"#{:02x}{:02x}{:02x}\"\n",
-            cursor_text.0, cursor_text.1, cursor_text.2
-        ));
-    }
-
-    output.push_str("\n");
-
-    // Selection colors
-    output.push_str("[colors.selection]\n");
-    let selection_bg = adjust_brightness(bg_color, 1.4);
-    output.push_str(&format!(
-        "background = \"#{:02x}{:02x}{:02x}\"\n",
-        selection_bg.0, selection_bg.1, selection_bg.2
-    ));
-
-    if let Some(selection_fg) = extract_rgb(&theme.palette.normal) {
-        output.push_str(&format!(
-            "text = \"#{:02x}{:02x}{:02x}\"\n",
-            selection_fg.0, selection_fg.1, selection_fg.2
-        ));
-    }
-
-    Ok(output)
-}
-
 /// Update Alacritty configuration with theme imports
 fn update_alacritty_config(
     config: &AlacrittyConfig,
-    installed_themes: &[(String, String)],
+    installed_themes: &[String],
 ) -> Result<(), Box<dyn Error>> {
     use inquire::{Confirm, Select};
 
@@ -471,14 +260,11 @@ fn update_alacritty_config(
 
     // Let user choose which theme to set as active
     if installed_themes.len() == 1 {
-        let (theme_name, theme_filename) = &installed_themes[0];
+        let theme_filename = &installed_themes[0];
         update_config_with_theme(config, theme_filename)?;
-        println!("✅ Set {} as active theme", theme_name.bright_cyan());
+        println!("✅ Set {} as active theme", theme_filename.bright_cyan());
     } else {
-        let theme_options: Vec<String> = installed_themes
-            .iter()
-            .map(|(name, _)| name.clone())
-            .collect();
+        let theme_options: Vec<String> = installed_themes.iter().map(|name| name.clone()).collect();
 
         let choice_options = vec![
             "Select active theme",
@@ -486,12 +272,15 @@ fn update_alacritty_config(
         ];
         let setup_choice = Select::new("Configuration setup:", choice_options).prompt()?;
 
+        for theme_filename in installed_themes {
+            update_config_with_theme(config, theme_filename)?;
+        }
         if setup_choice == "Select active theme" {
             let selected_theme = Select::new("Choose active theme:", theme_options).prompt()?;
 
-            if let Some((_, theme_filename)) = installed_themes
+            if let Some(theme_filename) = installed_themes
                 .iter()
-                .find(|(name, _)| name == &selected_theme)
+                .find(|&name| name == &selected_theme)
             {
                 update_config_with_theme(config, theme_filename)?;
                 println!("✅ Set {} as active theme", selected_theme.bright_cyan());
@@ -549,20 +338,20 @@ fn update_config_with_theme(
 }
 
 /// Show manual configuration instructions
-fn show_manual_config_instructions(installed_themes: &[(String, String)]) {
+fn show_manual_config_instructions(installed_themes: &[String]) {
     println!("\n📖 {} Configuration:", "Manual".bright_blue());
     println!("Add the following to your alacritty.toml:");
     println!();
     println!("[general]");
-    for (_, theme_filename) in installed_themes {
+    for theme_filename in installed_themes {
         println!("import = [\"themes/{}\"]", theme_filename);
     }
 }
 
 /// Show installation summary
 fn show_installation_summary(
-    installed_themes: &[(String, String)],
-    errors: &[(String, Box<dyn Error>)],
+    installed_themes: &[String],
+    // errors: &[(String, Box<dyn Error>)],
 ) {
     println!();
     println!("📊 {} Summary:", "Installation".bright_blue());
@@ -570,80 +359,50 @@ fn show_installation_summary(
         "   Successfully installed: {}",
         installed_themes.len().to_string().bright_green()
     );
-    println!(
-        "   Failed installations: {}",
-        errors.len().to_string().bright_red()
-    );
+    // println!(
+    //     "   Failed installations: {}",
+    //     errors.len().to_string().bright_red()
+    // );
 
     if !installed_themes.is_empty() {
         println!("\n✅ {} Themes:", "Installed".bright_green());
-        for (theme_name, theme_filename) in installed_themes {
-            println!(
-                "   • {} ({})",
-                theme_name.bright_cyan(),
-                theme_filename.dimmed()
-            );
+        for theme_filename in installed_themes {
+            println!("   • {}", theme_filename.bright_cyan());
         }
     }
 
-    if !errors.is_empty() {
-        println!("\n❌ {} Failures:", "Installation".bright_red());
-        for (theme_name, error) in errors {
-            println!("   • {}: {}", theme_name, error.to_string().red());
-        }
-    }
+    // if !errors.is_empty() {
+    //     println!("\n❌ {} Failures:", "Installation".bright_red());
+    //     for (theme_name, error) in errors {
+    //         println!("   • {}: {}", theme_name, error.to_string().red());
+    //     }
+    // }
 }
 
 /// Show verification steps
-fn show_verification_steps(themes: &[Theme]) {
+fn show_verification_steps(_installed_themes: &[String]) {
     println!("\n🔍 {} Steps:", "Verification".bright_blue());
-    println!("1. Restart Alacritty");
+    println!("1. Restart Alacritty if necessary");
     println!("2. Check that colors match the expected theme");
     println!(
         "3. Run: {} (to check for config errors)",
         "alacritty --print-events".bright_cyan()
     );
 
-    if !themes.is_empty() {
-        let theme = &themes[0];
-        println!(
-            "\n💡 {} Colors for {}:",
-            "Expected".bright_yellow(),
-            theme.name.bright_cyan()
-        );
-        if let Some((r, g, b)) = theme.bg_rgbs.first() {
-            println!("   Background: RGB({}, {}, {})", r, g, b);
-        }
-        if let Some((r, g, b)) = extract_rgb(&theme.palette.normal) {
-            println!("   Normal text: RGB({}, {}, {})", r, g, b);
-        }
-    }
-}
-
-/// Extract RGB from style
-fn extract_rgb(style: &thag_styling::Style) -> Option<(u8, u8, u8)> {
-    style
-        .foreground
-        .as_ref()
-        .and_then(|color_info| match &color_info.value {
-            thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-            _ => None,
-        })
-}
-
-/// Adjust brightness of color
-fn adjust_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
-    (
-        ((r as f32 * factor).min(255.0).max(0.0)) as u8,
-        ((g as f32 * factor).min(255.0).max(0.0)) as u8,
-        ((b as f32 * factor).min(255.0).max(0.0)) as u8,
-    )
-}
-
-/// Check if color is light
-fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
-    let luminance = 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
-    luminance > 128.0
+    // if !themes.is_empty() {
+    //     let theme = &themes[0];
+    //     println!(
+    //         "\n💡 {} Colors for {}:",
+    //         "Expected".bright_yellow(),
+    //         theme.name.bright_cyan()
+    //     );
+    //     if let Some((r, g, b)) = theme.bg_rgbs.first() {
+    //         println!("   Background: RGB({}, {}, {})", r, g, b);
+    //     }
+    //     if let Some((r, g, b)) = extract_rgb(&theme.palette.normal) {
+    //         println!("   Normal text: RGB({}, {}, {})", r, g, b);
+    //     }
+    // }
 }
 
 #[cfg(test)]

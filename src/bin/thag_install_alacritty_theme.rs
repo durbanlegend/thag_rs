@@ -148,8 +148,11 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Er
         "Select theme files (.toml)",
         "Select all themes from directory",
         "Install built-in theme by name",
-        "Select from multiple built-in themes",
+        // "Select from multiple built-in themes",
     ];
+
+    // Make an attempt to find the most likely path
+    let _ = navigator.navigate_to_path("exported_themes/alacritty");
 
     let selection_method =
         Select::new("How would you like to select themes?", selection_options).prompt()?;
@@ -268,54 +271,6 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<Theme>, Box<dyn Er
                     Ok(vec![])
                 }
             }
-        }
-        "Select from multiple built-in themes" => {
-            println!("\n📚 {} Built-in themes:", "Available".bright_blue());
-
-            let common_themes = vec![
-                "thag-vibrant-dark",
-                "thag-vibrant-light",
-                "thag-morning-coffee-dark",
-                "thag-morning-coffee-light",
-                "dracula_official",
-                "gruvbox_dark",
-                "gruvbox_light",
-                "solarized_dark",
-                "solarized_light",
-            ];
-
-            let mut available_themes = Vec::new();
-            let mut theme_display_names = Vec::new();
-
-            for theme_name in &common_themes {
-                match Theme::get_builtin(theme_name) {
-                    Ok(theme) => {
-                        theme_display_names.push(format!("{} - {}", theme.name, theme.description));
-                        available_themes.push(theme);
-                    }
-                    Err(_) => {
-                        // Skip unavailable themes
-                    }
-                }
-            }
-
-            if available_themes.is_empty() {
-                println!("❌ No built-in themes available");
-                return Ok(vec![]);
-            }
-
-            let selected_names =
-                MultiSelect::new("Select themes to install:", theme_display_names.clone())
-                    .prompt()?;
-
-            let selected_themes = available_themes
-                .into_iter()
-                .enumerate()
-                .filter(|(i, _)| selected_names.contains(&theme_display_names[*i]))
-                .map(|(_, theme)| theme)
-                .collect();
-
-            Ok(selected_themes)
         }
         _ => Ok(vec![]),
     }
@@ -552,7 +507,7 @@ fn update_config_with_theme(
     config: &AlacrittyConfig,
     theme_filename: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let import_line = format!("import = [\"themes/{}\"]\n", theme_filename);
+    let import_line = format!("themes/{theme_filename}",);
 
     if config.config_file.exists() {
         let existing_config = fs::read_to_string(&config.config_file)?;
@@ -563,14 +518,14 @@ fn update_config_with_theme(
         // Navigate to general.import
         if let Some(imports) = doc["general"]["import"].as_array_mut() {
             // Remove duplicates of new_value
-            imports.retain(|item| item.as_str() != Some(theme_filename));
+            imports.retain(|item| item.as_str() != Some(&import_line));
 
             // Push the new value at the end
-            imports.push(Value::from(theme_filename));
+            imports.push(Value::from(&import_line));
         } else {
             // If the array doesn't exist, create it
             let mut arr = toml_edit::Array::default();
-            arr.push(Value::from(theme_filename));
+            arr.push(Value::from(&import_line));
             doc["general"]["import"] = Item::Value(Value::Array(arr));
         }
 
@@ -578,7 +533,7 @@ fn update_config_with_theme(
         fs::write(&config.config_file, doc.to_string())?;
 
         println!(
-            "✅ Updated {}, moved {theme_filename} to the end of [general.import]",
+            "✅ Updated {}, moved {import_line} to the end of [general.import]",
             config.config_file.display()
         );
     } else {

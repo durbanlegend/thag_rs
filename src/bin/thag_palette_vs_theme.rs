@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
+# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire"] }
 */
 
 /// Terminal palette comparison tool with theme selection
@@ -15,8 +15,7 @@ thag_styling = { version = "0.2, thag-auto" }
 use colored::Colorize;
 use std::error::Error;
 use thag_proc_macros::file_navigator;
-
-use thag_styling::{Style, TermAttributes, Theme};
+use thag_styling::{select_builtin_theme, Style, TermAttributes, Theme};
 
 file_navigator! {}
 
@@ -94,36 +93,41 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
             println!("\n📚 {} Built-in themes:", "Available".bright_blue());
             println!("─────────────────────");
 
-            // List some common built-in themes (this would ideally come from the theme system)
-            let common_themes = vec![
-                "thag-vibrant-dark",
-                "thag-vibrant-light",
-                "thag-morning-coffee-dark",
-                "thag-morning-coffee-light",
-                "dracula_official",
-                "gruvbox_dark",
-                "gruvbox_light",
-                "solarized_dark",
-                "solarized_light",
-            ];
+            // // List some common built-in themes (this would ideally come from the theme system)
+            // let common_themes = vec![
+            //     "thag-vibrant-dark",
+            //     "thag-vibrant-light",
+            //     "thag-morning-coffee-dark",
+            //     "thag-morning-coffee-light",
+            //     "dracula_official",
+            //     "gruvbox_dark",
+            //     "gruvbox_light",
+            //     "solarized_dark",
+            //     "solarized_light",
+            // ];
 
-            for theme_name in &common_themes {
-                match Theme::get_builtin(theme_name) {
-                    Ok(theme) => {
-                        println!(
-                            "  • {} - {}",
-                            theme_name.bright_cyan(),
-                            theme.description.dimmed()
-                        );
-                    }
-                    Err(_) => {
-                        println!("  • {} - {}", theme_name.dimmed(), "(not available)".red());
-                    }
-                }
-            }
+            // for theme_name in &common_themes {
+            //     match Theme::get_builtin(theme_name) {
+            //         Ok(theme) => {
+            //             println!(
+            //                 "  • {} - {}",
+            //                 theme_name.bright_cyan(),
+            //                 theme.description.dimmed()
+            //             );
+            //         }
+            //         Err(_) => {
+            //             println!("  • {} - {}", theme_name.dimmed(), "(not available)".red());
+            //         }
+            //     }
+            // }
 
-            println!();
-            let theme_name = Text::new("Enter theme name from the list above:").prompt()?;
+            // println!();
+            // let theme_name = Text::new("Enter theme name from the list above:").prompt()?;
+
+            let maybe_theme_name = select_builtin_theme();
+            let Some(theme_name) = maybe_theme_name else {
+                return Err("No theme selected".into());
+            };
 
             Theme::get_builtin(&theme_name).map_err(|e| {
                 format!("Failed to load built-in theme '{}': {}", theme_name, e).into()
@@ -429,18 +433,18 @@ fn display_color_comparison(theme: &Theme) {
 /// Display recommendations based on comparison
 fn display_recommendations(theme: &Theme) {
     println!("💡 {} and Tips:", "Recommendations".bright_blue());
-    println!("──────────────────────");
+    println!("────────────────────────────");
 
     println!("• If colors don't match expected values:");
     println!("  - Your terminal may not support the theme correctly");
     println!(
-        "  - Try using {} to synchronize palette",
+        "  - Try using {} to synchronize the terminal palette with the `thag_styling` theme",
         "thag_sync_palette".bright_cyan()
     );
     println!("  - Check if your terminal emulator supports the theme format");
     println!();
 
-    println!("• For {} themes:", theme.name.bright_cyan());
+    println!("• For {} theme:", theme.name.bright_cyan());
     match theme.term_bg_luma {
         thag_styling::TermBgLuma::Dark => {
             println!("  - Ensure your terminal has a dark background");

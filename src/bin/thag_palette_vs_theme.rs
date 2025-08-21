@@ -4,7 +4,7 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 # thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire"] }
 */
-
+#![allow(clippy::uninlined_format_args)]
 /// Terminal palette comparison tool with theme selection
 ///
 /// This tool displays the current terminal's color palette alongside
@@ -15,7 +15,7 @@ thag_styling = { version = "0.2, thag-auto", default-features = false, features 
 use colored::Colorize;
 use std::error::Error;
 use thag_proc_macros::file_navigator;
-use thag_styling::{select_builtin_theme, Style, TermAttributes, Theme};
+use thag_styling::{select_builtin_theme, Style, TermAttributes, TermBgLuma, Theme}; // import without risk of name clashing
 
 file_navigator! {}
 
@@ -64,12 +64,8 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
     match selection_method {
         "Select theme file (.toml)" => {
             println!("\n📁 Select a theme file:");
-            let _extensions = vec!["toml", "TOML"];
-            let theme_file = match select_file(navigator, Some("toml"), false) {
-                Ok(file) => file,
-                Err(_) => {
-                    return Err("No theme file selected".into());
-                }
+            let Ok(theme_file) = select_file(navigator, Some("toml"), false) else {
+                return Err("No theme file selected".into());
             };
 
             println!(
@@ -92,37 +88,6 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
         "List available built-in themes" => {
             println!("\n📚 {} Built-in themes:", "Available".bright_blue());
             println!("─────────────────────");
-
-            // // List some common built-in themes (this would ideally come from the theme system)
-            // let common_themes = vec![
-            //     "thag-vibrant-dark",
-            //     "thag-vibrant-light",
-            //     "thag-morning-coffee-dark",
-            //     "thag-morning-coffee-light",
-            //     "dracula_official",
-            //     "gruvbox_dark",
-            //     "gruvbox_light",
-            //     "solarized_dark",
-            //     "solarized_light",
-            // ];
-
-            // for theme_name in &common_themes {
-            //     match Theme::get_builtin(theme_name) {
-            //         Ok(theme) => {
-            //             println!(
-            //                 "  • {} - {}",
-            //                 theme_name.bright_cyan(),
-            //                 theme.description.dimmed()
-            //             );
-            //         }
-            //         Err(_) => {
-            //             println!("  • {} - {}", theme_name.dimmed(), "(not available)".red());
-            //         }
-            //     }
-            // }
-
-            // println!();
-            // let theme_name = Text::new("Enter theme name from the list above:").prompt()?;
 
             let maybe_theme_name = select_builtin_theme();
             let Some(theme_name) = maybe_theme_name else {
@@ -311,6 +276,7 @@ fn display_theme_colors(theme: &Theme) {
 }
 
 /// Display side-by-side color comparison
+#[allow(clippy::too_many_lines)]
 fn display_color_comparison(theme: &Theme) {
     println!("🔄 {} Color Mapping:", "ANSI vs Theme".bright_blue());
     println!("──────────────────────────────────────────");
@@ -446,15 +412,15 @@ fn display_recommendations(theme: &Theme) {
 
     println!("• For {} theme:", theme.name.bright_cyan());
     match theme.term_bg_luma {
-        thag_styling::TermBgLuma::Dark => {
+        TermBgLuma::Dark => {
             println!("  - Ensure your terminal has a dark background");
             println!("  - ANSI 0 (Black) should match background color");
         }
-        thag_styling::TermBgLuma::Light => {
+        TermBgLuma::Light => {
             println!("  - Ensure your terminal has a light background");
             println!("  - Colors should be adjusted for light backgrounds");
         }
-        _ => {}
+        TermBgLuma::Undetermined => {}
     }
     println!();
 
@@ -495,7 +461,7 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
             if contrast < 4.5 {
                 issues.push(format!(
                     "Low contrast between background and normal text ({}:1, recommended 4.5:1+)",
-                    format!("{:.1}", contrast)
+                    format_args!("{:.1}", contrast)
                 ));
             }
         }
@@ -522,9 +488,9 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
 fn calculate_contrast_ratio(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f64 {
     fn luminance(rgb: (u8, u8, u8)) -> f64 {
         let (r, g, b) = (
-            rgb.0 as f64 / 255.0,
-            rgb.1 as f64 / 255.0,
-            rgb.2 as f64 / 255.0,
+            f64::from(rgb.0) / 255.0,
+            f64::from(rgb.1) / 255.0,
+            f64::from(rgb.2) / 255.0,
         );
 
         let to_linear = |c: f64| {
@@ -535,7 +501,10 @@ fn calculate_contrast_ratio(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f64 {
             }
         };
 
-        0.2126 * to_linear(r) + 0.7152 * to_linear(g) + 0.0722 * to_linear(b)
+        0.0722f64.mul_add(
+            to_linear(b),
+            0.2126f64.mul_add(to_linear(r), 0.7152 * to_linear(g)),
+        )
     }
 
     let l1 = luminance(color1);
@@ -547,8 +516,9 @@ fn calculate_contrast_ratio(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f64 {
 
 /// Extract RGB information from a style for display
 fn extract_rgb_info(style: &Style) -> String {
-    match &style.foreground {
-        Some(color_info) => match &color_info.value {
+    style.foreground.as_ref().map_or_else(
+        || "No color".to_string(),
+        |color_info| match &color_info.value {
             thag_styling::ColorValue::TrueColor { rgb } => {
                 format!(
                     "#{:02x}{:02x}{:02x} RGB({}, {}, {})",
@@ -562,8 +532,7 @@ fn extract_rgb_info(style: &Style) -> String {
                 format!("ANSI({})", index)
             }
         },
-        None => "No color".to_string(),
-    }
+    )
 }
 
 /// Extract RGB tuple from a style
@@ -584,16 +553,17 @@ fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
         .first()
         .copied()
         .or_else(|| extract_rgb(&theme.palette.subtle))
-        .or_else(|| Some((16, 16, 16)))
+        .or(Some((16, 16, 16)))
 }
 
 /// Brighten a color by increasing its components
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
     let factor = 1.3;
     (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
+        ((f32::from(r) * factor).min(255.0)) as u8,
+        ((f32::from(g) * factor).min(255.0)) as u8,
+        ((f32::from(b) * factor).min(255.0)) as u8,
     )
 }
 

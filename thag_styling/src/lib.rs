@@ -110,7 +110,7 @@ pub enum StylingError {
 
 impl From<std::fmt::Error> for StylingError {
     fn from(err: std::fmt::Error) -> Self {
-        StylingError::Generic(format!("Format error: {}", err))
+        Self::Generic(format!("Format error: {err}"))
     }
 }
 
@@ -216,8 +216,16 @@ impl StylingConfigProvider for NoConfigProvider {
 }
 
 /// Select a built-in theme using `inquire`.
+///
+/// # Panics
+///
+/// If it fails to load the fallback theme.
 #[cfg(feature = "inquire")]
+#[must_use]
 pub fn select_builtin_theme() -> Option<String> {
+    use inquire::error::InquireResult;
+    use inquire::list_option::ListOption;
+
     // Initialize terminal attributes to ensure styling works
     let _term_attrs = TermAttributes::get_or_init();
     // eprintln!("_term_attrs={_term_attrs:#?}");
@@ -240,10 +248,6 @@ pub fn select_builtin_theme() -> Option<String> {
     // Clear screen initially
     print!("\x1b[2J\x1b[H");
 
-    // let mut cursor = 0_usize;
-    use inquire::error::InquireResult;
-    use inquire::list_option::ListOption;
-
     let maybe_theme_name = loop {
         println!("\n🎨 Interactive Theme Browser");
         println!("{}", "═".repeat(80));
@@ -253,7 +257,7 @@ pub fn select_builtin_theme() -> Option<String> {
 
         let selection: InquireResult<ListOption<String>> = Select::new(
             "🔍 Select a theme to preview:",
-            theme_options.clone(),
+            theme_options,
         )
         .with_page_size(24)
         .with_help_message(
@@ -280,7 +284,7 @@ pub fn select_builtin_theme() -> Option<String> {
                 break None;
             }
             Err(e) => {
-                println!("❌ Error: {}", e);
+                println!("❌ Error: {e}");
                 break None;
             }
         }

@@ -3,7 +3,7 @@
 //! This module provides functionality to export thag themes to popular terminal emulator formats,
 //! enabling users to apply generated themes across different terminal applications.
 
-use crate::{StylingError, StylingResult, Theme};
+use crate::{ColorValue, StylingError, StylingResult, Theme};
 use std::path::Path;
 
 pub mod alacritty;
@@ -15,6 +15,10 @@ pub mod windows_terminal;
 /// Trait for exporting themes to different terminal emulator formats
 pub trait ThemeExporter {
     /// Export a theme to the format-specific string representation
+    ///
+    /// # Errors
+    ///
+    /// Will bubble up any i/o  errors encountered.
     fn export_theme(theme: &Theme) -> StylingResult<String>;
 
     /// Get the recommended file extension for this format
@@ -29,64 +33,65 @@ pub trait ThemeExporter {
 pub enum ExportFormat {
     /// Alacritty terminal emulator (TOML/YAML)
     Alacritty,
-    /// WezTerm terminal emulator (TOML)
+    /// `WezTerm` terminal emulator (TOML)
     WezTerm,
-    /// iTerm2 terminal emulator (JSON/Plist)
+    /// `iTerm2` terminal emulator (JSON/Plist)
     ITerm2,
-    /// Kitty terminal emulator (Config format)
+    ///`Kitty` terminal emulator (Config format)
     Kitty,
-    /// Windows Terminal (JSON)
+    /// `Windows Terminal` (JSON)
     WindowsTerminal,
 }
 
 impl ExportFormat {
     /// Get all available export formats
-    pub fn all() -> &'static [ExportFormat] {
+    #[must_use]
+    pub const fn all() -> &'static [Self] {
         &[
-            ExportFormat::Alacritty,
-            ExportFormat::WezTerm,
-            ExportFormat::ITerm2,
-            ExportFormat::Kitty,
-            ExportFormat::WindowsTerminal,
+            Self::Alacritty,
+            Self::WezTerm,
+            Self::ITerm2,
+            Self::Kitty,
+            Self::WindowsTerminal,
         ]
     }
 
     /// Get the file extension for this format
+    #[must_use]
     pub fn file_extension(self) -> &'static str {
         match self {
-            ExportFormat::Alacritty => alacritty::AlacrittyExporter::file_extension(),
-            ExportFormat::WezTerm => wezterm::WezTermExporter::file_extension(),
-            ExportFormat::ITerm2 => iterm2::ITerm2Exporter::file_extension(),
-            ExportFormat::Kitty => kitty::KittyExporter::file_extension(),
-            ExportFormat::WindowsTerminal => {
-                windows_terminal::WindowsTerminalExporter::file_extension()
-            }
+            Self::Alacritty => alacritty::AlacrittyExporter::file_extension(),
+            Self::WezTerm => wezterm::WezTermExporter::file_extension(),
+            Self::ITerm2 => iterm2::ITerm2Exporter::file_extension(),
+            Self::Kitty => kitty::KittyExporter::file_extension(),
+            Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::file_extension(),
         }
     }
 
     /// Get the format name
+    #[must_use]
     pub fn format_name(self) -> &'static str {
         match self {
-            ExportFormat::Alacritty => alacritty::AlacrittyExporter::format_name(),
-            ExportFormat::WezTerm => wezterm::WezTermExporter::format_name(),
-            ExportFormat::ITerm2 => iterm2::ITerm2Exporter::format_name(),
-            ExportFormat::Kitty => kitty::KittyExporter::format_name(),
-            ExportFormat::WindowsTerminal => {
-                windows_terminal::WindowsTerminalExporter::format_name()
-            }
+            Self::Alacritty => alacritty::AlacrittyExporter::format_name(),
+            Self::WezTerm => wezterm::WezTermExporter::format_name(),
+            Self::ITerm2 => iterm2::ITerm2Exporter::format_name(),
+            Self::Kitty => kitty::KittyExporter::format_name(),
+            Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::format_name(),
         }
     }
 
     /// Export a theme using this format
+    ///
+    /// # Errors
+    ///
+    /// Will bubble up any i/o  errors encountered.
     pub fn export_theme(self, theme: &Theme) -> StylingResult<String> {
         match self {
-            ExportFormat::Alacritty => alacritty::AlacrittyExporter::export_theme(theme),
-            ExportFormat::WezTerm => wezterm::WezTermExporter::export_theme(theme),
-            ExportFormat::ITerm2 => iterm2::ITerm2Exporter::export_theme(theme),
-            ExportFormat::Kitty => kitty::KittyExporter::export_theme(theme),
-            ExportFormat::WindowsTerminal => {
-                windows_terminal::WindowsTerminalExporter::export_theme(theme)
-            }
+            Self::Alacritty => alacritty::AlacrittyExporter::export_theme(theme),
+            Self::WezTerm => wezterm::WezTermExporter::export_theme(theme),
+            Self::ITerm2 => iterm2::ITerm2Exporter::export_theme(theme),
+            Self::Kitty => kitty::KittyExporter::export_theme(theme),
+            Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::export_theme(theme),
         }
     }
 }
@@ -100,6 +105,10 @@ impl ExportFormat {
 ///
 /// # Returns
 /// A vector of successfully exported file paths
+///
+/// # Errors
+///
+/// Will bubble up any i/o  errors encountered.
 pub fn export_all_formats<P: AsRef<Path>>(
     theme: &Theme,
     output_dir: P,
@@ -163,6 +172,10 @@ pub fn export_all_formats<P: AsRef<Path>>(
 /// * `theme` - The theme to export
 /// * `format` - The target export format
 /// * `output_path` - Path to save the exported theme file
+///
+/// # Errors
+///
+/// Will bubble up any i/o errors encountered.
 pub fn export_theme_to_file<P: AsRef<Path>>(
     theme: &Theme,
     format: ExportFormat,
@@ -174,6 +187,7 @@ pub fn export_theme_to_file<P: AsRef<Path>>(
 }
 
 /// Generate installation instructions for a specific format
+#[must_use]
 pub fn generate_installation_instructions(format: ExportFormat, theme_filename: &str) -> String {
     match format {
         ExportFormat::Alacritty => {
@@ -197,7 +211,7 @@ To use this theme with Alacritty:
         }
         ExportFormat::WezTerm => {
             format!(
-                r#"# WezTerm Theme Installation
+                r"# WezTerm Theme Installation
 
 To use this theme with WezTerm:
 
@@ -216,7 +230,7 @@ To use this theme with WezTerm:
 
 Note: The theme name should match the filename without extension.
 WezTerm will use this TOML file format, which is different from Alacritty's TOML structure.
-"#
+"
             )
         }
         ExportFormat::ITerm2 => {
@@ -238,7 +252,7 @@ The theme will be applied to your current profile.
         }
         ExportFormat::Kitty => {
             format!(
-                r#"# Kitty Theme Installation
+                r"# Kitty Theme Installation
 
 To use this theme with Kitty:
 
@@ -252,7 +266,7 @@ To use this theme with Kitty:
    ```
 
 3. Reload Kitty config with Ctrl+Shift+F5 or restart Kitty.
-"#
+"
             )
         }
         ExportFormat::WindowsTerminal => {
@@ -276,13 +290,138 @@ Alternatively, you can merge the JSON content directly into your settings.json f
 }
 
 /// Brighten a color by increasing its components
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
+    adjust_color_brightness((r, g, b), 1.3)
+}
+
+/// Dim a color by reducing its components
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn dim_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
+    adjust_color_brightness((r, g, b), 0.6)
+}
+
+/// Adjust color brightness by a factor
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
     (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
+        (f32::from(r) * factor).clamp(0.0, 255.0) as u8,
+        (f32::from(g) * factor).clamp(0.0, 255.0) as u8,
+        (f32::from(b) * factor).clamp(0.0, 255.0) as u8,
     )
+}
+
+/// Get the best dark color from the theme for black mapping
+fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
+    // Try background first, then subtle, then create a dark color
+    theme
+        .bg_rgbs
+        .first()
+        .copied()
+        .or_else(|| get_rgb_from_style(&theme.palette.subtle))
+        .or(Some((16, 16, 16)))
+}
+
+/// Extract RGB values from a Style's foreground color
+fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
+    style.foreground.as_ref().map(|color_info| {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => (rgb[0], rgb[1], rgb[2]),
+            ColorValue::Color256 { color256 } => {
+                // Convert 256-color index to approximate RGB
+                color_256_to_rgb(*color256)
+            }
+            ColorValue::Basic { index, .. } => {
+                // Convert basic color index to RGB
+                basic_color_to_rgb(*index)
+            }
+        }
+    })
+}
+
+/// Convert basic color index to RGB
+#[allow(clippy::match_same_arms)]
+const fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
+    match index {
+        0 => (0, 0, 0),        // Black
+        1 => (128, 0, 0),      // Red
+        2 => (0, 128, 0),      // Green
+        3 => (128, 128, 0),    // Yellow
+        4 => (0, 0, 128),      // Blue
+        5 => (128, 0, 128),    // Magenta
+        6 => (0, 128, 128),    // Cyan
+        7 => (192, 192, 192),  // White
+        8 => (128, 128, 128),  // Bright Black
+        9 => (255, 0, 0),      // Bright Red
+        10 => (0, 255, 0),     // Bright Green
+        11 => (255, 255, 0),   // Bright Yellow
+        12 => (0, 0, 255),     // Bright Blue
+        13 => (255, 0, 255),   // Bright Magenta
+        14 => (0, 255, 255),   // Bright Cyan
+        15 => (255, 255, 255), // Bright White
+        _ => (128, 128, 128),  // Default gray
+    }
+}
+
+/// Convert 256-color index to RGB
+const fn color_256_to_rgb(index: u8) -> (u8, u8, u8) {
+    match index {
+        // Standard colors (0-15)
+        0 => (0, 0, 0),        // Black
+        1 => (128, 0, 0),      // Red
+        2 => (0, 128, 0),      // Green
+        3 => (128, 128, 0),    // Yellow
+        4 => (0, 0, 128),      // Blue
+        5 => (128, 0, 128),    // Magenta
+        6 => (0, 128, 128),    // Cyan
+        7 => (192, 192, 192),  // White
+        8 => (128, 128, 128),  // Bright Black
+        9 => (255, 0, 0),      // Bright Red
+        10 => (0, 255, 0),     // Bright Green
+        11 => (255, 255, 0),   // Bright Yellow
+        12 => (0, 0, 255),     // Bright Blue
+        13 => (255, 0, 255),   // Bright Magenta
+        14 => (0, 255, 255),   // Bright Cyan
+        15 => (255, 255, 255), // Bright White
+
+        // 216 color cube (16-231)
+        16..=231 => {
+            let n = index - 16;
+            let r = (n / 36) * 51;
+            let g = ((n % 36) / 6) * 51;
+            let b = (n % 6) * 51;
+            (r, g, b)
+        }
+
+        // Grayscale (232-255)
+        232..=255 => {
+            let gray = 8 + (index - 232) * 10;
+            (gray, gray, gray)
+        }
+    }
+}
+
+/// Check if a color is considered light
+fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
+    // Calculate relative luminance
+    let r_linear = if r <= 10 {
+        f32::from(r) / 3294.6
+    } else {
+        ((f32::from(r) + 14.025) / 269.025).powf(2.4)
+    };
+    let g_linear = if g <= 10 {
+        f32::from(g) / 3294.6
+    } else {
+        ((f32::from(g) + 14.025) / 269.025).powf(2.4)
+    };
+    let b_linear = if b <= 10 {
+        f32::from(b) / 3294.6
+    } else {
+        ((f32::from(b) + 14.025) / 269.025).powf(2.4)
+    };
+
+    let luminance = 0.0722f32.mul_add(b_linear, 0.2126f32.mul_add(r_linear, 0.7152 * g_linear));
+    luminance > 0.5
 }
 
 #[cfg(test)]

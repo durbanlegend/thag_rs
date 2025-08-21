@@ -1,16 +1,15 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
 */
-
-/// Generate thag_styling themes from image files using file navigator
+#![allow(clippy::uninlined_format_args)]
+/// Generate `thag_styling` themes from image files using file navigator.
 ///
 /// This tool analyzes image files to extract dominant colors and generates
-/// thag_styling compatible theme files. Supports auto-detection of theme type
+/// `thag_styling`-compatible theme files. Supports auto-detection of theme type
 /// (light/dark) and customizable color extraction parameters.
-//# Purpose: Generate custom thag_styling themes from images
+//# Purpose: Generate custom `thag_styling` themes from images
 //# Categories: color, styling, terminal, theming, tools
 use colored::Colorize;
 use std::error::Error;
@@ -46,16 +45,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!();
 
     // Use file navigator to select image file
-    let image_path = match select_file(
+    let Ok(image_path) = select_file(
         &mut navigator,
         Some("png,jpg,jpeg,gif,bmp,tiff,tif,webp"),
         false,
-    ) {
-        Ok(path) => path,
-        Err(_) => {
-            println!("\n❌ No image file selected. Exiting.");
-            return Ok(());
-        }
+    ) else {
+        println!("\n❌ No image file selected. Exiting.");
+        return Ok(());
     };
 
     println!(
@@ -89,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let theme_type_suffix = match theme.term_bg_luma {
             TermBgLuma::Light => "-light",
             TermBgLuma::Dark => "-dark",
-            _ => "",
+            TermBgLuma::Undetermined => "",
         };
 
         format!(
@@ -235,8 +231,9 @@ fn display_color_palette(theme: &Theme) {
 
 /// Extract RGB information from a style for display
 fn extract_rgb_info(style: &thag_styling::Style) -> String {
-    match &style.foreground {
-        Some(color_info) => match &color_info.value {
+    style.foreground.as_ref().map_or_else(
+        || "No color".to_string(),
+        |color_info| match &color_info.value {
             thag_styling::ColorValue::TrueColor { rgb } => {
                 format!(
                     "#{:02x}{:02x}{:02x} RGB({}, {}, {})",
@@ -250,8 +247,7 @@ fn extract_rgb_info(style: &thag_styling::Style) -> String {
                 format!("ANSI({})", index)
             }
         },
-        None => "No color".to_string(),
-    }
+    )
 }
 
 /// Save theme to a TOML file using file navigator
@@ -271,12 +267,9 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> StylingResul
 
     // Get output directory
     println!("\n📁 Select directory to save theme file:");
-    let output_dir = match select_directory(navigator, true) {
-        Ok(dir) => dir,
-        Err(_) => {
-            println!("❌ No directory selected. Theme not saved.");
-            return Ok(());
-        }
+    let Ok(output_dir) = select_directory(navigator, true) else {
+        println!("❌ No directory selected. Theme not saved.");
+        return Ok(());
     };
 
     // Get filename
@@ -287,7 +280,10 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> StylingResul
         .prompt()
         .map_err(|e| StylingError::FromStr(format!("Input error: {}", e)))?;
 
-    let filename = if filename.ends_with(".toml") {
+    let filename = if std::path::Path::new(&filename)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("toml"))
+    {
         filename
     } else {
         format!("{}.toml", filename)

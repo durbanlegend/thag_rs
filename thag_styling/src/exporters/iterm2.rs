@@ -4,8 +4,11 @@
 //! iTerm2 uses .itermcolors files (plist XML) for color presets that can be imported through the UI.
 
 use crate::{
-    exporters::{brighten_color, ThemeExporter},
-    ColorValue, StylingResult, Theme,
+    exporters::{
+        adjust_color_brightness, brighten_color, get_best_dark_color, get_rgb_from_style,
+        ThemeExporter,
+    },
+    StylingResult, Theme,
 };
 
 use std::fmt::Write;
@@ -186,103 +189,13 @@ fn write_color_entry(
     Ok(())
 }
 
-/// Extract RGB values from a Style's foreground color
-fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
-    style.foreground.as_ref().and_then(|color_info| {
-        match &color_info.value {
-            ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-            ColorValue::Color256 { color256 } => {
-                // Convert 256-color index to approximate RGB
-                Some(color_256_to_rgb(*color256))
-            }
-            ColorValue::Basic { index, .. } => {
-                // Convert basic color index to RGB
-                Some(basic_color_to_rgb(*index))
-            }
-        }
-    })
-}
-
-/// Convert 256-color index to RGB
-fn color_256_to_rgb(index: u8) -> (u8, u8, u8) {
-    match index {
-        // Standard colors (0-15)
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Red
-        2 => (0, 128, 0),      // Green
-        3 => (128, 128, 0),    // Yellow
-        4 => (0, 0, 128),      // Blue
-        5 => (128, 0, 128),    // Magenta
-        6 => (0, 128, 128),    // Cyan
-        7 => (192, 192, 192),  // White
-        8 => (128, 128, 128),  // Bright Black
-        9 => (255, 0, 0),      // Bright Red
-        10 => (0, 255, 0),     // Bright Green
-        11 => (255, 255, 0),   // Bright Yellow
-        12 => (0, 0, 255),     // Bright Blue
-        13 => (255, 0, 255),   // Bright Magenta
-        14 => (0, 255, 255),   // Bright Cyan
-        15 => (255, 255, 255), // Bright White
-
-        // 216 color cube (16-231)
-        16..=231 => {
-            let n = index - 16;
-            let r = (n / 36) * 51;
-            let g = ((n % 36) / 6) * 51;
-            let b = (n % 6) * 51;
-            (r, g, b)
-        }
-
-        // Grayscale (232-255)
-        232..=255 => {
-            let gray = 8 + (index - 232) * 10;
-            (gray, gray, gray)
-        }
-    }
-}
-
-/// Convert basic color index to RGB
-fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
-    match index {
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Red
-        2 => (0, 128, 0),      // Green
-        3 => (128, 128, 0),    // Yellow
-        4 => (0, 0, 128),      // Blue
-        5 => (128, 0, 128),    // Magenta
-        6 => (0, 128, 128),    // Cyan
-        7 => (192, 192, 192),  // White
-        8 => (128, 128, 128),  // Bright Black
-        9 => (255, 0, 0),      // Bright Red
-        10 => (0, 255, 0),     // Bright Green
-        11 => (255, 255, 0),   // Bright Yellow
-        12 => (0, 0, 255),     // Bright Blue
-        13 => (255, 0, 255),   // Bright Magenta
-        14 => (0, 255, 255),   // Bright Cyan
-        15 => (255, 255, 255), // Bright White
-        _ => (128, 128, 128),  // Default gray
-    }
-}
-
-/// Adjust color brightness by a factor
-fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
-    (
-        ((r as f32 * factor).min(255.0).max(0.0)) as u8,
-        ((g as f32 * factor).min(255.0).max(0.0)) as u8,
-        ((b as f32 * factor).min(255.0).max(0.0)) as u8,
-    )
-}
-
-/// Get the best dark color from the theme for black mapping
-fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-    // Use background color as per palette_sync mapping
-    theme.bg_rgbs.first().copied()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ColorSupport, Palette, TermBgLuma};
+    use crate::{
+        exporters::{basic_color_to_rgb, color_256_to_rgb},
+        ColorSupport, Palette, TermBgLuma,
+    };
     use std::path::PathBuf;
 
     fn create_test_theme() -> Theme {

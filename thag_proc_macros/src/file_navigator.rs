@@ -6,6 +6,7 @@ use quote::quote;
 pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
     let output = quote! {
         use inquire::{InquireError, Select, Text};
+        use std::fmt::Write as _; // import without risk of name clashing
 
         struct FileNavigator {
             current_dir: std::path::PathBuf,
@@ -132,7 +133,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                             if let Ok(var_value) = std::env::var(&var_name) {
                                 result.push_str(&var_value);
                             } else {
-                                result.push_str(&format!("${{{var_name}}}"));
+                                let _ = writeln!(result, "${{{var_name}}}");
                             }
                         } else {
                             let mut var_name = String::new();
@@ -147,7 +148,7 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                                 if let Ok(var_value) = std::env::var(&var_name) {
                                     result.push_str(&var_value);
                                 } else {
-                                    result.push_str(&format!("${var_name}"));
+                                    let _ = writeln!(result, "${var_name}");
                                 }
                             } else {
                                 result.push('$');

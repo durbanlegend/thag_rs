@@ -4,16 +4,20 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquire_theming"] }
 */
 
-/// Export thag_styling themes to multiple terminal emulator formats
+/// Export `thag_styling` themes to multiple terminal emulator formats
 ///
-/// This tool exports thag_styling theme files to various terminal emulator formats
-/// including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.
-/// Themes are exported to organized subdirectories in ./exported_themes/
+/// This tool exports `thag_styling` theme files to various terminal emulator formats
+/// including `Alacritty`, `WezTerm`, `iTerm2`, `Kitty`, and `Windows Terminal`.
+/// Themes are exported to organized subdirectories in ./`exported_themes`/
 //# Purpose: Export thag themes to multiple terminal emulator formats
 //# Categories: color, styling, terminal, theming, tools
 use colored::Colorize;
 use inquire::set_global_render_config;
-use std::{error::Error, fs, path::{Path, PathBuf}};
+use std::{
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 use thag_proc_macros::file_navigator;
 use thag_styling::{
     export_theme_to_file, generate_installation_instructions, themed_inquire_config, ExportFormat,
@@ -151,29 +155,24 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
 
     match selection_method {
         "Select individual theme files" => {
-            let _extensions = vec!["toml", "TOML"];
+            // let extensions = &["toml", "TOML"];
             let mut selected_files = Vec::new();
 
             loop {
                 println!("\n📁 Select a theme file (.toml format):");
-                match select_file(navigator, Some("toml"), false) {
-                    Ok(file) => {
-                        selected_files.push(file);
-
-                        let add_more = Confirm::new("Add another theme file?")
-                            .with_default(false)
-                            .prompt()?;
-
-                        if !add_more {
-                            break;
-                        }
-                    }
-                    Err(_) => {
-                        if selected_files.is_empty() {
-                            return Ok(vec![]);
-                        }
+                if let Ok(file) = select_file(navigator, Some("toml"), false) {
+                    selected_files.push(file);
+                    let add_more = Confirm::new("Add another theme file?")
+                        .with_default(false)
+                        .prompt()?;
+                    if !add_more {
                         break;
                     }
+                } else {
+                    if selected_files.is_empty() {
+                        return Ok(vec![]);
+                    }
+                    break;
                 }
             }
             Ok(selected_files)
@@ -224,15 +223,15 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
             // Try to load the built-in theme and create a temporary file
             match Theme::get_builtin(&theme_name) {
                 Ok(theme) => {
-                    let temp_file = std::env::temp_dir().join(format!("{}.toml", theme_name));
+                    let temp_file = std::env::temp_dir().join(format!("{theme_name}.toml"));
                     let toml_content = thag_styling::theme_to_toml(&theme)
-                        .map_err(|e| format!("Failed to serialize theme: {}", e))?;
+                        .map_err(|e| format!("Failed to serialize theme: {e}"))?;
 
                     fs::write(&temp_file, toml_content)?;
                     Ok(vec![temp_file])
                 }
                 Err(e) => {
-                    println!("❌ Failed to load built-in theme '{}': {}", theme_name, e);
+                    println!("❌ Failed to load built-in theme '{theme_name}': {e}");
                     Ok(vec![])
                 }
             }
@@ -244,9 +243,9 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
             // Convert themes to temporary files for processing
             let mut temp_files = Vec::new();
             for (theme_name, theme) in selected_themes {
-                let temp_file = std::env::temp_dir().join(format!("{}.toml", theme_name));
+                let temp_file = std::env::temp_dir().join(format!("{theme_name}.toml"));
                 let toml_content = thag_styling::theme_to_toml(&theme)
-                    .map_err(|e| format!("Failed to serialize theme: {}", e))?;
+                    .map_err(|e| format!("Failed to serialize theme: {e}"))?;
 
                 fs::write(&temp_file, toml_content)?;
                 temp_files.push(temp_file);
@@ -279,7 +278,7 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
     Ok(theme_files)
 }
 
-/// Interactive theme browser similar to thag_show_themes
+/// Interactive theme browser similar to `thag_show_themes`
 fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>> {
     use inquire::MultiSelect;
 
@@ -309,7 +308,7 @@ fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>>
     );
     println!("{}", "═".repeat(50).dimmed());
 
-    let selected_options = MultiSelect::new("Select themes to export:", theme_options.clone())
+    let selected_options = MultiSelect::new("Select themes to export:", theme_options)
         .with_page_size(15)
         .with_help_message("Space to select • ↑↓ to navigate • Enter to confirm")
         .prompt()?;
@@ -320,7 +319,7 @@ fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>>
         let theme_name = selected_option
             .split(" - ")
             .next()
-            .unwrap_or(&selected_option);
+            .unwrap_or(selected_option);
 
         match Theme::get_builtin(theme_name) {
             Ok(theme) => {
@@ -328,7 +327,7 @@ fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>>
                 selected_themes.push((theme_name.to_string(), theme));
             }
             Err(e) => {
-                println!("   ❌ Failed to load theme '{}': {}", theme_name, e);
+                println!("   ❌ Failed to load theme '{theme_name}': {e}");
             }
         }
     }
@@ -388,7 +387,7 @@ fn process_theme_file(
 ) -> Result<usize, Box<dyn Error>> {
     // Load theme
     let theme =
-        Theme::load_from_file(theme_file).map_err(|e| format!("Failed to load theme: {}", e))?;
+        Theme::load_from_file(theme_file).map_err(|e| format!("Failed to load theme: {e}"))?;
 
     let theme_base_name = theme_file
         .file_stem()
@@ -434,7 +433,7 @@ fn show_installation_instructions(formats: &[ExportFormat]) {
 
         // Use a generic placeholder since we don't know the specific theme name here
         let instructions = generate_installation_instructions(*format, "<theme-name>");
-        println!("{}", instructions);
+        println!("{instructions}");
 
         println!(
             "\n💡 {} Replace {} with your actual theme filename",

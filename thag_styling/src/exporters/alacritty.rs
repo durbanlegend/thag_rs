@@ -4,8 +4,11 @@
 //! Alacritty uses a specific TOML structure that differs from other terminals.
 
 use crate::{
-    exporters::{brighten_color, ThemeExporter},
-    ColorValue, StylingResult, Theme,
+    exporters::{
+        adjust_color_brightness, brighten_color, dim_color, get_best_dark_color,
+        get_rgb_from_style, is_light_color, ThemeExporter,
+    },
+    StylingResult, Theme,
 };
 
 /// Alacritty theme exporter
@@ -69,7 +72,7 @@ impl ThemeExporter for AlacrittyExporter {
             ));
         }
 
-        output.push_str("\n");
+        output.push('\n');
 
         // Normal colors (0-7)
         output.push_str("[colors.normal]\n");
@@ -98,7 +101,7 @@ impl ThemeExporter for AlacrittyExporter {
             }
         }
 
-        output.push_str("\n");
+        output.push('\n');
 
         // Bright colors (8-15) - brighter/more saturated versions
         output.push_str("[colors.bright]\n");
@@ -141,7 +144,7 @@ impl ThemeExporter for AlacrittyExporter {
             }
         }
 
-        output.push_str("\n");
+        output.push('\n');
 
         // Dim colors (optional, for compatibility)
         output.push_str("[colors.dim]\n");
@@ -190,7 +193,7 @@ impl ThemeExporter for AlacrittyExporter {
             }
         }
 
-        output.push_str("\n");
+        output.push('\n');
 
         // Cursor colors
         output.push_str("[colors.cursor]\n");
@@ -213,7 +216,7 @@ impl ThemeExporter for AlacrittyExporter {
             ));
         }
 
-        output.push_str("\n");
+        output.push('\n');
 
         // Selection colors
         output.push_str("[colors.selection]\n");
@@ -232,7 +235,7 @@ impl ThemeExporter for AlacrittyExporter {
             ));
         }
 
-        output.push_str("\n");
+        output.push('\n');
 
         // Search colors
         output.push_str("[colors.search]\n");
@@ -273,142 +276,31 @@ impl ThemeExporter for AlacrittyExporter {
     }
 }
 
-/// Extract RGB values from a Style's foreground color
-fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
-    style.foreground.as_ref().and_then(|color_info| {
-        eprintln!("Color value={:?}", color_info.value);
-        match &color_info.value {
-            ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-            ColorValue::Color256 { color256 } => {
-                // Convert 256-color index to approximate RGB
-                Some(color_256_to_rgb(*color256))
-            }
-            ColorValue::Basic { index, .. } => {
-                // Convert basic color index to RGB
-                Some(basic_color_to_rgb(*index))
-            }
-        }
-    })
-}
-
-/// Convert 256-color index to RGB
-fn color_256_to_rgb(index: u8) -> (u8, u8, u8) {
-    match index {
-        // Standard colors (0-15)
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Red
-        2 => (0, 128, 0),      // Green
-        3 => (128, 128, 0),    // Yellow
-        4 => (0, 0, 128),      // Blue
-        5 => (128, 0, 128),    // Magenta
-        6 => (0, 128, 128),    // Cyan
-        7 => (192, 192, 192),  // White
-        8 => (128, 128, 128),  // Bright Black
-        9 => (255, 0, 0),      // Bright Red
-        10 => (0, 255, 0),     // Bright Green
-        11 => (255, 255, 0),   // Bright Yellow
-        12 => (0, 0, 255),     // Bright Blue
-        13 => (255, 0, 255),   // Bright Magenta
-        14 => (0, 255, 255),   // Bright Cyan
-        15 => (255, 255, 255), // Bright White
-
-        // 216 color cube (16-231)
-        16..=231 => {
-            let n = index - 16;
-            let r = (n / 36) * 51;
-            let g = ((n % 36) / 6) * 51;
-            let b = (n % 6) * 51;
-            (r, g, b)
-        }
-
-        // Grayscale (232-255)
-        232..=255 => {
-            let gray = 8 + (index - 232) * 10;
-            (gray, gray, gray)
-        }
-    }
-}
-
-/// Convert basic color index to RGB
-fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
-    match index {
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Red
-        2 => (0, 128, 0),      // Green
-        3 => (128, 128, 0),    // Yellow
-        4 => (0, 0, 128),      // Blue
-        5 => (128, 0, 128),    // Magenta
-        6 => (0, 128, 128),    // Cyan
-        7 => (192, 192, 192),  // White
-        8 => (128, 128, 128),  // Bright Black
-        9 => (255, 0, 0),      // Bright Red
-        10 => (0, 255, 0),     // Bright Green
-        11 => (255, 255, 0),   // Bright Yellow
-        12 => (0, 0, 255),     // Bright Blue
-        13 => (255, 0, 255),   // Bright Magenta
-        14 => (0, 255, 255),   // Bright Cyan
-        15 => (255, 255, 255), // Bright White
-        _ => (128, 128, 128),  // Default gray
-    }
-}
-
-/// Dim a color by reducing its components
-fn dim_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 0.6;
-    (
-        (r as f32 * factor) as u8,
-        (g as f32 * factor) as u8,
-        (b as f32 * factor) as u8,
-    )
-}
-
-/// Check if a color is considered light
-fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
-    // Calculate relative luminance
-    let r_linear = if r <= 10 {
-        r as f32 / 3294.6
-    } else {
-        ((r as f32 + 14.025) / 269.025).powf(2.4)
-    };
-    let g_linear = if g <= 10 {
-        g as f32 / 3294.6
-    } else {
-        ((g as f32 + 14.025) / 269.025).powf(2.4)
-    };
-    let b_linear = if b <= 10 {
-        b as f32 / 3294.6
-    } else {
-        ((b as f32 + 14.025) / 269.025).powf(2.4)
-    };
-
-    let luminance = 0.2126 * r_linear + 0.7152 * g_linear + 0.0722 * b_linear;
-    luminance > 0.5
-}
-
-/// Adjust color brightness by a factor
-fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
-    (
-        ((r as f32 * factor).min(255.0).max(0.0)) as u8,
-        ((g as f32 * factor).min(255.0).max(0.0)) as u8,
-        ((b as f32 * factor).min(255.0).max(0.0)) as u8,
-    )
-}
-
-/// Get the best dark color from the theme for black mapping
-fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-    // Try background first, then subtle, then create a dark color
-    theme
-        .bg_rgbs
-        .first()
-        .copied()
-        .or_else(|| get_rgb_from_style(&theme.palette.subtle))
-        .or_else(|| Some((16, 16, 16)))
-}
+// /// Extract RGB values from a Style's foreground color
+// fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
+//     style.foreground.as_ref().and_then(|color_info| {
+//         eprintln!("Color value={:?}", color_info.value);
+//         match &color_info.value {
+//             ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+//             ColorValue::Color256 { color256 } => {
+//                 // Convert 256-color index to approximate RGB
+//                 Some(color_256_to_rgb(*color256))
+//             }
+//             ColorValue::Basic { index, .. } => {
+//                 // Convert basic color index to RGB
+//                 Some(basic_color_to_rgb(*index))
+//             }
+//         }
+//     })
+// }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{exporters::brighten_color, ColorSupport, Palette, TermBgLuma};
+    use crate::{
+        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb},
+        ColorSupport, Palette, TermBgLuma,
+    };
     use std::path::PathBuf;
 
     fn create_test_theme() -> Theme {

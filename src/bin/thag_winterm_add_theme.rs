@@ -14,8 +14,12 @@ serde_json = "1.0"
 /// selecting individual themes or entire directories of themes.
 //# Purpose: Install thag themes for Windows Terminal
 //# Categories: color, styling, terminal, theming, tools, windows
+#[cfg(target_os = "windows")]
+use colored::Colorize;
+#[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
 
+#[cfg(target_os = "windows")]
 file_navigator! {}
 
 #[cfg(not(target_os = "windows"))]

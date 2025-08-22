@@ -2336,17 +2336,6 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
     }
 }
 
-// #[allow(dead_code)]
-// fn main() -> StylingResult<()> {
-//     // Load built-in theme
-//     let _dracula = Theme::get_builtin("dracula")?;
-
-//     // Load custom theme
-//     let _custom = Theme::load_from_file(Path::new("themes/built_in/espresso.toml"))?;
-
-//     Ok(())
-// }
-
 /// Main method for testing purposes
 ///
 /// # Errors
@@ -3137,7 +3126,7 @@ macro_rules! cprtln_with_embeds {
 #[macro_export]
 macro_rules! cvprtln_with_embeds {
     ($style:expr, $verbosity:expr, $format_str:expr, $embeds:expr) => {{
-        let current_verbosity = thag_common::get_verbosity();
+        let current_verbosity = $crate::get_verbosity();
         if $verbosity <= current_verbosity {
             $crate::cprtln_with_embeds!($style, $format_str, $embeds);
         }

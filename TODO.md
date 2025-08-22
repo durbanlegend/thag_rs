@@ -324,6 +324,25 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
         Use a temp staging branch like staging_temp, otherwise it will merge backwards into main for some reason while creating
         the pull request.
 
+ANSI Color           Semantic Role
+───────────────────────────────
+Black (0)            Background
+Red (1)              Error
+Green (2)            Success
+Yellow (3)           Warning
+Blue (4)             Info
+Magenta (5)          Heading1
+Cyan (6)             Heading3
+White (7)            Normal
+Bright Black (8)     Subtle
+Bright Red (9)       Trace
+Bright Green (10)    Debug
+Bright Yellow (11)   Emphasis
+Bright Blue (12)     Info (brighter)
+Bright Magenta (13)  Heading1 (brighter)
+Bright Cyan (14)     Hint
+Bright White (15)    Normal (brighter)
+
 
 export feature_sets=()
 

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.1, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.

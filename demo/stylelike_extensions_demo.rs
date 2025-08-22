@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
+# thag_common = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 /// Demo script showcasing StyleLike trait extensions for ergonomic printing and embedding
@@ -15,9 +15,10 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 /// and the embedding feature preserves outer styles when nesting different styles.
 //# Purpose: Demo StyleLike extensions for ergonomic styling and embedding
 //# Categories: styling, ergonomics, embedding
-use thag_common::Verbosity;
 use thag_styling::styling::{Color, Embedded, Role, Style, StyleLike, TermAttributes};
-use thag_styling::{cprtln, cprtln_with_embeds, cvprtln, cvprtln_with_embeds, ColorInitStrategy};
+use thag_styling::{
+    cprtln, cprtln_with_embeds, cvprtln, cvprtln_with_embeds, ColorInitStrategy, Verbosity,
+};
 
 fn main() {
     // Initialize styling system

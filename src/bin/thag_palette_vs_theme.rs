@@ -424,7 +424,7 @@ fn display_color_comparison(theme: &Theme) {
             format!(
                 "\x1b[38;2;{};{};{}m████\x1b[0m #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
                 r, g, b, r, g, b, r, g, b
-            )
+
         } else {
             // Style::from(Role::Subtle).paint("N/A").to_string()
             Style::from(Role::Normal).dim().paint("N/A").to_string()

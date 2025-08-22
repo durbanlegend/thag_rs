@@ -40,7 +40,7 @@ debug_logging = []
 config = ["edit", "mockall", "toml_edit", "toml"]
 
 # Terminal color detection and background detection
-color_detect = ["ratatui", "scopeguard", "supports-color", "termbg"]
+color_detect = ["config", "ratatui", "scopeguard", "supports-color", "termbg"]
 
 [lib]
 name = "thag_common"

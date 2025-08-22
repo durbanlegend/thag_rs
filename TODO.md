@@ -327,9 +327,21 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 
 export feature_sets=()
 
+
+# thag_common
+export feature_sets=(
+    "",
+    "config",
+    "color_detect",
+    "debug_logging",
+    "config,debug_logging",
+    "color_detect,debug_logging",
+)
+
 # thag_styling
 export feature_sets=(
-    "basic"
+    "basic",
+    "config",
     "color_detect",
     "color_detect,inquire_theming"
     "console_support",

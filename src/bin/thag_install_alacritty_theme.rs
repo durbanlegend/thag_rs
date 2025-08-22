@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-# thag_styling = { version = "0.2, thag-auto" }
 */
 
 /// Install generated themes for Alacritty terminal emulator
@@ -67,24 +66,50 @@ fn main() -> Result<(), Box<dyn Error>> {
     fs::create_dir_all(&alacritty_config.themes_dir)?;
 
     // Select theme(s) to install
-    let themes = select_themes(&mut navigator)?;
+    let theme_paths = select_themes(&mut navigator)?;
 
-    if themes.is_empty() {
+    if theme_paths.is_empty() {
         println!("❌ No themes selected for installation.");
         return Ok(());
     }
 
-    println!("🎨 Installing {} theme(s)...", themes.len());
+    println!("🎨 Installing {} theme(s)...", theme_paths.len());
     println!();
 
     // Update Alacritty configuration
     println!();
-    let themes: Vec<String> = themes
+    let theme_filenames: Vec<String> = theme_paths
         .iter()
         .filter_map(|path| path.file_name().and_then(|f| f.to_str()))
         .map(ToString::to_string)
         .collect::<Vec<_>>();
-    match update_alacritty_config(&alacritty_config, &themes) {
+
+    let mut installed_themes = Vec::new();
+    let mut installation_errors: Vec<(String, Box<dyn Error>)> = Vec::new();
+    let destination_path = alacritty_config.themes_dir.clone();
+    for theme_source_path in &theme_paths {
+        let theme_filename = theme_source_path
+            .file_name()
+            .ok_or_else(|| "Can't extract filename")?
+            .to_string_lossy()
+            .to_string();
+        // Attempt to copy the file
+        // let result = copy_theme(theme_source_path, &destination_path);
+        let result = fs::copy(theme_source_path, &destination_path.join(&theme_filename));
+        match result {
+            Ok(_) => {
+                installed_themes.push(theme_filename.clone());
+                println!("   ✅ {}", theme_filename.bright_green());
+            }
+            Err(e) => {
+                let e_str = (&e).to_string();
+                installation_errors.push((theme_filename.clone(), Box::new(e)));
+                println!("   ❌ {}: {}", theme_filename.bright_red(), e_str.red());
+            }
+        }
+    }
+
+    match update_alacritty_config(&alacritty_config, &installed_themes) {
         Ok(()) => {
             println!("✅ Alacritty configuration updated successfully");
         }
@@ -93,17 +118,34 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "⚠️  Failed to update configuration: {}",
                 e.to_string().yellow()
             );
-            show_manual_config_instructions(&themes);
+            show_manual_config_instructions(&theme_filenames);
         }
     }
 
     // Show summary and next steps
-    show_installation_summary(&themes);
-    show_verification_steps(&themes);
+    show_installation_summary(installed_themes.as_slice(), &installation_errors);
+    show_verification_steps(&theme_filenames);
 
     println!("\n🎉 Theme installation completed!");
     Ok(())
 }
+
+// /// Install a single theme for Alacritty
+// fn copy_theme(source_path: &PathBuf, destination_path: &PathBuf) -> Result<String, Box<dyn Error>> {
+//     match fs::copy(source_path, &destination_path) {
+//         Ok(bytes_copied) => {
+//             println!(
+//                 "Successfully copied {bytes_copied} bytes from '{}' to '{}'",
+//                 source_path.display(),
+//                 destination_path.display()
+//             );
+//         }
+//         Err(e) => {
+//             eprintln!("Error copying file: {}", e);
+//         }
+//     }
+//     Ok(source_path.file_name()?.to_string_lossy().to_string())
+// }
 
 #[derive(Debug)]
 struct AlacrittyConfig {
@@ -130,6 +172,8 @@ fn get_alacritty_config_info() -> Result<AlacrittyConfig, Box<dyn Error>> {
 fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     use inquire::{Confirm, MultiSelect, Select};
 
+    // let opt_indiv = "Select theme files (.toml) individually";
+    // let opt_bulk = "Select theme files in bulk from directory";
     let selection_options = vec![
         "Select theme files (.toml) individually",
         "Select theme files in bulk from directory",
@@ -144,7 +188,7 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
         Select::new("How would you like to select themes?", selection_options).prompt()?;
 
     match selection_method {
-        "Select theme files (.toml)" => {
+        "Select theme files (.toml) individually" => {
             let extensions = "toml,TOML";
 
             loop {
@@ -169,7 +213,7 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
 
             Ok(selected_themes)
         }
-        "Select all themes from directory" => {
+        "Select theme files in bulk from directory" => {
             println!("\n📁 Select directory containing theme files:");
             match select_directory(navigator, true) {
                 Ok(theme_dir) => {
@@ -346,21 +390,29 @@ fn show_manual_config_instructions(installed_themes: &[String]) {
 }
 
 /// Show installation summary
-fn show_installation_summary(
-    installed_themes: &[String],
-    // errors: &[(String, Box<dyn Error>)],
-) {
+fn show_installation_summary(installed_themes: &[String], errors: &[(String, Box<dyn Error>)]) {
     println!();
     println!("📊 {} Summary:", "Installation".bright_blue());
     println!(
         "   Successfully installed: {}",
         installed_themes.len().to_string().bright_green()
     );
+    println!(
+        "   Failed installations: {}",
+        errors.len().to_string().bright_red()
+    );
 
     if !installed_themes.is_empty() {
         println!("\n✅ {} Themes:", "Installed".bright_green());
-        for theme_filename in installed_themes {
-            println!("   • {}", theme_filename.bright_cyan());
+        for theme_name in installed_themes {
+            println!("   • {})", theme_name.bright_cyan(),);
+        }
+    }
+
+    if !errors.is_empty() {
+        println!("\n❌ {} Failures:", "Installation".bright_red());
+        for (theme_name, error) in errors {
+            println!("   • {}: {}", theme_name, error.to_string().red());
         }
     }
 }

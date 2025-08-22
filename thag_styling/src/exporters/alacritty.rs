@@ -118,18 +118,9 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.bright]\n");
 
         let bright_colors = [
-            (
-                "black",
-                get_rgb_from_style(&theme.palette.subtle).or(Some((64, 64, 64))),
-            ),
-            (
-                "red",
-                get_rgb_from_style(&theme.palette.trace).map(brighten_color),
-            ),
-            (
-                "green",
-                get_rgb_from_style(&theme.palette.debug).map(brighten_color),
-            ),
+            ("black", get_rgb_from_style(&theme.palette.subtle)),
+            ("red", get_rgb_from_style(&theme.palette.trace)),
+            ("green", get_rgb_from_style(&theme.palette.debug)),
             ("yellow", get_rgb_from_style(&theme.palette.emphasis)),
             (
                 "blue",

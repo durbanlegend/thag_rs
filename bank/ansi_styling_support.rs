@@ -19,7 +19,7 @@ fn main() {
     println!("{}", "Italic Blue".style().italic().fg(Color::Blue));
     println!(
         "{}",
-        "Bold, Underlined, Magenta"
+        "Bold underlined magenta"
             .style()
             .bold()
             .underline()

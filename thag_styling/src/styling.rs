@@ -1072,7 +1072,7 @@ impl TermAttributes {
 /// println!("{}", styled_error); // Prints in error styling
 /// ```
 pub fn paint_for_role(role: Role, string: &str) -> String {
-    Style::for_role(role).paint(string)
+    Style::from(role).paint(string)
 }
 
 #[must_use]

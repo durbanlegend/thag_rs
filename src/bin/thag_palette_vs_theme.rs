@@ -12,19 +12,26 @@ thag_styling = { version = "0.2, thag-auto", default-features = false, features 
 /// mapping issues and verify theme installation.
 //# Purpose: Compare terminal palette with thag theme colors
 //# Categories: color, styling, terminal, theming, tools
-use colored::Colorize;
 use std::error::Error;
 use thag_proc_macros::file_navigator;
-use thag_styling::{select_builtin_theme, Style, TermAttributes, TermBgLuma, Theme}; // import without risk of name clashing
+use thag_rs::paint_for_role;
+use thag_styling::{
+    cprtln, cprtln_with_embeds, select_builtin_theme, ColorInitStrategy, Role, Style, StyleLike,
+    TermAttributes, TermBgLuma, Theme,
+};
 
 file_navigator! {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!(
+    // Initialize styling system
+    TermAttributes::initialize(&ColorInitStrategy::Match);
+
+    cprtln_with_embeds!(
+        Role::Normal,
         "🎨 {} - Terminal Palette vs Theme Comparison",
-        "thag_palette_vs_theme".bright_blue()
+        &[Role::Info.embed("thag_palette_vs_theme")]
     );
-    println!("{}", "=".repeat(70).dimmed());
+    cprtln!(Role::Subtle, "{}", "=".repeat(70));
     println!();
 
     // Initialize file navigator
@@ -33,7 +40,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Select theme to compare
     let theme = select_theme(&mut navigator)?;
 
-    println!("📋 Selected theme: {}", theme.name.bright_cyan());
+    cprtln_with_embeds!(
+        Role::Normal,
+        "📋 Selected theme: {}",
+        &[Role::Heading3.embed(&theme.name)]
+    );
     println!("📝 Description: {}", theme.description);
     println!();
 
@@ -68,9 +79,10 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
                 return Err("No theme file selected".into());
             };
 
-            println!(
+            cprtln_with_embeds!(
+                Role::Normal,
                 "📄 Loading theme from: {}",
-                theme_file.display().to_string().bright_green()
+                &[Role::Debug.embed(&theme_file.display().to_string())]
             );
 
             Theme::load_from_file(&theme_file)
@@ -86,7 +98,11 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
             })
         }
         "List available built-in themes" => {
-            println!("\n📚 {} Built-in themes:", "Available".bright_blue());
+            cprtln_with_embeds!(
+                Role::Normal,
+                "\n📚 {} Built-in themes:",
+                &[Role::Info.embed("Available")]
+            );
             println!("─────────────────────");
 
             let maybe_theme_name = select_builtin_theme();
@@ -104,7 +120,11 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
 
 /// Display basic terminal information
 fn display_terminal_info() {
-    println!("📟 {} Information:", "Terminal".bright_blue());
+    cprtln_with_embeds!(
+        Role::Normal,
+        "📟 {} Information:",
+        &[Role::Info.embed("Terminal")]
+    );
     println!("─────────────────────");
 
     let term_attrs = TermAttributes::get_or_init();
@@ -114,16 +134,24 @@ fn display_terminal_info() {
 
     // Display relevant environment variables
     if let Ok(term) = std::env::var("TERM") {
-        println!("🖥️  TERM: {}", term.bright_green());
+        cprtln_with_embeds!(Role::Normal, "🖥️  TERM: {}", &[Role::Debug.embed(&term)]);
     }
     if let Ok(colorterm) = std::env::var("COLORTERM") {
-        println!("🌈 COLORTERM: {}", colorterm.bright_green());
+        cprtln_with_embeds!(
+            Role::Normal,
+            "🌈 COLORTERM: {}",
+            &[Role::Debug.embed(&colorterm)]
+        );
     }
 
     // Try to detect terminal emulator
     let terminal_info = detect_terminal_emulator();
     if !terminal_info.is_empty() {
-        println!("🖥️  Detected: {}", terminal_info.bright_yellow());
+        cprtln_with_embeds!(
+            Role::Normal,
+            "🖥️  Detected: {}",
+            &[Role::Emphasis.embed(&terminal_info)]
+        );
     }
 
     println!();
@@ -160,11 +188,12 @@ fn detect_terminal_emulator() -> String {
 
 /// Display the 16 basic ANSI colors
 fn display_ansi_colors() {
-    println!(
+    cprtln_with_embeds!(
+        Role::Normal,
         "🎨 {} ANSI Colors (0-15):",
-        "Current Terminal".bright_blue()
+        &[Role::Info.embed("Current Terminal")]
     );
-    println!("───────────────────────────────");
+    println!("───────────────────────────────────────────");
 
     // Basic colors (0-7)
     println!("Standard Colors (0-7):");
@@ -202,7 +231,11 @@ fn display_color_row(colors: &[(u8, &str)]) {
     // Print color indices
     print!("   ");
     for (index, _) in colors {
-        print!("{:>12}", index.to_string().bright_yellow());
+        print!(
+            "{}",
+            // Style::from(Role::Emphasis).paint(format!("{:>12}", index))
+            paint_for_role(Role::Emphasis, &format!("{:>12}", index))
+        );
     }
     println!();
 
@@ -230,8 +263,12 @@ fn display_color_row(colors: &[(u8, &str)]) {
 
 /// Display theme colors with visual preview
 fn display_theme_colors(theme: &Theme) {
-    println!("🌟 {} Colors:", theme.name.bright_blue());
-    println!("─────────────────────────────");
+    cprtln_with_embeds!(
+        Role::Normal,
+        "🌟 {} Colors:",
+        &[Role::Info.embed(&theme.name)]
+    );
+    println!("─────────────────────────────────────────");
 
     println!("Background: {:?}", theme.bg_rgbs);
     println!();
@@ -258,7 +295,11 @@ fn display_theme_colors(theme: &Theme) {
     for (name, style) in semantic_colors {
         let colored_text = style.paint(format!("{:>12}", name));
         let rgb_info = extract_rgb_info(style);
-        println!("   {} {}", colored_text, rgb_info.dimmed());
+        println!(
+            "   {} {}",
+            colored_text,
+            Style::from(Role::Normal).dim().paint(&rgb_info)
+        );
     }
 
     // Show background color preview if available
@@ -278,7 +319,11 @@ fn display_theme_colors(theme: &Theme) {
 /// Display side-by-side color comparison
 #[allow(clippy::too_many_lines)]
 fn display_color_comparison(theme: &Theme) {
-    println!("🔄 {} Color Mapping:", "ANSI vs Theme".bright_blue());
+    cprtln_with_embeds!(
+        Role::Normal,
+        "🔄 {} Color Mapping:",
+        &[Role::Info.embed("ANSI vs Theme")]
+    );
     println!("──────────────────────────────────────────");
 
     // Corrected mappings that match thag_sync_palette behavior
@@ -361,12 +406,12 @@ fn display_color_comparison(theme: &Theme) {
         ),
     ];
 
-    println!(
-        "{:<20} {:<12} {:<35} {}",
-        "ANSI Color".bright_cyan(),
-        "Current".bright_cyan(),
-        "Expected (Theme)".bright_cyan(),
-        "Semantic Role".bright_cyan()
+    cprtln!(
+        Role::Heading3,
+        "{:<20} {:<12} {:<26} Semantic Role",
+        "ANSI Color",
+        "Current",
+        "Expected (Theme)"
     );
     println!("{}", "─".repeat(80));
 
@@ -381,15 +426,17 @@ fn display_color_comparison(theme: &Theme) {
                 r, g, b, r, g, b, r, g, b
             )
         } else {
-            "N/A".dimmed().to_string()
+            // Style::from(Role::Subtle).paint("N/A").to_string()
+            Style::from(Role::Normal).dim().paint("N/A").to_string()
         };
 
         println!(
-            "{:<20} {:<12} {:<35} {}",
+            "{:<20} {:<5}         {:<26} {}",
             name,
             terminal_sample,
             thag_display,
-            semantic_role.dimmed()
+            // Style::from(Role::Subtle).paint(&semantic_role)
+            Style::from(Role::Normal).dim().paint(&semantic_role)
         );
     }
 
@@ -398,19 +445,28 @@ fn display_color_comparison(theme: &Theme) {
 
 /// Display recommendations based on comparison
 fn display_recommendations(theme: &Theme) {
-    println!("💡 {} and Tips:", "Recommendations".bright_blue());
+    cprtln_with_embeds!(
+        Role::Normal,
+        "💡 {} and Tips:",
+        &[Role::Info.embed("Recommendations")]
+    );
     println!("────────────────────────────");
 
     println!("• If colors don't match expected values:");
     println!("  - Your terminal may not support the theme correctly");
-    println!(
+    cprtln_with_embeds!(
+        Role::Normal,
         "  - Try using {} to synchronize the terminal palette with the `thag_styling` theme",
-        "thag_sync_palette".bright_cyan()
+        &[Role::Heading3.embed("thag_sync_palette")]
     );
     println!("  - Check if your terminal emulator supports the theme format");
     println!();
 
-    println!("• For {} theme:", theme.name.bright_cyan());
+    cprtln_with_embeds!(
+        Role::Normal,
+        "• For {} theme:",
+        &[Role::Heading3.embed(&theme.name)]
+    );
     match theme.term_bg_luma {
         TermBgLuma::Dark => {
             println!("  - Ensure your terminal has a dark background");
@@ -424,27 +480,38 @@ fn display_recommendations(theme: &Theme) {
     }
     println!();
 
-    println!("• {} Commands:", "Useful".bright_yellow());
-    println!(
+    cprtln_with_embeds!(
+        Role::Normal,
+        "• {} Commands:",
+        &[Role::Emphasis.embed("Useful")]
+    );
+    cprtln_with_embeds!(
+        Role::Normal,
         "  - {}: Export theme to terminal formats",
-        "thag_gen_terminal_themes".bright_cyan()
+        &[Role::Heading3.embed("thag_gen_terminal_themes")]
     );
-    println!(
+    cprtln_with_embeds!(
+        Role::Normal,
         "  - {}: Sync terminal palette",
-        format!("thag_sync_palette --apply {}", theme.name).bright_cyan()
+        &[Role::Heading3.embed(&format!("thag_sync_palette --apply {}", theme.name))]
     );
-    println!(
+    cprtln_with_embeds!(
+        Role::Normal,
         "  - {}: Generate themes from images",
-        "thag_image_to_theme".bright_cyan()
+        &[Role::Heading3.embed("thag_image_to_theme")]
     );
     println!();
 
     // Show specific issues if detected
     let issues = detect_potential_issues(theme);
     if !issues.is_empty() {
-        println!("⚠️  {} Issues Detected:", "Potential".bright_yellow());
+        cprtln_with_embeds!(
+            Role::Normal,
+            "⚠️  {} Issues Detected:",
+            &[Role::Emphasis.embed("Potential")]
+        );
         for issue in issues {
-            println!("   • {}", issue.bright_yellow());
+            cprtln_with_embeds!(Role::Normal, "   • {}", &[Role::Emphasis.embed(&issue)]);
         }
         println!();
     }

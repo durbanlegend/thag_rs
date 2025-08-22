@@ -42,7 +42,8 @@ pub fn configure_log() {
 
     let env = Env::new().filter("RUST_LOG");
     eprintln!("env={env:?}");
-    let builder = Builder::new().parse_env(env).init();
+    let mut builder = Builder::new();
+    builder.parse_env(env).init();
     eprintln!("builder={builder:?}");
     info!("Initialized env_logger");
 }

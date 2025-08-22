@@ -5,6 +5,8 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["t
 */
 
 /// Basic prompted front-end to build and run a `thag` command.
+//# Purpose: Simplify running `thag`.
+//# Categories: cli, interactive, thag_front_ends, tools
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 use clap::CommandFactory;

@@ -15,7 +15,7 @@ use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgL
 /// This tool analyzes images and extracts dominant colors to create terminal color themes.
 /// The generated themes can be saved as TOML files compatible with thag's theming system.
 //# Purpose: Generate custom color themes from images using color analysis
-//# Categories: theming, colors, tools, customization
+//# Categories: theming, color, tools, customization
 fn print_usage() {
     println!("Usage:");
     println!("  thag_gen_theme <image_path>                      Generate theme from image (auto-detect light/dark)");

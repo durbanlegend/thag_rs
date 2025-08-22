@@ -41,6 +41,7 @@ pub enum ThagError {
     /// Error from `thag_common` operations
     Common(thag_common::ThagCommonError),
     /// Error from `thag_common::config`
+    #[cfg(feature = "config")]
     Config(thag_common::ConfigError),
     /// Error from `thag_styling` operations
     #[cfg(feature = "thag_styling")]
@@ -339,6 +340,7 @@ impl std::fmt::Display for ThagError {
             Self::Validation(e) => write!(f, "{e}"),
             Self::VarError(e) => write!(f, "{e}"),
             Self::Common(e) => write!(f, "Common error: {e}"),
+            #[cfg(feature = "config")]
             Self::Config(e) => write!(f, "Config error: {e}"),
             #[cfg(feature = "thag_styling")]
             Self::Styling(e) => write!(f, "Styling error: {e}"),
@@ -387,6 +389,7 @@ impl Error for ThagError {
             Self::Validation(_) => None,
             Self::VarError(e) => Some(e),
             Self::Common(e) => Some(e),
+            #[cfg(feature = "config")]
             Self::Config(e) => Some(e),
             #[cfg(feature = "thag_styling")]
             Self::Styling(e) => Some(e),
@@ -485,6 +488,7 @@ impl From<thag_common::ThagCommonError> for ThagError {
     }
 }
 
+#[cfg(feature = "config")]
 impl From<thag_common::ConfigError> for ThagError {
     fn from(err: thag_common::ConfigError) -> Self {
         Self::Config(err)

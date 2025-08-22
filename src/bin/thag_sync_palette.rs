@@ -1,8 +1,9 @@
-//! Terminal palette synchronization using OSC sequences
-//!
-//! This binary provides command-line access to `thag_styling`'s palette synchronization
-//! functionality, allowing you to apply theme colors directly to your terminal's palette.
-
+/// Terminal palette synchronization using OSC sequences
+///
+/// This binary provides command-line access to `thag_styling`'s palette synchronization
+/// functionality, allowing you to apply theme colors directly to your terminal's palette.
+//# Purpose: Configure custom terminal themes.
+//# Categories: ansi, color, customization, interactive, styling, terminal, theming, tools, windows, xterm
 use std::env;
 use std::process;
 use thag_common::get_verbosity;

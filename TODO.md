@@ -35,6 +35,8 @@
 - [ ]  Generate mintty theme for Git Bash - nice and simple, needs bright colours.
 - [ ]  Consolidate tools in thag_rs/src/bin?. Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264)
 
+let _ = writeln!(output,
+
 donf@MacBook-Air thag_rs % thag bank/styling.rs -fb
 [src/bin/thag_rs.rs:32:5]
 [src/bin/thag_rs.rs:34:5]

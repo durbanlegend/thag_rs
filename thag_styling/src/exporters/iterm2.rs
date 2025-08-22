@@ -11,12 +11,13 @@ use crate::{
     StylingResult, Theme,
 };
 
-use std::fmt::Write;
+use std::fmt::Write as _;
 
 /// iTerm2 theme exporter
 pub struct ITerm2Exporter;
 
 impl ThemeExporter for ITerm2Exporter {
+    #[allow(clippy::too_many_lines)]
     fn export_theme(theme: &Theme) -> StylingResult<String> {
         let mut output = String::new();
 
@@ -172,9 +173,9 @@ fn write_color_entry(
     let (r, g, b) = rgb_opt.unwrap_or((128, 128, 128));
 
     // Convert to normalized float values (0.0 - 1.0)
-    let red = r as f64 / 255.0;
-    let green = g as f64 / 255.0;
-    let blue = b as f64 / 255.0;
+    let red = f64::from(r) / 255.0;
+    let green = f64::from(g) / 255.0;
+    let blue = f64::from(b) / 255.0;
 
     writeln!(output, "\t<key>{}</key>", key)?;
     writeln!(output, "\t<dict>")?;

@@ -10,19 +10,26 @@ use crate::{
     },
     StylingResult, Theme,
 };
+use std::fmt::Write as _; // import without risk of name clashing
 
 /// Alacritty theme exporter
 pub struct AlacrittyExporter;
 
 impl ThemeExporter for AlacrittyExporter {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::too_many_lines
+    )]
     fn export_theme(theme: &Theme) -> StylingResult<String> {
         let mut output = String::new();
 
         // Add header comment
-        output.push_str(&format!(
+        let _ = writeln!(
+            output,
             "# Alacritty Color Scheme: {}\n# Generated from thag theme\n# {}\n\n",
             theme.name, theme.description
-        ));
+        );
 
         // Get primary background color
         let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
@@ -32,27 +39,30 @@ impl ThemeExporter for AlacrittyExporter {
 
         // Primary colors section
         output.push_str("[colors.primary]\n");
-        output.push_str(&format!(
+        let _ = writeln!(
+            output,
             "background = \"#{:02x}{:02x}{:02x}\"\n",
             bg_color.0, bg_color.1, bg_color.2
-        ));
+        );
 
         // Use normal text color for foreground
         if let Some(fg_color) = get_rgb_from_style(&theme.palette.normal) {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "foreground = \"#{:02x}{:02x}{:02x}\"\n",
                 fg_color.0, fg_color.1, fg_color.2
-            ));
+            );
         }
 
         // Bright foreground (use emphasis or fallback to normal)
         if let Some(bright_fg) = get_rgb_from_style(&theme.palette.emphasis)
             .or_else(|| get_rgb_from_style(&theme.palette.normal))
         {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "bright_foreground = \"#{:02x}{:02x}{:02x}\"\n",
                 bright_fg.0, bright_fg.1, bright_fg.2
-            ));
+            );
         }
 
         // Dim foreground (use subtle or fallback to normal with reduced brightness)
@@ -60,16 +70,17 @@ impl ThemeExporter for AlacrittyExporter {
             get_rgb_from_style(&theme.palette.normal).map(|(r, g, b)| {
                 // Reduce brightness by 30%
                 (
-                    (r as f32 * 0.7) as u8,
-                    (g as f32 * 0.7) as u8,
-                    (b as f32 * 0.7) as u8,
+                    (f32::from(r) * 0.7) as u8,
+                    (f32::from(g) * 0.7) as u8,
+                    (f32::from(b) * 0.7) as u8,
                 )
             })
         }) {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "dim_foreground = \"#{:02x}{:02x}{:02x}\"\n",
                 dim_fg.0, dim_fg.1, dim_fg.2
-            ));
+            );
         }
 
         output.push('\n');
@@ -87,7 +98,7 @@ impl ThemeExporter for AlacrittyExporter {
             ("magenta", get_rgb_from_style(&theme.palette.heading1)),
             (
                 "cyan",
-                get_rgb_from_style(&theme.palette.heading3).or_else(|| Some((64, 192, 192))),
+                get_rgb_from_style(&theme.palette.heading3).or(Some((64, 192, 192))),
             ),
             ("white", get_rgb_from_style(&theme.palette.normal)),
         ];
@@ -109,7 +120,7 @@ impl ThemeExporter for AlacrittyExporter {
         let bright_colors = [
             (
                 "black",
-                get_rgb_from_style(&theme.palette.subtle).or_else(|| Some((64, 64, 64))),
+                get_rgb_from_style(&theme.palette.subtle).or(Some((64, 64, 64))),
             ),
             (
                 "red",
@@ -175,7 +186,7 @@ impl ThemeExporter for AlacrittyExporter {
                 "cyan",
                 get_rgb_from_style(&theme.palette.info)
                     .map(dim_color)
-                    .or_else(|| Some((32, 96, 96))),
+                    .or(Some((32, 96, 96))),
             ),
             (
                 "white",
@@ -186,10 +197,11 @@ impl ThemeExporter for AlacrittyExporter {
 
         for (color_name, rgb_opt) in dim_colors {
             if let Some((r, g, b)) = rgb_opt {
-                output.push_str(&format!(
+                let _ = writeln!(
+                    output,
                     "{} = \"#{:02x}{:02x}{:02x}\"\n",
                     color_name, r, g, b
-                ));
+                );
             }
         }
 
@@ -200,20 +212,22 @@ impl ThemeExporter for AlacrittyExporter {
         if let Some(cursor_color) = get_rgb_from_style(&theme.palette.emphasis)
             .or_else(|| get_rgb_from_style(&theme.palette.normal))
         {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "cursor = \"#{:02x}{:02x}{:02x}\"\n",
                 cursor_color.0, cursor_color.1, cursor_color.2
-            ));
+            );
             // Cursor text should contrast with cursor color
             let text_color = if is_light_color(cursor_color) {
                 (0, 0, 0) // Black text on light cursor
             } else {
                 (255, 255, 255) // White text on dark cursor
             };
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "text = \"#{:02x}{:02x}{:02x}\"\n",
                 text_color.0, text_color.1, text_color.2
-            ));
+            );
         }
 
         output.push('\n');
@@ -223,16 +237,18 @@ impl ThemeExporter for AlacrittyExporter {
 
         // Use a slightly modified background color for selection
         let selection_bg = adjust_color_brightness(bg_color, 1.3);
-        output.push_str(&format!(
+        let _ = writeln!(
+            output,
             "background = \"#{:02x}{:02x}{:02x}\"\n",
             selection_bg.0, selection_bg.1, selection_bg.2
-        ));
+        );
 
         if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "text = \"#{:02x}{:02x}{:02x}\"\n",
                 selection_fg.0, selection_fg.1, selection_fg.2
-            ));
+            );
         }
 
         output.push('\n');
@@ -242,26 +258,30 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.search.matches]\n");
 
         if let Some(search_match) = get_rgb_from_style(&theme.palette.warning) {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "background = \"#{:02x}{:02x}{:02x}\"\n",
                 search_match.0, search_match.1, search_match.2
-            ));
-            output.push_str(&format!(
+            );
+            let _ = writeln!(
+                output,
                 "foreground = \"#{:02x}{:02x}{:02x}\"\n",
                 bg_color.0, bg_color.1, bg_color.2
-            ));
+            );
         }
 
         output.push_str("\n[colors.search.focused_match]\n");
         if let Some(focused_match) = get_rgb_from_style(&theme.palette.emphasis) {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "background = \"#{:02x}{:02x}{:02x}\"\n",
                 focused_match.0, focused_match.1, focused_match.2
-            ));
-            output.push_str(&format!(
+            );
+            let _ = writeln!(
+                output,
                 "foreground = \"#{:02x}{:02x}{:02x}\"\n",
                 bg_color.0, bg_color.1, bg_color.2
-            ));
+            );
         }
 
         Ok(output)

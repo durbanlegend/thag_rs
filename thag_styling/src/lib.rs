@@ -248,7 +248,7 @@ pub fn select_builtin_theme() -> Option<String> {
     // Clear screen initially
     print!("\x1b[2J\x1b[H");
 
-    let maybe_theme_name = loop {
+    let maybe_theme_name = {
         println!("\n🎨 Interactive Theme Browser");
         println!("{}", "═".repeat(80));
         println!("📚 {} themes available", themes.len());
@@ -276,16 +276,16 @@ pub fn select_builtin_theme() -> Option<String> {
                     .split(" - ")
                     .next()
                     .unwrap_or(&selected.value);
-                return Some(theme_name.to_string());
+                Some(theme_name.to_string())
             }
             Err(inquire::InquireError::OperationCanceled) => {
                 print!("\x1b[2J\x1b[H");
                 println!("👋 Thanks for using the theme browser!");
-                break None;
+                None
             }
             Err(e) => {
                 println!("❌ Error: {e}");
-                break None;
+                None
             }
         }
     };

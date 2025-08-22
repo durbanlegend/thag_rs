@@ -13,7 +13,6 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["s
 //# Categories: technique, tools
 use heck::ToSnakeCase;
 use inquire::set_global_render_config;
-use regex;
 use std::{
     collections::HashMap,
     env,
@@ -308,8 +307,7 @@ fn generate_run_section(metadata: &ScriptMetadata) -> String {
 
 fn determine_boilerplate_path(scripts_dir: &Path) -> PathBuf {
     // Check if this is a src/bin directory (contains tools)
-    if scripts_dir.ends_with("src/bin")
-        || scripts_dir.file_name().map_or(false, |name| name == "bin")
+    if scripts_dir.ends_with("src/bin") || scripts_dir.file_name().is_some_and(|name| name == "bin")
     {
         PathBuf::from("assets/bin_boilerplate.md")
     } else {

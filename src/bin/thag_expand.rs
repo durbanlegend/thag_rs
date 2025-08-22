@@ -16,7 +16,7 @@ use side_by_side_diff::create_side_by_side_diff;
 use std::{
     env::args,
     fs,
-    io::{self, Error, ErrorKind, Write},
+    io::{self, Error, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -107,7 +107,7 @@ fn expand_script() -> Result<()> {
 
     // Load source files - do this once
     let unexpanded_source = fs::read_to_string(&input_path)
-        .map_err(|err| Error::new(ErrorKind::Other, format!("Failed to read file: {err}")))?;
+        .map_err(|err| Error::other(format!("Failed to read file: {err}")))?;
 
     // Get expanded source using cargo-expand - this can be slow, so only do it once
     let start = std::time::Instant::now();

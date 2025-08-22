@@ -379,7 +379,7 @@ fn convert_directory(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
             if cli.verbose {
-                println!("Converting {path:?}");
+                println!("Converting {}", path.display());
             }
             convert_file(&path, cli)?;
         }
@@ -410,12 +410,12 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
         if is_base24 { "" } else { "_base16" }
     ));
     if !cli.force && true_color_path.exists() {
-        eprintln!("Skipping existing file: {true_color_path:?}");
+        eprintln!("Skipping existing file: {}", true_color_path.display());
     } else {
         let theme_toml = toml::to_string_pretty(&thag_theme.to_output(false, is_base24))?; // Changed from theme to thag_theme
         fs::write(&true_color_path, theme_toml)?;
         if cli.verbose {
-            println!("Created {true_color_path:?}");
+            println!("Created {}", true_color_path.display());
         }
     }
 
@@ -431,12 +431,12 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
             }
         ));
         if !cli.force && color256_path.exists() {
-            eprintln!("Skipping existing file: {color256_path:?}");
+            eprintln!("Skipping existing file: {}", color256_path.display());
         } else {
             let theme_256_toml = toml::to_string_pretty(&thag_theme.to_output(true, is_base24))?; // Changed from theme to thag_theme
             fs::write(&color256_path, theme_256_toml)?;
             if cli.verbose {
-                println!("Created {color256_path:?}");
+                println!("Created {}", color256_path.display());
             }
         }
     }

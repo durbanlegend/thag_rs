@@ -36,6 +36,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Err(err) => return Err(err.into()),
         },
-    };
+    }
     Ok(())
 }

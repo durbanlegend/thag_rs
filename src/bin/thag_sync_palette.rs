@@ -1,6 +1,6 @@
 //! Terminal palette synchronization using OSC sequences
 //!
-//! This binary provides command-line access to thag_styling's palette synchronization
+//! This binary provides command-line access to `thag_styling`'s palette synchronization
 //! functionality, allowing you to apply theme colors directly to your terminal's palette.
 
 use std::env;
@@ -44,9 +44,9 @@ fn main() {
         Some("list") => {
             list_themes();
         }
-        Some("help") | Some("-h") | Some("--help") => {
-            print_usage();
-        }
+        // Some("help") | Some("-h") | Some("--help") => {
+        //     print_usage();
+        // }
         _ => {
             print_usage();
         }

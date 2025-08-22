@@ -16,7 +16,6 @@ use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgL
 /// The generated themes can be saved as TOML files compatible with thag's theming system.
 //# Purpose: Generate custom color themes from images using color analysis
 //# Categories: theming, colors, tools, customization
-
 fn print_usage() {
     println!("Usage:");
     println!("  thag_gen_theme <image_path>                      Generate theme from image (auto-detect light/dark)");
@@ -35,6 +34,7 @@ fn print_usage() {
     println!("Supported image formats: PNG, JPEG, GIF, BMP, TIFF, WebP");
 }
 
+#[allow(clippy::too_many_lines)]
 fn main() -> ThagResult<()> {
     let args: Vec<String> = env::args().collect();
 
@@ -73,14 +73,11 @@ fn main() -> ThagResult<()> {
             }
             "--colors" => {
                 if i + 1 < args.len() {
-                    match args[i + 1].parse::<usize>() {
-                        Ok(count) => {
-                            config.color_count = count.max(8).min(64); // Reasonable bounds
-                        }
-                        Err(_) => {
-                            cprtln!(Role::Error, "Invalid color count: {}", args[i + 1]);
-                            return Ok(());
-                        }
+                    if let Ok(count) = args[i + 1].parse::<usize>() {
+                        config.color_count = count.clamp(8, 64); // Reasonable bounds
+                    } else {
+                        cprtln!(Role::Error, "Invalid color count: {}", args[i + 1]);
+                        return Ok(());
                     }
                     i += 1;
                 } else {
@@ -237,7 +234,7 @@ fn format_style_attributes(style: &thag_styling::Style) -> String {
     }
 }
 
-fn color_256_to_rgb(color: u8) -> [u8; 3] {
+const fn color_256_to_rgb(color: u8) -> [u8; 3] {
     match color {
         0..=15 => {
             let colors = [

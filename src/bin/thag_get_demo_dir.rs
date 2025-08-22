@@ -6,7 +6,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["t
 
 /// Demo directory downloader. Very fast replacement for `thag_get_demo` with subdirectory
 /// support so as to include the `demo/proc_macros` directory. Git `sparse-checkout`
-/// approach suggested and written by ChatGPT, local directory handling assisted by Claude.
+/// approach suggested and written by `ChatGPT`, local directory handling assisted by Claude.
 //# Purpose: Prototype for `thag_get_demo_dir`.
 //# Categories: crates, prototype, technique
 use colored::Colorize;
@@ -43,14 +43,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (dest_dir, demo_dest) = loop {
         println!("Select where you want to save the new `demo` directory");
-        let dest_dir = match select_directory(&mut navigator, false) {
-            Ok(path) => path,
-            Err(_) => {
-                println!("\nNo directory selected. Exiting.\n");
-                return Ok(());
-            }
+        let Ok(dest_dir) = select_directory(&mut navigator, false) else {
+            println!("\nNo directory selected. Exiting.\n");
+            return Ok(());
         };
-
         // // `select_directory` already handles this.
         // fs::create_dir_all(&dest_dir)?;
 

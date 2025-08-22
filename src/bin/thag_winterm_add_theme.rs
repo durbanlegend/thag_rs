@@ -14,21 +14,14 @@ serde_json = "1.0"
 /// selecting individual themes or entire directories of themes.
 //# Purpose: Install thag themes for Windows Terminal
 //# Categories: color, styling, terminal, theming, tools, windows
-use colored::Colorize;
-use std::error::Error;
-use std::fs;
-use std::path::{Path, PathBuf};
 use thag_proc_macros::file_navigator;
-use thag_rs::{cprtln, Role, ThagResult};
-use thag_styling::{ExportFormat, Theme};
 
 file_navigator! {}
 
 #[cfg(not(target_os = "windows"))]
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
     println!("❌ This tool is only available on Windows systems.");
     println!("   Windows Terminal is not available on other platforms.");
-    Ok(())
 }
 
 #[cfg(target_os = "windows")]

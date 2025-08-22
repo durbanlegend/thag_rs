@@ -10,9 +10,10 @@ use arboard::Clipboard;
 use clap::CommandFactory;
 use colored::Colorize;
 use inquire::{set_global_render_config, MultiSelect};
-use regex;
 use std::collections::HashMap;
+use std::fmt::Write as _; // import without risk of name clashing
 use std::process::Command;
+use std::string::ToString;
 use thag_proc_macros::file_navigator;
 use thag_rs::{
     auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style,
@@ -59,6 +60,7 @@ fn get_clap_groups() -> HashMap<String, Vec<String>> {
     group_members
 }
 
+#[allow(clippy::too_many_lines)]
 fn extract_clap_metadata() -> Vec<OptionGroup> {
     let cmd = Cli::command();
     let clap_groups = get_clap_groups();
@@ -77,11 +79,9 @@ fn extract_clap_metadata() -> Vec<OptionGroup> {
             name: arg.get_id().to_string(),
             short: arg.get_short(),
             long: arg.get_long().unwrap_or("").to_string(),
-            help: arg
-                .get_help()
-                .map_or_else(|| "".to_string(), |h| h.to_string()),
+            help: arg.get_help().map_or_else(String::new, ToString::to_string),
             takes_value: arg.get_action().takes_values(),
-            group: arg.get_help_heading().map(|h| h.to_string()),
+            group: arg.get_help_heading().map(ToString::to_string),
         };
 
         // First categorize by help heading, then override with clap groups for mutual exclusivity
@@ -204,12 +204,12 @@ fn format_option_display(option: &OptionInfo) -> String {
     let mut display = String::new();
 
     if let Some(short) = option.short {
-        display.push_str(&format!("-{}", short));
+        let _ = writeln!(display, "-{}", short);
         if !option.long.is_empty() {
-            display.push_str(&format!(", --{}", option.long));
+            let _ = writeln!(display, ", --{}", option.long);
         }
     } else if !option.long.is_empty() {
-        display.push_str(&format!("--{}", option.long));
+        let _ = writeln!(display, "--{}", option.long);
     }
 
     if !option.help.is_empty() {
@@ -219,7 +219,7 @@ fn format_option_display(option: &OptionInfo) -> String {
         } else {
             option.help.clone()
         };
-        display.push_str(&format!(" - {}", help_text));
+        let _ = writeln!(display, " - {help_text}");
     }
 
     display
@@ -230,6 +230,7 @@ fn is_interactive() -> bool {
     io::stdin().is_terminal()
 }
 
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!("thag_prompt");
@@ -280,12 +281,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "\nStep: Select a script file"
         );
 
-        match select_file(&mut navigator, Some("rs"), false) {
-            Ok(path) => (Some(path), false),
-            Err(_) => {
-                println!("No file selected. Exiting.");
-                return Ok(());
-            }
+        if let Ok(path) = select_file(&mut navigator, Some("rs"), false) {
+            (Some(path), false)
+        } else {
+            println!("No file selected. Exiting.");
+            return Ok(());
         }
     };
 
@@ -303,7 +303,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .options
                 .iter()
                 .filter(|v| v.name != "script")
-                .map(|opt| format_option_display(opt))
+                .map(format_option_display)
                 .collect();
 
             if let Ok(choice) = Select::new("Select dynamic option:", dynamic_choices.clone())
@@ -356,33 +356,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Very quiet (-qq)",
             ];
 
-            if let Ok(selection) = Select::new("Select verbosity level:", verbosity_choices)
+            if let Ok(Some(selection)) = Select::new("Select verbosity level:", verbosity_choices)
                 .with_help_message("Choose output verbosity level")
                 .prompt_skippable()
             {
-                if let Some(selection) = selection {
-                    match selection.as_ref() {
-                        "Verbose (-v)" => {
-                            selected_options.push("verbose".to_string());
-                            selected_values.insert("verbose".to_string(), "1".to_string());
-                        }
-                        "Debug (-vv)" => {
-                            selected_options.push("verbose".to_string());
-                            selected_values.insert("verbose".to_string(), "2".to_string());
-                        }
-                        "Quiet (-q)" => {
-                            selected_options.push("quiet".to_string());
-                            selected_values.insert("quiet".to_string(), "1".to_string());
-                        }
-                        "Very quiet (-qq)" => {
-                            selected_options.push("quiet".to_string());
-                            selected_values.insert("quiet".to_string(), "2".to_string());
-                        }
-                        "Normal verbosity" => {
-                            selected_options.push("normal_verbosity".to_string());
-                        }
-                        _ => {}
+                match selection {
+                    "Verbose (-v)" => {
+                        selected_options.push("verbose".to_string());
+                        selected_values.insert("verbose".to_string(), "1".to_string());
                     }
+                    "Debug (-vv)" => {
+                        selected_options.push("verbose".to_string());
+                        selected_values.insert("verbose".to_string(), "2".to_string());
+                    }
+                    "Quiet (-q)" => {
+                        selected_options.push("quiet".to_string());
+                        selected_values.insert("quiet".to_string(), "1".to_string());
+                    }
+                    "Very quiet (-qq)" => {
+                        selected_options.push("quiet".to_string());
+                        selected_values.insert("quiet".to_string(), "2".to_string());
+                    }
+                    "Normal verbosity" => {
+                        selected_options.push("normal_verbosity".to_string());
+                    }
+                    _ => {}
                 }
             }
             continue;
@@ -390,70 +388,62 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Handle input and environment setup (thag_prompt-specific features)
         if group.name == "Processing Options" {
-            let choices: Vec<String> = group
-                .options
-                .iter()
-                .map(|opt| format_option_display(opt))
-                .collect();
+            let choices: Vec<String> = group.options.iter().map(format_option_display).collect();
 
             // Add input file and environment variable options to the choices
             let mut extended_choices = choices.clone();
             extended_choices.push("📁 Input file (pipe from file)".to_string());
             extended_choices.push("🌍 Environment variables".to_string());
 
-            if let Ok(selections) =
+            if let Ok(Some(selections)) =
                 MultiSelect::new(&format!("Select {}:", group.name), extended_choices.clone())
                     .with_help_message("Use space to select, enter to confirm, ESC to skip")
                     .prompt_skippable()
             {
-                if let Some(selections) = selections {
-                    for selection in selections {
-                        if selection == "📁 Input file (pipe from file)" {
-                            let input_file = Text::new("Input file to pipe to stdin:")
+                for selection in selections {
+                    if selection == "📁 Input file (pipe from file)" {
+                        let input_file = Text::new("Input file to pipe to stdin:")
+                            .with_help_message(
+                                "File path (e.g. data.txt) - alternative to shell redirection",
+                            )
+                            .prompt()?;
+                        selected_options.push("input_file".to_string());
+                        selected_values.insert("input_file".to_string(), input_file);
+                    } else if selection == "🌍 Environment variables" {
+                        let env_vars =
+                            Text::new("Environment variables (KEY=VALUE, comma-separated):")
                                 .with_help_message(
-                                    "File path (e.g. data.txt) - alternative to shell redirection",
+                                    "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
                                 )
                                 .prompt()?;
-                            selected_options.push("input_file".to_string());
-                            selected_values.insert("input_file".to_string(), input_file);
-                        } else if selection == "🌍 Environment variables" {
-                            let env_vars =
-                                Text::new("Environment variables (KEY=VALUE, comma-separated):")
-                                    .with_help_message(
-                                        "e.g. RUST_LOG=debug,MY_VAR=$PWD (supports $VAR expansion)",
+                        selected_options.push("env_vars".to_string());
+                        selected_values.insert("env_vars".to_string(), env_vars);
+                    } else {
+                        let idx = choices.iter().position(|c| c == &selection).unwrap();
+                        let selected_option = &group.options[idx];
+                        selected_options.push(selected_option.name.clone());
+
+                        // Handle options that take values
+                        if selected_option.takes_value {
+                            match selected_option.name.as_str() {
+                                "features" => {
+                                    let features =
+                                        Text::new("Enter features (comma-separated):").prompt()?;
+                                    selected_values.insert(selected_option.name.clone(), features);
+                                }
+                                "infer" => {
+                                    let infer_options = ["none", "min", "config", "max"];
+                                    let infer_choice = Select::new(
+                                        "Dependency inference level:",
+                                        infer_options.to_vec(),
                                     )
                                     .prompt()?;
-                            selected_options.push("env_vars".to_string());
-                            selected_values.insert("env_vars".to_string(), env_vars);
-                        } else {
-                            let idx = choices.iter().position(|c| c == &selection).unwrap();
-                            let selected_option = &group.options[idx];
-                            selected_options.push(selected_option.name.clone());
-
-                            // Handle options that take values
-                            if selected_option.takes_value {
-                                match selected_option.name.as_str() {
-                                    "features" => {
-                                        let features =
-                                            Text::new("Enter features (comma-separated):")
-                                                .prompt()?;
-                                        selected_values
-                                            .insert(selected_option.name.clone(), features);
-                                    }
-                                    "infer" => {
-                                        let infer_options = ["none", "min", "config", "max"];
-                                        let infer_choice = Select::new(
-                                            "Dependency inference level:",
-                                            infer_options.to_vec(),
-                                        )
-                                        .prompt()?;
-                                        selected_values.insert(
-                                            selected_option.name.clone(),
-                                            infer_choice.to_string(),
-                                        );
-                                    }
-                                    _ => {}
+                                    selected_values.insert(
+                                        selected_option.name.clone(),
+                                        infer_choice.to_string(),
+                                    );
                                 }
+                                _ => {}
                             }
                         }
                     }
@@ -466,138 +456,113 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
-        let choices: Vec<String> = group
-            .options
-            .iter()
-            .map(|opt| format_option_display(opt))
-            .collect();
+        let choices: Vec<String> = group.options.iter().map(format_option_display).collect();
 
         if group.multiple {
-            if let Ok(selections) =
+            if let Ok(Some(selections)) =
                 MultiSelect::new(&format!("Select {}:", group.name), choices.clone())
                     .with_help_message("Use space to select, enter to confirm, ESC to skip")
                     .prompt_skippable()
             {
-                if let Some(selections) = selections {
-                    for selection in selections {
-                        let idx = choices.iter().position(|c| c == &selection).unwrap();
-                        let selected_option = &group.options[idx];
-                        selected_options.push(selected_option.name.clone());
+                for selection in selections {
+                    let idx = choices.iter().position(|c| c == &selection).unwrap();
+                    let selected_option = &group.options[idx];
+                    selected_options.push(selected_option.name.clone());
 
-                        // Handle options that take values
-                        if selected_option.takes_value {
-                            match selected_option.name.as_str() {
-                                "features" => {
-                                    let features =
-                                        Text::new("Enter features (comma-separated):").prompt()?;
-                                    selected_values.insert(selected_option.name.clone(), features);
-                                }
-                                "infer" => {
-                                    let infer_options = ["none", "min", "config", "max"];
-                                    let infer_choice = Select::new(
-                                        "Dependency inference level:",
-                                        infer_options.to_vec(),
-                                    )
-                                    .prompt()?;
-                                    selected_values.insert(
-                                        selected_option.name.clone(),
-                                        infer_choice.to_string(),
-                                    );
-                                }
-                                "toml" => {
-                                    let toml_input =
-                                        Text::new("Enter manifest info (Cargo.toml format):")
-                                            .with_help_message(
-                                                r#"e.g. [dependencies]
-serde = "1.0""#,
-                                            )
-                                            .prompt()?;
-                                    selected_values
-                                        .insert(selected_option.name.clone(), toml_input);
-                                }
-                                "begin" => {
-                                    let begin_input = Text::new("Enter pre-loop Rust statements:")
-                                        .with_help_message("e.g. let mut count = 0;")
-                                        .prompt()?;
-                                    selected_values
-                                        .insert(selected_option.name.clone(), begin_input);
-                                }
-                                "end" => {
-                                    let end_input = Text::new("Enter post-loop Rust statements:")
-                                        .with_help_message("e.g. println!(\"Total: {}\", count);")
-                                        .prompt()?;
-                                    selected_values.insert(selected_option.name.clone(), end_input);
-                                }
-                                _ => {}
+                    // Handle options that take values
+                    if selected_option.takes_value {
+                        match selected_option.name.as_str() {
+                            "features" => {
+                                let features =
+                                    Text::new("Enter features (comma-separated):").prompt()?;
+                                selected_values.insert(selected_option.name.clone(), features);
                             }
+                            "infer" => {
+                                let infer_options = ["none", "min", "config", "max"];
+                                let infer_choice = Select::new(
+                                    "Dependency inference level:",
+                                    infer_options.to_vec(),
+                                )
+                                .prompt()?;
+                                selected_values
+                                    .insert(selected_option.name.clone(), infer_choice.to_string());
+                            }
+                            "toml" => {
+                                let toml_input =
+                                    Text::new("Enter manifest info (Cargo.toml format):")
+                                        .with_help_message(
+                                            r#"e.g. [dependencies]
+serde = "1.0""#,
+                                        )
+                                        .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), toml_input);
+                            }
+                            "begin" => {
+                                let begin_input = Text::new("Enter pre-loop Rust statements:")
+                                    .with_help_message("e.g. let mut count = 0;")
+                                    .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), begin_input);
+                            }
+                            "end" => {
+                                let end_input = Text::new("Enter post-loop Rust statements:")
+                                    .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                    .prompt()?;
+                                selected_values.insert(selected_option.name.clone(), end_input);
+                            }
+                            _ => {}
                         }
                     }
                 }
-            } else {
-                if let Ok(selection) =
-                    Select::new(&format!("Select {}:", group.name), choices.clone())
-                        .with_help_message("Press ESC to skip")
-                        .prompt_skippable()
-                {
-                    if let Some(selection) = selection {
-                        let idx = choices.iter().position(|c| c == &selection).unwrap();
-                        let selected_option = &group.options[idx];
-                        selected_options.push(selected_option.name.clone());
+            } else if let Ok(Some(selection)) =
+                Select::new(&format!("Select {}:", group.name), choices.clone())
+                    .with_help_message("Press ESC to skip")
+                    .prompt_skippable()
+            {
+                let idx = choices.iter().position(|c| c == &selection).unwrap();
+                let selected_option = &group.options[idx];
+                selected_options.push(selected_option.name.clone());
 
-                        // Handle options that take values
-                        if selected_option.takes_value {
-                            match selected_option.name.as_str() {
-                                "filter" => {
-                                    let filter = Text::new("Enter filter expression:")
-                                        .with_help_message(
-                                            "e.g. line.contains(\"error\"), line.len() > 10",
-                                        )
-                                        .prompt()?;
-                                    selected_values.insert(selected_option.name.clone(), filter);
-                                }
-                                "toml" => {
-                                    let toml_input =
-                                        Text::new("Enter manifest info (Cargo.toml format):")
-                                            .with_help_message(
-                                                "e.g. [dependencies]\nserde = \"1.0\"",
-                                            )
-                                            .prompt()?;
-                                    selected_values
-                                        .insert(selected_option.name.clone(), toml_input);
-                                }
-                                "begin" => {
-                                    let begin_input = Text::new("Enter pre-loop Rust statements:")
-                                        .with_help_message("e.g. let mut count = 0;")
-                                        .prompt()?;
-                                    selected_values
-                                        .insert(selected_option.name.clone(), begin_input);
-                                }
-                                "end" => {
-                                    let end_input = Text::new("Enter post-loop Rust statements:")
-                                        .with_help_message("e.g. println!(\"Total: {}\", count);")
-                                        .prompt()?;
-                                    selected_values.insert(selected_option.name.clone(), end_input);
-                                }
-                                "features" => {
-                                    let features =
-                                        Text::new("Enter features (comma-separated):").prompt()?;
-                                    selected_values.insert(selected_option.name.clone(), features);
-                                }
-                                "infer" => {
-                                    let infer_options = ["none", "min", "config", "max"];
-                                    let infer_choice = Select::new(
-                                        "Dependency inference level:",
-                                        infer_options.to_vec(),
-                                    )
-                                    .prompt()?;
-                                    selected_values.insert(
-                                        selected_option.name.clone(),
-                                        infer_choice.to_string(),
-                                    );
-                                }
-                                _ => {}
-                            }
+                // Handle options that take values
+                if selected_option.takes_value {
+                    match selected_option.name.as_str() {
+                        "filter" => {
+                            let filter = Text::new("Enter filter expression:")
+                                .with_help_message("e.g. line.contains(\"error\"), line.len() > 10")
+                                .prompt()?;
+                            selected_values.insert(selected_option.name.clone(), filter);
                         }
+                        "toml" => {
+                            let toml_input = Text::new("Enter manifest info (Cargo.toml format):")
+                                .with_help_message("e.g. [dependencies]\nserde = \"1.0\"")
+                                .prompt()?;
+                            selected_values.insert(selected_option.name.clone(), toml_input);
+                        }
+                        "begin" => {
+                            let begin_input = Text::new("Enter pre-loop Rust statements:")
+                                .with_help_message("e.g. let mut count = 0;")
+                                .prompt()?;
+                            selected_values.insert(selected_option.name.clone(), begin_input);
+                        }
+                        "end" => {
+                            let end_input = Text::new("Enter post-loop Rust statements:")
+                                .with_help_message("e.g. println!(\"Total: {}\", count);")
+                                .prompt()?;
+                            selected_values.insert(selected_option.name.clone(), end_input);
+                        }
+                        "features" => {
+                            let features =
+                                Text::new("Enter features (comma-separated):").prompt()?;
+                            selected_values.insert(selected_option.name.clone(), features);
+                        }
+                        "infer" => {
+                            let infer_options = ["none", "min", "config", "max"];
+                            let infer_choice =
+                                Select::new("Dependency inference level:", infer_options.to_vec())
+                                    .prompt()?;
+                            selected_values
+                                .insert(selected_option.name.clone(), infer_choice.to_string());
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -614,7 +579,7 @@ serde = "1.0""#,
                 Vec::new()
             } else {
                 let mut args = vec!["--".to_string()];
-                args.extend(args_input.split_whitespace().map(|s| s.to_string()));
+                args.extend(args_input.split_whitespace().map(ToString::to_string));
                 args
             }
         } else {
@@ -804,16 +769,14 @@ serde = "1.0""#,
         cmd.args(&script_args);
     }
 
-    // Handle input file - either from selection or prompt
+    // Handle input file` - either from selection or prompt
     let input_file_path = selected_values
         .get("input_file")
         .cloned()
         .or(input_file_option);
-    let input_file_info = if let Some(input_file) = &input_file_path {
-        Some(format!(" < {}", input_file))
-    } else {
-        None
-    };
+    let input_file_info = input_file_path
+        .as_ref()
+        .map(|input_file| format!(" < {}", input_file));
 
     // Handle environment variables - either from selection or prompt
     let env_input = selected_values.get("env_vars").cloned().or(env_vars_option);
@@ -832,10 +795,10 @@ serde = "1.0""#,
         }
     }
 
-    let env_vars_info = if !env_vars_display.is_empty() {
-        Some(format!(" (env: {})", env_vars_display.join(", ")))
-    } else {
+    let env_vars_info = if env_vars_display.is_empty() {
         None
+    } else {
+        Some(format!(" (env: {})", env_vars_display.join(", ")))
     };
 
     // Build command display string
@@ -848,13 +811,13 @@ serde = "1.0""#,
     }
 
     // Handle environment variables prefix for shell execution
-    let env_prefix = if !env_vars_display.is_empty() {
-        format!("{} ", env_vars_display.join(" "))
-    } else {
+    let env_prefix = if env_vars_display.is_empty() {
         String::new()
+    } else {
+        format!("{} ", env_vars_display.join(" "))
     };
 
-    match output_choice.as_ref() {
+    match output_choice {
         "Execute command" => {
             // Set up stdin redirection if specified
             if let Some(input_file) = input_file_path {
@@ -917,6 +880,7 @@ serde = "1.0""#,
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
     println!("Running in test mode: {test_mode}");
 
@@ -1019,10 +983,10 @@ regex = "1.0""#,
             std::env::set_var("TEST_EXPAND", "expanded_value");
             cmd.arg("--expr")
                 .arg("println!(\"Environment variable resolved\")")
-                .env("SIMPLE_VAR", &expand_env_vars("$PWD"))
+                .env("SIMPLE_VAR", expand_env_vars("$PWD"))
                 .env(
                     "COMPLEX_VAR",
-                    &expand_env_vars("prefix_${TEST_EXPAND}_suffix"),
+                    expand_env_vars("prefix_${TEST_EXPAND}_suffix"),
                 );
         }
         "test_display_enhanced" => {
@@ -1123,7 +1087,7 @@ fn expand_env_vars(input: &str) -> String {
                 );
                 String::new()
             });
-            result.replace_range(start..start + end + 1, &replacement);
+            result.replace_range(start..=(start + end), &replacement);
         } else {
             break; // Malformed ${...} - stop processing
         }
@@ -1158,18 +1122,16 @@ fn format_command_display(cmd: &Command) -> String {
         let in_single_quotes = arg_str.starts_with('\'') && arg_str.ends_with('\'');
         if in_single_quotes {
             // let arg_str = arg_str.trim_matches('\'');
-            display.push_str(&format!("'{arg_str}'"));
+            let _ = writeln!(display, "'{arg_str}'");
             // eprintln!("1. display={display}");
+        } else if arg_str.contains(' ') || arg_str.contains('"') || arg_str.contains('\'') {
+            display.push('\'');
+            display.push_str(&arg_str.replace('\'', r#"'"'"'"#));
+            display.push('\'');
+            // eprintln!("2. display={display}");
         } else {
-            if arg_str.contains(' ') || arg_str.contains('"') || arg_str.contains('\'') {
-                display.push('\'');
-                display.push_str(&arg_str.replace('\'', r#"'"'"'"#));
-                display.push('\'');
-                // eprintln!("2. display={display}");
-            } else {
-                display.push_str(&format!("'{arg_str}'"));
-                // eprintln!("3. display={display}");
-            }
+            let _ = writeln!(display, "'{arg_str}'");
+            // eprintln!("3. display={display}");
         }
     }
 

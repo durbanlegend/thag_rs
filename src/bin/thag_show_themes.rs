@@ -18,7 +18,6 @@ use thag_styling::{
 /// terminal setup instructions for optimal display.
 //# Purpose: Help get best use out of styling with built-in themes.
 //# Categories: reference, technique, tools
-
 fn print_usage() {
     println!("Usage:");
     println!("  thag_show_themes                Interactive theme browser (default)");
@@ -44,7 +43,10 @@ fn list_themes() -> ThagResult<()> {
     Ok(())
 }
 
-fn interactive_theme_browser() -> ThagResult<()> {
+fn interactive_theme_browser() {
+    use inquire::error::InquireResult;
+    use inquire::list_option::ListOption;
+
     // Initialize terminal attributes to ensure styling works
     let _term_attrs = TermAttributes::get_or_init();
     // eprintln!("_term_attrs={_term_attrs:#?}");
@@ -68,8 +70,6 @@ fn interactive_theme_browser() -> ThagResult<()> {
     print!("\x1b[2J\x1b[H");
 
     let mut cursor = 0_usize;
-    use inquire::error::InquireResult;
-    use inquire::list_option::ListOption;
 
     loop {
         println!("\n🎨 Interactive Theme Browser");
@@ -104,21 +104,12 @@ fn interactive_theme_browser() -> ThagResult<()> {
                 // Clear screen for better presentation
                 print!("\x1b[2J\x1b[H");
 
-                match show_theme(theme_name) {
-                    Ok(()) => {
-                        println!("\n{}", "═".repeat(80));
-                        println!("🔙 Press Enter to return to theme browser, or Ctrl+C to exit...");
-                        let _ = io::stdin().read_line(&mut String::new());
-                        // Clear screen before returning to menu
-                        print!("\x1b[2J\x1b[H");
-                    }
-                    Err(e) => {
-                        println!("❌ Error displaying theme '{}': {}", theme_name, e);
-                        println!("Press Enter to continue...");
-                        let _ = io::stdin().read_line(&mut String::new());
-                        print!("\x1b[2J\x1b[H");
-                    }
-                }
+                show_theme(theme_name);
+                println!("\n{}", "═".repeat(80));
+                println!("🔙 Press Enter to return to theme browser, or Ctrl+C to exit...");
+                let _ = io::stdin().read_line(&mut String::new());
+                // Clear screen before returning to menu
+                print!("\x1b[2J\x1b[H");
             }
             Err(inquire::InquireError::OperationCanceled) => {
                 print!("\x1b[2J\x1b[H");
@@ -131,11 +122,9 @@ fn interactive_theme_browser() -> ThagResult<()> {
             }
         }
     }
-
-    Ok(())
 }
 
-fn show_theme(theme_name: &str) -> ThagResult<()> {
+fn show_theme(theme_name: &str) {
     let term_attrs = TermAttributes::get_or_init();
 
     let theme = Theme::get_theme_with_color_support(theme_name, term_attrs.color_support)
@@ -159,8 +148,6 @@ fn show_theme(theme_name: &str) -> ThagResult<()> {
 
     // Provide terminal setup instructions
     show_terminal_instructions(&theme);
-
-    Ok(())
 }
 
 fn show_terminal_instructions(theme: &Theme) {
@@ -195,7 +182,7 @@ fn show_terminal_instructions(theme: &Theme) {
 
     cprtln!(
         theme.style_for(Role::Normal),
-        r#"        To view the colors clearly, set your terminal background to {bg} and foreground and cursor to {fg}."#
+        r"        To view the colors clearly, set your terminal background to {bg} and foreground and cursor to {fg}."
     );
 
     cprtln!(
@@ -210,10 +197,10 @@ fn show_terminal_instructions(theme: &Theme) {
     println!();
     cprtln!(
         theme.style_for(Role::Normal),
-        r#"        For best results, rather configure the desired theme in your terminal settings.
+        r"        For best results, rather configure the desired theme in your terminal settings.
         To be sure that `thag` will identify the desired theme from the background color, edit your configuration with `thag -C`.
         Add this theme to the `preferred_dark` or `preferred_light` list above any other themes that use the same
-        background, and save the configuration."#
+        background, and save the configuration."
     );
     println!();
 
@@ -227,43 +214,43 @@ fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {
 
     match env_type {
         TerminalEnv::ITerm => format!(
-            "\tiTerm2 Setup:\n\
-            \t1. Open iTerm2 Settings (Cmd + ,)\n\
-            \t2. Go to Profiles → Colors\n\
-            \t3. Recommended: Install desired theme from Color Presets per `https://iterm2colorschemes.com/`\n\
-            \t4. Otherwise Set Background Color to {}.",
+            r"	iTerm2 Setup:
+	1. Open iTerm2 Settings (Cmd + ,)
+	2. Go to Profiles → Colors
+	3. Recommended: Install desired theme from Color Presets per `https://iterm2colorschemes.com/`
+	4. Otherwise Set Background Color to {}.",
             bg_color,
             // luma.to_lowercase()
         ),
 
         TerminalEnv::AppleTerminal => format!(
-            r#"	Apple Terminal Setup:
+            r"	Apple Terminal Setup:
 	1. Terminal → Settings → Profiles
 	2. Recommended: Import .terminal file from bottom left drop-down menu.
 	       See e.g. `https://github.com/lysyi3m/macos-terminal-themes/tree/master`.
     3. Select your profile or create new.
 	4. Ensure Background Color is set to {}
-	5. Recommended for {} backgrounds"#,
+	5. Recommended for {} backgrounds",
             bg_color,
             luma.to_lowercase()
         ),
 
         TerminalEnv::WezTerm => format!(
-            r#"	WezTerm Setup:
+            r"	WezTerm Setup:
 	1. Edit ~/.wezterm.lua
 	2. Refer to https://wezterm.org/config/appearance.html and https://wezterm.org/colorschemes/index.html
 	3. Ensure background is set to {}
-	4. Optimized for {} backgrounds"#,
+	4. Optimized for {} backgrounds",
             bg_color,
             luma.to_lowercase()
         ),
 
         TerminalEnv::GnomeTerminal => format!(
-            r#"	GNOME Terminal Setup:
+            r"	GNOME Terminal Setup:
 	1. Edit → Preferences → Profiles
 	2. Select your profile
 	3. Colors tab → Background Color: {}
-	4. Optimized for {} backgrounds"#,
+	4. Optimized for {} backgrounds",
             bg_color,
             luma.to_lowercase()
         ),
@@ -319,7 +306,7 @@ fn main() -> ThagResult<()> {
         // Default to interactive mode when no arguments provided
         println!("🎨 Welcome to thag theme browser!");
         println!("Starting interactive mode...\n");
-        interactive_theme_browser()?;
+        interactive_theme_browser();
         return Ok(());
     }
 
@@ -328,19 +315,12 @@ fn main() -> ThagResult<()> {
             list_themes()?;
         }
         "interactive" | "i" => {
-            interactive_theme_browser()?;
+            interactive_theme_browser();
         }
         "help" | "--help" | "-h" => {
             print_usage();
         }
-        theme_name => match show_theme(theme_name) {
-            Ok(()) => {}
-            Err(e) => {
-                eprintln!("Error: Could not load theme '{}': {}", theme_name, e);
-                eprintln!("\nUse 'thag_show_themes list' to see available themes.");
-                std::process::exit(1);
-            }
-        },
+        theme_name => show_theme(theme_name),
     }
 
     Ok(())

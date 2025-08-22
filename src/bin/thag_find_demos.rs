@@ -10,14 +10,13 @@ use inquire::set_global_render_config;
 //# Purpose: Allow user to select scripts by category.
 //# Categories: technique, tools
 use inquire::MultiSelect;
-use regex;
+use std::fmt::Write as _; // import without risk of name clashing
 use std::{
     collections::{BTreeSet, HashMap},
     fs::{self, read_dir},
     path::{Path, PathBuf},
     process::Command,
 };
-use strum;
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::code_utils::to_ast;
 use thag_rs::help_system::check_help_and_exit;
@@ -495,10 +494,12 @@ fn generate_html_report(
     .to_string();
 
     html.push_str("<h1>thag_rs Demo Scripts</h1>");
-    html.push_str(&format!(
+    let _ = writeln!(
+        html,
         "<h2>Matching categories {combination_op} crates:</h2>"
-    ));
-    html.push_str(&format!(
+    );
+    let _ = writeln!(
+        html,
         r#"
         <div class="filter-description">
             <div class="filter-line">
@@ -512,12 +513,13 @@ fn generate_html_report(
             </div>
         </div>
     "#
-    ));
+    );
 
     // Rest of the HTML generation...
     #[allow(clippy::or_fun_call)]
     for meta in metadata_list {
-        html.push_str(&format!(
+        let _ = writeln!(
+            html,
             r#"
             <div class="script-item">
                 <h2>{}</h2>
@@ -531,16 +533,18 @@ fn generate_html_report(
             meta.purpose
                 .as_ref()
                 .unwrap_or(&String::from("No purpose specified")),
-        ));
+        );
 
         if !meta.crates.is_empty() {
-            html.push_str(&format!(
+            let _ = writeln!(
+                html,
                 "<p><span class=\"metadata-label\">Crates:</span> {}</p>",
                 meta.crates.join(", ")
-            ));
+            );
         }
 
-        html.push_str(&format!(
+        let _ = writeln!(
+            html,
             r#"
                 <p><span class="metadata-label">Categories:</span> {}</p>
                 <p><a href="/edit/{}" class="edit-link">Edit script</a></p>
@@ -548,7 +552,7 @@ fn generate_html_report(
             "#,
             meta.categories.join(", "),
             meta.script
-        ));
+        );
     }
 
     html.push_str("</body></html>");
@@ -563,36 +567,33 @@ fn output_markdown(
     metadata_list: &[ScriptMetadata],
 ) -> String {
     let mut md = String::from("# thag_rs Demo Scripts\n\n");
-    md.push_str(&format!(
-        "## Matching categories {combination_op} crates:\n\n"
-    ));
-    md.push_str(&format!("**categories:** {categories_desc}\n\n"));
-    md.push_str(&format!("{combination_op}\n\n"));
-    md.push_str(&format!("**crates:**     {crates_desc}\n\n"));
+    let _ = writeln!(md, "## Matching categories {combination_op} crates:\n\n");
+    let _ = writeln!(md, "**categories:** {categories_desc}\n\n");
+    let _ = writeln!(md, "{combination_op}\n\n");
+    let _ = writeln!(md, "**crates:**     {crates_desc}\n\n");
 
     for meta in metadata_list {
-        md.push_str(&format!("## {}\n\n", meta.script));
-        md.push_str(&format!(
+        let _ = writeln!(md, "## {}\n\n", meta.script);
+        let _ = writeln!(
+            md,
             "{}\n\n",
             meta.description
                 .as_ref()
                 .unwrap_or(&String::from("No description available"))
-        ));
-        md.push_str(&format!(
+        );
+        let _ = writeln!(
+            md,
             "**Purpose:** {}\n\n",
             meta.purpose
                 .as_ref()
                 .unwrap_or(&String::from("No purpose specified"))
-        ));
+        );
 
         if !meta.crates.is_empty() {
-            md.push_str(&format!("**Crates:** {}\n\n", meta.crates.join(", ")));
+            let _ = writeln!(md, "**Crates:** {}\n\n", meta.crates.join(", "));
         }
 
-        md.push_str(&format!(
-            "**Categories:** {}\n\n",
-            meta.categories.join(", ")
-        ));
+        let _ = writeln!(md, "**Categories:** {}\n\n", meta.categories.join(", "));
         md.push_str("---\n\n");
     }
     md

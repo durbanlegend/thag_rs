@@ -1,4 +1,4 @@
-/// This script generates documentation for proc macros defined in demo/proc_macros/lib.rs
+/// This script generates documentation for proc macros defined in `demo/proc_macros/lib.rs`
 /// and creates a comprehensive README.md file for the proc macros directory.
 ///
 /// It extracts proc macro definitions, their documentation, and links them to their
@@ -181,19 +181,17 @@ fn parse_proc_macros(
 }
 
 fn extract_example_metadata(example_path: &Path) -> (Option<String>, Option<String>) {
-    let content = match fs::read_to_string(example_path) {
-        Ok(c) => c,
-        Err(_) => return (None, None),
+    let Ok(content) = fs::read_to_string(example_path) else {
+        return (None, None);
     };
-
     let mut purpose = None;
     let mut description = Vec::new();
 
     for line in content.lines() {
         if let Some(stripped) = line.strip_prefix("//# Purpose:") {
             purpose = Some(stripped.trim().to_string());
-        } else if line.starts_with("///") {
-            let doc_line = line[3..].trim();
+        } else if let Some(stripped) = line.strip_prefix("///") {
+            let doc_line = stripped.trim();
             if !doc_line.is_empty() {
                 description.push(doc_line.to_string());
             }
@@ -209,6 +207,7 @@ fn extract_example_metadata(example_path: &Path) -> (Option<String>, Option<Stri
     (purpose, description)
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_readme(
     macros: &[ProcMacroInfo],
     output_path: &Path,

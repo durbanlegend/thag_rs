@@ -17,6 +17,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Categories: technique, tools
 use heck::ToSnakeCase;
 use inquire::{set_global_render_config, Confirm, MultiSelect, Select, Text};
+use std::fmt::Write as _; // import without risk of name clashing
 use std::{error::Error, fs, path::PathBuf};
 use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 
@@ -174,7 +175,7 @@ fn review_and_edit_variants(variants: &mut Vec<ErrorVariant>) -> Result<(), Box<
                     variants.remove(idx);
                 }
             }
-            "Cancel" => continue,
+            "Cancel" => (),
             _ => unreachable!(),
         }
     }
@@ -250,38 +251,44 @@ fn generate_tests(module: &ErrorModule) -> String {
         output.push_str("        assert_eq!(\n");
         if let Some(wrapped) = &variant.wrapped_type {
             if wrapped == "std::io::Error" {
-                output.push_str(&format!(
+                let _ = writeln!(
+                    output,
                     r#"            {}::{}(std::io::Error::new(std::io::ErrorKind::Other, "test error")).to_string(),
 "#,
                     module.name, variant.name
-                ));
+                );
                 // Use the actual display message format
-                output.push_str(&format!(
+                let _ = writeln!(
+                    output,
                     r#"            "{}"
 "#,
                     variant.display_message.replace("{}", "test error")
-                ));
+                );
             } else if wrapped == "String" {
-                output.push_str(&format!(
+                let _ = writeln!(
+                    output,
                     r#"            {}::{}("test error".to_string()).to_string(),
 "#,
                     module.name, variant.name
-                ));
+                );
                 // Use the actual display message format
-                output.push_str(&format!(
+                let _ = writeln!(
+                    output,
                     r#"            "{}"
 "#,
                     variant.display_message.replace("{}", "test error")
-                ));
+                );
             } else {
                 // Add comment for custom wrapped types
-                output.push_str(&format!(
+                let _ = writeln!(
+                    output,
                     "            // TODO: Provide appropriate test value for {wrapped}\n"
-                ));
-                output.push_str(&format!(
+                );
+                let _ = writeln!(
+                    output,
                     "            // {}::{}(your_test_value).to_string(),\n",
                     module.name, variant.name
-                ));
+                );
                 output.push_str(
                     r#"            // "test error"  // TODO: Review expected output
 "#,
@@ -290,16 +297,18 @@ fn generate_tests(module: &ErrorModule) -> String {
                 continue;
             }
         } else {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "            {}::{}.to_string(),\n",
                 module.name, variant.name
-            ));
+            );
             // For variants without wrapped types, use the display message directly
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 r#"            "{}"
 "#,
                 variant.display_message
-            ));
+            );
         }
         output.push_str("        );\n");
     }
@@ -314,33 +323,38 @@ fn generate_tests(module: &ErrorModule) -> String {
                 "std::io::Error" => {
                     output.push_str(r#"        let io_error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
 "#);
-                    output.push_str(&format!(
+                    let _ = writeln!(
+                        output,
                         "        let error = {}::{}(io_error);\n",
                         module.name, variant.name
-                    ));
-                    output.push_str(&format!(
+                    );
+                    let _ = writeln!(
+                        output,
                         "        assert!(matches!(error, {}::{}(_)));\n",
                         module.name, variant.name
-                    ));
+                    );
                 }
                 "String" => {
                     output.push_str(
                         r#"        let string_error = "test error".to_string();
 "#,
                     );
-                    output.push_str(&format!(
+                    let _ = writeln!(
+                        output,
                         "        let error = {}::{}(string_error);\n",
                         module.name, variant.name
-                    ));
-                    output.push_str(&format!(
+                    );
+                    let _ = writeln!(
+                        output,
                         "        assert!(matches!(error, {}::{}(_)));\n",
                         module.name, variant.name
-                    ));
+                    );
                 }
                 _ => {
-                    output.push_str(&format!(
+                    let _ = writeln!(
+                        output,
                         "        // TODO: Add test for {wrapped} wrapped type\n"
-                    ));
+                    );
                 }
             }
             output.push('\n');
@@ -408,7 +422,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             Err(e) => {
                 println!("Error creating variant: {e}");
-                continue;
             }
         }
     }
@@ -461,12 +474,12 @@ fn generate_error_module(module: &ErrorModule) -> String {
 
     // Generate enum
     output.push_str("#[derive(Debug)]\n");
-    output.push_str(&format!("pub enum {} {{\n", module.name));
+    let _ = writeln!(output, "pub enum {} {{\n", module.name);
     for variant in &module.variants {
         if let Some(wrapped) = &variant.wrapped_type {
-            output.push_str(&format!("    {}({}),\n", variant.name, wrapped));
+            let _ = writeln!(output, "    {}({}),\n", variant.name, wrapped);
         } else {
-            output.push_str(&format!("    {},\n", variant.name));
+            let _ = writeln!(output, "    {},\n", variant.name);
         }
     }
     output.push_str("}\n\n");
@@ -476,9 +489,9 @@ fn generate_error_module(module: &ErrorModule) -> String {
         if let Some(wrapped) = &variant.wrapped_type {
             if wrapped != "String" {
                 // Skip String as it's handled differently
-                output.push_str(&format!("impl From<{wrapped}> for {} {{\n", module.name));
-                output.push_str(&format!("    fn from(err: {wrapped}) -> Self {{\n"));
-                output.push_str(&format!("        Self::{}(err)\n", variant.name));
+                let _ = writeln!(output, "impl From<{wrapped}> for {} {{\n", module.name);
+                let _ = writeln!(output, "    fn from(err: {wrapped}) -> Self {{\n");
+                let _ = writeln!(output, "        Self::{}(err)\n", variant.name);
                 output.push_str("    }\n");
                 output.push_str("}\n\n");
             }
@@ -486,49 +499,43 @@ fn generate_error_module(module: &ErrorModule) -> String {
     }
 
     // Generate Display impl
-    output.push_str(&format!("impl std::fmt::Display for {} {{\n", module.name));
+    let _ = writeln!(output, "impl std::fmt::Display for {} {{\n", module.name);
     output.push_str("    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n");
     output.push_str("        match self {\n");
     for variant in &module.variants {
         if let Some(_wrapped) = &variant.wrapped_type {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 r#"            Self::{}(e) => write!(f, "{}", e),
 "#,
                 variant.name, variant.display_message
-            ));
+            );
         } else {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 r#"            Self::{} => write!(f, "{}"),
 "#,
                 variant.name, variant.display_message
-            ));
+            );
         }
     }
     output.push_str("        }\n");
     output.push_str("    }\n");
     output.push_str("}\n\n");
 
-    // // Generate Error impl
-    // output.push_str(&format!(
-    //     "impl std::error::Error for {} {{}}\n\n",
-    //     module.name
-    // ));
-
     // Generate Error impl
-    output.push_str(&format!("impl std::error::Error for {} {{\n", module.name));
+    let _ = writeln!(output, "impl std::error::Error for {} {{\n", module.name);
     output.push_str("    fn source(&self) -> Option<&(dyn Error + 'static)> {\n");
     output.push_str("        match self {\n");
     for variant in &module.variants {
         if let Some(_wrapped) = &variant.wrapped_type {
-            output.push_str(&format!(
+            let _ = writeln!(
+                output,
                 "            Self::{}(e) => Some(e),\n",
                 variant.name
-            ));
+            );
         } else {
-            output.push_str(&format!(
-                "           Self::{} => Some(self),\n",
-                variant.name
-            ));
+            let _ = writeln!(output, "           Self::{} => Some(self),\n", variant.name);
         }
     }
     output.push_str("        }\n");

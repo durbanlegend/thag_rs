@@ -7,7 +7,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["t
 ///
 /// This utility helps migrate tools by:
 /// - Moving files from tools/ to src/bin/
-/// - Adding the auto_help! macro integration
+/// - Adding the `auto_help!` macro integration
 /// - Updating Cargo.toml entries if needed
 /// - Preserving all existing functionality
 //# Purpose: Migrate tools from tools/ directory to src/bin/ with auto-help integration
@@ -125,7 +125,7 @@ fn find_rust_files(dir: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "rs") {
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "rs") {
             rust_files.push(path);
         }
     }
@@ -165,7 +165,7 @@ fn migrate_tool(
 
         // Now read and transform the content at the new location
         let content = fs::read_to_string(dest)?;
-        let transformed = transform_tool_content(&content, tool_name)?;
+        let transformed = transform_tool_content(&content, tool_name);
         fs::write(dest, transformed)?;
 
         println!("✅ File transformed with auto-help integration");
@@ -175,10 +175,10 @@ fn migrate_tool(
             .args(["add", &dest.to_string_lossy()])
             .output()?;
 
-        if !git_add_result.status.success() {
-            println!("⚠️  Warning: Could not stage changes automatically");
-        } else {
+        if git_add_result.status.success() {
             println!("✅ Changes staged for commit");
+        } else {
+            println!("⚠️  Warning: Could not stage changes automatically");
         }
     } else {
         // Fallback to regular file operations
@@ -188,7 +188,7 @@ fn migrate_tool(
         let content = fs::read_to_string(source)?;
 
         // Transform the content
-        let transformed = transform_tool_content(&content, tool_name)?;
+        let transformed = transform_tool_content(&content, tool_name);
 
         // Ensure destination directory exists
         if let Some(parent) = dest.parent() {
@@ -204,17 +204,14 @@ fn migrate_tool(
     Ok(())
 }
 
-fn transform_tool_content(
-    content: &str,
-    tool_name: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
+fn transform_tool_content(content: &str, tool_name: &str) -> String {
     let lines: Vec<&str> = content.lines().collect();
     let mut transformed = Vec::new();
     // let mut in_main = false;
     let mut help_added = false;
     let tool_name_without_ext = tool_name.trim_end_matches(".rs");
 
-    for (i, line) in lines.iter().enumerate() {
+    for (i, &line) in lines.iter().enumerate() {
         // Add the line as-is first
         transformed.push(line.to_string());
 
@@ -224,15 +221,13 @@ fn transform_tool_content(
             // Check if thag_rs is already imported
             let has_thag_import = lines
                 .iter()
-                .any(|l| l.contains(r#"use thag_rs::{{auto_help"#));
+                .any(|l| l.contains(r"use thag_rs::{{auto_help"));
 
             if !has_thag_import {
                 // Add thag_rs import in the dependencies section
                 if let Some(toml_end) = find_toml_block_end(&lines) {
                     // Insert thag_rs dependency
-                    let deps_line = format!(
-                        r#"thag_rs = {{ version = "0.2, thag-auto", default-features = falsee, features = ["core", "simplelog"] }}"#
-                    );
+                    let deps_line = r#"thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }"#.to_string();
                     // This is a simplified approach - in practice you'd want more sophisticated TOML parsing
                     transformed.insert(toml_end, deps_line);
                 }
@@ -257,14 +252,14 @@ fn transform_tool_content(
                     tool_name_without_ext
                 ));
                 transformed.push("    check_help_and_exit(&help);".to_string());
-                transformed.push("".to_string()); // Empty line for spacing
+                transformed.push(String::new()); // Empty line for spacing
             }
 
             help_added = true;
         }
     }
 
-    Ok(transformed.join("\n"))
+    transformed.join("\n")
 }
 
 fn find_toml_block_end(lines: &[&str]) -> Option<usize> {
@@ -330,7 +325,7 @@ fn update_cargo_toml(tool_name: &str) -> Result<bool, Box<dyn std::error::Error>
         if line.starts_with("[[bin]]") {
             // Look for the end of this bin entry (next [[bin]] or end of file)
             for j in (i + 1)..lines.len() {
-                if lines[j].starts_with("[[bin]]") || lines[j].starts_with("[") {
+                if lines[j].starts_with("[[bin]]") || lines[j].starts_with('[') {
                     insert_index = Some(j);
                     break;
                 } else if j == lines.len() - 1 {

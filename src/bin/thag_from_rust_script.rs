@@ -11,8 +11,7 @@ use std::io::{self, Read, Write};
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
     let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    handle.read_to_string(&mut buffer)?;
+    stdin.lock().read_to_string(&mut buffer)?;
     Ok(buffer)
 }
 
@@ -26,9 +25,8 @@ fn safe_println(line: &str) -> Result<(), io::Error> {
         if e.kind() == io::ErrorKind::BrokenPipe {
             // eprintln!("Broken pipe error: {}", e);
             return Ok(());
-        } else {
-            return Err(e);
         }
+        return Err(e);
     }
     Ok(())
 }
@@ -59,9 +57,9 @@ fn main() -> Result<(), io::Error> {
             }
             // Preserve toml
             let line = line.trim_start_matches("//!").trim_start();
-            safe_println(&line)?;
+            safe_println(line)?;
         } else {
-            safe_println(&line)?;
+            safe_println(line)?;
         }
     }
     Ok(())

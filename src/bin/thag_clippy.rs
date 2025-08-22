@@ -121,7 +121,7 @@ fn select_script() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut navigator = FileNavigator::new();
 
     loop {
-        let items = navigator.list_items(Some("rs"), false, false);
+        let items = navigator.list_items(Some("rs"), false, false, false);
 
         let selection = Select::new(
             &format!("Current dir: {}", navigator.current_dir.display()),

@@ -2938,9 +2938,8 @@ impl fmt::Display for Styled<String> {
     }
 }
 
-/// A line print macro that prints a styled and colored message, without verbosity gating..
 /// Trait that allows both Style and Role to be used interchangeably with styling macros
-pub trait StyleLike {
+pub trait Styler {
     /// Convert this item to a Style for use with styling macros
     fn to_style(&self) -> Style;
 
@@ -3003,27 +3002,135 @@ pub trait StyleLike {
             content: content.to_string(),
         }
     }
+
+    /// Apply this style to text and return the styled string
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Error.paint("Error message");
+    /// let styled = Role::Info.paint(format!("Value: {}", 42));
+    /// ```
+    fn paint<D>(&self, val: D) -> String
+    where
+        D: std::fmt::Display,
+    {
+        self.to_style().paint(val)
+    }
+
+    /// Return a Style with bold formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Error.bold().paint("Bold error");
+    /// Role::Info.bold().prtln(format_args!("Bold info: {}", value));
+    /// ```
+    fn bold(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().bold()
+    }
+
+    /// Return a Style with italic formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Emphasis.italic().paint("Italic text");
+    /// Role::Code.italic().prtln(format_args!("Italic code: {}", code));
+    /// ```
+    fn italic(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().italic()
+    }
+
+    /// Return a Style with dim formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Normal.dim().paint("Dimmed text");
+    /// Role::Info.dim().prtln(format_args!("Dimmed info: {}", info));
+    /// ```
+    fn dim(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().dim()
+    }
+
+    /// Return a Style with underline formatting enabled
+    ///
+    /// # Example
+    /// ```ignore
+    /// let styled = Role::Warning.underline().paint("Underlined warning");
+    /// Role::Error.underline().prtln(format_args!("Underlined error: {}", error));
+    /// ```
+    fn underline(self) -> Style
+    where
+        Self: Sized,
+    {
+        self.to_style().underline()
+    }
 }
 
-impl StyleLike for Style {
+/// Trait that allows strings to be styled directly
+///
+/// # Examples
+/// ```ignore
+/// use thag_styling::{Role, Styleable};
+///
+/// let styled = "error message".as_role(Role::Error);
+/// let styled = "warning".as_styled(Role::Warning.bold());
+/// let styled = format!("Value: {}", 42).as_role(Role::Info);
+/// ```
+pub trait Styleable {
+    /// Style this text using the given styler
+    fn as_styled(&self, styler: impl Styler) -> String;
+
+    /// Style this text using the given role
+    fn as_role(&self, role: Role) -> String;
+}
+
+impl Styleable for &str {
+    fn as_styled(&self, styler: impl Styler) -> String {
+        styler.paint(self)
+    }
+
+    fn as_role(&self, role: Role) -> String {
+        role.paint(self)
+    }
+}
+
+impl Styleable for String {
+    fn as_styled(&self, styler: impl Styler) -> String {
+        styler.paint(self)
+    }
+
+    fn as_role(&self, role: Role) -> String {
+        role.paint(self)
+    }
+}
+
+impl Styler for Style {
     fn to_style(&self) -> Style {
         self.clone()
     }
 }
 
-impl StyleLike for &Style {
+impl Styler for &Style {
     fn to_style(&self) -> Style {
         (*self).clone()
     }
 }
 
-impl StyleLike for Role {
+impl Styler for Role {
     fn to_style(&self) -> Style {
         Style::from(*self)
     }
 }
 
-impl StyleLike for &Role {
+impl Styler for &Role {
     fn to_style(&self) -> Style {
         Style::from(**self)
     }
@@ -3038,7 +3145,7 @@ pub struct Embedded {
 
 impl Embedded {
     /// Create a new embedded styled text
-    pub fn new<S: StyleLike>(style: &S, content: &str) -> Self {
+    pub fn new<S: Styler>(style: &S, content: &str) -> Self {
         Self {
             style: style.to_style(),
             content: content.to_string(),
@@ -3104,7 +3211,7 @@ pub fn format_with_embeds(outer_style: &Style, format_str: &str, embeds: &[Embed
 #[macro_export]
 macro_rules! cprtln_with_embeds {
     ($style:expr, $format_str:expr, $embeds:expr) => {{
-        let outer_style = $crate::styling::StyleLike::to_style(&$style);
+        let outer_style = $crate::styling::Styler::to_style(&$style);
         let formatted = $crate::styling::format_with_embeds(&outer_style, $format_str, $embeds);
         let painted = outer_style.paint(formatted);
         println!("{painted}");
@@ -3139,7 +3246,7 @@ macro_rules! cvprtln_with_embeds {
 macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
-        let painted = $crate::styling::StyleLike::to_style(&$style).paint(content);
+        let painted = $crate::styling::Styler::to_style(&$style).paint(content);
         println!("{painted}");
     }};
 }
@@ -3420,25 +3527,25 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_stylelike_trait() {
+    fn test_styler_trait() {
         init_test_output();
 
-        // Test that Role implements StyleLike
+        // Test that Role implements Styler
         let role = Role::Code;
         let style_from_role = role.to_style();
         assert_eq!(style_from_role, Style::from(Role::Code));
 
-        // Test that &Role implements StyleLike
+        // Test that &Role implements Styler
         let role_ref = &Role::Error;
         let style_from_role_ref = role_ref.to_style();
         assert_eq!(style_from_role_ref, Style::from(Role::Error));
 
-        // Test that Style implements StyleLike
+        // Test that Style implements Styler
         let original_style = Style::from(Role::Success).bold();
         let style_from_style = original_style.to_style();
         assert_eq!(style_from_style, original_style);
 
-        // Test that &Style implements StyleLike
+        // Test that &Style implements Styler
         let style_ref = &Style::from(Role::Warning).italic();
         let style_from_style_ref = style_ref.to_style();
         assert_eq!(style_from_style_ref, *style_ref);
@@ -3446,12 +3553,54 @@ mod tests {
         let output = get_test_output();
         flush_test_output(); // Write captured output to stdout
         assert!(!output.is_empty());
-        flush_test_output(); // Write captured output to stdout
     }
 
     #[test]
     #[serial]
-    fn test_stylelike_trait_methods() {
+    fn test_styler_direct_methods() {
+        init_test_output();
+
+        // Test direct paint method on Role
+        let painted_role = Role::Error.paint("Test error");
+        assert!(painted_role.contains("Test error"));
+
+        // Test direct paint method on Style
+        let style = Style::from(Role::Success).bold();
+        let painted_style = style.paint("Test success");
+        assert!(painted_style.contains("Test success"));
+
+        // Test chaining methods on Role
+        let chained = Role::Warning.bold().italic().paint("Chained warning");
+        assert!(chained.contains("Chained warning"));
+
+        // Test individual formatting methods
+        let bold_role = Role::Info.bold();
+        assert!(bold_role.bold);
+
+        let italic_role = Role::Code.italic();
+        assert!(italic_role.italic);
+
+        let dim_role = Role::Normal.dim();
+        assert!(dim_role.dim);
+
+        let underline_role = Role::Emphasis.underline();
+        assert!(underline_role.underline);
+
+        // Test that chaining works with multiple attributes
+        let multi_attr = Role::Debug.bold().italic().dim().underline();
+        assert!(multi_attr.bold);
+        assert!(multi_attr.italic);
+        assert!(multi_attr.dim);
+        assert!(multi_attr.underline);
+
+        let _output = get_test_output();
+        flush_test_output(); // Write captured output to stdout
+                             // Output might be empty for paint tests, but should not crash
+    }
+
+    #[test]
+    #[serial]
+    fn test_styler_trait_methods() {
         init_test_output();
 
         // Test prtln method with Role

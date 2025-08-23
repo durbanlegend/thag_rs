@@ -14,9 +14,9 @@ thag_styling = { version = "0.2, thag-auto", default-features = false, features 
 //# Categories: color, styling, terminal, theming, tools
 use std::error::Error;
 use thag_proc_macros::file_navigator;
-use thag_rs::paint_for_role;
+
 use thag_styling::{
-    cprtln, cprtln_with_embeds, select_builtin_theme, ColorInitStrategy, Role, Style, StyleLike,
+    cprtln, cprtln_with_embeds, select_builtin_theme, ColorInitStrategy, Role, Style, Styler,
     TermAttributes, TermBgLuma, Theme,
 };
 
@@ -231,11 +231,7 @@ fn display_color_row(colors: &[(u8, &str)]) {
     // Print color indices
     print!("   ");
     for (index, _) in colors {
-        print!(
-            "{}",
-            // Style::from(Role::Emphasis).paint(format!("{:>12}", index))
-            paint_for_role(Role::Emphasis, &format!("{:>12}", index))
-        );
+        print!("{}", Role::Emphasis.paint(format!("{:>12}", index)));
     }
     println!();
 
@@ -295,11 +291,7 @@ fn display_theme_colors(theme: &Theme) {
     for (name, style) in semantic_colors {
         let colored_text = style.paint(format!("{:>12}", name));
         let rgb_info = extract_rgb_info(style);
-        println!(
-            "   {} {}",
-            colored_text,
-            Style::from(Role::Normal).dim().paint(&rgb_info)
-        );
+        println!("   {} {}", colored_text, Role::Subtle.paint(&rgb_info));
     }
 
     // Show background color preview if available
@@ -424,10 +416,10 @@ fn display_color_comparison(theme: &Theme) {
             format!(
                 "\x1b[38;2;{};{};{}m████\x1b[0m #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
                 r, g, b, r, g, b, r, g, b
-
+            )
         } else {
             // Style::from(Role::Subtle).paint("N/A").to_string()
-            Style::from(Role::Normal).dim().paint("N/A").to_string()
+            Role::Normal.dim().paint("N/A").to_string()
         };
 
         println!(
@@ -435,8 +427,7 @@ fn display_color_comparison(theme: &Theme) {
             name,
             terminal_sample,
             thag_display,
-            // Style::from(Role::Subtle).paint(&semantic_role)
-            Style::from(Role::Normal).dim().paint(&semantic_role)
+            Role::Subtle.paint(&semantic_role)
         );
     }
 

@@ -280,7 +280,7 @@ impl PaletteSync {
     /// Show hybrid demonstration: both palette colors and proper styling with attributes
     #[allow(clippy::too_many_lines)]
     pub fn demonstrate_hybrid_styling(_theme: &Theme) {
-        use crate::{Role, Style, StyleLike};
+        use crate::{Role, Style, Styler};
 
         println!();
         println!("🎨 Hybrid Color Demonstration:");

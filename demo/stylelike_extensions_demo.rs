@@ -3,7 +3,7 @@
 # thag_common = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
-/// Demo script showcasing StyleLike trait extensions for ergonomic printing and embedding
+/// Demo script showcasing Styler trait extensions for ergonomic printing and embedding
 ///
 /// This script demonstrates:
 /// 1. cprtln! - ergonomic styled printing macro
@@ -11,11 +11,11 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 /// 3. cprtln_with_embeds! - styled printing with embedded styled content
 /// 4. cvprtln_with_embeds! - verbosity-gated embedded styled printing
 ///
-/// The StyleLike trait allows both Role and Style to be used interchangeably,
+/// The Styler trait allows both Role and Style to be used interchangeably,
 /// and the embedding feature preserves outer styles when nesting different styles.
-//# Purpose: Demo StyleLike extensions for ergonomic styling and embedding
+//# Purpose: Demo Styler extensions for ergonomic styling and embedding
 //# Categories: styling, ergonomics, embedding
-use thag_styling::styling::{Color, Embedded, Role, Style, StyleLike, TermAttributes};
+use thag_styling::styling::{Color, Embedded, Role, Style, Styler, TermAttributes};
 use thag_styling::{
     cprtln, cprtln_with_embeds, cvprtln, cvprtln_with_embeds, ColorInitStrategy, Verbosity,
 };
@@ -24,7 +24,7 @@ fn main() {
     // Initialize styling system
     TermAttributes::initialize(&ColorInitStrategy::Match);
 
-    println!("=== StyleLike Extensions Demo ===\n");
+    println!("=== Styler Extensions Demo ===\n");
 
     // Section 1: Basic cprtln! usage
     println!("1. Basic cprtln! usage:");
@@ -190,7 +190,7 @@ fn main() {
     println!();
 
     // Section 10: Demonstrating the .embed() method on different types
-    println!("10. Using .embed() method on different StyleLike types:");
+    println!("10. Using .embed() method on different Styler types:");
 
     let role_embed = Role::Code.embed("role-based");
     let style_embed = Style::from(Role::Error).bold().embed("style-based");
@@ -203,7 +203,7 @@ fn main() {
         &[role_embed, style_embed, color_embed, ref_embed]
     );
 
-    println!("\n=== End of StyleLike Extensions Demo ===");
+    println!("\n=== End of Styler Extensions Demo ===");
     println!("\nKey benefits:");
     cprtln!(
         Role::Success,

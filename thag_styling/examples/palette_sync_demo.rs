@@ -150,7 +150,7 @@ fn list_themes() {
 }
 
 fn demonstrate_colors() {
-    use thag_styling::{Role, Style, StyleLike};
+    use thag_styling::{Role, Style, Styler};
 
     println!("🌈 Thag styling roles with current theme:");
 

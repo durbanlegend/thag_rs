@@ -3,7 +3,7 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Demo showcasing both macro and method syntax for StyleLike functionality
+/// Demo showcasing both macro and method syntax for Styler functionality
 ///
 /// This demonstrates:
 /// 1. Traditional macro syntax: cprtln!(Role::Code, "message")
@@ -12,7 +12,7 @@ thag_styling = { version = "0.2, thag-auto" }
 //# Purpose: Demo both macro and method approaches for styling
 //# Categories: styling, techniques
 use thag_styling::{
-    cprtln, cprtln_with_embeds, cvprtln, ColorInitStrategy, Role, Style, StyleLike, TermAttributes,
+    cprtln, cprtln_with_embeds, cvprtln, ColorInitStrategy, Role, Style, Styler, TermAttributes,
     Verbosity,
 };
 

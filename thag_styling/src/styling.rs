@@ -3074,89 +3074,210 @@ pub trait Styler {
     }
 }
 
-/// Trait that allows strings to be styled directly
+/// A styled string that preserves styling context like colored's ColoredString
+///
+/// This type automatically handles reset sequences to ensure that when styled
+/// strings are embedded within other styled strings, the outer styling context
+/// is properly preserved.
+#[derive(Clone, Debug)]
+pub struct StyledString {
+    content: String,
+    style: Style,
+}
+
+impl StyledString {
+    /// Create a new StyledString with the given content and style
+    pub fn new(content: String, style: Style) -> Self {
+        Self { content, style }
+    }
+
+    /// Replace all reset sequences (\x1b[0m) with this style's ANSI codes
+    ///
+    /// This is the key innovation that allows perfect nesting - each level
+    /// replaces the reset sequences of its embedded content with its own
+    /// color codes, ensuring the outer context is always restored.
+    fn replace_resets_with_style(&self) -> String {
+        let reset = "\x1b[0m";
+        let style_codes = self.style.to_ansi_codes();
+
+        if !self.content.contains(reset) {
+            return self.content.clone();
+        }
+
+        // Simple and efficient: replace all resets with our style codes
+        self.content.replace(reset, &style_codes)
+    }
+
+    /// Convert to final styled string with proper ANSI codes
+    pub fn to_styled(&self) -> String {
+        let content_with_replaced_resets = self.replace_resets_with_style();
+        let style_codes = self.style.to_ansi_codes();
+        format!("{}{}\x1b[0m", style_codes, content_with_replaced_resets)
+    }
+
+    /// Chain bold styling
+    pub fn bold(self) -> Self {
+        Self {
+            content: self.content,
+            style: self.style.bold(),
+        }
+    }
+
+    /// Chain italic styling
+    pub fn italic(self) -> Self {
+        Self {
+            content: self.content,
+            style: self.style.italic(),
+        }
+    }
+
+    /// Chain dim styling
+    pub fn dim(self) -> Self {
+        Self {
+            content: self.content,
+            style: self.style.dim(),
+        }
+    }
+
+    /// Chain underline styling
+    pub fn underline(self) -> Self {
+        Self {
+            content: self.content,
+            style: self.style.underline(),
+        }
+    }
+}
+
+impl std::fmt::Display for StyledString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_styled())
+    }
+}
+
+impl AsRef<str> for StyledString {
+    fn as_ref(&self) -> &str {
+        &self.content
+    }
+}
+
+impl From<StyledString> for String {
+    fn from(styled: StyledString) -> String {
+        styled.to_styled()
+    }
+}
+
+/// Extension trait for generating ANSI codes from Style
+trait StyleAnsiExt {
+    fn to_ansi_codes(&self) -> String;
+}
+
+impl StyleAnsiExt for Style {
+    fn to_ansi_codes(&self) -> String {
+        let mut codes = String::new();
+
+        if let Some(color_info) = &self.foreground {
+            codes.push_str(color_info.ansi);
+        }
+
+        if self.bold {
+            codes.push_str("\x1b[1m");
+        }
+        if self.italic {
+            codes.push_str("\x1b[3m");
+        }
+        if self.dim {
+            codes.push_str("\x1b[2m");
+        }
+        if self.underline {
+            codes.push_str("\x1b[4m");
+        }
+
+        codes
+    }
+}
+
+/// Trait that allows strings to be styled directly with automatic context preservation
 ///
 /// # Examples
 /// ```ignore
 /// use thag_styling::{Role, Styleable};
 ///
 /// let styled = "error message".style_with(Role::Error);
-/// let styled = "warning".style_with(Role::Warning.bold());
-/// let styled = format!("Value: {}", 42).style_with(Role::Info);
+/// let nested = format!("Warning: {}", "critical".error()).warning();
 /// ```
 pub trait Styleable: std::fmt::Display {
-    /// Style this text using the given styler
-    fn style_with(&self, styler: impl Styler) -> String;
+    /// Style this text using the given styler, returning a StyledString
+    fn style_with(&self, styler: impl Styler) -> StyledString;
 
     // Individual role methods for convenience (like colored's color methods)
 
     /// Style this text as an error message
-    fn error(&self) -> String {
+    fn error(&self) -> StyledString {
         self.style_with(Role::Error)
     }
 
     /// Style this text as a warning message
-    fn warning(&self) -> String {
+    fn warning(&self) -> StyledString {
         self.style_with(Role::Warning)
     }
 
     /// Style this text as a success message
-    fn success(&self) -> String {
+    fn success(&self) -> StyledString {
         self.style_with(Role::Success)
     }
 
     /// Style this text as an informational message
-    fn info(&self) -> String {
+    fn info(&self) -> StyledString {
         self.style_with(Role::Info)
     }
 
     /// Style this text as emphasized text
-    fn emphasis(&self) -> String {
+    fn emphasis(&self) -> StyledString {
         self.style_with(Role::Emphasis)
     }
 
     /// Style this text as code
-    fn code(&self) -> String {
+    fn code(&self) -> StyledString {
         self.style_with(Role::Code)
     }
 
     /// Style this text as normal text
-    fn normal(&self) -> String {
+    fn normal(&self) -> StyledString {
         self.style_with(Role::Normal)
     }
 
     /// Style this text as subtle text
-    fn subtle(&self) -> String {
+    fn subtle(&self) -> StyledString {
         self.style_with(Role::Subtle)
     }
 
     /// Style this text as hint text
-    fn hint(&self) -> String {
+    fn hint(&self) -> StyledString {
         self.style_with(Role::Hint)
     }
 
     /// Style this text as debug information
-    fn debug(&self) -> String {
+    fn debug(&self) -> StyledString {
         self.style_with(Role::Debug)
     }
 
     /// Style this text as trace information
-    fn trace(&self) -> String {
+    fn trace(&self) -> StyledString {
         self.style_with(Role::Trace)
     }
 
     /// Style this text as a primary heading
-    fn heading1(&self) -> String {
+    fn heading1(&self) -> StyledString {
         self.style_with(Role::Heading1)
     }
 
     /// Style this text as a secondary heading
-    fn heading2(&self) -> String {
+    fn heading2(&self) -> StyledString {
         self.style_with(Role::Heading2)
     }
 
     /// Style this text as a tertiary heading
-    fn heading3(&self) -> String {
+    fn heading3(&self) -> StyledString {
         self.style_with(Role::Heading3)
     }
 
@@ -3199,14 +3320,20 @@ pub trait Styleable: std::fmt::Display {
 }
 
 impl Styleable for &str {
-    fn style_with(&self, styler: impl Styler) -> String {
-        styler.paint(self)
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
     }
 }
 
 impl Styleable for String {
-    fn style_with(&self, styler: impl Styler) -> String {
-        styler.paint(self)
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.clone(), styler.to_style())
+    }
+}
+
+impl Styler for StyledString {
+    fn to_style(&self) -> Style {
+        self.style.clone()
     }
 }
 

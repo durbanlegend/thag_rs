@@ -10,9 +10,8 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 /// inner reset sequences.
 //# Purpose: Concept for context-preserving styled strings
 //# Categories: styling, concepts, prototypes
-
 use std::fmt;
-use thag_styling::{ColorInitStrategy, Role, Style, Styler, TermAttributes};
+use thag_styling::{ColorInitStrategy, Role, Style, Styleable, Styler, TermAttributes};
 
 /// A styled string that preserves styling context like colored's ColoredString
 #[derive(Clone, Debug)]
@@ -33,7 +32,7 @@ impl StyledString {
     }
 
     /// Escape inner reset sequences by restoring outer style after each one
-    /// This mimics colored's escape_inner_reset_sequences method
+    /// This mimics `colored`'s `escape_inner_reset_sequences` method
     fn escape_inner_resets(&self) -> String {
         if !self.has_inner_resets() {
             return self.content.clone();
@@ -188,19 +187,25 @@ fn main() {
     println!("   {}", simple);
 
     println!("\n2. The nesting problem with current approach:");
-    let inner1 = "Heading1 text".styled_with(Role::Heading1.underline());
-    let inner2 = "Heading2 text".styled_with(Role::Heading2.italic());
-    let broken_embed = format!("Error {} error {} error", inner1, inner2).styled_error();
-    let broken_result = format!("Warning {} warning", broken_embed).styled_warning();
-    println!("   {}", broken_result);
+    let inner1 = "Heading1 text".style_with(Role::Heading1.underline());
+    let inner2 = "Heading2 text".style_with(Role::Heading2.italic());
+    let broken_embed = format!("Error {} error {} error", inner1, inner2).error();
+    println!("broken_embed=   {}", broken_embed);
+    println!("broken_embed=   {:?}", broken_embed);
+    let broken_result = format!("Warning {} warning", broken_embed).warning();
+    println!("broken_result=   {}", broken_result);
+    println!("broken_result=   {:?}", broken_result);
     println!("   ❌ Problem: Warning color likely lost after inner resets");
 
     println!("\n3. StyledString with inner reset handling:");
     let smart_inner1 = "Heading1 text".styled_with(Role::Heading1.underline());
     let smart_inner2 = "Heading2 text".styled_with(Role::Heading2.italic());
     let smart_embed = format!("Error {} error {} error", smart_inner1, smart_inner2).styled_error();
+    println!("smart_embed=   {}", smart_embed);
+    println!("smart_embed=   {:?}", smart_embed);
     let smart_result = format!("Warning {} warning", smart_embed).styled_warning();
-    println!("   {}", smart_result);
+    println!("smart_result=   {}", smart_result);
+    println!("smart_result=   {:?}", smart_result);
     println!("   ✅ Should work: Warning color restored after each inner reset");
 
     println!("\n4. Chaining with StyledString:");

@@ -31,15 +31,26 @@ fn main() {
     );
     // Notice: Warning styling is preserved throughout!
 
-    println!("\n3. ALTERNATIVE (using individual embed methods):");
+    println!("\n3. CORRECT APPROACH - nested embedding:");
     cprtln_with_embeds!(
         Role::Warning,
         "Warning {} warning",
-        &[format!(
+        &[Role::Error.embed(&format!(
             "Error {} error {} error",
-            "Heading1 and underlined!", "Heading2 and italic!"
-        )
-        .embed_error()]
+            Role::Heading1.underline().paint("Heading1 and underlined!"),
+            Role::Heading2.italic().paint("Heading2 and italic!")
+        ))]
+    );
+
+    println!("\n4. EVEN BETTER - proper multi-level embedding:");
+    // This would be the ideal approach but requires nested embedding support
+    cprtln_with_embeds!(
+        Role::Warning,
+        "Warning Error {} error {} error warning",
+        &[
+            "Heading1 and underlined!".embed_with(Role::Heading1.underline()),
+            "Heading2 and italic!".embed_with(Role::Heading2.italic())
+        ]
     );
 
     println!("\n✅ Problem solved! Outer styling is now properly preserved.");

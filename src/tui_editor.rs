@@ -674,7 +674,7 @@ where
     // Create the `TextArea` from initial content
     let mut textarea = TextArea::from(edit_data.initial_content.lines());
     textarea.set_hard_tab_indent(true);
-    eprintln!("textarea.tab_length()={}", textarea.tab_length());
+    // eprintln!("textarea.tab_length()={}", textarea.tab_length());
 
     // Set up the display parameters for the `TextArea`
     textarea.set_block(
@@ -898,7 +898,7 @@ where
                     );
                 }
                 key!(f10) => {
-                    eprintln!("key_combination={key_combination:?}");
+                    // eprintln!("key_combination={key_combination:?}");
                     ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
                     textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
                     textarea.set_block(

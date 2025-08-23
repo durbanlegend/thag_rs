@@ -3080,35 +3080,133 @@ pub trait Styler {
 /// ```ignore
 /// use thag_styling::{Role, Styleable};
 ///
-/// let styled = "error message".as_role(Role::Error);
-/// let styled = "warning".as_styled(Role::Warning.bold());
-/// let styled = format!("Value: {}", 42).as_role(Role::Info);
+/// let styled = "error message".style_with(Role::Error);
+/// let styled = "warning".style_with(Role::Warning.bold());
+/// let styled = format!("Value: {}", 42).style_with(Role::Info);
 /// ```
-pub trait Styleable {
+pub trait Styleable: std::fmt::Display {
     /// Style this text using the given styler
-    fn as_styled(&self, styler: impl Styler) -> String;
+    fn style_with(&self, styler: impl Styler) -> String;
 
-    /// Style this text using the given role
-    fn as_role(&self, role: Role) -> String;
+    // Individual role methods for convenience (like colored's color methods)
+
+    /// Style this text as an error message
+    fn error(&self) -> String {
+        self.style_with(Role::Error)
+    }
+
+    /// Style this text as a warning message
+    fn warning(&self) -> String {
+        self.style_with(Role::Warning)
+    }
+
+    /// Style this text as a success message
+    fn success(&self) -> String {
+        self.style_with(Role::Success)
+    }
+
+    /// Style this text as an informational message
+    fn info(&self) -> String {
+        self.style_with(Role::Info)
+    }
+
+    /// Style this text as emphasized text
+    fn emphasis(&self) -> String {
+        self.style_with(Role::Emphasis)
+    }
+
+    /// Style this text as code
+    fn code(&self) -> String {
+        self.style_with(Role::Code)
+    }
+
+    /// Style this text as normal text
+    fn normal(&self) -> String {
+        self.style_with(Role::Normal)
+    }
+
+    /// Style this text as subtle text
+    fn subtle(&self) -> String {
+        self.style_with(Role::Subtle)
+    }
+
+    /// Style this text as hint text
+    fn hint(&self) -> String {
+        self.style_with(Role::Hint)
+    }
+
+    /// Style this text as debug information
+    fn debug(&self) -> String {
+        self.style_with(Role::Debug)
+    }
+
+    /// Style this text as trace information
+    fn trace(&self) -> String {
+        self.style_with(Role::Trace)
+    }
+
+    /// Style this text as a primary heading
+    fn heading1(&self) -> String {
+        self.style_with(Role::Heading1)
+    }
+
+    /// Style this text as a secondary heading
+    fn heading2(&self) -> String {
+        self.style_with(Role::Heading2)
+    }
+
+    /// Style this text as a tertiary heading
+    fn heading3(&self) -> String {
+        self.style_with(Role::Heading3)
+    }
+
+    // Embedding-aware methods that return Embedded for use with cprtln_with_embeds!
+
+    /// Create an embedded styled text for this string using the given styler
+    fn embed_with(&self, styler: impl Styler) -> Embedded {
+        styler.embed(&format!("{}", self))
+    }
+
+    /// Create an embedded error message
+    fn embed_error(&self) -> Embedded {
+        Role::Error.embed(&format!("{}", self))
+    }
+
+    /// Create an embedded warning message
+    fn embed_warning(&self) -> Embedded {
+        Role::Warning.embed(&format!("{}", self))
+    }
+
+    /// Create an embedded success message
+    fn embed_success(&self) -> Embedded {
+        Role::Success.embed(&format!("{}", self))
+    }
+
+    /// Create an embedded info message
+    fn embed_info(&self) -> Embedded {
+        Role::Info.embed(&format!("{}", self))
+    }
+
+    /// Create an embedded code snippet
+    fn embed_code(&self) -> Embedded {
+        Role::Code.embed(&format!("{}", self))
+    }
+
+    /// Create an embedded emphasized text
+    fn embed_emphasis(&self) -> Embedded {
+        Role::Emphasis.embed(&format!("{}", self))
+    }
 }
 
 impl Styleable for &str {
-    fn as_styled(&self, styler: impl Styler) -> String {
+    fn style_with(&self, styler: impl Styler) -> String {
         styler.paint(self)
-    }
-
-    fn as_role(&self, role: Role) -> String {
-        role.paint(self)
     }
 }
 
 impl Styleable for String {
-    fn as_styled(&self, styler: impl Styler) -> String {
+    fn style_with(&self, styler: impl Styler) -> String {
         styler.paint(self)
-    }
-
-    fn as_role(&self, role: Role) -> String {
-        role.paint(self)
     }
 }
 

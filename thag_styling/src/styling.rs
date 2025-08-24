@@ -3096,6 +3096,9 @@ impl StyledString {
     /// This is the key innovation that allows perfect nesting - each level
     /// replaces the reset sequences of its embedded content with its own
     /// color codes, ensuring the outer context is always restored.
+    ///
+    /// Enhanced to properly reset text attributes (bold/dim, italic, underline)
+    /// that would otherwise leak from inner styled content.
     fn replace_resets_with_style(&self) -> String {
         let reset = "\x1b[0m";
         let style_codes = self.style.to_ansi_codes();
@@ -3104,15 +3107,39 @@ impl StyledString {
             return self.content.clone();
         }
 
-        // Simple and efficient: replace all resets with our style codes
-        self.content.replace(reset, &style_codes)
+        // Build the replacement string with attribute resets and style codes
+        let replacement = self.build_reset_replacement(&style_codes);
+
+        // Replace all resets with our enhanced replacement
+        self.content.replace(reset, &replacement)
+    }
+
+    /// Build the complete styling prefix with attribute resets
+    ///
+    /// This creates a string that:
+    /// 1. Always resets all text attributes to prevent bleeding
+    /// 2. Applies the current style's ANSI codes
+    fn build_styling_prefix(&self) -> String {
+        let style_codes = self.style.to_ansi_codes();
+
+        // Always include full attribute reset to prevent bleeding from outer contexts
+        format!("\x1b[22;23;24m{}", style_codes)
+    }
+
+    /// Build the replacement string for inner resets
+    ///
+    /// This creates a replacement for \x1b[0m that uses the same prefix
+    /// as the main styling to ensure consistent attribute handling
+    fn build_reset_replacement(&self, _style_codes: &str) -> String {
+        // Use the same prefix as the main styling
+        self.build_styling_prefix()
     }
 
     /// Convert to final styled string with proper ANSI codes
     pub fn to_styled(&self) -> String {
         let content_with_replaced_resets = self.replace_resets_with_style();
-        let style_codes = self.style.to_ansi_codes();
-        format!("{}{}\x1b[0m", style_codes, content_with_replaced_resets)
+        let styling_prefix = self.build_styling_prefix();
+        format!("{}{}\x1b[0m", styling_prefix, content_with_replaced_resets)
     }
 
     /// Chain bold styling

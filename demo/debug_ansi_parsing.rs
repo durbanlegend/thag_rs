@@ -1,6 +1,12 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+thag_styling = { version = "0.2, thag-auto" }
+
+[target.'cfg(not(target_os = "windows"))'.features]
+default = ["thag_styling/color_detect"]
+
+[target.'cfg(target_os = "windows")'.features]
+default = ["thag_styling/config"]
 */
 
 /// Debug ANSI code generation and parsing

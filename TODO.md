@@ -34,6 +34,8 @@
 - [ ]  Thag tool for showing current terminal palette - customize demo/palette_with_vibrant_theme.rs to make it generic.
 - [ ]  Generate mintty theme for Git Bash - nice and simple, needs bright colours.
 - [ ]  Consolidate tools in thag_rs/src/bin?. Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264)
+- [ ]  Different thag_styling dependencies in TOML block for Windows vs other.
+- [ ]  Fix thag_gen_terminal_themes.rs for Windows at least.
 
 let _ = writeln!(output,
 

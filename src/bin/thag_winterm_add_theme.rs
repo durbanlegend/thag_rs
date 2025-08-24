@@ -17,7 +17,15 @@ serde_json = "1.0"
 #[cfg(target_os = "windows")]
 use colored::Colorize;
 #[cfg(target_os = "windows")]
+use std::{
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
+#[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
+#[cfg(target_os = "windows")]
+use thag_rs::Theme;
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
@@ -87,8 +95,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("   ✅ {}", theme.name.bright_green());
             }
             Err(e) => {
+                let e_str = &(e).to_string();
                 installation_errors.push((theme.name.clone(), e));
-                println!("   ❌ {}: {}", theme.name.bright_red(), e.to_string().red());
+                println!("   ❌ {}: {}", theme.name.bright_red(), e_str.red());
             }
         }
     }
@@ -124,7 +133,7 @@ fn get_windows_terminal_settings_path() -> Result<PathBuf, Box<dyn Error>> {
 fn select_themes_for_installation(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{Confirm, MultiSelect, Select, Text};
+    use inquire::{Select};
 
     let selection_options = vec![
         "Select theme files (.toml)",
@@ -154,11 +163,12 @@ fn select_individual_toml_themes(
     use inquire::Confirm;
 
     let extensions = vec!["toml", "TOML"];
+    let extensions = extensions.join(",");
     let mut selected_themes = Vec::new();
 
     loop {
         println!("\n📁 Select a theme file (.toml format):");
-        match select_file(navigator, Some("toml"), false) {
+        match select_file(navigator, Some(&extensions), false) {
             Ok(theme_file) => {
                 match Theme::load_from_file(&theme_file) {
                     Ok(theme) => {
@@ -231,9 +241,10 @@ fn select_themes_from_directory(
                     .iter()
                     .map(|t| format!("{} - {}", t.name, t.description))
                     .collect();
+                let len = theme_names.len();
 
-                let selected_names = MultiSelect::new("Select themes to install:", theme_names)
-                    .with_default(&(0..theme_names.len()).collect::<Vec<_>>())
+                let selected_names = MultiSelect::new("Select themes to install:", theme_names.clone())
+                    .with_default(&(0..len).collect::<Vec<_>>())
                     .prompt()?;
 
                 let selected_themes = themes
@@ -256,7 +267,7 @@ fn select_themes_from_directory(
 fn select_exported_json_themes(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{Confirm, MultiSelect};
+    use inquire::{ MultiSelect};
 
     println!("\n📁 Select directory containing exported Windows Terminal themes (.json):");
     match select_directory(navigator, true) {
@@ -278,9 +289,10 @@ fn select_exported_json_themes(
                         .to_string()
                 })
                 .collect();
+            let len = file_names.len();
 
-            let selected_names = MultiSelect::new("Select theme files to install:", file_names)
-                .with_default(&(0..file_names.len()).collect::<Vec<_>>())
+            let selected_names = MultiSelect::new("Select theme files to install:", file_names.clone())
+                .with_default(&(0..len).collect::<Vec<_>>())
                 .prompt()?;
 
             let selected_files: Vec<_> = json_files
@@ -493,6 +505,8 @@ fn add_theme_to_settings(
     // Generate Windows Terminal color scheme from theme
     let color_scheme = if theme.filename.extension().and_then(|s| s.to_str()) == Some("json") {
         // Load existing JSON scheme
+
+        use std::fs;
         let json_content = fs::read_to_string(&theme.filename)?;
         serde_json::from_str(&json_content)?
     } else {

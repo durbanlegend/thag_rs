@@ -427,7 +427,7 @@ fn display_color_comparison(theme: &Theme) {
             name,
             terminal_sample,
             thag_display,
-            Role::Subtle.paint(&semantic_role)
+            Role::Subtle.paint(semantic_role)
         );
     }
 

@@ -410,6 +410,7 @@ feature_sets=(
     "repl"
     "full"
     "default"
+    "tools"
 )
 
 for f in "${feature_sets[@]}"; do

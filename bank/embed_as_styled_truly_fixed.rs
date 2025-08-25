@@ -5,8 +5,10 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 */
+use thag_styling::styling::{format_with_embeds, Embedded};
 use thag_styling::{
-    cprtln, cprtln_with_embeds, ColorInitStrategy, Role, Styleable, Styler, TermAttributes,
+    cprtln, cprtln_with_embeds, ColorInitStrategy, Role, Style, Styleable, StyledString,
+    StyledStringExt, Styler, TermAttributes,
 };
 
 fn main() {
@@ -21,20 +23,33 @@ fn main() {
     let embed = format!("Error {cstring1} error {cstring2} error").error();
 
     cprtln!(Role::Warning, "Warning {embed} warning");
-    println!("   ❌ Problem: Warning styling lost after embedded content");
+    println!("   ❌ Problem: Warning styling lost after embedded content - now fixed");
 
-    println!("\n2. ATTEMPT 1 - using embed methods (still wrong):");
+    // println!("\n2. ATTEMPT 1 - using embed methods (still wrong):");
+    // let embed1 = "Heading1 and underlined!".embed_with(Role::Heading1.underline());
+    // let embed2 = "Heading2 and italic!".embed_with(Role::Heading2.italic());
+
+    // cprtln_with_embeds!(
+    //     Role::Warning,
+    //     "Warning Error {} error {} error warning",
+    //     &[embed1, embed2]
+
+    println!("\n2. ATTEMPT 1 - using embed methods (now fixed but with redundant application of Error style):");
     let embed1 = "Heading1 and underlined!".embed_with(Role::Heading1.underline());
     let embed2 = "Heading2 and italic!".embed_with(Role::Heading2.italic());
 
-    cprtln_with_embeds!(
-        Role::Warning,
-        "Warning Error {} error {} error warning",
-        &[embed1, embed2]
+    // let error_text = format_with_embeds(Role::Error, "Error {} error {} error", &[embed1, embed2]);
+    let error_text = format_with_embeds(
+        &Style::from(Role::Error),
+        "Error {} error {} error",
+        &[embed1, embed2],
     );
-    println!("   ❌ Problem: Entire embedded content becomes Warning color");
+    // let error_embed = error_text.embed_with(Style::new());
+    // let error_embed = Embedded::new(&Style::new(), &error_text); // Use plain style
+    let error_embed = error_text.embed_with(Role::Error);
+    cprtln_with_embeds!(Role::Warning, "Warning {} warning", &[error_embed]);
 
-    println!("\n3. CORRECT APPROACH - multiple separate embeds:");
+    println!("\n3. CORRECT APPROACH - multiple separate embeds (now superseded by StyledString):");
     // The key insight: we need to break this into multiple separate embeds
     // Each styled piece needs to be its own embed in the outer warning context
     cprtln_with_embeds!(
@@ -50,7 +65,7 @@ fn main() {
     );
     println!("   ✅ Success: Each piece maintains its color, Warning preserved throughout");
 
-    println!("\n4. ALTERNATIVE - using Role.embed directly:");
+    println!("\n4. ALTERNATIVE - using Role.embed directly (now superseded by StyledString):");
     cprtln_with_embeds!(
         Role::Warning,
         "Warning {} {} {} {} {} warning",
@@ -64,7 +79,7 @@ fn main() {
     );
     println!("   ✅ Success: Same result using Role.embed() syntax");
 
-    println!("\n5. MOST READABLE - descriptive variable names:");
+    println!("\n5. MOST READABLE - descriptive variable names (now superseded by StyledString):");
     let error_start = "Error".embed_error();
     let heading1_styled = "Heading1 and underlined!".embed_with(Role::Heading1.underline());
     let error_middle1 = "error".embed_error();
@@ -82,7 +97,19 @@ fn main() {
             error_end
         ]
     );
-    println!("   ✅ Success: Most readable approach with descriptive names");
+    println!("   ✅ Success: Most readable EMBED approach with descriptive names");
+
+    println!("\n6. StyledString approach:");
+    let styled_error = format!(
+        "Error {} error {} error",
+        "Heading1 and underlined!".heading1().underline(),
+        "Heading2 and italic!".heading2().italic()
+    )
+    .error();
+    format!("Warning {} warning", styled_error)
+        .warning()
+        .println();
+    println!("   ✅ Success: Most ergonomic approach with nested embedding");
 
     println!("\n=== Key Insights ===");
     println!("❌ DOESN'T WORK: Trying to embed a multi-colored string as a single embed");

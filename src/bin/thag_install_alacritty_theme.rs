@@ -90,26 +90,34 @@ fn main() -> Result<(), Box<dyn Error>> {
     for theme_source_path in &theme_paths {
         let theme_filename = theme_source_path
             .file_name()
-            .ok_or_else(|| "Can't extract filename")?
-            .to_string_lossy()
-            .to_string();
+            .ok_or("Can't extract filename")?
+            .to_string_lossy();
         // Attempt to copy the file
         // let result = copy_theme(theme_source_path, &destination_path);
-        let result = fs::copy(theme_source_path, &destination_path.join(&theme_filename));
+        let result = fs::copy(
+            theme_source_path,
+            destination_path.join(theme_filename.to_string()),
+        );
         match result {
             Ok(_) => {
                 installed_themes.push(theme_filename.clone());
                 println!("   ✅ {}", theme_filename.bright_green());
             }
             Err(e) => {
-                let e_str = (&e).to_string();
-                installation_errors.push((theme_filename.clone(), Box::new(e)));
+                let e_str = e.to_string();
+                installation_errors.push((theme_filename.to_string(), Box::new(e)));
                 println!("   ❌ {}: {}", theme_filename.bright_red(), e_str.red());
             }
         }
     }
 
-    match update_alacritty_config(&alacritty_config, &installed_themes) {
+    match update_alacritty_config(
+        &alacritty_config,
+        &installed_themes
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>(),
+    ) {
         Ok(()) => {
             println!("✅ Alacritty configuration updated successfully");
         }
@@ -123,7 +131,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Show summary and next steps
-    show_installation_summary(installed_themes.as_slice(), &installation_errors);
+    show_installation_summary(
+        &installed_themes
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>(),
+        &installation_errors,
+    );
     show_verification_steps(&theme_filenames);
 
     println!("\n🎉 Theme installation completed!");

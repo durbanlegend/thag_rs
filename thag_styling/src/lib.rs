@@ -34,8 +34,8 @@ pub use thag_common::{
 pub use styling::{
     display_terminal_attributes, display_theme_details, display_theme_roles, find_closest_color,
     get_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue,
-    HowInitialized, Palette, PaletteConfig, Role, Style, Styleable, Styled, StyledString, Styler,
-    TermAttributes, Theme,
+    HowInitialized, Palette, PaletteConfig, Role, Style, Styleable, Styled, StyledString,
+    StyledStringExt, Styler, TermAttributes, Theme,
 };
 
 // Re-export integration traits and types

@@ -329,6 +329,7 @@ pub fn extract(
 #[profiled]
 pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
     if let Some(ref mut rs_manifest) = build_state.rs_manifest {
+        eprintln!("rs_manifest={rs_manifest:#?}");
         let thag_crates = [
             "thag_common",
             "thag_rs",
@@ -345,6 +346,18 @@ pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResul
                         .dependencies
                         .insert((*crate_name).to_string(), new_dependency);
                     build_state.thag_auto_processed = true;
+                }
+            }
+            // Cater for windows target needing to avoid `color_detect` feature in the first instance.
+            for target in rs_manifest.target.values_mut() {
+                if let Some(dependency) = target.dependencies.get_mut(*crate_name) {
+                    if should_process_thag_auto(dependency) {
+                        *dependency = resolve_thag_dependency(crate_name, &dependency.clone())?;
+                        // target
+                        //     .dependencies
+                        //     .insert((*crate_name).to_string(), new_dependency);
+                        build_state.thag_auto_processed = true;
+                    }
                 }
             }
         }
@@ -499,9 +512,20 @@ to git or local paths when environment variables are set. This allows the same
 script to work in different environments without modification.
 
 For more details, see the comments in demo scripts or the thag documentation.",
-        if cfg!(target_os = "windows") {"$env:THAG_DEV_PATH = \\absolute\\path\\to\\thag_rs"} else {"export THAG_DEV_PATH=/absolute/path/to/thag_rs"},
+        if cfg!(target_os = "windows") {
+            "$env:THAG_DEV_PATH = \\absolute\\path\\to\\thag_rs"
+        } else {
+            "export THAG_DEV_PATH=/absolute/path/to/thag_rs"
+        },
         styled!(
-        if cfg!(target_os = "windows") {"$env:THAG_DEV_PATH = $PWD"} else { "export THAG_DEV_PATH=$PWD" }, bold, reversed)
+            if cfg!(target_os = "windows") {
+                "$env:THAG_DEV_PATH = $PWD"
+            } else {
+                "export THAG_DEV_PATH=$PWD"
+            },
+            bold,
+            reversed
+        )
     );
 }
 

@@ -44,7 +44,7 @@ home = "0.5.11"
 log = "0.4.27"
 mockall = "0.13.1"
 nu-ansi-term = "0.50.1"
-phf = { version = "0.12.1", features = ["macros"] }
+phf = { version = "0.13.1", features = ["macros"] }
 prettyplease = "0.2.37"
 proc-macro2 = "1.0.101"
 quote = "1.0.40"

@@ -1,6 +1,9 @@
 /*[toml]
-[dependencies]
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 */
 
 /// Debug the replace logic to find why colors are wrong and resets aren't removed

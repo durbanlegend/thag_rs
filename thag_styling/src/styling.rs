@@ -3074,7 +3074,7 @@ pub trait Styler {
     }
 }
 
-/// A styled string that preserves styling context like colored's ColoredString
+/// A styled string that preserves styling context like colored's `ColoredString`
 ///
 /// This type automatically handles reset sequences to ensure that when styled
 /// strings are embedded within other styled strings, the outer styling context
@@ -3086,8 +3086,9 @@ pub struct StyledString {
 }
 
 impl StyledString {
-    /// Create a new StyledString with the given content and style
-    pub fn new(content: String, style: Style) -> Self {
+    /// Create a new `StyledString` with the given content and style
+    #[must_use]
+    pub const fn new(content: String, style: Style) -> Self {
         Self { content, style }
     }
 
@@ -3136,6 +3137,7 @@ impl StyledString {
     }
 
     /// Convert to final styled string with proper ANSI codes
+    #[must_use]
     pub fn to_styled(&self) -> String {
         let content_with_replaced_resets = self.replace_resets_with_style();
         let styling_prefix = self.build_styling_prefix();
@@ -3143,6 +3145,7 @@ impl StyledString {
     }
 
     /// Chain bold styling
+    #[must_use]
     pub fn bold(self) -> Self {
         Self {
             content: self.content,
@@ -3151,6 +3154,7 @@ impl StyledString {
     }
 
     /// Chain italic styling
+    #[must_use]
     pub fn italic(self) -> Self {
         Self {
             content: self.content,
@@ -3159,6 +3163,7 @@ impl StyledString {
     }
 
     /// Chain dim styling
+    #[must_use]
     pub fn dim(self) -> Self {
         Self {
             content: self.content,
@@ -3167,6 +3172,7 @@ impl StyledString {
     }
 
     /// Chain underline styling
+    #[must_use]
     pub fn underline(self) -> Self {
         Self {
             content: self.content,
@@ -3188,7 +3194,7 @@ impl AsRef<str> for StyledString {
 }
 
 impl From<StyledString> for String {
-    fn from(styled: StyledString) -> String {
+    fn from(styled: StyledString) -> Self {
         styled.to_styled()
     }
 }
@@ -3233,7 +3239,7 @@ impl StyleAnsiExt for Style {
 /// let nested = format!("Warning: {}", "critical".error()).warning();
 /// ```
 pub trait Styleable: std::fmt::Display {
-    /// Style this text using the given styler, returning a StyledString
+    /// Style this text using the given styler, returning a `StyledString`
     fn style_with(&self, styler: impl Styler) -> StyledString;
 
     // Individual role methods for convenience (like colored's color methods)
@@ -3348,7 +3354,7 @@ pub trait Styleable: std::fmt::Display {
 
 impl Styleable for &str {
     fn style_with(&self, styler: impl Styler) -> StyledString {
-        StyledString::new(self.to_string(), styler.to_style())
+        StyledString::new((*self).to_string(), styler.to_style())
     }
 }
 

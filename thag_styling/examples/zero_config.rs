@@ -1,13 +1,6 @@
 /*[toml]
 [dependencies]
-# console = { version = "0.15.8", optional = true }
 crossterm = { version = "0.28.1" }
-# inquire = { version = "0.7.5", optional = true }
-# nu-ansi-term = { version = "0.50.1", optional = true }
-# ratatui = { version = "0.29.0", optional = true }
-# scopeguard = { version = "1.2.0", optional = true }
-# supports-color = { version = "3.0.2", optional = true }
-# termbg = { version = "0.6.2", optional = true }
 thag_common = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["full"] }
 
@@ -67,9 +60,11 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
 /// # Or use the full feature set:
 /// cargo run -p thag_styling --example zero_config --features "full"
 /// ```
-use color_eyre::Result;
+// use color_eyre::Result;
 use std::io::{self};
-use thag_styling::{paint_for_role, Role, TermAttributes, ThemedStyle};
+#[cfg(feature = "ratatui_support")]
+use thag_styling::ThemedStyle;
+use thag_styling::{paint_for_role, Role, TermAttributes};
 
 fn main() -> io::Result<()> {
     println!("🎨 Thag Styling - Zero Configuration Demo\n");

@@ -8,9 +8,13 @@
 //! cargo run --example role_color_diagnostic --features "color_detect,ratatui_support"
 //! ```
 
+#[cfg(feature = "ratatui_support")]
 use ratatui::style::Style as RataStyle;
-use thag_styling::{paint_for_role, Role, Style, TermAttributes, ThemedStyle};
+#[cfg(feature = "ratatui_support")]
+use thag_styling::ThemedStyle;
+use thag_styling::{paint_for_role, Role, Style, TermAttributes};
 
+#[cfg(feature = "ratatui_support")]
 fn main() {
     println!("🎨 Role Color Mapping Diagnostic\n");
 
@@ -84,8 +88,8 @@ fn main() {
                 thag_styling::ColorValue::Color256 { color256 } => {
                     print!("Color256({:3})      Medium     │ ", color256);
                 }
-                thag_styling::ColorValue::Basic { basic } => {
-                    print!("Basic({})         Medium     │ ", basic[1]);
+                thag_styling::ColorValue::Basic { ansi, index } => {
+                    print!("Basic(ANSI: {ansi:?}) - Index: {index}",);
                 }
             }
         } else {

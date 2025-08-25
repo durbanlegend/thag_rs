@@ -1,7 +1,12 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["config", "image_themes"] }
 */
 #![allow(clippy::uninlined_format_args)]
 /// Generate `thag_styling` themes from image files using file navigator.

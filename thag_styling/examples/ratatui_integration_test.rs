@@ -5,12 +5,15 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example ratatui_integration_test --features "color_detect,ratatui_support"
+//! cargo run -p thag_styling --example ratatui_integration_test --features "config,ratatui_support"
 //! ```
 
-use ratatui::style::Style as RataStyle;
-use thag_styling::{paint_for_role, Role, Style, ThemedStyle};
+#[cfg(feature = "ratatui_support")]
+use ratatui::style::{Color, Style as RataStyle};
+#[cfg(feature = "ratatui_support")]
+use thag_styling::{paint_for_role, styling::index_to_rgb, Role, Style, ThemedStyle};
 
+#[cfg(feature = "ratatui_support")]
 fn main() {
     println!("🔍 Ratatui Integration Tracing Test\n");
 
@@ -37,10 +40,10 @@ fn main() {
                     );
                 }
                 thag_styling::ColorValue::Color256 { color256 } => {
-                    println!("   Color256({}) - Index: {}", color256, color_info.index);
+                    println!("   Color256({color256}) - Index: {}", color_info.index);
                 }
-                thag_styling::ColorValue::Basic { basic } => {
-                    println!("   Basic({:?}) - Index: {}", basic, color_info.index);
+                thag_styling::ColorValue::Basic { ansi, index } => {
+                    println!("   Basic(ANSI: {ansi:?}) - Index: {index}",);
                 }
             }
         } else {
@@ -91,20 +94,15 @@ fn main() {
     let hd1_thag = Style::from(Role::Heading1);
     if let Some(color_info) = &hd1_thag.foreground {
         let direct_conversion = match &color_info.value {
-            thag_styling::ColorValue::TrueColor { rgb } => {
-                ratatui::style::Color::Rgb(rgb[0], rgb[1], rgb[2])
-            }
-            thag_styling::ColorValue::Color256 { color256 } => {
-                ratatui::style::Color::Indexed(*color256)
-            }
-            thag_styling::ColorValue::Basic { .. } => {
-                ratatui::style::Color::Indexed(color_info.index)
-            }
+            thag_styling::ColorValue::TrueColor { rgb } => Color::Rgb(rgb[0], rgb[1], rgb[2]),
+            thag_styling::ColorValue::Color256 { color256 } => Color::Indexed(*color256),
+            thag_styling::ColorValue::Basic { .. } => Color::Indexed(color_info.index),
         };
         println!("Direct color conversion for HD1: {:?}", direct_conversion);
 
-        let legacy_conversion = ratatui::style::Color::Indexed(color_info.index);
-        println!("Legacy conversion for HD1: {:?}", legacy_conversion);
+        let legacy_conversion = Color::Indexed(color_info.index);
+        let (r, g, b) = index_to_rgb(color_info.index);
+        println!("Legacy conversion for HD1: {legacy_conversion:?}, maps to RGB=({r},{g},{b})",);
 
         if format!("{:?}", direct_conversion) != format!("{:?}", legacy_conversion) {
             println!("⚠️  CONVERSION MISMATCH - Legacy uses index, direct uses RGB!");

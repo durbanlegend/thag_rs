@@ -1,6 +1,9 @@
 /*[toml]
-[dependencies]
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 */
 use thag_styling::{
     cprtln, cprtln_with_embeds, ColorInitStrategy, Role, Styleable, Styler, TermAttributes,

@@ -1,6 +1,9 @@
 /*[toml]
-[dependencies]
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "ratatui_support"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["config", "ratatui_support"] }
 */
 
 //! # [Ratatui] User Input example

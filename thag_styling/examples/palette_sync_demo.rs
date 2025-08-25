@@ -5,10 +5,10 @@
 //!
 //! Usage:
 //! ```bash
-//! cargo run --example palette_sync_demo --features="color_detect" -- apply thag-botticelli-birth-of-venus
-//! cargo run --example palette_sync_demo --features="color_detect" -- preview thag-botticelli-birth-of-venus
-//! cargo run --example palette_sync_demo --features="color_detect" -- reset
-//! cargo run --example palette_sync_demo --features="color_detect" -- demo
+//! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- apply thag-botticelli-birth-of-venus
+//! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- preview thag-botticelli-birth-of-venus
+//! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- reset
+//! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- demo
 //! ```
 
 use std::env;
@@ -37,6 +37,7 @@ fn main() {
         }
         Some("demo") => {
             demo_palette();
+            // demonstrate_colors(); // Redundant?
         }
         Some("list") => {
             list_themes();
@@ -149,37 +150,37 @@ fn list_themes() {
     println!("💡 Use any theme name with the 'apply' or 'preview' command");
 }
 
-fn demonstrate_colors() {
-    use thag_styling::{Role, Style, Styler};
+// fn demonstrate_colors() {
+//     use thag_styling::{Role, Style, Styler};
 
-    println!("🌈 Thag styling roles with current theme:");
+//     println!("🌈 Thag styling roles with current theme:");
 
-    let roles_and_messages = [
-        (Role::Heading1, "# Heading 1 - Major sections"),
-        (Role::Heading2, "## Heading 2 - Subsections"),
-        (Role::Heading3, "### Heading 3 - Minor sections"),
-        (Role::Error, "❌ Error - Something went wrong"),
-        (Role::Warning, "⚠️  Warning - Pay attention"),
-        (Role::Success, "✅ Success - Everything worked!"),
-        (Role::Info, "ℹ️  Info - Informational message"),
-        (Role::Emphasis, "⭐ Emphasis - Important content"),
-        (Role::Code, "💻 Code - `filenames and code blocks`"),
-        (Role::Normal, "📄 Normal - Regular text content"),
-        (Role::Subtle, "🔍 Subtle - Secondary information"),
-        (Role::Hint, "💡 Hint - Helpful suggestions"),
-        (Role::Debug, "🐛 Debug - Development info"),
-        (Role::Trace, "🔍 Trace - Detailed diagnostic"),
-    ];
+//     let roles_and_messages = [
+//         (Role::Heading1, "# Heading 1 - Major sections"),
+//         (Role::Heading2, "## Heading 2 - Subsections"),
+//         (Role::Heading3, "### Heading 3 - Minor sections"),
+//         (Role::Error, "❌ Error - Something went wrong"),
+//         (Role::Warning, "⚠️  Warning - Pay attention"),
+//         (Role::Success, "✅ Success - Everything worked!"),
+//         (Role::Info, "ℹ️  Info - Informational message"),
+//         (Role::Emphasis, "⭐ Emphasis - Important content"),
+//         (Role::Code, "💻 Code - `filenames and code blocks`"),
+//         (Role::Normal, "📄 Normal - Regular text content"),
+//         (Role::Subtle, "🔍 Subtle - Secondary information"),
+//         (Role::Hint, "💡 Hint - Helpful suggestions"),
+//         (Role::Debug, "🐛 Debug - Development info"),
+//         (Role::Trace, "🔍 Trace - Detailed diagnostic"),
+//     ];
 
-    for (role, message) in roles_and_messages {
-        let style = Style::from(role);
-        style.prtln(format_args!("{}", message));
-    }
+//     for (role, message) in roles_and_messages {
+//         let style = Style::from(role);
+//         style.prtln(format_args!("{}", message));
+//     }
 
-    println!();
-    println!("🎯 The colors above use the updated terminal palette + thag attributes!");
-    println!("📝 Note: Colors only apply to this terminal session (not new tabs/windows)");
-}
+//     println!();
+//     println!("🎯 The colors above use the updated terminal palette + thag attributes!");
+//     println!("📝 Note: Colors only apply to this terminal session (not new tabs/windows)");
+// }
 
 fn print_usage() {
     let program = args()

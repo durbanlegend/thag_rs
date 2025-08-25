@@ -188,8 +188,8 @@ fn print_style_analysis() {
                 thag_styling::ColorValue::Color256 { color256 } => {
                     println!("Color256({})", color256);
                 }
-                thag_styling::ColorValue::Basic { basic } => {
-                    println!("Basic({:?})", basic);
+                thag_styling::ColorValue::Basic { ansi, index } => {
+                    println!("   Basic(ANSI: {ansi:?}) - Index: {index}",);
                 }
             }
         } else {

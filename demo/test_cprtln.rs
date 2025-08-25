@@ -1,6 +1,9 @@
 /*[toml]
-[dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "config"] }
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 */
 
 /// Test script to verify cprtln macro works with both Style and Role

@@ -423,17 +423,16 @@ impl PaletteSync {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::styling::TermAttributes;
+    use crate::{styling::TermAttributes, ColorInitStrategy};
 
     #[test]
     fn test_ansi_color_mapping() {
         // Initialize with a basic theme for testing
-        TermAttributes::initialize(crate::ColorInitStrategy::Configure {
-            theme: Some("thag-dark".to_string()),
-            color_support: Some(crate::ColorSupport::TrueColor),
-            backgrounds: Some(vec!["#000000".to_string()]),
-        })
-        .unwrap();
+        TermAttributes::initialize(&ColorInitStrategy::Configure(
+            crate::ColorSupport::TrueColor,
+            crate::TermBgLuma::Dark,
+            Some((0, 0, 0)),
+        ));
 
         let theme = crate::Theme::get_builtin("thag-dark").unwrap();
         let color_map = PaletteSync::build_ansi_color_map(&theme);
@@ -457,9 +456,6 @@ mod tests {
 
         // Should not exceed 255
         let white = [255, 255, 255];
-        let bright_white = PaletteSync::brighten_color(white);
-        assert!(bright_white[0] <= 255);
-        assert!(bright_white[1] <= 255);
-        assert!(bright_white[2] <= 255);
+        let _ = PaletteSync::brighten_color(white);
     }
 }

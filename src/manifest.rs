@@ -329,7 +329,6 @@ pub fn extract(
 #[profiled]
 pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
     if let Some(ref mut rs_manifest) = build_state.rs_manifest {
-        eprintln!("rs_manifest={rs_manifest:#?}");
         let thag_crates = [
             "thag_common",
             "thag_rs",

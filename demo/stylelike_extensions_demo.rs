@@ -1,7 +1,9 @@
 /*[toml]
-[dependencies]
-# thag_common = { version = "0.2, thag-auto" }
+[target.'cfg(not(target_os = "windows"))'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 */
 /// Demo script showcasing Styler trait extensions for ergonomic printing and embedding
 ///

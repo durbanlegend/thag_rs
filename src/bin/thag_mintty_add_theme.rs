@@ -265,10 +265,8 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
         let path = entry.path();
 
         if path.is_file() {
-            if let Some(extension) = path.extension() {
-                if extension == "toml" {
-                    theme_files.push(path);
-                }
+            if path.extension().is_none() {
+                theme_files.push(path);
             }
         }
     }

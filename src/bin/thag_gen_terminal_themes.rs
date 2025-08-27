@@ -7,7 +7,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquir
 /// Export `thag_styling` themes to multiple terminal emulator formats
 ///
 /// This tool exports `thag_styling` theme files to various terminal emulator formats
-/// including `Alacritty`, `WezTerm`, `iTerm2`, `Kitty`, and `Windows Terminal`.
+/// including `Alacritty`, `WezTerm`, `iTerm2`, `Kitty`, `Mintty`, and `Windows Terminal`.
 /// Themes are exported to organized subdirectories in ./`exported_themes`/
 //# Purpose: Export thag themes to multiple terminal emulator formats
 //# Categories: color, styling, terminal, theming, tools
@@ -451,6 +451,7 @@ fn get_all_export_formats() -> Vec<ExportFormat> {
         ExportFormat::WezTerm,
         ExportFormat::ITerm2,
         ExportFormat::Kitty,
+        ExportFormat::Mintty,
         ExportFormat::WindowsTerminal,
     ]
 }
@@ -517,5 +518,6 @@ mod tests {
         assert!(format_names.contains(&"Alacritty".to_string()));
         assert!(format_names.contains(&"WezTerm".to_string()));
         assert!(format_names.contains(&"Kitty".to_string()));
+        assert!(format_names.contains(&"Mintty".to_string()));
     }
 }

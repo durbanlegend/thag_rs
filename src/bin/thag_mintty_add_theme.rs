@@ -20,7 +20,6 @@ use colored::Colorize;
 use std::{
     error::Error,
     fs,
-    io::{self, Write},
     path::{Path, PathBuf},
 };
 #[cfg(target_os = "windows")]

@@ -404,6 +404,7 @@ fn process_theme_file(
             ExportFormat::WezTerm => export_base_dir.join("wezterm"),
             ExportFormat::ITerm2 => export_base_dir.join("iterm2"),
             ExportFormat::Kitty => export_base_dir.join("kitty"),
+            ExportFormat::Mintty => export_base_dir.join("mintty"),
             ExportFormat::WindowsTerminal => export_base_dir.join("windows"),
         };
 

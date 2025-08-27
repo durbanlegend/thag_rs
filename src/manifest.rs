@@ -512,7 +512,7 @@ script to work in different environments without modification.
 
 For more details, see the comments in demo scripts or the thag documentation.",
         if cfg!(target_os = "windows") {
-            "$env:THAG_DEV_PATH = \\absolute\\path\\to\\thag_rs"
+            "(Assuming PowerShell:) $env:THAG_DEV_PATH = absolute\\path\\to\\thag_rs"
         } else {
             "export THAG_DEV_PATH=/absolute/path/to/thag_rs"
         },

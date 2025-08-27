@@ -7,6 +7,11 @@
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
+///
 //# Purpose: Demo a very fast precise computation for large individual Fibonacci numbers.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`

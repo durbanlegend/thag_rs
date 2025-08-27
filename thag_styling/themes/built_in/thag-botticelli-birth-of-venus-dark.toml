@@ -1,4 +1,4 @@
-name = "thag-botticelli-birth-of-venus"
+name = "thag-botticelli-birth-of-venus-dark"
 description = "Generated from image analysis"
 term_bg_luma = "dark"
 min_color_support = "true_color"

@@ -47,7 +47,7 @@ Scripts that are evolved into particularly useful generic tools may be promoted 
 - **Documentation**: Document all public items, especially interfaces and non-obvious behavior
 - **Profiling**: Use `#[profiled]` attribute on functions that should be profiled
 - **Features**: Clearly mark feature-dependent code with `#[cfg(feature = "feature_name")]`
-- **Testing**: Write unit tests for modules, with integration tests for full workflows
+- **Testing**: Write unit tests for modules, with integration tests for full workflows. Unit test function names should start with `test_<module_name>_` to facilitate confining testing to a specific module.
 - **Formatting**: Follow rustfmt conventions; run `cargo fmt` before committing
 - **Modules**: Prefer modules in their own programs named <module_name>.rs rather than in directories with a mod.rs if possible.
 - **Redundancy**: Don't generate identical functions for different variants of scripts or programs, such as the `thag_styling::exporters` variants, if the common code can reasonably by code once in a lib.rs.

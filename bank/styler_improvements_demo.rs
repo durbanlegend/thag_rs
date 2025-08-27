@@ -158,37 +158,31 @@ fn main() {
 
     // Section 8: String extension trait (Styleable)
     println!("\n8. String extension trait (Styleable):");
+    println!("   {}", "Direct string styling with role".error());
     println!(
         "   {}",
-        "Direct string styling with role".as_role(Role::Error)
+        "String styling with chained attributes".info().bold()
     );
+    println!("   {}", format!("Formatted string: {}", 123).success());
     println!(
         "   {}",
-        "String styling with chained attributes".as_styled(Role::Info.bold())
-    );
-    println!(
-        "   {}",
-        format!("Formatted string: {}", 123).as_role(Role::Success)
-    );
-    println!(
-        "   {}",
-        "Complex styling".as_styled(Role::Warning.bold().italic().underline())
+        "Complex styling".warning().bold().italic().underline()
     );
 
     println!("\n   Compare string extension vs direct role:");
-    println!("   String: {}", "message".as_role(Role::Code));
+    println!("   String: {}", "message".code());
     println!("   Role:   {}", Role::Code.paint("message"));
 
     // Section 9: Different string types with Styleable:
     println!("\n9. Different string types with Styleable:");
     let owned_string = String::from("Owned string");
-    println!("   {}", owned_string.as_role(Role::Emphasis));
+    println!("   {}", owned_string.emphasis());
 
     let string_ref = "String reference";
-    println!("   {}", string_ref.as_styled(Role::Debug.dim()));
+    println!("   {}", string_ref.debug().dim());
 
     let formatted = format!("Formatted: {}", "value");
-    println!("   {}", formatted.as_role(Role::Info));
+    println!("   {}", formatted.info());
 
     println!("\n=== Demo Complete ===");
     println!("\nKey improvements:");
@@ -206,7 +200,7 @@ fn main() {
     );
     cprtln!(
         Role::Success,
-        "✓ String extensions: 'text'.as_role(Role::Error) and 'text'.as_styled(Role::Info.bold())"
+        "✓ String extensions: 'text'.error() and 'text'.as_styled(Role::Info.bold())"
     );
     cprtln!(
         Role::Success,

@@ -26,11 +26,8 @@ thag_common = { version = "0.2, thag-auto" }
 //# Purpose: Migration guide from old embedding systems to StyledString
 //# Categories: styling, migration, documentation, examples
 use thag_common::Verbosity;
-use thag_styling::{
-    styling::StyledStringExt, ColorInitStrategy, Role, Styleable, Styler, TermAttributes,
-};
+use thag_styling::{ColorInitStrategy, Styleable, StyledStringExt, TermAttributes};
 
-#[allow(deprecated)]
 fn main() {
     // Initialize styling system
     TermAttributes::initialize(&ColorInitStrategy::Match);
@@ -43,11 +40,14 @@ fn main() {
     println!("   NEW: format!(\"Warning {{}} warning\", \"error\".error()).warning().println();");
     println!();
 
-    println!("   Old approach result:");
-    let embed = "error".embed_with(Role::Error);
-    thag_styling::cprtln_with_embeds!(Role::Warning, "Warning {} warning", &[embed]);
+    println!("   Old approach would have required:");
+    println!("   let embed = \"error\".embed_with(Role::Error);");
+    println!(
+        "   thag_styling::cprtln_with_embeds!(Role::Warning, \"Warning {{}} warning\", &[embed]);"
+    );
+    println!();
 
-    println!("   New approach result:");
+    println!("   New approach:");
     format!("Warning {} warning", "error".error())
         .warning()
         .println();
@@ -61,12 +61,13 @@ fn main() {
     println!("   NEW: format!(\"Status: {{}} and {{}}\", \"success\".success(), \"warning\".warning()).info().println();");
     println!();
 
-    println!("   Old approach result:");
-    let embed1 = "success".embed_with(Role::Success);
-    let embed2 = "warning".embed_with(Role::Warning);
-    thag_styling::cprtln_with_embeds!(Role::Info, "Status: {} and {}", &[embed1, embed2]);
+    println!("   Old approach would have required:");
+    println!("   let embed1 = \"success\".embed_with(Role::Success);");
+    println!("   let embed2 = \"warning\".embed_with(Role::Warning);");
+    println!("   thag_styling::cprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);");
+    println!();
 
-    println!("   New approach result:");
+    println!("   New approach:");
     format!(
         "Status: {} and {}",
         "success".success(),
@@ -82,11 +83,12 @@ fn main() {
     println!("   NEW: format!(\"Debug: {{}}\", \"value\".code()).debug().vprintln(V::Debug);");
     println!();
 
-    println!("   Old approach result:");
-    let debug_embed = "value".embed_with(Role::Code);
-    thag_styling::cvprtln_with_embeds!(Role::Debug, Verbosity::Debug, "Debug: {}", &[debug_embed]);
+    println!("   Old approach would have required:");
+    println!("   let debug_embed = \"value\".embed_with(Role::Code);");
+    println!("   thag_styling::cvprtln_with_embeds!(Role::Debug, Verbosity::Debug, \"Debug: {{}}\", &[debug_embed]);");
+    println!();
 
-    println!("   New approach result:");
+    println!("   New approach:");
     format!("Debug: {}", "value".code())
         .debug()
         .vprintln(Verbosity::Debug);
@@ -100,20 +102,38 @@ fn main() {
 
     println!("   New approach (unlimited nesting):");
     let deep_result = format!(
-        "Level1: {} {}",
+        "Level1: Success [{}] [{}] Level1: Success",
         format!(
-            "Level2: {} {}",
-            format!("Level3: {}", "deepest".code().bold())
-                .error()
-                .italic(),
-            "level2-end".error()
+            "Level2a: Warning [{}] [{}] Level2a: Warning]",
+            format!(
+                "Level3a: Error italic [{}] Level3a: Error italic",
+                "Level 4: Code bold".code().bold()
+            )
+            .error()
+            .italic(),
+            "Level3b: Plain Error".error()
         )
         .warning()
         .bold(),
-        "level1-end".normal()
+        "Level 2b: Normal".normal()
     )
     .success();
     deep_result.println();
+    println!();
+
+    println!("   New approach stepwise:");
+    let level4 = "Level 4: Code bold".code().bold();
+    let level3a = format!("Level3a: Error italic [{level4}] Level3a: Error italic")
+        .error()
+        .italic();
+    let level3b = "Level3b: Plain Error".error();
+    let level2a = format!("Level2a: Warning [{level3a}] [{level3b}] Level2a: Warning]",)
+        .warning()
+        .bold();
+    let level2b = "Level 2b: Normal".normal();
+    format!("Level1: Success [{level2a}] [{level2b}] Level1: Success")
+        .success()
+        .println();
     println!();
 
     // Example 5: Attribute handling comparison
@@ -149,17 +169,20 @@ fn main() {
     println!("   styled_println and styled_vprintln functions");
     println!();
 
-    #[allow(deprecated)]
-    thag_styling::styling::styled_println(
-        Role::Success,
-        &format!("Migrated: {}", "success".code()),
+    println!("   Example migration helpers (now removed):");
+    println!("   styled_println(Role::Success, &format!(\"Migrated: {{}}\", \"success\".code()));");
+    println!(
+        "   styled_vprintln(Role::Debug, V::Debug, &format!(\"Debug: {{}}\", \"info\".info()));"
     );
-    #[allow(deprecated)]
-    thag_styling::styling::styled_vprintln(
-        Role::Debug,
-        Verbosity::Debug,
-        &format!("Debug: {}", "info".info()),
-    );
+    println!();
+
+    println!("   Direct modern equivalent:");
+    format!("Migrated: {}", "success".code())
+        .success()
+        .println();
+    format!("Debug: {}", "info".info())
+        .debug()
+        .vprintln(Verbosity::Debug);
     println!();
 
     // Example 8: Performance comparison
@@ -177,13 +200,11 @@ fn main() {
     println!("   OLD (verbose, manual):");
     println!("   let embed1 = \"error\".embed_with(Role::Error);");
     println!("   let embed2 = \"warning\".embed_with(Role::Warning);");
-    println!(
-        "   cprtln_with_embeds!(Role::Info, \"Status: {{{{}}}} and {{{{}}}}\", &[embed1, embed2]);"
-    );
+    println!("   cprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);");
     println!();
 
     println!("   NEW (concise, natural):");
-    println!("   format!(\"Status: {{{{}}}} and {{{{}}}}\", \"error\".error(), \"warning\".warning()).info().println();");
+    println!("   format!(\"Status: {{}} and {{}}\", \"error\".error(), \"warning\".warning()).info().println();");
     println!();
 
     // Example 10: Error cases and edge handling

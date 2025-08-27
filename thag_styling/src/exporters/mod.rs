@@ -9,6 +9,7 @@ use std::path::Path;
 pub mod alacritty;
 pub mod iterm2;
 pub mod kitty;
+pub mod mintty;
 pub mod wezterm;
 pub mod windows_terminal;
 
@@ -39,6 +40,8 @@ pub enum ExportFormat {
     ITerm2,
     ///`Kitty` terminal emulator (Config format)
     Kitty,
+    /// `Mintty` terminal emulator (INI format)
+    Mintty,
     /// `Windows Terminal` (JSON)
     WindowsTerminal,
 }
@@ -52,6 +55,7 @@ impl ExportFormat {
             Self::WezTerm,
             Self::ITerm2,
             Self::Kitty,
+            Self::Mintty,
             Self::WindowsTerminal,
         ]
     }
@@ -64,6 +68,7 @@ impl ExportFormat {
             Self::WezTerm => wezterm::WezTermExporter::file_extension(),
             Self::ITerm2 => iterm2::ITerm2Exporter::file_extension(),
             Self::Kitty => kitty::KittyExporter::file_extension(),
+            Self::Mintty => mintty::MinttyExporter::file_extension(),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::file_extension(),
         }
     }
@@ -76,6 +81,7 @@ impl ExportFormat {
             Self::WezTerm => wezterm::WezTermExporter::format_name(),
             Self::ITerm2 => iterm2::ITerm2Exporter::format_name(),
             Self::Kitty => kitty::KittyExporter::format_name(),
+            Self::Mintty => mintty::MinttyExporter::format_name(),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::format_name(),
         }
     }
@@ -91,6 +97,7 @@ impl ExportFormat {
             Self::WezTerm => wezterm::WezTermExporter::export_theme(theme),
             Self::ITerm2 => iterm2::ITerm2Exporter::export_theme(theme),
             Self::Kitty => kitty::KittyExporter::export_theme(theme),
+            Self::Mintty => mintty::MinttyExporter::export_theme(theme),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::export_theme(theme),
         }
     }
@@ -136,6 +143,13 @@ pub fn export_all_formats<P: AsRef<Path>>(
                         base_filename,
                         format.file_extension()
                     ),
+                    ExportFormat::Mintty => {
+                        if format.file_extension().is_empty() {
+                            format!("{}_mintty", base_filename)
+                        } else {
+                            format!("{}_mintty.{}", base_filename, format.file_extension())
+                        }
+                    }
                     _ => format!("{}.{}", base_filename, format.file_extension()),
                 };
                 let file_path = output_dir.join(filename);
@@ -267,6 +281,30 @@ To use this theme with Kitty:
 
 3. Reload Kitty config with Ctrl+Shift+F5 or restart Kitty.
 "
+            )
+        }
+        ExportFormat::Mintty => {
+            format!(
+                r#"# Mintty (Git Bash) Theme Installation
+
+To use this theme with Mintty (Git Bash):
+
+1. Copy the theme file to the Mintty themes directory:
+   - Windows: `C:\Program Files\Git\usr\share\mintty\themes\`
+   - Note: You may need administrator privileges
+
+2. Option A - Using the theme chooser:
+   - Open Git Bash
+   - Right-click on the title bar and select "Options..."
+   - Go to "Looks" tab
+   - Select your theme from the "Theme" dropdown
+
+3. Option B - Manual configuration:
+   - Edit ~/.minttyrc and add: `ThemeFile={theme_filename}`
+   - Restart Git Bash
+
+The theme will be applied to all new Mintty windows.
+"#
             )
         }
         ExportFormat::WindowsTerminal => {
@@ -471,6 +509,7 @@ mod tests {
         assert_eq!(ExportFormat::WezTerm.file_extension(), "toml");
         assert_eq!(ExportFormat::ITerm2.file_extension(), "itermcolors");
         assert_eq!(ExportFormat::Kitty.file_extension(), "conf");
+        assert_eq!(ExportFormat::Mintty.file_extension(), "");
         assert_eq!(ExportFormat::WindowsTerminal.file_extension(), "json");
     }
 

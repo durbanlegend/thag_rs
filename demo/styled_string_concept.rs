@@ -227,11 +227,14 @@ fn main() {
     println!("✅ No need for explicit embedding syntax");
     println!("✅ Drop-in replacement for current string methods");
 
-    println!("\n=== Comparison ===");
-    println!("Current approach:");
-    println!("  cprtln_with_embeds!(Role::Warning, \"Warning {{}} warning\", &[embed]);");
+    println!("\n=== StyledString Benefits ===");
+    println!("✅ Natural Rust syntax with format! and method chaining");
+    println!("✅ Automatic context preservation across unlimited nesting levels");
+    println!("✅ Perfect attribute reset handling prevents bleeding");
+    println!("✅ No special macros or embed arrays needed");
+    println!("✅ More performant - no macro overhead");
     println!();
-    println!("StyledString approach:");
-    println!("  println!(\"{{}}\", format!(\"Warning {{}} warning\", embed).styled_warning());");
-    println!("  // Automatic context preservation, no special macros needed!");
+    println!("Example:");
+    println!("  format!(\"Warning {{}} warning\", \"error\".error()).warning().println();");
+    println!("  // Clean, readable, and just works!");
 }

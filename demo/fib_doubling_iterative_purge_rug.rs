@@ -7,6 +7,12 @@
 /// This version is derived from `demo/fib_doubling_iterative.rs` with the following
 /// change: that we reduce bloat as best we can  by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
+///
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
+///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`

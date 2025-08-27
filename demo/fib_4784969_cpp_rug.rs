@@ -3,7 +3,10 @@
 /// digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
 /// edging out `fibo` at this scale.
 ///
-/// The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
 ///
 /// E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///

@@ -262,13 +262,18 @@ path = "src/bin/thag_palette_vs_theme.rs"
 required-features = ["tools"]
 
 [[bin]]
-name = "thag_install_alacritty_theme"
-path = "src/bin/thag_install_alacritty_theme.rs"
+name = "thag_alacritty_add_theme"
+path = "src/bin/thag_alacritty_add_theme.rs"
 required-features = ["tools"]
 
 [[bin]]
 name = "thag_winterm_add_theme"
 path = "src/bin/thag_winterm_add_theme.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "thag_mintty_add_theme"
+path = "src/bin/thag_mintty_add_theme.rs"
 required-features = ["tools"]
 
 # [[bin]]

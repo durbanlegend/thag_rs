@@ -10,6 +10,12 @@
 ///
 /// Using `clap` here is complete overkill, but this is just a demo.
 /// On Linux you may need to install the m4 package.
+///
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
+///
 //# Purpose: Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`

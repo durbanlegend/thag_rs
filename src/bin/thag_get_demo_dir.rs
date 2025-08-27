@@ -4,12 +4,6 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
 */
 
-/// Demo directory downloader. Very fast replacement for `thag_get_demo` with subdirectory
-/// support so as to include the `demo/proc_macros` directory. Git `sparse-checkout`
-/// approach suggested and written by `ChatGPT`, local directory handling assisted by Claude.
-//# Purpose: Prototype for `thag_get_demo_dir`.
-//# Categories: crates, prototype, technique
-use colored::Colorize;
 use inquire::{self, set_global_render_config};
 use std::error::Error;
 use std::fs;
@@ -18,6 +12,12 @@ use std::path::PathBuf;
 use std::process::Command;
 use thag_proc_macros::file_navigator;
 use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
+/// Demo directory downloader. Very fast replacement for `thag_get_demo` with subdirectory
+/// support so as to include the `demo/proc_macros` directory. Git `sparse-checkout`
+/// approach suggested and written by `ChatGPT`, local directory handling assisted by Claude.
+//# Purpose: Prototype for `thag_get_demo_dir`.
+//# Categories: crates, prototype, technique
+use thag_styling::Styler;
 
 file_navigator! {}
 
@@ -55,9 +55,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         if demo_dest.exists() {
             println!(
                 "\n{}\n",
-                format!("Destination already has subdirectory {}", "demo".bold())
-                    // .bold()
-                    .magenta()
+                format!("Destination already has subdirectory {}", "demo")
+                    .style()
+                    .emphasis()
             );
             continue;
         }

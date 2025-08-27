@@ -7,15 +7,6 @@ dirs = "5.0"
 serde_json = "1.0"
 */
 
-/// Windows Terminal theme installer with file navigator
-///
-/// This Windows-only tool installs thag themes into Windows Terminal by
-/// adding theme schemes to the settings.json configuration file. Supports
-/// selecting individual themes or entire directories of themes.
-//# Purpose: Install thag themes for Windows Terminal
-//# Categories: color, styling, terminal, theming, tools, windows
-#[cfg(target_os = "windows")]
-use colored::Colorize;
 #[cfg(target_os = "windows")]
 use std::{
     error::Error,
@@ -26,6 +17,15 @@ use std::{
 use thag_proc_macros::file_navigator;
 #[cfg(target_os = "windows")]
 use thag_rs::Theme;
+/// Windows Terminal theme installer with file navigator
+///
+/// This Windows-only tool installs thag themes into Windows Terminal by
+/// adding theme schemes to the settings.json configuration file. Supports
+/// selecting individual themes or entire directories of themes.
+//# Purpose: Install thag themes for Windows Terminal
+//# Categories: color, styling, terminal, theming, tools, windows
+#[cfg(target_os = "windows")]
+use thag_styling::Styler;
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
@@ -40,7 +40,7 @@ fn main() {
 fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "🖥️  {} - Windows Terminal Theme Installer",
-        "thag_winterm_add_theme".bright_blue()
+        "thag_winterm_add_theme".style().info()
     );
     println!("{}", "=".repeat(70).dimmed());
     println!();
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("📁 Windows Terminal configuration:");
     println!(
         "   Settings file: {}",
-        settings_path.display().to_string().bright_cyan()
+        settings_path.display().to_string().style().info()
     );
 
     // Check if settings file exists
@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    println!("   Status: {}", "Found".bright_green());
+    println!("   Status: {}", "Found".style().success());
     println!();
 
     // Select themes to install
@@ -133,7 +133,7 @@ fn get_windows_terminal_settings_path() -> Result<PathBuf, Box<dyn Error>> {
 fn select_themes_for_installation(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{Select};
+    use inquire::Select;
 
     let selection_options = vec![
         "Select theme files (.toml)",
@@ -243,9 +243,10 @@ fn select_themes_from_directory(
                     .collect();
                 let len = theme_names.len();
 
-                let selected_names = MultiSelect::new("Select themes to install:", theme_names.clone())
-                    .with_default(&(0..len).collect::<Vec<_>>())
-                    .prompt()?;
+                let selected_names =
+                    MultiSelect::new("Select themes to install:", theme_names.clone())
+                        .with_default(&(0..len).collect::<Vec<_>>())
+                        .prompt()?;
 
                 let selected_themes = themes
                     .into_iter()
@@ -267,7 +268,7 @@ fn select_themes_from_directory(
 fn select_exported_json_themes(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{ MultiSelect};
+    use inquire::MultiSelect;
 
     println!("\n📁 Select directory containing exported Windows Terminal themes (.json):");
     match select_directory(navigator, true) {
@@ -291,9 +292,10 @@ fn select_exported_json_themes(
                 .collect();
             let len = file_names.len();
 
-            let selected_names = MultiSelect::new("Select theme files to install:", file_names.clone())
-                .with_default(&(0..len).collect::<Vec<_>>())
-                .prompt()?;
+            let selected_names =
+                MultiSelect::new("Select theme files to install:", file_names.clone())
+                    .with_default(&(0..len).collect::<Vec<_>>())
+                    .prompt()?;
 
             let selected_files: Vec<_> = json_files
                 .into_iter()

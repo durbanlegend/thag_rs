@@ -15,8 +15,6 @@ dirs = "5.0"
 //# Categories: color, styling, terminal, theming, tools, windows
 
 #[cfg(target_os = "windows")]
-use colored::Colorize;
-#[cfg(target_os = "windows")]
 use std::{
     error::Error,
     fs,
@@ -25,6 +23,8 @@ use std::{
 #[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
 #[cfg(target_os = "windows")]
+use thag_styling::Styleable;
+
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
@@ -71,16 +71,33 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    println!("   Themes directory: {}", "Found".bright_green());
+    println!("   Themes directory: {}", "Found".success());
+
+    // Check write permissions upfront
+    match check_directory_write_permission(&mintty_config.themes_dir) {
+        Ok(true) => {
+            println!("   Write permission: {}", "OK".success());
+        }
+        Ok(false) => {
+            println!("❌ No write permission to themes directory.");
+            println!("   Directory: {}", mintty_config.themes_dir.display());
+            println!("   Please run this tool as Administrator or change directory permissions.");
+            return Ok(());
+        }
+        Err(e) => {
+            println!("⚠️  Could not check write permission: {}", e);
+            println!("   Proceeding anyway - you may encounter permission errors.");
+        }
+    }
 
     // Check config file
     let config_exists = mintty_config.config_file.exists();
     println!(
         "   Config file: {}",
         if config_exists {
-            "Found".bright_green()
+            "Found".success()
         } else {
-            "Will be created".bright_yellow()
+            "Will be created".warning()
         }
     );
     println!();
@@ -100,15 +117,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok((theme_name, mintty_filename)) => {
                 println!(
                     "✅ Installed: {} → {}",
-                    theme_name.bright_green(),
-                    mintty_filename.bright_cyan()
+                    theme_name.success(),
+                    mintty_filename.info()
                 );
                 installed_themes.push((theme_name, mintty_filename));
             }
             Err(e) => {
                 println!(
                     "❌ Failed to install {}: {}",
-                    theme_file.display().to_string().bright_red(),
+                    theme_file.display().to_string().error(),
                     e
                 );
             }
@@ -122,10 +139,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if should_update_config {
             match update_mintty_config(&mintty_config.config_file, &installed_themes) {
                 Ok(theme_name) => {
-                    println!(
-                        "✅ Updated ~/.minttyrc with theme: {}",
-                        theme_name.bright_cyan()
-                    );
+                    println!("✅ Updated ~/.minttyrc with theme: {}", theme_name.info());
                 }
                 Err(e) => {
                     println!("⚠️  Failed to update ~/.minttyrc: {}", e);
@@ -139,6 +153,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+/// Check if we have write permission to a directory
+#[cfg(target_os = "windows")]
+fn check_directory_write_permission(dir: &Path) -> Result<bool, Box<dyn Error>> {
+    // Try to create a temporary file in the directory to test write permission
+    let temp_filename = format!("thag_test_write_{}.tmp", std::process::id());
+    let temp_path = dir.join(&temp_filename);
+
+    match fs::write(&temp_path, "test") {
+        Ok(()) => {
+            // Clean up the test file
+            let _ = fs::remove_file(&temp_path);
+            Ok(true)
+        }
+        Err(ref e) if e.kind() == std::io::ErrorKind::PermissionDenied => Ok(false),
+        Err(e) => Err(Box::new(e)),
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -405,17 +437,13 @@ fn show_installation_summary(installed_themes: &[(String, String)]) {
     println!("{}", "=".repeat(50).dimmed());
 
     for (theme_name, filename) in installed_themes {
-        println!(
-            "✅ {} → {}",
-            theme_name.bright_green(),
-            filename.bright_cyan()
-        );
+        println!("✅ {} → {}", theme_name.success(), filename.info());
     }
 
     println!();
     println!(
         "📁 Themes installed to: {}",
-        r"C:\Program Files\Git\usr\share\mintty\themes\".bright_cyan()
+        r"C:\Program Files\Git\usr\share\mintty\themes\".info()
     );
 }
 

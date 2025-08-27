@@ -10,7 +10,6 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["t
 #[cfg(feature = "clipboard")]
 use arboard::Clipboard;
 use clap::CommandFactory;
-use colored::Colorize;
 use inquire::{set_global_render_config, MultiSelect};
 use std::collections::HashMap;
 use std::fmt::Write as _; // import without risk of name clashing
@@ -20,6 +19,7 @@ use thag_proc_macros::file_navigator;
 use thag_rs::{
     auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style,
 };
+use thag_styling::Styler;
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;

@@ -52,6 +52,7 @@ Scripts that are evolved into particularly useful generic tools may be promoted 
 - **Modules**: Prefer modules in their own programs named <module_name>.rs rather than in directories with a mod.rs if possible.
 - **Redundancy**: Don't generate identical functions for different variants of scripts or programs, such as the `thag_styling::exporters` variants, if the common code can reasonably by code once in a lib.rs.
 - **Coding**: Try to be clippy::pedantic compliant. Generate for 2021 edition and Rust version in package.rust-version of Cargo.toml.
+- **Coloring and styling**: Use thag_styling and not the `colored` crate!
 
 ## thag_styling file formats
 - **thag_styling themes**: Filenames and `name` field should be (lower) kebab case. The files should be in TOML format with the .toml suffix, and the file name stem should start with `thag-`, end in `-light` or `-dark` as appropriate.

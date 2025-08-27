@@ -940,7 +940,7 @@ fn prompt_proc_macros_config(
     }))
 }
 
-use colored::Colorize;
+use thag_styling::Styler;
 
 fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
     let config_source = select_base_config()?;
@@ -1043,7 +1043,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             fs::rename(&config_path, &backup_path)?;
             println!(
                 "{}",
-                format!("Created backup at {}", backup_path.display()).blue()
+                format!("Created backup at {}", backup_path.display())
+                    .style()
+                    .info()
             );
         }
 
@@ -1051,7 +1053,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fs::write(&config_path, preview)?;
         println!(
             "{}",
-            format!("Configuration saved to {}", config_path.display()).green()
+            format!("Configuration saved to {}", config_path.display())
+                .style()
+                .success()
         );
     } else {
         println!("Configuration not saved.");

@@ -3,6 +3,12 @@
 thag_proc_macros = { version = "0.2, thag-auto" }
 */
 
+use std::clone::Clone;
+use std::error::Error;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::string::ToString;
+use thag_proc_macros::file_navigator;
 /// Install generated themes for Alacritty terminal emulator
 ///
 /// This tool installs Alacritty themes into Alacritty's configuration directory
@@ -10,23 +16,17 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 /// The themes will typically have been created by `thag_gen_terminal_themes.rs`.
 //# Purpose: Install and configure thag themes for Alacritty terminal
 //# Categories: color, styling, terminal, theming, tools
-use colored::Colorize;
-use std::clone::Clone;
-use std::error::Error;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::string::ToString;
-use thag_proc_macros::file_navigator;
+use thag_styling::Styleable;
 use toml_edit::{DocumentMut, Item, Value};
 
 file_navigator! {}
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!(
-        "🛠️  {} - Alacritty Theme Installer",
-        "thag_install_alacritty_theme".bright_blue()
+        "🎨 {} - Alacritty Theme Installer",
+        "thag_install_alacritty_theme".info()
     );
-    println!("{}", "=".repeat(70).dimmed());
+    println!("{}", "=".repeat(70));
     println!();
 
     // Initialize file navigator
@@ -38,27 +38,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("📁 Alacritty configuration:");
     println!(
         "   Config directory: {}",
-        alacritty_config
-            .config_dir
-            .display()
-            .to_string()
-            .bright_cyan()
+        alacritty_config.config_dir.display().to_string().info()
     );
     println!(
         "   Themes directory: {}",
-        alacritty_config
-            .themes_dir
-            .display()
-            .to_string()
-            .bright_cyan()
+        alacritty_config.themes_dir.display().to_string().info()
     );
     println!(
         "   Config file: {}",
-        alacritty_config
-            .config_file
-            .display()
-            .to_string()
-            .bright_cyan()
+        alacritty_config.config_file.display().to_string().info()
     );
     println!();
 
@@ -101,12 +89,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         match result {
             Ok(_) => {
                 installed_themes.push(theme_filename.clone());
-                println!("   ✅ {}", theme_filename.bright_green());
+                println!("   ✅ {}", theme_filename.to_string().success());
             }
             Err(e) => {
                 let e_str = e.to_string();
                 installation_errors.push((theme_filename.to_string(), Box::new(e)));
-                println!("   ❌ {}: {}", theme_filename.bright_red(), e_str.red());
+                println!(
+                    "   ❌ {}: {}",
+                    theme_filename.to_string().error(),
+                    e_str.error()
+                );
             }
         }
     }
@@ -124,7 +116,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(e) => {
             println!(
                 "⚠️  Failed to update configuration: {}",
-                e.to_string().yellow()
+                e.to_string().warning()
             );
             show_manual_config_instructions(&theme_filenames);
         }
@@ -301,7 +293,7 @@ fn update_alacritty_config(
     if installed_themes.len() == 1 {
         let theme_filename = &installed_themes[0];
         update_config_with_theme(config, theme_filename)?;
-        println!("✅ Set {} as active theme", theme_filename.bright_cyan());
+        println!("✅ Set {} as active theme", theme_filename.info());
     } else {
         let theme_options: Vec<String> = installed_themes.to_vec();
 
@@ -322,7 +314,7 @@ fn update_alacritty_config(
                 .find(|&name| name == &selected_theme)
             {
                 update_config_with_theme(config, theme_filename)?;
-                println!("✅ Set {} as active theme", selected_theme.bright_cyan());
+                println!("✅ Set {} as active theme", selected_theme.info());
             }
         }
     }
@@ -377,7 +369,7 @@ fn update_config_with_theme(
 
 /// Show manual configuration instructions
 fn show_manual_config_instructions(installed_themes: &[String]) {
-    println!("\n📖 {} Configuration:", "Manual".bright_blue());
+    println!("\n📖 {} Configuration:", "Manual".info());
     println!("Add the following to your alacritty.toml:");
     println!();
     println!("[general]");
@@ -389,39 +381,39 @@ fn show_manual_config_instructions(installed_themes: &[String]) {
 /// Show installation summary
 fn show_installation_summary(installed_themes: &[String], errors: &[(String, Box<dyn Error>)]) {
     println!();
-    println!("📊 {} Summary:", "Installation".bright_blue());
+    println!("📊 {} Summary:", "Installation".info());
     println!(
         "   Successfully installed: {}",
-        installed_themes.len().to_string().bright_green()
+        installed_themes.len().to_string().success()
     );
     println!(
         "   Failed installations: {}",
-        errors.len().to_string().bright_red()
+        errors.len().to_string().error()
     );
 
     if !installed_themes.is_empty() {
-        println!("\n✅ {} Themes:", "Installed".bright_green());
+        println!("\n✅ {} Themes:", "Installed".success());
         for theme_name in installed_themes {
-            println!("   • {})", theme_name.bright_cyan(),);
+            println!("   • {})", theme_name.info(),);
         }
     }
 
     if !errors.is_empty() {
-        println!("\n❌ {} Failures:", "Installation".bright_red());
+        println!("\n❌ {} Failures:", "Installation".error());
         for (theme_name, error) in errors {
-            println!("   • {}: {}", theme_name, error.to_string().red());
+            println!("   • {}: {}", theme_name, error.to_string().error());
         }
     }
 }
 
 /// Show verification steps
 fn show_verification_steps(_installed_themes: &[String]) {
-    println!("\n🔍 {} Steps:", "Verification".bright_blue());
+    println!("\n🔍 {} Steps:", "Verification".info());
     println!("1. Restart Alacritty if necessary");
     println!("2. Check that colors match the expected theme");
     println!(
         "3. Run: {} (to check for config errors)",
-        "alacritty --print-events".bright_cyan()
+        "alacritty --print-events".info()
     );
 }
 

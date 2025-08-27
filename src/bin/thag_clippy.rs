@@ -12,7 +12,6 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 //# Categories: technique, thag_front_ends, tools
 //# Usage: thag_clippy [script_path] or thag_clippy (interactive mode)
-use colored::Colorize;
 use inquire::{set_global_render_config, Confirm, MultiSelect};
 use std::{env, error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::file_navigator;

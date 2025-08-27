@@ -11,7 +11,6 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquir
 /// Themes are exported to organized subdirectories in ./`exported_themes`/
 //# Purpose: Export thag themes to multiple terminal emulator formats
 //# Categories: color, styling, terminal, theming, tools
-use colored::Colorize;
 use inquire::set_global_render_config;
 use std::{
     error::Error,
@@ -19,6 +18,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use thag_proc_macros::file_navigator;
+use thag_styling::Styleable;
 use thag_styling::{
     export_theme_to_file, generate_installation_instructions, themed_inquire_config, ExportFormat,
     TermAttributes, Theme,
@@ -29,9 +29,9 @@ file_navigator! {}
 fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "🎨 {} - Terminal Theme Exporter",
-        "thag_gen_terminal_themes".bright_blue()
+        "thag_gen_terminal_themes".info()
     );
-    println!("{}", "=".repeat(70).dimmed());
+    println!("{}", "=".repeat(70));
     println!();
 
     // Initialize file navigator
@@ -72,8 +72,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
-                        .bright_green(),
-                    count.to_string().bright_cyan()
+                        .to_string()
+                        .success(),
+                    count.to_string().info()
                 );
             }
             Err(e) => {
@@ -85,8 +86,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
-                        .bright_red(),
-                    error_msg.bright_red()
+                        .to_string()
+                        .error(),
+                    error_msg.error()
                 );
             }
         }
@@ -94,22 +96,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Summary
     println!();
-    println!("📊 {} Summary:", "Export".bright_blue());
+    println!("📊 {} Summary:", "Export".info());
     println!(
         "   Total themes processed: {}",
-        theme_files.len().to_string().bright_cyan()
+        theme_files.len().to_string().info()
     );
     println!(
         "   Total formats exported: {}",
-        total_exported.to_string().bright_green()
+        total_exported.to_string().success()
     );
     println!(
         "   Failed exports: {}",
-        failed_exports.len().to_string().bright_red()
+        failed_exports.len().to_string().error()
     );
 
     if !failed_exports.is_empty() {
-        println!("\n❌ {} Failures:", "Export".bright_red());
+        println!("\n❌ {} Failures:", "Export".error());
         for (file, error) in &failed_exports {
             println!(
                 "   • {}: {}",
@@ -121,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!(
         "\n📁 Exported themes location: {}",
-        export_base_dir.display().to_string().bright_green()
+        export_base_dir.display().to_string().success()
     );
 
     // Show installation instructions if requested
@@ -302,11 +304,8 @@ fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>>
         })
         .collect();
 
-    println!(
-        "\n🎨 {} Built-in themes browser",
-        "Interactive".bright_blue()
-    );
-    println!("{}", "═".repeat(50).dimmed());
+    println!("\n🎨 {} Built-in themes browser", "Interactive".info());
+    println!("{}", "═".repeat(50));
 
     let selected_options = MultiSelect::new("Select themes to export:", theme_options)
         .with_page_size(15)
@@ -323,7 +322,7 @@ fn select_themes_interactively() -> Result<Vec<(String, Theme)>, Box<dyn Error>>
 
         match Theme::get_builtin(theme_name) {
             Ok(theme) => {
-                println!("   📋 Added: {}", theme.name.bright_cyan());
+                println!("   📋 Added: {}", theme.name.info());
                 selected_themes.push((theme_name.to_string(), theme));
             }
             Err(e) => {
@@ -425,12 +424,12 @@ fn process_theme_file(
 
 /// Show installation instructions for selected formats with actual theme names
 fn show_installation_instructions(formats: &[ExportFormat]) {
-    println!("\n📖 {} Instructions:", "Installation".bright_blue());
-    println!("{}", "=".repeat(70).dimmed());
+    println!("\n📖 {} Instructions:", "Installation".info());
+    println!("{}", "=".repeat(70));
 
     for format in formats {
-        println!("\n🔧 {}", format.format_name().bright_cyan());
-        println!("{}", "─".repeat(30).dimmed());
+        println!("\n🔧 {}", format.format_name().info());
+        println!("{}", "─".repeat(30));
 
         // Use a generic placeholder since we don't know the specific theme name here
         let instructions = generate_installation_instructions(*format, "<theme-name>");
@@ -438,8 +437,8 @@ fn show_installation_instructions(formats: &[ExportFormat]) {
 
         println!(
             "\n💡 {} Replace {} with your actual theme filename",
-            "Note:".bright_yellow(),
-            "<theme-name>".bright_cyan()
+            "Note:".warning(),
+            "<theme-name>".info()
         );
     }
 }

@@ -9,6 +9,10 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_
 thag_styling = { version = "0.2, thag-auto", features = ["config", "image_themes"] }
 */
 #![allow(clippy::uninlined_format_args)]
+use std::error::Error;
+use std::fs;
+use std::path::Path;
+use thag_proc_macros::file_navigator;
 /// Generate `thag_styling` themes from image files using file navigator.
 ///
 /// This tool analyzes image files to extract dominant colors and generates
@@ -16,11 +20,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config", "image_themes
 /// (light/dark) and customizable color extraction parameters.
 //# Purpose: Generate custom `thag_styling` themes from images
 //# Categories: color, styling, terminal, theming, tools
-use colored::Colorize;
-use std::error::Error;
-use std::fs;
-use std::path::Path;
-use thag_proc_macros::file_navigator;
+use thag_styling::Styleable;
 use thag_styling::{
     cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, StylingError,
     StylingResult, TermBgLuma, Theme,
@@ -31,9 +31,9 @@ file_navigator! {}
 fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "🖼️  {} - Image to Theme Generator",
-        "thag_image_to_theme".bright_blue()
+        "thag_image_to_theme".info()
     );
-    println!("{}", "=".repeat(60).dimmed());
+    println!("{}", "=".repeat(60));
     println!();
 
     // Initialize file navigator
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!(
         "📷 Selected image: {}",
-        image_path.display().to_string().bright_green()
+        image_path.display().to_string().success()
     );
     println!();
 
@@ -181,18 +181,18 @@ fn get_theme_config(image_path: &Path) -> Result<ImageThemeConfig, Box<dyn Error
 
 /// Display comprehensive theme information
 fn display_theme_info(theme: &Theme) {
-    println!("✅ {} generated successfully!", "Theme".bright_green());
+    println!("✅ {} generated successfully!", "Theme".success());
     println!();
 
-    println!("📋 {} Information:", "Theme".bright_blue());
-    println!("   Name: {}", theme.name.bright_cyan());
+    println!("📋 {} Information:", "Theme".info());
+    println!("   Name: {}", theme.name.info());
     println!("   Description: {}", theme.description);
     println!("   Type: {:?}", theme.term_bg_luma);
     println!("   Color Support: {:?}", theme.min_color_support);
     println!("   Backgrounds: {:?}", theme.bg_rgbs);
     println!();
 
-    println!("🎨 {} Preview:", "Color Palette".bright_blue());
+    println!("🎨 {} Preview:", "Color Palette".info());
     display_color_palette(theme);
 }
 
@@ -218,7 +218,7 @@ fn display_color_palette(theme: &Theme) {
     for (name, style) in palette_items {
         let styled_name = style.paint(format!("{:>12}", name));
         let rgb_info = extract_rgb_info(style);
-        println!("   {} {}", styled_name, rgb_info.dimmed());
+        println!("   {} {}", styled_name, rgb_info);
     }
 
     // Show background colors
@@ -319,7 +319,7 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> StylingResul
 
     println!(
         "💾 Theme saved to: {}",
-        output_path.display().to_string().bright_green()
+        output_path.display().to_string().success()
     );
 
     // Ask if user wants to view the TOML content
@@ -330,13 +330,13 @@ fn save_theme_file(theme: &Theme, navigator: &mut FileNavigator) -> StylingResul
 
     if show_toml {
         println!();
-        println!("📄 {} Content:", "TOML".bright_blue());
-        println!("{}", "─".repeat(60).dimmed());
+        println!("📄 {} Content:", "TOML".info());
+        println!("{}", "─".repeat(60));
         println!("{}", toml_content);
     }
 
     println!();
-    println!("💡 {} To use this theme:", "Tip:".bright_yellow());
+    println!("💡 {} To use this theme:", "Tip:".warning());
     println!("   • Copy to your thag themes directory");
     println!("   • Use with thag_gen_terminal_themes to export to terminal formats");
     println!("   • Reference in your thag configuration");

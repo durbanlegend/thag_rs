@@ -17,6 +17,7 @@ use std::fmt::Write as _;
 pub struct MinttyExporter;
 
 impl ThemeExporter for MinttyExporter {
+    #[allow(clippy::too_many_lines)]
     fn export_theme(theme: &Theme) -> StylingResult<String> {
         let mut output = String::new();
 

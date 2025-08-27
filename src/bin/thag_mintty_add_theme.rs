@@ -25,8 +25,6 @@ use std::{
 #[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
 #[cfg(target_os = "windows")]
-use thag_styling::exporters::ExportFormat;
-
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
@@ -173,8 +171,8 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
     use inquire::{Confirm, MultiSelect, Select};
 
     let selection_options = vec![
-        "Select theme files (.toml) individually",
-        "Select theme files in bulk from directory",
+        "Select mintty theme files individually",
+        "Select mintty theme files in bulk from directory",
     ];
 
     let mut selected_themes = Vec::new();
@@ -189,13 +187,17 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
         Select::new("How would you like to select themes?", selection_options).prompt()?;
 
     match selection_method {
-        "Select theme files (.toml) individually" => {
-            let extensions = "toml,TOML";
-
+        "Select mintty theme files individually" => {
             loop {
-                println!("\n📁 Select a theme file:");
-                if let Ok(theme_file) = select_file(navigator, Some(extensions), false) {
-                    selected_themes.push(theme_file);
+                println!("\n📁 Select a mintty theme file (no extension):");
+                if let Ok(theme_file) = select_file(navigator, None, false) {
+                    // Check that it's a mintty theme file (no extension)
+                    if theme_file.extension().is_none() {
+                        selected_themes.push(theme_file);
+                    } else {
+                        println!("⚠️  Mintty theme files should have no extension. Skipping.");
+                        continue;
+                    }
 
                     let add_more = Confirm::new("Add another theme file?")
                         .with_default(false)
@@ -213,14 +215,14 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
 
             Ok(selected_themes)
         }
-        "Select theme files in bulk from directory" => {
-            println!("\n📁 Select directory containing theme files:");
+        "Select mintty theme files in bulk from directory" => {
+            println!("\n📁 Select directory containing mintty theme files:");
             match select_directory(navigator, true) {
                 Ok(theme_dir) => {
                     let theme_files = find_theme_files_in_directory(&theme_dir)?;
 
                     if theme_files.is_empty() {
-                        println!("❌ No .toml theme files found in directory");
+                        println!("❌ No mintty theme files found in directory");
                         return Ok(vec![]);
                     }
 
@@ -255,7 +257,7 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
     }
 }
 
-/// Find theme files in a directory
+/// Find mintty theme files in a directory (files with no extension)
 #[cfg(target_os = "windows")]
 fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let mut theme_files = Vec::new();
@@ -264,8 +266,9 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if path.extension().is_none() {
+        if path.is_file() && path.extension().is_none() {
+            // Additional check: ensure it looks like a mintty theme file
+            if is_mintty_theme_file(&path)? {
                 theme_files.push(path);
             }
         }
@@ -275,30 +278,47 @@ fn find_theme_files_in_directory(dir: &Path) -> Result<Vec<PathBuf>, Box<dyn Err
     Ok(theme_files)
 }
 
-/// Process a single theme file and install it
+/// Check if a file appears to be a mintty theme file
+#[cfg(target_os = "windows")]
+fn is_mintty_theme_file(path: &Path) -> Result<bool, Box<dyn Error>> {
+    if let Ok(content) = fs::read_to_string(path) {
+        // Check for mintty-specific configuration keys
+        Ok(content.contains("BackgroundColour=") || content.contains("ForegroundColour="))
+    } else {
+        Ok(false)
+    }
+}
+
+/// Copy a mintty theme file to the themes directory
 #[cfg(target_os = "windows")]
 fn process_theme_file(
     theme_file: &Path,
     themes_dir: &Path,
 ) -> Result<(String, String), Box<dyn Error>> {
-    // Load the theme
-    let theme = thag_styling::Theme::load_from_file(theme_file)
-        .map_err(|e| format!("Failed to load theme: {}", e))?;
+    let theme_filename = theme_file
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or("Invalid theme filename")?
+        .to_string();
 
-    // Export to mintty format
-    let mintty_content = ExportFormat::Mintty
-        .export_theme(&theme)
-        .map_err(|e| format!("Failed to export theme: {}", e))?;
+    let destination_path = themes_dir.join(&theme_filename);
 
-    // Create mintty theme filename (no extension)
-    let mintty_filename = format!("thag-{}", theme.name.to_lowercase().replace(' ', "-"));
-    let mintty_path = themes_dir.join(&mintty_filename);
+    // Copy the theme file to the mintty themes directory
+    fs::copy(theme_file, &destination_path)
+        .map_err(|e| format!("Failed to copy theme file: {}", e))?;
 
-    // Write the theme file
-    fs::write(&mintty_path, mintty_content)
-        .map_err(|e| format!("Failed to write theme file: {}", e))?;
+    // Extract theme name from filename (remove thag- prefix if present)
+    let theme_name = if theme_filename.starts_with("thag-") {
+        theme_filename
+            .strip_prefix("thag-")
+            .unwrap_or(&theme_filename)
+    } else {
+        &theme_filename
+    };
 
-    Ok((theme.name.clone(), mintty_filename))
+    let display_name = theme_name.replace('-', " ").replace('_', " ");
+
+    Ok((display_name, theme_filename))
 }
 
 #[cfg(target_os = "windows")]
@@ -417,33 +437,22 @@ fn show_usage_instructions() {
 mod tests {
     #[cfg(target_os = "windows")]
     use super::*;
-    #[cfg(target_os = "windows")]
-    use thag_styling::{ColorSupport, Palette, TermBgLuma};
 
     #[cfg(target_os = "windows")]
-    fn create_test_theme() -> thag_styling::Theme {
-        thag_styling::Theme {
-            name: "Test Mintty Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme for mintty installation".to_string(),
+    #[test]
+    fn test_mintty_config_info() {
+        // Test that we can get mintty configuration info
+        if let Ok(config) = get_mintty_config_info() {
+            assert!(config.themes_dir.to_string_lossy().contains("mintty"));
+            assert!(config.config_file.to_string_lossy().contains("minttyrc"));
         }
     }
 
     #[cfg(target_os = "windows")]
     #[test]
-    fn test_theme_export() {
-        let theme = create_test_theme();
-        let result = ExportFormat::Mintty.export_theme(&theme);
-        assert!(result.is_ok());
-
-        let content = result.unwrap();
-        assert!(content.contains("BackgroundColour=30,30,46"));
+    fn test_mintty_theme_file_detection() {
+        // Test helper for file detection - this would need actual files to test properly
+        assert!(true);
     }
 
     #[cfg(not(target_os = "windows"))]

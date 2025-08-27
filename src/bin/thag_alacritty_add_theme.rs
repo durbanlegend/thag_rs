@@ -144,23 +144,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// /// Install a single theme for Alacritty
-// fn copy_theme(source_path: &PathBuf, destination_path: &PathBuf) -> Result<String, Box<dyn Error>> {
-//     match fs::copy(source_path, &destination_path) {
-//         Ok(bytes_copied) => {
-//             println!(
-//                 "Successfully copied {bytes_copied} bytes from '{}' to '{}'",
-//                 source_path.display(),
-//                 destination_path.display()
-//             );
-//         }
-//         Err(e) => {
-//             eprintln!("Error copying file: {}", e);
-//         }
-//     }
-//     Ok(source_path.file_name()?.to_string_lossy().to_string())
-// }
-
 #[derive(Debug)]
 struct AlacrittyConfig {
     config_dir: PathBuf,

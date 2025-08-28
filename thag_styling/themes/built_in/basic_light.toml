@@ -24,5 +24,7 @@ emphasis = { ansi = "green", index = 2, style = ["bold"] } # Green
 hint = { ansi = "cyan", index = 6, style = ["italic"] }    # Cyan
 
 # Development
-debug = { ansi = "cyan", index = 6 } # Cyan
-trace = { ansi = "gray", index = 8 } # Gray
+debug = { ansi = "cyan", index = 6 }                               # Cyan
+link = { ansi = "bright_red", index = 9 }                          # Bright Red
+quote = { ansi = "bright_white", index = 15 }                      # Bright White
+commentary = { ansi = "bright_black", index = 8, style = ["dim"] } # Dim styling

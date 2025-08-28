@@ -38,7 +38,9 @@ normal = "#FFFFFF"
 subtle = "#808080"
 hint = "#80FFFF"
 debug = "#C0C0C0"
-trace = "#808080"
+link = "#FF8080"
+quote = "#C0C0FF"
+commentary = "#A0A0A0"
 "#,
 };
 "##;

@@ -5,8 +5,8 @@
 
 use crate::{
     exporters::{
-        adjust_color_brightness, brighten_color, dim_color, get_best_dark_color,
-        get_rgb_from_style, is_light_color, ThemeExporter,
+        adjust_color_brightness, dim_color, get_best_dark_color, get_rgb_from_style,
+        is_light_color, ThemeExporter,
     },
     StylingResult, Theme,
 };
@@ -240,7 +240,7 @@ impl ThemeExporter for KittyExporter {
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.error) {
             let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.trace).or(Some((64, 64, 64))) {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.link).or(Some((64, 64, 64))) {
             let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
@@ -264,23 +264,17 @@ impl ThemeExporter for KittyExporter {
         output.push_str("\n# blue\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.info) {
             let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}\n", r, g, b);
-            let bright = brighten_color((r, g, b));
-            let _ = writeln!(
-                output,
-                "color12 #{:02x}{:02x}{:02x}\n",
-                bright.0, bright.1, bright.2
-            );
+        }
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.code) {
+            let _ = writeln!(output, "color12 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
         output.push_str("\n# magenta\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading1) {
             let _ = writeln!(output, "color5 #{:02x}{:02x}{:02x}\n", r, g, b);
-            let bright = brighten_color((r, g, b));
-            let _ = writeln!(
-                output,
-                "color13 #{:02x}{:02x}{:02x}\n",
-                bright.0, bright.1, bright.2
-            );
+        }
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading2) {
+            let _ = writeln!(output, "color13 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
         output.push_str("\n# cyan\n");
@@ -301,7 +295,7 @@ impl ThemeExporter for KittyExporter {
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(output, "color7 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal).map(brighten_color) {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.quote) {
             let _ = writeln!(output, "color15 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
@@ -323,7 +317,7 @@ impl ThemeExporter for KittyExporter {
 mod tests {
     use super::*;
     use crate::{
-        exporters::{basic_color_to_rgb, color_256_to_rgb},
+        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb},
         ColorSupport, Palette, TermBgLuma,
     };
     use std::path::PathBuf;

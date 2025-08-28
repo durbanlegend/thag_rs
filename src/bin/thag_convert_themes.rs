@@ -248,7 +248,9 @@ impl ToThemeOutput for Theme {
                 subtle: style_to_output(&self.palette.subtle, use_256),
                 hint: style_to_output(&self.palette.hint, use_256),
                 debug: style_to_output(&self.palette.debug, use_256),
-                trace: style_to_output(&self.palette.trace, use_256),
+                link: style_to_output(&self.palette.link, use_256),
+                quote: style_to_output(&self.palette.quote, use_256),
+                commentary: style_to_output(&self.palette.commentary, use_256),
             },
         }
     }

@@ -5,8 +5,8 @@
 
 use crate::{
     exporters::{
-        adjust_color_brightness, brighten_color, get_best_dark_color, get_rgb_from_style,
-        is_light_color, ThemeExporter,
+        adjust_color_brightness, get_best_dark_color, get_rgb_from_style, is_light_color,
+        ThemeExporter,
     },
     StylingResult, Theme,
 };
@@ -95,22 +95,16 @@ impl ThemeExporter for WezTermExporter {
 
         let bright_colors = [
             ("Bright Black", get_rgb_from_style(&theme.palette.subtle)),
-            ("Bright Red", get_rgb_from_style(&theme.palette.trace)),
+            ("Bright Red", get_rgb_from_style(&theme.palette.link)),
             ("Bright Green", get_rgb_from_style(&theme.palette.debug)),
             ("Bright Yellow", get_rgb_from_style(&theme.palette.emphasis)),
-            (
-                "Bright Blue",
-                get_rgb_from_style(&theme.palette.info).map(brighten_color),
-            ),
+            ("Bright Blue", get_rgb_from_style(&theme.palette.code)),
             (
                 "Bright Magenta",
-                get_rgb_from_style(&theme.palette.heading1).map(brighten_color),
+                get_rgb_from_style(&theme.palette.heading2),
             ),
             ("Bright Cyan", get_rgb_from_style(&theme.palette.hint)),
-            (
-                "Bright White",
-                get_rgb_from_style(&theme.palette.normal).map(brighten_color),
-            ),
+            ("Bright White", get_rgb_from_style(&theme.palette.quote)),
         ];
 
         for (name, rgb_opt) in bright_colors {
@@ -222,7 +216,7 @@ impl ThemeExporter for WezTermExporter {
 mod tests {
     use super::*;
     use crate::{
-        exporters::{basic_color_to_rgb, color_256_to_rgb},
+        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb, is_light_color},
         ColorSupport, Palette, TermBgLuma,
     };
     use std::path::PathBuf;

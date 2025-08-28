@@ -4,10 +4,7 @@
 //! Windows Terminal uses JSON configuration files for color schemes.
 
 use crate::{
-    exporters::{
-        adjust_color_brightness, brighten_color, get_best_dark_color, get_rgb_from_style,
-        ThemeExporter,
-    },
+    exporters::{adjust_color_brightness, get_best_dark_color, get_rgb_from_style, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -53,7 +50,7 @@ impl ThemeExporter for WindowsTerminalExporter {
                 get_rgb_from_style(&theme.palette.subtle)
             ),
             "brightRed": format_color(
-                get_rgb_from_style(&theme.palette.trace)
+                get_rgb_from_style(&theme.palette.link)
             ),
             "brightGreen": format_color(
                 get_rgb_from_style(&theme.palette.debug)
@@ -62,17 +59,16 @@ impl ThemeExporter for WindowsTerminalExporter {
                 get_rgb_from_style(&theme.palette.emphasis)
             ),
             "brightBlue": format_color(
-                get_rgb_from_style(&theme.palette.info).map(brighten_color)
+                get_rgb_from_style(&theme.palette.code)
             ),
             "brightPurple": format_color(
-                get_rgb_from_style(&theme.palette.code).map(brighten_color)
+                get_rgb_from_style(&theme.palette.heading2)
             ),
             "brightCyan": format_color(
                 get_rgb_from_style(&theme.palette.hint)
             ),
             "brightWhite": format_color(
-                get_rgb_from_style(&theme.palette.normal)
-                    .map(brighten_color)
+                get_rgb_from_style(&theme.palette.quote)
             )
         });
 
@@ -105,7 +101,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        exporters::{basic_color_to_rgb, color_256_to_rgb},
+        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb},
         ColorSupport, Palette, TermBgLuma,
     };
     use std::path::PathBuf;

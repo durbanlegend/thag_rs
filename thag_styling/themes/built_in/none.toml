@@ -25,4 +25,6 @@ hint = { ansi = "", index = 0 }
 
 # Development
 debug = { ansi = "", index = 0 }
-trace = { ansi = "", index = 0 }
+link = { ansi = "", index = 0 }
+quote = { ansi = "", index = 0 }
+commentary = { ansi = "", index = 0 }

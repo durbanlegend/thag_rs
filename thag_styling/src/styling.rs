@@ -642,8 +642,8 @@ impl Role {
     pub const HINT: Self = Self::Hint;
     /// Short alias for `Role::Debug`
     pub const DBUG: Self = Self::Debug;
-    /// Short alias for `Role::Trace`
-    pub const TRCE: Self = Self::Trace;
+    /// Short alias for `Role::Link`
+    pub const LINK: Self = Self::Link;
 }
 
 impl Role {
@@ -1125,8 +1125,12 @@ pub enum Role {
 
     /// Development/diagnostic information
     Debug,
-    /// Detailed execution tracking
-    Trace,
+    /// Links and URLs
+    Link,
+    /// Quoted text or citations
+    Quote,
+    /// Commentary or explanatory notes
+    Commentary,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -1149,7 +1153,9 @@ pub struct PaletteConfig {
     subtle: StyleConfig,
     hint: StyleConfig,
     debug: StyleConfig,
-    trace: StyleConfig,
+    link: StyleConfig,
+    quote: StyleConfig,
+    commentary: StyleConfig,
 }
 
 /// Color palette containing predefined styles for all message roles
@@ -1188,8 +1194,12 @@ pub struct Palette {
     pub hint: Style,
     /// Style for development/diagnostic information
     pub debug: Style,
-    /// Style for detailed execution tracking
-    pub trace: Style,
+    /// Style for links and URLs
+    pub link: Style,
+    /// Style for quoted text or citations
+    pub quote: Style,
+    /// Style for commentary or explanatory notes
+    pub commentary: Style,
 }
 
 impl Palette {
@@ -1219,7 +1229,9 @@ impl Palette {
             Role::Subtle => self.subtle.clone(),
             Role::Hint => self.hint.clone(),
             Role::Debug => self.debug.clone(),
-            Role::Trace => self.trace.clone(),
+            Role::Link => self.link.clone(),
+            Role::Quote => self.quote.clone(),
+            Role::Commentary => self.commentary.clone(),
         }
     }
 }
@@ -1732,7 +1744,9 @@ impl Theme {
             .chain(&def.palette.subtle.style)
             .chain(&def.palette.hint.style)
             .chain(&def.palette.debug.style)
-            .chain(&def.palette.trace.style)
+            .chain(&def.palette.link.style)
+            .chain(&def.palette.quote.style)
+            .chain(&def.palette.commentary.style)
         {
             if !["bold", "italic", "dim", "underline"].contains(&style_name.as_str()) {
                 return Err(ThemeError::InvalidStyle(style_name.clone()).into());
@@ -1803,7 +1817,9 @@ impl Theme {
             Role::Subtle => palette.subtle.clone(),
             Role::Hint => palette.hint.clone(),
             Role::Debug => palette.debug.clone(),
-            Role::Trace => palette.trace.clone(),
+            Role::Link => palette.link.clone(),
+            Role::Quote => palette.quote.clone(),
+            Role::Commentary => palette.commentary.clone(),
         }
     }
 
@@ -2497,7 +2513,9 @@ pub fn display_theme_roles(theme: &Theme) {
         ("Subtle", "De-emphasized but clearly visible text"),
         ("Hint", "Completion suggestions or placeholder text"),
         ("Debug", "Development/diagnostic information"),
-        ("Trace", "Detailed execution tracking"),
+        ("Link", "Links and URLs"),
+        ("Quote", "Quoted text or citations"),
+        ("Commentary", "Commentary or explanatory notes"),
     ];
 
     let col1_width = ROLE_DOCS
@@ -2533,7 +2551,9 @@ pub fn display_theme_roles(theme: &Theme) {
             "Subtle" => Role::Subtle,
             "Hint" => Role::Hint,
             "Debug" => Role::Debug,
-            "Trace" => Role::Trace,
+            "Link" => Role::Link,
+            "Quote" => Role::Quote,
+            "Commentary" => Role::Commentary,
             _ => Role::Normal,
         };
 
@@ -2962,7 +2982,7 @@ pub trait Styler {
     /// # Example
     /// ```ignore
     /// Role::Debug.vprtln(Verbosity::Verbose, "Debug: {}", value);
-    /// (Role::Trace).vprtln(Verbosity::Debug, "Trace info");
+    /// (Role::Link).vprtln(Verbosity::Debug, "Link info");
     /// ```
     fn vprtln(&self, verbosity: thag_common::Verbosity, args: std::fmt::Arguments<'_>) {
         let current_verbosity = thag_common::get_verbosity();
@@ -3291,9 +3311,19 @@ pub trait Styleable: std::fmt::Display {
         self.style_with(Role::Debug)
     }
 
-    /// Style this text as trace information
-    fn trace(&self) -> StyledString {
-        self.style_with(Role::Trace)
+    /// Style this text as a link
+    fn link(&self) -> StyledString {
+        self.style_with(Role::Link)
+    }
+
+    /// Style this text as quoted content
+    fn quote(&self) -> StyledString {
+        self.style_with(Role::Quote)
+    }
+
+    /// Style this text as commentary or explanatory notes
+    fn commentary(&self) -> StyledString {
+        self.style_with(Role::Commentary)
     }
 
     /// Style this text as a primary heading
@@ -3742,9 +3772,9 @@ mod tests {
         );
 
         // Test that lower verbosity messages are filtered out
-        Role::Trace.vprtln(
+        Role::Link.vprtln(
             thag_common::Verbosity::Debug,
-            format_args!("This should be filtered: {}", "trace"),
+            format_args!("This should be filtered: {}", "link"),
         );
 
         // Test with parentheses for disambiguation

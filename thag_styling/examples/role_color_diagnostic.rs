@@ -40,7 +40,9 @@ fn main() {
         ("Subtle", Role::Subtle),
         ("Debug (DBUG)", Role::Debug),
         ("Hint", Role::Hint),
-        ("Trace", Role::Trace),
+        ("Link", Role::Link),
+        ("Quote", Role::Quote),
+        ("Commentary", Role::Commentary),
     ];
 
     println!("Role Color Mappings:");

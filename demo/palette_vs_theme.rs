@@ -163,7 +163,9 @@ fn display_theme_colors(theme: &Theme) {
         ("Subtle", &theme.palette.subtle),
         ("Hint", &theme.palette.hint),
         ("Debug", &theme.palette.debug),
-        ("Trace", &theme.palette.trace),
+        ("Link", &theme.palette.link),
+        ("Quote", &theme.palette.quote),
+        ("Commentary", &theme.palette.commentary),
     ];
 
     println!("Semantic Colors:");
@@ -232,8 +234,8 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Bright Red (9)",
             9,
-            "Trace",
-            extract_rgb(&theme.palette.trace),
+            "Link",
+            extract_rgb(&theme.palette.link),
         ),
         (
             "Bright Green (10)",

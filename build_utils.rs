@@ -127,8 +127,22 @@ pub fn validate_theme_file(path: &Path) -> Result<(), BuildError> {
     // Validate palette fields
     if let Some(palette) = theme.get("palette").and_then(|v| v.as_table()) {
         let required_styles = [
-            "heading1", "heading2", "heading3", "error", "warning", "success", "info", "emphasis",
-            "code", "normal", "subtle", "hint", "debug", "trace",
+            "heading1",
+            "heading2",
+            "heading3",
+            "error",
+            "warning",
+            "success",
+            "info",
+            "emphasis",
+            "code",
+            "normal",
+            "subtle",
+            "hint",
+            "debug",
+            "link",
+            "quote",
+            "commentary",
         ];
 
         for style in required_styles {

@@ -56,4 +56,12 @@ hint = { rgb = [76, 86, 106], style = ["italic"] } # Nord3: Polar Night
 
 # Development
 debug = { rgb = [67, 76, 94] } # Nord2: Polar Night
-trace = { rgb = [59, 66, 82] } # Nord1: Polar Night
+link = { rgb = [136, 192, 208] } # Nord8: Frost - Light blue for links
+quote = { rgb = [163, 190, 140] } # Nord14: Aurora - Green for quotes
+commentary = { rgb = [
+    59,
+    66,
+    82,
+], style = [
+    "dim",
+] } # Nord1: Polar Night dim for commentary

@@ -51,4 +51,12 @@ hint = { rgb = [101, 123, 131], style = ["italic"] } # Base00: Primary content
 
 # Development
 debug = { rgb = [147, 161, 161] } # Base1
-trace = { rgb = [238, 232, 213] } # Base2: Background highlights
+link = { rgb = [220, 50, 47] } # Red for links
+quote = { rgb = [238, 232, 213] } # Base2: Background highlights for quotes
+commentary = { rgb = [
+    147,
+    161,
+    161,
+], style = [
+    "dim",
+] } # Base1 dim for commentary

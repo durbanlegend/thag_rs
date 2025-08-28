@@ -153,18 +153,18 @@ impl PaletteSync {
     /// - 1: Red (error)
     /// - 2: Green (success)
     /// - 3: Yellow (warning)
-    /// - 4: Blue (code)
-    /// - 5: Magenta (emphasis)
-    /// - 6: Cyan (info)
+    /// - 4: Blue (info)
+    /// - 5: Magenta (heading1)
+    /// - 6: Cyan (Heading3)
     /// - 7: White (normal)
-    /// - 8: Bright Black (debug)
-    /// - 9: Bright Red (error, brighter)
-    /// - 10: Bright Green (success, brighter)
-    /// - 11: Bright Yellow (heading3)
-    /// - 12: Bright Blue (heading2)
-    /// - 13: Bright Magenta (heading1)
+    /// - 8: Bright Black (subtle)
+    /// - 9: Bright Red (link)
+    /// - 10: Bright Green (debug)
+    /// - 11: Bright Yellow (emphasis)
+    /// - 12: Bright Blue (code)
+    /// - 13: Bright Magenta (heading2)
     /// - 14: Bright Cyan (hint)
-    /// - 15: Bright White (normal, brighter)
+    /// - 15: Bright White (quote)
     fn build_ansi_color_map(theme: &Theme) -> [[u8; 3]; 16] {
         let extract_rgb = |role: Role| -> [u8; 3] {
             theme
@@ -188,29 +188,28 @@ impl PaletteSync {
         let bg_rgb = theme.bg_rgbs.first().copied().map_or([0, 0, 0], Into::into);
 
         [
-            bg_rgb,                                            // 0: Black (use theme background)
-            extract_rgb(Role::Error),                          // 1: Red
-            extract_rgb(Role::Success),                        // 2: Green
-            extract_rgb(Role::Warning),                        // 3: Yellow
-            extract_rgb(Role::Info),                           // 4: Blue
-            extract_rgb(Role::Heading1),                       // 5: Magenta
-            extract_rgb(Role::Heading3),                       // 6: Cyan
-            extract_rgb(Role::Normal),                         // 7: White
-            extract_rgb(Role::Subtle), // 8: Bright Black (use Subtle instead of Debug)
-            extract_rgb(Role::Trace),  // 9: Bright Red (use Trace instead of brightened Error)
-            extract_rgb(Role::Debug),  // 10: Bright Green (use Debug instead of brightened Success)
+            bg_rgb,                      // 0: Black (use theme background)
+            extract_rgb(Role::Error),    // 1: Red
+            extract_rgb(Role::Success),  // 2: Green
+            extract_rgb(Role::Warning),  // 3: Yellow
+            extract_rgb(Role::Info),     // 4: Blue
+            extract_rgb(Role::Heading1), // 5: Magenta
+            extract_rgb(Role::Heading3), // 6: Cyan
+            extract_rgb(Role::Normal),   // 7: White
+            extract_rgb(Role::Subtle),   // 8: Bright Black
+            extract_rgb(Role::Link),     // 9: Bright Red
+            extract_rgb(Role::Debug),    // 10: Bright Green
             extract_rgb(Role::Emphasis), // 11: Bright Yellow
-            Self::brighten_color(extract_rgb(Role::Info)), // 12: Bright Blue
-            Self::brighten_color(extract_rgb(Role::Heading1)), // 13: Bright Magenta
-            extract_rgb(Role::Hint),   // 14: Bright Cyan
-            Self::brighten_color(extract_rgb(Role::Normal)), // 15: Bright White
+            extract_rgb(Role::Code),     // 12: Bright Blue
+            extract_rgb(Role::Heading2), // 13: Bright Magenta
+            extract_rgb(Role::Hint),     // 14: Bright Cyan
+            extract_rgb(Role::Quote),    // 15: Bright White
         ]
     }
 
     /// Brighten a color by increasing its lightness
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
-        let factor = 1.3f32;
+        let factor = 1.3;
         [
             ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
             ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
@@ -361,14 +360,26 @@ impl PaletteSync {
                 "ANSI 14: Bright Cyan",
             ),
             (
+                Role::Quote,
+                "💬 Quote - Quoted text or citations",
+                "\x1b[97m",
+                "ANSI 15: Bright White",
+            ),
+            (
+                Role::Commentary,
+                "📝 Commentary - Explanatory notes",
+                "\x1b[2m",
+                "Dim styling (no dedicated ANSI slot)",
+            ),
+            (
                 Role::Debug,
                 "🐛 Debug - Development info",
                 "\x1b[92m",
                 "ANSI 10: Bright Green",
             ),
             (
-                Role::Trace,
-                "🔍 Trace - Detailed diagnostic",
+                Role::Link,
+                "🔗 Link - URLs and hyperlinks",
                 "\x1b[91m",
                 "ANSI 9: Bright Red",
             ),

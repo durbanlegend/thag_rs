@@ -123,7 +123,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 //     palette.subtle = Style::fg(ColorInfo::rgb(128, 128, 128)); // Gray
 //     palette.hint = Style::fg(ColorInfo::rgb(105, 105, 105)); // Dim gray
 //     palette.debug = Style::fg(ColorInfo::rgb(255, 140, 0)); // Dark orange
-//     palette.trace = Style::fg(ColorInfo::rgb(192, 192, 192)); // Silver
+//     palette.link = Style::fg(ColorInfo::rgb(255, 100, 100)); // Light red
+//     palette.quote = Style::fg(ColorInfo::rgb(180, 180, 255)); // Light blue
+//     palette.commentary = Style::fg(ColorInfo::rgb(192, 192, 192)); // Silver
 
 //     Theme {
 //         name: "Vibrant Demo Theme".to_string(),

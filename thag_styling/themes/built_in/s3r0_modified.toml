@@ -37,4 +37,12 @@ hint = { rgb = [114, 114, 114], style = ["italic"] } # Dark gray
 
 # Development
 debug = { rgb = [114, 114, 114] } # Dark gray
-trace = { rgb = [76, 76, 76] }    # Darker gray
+link = { rgb = [255, 85, 85] } # Red for links
+quote = { rgb = [76, 76, 76] } # Darker gray for quotes
+commentary = { rgb = [
+    114,
+    114,
+    114,
+], style = [
+    "dim",
+] } # Dark gray dim for commentary

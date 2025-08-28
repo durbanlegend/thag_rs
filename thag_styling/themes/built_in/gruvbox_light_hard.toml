@@ -40,9 +40,9 @@ term_bg_luma = "light"
 min_color_support = "true_color"
 # List of known backgrounds with optional comments
 backgrounds = [
-    "#f9f5d7",  # Official
-    "#d9c8a4",  # Zed Terminal
-    "#fbf1c7",  # Alternative light
+    "#f9f5d7", # Official
+    "#d9c8a4", # Zed Terminal
+    "#fbf1c7", # Alternative light
 ]
 
 [palette]
@@ -66,4 +66,12 @@ hint = { rgb = [146, 131, 116], style = ["italic"] } # Light Gray
 
 # Development
 debug = { rgb = [168, 153, 132] } # Gray
-trace = { rgb = [189, 174, 147] } # Light Gray
+link = { rgb = [204, 36, 29] } # Red for links
+quote = { rgb = [189, 174, 147] } # Light Gray for quotes
+commentary = { rgb = [
+    168,
+    153,
+    132,
+], style = [
+    "dim",
+] } # Gray dim for commentary

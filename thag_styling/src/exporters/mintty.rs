@@ -4,10 +4,7 @@
 //! Mintty theme files are simple key-value pairs stored without file extensions.
 
 use crate::{
-    exporters::{
-        adjust_color_brightness, brighten_color, get_best_dark_color, get_rgb_from_style,
-        ThemeExporter,
-    },
+    exporters::{adjust_color_brightness, get_best_dark_color, get_rgb_from_style, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -67,7 +64,7 @@ impl ThemeExporter for MinttyExporter {
 
         // Bold text color
         if let Some(bold_color) = get_rgb_from_style(&theme.palette.emphasis)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal).map(brighten_color))
+            .or_else(|| get_rgb_from_style(&theme.palette.normal))
         {
             let _ = writeln!(
                 output,
@@ -128,7 +125,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright Red
-        if let Some(bright_red) = get_rgb_from_style(&theme.palette.trace) {
+        if let Some(bright_red) = get_rgb_from_style(&theme.palette.link) {
             let _ = writeln!(
                 output,
                 "BoldRed={},{},{}",
@@ -155,7 +152,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright Blue
-        if let Some(bright_blue) = get_rgb_from_style(&theme.palette.info).map(brighten_color) {
+        if let Some(bright_blue) = get_rgb_from_style(&theme.palette.code) {
             let _ = writeln!(
                 output,
                 "BoldBlue={},{},{}",
@@ -164,7 +161,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright Magenta
-        if let Some(bright_magenta) = get_rgb_from_style(&theme.palette.code).map(brighten_color) {
+        if let Some(bright_magenta) = get_rgb_from_style(&theme.palette.heading2) {
             let _ = writeln!(
                 output,
                 "BoldMagenta={},{},{}",
@@ -182,7 +179,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright White
-        if let Some(bright_white) = get_rgb_from_style(&theme.palette.normal).map(brighten_color) {
+        if let Some(bright_white) = get_rgb_from_style(&theme.palette.quote) {
             let _ = writeln!(
                 output,
                 "BoldWhite={},{},{}",

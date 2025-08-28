@@ -37,5 +37,7 @@ subtle = { rgb = [98, 114, 164] }                      # Comment
 hint = { rgb = [98, 114, 164], style = ["italic"] }    # Comment italic
 
 # Development
-debug = { rgb = [80, 250, 123], style = ["italic"] }         # Comment italic
-trace = { rgb = [139, 233, 253], style = ["italic", "dim"] } # Cyan
+debug = { rgb = [80, 250, 123], style = ["italic"] }             # Comment italic
+link = { rgb = [139, 233, 253], style = ["underline"] }          # Cyan for links
+quote = { rgb = [139, 233, 253], style = ["italic"] }            # Cyan for quotes
+commentary = { rgb = [98, 114, 164], style = ["italic", "dim"] } # Comment color

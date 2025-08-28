@@ -5,8 +5,8 @@
 
 use crate::{
     exporters::{
-        adjust_color_brightness, brighten_color, dim_color, get_best_dark_color,
-        get_rgb_from_style, is_light_color, ThemeExporter,
+        adjust_color_brightness, dim_color, get_best_dark_color, get_rgb_from_style,
+        is_light_color, ThemeExporter,
     },
     StylingResult, Theme,
 };
@@ -119,22 +119,13 @@ impl ThemeExporter for AlacrittyExporter {
 
         let bright_colors = [
             ("black", get_rgb_from_style(&theme.palette.subtle)),
-            ("red", get_rgb_from_style(&theme.palette.trace)),
+            ("red", get_rgb_from_style(&theme.palette.link)),
             ("green", get_rgb_from_style(&theme.palette.debug)),
             ("yellow", get_rgb_from_style(&theme.palette.emphasis)),
-            (
-                "blue",
-                get_rgb_from_style(&theme.palette.info).map(brighten_color),
-            ),
-            (
-                "magenta",
-                get_rgb_from_style(&theme.palette.heading1).map(brighten_color),
-            ),
+            ("blue", get_rgb_from_style(&theme.palette.code)),
+            ("magenta", get_rgb_from_style(&theme.palette.heading2)),
             ("cyan", get_rgb_from_style(&theme.palette.hint)),
-            (
-                "white",
-                get_rgb_from_style(&theme.palette.normal).map(brighten_color),
-            ),
+            ("white", get_rgb_from_style(&theme.palette.quote)),
         ];
 
         eprintln!("Bright colors:");

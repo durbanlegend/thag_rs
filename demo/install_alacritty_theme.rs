@@ -144,7 +144,7 @@ fn generate_corrected_alacritty_theme(theme: &Theme) -> Result<String, Box<dyn s
 
     let bright_colors = [
         ("black", extract_rgb(&theme.palette.subtle)), // 8: subtle
-        ("red", extract_rgb(&theme.palette.trace)),    // 9: trace (bright red)
+        ("red", extract_rgb(&theme.palette.link)),     // 9: link (bright red)
         ("green", extract_rgb(&theme.palette.debug)),  // 10: debug (bright green)
         ("yellow", extract_rgb(&theme.palette.heading3)), // 11: heading3 (bright yellow)
         ("blue", extract_rgb(&theme.palette.heading2)), // 12: heading2 (bright blue)

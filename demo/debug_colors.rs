@@ -50,7 +50,9 @@ fn main() {
         ("Subtle", Role::Subtle),
         ("Hint", Role::Hint),
         ("Debug", Role::Debug),
-        ("Trace", Role::Trace),
+        ("Link", Role::Link),
+        ("Quote", Role::Quote),
+        ("Commentary", Role::Commentary),
     ];
 
     for (name, role) in &roles {

@@ -25,5 +25,7 @@ subtle = { ansi = "bright_black", index = 8 }                   # Bright Black (
 hint = { ansi = "bright_cyan", index = 14, style = ["italic"] } # Bright Cyan
 
 # Development
-debug = { ansi = "bright_cyan", index = 14 } # Bright Cyan
-trace = { ansi = "bright_black", index = 8 } # Bright Black (Gray)
+debug = { ansi = "bright_cyan", index = 14 }                       # Bright Cyan
+link = { ansi = "bright_red", index = 9 }                          # Bright Red
+quote = { ansi = "bright_white", index = 15 }                      # Bright White
+commentary = { ansi = "bright_black", index = 8, style = ["dim"] } # Dim styling

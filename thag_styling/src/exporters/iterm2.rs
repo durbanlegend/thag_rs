@@ -4,10 +4,7 @@
 //! iTerm2 uses .itermcolors files (plist XML) for color presets that can be imported through the UI.
 
 use crate::{
-    exporters::{
-        adjust_color_brightness, brighten_color, get_best_dark_color, get_rgb_from_style,
-        ThemeExporter,
-    },
+    exporters::{adjust_color_brightness, get_best_dark_color, get_rgb_from_style, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -78,7 +75,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 9 Color",
-            get_rgb_from_style(&theme.palette.trace),
+            get_rgb_from_style(&theme.palette.link),
         )?;
         write_color_entry(
             &mut output,
@@ -93,12 +90,12 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 12 Color",
-            get_rgb_from_style(&theme.palette.info).map(brighten_color),
+            get_rgb_from_style(&theme.palette.code),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 13 Color",
-            get_rgb_from_style(&theme.palette.heading1),
+            get_rgb_from_style(&theme.palette.heading2),
         )?;
         write_color_entry(
             &mut output,
@@ -108,7 +105,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 15 Color",
-            get_rgb_from_style(&theme.palette.normal).map(brighten_color),
+            get_rgb_from_style(&theme.palette.quote),
         )?;
 
         // Background and foreground

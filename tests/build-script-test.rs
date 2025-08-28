@@ -40,7 +40,9 @@ normal = { basic = ["\\x1b[0m", "0"] }
 subtle = { basic = ["\\x1b[37m", "7"] }
 hint = { basic = ["\\x1b[36m", "6"], style = ["italic"] }
 debug = { basic = ["\\x1b[36m", "6"] }
-trace = { basic = ["\\x1b[37m", "7"] }
+link = { basic = ["\\x1b[31m", "1"] }
+quote = { basic = ["\\x1b[37m", "7"] }
+commentary = { basic = ["\\x1b[90m", "8"] }
 "#;
 
         let theme_path = create_test_theme(temp_dir.path(), "valid", valid_theme)?;

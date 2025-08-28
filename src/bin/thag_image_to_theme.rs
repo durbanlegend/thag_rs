@@ -212,7 +212,9 @@ fn display_color_palette(theme: &Theme) {
         ("Code", &theme.palette.code),
         ("Hint", &theme.palette.hint),
         ("Debug", &theme.palette.debug),
-        ("Trace", &theme.palette.trace),
+        ("Link", &theme.palette.link),
+        ("Quote", &theme.palette.quote),
+        ("Commentary", &theme.palette.commentary),
     ];
 
     for (name, style) in palette_items {

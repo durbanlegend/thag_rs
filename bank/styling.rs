@@ -855,8 +855,8 @@ impl Role {
     pub const HINT: Self = Self::Hint;
     /// Short alias for `Role::Debug`
     pub const DBUG: Self = Self::Debug;
-    /// Short alias for `Role::Trace`
-    pub const TRCE: Self = Self::Trace;
+    /// Short alias for `Role::Link`
+    pub const LINK: Self = Self::Link;
 }
 
 impl Role {
@@ -1428,7 +1428,9 @@ impl Palette {
             Role::Subtle => self.subtle.clone(),
             Role::Hint => self.hint.clone(),
             Role::Debug => self.debug.clone(),
-            Role::Trace => self.trace.clone(),
+            Role::Link => self.link.clone(),
+            Role::Quote => self.quote.clone(),
+            Role::Commentary => self.commentary.clone(),
         }
     }
 }
@@ -1967,7 +1969,9 @@ impl Theme {
             .chain(&def.palette.subtle.style)
             .chain(&def.palette.hint.style)
             .chain(&def.palette.debug.style)
-            .chain(&def.palette.trace.style)
+            .chain(&def.palette.link.style)
+            .chain(&def.palette.quote.style)
+            .chain(&def.palette.commentary.style)
         {
             if !["bold", "italic", "dim", "underline"].contains(&style_name.as_str()) {
                 return Err(ThemeError::InvalidStyle(style_name.clone()).into());
@@ -2039,7 +2043,9 @@ impl Theme {
             Role::Subtle => palette.subtle.clone(),
             Role::Hint => palette.hint.clone(),
             Role::Debug => palette.debug.clone(),
-            Role::Trace => palette.trace.clone(),
+            Role::Link => palette.link.clone(),
+            Role::Quote => palette.quote.clone(),
+            Role::Commentary => palette.commentary.clone(),
         }
     }
 
@@ -2813,7 +2819,9 @@ pub fn display_theme_roles(theme: &Theme) {
             "Subtle" => Role::Subtle,
             "Hint" => Role::Hint,
             "Debug" => Role::Debug,
-            "Trace" => Role::Trace,
+            "Link" => Role::Link,
+            "Quote" => Role::Quote,
+            "Commentary" => Role::Commentary,
             _ => Role::Normal,
         };
 

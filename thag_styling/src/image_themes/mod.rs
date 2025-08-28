@@ -620,18 +620,72 @@ impl ImageThemeGenerator {
             ))
         );
 
-        let trace_color = if debug_color.distance_to(hint_color) > 20.0 {
-            hint_color
-        } else {
-            Self::find_most_different_color(&enhanced_colors, &[debug_color], background_color)
+        // Derive three distinct colors for the new roles from existing palette colors
+        used_colors.push(debug_color);
+
+        // Link color: derive from error color (typically red/bright for visibility)
+        let link_color = {
+            let base = semantic_colors.error;
+            let adjusted_lightness = if is_light_theme {
+                (base.lightness - 0.15).max(0.3) // Darker for light themes
+            } else {
+                (base.lightness + 0.15).min(0.85) // Brighter for dark themes
+            };
+            let rgb = hsl_to_rgb(base.hue, base.saturation, adjusted_lightness);
+            ColorAnalysis::new(rgb, 0.0)
         };
+
+        // Quote color: derive from subtle color with reduced saturation for muted appearance
+        let quote_color = {
+            let base = subtle_color;
+            let adjusted_saturation = (base.saturation * 0.7).max(0.1);
+            let adjusted_lightness = if is_light_theme {
+                (base.lightness - 0.1).max(0.4)
+            } else {
+                (base.lightness + 0.1).min(0.75)
+            };
+            let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
+            ColorAnalysis::new(rgb, 0.0)
+        };
+
+        // Commentary color: derive from normal color, dimmed significantly
+        let commentary_color = {
+            let base = normal_color;
+            let adjusted_lightness = if is_light_theme {
+                (base.lightness + 0.2).min(0.6) // Lighter for light themes
+            } else {
+                (base.lightness - 0.25).max(0.35) // Much darker for dark themes
+            };
+            let adjusted_saturation = (base.saturation * 0.5).max(0.05);
+            let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
+            ColorAnalysis::new(rgb, 0.0)
+        };
+
         vprtln!(
             V::V,
-            "trace_color={}",
-            Style::new().with_rgb(trace_color.rgb).paint(format!(
+            "link_color={}",
+            Style::new().with_rgb(link_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&trace_color.rgb.into()),
-                trace_color.hue
+                rgb_to_hex(&link_color.rgb.into()),
+                link_color.hue
+            ))
+        );
+        vprtln!(
+            V::V,
+            "quote_color={}",
+            Style::new().with_rgb(quote_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&quote_color.rgb.into()),
+                quote_color.hue
+            ))
+        );
+        vprtln!(
+            V::V,
+            "commentary_color={}",
+            Style::new().with_rgb(commentary_color.rgb).paint(format!(
+                "{}, hue={}",
+                rgb_to_hex(&commentary_color.rgb.into()),
+                commentary_color.hue
             ))
         );
 
@@ -649,7 +703,9 @@ impl ImageThemeGenerator {
             code: Style::new().with_rgb(semantic_colors.code.rgb),
             emphasis: Style::new().with_rgb(semantic_colors.emphasis.rgb),
             debug: Style::new().with_rgb(debug_color.rgb).dim(),
-            trace: Style::new().with_rgb(trace_color.rgb).italic().dim(),
+            link: Style::new().with_rgb(link_color.rgb).underline(),
+            quote: Style::new().with_rgb(quote_color.rgb).italic(),
+            commentary: Style::new().with_rgb(commentary_color.rgb).italic().dim(),
         }
     }
 
@@ -1574,7 +1630,9 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
         ("subtle", &theme.palette.subtle),
         ("hint", &theme.palette.hint),
         ("debug", &theme.palette.debug),
-        ("trace", &theme.palette.trace),
+        ("link", &theme.palette.link),
+        ("quote", &theme.palette.quote),
+        ("commentary", &theme.palette.commentary),
     ];
 
     for (role_name, style) in palette_items {

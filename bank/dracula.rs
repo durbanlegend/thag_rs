@@ -109,7 +109,7 @@ fn main() {
     println!(
         "{}",
         theme
-            .style_for(Role::Trace)
+            .style_for(Role::Link)
             .paint("Trace: Entering main() (Dim Light Gray)")
     );
 }

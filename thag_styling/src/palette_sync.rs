@@ -207,16 +207,6 @@ impl PaletteSync {
         ]
     }
 
-    /// Brighten a color by increasing its lightness
-    fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
-        let factor = 1.3;
-        [
-            ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
-            ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
-            ((f32::from(rgb[2]) * factor).min(255.0)) as u8,
-        ]
-    }
-
     /// Print a color demonstration using the current palette
     ///
     /// This shows how the ANSI colors look after applying a theme,
@@ -436,6 +426,16 @@ mod tests {
     use super::*;
     use crate::{styling::TermAttributes, ColorInitStrategy};
 
+    /// Brighten a color by increasing its lightness
+    fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
+        let factor = 1.3;
+        [
+            ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
+            ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
+            ((f32::from(rgb[2]) * factor).min(255.0)) as u8,
+        ]
+    }
+
     #[test]
     fn test_ansi_color_mapping() {
         // Initialize with a basic theme for testing
@@ -460,13 +460,13 @@ mod tests {
     #[test]
     fn test_brighten_color() {
         let dark_red = [100, 0, 0];
-        let bright_red = PaletteSync::brighten_color(dark_red);
+        let bright_red = brighten_color(dark_red);
 
         // Should be brighter
         assert!(bright_red[0] > dark_red[0]);
 
         // Should not exceed 255
         let white = [255, 255, 255];
-        let _ = PaletteSync::brighten_color(white);
+        let _ = brighten_color(white);
     }
 }

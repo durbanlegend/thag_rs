@@ -91,15 +91,12 @@ impl ThemeExporter for AlacrittyExporter {
         // Map semantic colors to ANSI colors
         let normal_colors = [
             ("black", get_best_dark_color(theme)),
-            ("red", get_rgb_from_style(&theme.palette.error)),
+            ("red", get_rgb_from_style(&theme.palette.emphasis)),
             ("green", get_rgb_from_style(&theme.palette.success)),
-            ("yellow", get_rgb_from_style(&theme.palette.warning)),
+            ("yellow", get_rgb_from_style(&theme.palette.commentary)),
             ("blue", get_rgb_from_style(&theme.palette.info)),
             ("magenta", get_rgb_from_style(&theme.palette.heading1)),
-            (
-                "cyan",
-                get_rgb_from_style(&theme.palette.heading3).or(Some((64, 192, 192))),
-            ),
+            ("cyan", get_rgb_from_style(&theme.palette.code)),
             ("white", get_rgb_from_style(&theme.palette.normal)),
         ];
 
@@ -119,10 +116,10 @@ impl ThemeExporter for AlacrittyExporter {
 
         let bright_colors = [
             ("black", get_rgb_from_style(&theme.palette.subtle)),
-            ("red", get_rgb_from_style(&theme.palette.link)),
+            ("red", get_rgb_from_style(&theme.palette.error)),
             ("green", get_rgb_from_style(&theme.palette.debug)),
-            ("yellow", get_rgb_from_style(&theme.palette.emphasis)),
-            ("blue", get_rgb_from_style(&theme.palette.code)),
+            ("yellow", get_rgb_from_style(&theme.palette.warning)),
+            ("blue", get_rgb_from_style(&theme.palette.link)),
             ("magenta", get_rgb_from_style(&theme.palette.heading2)),
             ("cyan", get_rgb_from_style(&theme.palette.hint)),
             ("white", get_rgb_from_style(&theme.palette.quote)),

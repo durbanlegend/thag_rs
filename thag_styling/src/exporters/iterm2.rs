@@ -35,7 +35,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 1 Color",
-            get_rgb_from_style(&theme.palette.error),
+            get_rgb_from_style(&theme.palette.emphasis),
         )?;
         write_color_entry(
             &mut output,
@@ -45,7 +45,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 3 Color",
-            get_rgb_from_style(&theme.palette.warning),
+            get_rgb_from_style(&theme.palette.commentary),
         )?;
         write_color_entry(
             &mut output,
@@ -60,7 +60,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 6 Color",
-            get_rgb_from_style(&theme.palette.heading3),
+            get_rgb_from_style(&theme.palette.code),
         )?;
         write_color_entry(
             &mut output,
@@ -75,7 +75,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 9 Color",
-            get_rgb_from_style(&theme.palette.link),
+            get_rgb_from_style(&theme.palette.error),
         )?;
         write_color_entry(
             &mut output,
@@ -85,12 +85,12 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 11 Color",
-            get_rgb_from_style(&theme.palette.emphasis),
+            get_rgb_from_style(&theme.palette.warning),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 12 Color",
-            get_rgb_from_style(&theme.palette.code),
+            get_rgb_from_style(&theme.palette.link),
         )?;
         write_color_entry(
             &mut output,

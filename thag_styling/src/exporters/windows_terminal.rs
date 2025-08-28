@@ -35,13 +35,13 @@ impl ThemeExporter for WindowsTerminalExporter {
 
             // ANSI colors (0-7: normal, 8-15: bright)
             "black": format_color(get_best_dark_color(theme)),
-            "red": format_color(get_rgb_from_style(&theme.palette.error)),
+            "red": format_color(get_rgb_from_style(&theme.palette.emphasis)),
             "green": format_color(get_rgb_from_style(&theme.palette.success)),
-            "yellow": format_color(get_rgb_from_style(&theme.palette.warning)),
+            "yellow": format_color(get_rgb_from_style(&theme.palette.commentary)),
             "blue": format_color(get_rgb_from_style(&theme.palette.info)),
             "purple": format_color(get_rgb_from_style(&theme.palette.heading1)),
             "cyan": format_color(
-                get_rgb_from_style(&theme.palette.heading3)
+                get_rgb_from_style(&theme.palette.code)
             ),
             "white": format_color(get_rgb_from_style(&theme.palette.normal)),
 
@@ -50,16 +50,16 @@ impl ThemeExporter for WindowsTerminalExporter {
                 get_rgb_from_style(&theme.palette.subtle)
             ),
             "brightRed": format_color(
-                get_rgb_from_style(&theme.palette.link)
+                get_rgb_from_style(&theme.palette.error)
             ),
             "brightGreen": format_color(
                 get_rgb_from_style(&theme.palette.debug)
             ),
             "brightYellow": format_color(
-                get_rgb_from_style(&theme.palette.emphasis)
+                get_rgb_from_style(&theme.palette.warning)
             ),
             "brightBlue": format_color(
-                get_rgb_from_style(&theme.palette.code)
+                get_rgb_from_style(&theme.palette.link)
             ),
             "brightPurple": format_color(
                 get_rgb_from_style(&theme.palette.heading2)

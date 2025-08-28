@@ -188,22 +188,22 @@ impl PaletteSync {
         let bg_rgb = theme.bg_rgbs.first().copied().map_or([0, 0, 0], Into::into);
 
         [
-            bg_rgb,                      // 0: Black (use theme background)
-            extract_rgb(Role::Error),    // 1: Red
-            extract_rgb(Role::Success),  // 2: Green
-            extract_rgb(Role::Warning),  // 3: Yellow
-            extract_rgb(Role::Info),     // 4: Blue
-            extract_rgb(Role::Heading1), // 5: Magenta
-            extract_rgb(Role::Heading3), // 6: Cyan
-            extract_rgb(Role::Normal),   // 7: White
-            extract_rgb(Role::Subtle),   // 8: Bright Black
-            extract_rgb(Role::Link),     // 9: Bright Red
-            extract_rgb(Role::Debug),    // 10: Bright Green
-            extract_rgb(Role::Emphasis), // 11: Bright Yellow
-            extract_rgb(Role::Code),     // 12: Bright Blue
-            extract_rgb(Role::Heading2), // 13: Bright Magenta
-            extract_rgb(Role::Hint),     // 14: Bright Cyan
-            extract_rgb(Role::Quote),    // 15: Bright White
+            bg_rgb,                        // 0: Black (use theme background)
+            extract_rgb(Role::Emphasis),   // 1: Red (important emphasis)
+            extract_rgb(Role::Success),    // 2: Green (positive outcomes)
+            extract_rgb(Role::Commentary), // 3: Yellow (highlighted notes)
+            extract_rgb(Role::Info),       // 4: Blue (calm information)
+            extract_rgb(Role::Heading1),   // 5: Magenta (primary headings)
+            extract_rgb(Role::Code),       // 6: Cyan (technical content)
+            extract_rgb(Role::Normal),     // 7: White (standard text)
+            extract_rgb(Role::Subtle),     // 8: Bright Black (dimmed text)
+            extract_rgb(Role::Error),      // 9: Bright Red (maximum urgency)
+            extract_rgb(Role::Debug),      // 10: Bright Green (development info)
+            extract_rgb(Role::Warning),    // 11: Bright Yellow (high visibility caution)
+            extract_rgb(Role::Link),       // 12: Bright Blue (web convention links)
+            extract_rgb(Role::Heading2),   // 13: Bright Magenta (secondary headings)
+            extract_rgb(Role::Hint),       // 14: Bright Cyan (helpful suggestions)
+            extract_rgb(Role::Quote),      // 15: Bright White (prominent quotes)
         ]
     }
 
@@ -356,10 +356,28 @@ impl PaletteSync {
                 "ANSI 15: Bright White",
             ),
             (
+                Role::Warning,
+                "⚠️ Warning - Important cautions and potential issues",
+                "\x1b[93m",
+                "ANSI 11: Bright Yellow",
+            ),
+            (
+                Role::Link,
+                "🔗 Link - URLs and hyperlinks",
+                "\x1b[94m",
+                "ANSI 12: Bright Blue",
+            ),
+            (
                 Role::Commentary,
                 "📝 Commentary - Explanatory notes",
-                "\x1b[2m",
-                "Dim styling (no dedicated ANSI slot)",
+                "\x1b[33m",
+                "ANSI 3: Yellow",
+            ),
+            (
+                Role::Emphasis,
+                "💪 Emphasis - Important text that needs attention",
+                "\x1b[31m",
+                "ANSI 1: Red",
             ),
             (
                 Role::Debug,
@@ -368,8 +386,8 @@ impl PaletteSync {
                 "ANSI 10: Bright Green",
             ),
             (
-                Role::Link,
-                "🔗 Link - URLs and hyperlinks",
+                Role::Error,
+                "❌ Error - Critical issues requiring immediate attention",
                 "\x1b[91m",
                 "ANSI 9: Bright Red",
             ),

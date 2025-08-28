@@ -39,6 +39,7 @@
 - [ ] DONE: Fix thag_gen_terminal_themes.rs for Windows at least.
 - [ ] Update demo/thag_theme.rs and other displays to use the new 15-colour palette.
 - [ ] Duplication between src/bin/thag_gen_theme.rs and src/bin/thag_image_to_theme.rs.
+- [ ] Force light or dark in theme name in src/bin/thag_image_to_theme.rs.
 
 
 let _ = writeln!(output,

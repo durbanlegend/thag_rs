@@ -80,7 +80,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Dark Red
-        if let Some(red) = get_rgb_from_style(&theme.palette.error) {
+        if let Some(red) = get_rgb_from_style(&theme.palette.emphasis) {
             let _ = writeln!(output, "Red={},{},{}", red.0, red.1, red.2);
         }
 
@@ -90,7 +90,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Dark Yellow
-        if let Some(yellow) = get_rgb_from_style(&theme.palette.warning) {
+        if let Some(yellow) = get_rgb_from_style(&theme.palette.commentary) {
             let _ = writeln!(output, "Yellow={},{},{}", yellow.0, yellow.1, yellow.2);
         }
 
@@ -105,7 +105,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Dark Cyan
-        if let Some(cyan) = get_rgb_from_style(&theme.palette.heading3) {
+        if let Some(cyan) = get_rgb_from_style(&theme.palette.code) {
             let _ = writeln!(output, "Cyan={},{},{}", cyan.0, cyan.1, cyan.2);
         }
 
@@ -125,7 +125,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright Red
-        if let Some(bright_red) = get_rgb_from_style(&theme.palette.link) {
+        if let Some(bright_red) = get_rgb_from_style(&theme.palette.error) {
             let _ = writeln!(
                 output,
                 "BoldRed={},{},{}",
@@ -143,7 +143,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright Yellow
-        if let Some(bright_yellow) = get_rgb_from_style(&theme.palette.emphasis) {
+        if let Some(bright_yellow) = get_rgb_from_style(&theme.palette.warning) {
             let _ = writeln!(
                 output,
                 "BoldYellow={},{},{}",
@@ -152,7 +152,7 @@ impl ThemeExporter for MinttyExporter {
         }
 
         // Bright Blue
-        if let Some(bright_blue) = get_rgb_from_style(&theme.palette.code) {
+        if let Some(bright_blue) = get_rgb_from_style(&theme.palette.link) {
             let _ = writeln!(
                 output,
                 "BoldBlue={},{},{}",

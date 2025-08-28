@@ -328,7 +328,7 @@ Alternatively, you can merge the JSON content directly into your settings.json f
 }
 
 /// Brighten a color by increasing its components
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]
 fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
     adjust_color_brightness((r, g, b), 1.3)
 }

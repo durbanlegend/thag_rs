@@ -59,12 +59,12 @@ impl ThemeExporter for WezTermExporter {
 
         let normal_colors = [
             ("Black", get_best_dark_color(theme)),
-            ("Red", get_rgb_from_style(&theme.palette.error)),
+            ("Red", get_rgb_from_style(&theme.palette.emphasis)),
             ("Green", get_rgb_from_style(&theme.palette.success)),
-            ("Yellow", get_rgb_from_style(&theme.palette.warning)),
+            ("Yellow", get_rgb_from_style(&theme.palette.commentary)),
             ("Blue", get_rgb_from_style(&theme.palette.info)),
             ("Magenta", get_rgb_from_style(&theme.palette.heading1)),
-            ("Cyan", get_rgb_from_style(&theme.palette.heading3)),
+            ("Cyan", get_rgb_from_style(&theme.palette.code)),
             ("White", get_rgb_from_style(&theme.palette.normal)),
         ];
 
@@ -95,10 +95,10 @@ impl ThemeExporter for WezTermExporter {
 
         let bright_colors = [
             ("Bright Black", get_rgb_from_style(&theme.palette.subtle)),
-            ("Bright Red", get_rgb_from_style(&theme.palette.link)),
+            ("Bright Red", get_rgb_from_style(&theme.palette.error)),
             ("Bright Green", get_rgb_from_style(&theme.palette.debug)),
-            ("Bright Yellow", get_rgb_from_style(&theme.palette.emphasis)),
-            ("Bright Blue", get_rgb_from_style(&theme.palette.code)),
+            ("Bright Yellow", get_rgb_from_style(&theme.palette.warning)),
+            ("Bright Blue", get_rgb_from_style(&theme.palette.link)),
             (
                 "Bright Magenta",
                 get_rgb_from_style(&theme.palette.heading2),

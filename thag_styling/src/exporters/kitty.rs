@@ -237,35 +237,34 @@ impl ThemeExporter for KittyExporter {
         }
 
         output.push_str("\n# red\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.error) {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.emphasis) {
             let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.link).or(Some((64, 64, 64))) {
-            let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}\n", r, g, b);
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.error) {
+            let _ = writeln!(output, "color9 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
         output.push_str("\n# green\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.success) {
             let _ = writeln!(output, "color2 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.debug).or(Some((64, 64, 64))) {
-            let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}\n", r, g, b);
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.debug) {
+            let _ = writeln!(output, "color10 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
         output.push_str("\n# yellow\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.warning) {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.commentary) {
             let _ = writeln!(output, "color3 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.emphasis).or(Some((64, 64, 64)))
-        {
-            let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}\n", r, g, b);
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.warning) {
+            let _ = writeln!(output, "color11 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
         output.push_str("\n# blue\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.info) {
             let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.code) {
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.link) {
             let _ = writeln!(output, "color12 #{:02x}{:02x}{:02x}\n", r, g, b);
         }
 
@@ -278,18 +277,12 @@ impl ThemeExporter for KittyExporter {
         }
 
         output.push_str("\n# cyan\n");
-        let cyan_normal = get_rgb_from_style(&theme.palette.heading3).unwrap_or((64, 192, 192));
-        let _ = writeln!(
-            output,
-            "color6 #{:02x}{:02x}{:02x}\n",
-            cyan_normal.0, cyan_normal.1, cyan_normal.2
-        );
-        let cyan_bright = get_rgb_from_style(&theme.palette.hint).unwrap_or((64, 192, 192));
-        let _ = writeln!(
-            output,
-            "color14 #{:02x}{:02x}{:02x}\n",
-            cyan_bright.0, cyan_bright.1, cyan_bright.2
-        );
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.code) {
+            let _ = writeln!(output, "color6 #{:02x}{:02x}{:02x}\n", r, g, b);
+        }
+        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.hint) {
+            let _ = writeln!(output, "color14 #{:02x}{:02x}{:02x}\n", r, g, b);
+        }
 
         output.push_str("\n# white\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal) {

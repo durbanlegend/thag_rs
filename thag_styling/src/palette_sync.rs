@@ -149,22 +149,22 @@ impl PaletteSync {
     /// Build a mapping from ANSI color indices (0-15) to RGB values based on theme roles
     ///
     /// Maps `thag_styling` semantic roles to traditional ANSI color meanings:
-    /// - 0: Black (subtle)
-    /// - 1: Red (error)
-    /// - 2: Green (success)
-    /// - 3: Yellow (warning)
-    /// - 4: Blue (info)
-    /// - 5: Magenta (heading1)
-    /// - 6: Cyan (Heading3)
-    /// - 7: White (normal)
-    /// - 8: Bright Black (subtle)
-    /// - 9: Bright Red (link)
-    /// - 10: Bright Green (debug)
-    /// - 11: Bright Yellow (emphasis)
-    /// - 12: Bright Blue (code)
-    /// - 13: Bright Magenta (heading2)
-    /// - 14: Bright Cyan (hint)
-    /// - 15: Bright White (quote)
+    /// - 0: Black (use theme background)
+    /// - 1: Red (important emphasis)
+    /// - 2: Green (positive outcomes)
+    /// - 3: Yellow (highlighted notes)
+    /// - 4: Blue (calm information)
+    /// - 5: Magenta (primary headings)
+    /// - 6: Cyan (technical content)
+    /// - 7: White (standard text)
+    /// - 8: Bright Black (dimmed text)
+    /// - 9: Bright Red (maximum urgency)
+    /// - 10: Bright Green (development info)
+    /// - 11: Bright Yellow (high visibility caution)
+    /// - 12: Bright Blue (web convention links)
+    /// - 13: Bright Magenta (secondary headings)
+    /// - 14: Bright Cyan (helpful suggestions)
+    /// - 15: Bright White (prominent quotes)
     fn build_ansi_color_map(theme: &Theme) -> [[u8; 3]; 16] {
         let extract_rgb = |role: Role| -> [u8; 3] {
             theme
@@ -229,21 +229,26 @@ impl PaletteSync {
         println!();
 
         // Show thag roles mapped to ANSI colors
-        println!("🏷️  Thag Styling Roles (using updated ANSI palette):");
-        println!("\x1b[31m● Error - Something went wrong (ANSI 1: Red)");
-        println!("\x1b[33m● Warning - Pay attention to this (ANSI 3: Yellow)");
+        println!("🏷️  Thag Styling Roles (urgency-based ANSI palette):");
+        println!("\x1b[31m● Emphasis - Important text that needs attention (ANSI 1: Red)");
         println!("\x1b[32m● Success - Everything worked! (ANSI 2: Green)");
-        println!("\x1b[36m● Info - Informational message (ANSI 4: Blue)");
-        println!("\x1b[35m● Emphasis - Important content (ANSI 5: Magenta)");
-        println!("\x1b[34m● Code - `code blocks and filenames` (ANSI 4: Blue?)");
+        println!("\x1b[33m● Commentary - Highlighted notes and annotations (ANSI 3: Yellow)");
+        println!("\x1b[34m● Info - Informational message (ANSI 4: Blue)");
+        println!("\x1b[35m● Heading1 - Major sections (ANSI 5: Magenta)");
+        println!("\x1b[36m● Code - `code blocks and filenames` (ANSI 6: Cyan)");
         println!("\x1b[37m● Normal - Regular text (ANSI 7: White)");
         println!("\x1b[90m● Subtle - Secondary information (ANSI 8: Bright Black)");
-        println!("\x1b[94m● Hint - Helpful suggestions (ANSI 14: Bright Cyan)");
-        println!("\x1b[95m● Heading1 - Major sections (ANSI 13: Bright Magenta)");
-        println!("\x1b[94m● Heading2 - Subsections (ANSI 12: Bright Blue)");
-        println!("\x1b[93m● Heading3 - Minor sections (ANSI 11: Bright Yellow)");
+        println!(
+            "\x1b[91m● Error - Critical issues requiring immediate attention (ANSI 9: Bright Red)"
+        );
         println!("\x1b[92m● Debug - Development info (ANSI 10: Bright Green)");
-        println!("\x1b[91m● Trace - Detailed diagnostic (ANSI 9: Bright Red)");
+        println!(
+            "\x1b[93m● Warning - Important cautions and potential issues (ANSI 11: Bright Yellow)"
+        );
+        println!("\x1b[94m● Link - URLs and hyperlinks (ANSI 12: Bright Blue)");
+        println!("\x1b[95m● Heading2 - Subsections (ANSI 13: Bright Magenta)");
+        println!("\x1b[96m● Hint - Helpful suggestions (ANSI 14: Bright Cyan)");
+        println!("\x1b[97m● Quote - Quoted text or citations (ANSI 15: Bright White)");
         println!();
         println!("📝 Note: Palette changes only affect this terminal session");
     }
@@ -266,6 +271,7 @@ impl PaletteSync {
         }
     }
 
+    /* UNUSED - Remove in future cleanup
     /// Show hybrid demonstration: both palette colors and proper styling with attributes
     #[allow(clippy::too_many_lines)]
     pub fn demonstrate_hybrid_styling(_theme: &Theme) {
@@ -409,6 +415,7 @@ impl PaletteSync {
         println!("🎯 Right colors/attributes come from thag styling system");
         println!("💡 The combination gives you consistent theming everywhere!");
     }
+    */
 
     const fn color_name(index: u8) -> &'static str {
         match index {

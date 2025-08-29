@@ -1,62 +1,65 @@
-name = "thag-morning-coffee-light"
-description = "Generated from image analysis"
+name = "Thag Morning Coffee Light Base16"
+description = "Converted from Thag Morning Coffee Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
 backgrounds = ["#fdeddc"]
 bg_rgbs = [[253, 237, 220]]
 
 [palette.heading1]
-rgb = [128, 92, 37]
+rgb = [181, 129, 51]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [48, 96, 168]
+rgb = [25, 15, 2]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [168, 120, 48]
+rgb = [118, 153, 237]
 style = ["bold"]
 
 [palette.error]
-rgb = [96, 96, 96]
+rgb = [47, 93, 163]
+style = ["bold"]
 
 [palette.warning]
-rgb = [72, 48, 24]
+rgb = [229, 164, 68]
+style = ["bold"]
 
 [palette.success]
-rgb = [52, 52, 52]
+rgb = [255, 255, 255]
 
 [palette.info]
-rgb = [26, 50, 88]
+rgb = [51, 117, 231]
 
 [palette.emphasis]
-rgb = [37, 73, 128]
+rgb = [52, 34, 8]
+style = ["bold"]
 
 [palette.code]
-rgb = [37, 37, 110]
+rgb = [118, 153, 237]
+style = ["italic"]
 
 [palette.normal]
-rgb = [24, 24, 72]
+rgb = [107, 70, 16]
 
 [palette.subtle]
-rgb = [110, 74, 37]
+rgb = [184, 185, 188]
 
 [palette.hint]
-rgb = [71, 71, 71]
+rgb = [136, 138, 143]
 style = ["italic"]
 
 [palette.debug]
-rgb = [148, 100, 50]
+rgb = [75, 76, 80]
 style = ["dim"]
 
 [palette.link]
-rgb = [77, 77, 77]
+rgb = [92, 63, 21]
 style = ["underline"]
 
 [palette.quote]
-rgb = [137, 102, 67]
+rgb = [255, 204, 102]
 style = ["italic"]
 
 [palette.commentary]
-rgb = [74, 74, 124]
-style = ["italic", "dim"]
+rgb = [225, 225, 226]

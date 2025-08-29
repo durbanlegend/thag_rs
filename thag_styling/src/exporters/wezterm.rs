@@ -25,12 +25,12 @@ impl ThemeExporter for WezTermExporter {
 
         // Metadata section
         output.push_str("[metadata]\n");
-        let _ = writeln!(output, "name = \"{}\"\n", theme.name);
-        let _ = writeln!(output, "author = \"thag theme generator\"\n");
-        let _ = writeln!(output, "origin_url = \"Generated from thag theme\"\n");
-        let _ = writeln!(output, "wezterm_version = \"20240203-110809-5046fc22\"\n");
+        let _ = writeln!(output, r#"name = "{}""#, theme.name);
+        let _ = writeln!(output, r#"author = "thag theme generator""#);
+        let _ = writeln!(output, r#"origin_url = "Generated from thag theme""#);
+        let _ = writeln!(output, r#"wezterm_version = "20240203-110809-5046fc22""#);
         if !theme.name.is_empty() {
-            let _ = writeln!(output, "aliases = [\"{} (thag-generated)\"]\n", theme.name);
+            let _ = writeln!(output, r#"aliases = ["{} (thag-generated)"]"#, theme.name);
         }
         output.push('\n');
 
@@ -40,14 +40,14 @@ impl ThemeExporter for WezTermExporter {
         // Background and foreground
         let _ = writeln!(
             output,
-            "background = \"#{:02x}{:02x}{:02x}\" # Primary background\n",
+            r##"background = "#{:02x}{:02x}{:02x}" # Primary background"##,
             bg_color.0, bg_color.1, bg_color.2
         );
 
         if let Some(fg_color) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(
                 output,
-                "foreground = \"#{:02x}{:02x}{:02x}\" # Primary foreground\n",
+                r##"foreground = "#{:02x}{:02x}{:02x}" # Primary foreground"##,
                 fg_color.0, fg_color.1, fg_color.2
             );
         }
@@ -55,7 +55,7 @@ impl ThemeExporter for WezTermExporter {
         output.push('\n');
 
         // ANSI colors array (0-7)
-        output.push('\n');
+        output.push_str("ansi = [\n");
 
         let normal_colors = [
             ("Black", get_best_dark_color(theme)),
@@ -72,7 +72,7 @@ impl ThemeExporter for WezTermExporter {
             if let Some((r, g, b)) = rgb_opt {
                 let _ = writeln!(
                     output,
-                    "    \"#{:02x}{:02x}{:02x}\", # {}\n",
+                    r##"    "#{:02x}{:02x}{:02x}", # {}"##,
                     r,
                     g,
                     b,
@@ -82,7 +82,7 @@ impl ThemeExporter for WezTermExporter {
                 // Fallback color
                 let _ = writeln!(
                     output,
-                    "    \"#808080\", # {} (fallback)\n",
+                    r##"    "#808080", # {} (fallback)"##,
                     name.to_lowercase()
                 );
             }
@@ -111,7 +111,7 @@ impl ThemeExporter for WezTermExporter {
             if let Some((r, g, b)) = rgb_opt {
                 let _ = writeln!(
                     output,
-                    "    \"#{:02x}{:02x}{:02x}\", # {}\n",
+                    r##"    "#{:02x}{:02x}{:02x}", # {}"##,
                     r,
                     g,
                     b,
@@ -121,7 +121,7 @@ impl ThemeExporter for WezTermExporter {
                 // Fallback color
                 let _ = writeln!(
                     output,
-                    "    \"#c0c0c0\", # {} (fallback)\n",
+                    r##"    "#c0c0c0", # {} (fallback)"##,
                     name.to_lowercase()
                 );
             }
@@ -135,13 +135,13 @@ impl ThemeExporter for WezTermExporter {
         {
             let _ = writeln!(
                 output,
-                "cursor_bg = \"#{:02x}{:02x}{:02x}\" # Cursor background\n",
+                r##"cursor_bg = "#{:02x}{:02x}{:02x}" # Cursor background"##,
                 cursor_color.0, cursor_color.1, cursor_color.2
             );
 
             let _ = writeln!(
                 output,
-                "cursor_border = \"#{:02x}{:02x}{:02x}\" # Cursor border\n",
+                r##"cursor_border = "#{:02x}{:02x}{:02x}" # Cursor border"##,
                 cursor_color.0, cursor_color.1, cursor_color.2
             );
 
@@ -153,7 +153,7 @@ impl ThemeExporter for WezTermExporter {
             };
             let _ = writeln!(
                 output,
-                "cursor_fg = \"#{:02x}{:02x}{:02x}\" # Cursor text\n",
+                r##"cursor_fg = "#{:02x}{:02x}{:02x}" # Cursor text"##,
                 cursor_fg.0, cursor_fg.1, cursor_fg.2
             );
         }
@@ -164,14 +164,14 @@ impl ThemeExporter for WezTermExporter {
         let selection_bg = adjust_color_brightness(bg_color, 1.3);
         let _ = writeln!(
             output,
-            "selection_bg = \"#{:02x}{:02x}{:02x}\" # Selection background\n",
+            r##"selection_bg = "#{:02x}{:02x}{:02x}" # Selection background"##,
             selection_bg.0, selection_bg.1, selection_bg.2
         );
 
         if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(
                 output,
-                "selection_fg = \"#{:02x}{:02x}{:02x}\" # Selection foreground\n",
+                r##"selection_fg = "#{:02x}{:02x}{:02x}" # Selection foreground"##,
                 selection_fg.0, selection_fg.1, selection_fg.2
             );
         }
@@ -196,7 +196,7 @@ impl ThemeExporter for WezTermExporter {
 
         for (index, rgb_opt) in indexed_colors {
             if let Some((r, g, b)) = rgb_opt {
-                let _ = writeln!(output, "{} = \"#{:02x}{:02x}{:02x}\"\n", index, r, g, b);
+                let _ = writeln!(output, r##"{} = "#{:02x}{:02x}{:02x}""##, index, r, g, b);
             }
         }
 

@@ -45,6 +45,7 @@ use thag_rs::{
     maybe_config, themed_inquire_config, ColorSupport, Config, Context, Dependencies,
     FeatureOverride, Logging, Misc, ProcMacros, Styling, TermBgLuma, Verbosity,
 };
+use thag_styling::Styleable;
 
 type Error = CustomUserError;
 
@@ -940,8 +941,6 @@ fn prompt_proc_macros_config(
     }))
 }
 
-use thag_styling::Styler;
-
 fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
     let config_source = select_base_config()?;
     let builder = ConfigBuilder::new(config_source.get_config());
@@ -1017,7 +1016,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let help = auto_help!("thag_gen_config");
     check_help_and_exit(&help);
 
-    println!("{}", "Welcome to thag config builder!".bold());
+    println!("{}", "Welcome to thag config builder!".normal().bold());
 
     set_global_render_config(themed_inquire_config());
 
@@ -1043,9 +1042,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             fs::rename(&config_path, &backup_path)?;
             println!(
                 "{}",
-                format!("Created backup at {}", backup_path.display())
-                    .style()
-                    .info()
+                format!("Created backup at {}", backup_path.display()).info()
             );
         }
 
@@ -1053,9 +1050,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fs::write(&config_path, preview)?;
         println!(
             "{}",
-            format!("Configuration saved to {}", config_path.display())
-                .style()
-                .success()
+            format!("Configuration saved to {}", config_path.display()).success()
         );
     } else {
         println!("Configuration not saved.");

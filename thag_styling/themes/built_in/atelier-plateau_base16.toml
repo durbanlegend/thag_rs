@@ -11,17 +11,17 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    202,
-    73,
-    73,
+    132,
+    100,
+    196,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    114,
-    114,
-    202,
+    189,
+    81,
+    135,
 ]
 style = ["bold"]
 
@@ -39,19 +39,21 @@ rgb = [
     73,
     73,
 ]
+style = ["bold"]
 
 [palette.warning]
 rgb = [
-    160,
-    110,
-    59,
+    180,
+    90,
+    60,
 ]
+style = ["bold"]
 
 [palette.success]
 rgb = [
-    75,
-    139,
-    139,
+    244,
+    236,
+    236,
 ]
 
 [palette.info]
@@ -63,17 +65,19 @@ rgb = [
 
 [palette.emphasis]
 rgb = [
-    132,
-    100,
-    196,
+    160,
+    110,
+    59,
 ]
+style = ["bold"]
 
 [palette.code]
 rgb = [
-    75,
-    139,
-    139,
+    84,
+    133,
+    182,
 ]
+style = ["italic"]
 
 [palette.normal]
 rgb = [
@@ -84,9 +88,9 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    101,
-    93,
-    93,
+    41,
+    36,
+    36,
 ]
 
 [palette.hint]
@@ -99,19 +103,31 @@ style = ["italic"]
 
 [palette.debug]
 rgb = [
+    126,
+    119,
+    119,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
     75,
     139,
     139,
 ]
-style = ["dim"]
+style = ["underline"]
 
-[palette.trace]
+[palette.quote]
 rgb = [
-    114,
-    114,
-    202,
+    231,
+    223,
+    223,
 ]
-style = [
-    "italic",
-    "dim",
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    88,
+    80,
+    80,
 ]

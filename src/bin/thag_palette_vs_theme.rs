@@ -309,7 +309,12 @@ fn display_color_comparison(theme: &Theme) {
     // Corrected mappings that match thag_sync_palette behavior
     let color_mappings = [
         ("Black (0)", 0, "Background", get_best_dark_color(theme)),
-        ("Red (1)", 1, "Error", extract_rgb(&theme.palette.error)),
+        (
+            "Red (1)",
+            1,
+            "Emphasis",
+            extract_rgb(&theme.palette.emphasis),
+        ),
         (
             "Green (2)",
             2,
@@ -319,8 +324,8 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Yellow (3)",
             3,
-            "Warning",
-            extract_rgb(&theme.palette.warning),
+            "Commentary",
+            extract_rgb(&theme.palette.commentary),
         ),
         ("Blue (4)", 4, "Info", extract_rgb(&theme.palette.info)),
         (
@@ -329,12 +334,7 @@ fn display_color_comparison(theme: &Theme) {
             "Heading1",
             extract_rgb(&theme.palette.heading1),
         ),
-        (
-            "Cyan (6)",
-            6,
-            "Heading3",
-            extract_rgb(&theme.palette.heading3),
-        ),
+        ("Cyan (6)", 6, "Code", extract_rgb(&theme.palette.code)),
         ("White (7)", 7, "Normal", extract_rgb(&theme.palette.normal)),
         (
             "Bright Black (8)",
@@ -345,8 +345,8 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Bright Red (9)",
             9,
-            "Link",
-            extract_rgb(&theme.palette.link),
+            "Error",
+            extract_rgb(&theme.palette.error),
         ),
         (
             "Bright Green (10)",
@@ -357,20 +357,20 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Bright Yellow (11)",
             11,
-            "Emphasis",
-            extract_rgb(&theme.palette.emphasis),
+            "Warning",
+            extract_rgb(&theme.palette.warning),
         ),
         (
             "Bright Blue (12)",
             12,
-            "Info (brighter)",
-            extract_rgb(&theme.palette.info).map(brighten_color),
+            "Link",
+            extract_rgb(&theme.palette.link),
         ),
         (
             "Bright Magenta (13)",
             13,
-            "Heading1 (brighter)",
-            extract_rgb(&theme.palette.heading1).map(brighten_color),
+            "Heading2",
+            extract_rgb(&theme.palette.heading2),
         ),
         (
             "Bright Cyan (14)",
@@ -381,8 +381,8 @@ fn display_color_comparison(theme: &Theme) {
         (
             "Bright White (15)",
             15,
-            "Normal (brighter)",
-            extract_rgb(&theme.palette.normal).map(brighten_color),
+            "Quote",
+            extract_rgb(&theme.palette.quote),
         ),
     ];
 
@@ -599,7 +599,7 @@ fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
 }
 
 /// Brighten a color by increasing its components
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]
 fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
     let factor = 1.3;
     (

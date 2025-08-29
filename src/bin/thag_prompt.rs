@@ -19,7 +19,7 @@ use thag_proc_macros::file_navigator;
 use thag_rs::{
     auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style,
 };
-use thag_styling::Styler;
+use thag_styling::{Styleable, StyledStringExt};
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;
@@ -816,7 +816,7 @@ serde = "1.0""#,
     let env_prefix = if env_vars_display.is_empty() {
         String::new()
     } else {
-        format!("{} ", env_vars_display.join(" "))
+        env_vars_display.join(" ")
     };
 
     match output_choice {
@@ -842,8 +842,8 @@ serde = "1.0""#,
                 }
             }
 
-            cprtln!(Style::for_role(Role::Heading3), "\n{}", "Running:".bold());
-            cprtln!(Style::for_role(Role::Code), "{cmd_display}");
+            "\nRunning:".heading3().bold().println();
+            cmd_display.code().println();
 
             let status = cmd.status()?;
 

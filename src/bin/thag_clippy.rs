@@ -15,7 +15,10 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 use inquire::{set_global_render_config, Confirm, MultiSelect};
 use std::{env, error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::file_navigator;
-use thag_rs::{auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_styling::{
+    cprtln, themed_inquire_config, AnsiStyleExt, Color, Role, Style, Styleable, StyledStringExt,
+};
 
 file_navigator! {}
 
@@ -36,13 +39,13 @@ enum LintLevel {
 }
 
 impl LintLevel {
-    const fn color(&self) -> colored::Color {
+    fn color(&self) -> Style {
         match self {
-            Self::Basic => colored::Color::Green,
-            Self::Style => colored::Color::Cyan,
-            Self::Extra => colored::Color::Yellow,
-            Self::Strict => colored::Color::Red,
-            Self::Deprecated => colored::Color::BrightBlack,
+            Self::Basic => Color::green(),
+            Self::Style => Color::cyan(),
+            Self::Extra => Color::yellow(),
+            Self::Strict => Color::red(),
+            Self::Deprecated => Color::dark_gray(),
         }
     }
 }
@@ -110,7 +113,7 @@ impl ClippyLintGroup {
     fn format_for_display(&self) -> String {
         format!(
             "{}: {}",
-            self.name.color(self.level.color()).bold(),
+            self.name.style_with(self.level.color()).bold(),
             self.description
         )
     }
@@ -212,17 +215,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     match select_lint_groups() {
         Ok(selected_groups) => {
             if selected_groups.is_empty() {
-                cprtln!(
-                    Role::Warning,
-                    "{}",
-                    "\nNo lint groups selected. Using default Clippy checks."
-                );
-                cprtln!(Role::Heading3, "\n{}", "Running command:".bold());
-                cprtln!(
-                    Role::Code,
-                    "thag --cargo {} -- clippy",
-                    script_path.display()
-                );
+                "\nNo lint groups selected. Using default Clippy checks."
+                    .warning()
+                    .println();
+                "\nRunning command:".normal().bold().println();
+                format!("thag --cargo {} -- clippy", script_path.display())
+                    .code()
+                    .println();
             } else {
                 // Group selected lints by level
                 let mut by_level: Vec<(&str, Vec<&ClippyLintGroup>)> = Vec::new();
@@ -252,11 +251,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                cprtln!(Role::Heading3, "\n{}", "Selected lint groups:".bold());
+                "\nSelected lint groups:".heading3().bold().println();
                 for (level_name, groups) in &by_level {
-                    println!("  {}", level_name.bold());
+                    println!("  {}", level_name.style().bold());
+
                     for group in groups {
-                        println!("    • {}", group.name.color(group.level.color()));
+                        println!("    • {}", group.name.style_with(group.level.color()));
                     }
                 }
 
@@ -272,7 +272,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     script_path.display(),
                     warn_flags.join(" ")
                 );
-                cprtln!(Role::Heading3, "\n{}", "Command to run:".bold());
+                cprtln!(Role::Heading3, "\n{}", "Command to run:".style().bold());
                 cprtln!(Role::Code, "{command}");
 
                 let script_path = script_path.display().to_string();

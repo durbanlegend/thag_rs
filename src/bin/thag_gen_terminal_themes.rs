@@ -18,10 +18,9 @@ use std::{
     path::{Path, PathBuf},
 };
 use thag_proc_macros::file_navigator;
-use thag_styling::Styleable;
 use thag_styling::{
     export_theme_to_file, generate_installation_instructions, themed_inquire_config, ExportFormat,
-    TermAttributes, Theme,
+    Styleable, TermAttributes, Theme,
 };
 
 file_navigator! {}

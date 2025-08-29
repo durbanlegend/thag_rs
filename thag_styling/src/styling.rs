@@ -644,6 +644,10 @@ impl Role {
     pub const DBUG: Self = Self::Debug;
     /// Short alias for `Role::Link`
     pub const LINK: Self = Self::Link;
+    /// Short alias for `Role::Quote`
+    pub const QUOT: Self = Self::Quote;
+    /// Short alias for `Role::Commentary`
+    pub const COMM: Self = Self::Commentary;
 }
 
 impl Role {

@@ -1,4 +1,4 @@
-name = "Catppuccin Frappe "
+name = "Catppuccin Frappe"
 description = "Converted from Catppuccin Frappe theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -11,25 +11,25 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    231,
-    130,
-    132,
+    202,
+    158,
+    230,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    140,
-    170,
     238,
+    190,
+    190,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    129,
-    200,
-    190,
+    41,
+    44,
+    60,
 ]
 style = ["bold"]
 
@@ -39,6 +39,7 @@ rgb = [
     130,
     132,
 ]
+style = ["bold"]
 
 [palette.warning]
 rgb = [
@@ -46,12 +47,13 @@ rgb = [
     159,
     118,
 ]
+style = ["bold"]
 
 [palette.success]
 rgb = [
-    166,
-    209,
-    137,
+    186,
+    187,
+    241,
 ]
 
 [palette.info]
@@ -63,17 +65,19 @@ rgb = [
 
 [palette.emphasis]
 rgb = [
-    202,
-    158,
-    230,
+    229,
+    200,
+    144,
 ]
+style = ["bold"]
 
 [palette.code]
 rgb = [
-    166,
-    209,
-    137,
+    129,
+    200,
+    190,
 ]
+style = ["italic"]
 
 [palette.normal]
 rgb = [
@@ -84,12 +88,36 @@ rgb = [
 
 [palette.subtle]
 rgb = [
+    41,
+    44,
+    60,
+]
+
+[palette.hint]
+rgb = [
+    81,
+    87,
+    109,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    98,
+    104,
+    128,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
     166,
     209,
     137,
 ]
+style = ["underline"]
 
-[palette.hint]
+[palette.quote]
 rgb = [
     242,
     213,
@@ -97,21 +125,9 @@ rgb = [
 ]
 style = ["italic"]
 
-[palette.debug]
+[palette.commentary]
 rgb = [
-    166,
-    209,
-    137,
-]
-style = ["dim"]
-
-[palette.trace]
-rgb = [
-    140,
-    170,
-    238,
-]
-style = [
-    "italic",
-    "dim",
+    65,
+    69,
+    89,
 ]

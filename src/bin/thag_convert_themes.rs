@@ -47,8 +47,8 @@ struct BaseTheme {
     #[serde(alias = "name")]
     scheme: String,
     author: String,
-    system: String,
-    variant: String,
+    system: Option<String>,
+    variant: Option<String>,
     #[serde(default)]
     description: Option<String>,
     palette: BasePalette,
@@ -125,40 +125,86 @@ impl BaseTheme {
     }
 
     fn create_base24_palette(&self) -> Result<Palette, Box<dyn std::error::Error>> {
+        // Perfect 1:1 mapping: Base16 colors (base00-base0F) to thag roles
         Ok(Palette {
-            heading1: Style::from_fg_hex(&self.palette.base08)?.bold(), // Red
-            heading2: Style::from_fg_hex(&self.palette.base0_d)?.bold(), // Blue
-            heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(), // Cyan
-            error: Style::from_fg_hex(&self.palette.base08)?,           // Red
-            warning: Style::from_fg_hex(&self.palette.base09)?,         // Orange
-            success: Style::from_fg_hex(&self.palette.base0_b)?,        // Green
-            info: Style::from_fg_hex(&self.palette.base0_d)?,           // Blue
-            emphasis: Style::from_fg_hex(&self.palette.base0_e)?,       // Magenta
-            code: Style::from_fg_hex(&self.palette.base0_b)?,           // Green
-            normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
-            subtle: Style::from_fg_hex(self.palette.base14.as_ref().unwrap())?, // Light grey
-            hint: Style::from_fg_hex(self.palette.base13.as_ref().unwrap())?.italic(),
-            debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
-            trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
+            // base00 -> Background (not a role, handled separately)
+            // base01 -> Subtle (darker background/line highlighting)
+            subtle: Style::from_fg_hex(&self.palette.base01)?,
+            // base02 -> Commentary (selection background/comments)
+            commentary: Style::from_fg_hex(&self.palette.base02)?,
+            // base03 -> Hint (comments/invisibles)
+            hint: Style::from_fg_hex(&self.palette.base03)?.italic(),
+            // base04 -> Debug (dark foreground for status)
+            debug: Style::from_fg_hex(&self.palette.base04)?.dim(),
+            // base05 -> Normal (default foreground)
+            normal: Style::from_fg_hex(&self.palette.base05)?,
+            // base06 -> Quote (light foreground)
+            quote: Style::from_fg_hex(&self.palette.base06)?.italic(),
+            // base07 -> Success (light background/positive)
+            success: Style::from_fg_hex(&self.palette.base07)?,
+            // base08 -> Error (red - variables/danger)
+            error: Style::from_fg_hex(&self.palette.base08)?.bold(),
+            // base09 -> Warning (orange - constants/caution)
+            warning: Style::from_fg_hex(&self.palette.base09)?.bold(),
+            // base0A -> Emphasis (yellow - classes/important)
+            emphasis: Style::from_fg_hex(&self.palette.base0_a)?.bold(),
+            // base0B -> Link (green - strings/links in some contexts)
+            link: Style::from_fg_hex(&self.palette.base0_b)?.underline(),
+            // base0C -> Code (cyan - support/regex)
+            code: Style::from_fg_hex(&self.palette.base0_c)?.italic(),
+            // base0D -> Info (blue - functions/info)
+            info: Style::from_fg_hex(&self.palette.base0_d)?,
+            // base0E -> Heading1 (magenta - keywords/primary)
+            heading1: Style::from_fg_hex(&self.palette.base0_e)?.bold(),
+            // base0F -> Heading2 (brown - deprecated/secondary)
+            heading2: Style::from_fg_hex(&self.palette.base0_f)?.bold(),
+            // For Base24, we can use additional colors for heading3
+            heading3: Style::from_fg_hex(
+                self.palette
+                    .base10
+                    .as_ref()
+                    .unwrap_or(&self.palette.base0_c),
+            )?
+            .bold(),
         })
     }
 
     fn create_base16_palette(&self) -> Result<Palette, Box<dyn std::error::Error>> {
+        // Perfect 1:1 mapping: Base16 colors (base00-base0F) to thag roles
         Ok(Palette {
-            heading1: Style::from_fg_hex(&self.palette.base08)?.bold(), // Red
-            heading2: Style::from_fg_hex(&self.palette.base0_d)?.bold(), // Blue
-            heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(), // Cyan
-            error: Style::from_fg_hex(&self.palette.base08)?,           // Red
-            warning: Style::from_fg_hex(&self.palette.base0_a)?,        // Yellow
-            success: Style::from_fg_hex(&self.palette.base0_b)?,        // Green
-            info: Style::from_fg_hex(&self.palette.base0_d)?,           // Blue
-            emphasis: Style::from_fg_hex(&self.palette.base0_e)?.bold(), // Magenta
-            code: Style::from_fg_hex(&self.palette.base0_e)?,           // Green
-            normal: Style::from_fg_hex(&self.palette.base05)?,          // Default foreground
-            subtle: Style::from_fg_hex(&self.palette.base03)?,          // Comments color
+            // base00 -> Background (not a role, handled separately)
+            // base01 -> Subtle (darker background/line highlighting)
+            subtle: Style::from_fg_hex(&self.palette.base01)?,
+            // base02 -> Commentary (selection background/comments)
+            commentary: Style::from_fg_hex(&self.palette.base02)?,
+            // base03 -> Hint (comments/invisibles)
             hint: Style::from_fg_hex(&self.palette.base03)?.italic(),
-            debug: Style::from_fg_hex(&self.palette.base0_b)?.dim(),
-            trace: Style::from_fg_hex(&self.palette.base0_d)?.italic().dim(),
+            // base04 -> Debug (dark foreground for status)
+            debug: Style::from_fg_hex(&self.palette.base04)?.dim(),
+            // base05 -> Normal (default foreground)
+            normal: Style::from_fg_hex(&self.palette.base05)?,
+            // base06 -> Quote (light foreground)
+            quote: Style::from_fg_hex(&self.palette.base06)?.italic(),
+            // base07 -> Success (light background/positive)
+            success: Style::from_fg_hex(&self.palette.base07)?,
+            // base08 -> Error (red - variables/danger)
+            error: Style::from_fg_hex(&self.palette.base08)?.bold(),
+            // base09 -> Warning (orange - constants/caution)
+            warning: Style::from_fg_hex(&self.palette.base09)?.bold(),
+            // base0A -> Emphasis (yellow - classes/important)
+            emphasis: Style::from_fg_hex(&self.palette.base0_a)?.bold(),
+            // base0B -> Link (green - strings/links in some contexts)
+            link: Style::from_fg_hex(&self.palette.base0_b)?.underline(),
+            // base0C -> Code (cyan - support/regex)
+            code: Style::from_fg_hex(&self.palette.base0_c)?.italic(),
+            // base0D -> Info (blue - functions/info)
+            info: Style::from_fg_hex(&self.palette.base0_d)?,
+            // base0E -> Heading1 (magenta - keywords/primary)
+            heading1: Style::from_fg_hex(&self.palette.base0_e)?.bold(),
+            // base0F -> Heading2 (brown - deprecated/secondary)
+            heading2: Style::from_fg_hex(&self.palette.base0_f)?.bold(),
+            // For Base16, we must reuse a color for heading3 since we only have 16 colors for 16 roles
+            heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(), // Reuse cyan but with bold
         })
     }
 }
@@ -193,7 +239,9 @@ struct PaletteOutput {
     hint: StyleOutput,
     // Development
     debug: StyleOutput,
-    trace: StyleOutput,
+    link: StyleOutput,
+    quote: StyleOutput,
+    commentary: StyleOutput,
 }
 
 #[derive(Serialize)]

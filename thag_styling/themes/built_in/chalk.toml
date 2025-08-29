@@ -1,4 +1,4 @@
-name = "Chalk "
+name = "Chalk"
 description = "Converted from Chalk theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -11,25 +11,25 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    250,
-    133,
-    156,
+    219,
+    143,
+    234,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    90,
-    185,
-    237,
+    222,
+    175,
+    143,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    16,
-    188,
-    173,
+    11,
+    11,
+    11,
 ]
 style = ["bold"]
 
@@ -39,6 +39,7 @@ rgb = [
     133,
     156,
 ]
+style = ["bold"]
 
 [palette.warning]
 rgb = [
@@ -46,12 +47,13 @@ rgb = [
     153,
     113,
 ]
+style = ["bold"]
 
 [palette.success]
 rgb = [
-    161,
-    187,
-    84,
+    245,
+    245,
+    245,
 ]
 
 [palette.info]
@@ -63,17 +65,19 @@ rgb = [
 
 [palette.emphasis]
 rgb = [
-    219,
-    143,
-    234,
+    221,
+    178,
+    111,
 ]
+style = ["bold"]
 
 [palette.code]
 rgb = [
-    161,
-    187,
-    84,
+    16,
+    188,
+    173,
 ]
+style = ["italic"]
 
 [palette.normal]
 rgb = [
@@ -84,34 +88,46 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    172,
-    194,
-    103,
+    32,
+    32,
+    32,
 ]
 
 [palette.hint]
 rgb = [
-    237,
-    169,
-    135,
+    80,
+    80,
+    80,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
+    176,
+    176,
+    176,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
     161,
     187,
     84,
 ]
-style = ["dim"]
+style = ["underline"]
 
-[palette.trace]
+[palette.quote]
 rgb = [
-    90,
-    185,
-    237,
+    224,
+    224,
+    224,
 ]
-style = [
-    "italic",
-    "dim",
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    48,
+    48,
+    48,
 ]

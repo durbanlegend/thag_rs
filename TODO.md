@@ -40,9 +40,10 @@
 - [ ] Update demo/thag_theme.rs and other displays to use the new 15-colour palette.
 - [ ] Duplication between src/bin/thag_gen_theme.rs and src/bin/thag_image_to_theme.rs.
 - [ ] Force light or dark in theme name in src/bin/thag_image_to_theme.rs.
+- [ ] Fix writeln extra \n in exporters as per wezterm.
+- [ ] Figure out why `"#f0f0f0", # black` not accepted in WezTerm color config as foreground - clash with background?
 
-
-let _ = writeln!(output,
+https://github.com/base16-project/base16
 
 donf@MacBook-Air thag_rs % thag bank/styling.rs -fb
 [src/bin/thag_rs.rs:32:5]

@@ -1,133 +1,133 @@
-name = "Mellow Purple Base16"
-description = "Converted from Mellow Purple theme"
+name = "Thag Morning Coffee Dark Base16"
+description = "Converted from Thag Morning Coffee Dark theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
-backgrounds = ["#1e0528"]
+backgrounds = ["#000000"]
 bg_rgbs = [[
-    30,
-    5,
-    40,
+    0,
+    0,
+    0,
 ]]
 
 [palette.heading1]
 rgb = [
-    137,
-    145,
-    187,
+    229,
+    164,
+    68,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    77,
-    111,
-    255,
+    25,
+    15,
+    2,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
+    161,
     185,
-    0,
-    177,
+    243,
 ]
 style = ["bold"]
 
 [palette.error]
 rgb = [
-    0,
-    217,
-    233,
+    55,
+    110,
+    192,
 ]
 style = ["bold"]
 
 [palette.warning]
 rgb = [
-    170,
-    0,
-    163,
+    229,
+    164,
+    68,
 ]
 style = ["bold"]
 
 [palette.success]
 rgb = [
-    248,
-    192,
+    255,
+    255,
     255,
 ]
 
 [palette.info]
 rgb = [
-    85,
-    0,
-    104,
+    95,
+    147,
+    236,
 ]
 
 [palette.emphasis]
 rgb = [
-    149,
-    90,
-    231,
+    135,
+    95,
+    36,
 ]
 style = ["bold"]
 
 [palette.code]
 rgb = [
+    161,
     185,
-    0,
-    177,
+    243,
 ]
 style = ["italic"]
 
 [palette.normal]
 rgb = [
-    255,
-    238,
-    255,
+    250,
+    209,
+    168,
 ]
 
 [palette.subtle]
 rgb = [
-    26,
-    9,
-    45,
+    43,
+    44,
+    47,
 ]
 
 [palette.hint]
 rgb = [
-    50,
-    15,
-    85,
+    184,
+    185,
+    188,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
-    135,
-    53,
-    130,
+    109,
+    110,
+    116,
 ]
 style = ["dim"]
 
 [palette.link]
 rgb = [
-    5,
-    203,
-    13,
+    181,
+    129,
+    51,
 ]
 style = ["underline"]
 
 [palette.quote]
 rgb = [
     255,
-    238,
-    255,
+    204,
+    102,
 ]
 style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    51,
-    19,
-    84,
+    146,
+    147,
+    152,
 ]

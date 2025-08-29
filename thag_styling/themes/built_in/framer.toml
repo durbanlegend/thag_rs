@@ -1,4 +1,4 @@
-name = "Framer "
+name = "Framer"
 description = "Converted from Framer theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -11,25 +11,25 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
+    170,
+    136,
     255,
-    85,
-    85,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    0,
-    170,
-    255,
+    127,
+    42,
+    42,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    136,
-    221,
-    255,
+    43,
+    43,
+    43,
 ]
 style = ["bold"]
 
@@ -39,6 +39,7 @@ rgb = [
     85,
     85,
 ]
+style = ["bold"]
 
 [palette.warning]
 rgb = [
@@ -46,12 +47,13 @@ rgb = [
     204,
     51,
 ]
+style = ["bold"]
 
 [palette.success]
 rgb = [
-    152,
-    236,
-    101,
+    255,
+    255,
+    255,
 ]
 
 [palette.info]
@@ -63,17 +65,19 @@ rgb = [
 
 [palette.emphasis]
 rgb = [
-    170,
-    136,
+    51,
+    187,
     255,
 ]
+style = ["bold"]
 
 [palette.code]
 rgb = [
-    152,
-    236,
-    101,
+    136,
+    221,
+    255,
 ]
+style = ["italic"]
 
 [palette.normal]
 rgb = [
@@ -84,34 +88,46 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    182,
-    242,
-    146,
+    20,
+    20,
+    20,
 ]
 
 [palette.hint]
 rgb = [
-    255,
-    217,
-    102,
+    99,
+    99,
+    99,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
+    134,
+    134,
+    134,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
     152,
     236,
     101,
 ]
-style = ["dim"]
+style = ["underline"]
 
-[palette.trace]
+[palette.quote]
 rgb = [
-    0,
-    170,
-    255,
+    204,
+    204,
+    204,
 ]
-style = [
-    "italic",
-    "dim",
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    65,
+    65,
+    65,
 ]

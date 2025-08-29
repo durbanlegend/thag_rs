@@ -1,4 +1,4 @@
-name = "Catppuccin Latte "
+name = "Catppuccin Latte"
 description = "Converted from Catppuccin Latte theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
@@ -11,25 +11,25 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    210,
-    15,
+    136,
     57,
+    239,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    30,
-    102,
-    245,
+    221,
+    120,
+    120,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    23,
-    146,
-    153,
+    230,
+    233,
+    239,
 ]
 style = ["bold"]
 
@@ -39,6 +39,7 @@ rgb = [
     15,
     57,
 ]
+style = ["bold"]
 
 [palette.warning]
 rgb = [
@@ -46,12 +47,13 @@ rgb = [
     100,
     11,
 ]
+style = ["bold"]
 
 [palette.success]
 rgb = [
-    64,
-    160,
-    43,
+    114,
+    135,
+    253,
 ]
 
 [palette.info]
@@ -63,17 +65,19 @@ rgb = [
 
 [palette.emphasis]
 rgb = [
-    136,
-    57,
-    239,
+    223,
+    142,
+    29,
 ]
+style = ["bold"]
 
 [palette.code]
 rgb = [
-    64,
-    160,
-    43,
+    23,
+    146,
+    153,
 ]
+style = ["italic"]
 
 [palette.normal]
 rgb = [
@@ -84,12 +88,36 @@ rgb = [
 
 [palette.subtle]
 rgb = [
+    230,
+    233,
+    239,
+]
+
+[palette.hint]
+rgb = [
+    188,
+    192,
+    204,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    172,
+    176,
+    190,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
     64,
     160,
     43,
 ]
+style = ["underline"]
 
-[palette.hint]
+[palette.quote]
 rgb = [
     220,
     138,
@@ -97,21 +125,9 @@ rgb = [
 ]
 style = ["italic"]
 
-[palette.debug]
+[palette.commentary]
 rgb = [
-    64,
-    160,
-    43,
-]
-style = ["dim"]
-
-[palette.trace]
-rgb = [
-    30,
-    102,
-    245,
-]
-style = [
-    "italic",
-    "dim",
+    204,
+    208,
+    218,
 ]

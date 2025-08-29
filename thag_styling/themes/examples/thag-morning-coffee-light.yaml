@@ -3,19 +3,19 @@ scheme: "Thag Morning Coffee Light"
 author: "Don Forbes (http://github.com/durbanlegend)"
 variant: "light"
 palette:
-  base00: "fdeddc" # Brown 1 (sandy background
-  base01: "b8b9bc" # Gray 2, used for lighter background (optional)
-  base02: "E1E1E2" # Gray 1, selection background
-  base03: "888a8f" # Gray 2+, comments, etc.
-  base04: "4b4c50" # Gray 5
-  base09: "e5a444" # Brown 2
-  base06: "ffcc66" # warm intense yellow
-  base07: "ffffff" # white, used for upper boundary
-  base08: "2f5da3" # Blue 4+
-  base05: "6b4610" # Brown (main foreground)
-  base0A: "342208" # Brown 5
-  base0B: "5C3F15" # Brown 4
-  base0C: "7699ed" # Blue 2+
-  base0D: "3375e7" # Blue 3+
-  base0E: "B58133" # Brown 3
-  base0F: "190f02" # Brown 7
+  base00: "fdeddc"
+  base01: "b8b9bc"
+  base02: "E1E1E2"
+  base03: "888a8f"
+  base04: "4b4c50"
+  base09: "e5a444"
+  base06: "ffcc66"
+  base07: "ffffff"
+  base08: "2f5da3"
+  base05: "6b4610"
+  base0A: "342208"
+  base0B: "5C3F15"
+  base0C: "7699ed"
+  base0D: "3375e7"
+  base0E: "B58133"
+  base0F: "190f02"

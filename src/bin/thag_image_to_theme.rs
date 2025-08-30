@@ -9,10 +9,6 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_
 thag_styling = { version = "0.2, thag-auto", features = ["config", "image_themes"] }
 */
 #![allow(clippy::uninlined_format_args)]
-use std::error::Error;
-use std::fs;
-use std::path::Path;
-use thag_proc_macros::file_navigator;
 /// Generate `thag_styling` themes from image files using file navigator.
 ///
 /// This tool analyzes image files to extract dominant colors and generates
@@ -20,9 +16,12 @@ use thag_proc_macros::file_navigator;
 /// (light/dark) and customizable color extraction parameters.
 //# Purpose: Generate custom `thag_styling` themes from images
 //# Categories: color, styling, terminal, theming, tools
-use thag_styling::Styleable;
+use std::error::Error;
+use std::fs;
+use std::path::Path;
+use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, StylingError,
+    cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, Styleable, StylingError,
     StylingResult, TermBgLuma, Theme,
 };
 

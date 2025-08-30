@@ -1,16 +1,14 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
-thag_styling = { version = "0.2", features = ["image_themes"] }
+thag_styling = { version = "0.2", features = ["color_detect", "image_themes"] }
 */
 
-use std::env;
-use std::fs;
-use std::path::Path;
-use thag_rs::{cprtln, Role, ThagResult};
-use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
+use std::{env, error::Error, fs, path::Path};
+use thag_styling::{
+    cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, TermBgLuma,
+};
 
-/// Generate terminal color themes from images
+/// Generate terminal color themes from images. Functional duplicate of `thag_image_to_theme`.
 ///
 /// This tool analyzes images and extracts dominant colors to create terminal color themes.
 /// The generated themes can be saved as TOML files compatible with thag's theming system.
@@ -35,7 +33,7 @@ fn print_usage() {
 }
 
 #[allow(clippy::too_many_lines)]
-fn main() -> ThagResult<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 || args.contains(&"help".to_string()) || args.contains(&"--help".to_string())

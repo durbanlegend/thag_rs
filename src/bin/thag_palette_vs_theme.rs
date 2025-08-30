@@ -41,10 +41,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Select theme to compare
     let theme = select_theme(&mut navigator)?;
 
-    format!("📋 Selected theme: {}", &theme.name.heading3())
-        .normal()
-        .println();
-    println!("📝 Description: {}", theme.description);
+    theme.with_context(|| {
+        format!("📋 Selected theme: {}", &theme.name.heading3())
+            .normal()
+            .println();
+        println!("📝 Description: {}", theme.description);
+    });
     println!();
 
     // Display comprehensive comparison
@@ -182,365 +184,370 @@ fn detect_terminal_emulator() -> String {
 
 /// Display the 16 basic ANSI colors
 fn display_ansi_colors(theme: &Theme) {
-    format!("🎨 {} ANSI Colors (0-15):", "Current Terminal".info())
-        .normal()
-        .println();
-    println!("───────────────────────────────────────");
+    theme.with_context(|| {
+        format!("🎨 {} ANSI Colors (0-15):", "Current Terminal".info())
+            .normal()
+            .println();
+        println!("───────────────────────────────────────");
 
-    // Basic colors (0-7)
-    println!("Standard Colors (0-7):");
-    display_color_row(
-        &theme,
-        &[
-            (0, "Black"),
-            (1, "Red"),
-            (2, "Green"),
-            (3, "Yellow"),
-            (4, "Blue"),
-            (5, "Magenta"),
-            (6, "Cyan"),
-            (7, "White"),
-        ],
-    );
+        // Basic colors (0-7)
+        "Standard Colors (0-7):".normal().println();
+        display_color_row(
+            &theme,
+            &[
+                (0, "Black"),
+                (1, "Red"),
+                (2, "Green"),
+                (3, "Yellow"),
+                (4, "Blue"),
+                (5, "Magenta"),
+                (6, "Cyan"),
+                (7, "White"),
+            ],
+        );
 
-    println!();
+        println!();
 
-    // Bright colors (8-15)
-    println!("Bright Colors (8-15):");
-    display_color_row(
-        &theme,
-        &[
-            (8, "Bright Black"),
-            (9, "Bright Red"),
-            (10, "Bright Green"),
-            (11, "Bright Yellow"),
-            (12, "Bright Blue"),
-            (13, "Bright Magenta"),
-            (14, "Bright Cyan"),
-            (15, "Bright White"),
-        ],
-    );
+        // Bright colors (8-15)
+        println!("Bright Colors (8-15):");
+        display_color_row(
+            &theme,
+            &[
+                (8, "Bright Black"),
+                (9, "Bright Red"),
+                (10, "Bright Green"),
+                (11, "Bright Yellow"),
+                (12, "Bright Blue"),
+                (13, "Bright Magenta"),
+                (14, "Bright Cyan"),
+                (15, "Bright White"),
+            ],
+        );
 
-    println!();
+        println!();
+    });
 }
 
 /// Display a row of colors with their indices and names
 fn display_color_row(theme: &Theme, colors: &[(u8, &str)]) {
-    // Print color indices
-    print!("   ");
-    for (index, _) in colors {
-        print!(
-            "{}",
-            theme
-                .style_for(Role::Emphasis)
-                .paint(format!("{:>12}", index))
-        );
-    }
-    println!();
+    theme.with_context(|| {
+        // Print color indices
+        print!("   ");
+        for (index, _) in colors {
+            print!("{}", format!("{:>12}", index).emphasis());
+        }
+        println!();
 
-    // Print color names
-    print!("   ");
-    for (_, name) in colors {
-        print!("{:>12}", name);
-    }
-    println!();
+        // Print color names
+        print!("   ");
+        for (_, name) in colors {
+            print!("{:>12}", name);
+        }
+        println!();
 
-    // Print colored blocks using ANSI escape codes
-    print!("   ");
-    for (index, _) in colors {
-        print!("\x1b[48;5;{}m{:>12}\x1b[0m", index, "");
-    }
-    println!();
+        // Print colored blocks using ANSI escape codes
+        print!("   ");
+        for (index, _) in colors {
+            print!("\x1b[48;5;{}m{:>12}\x1b[0m", index, "");
+        }
+        println!();
 
-    // Print sample text in each color
-    print!("   ");
-    for (index, _) in colors {
-        print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, "Sample");
-    }
-    println!();
+        // Print sample text in each color
+        print!("   ");
+        for (index, _) in colors {
+            print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, "Sample");
+        }
+        println!();
+    });
 }
 
 /// Display theme colors with visual preview
 fn display_theme_colors(theme: &Theme) {
-    theme
-        .normal(&format!("🌟 {} Colors:", theme.info_text(&theme.name)))
-        .println();
-    println!("──────────────────────────────────────────────");
-
-    println!("Background: {:?}", theme.bg_rgbs);
-    println!();
-
-    // Display semantic colors with visual preview
-    let semantic_colors = [
-        ("Heading1", &theme.palette.heading1),
-        ("Heading2", &theme.palette.heading2),
-        ("Heading3", &theme.palette.heading3),
-        ("Error", &theme.palette.error),
-        ("Warning", &theme.palette.warning),
-        ("Success", &theme.palette.success),
-        ("Info", &theme.palette.info),
-        ("Emphasis", &theme.palette.emphasis),
-        ("Code", &theme.palette.code),
-        ("Normal", &theme.palette.normal),
-        ("Subtle", &theme.palette.subtle),
-        ("Hint", &theme.palette.hint),
-        ("Debug", &theme.palette.debug),
-        ("Link", &theme.palette.link),
-        ("Quote", &theme.palette.quote),
-        ("Commentary", &theme.palette.commentary),
-    ];
-
-    println!("Semantic Colors:");
-    for (name, style) in semantic_colors {
-        let colored_text = style.paint(format!("{:>12}", name));
-        let rgb_info = extract_rgb_info(style);
-        println!("   {} {}", colored_text, theme.code(&rgb_info));
-    }
-
-    // Show background color preview if available
-    if let Some((r, g, b)) = theme.bg_rgbs.first() {
-        println!();
-        theme.normal("Background Preview:").println();
-        print!("   ");
-        for _ in 0..20 {
-            print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
-        }
-        theme
-            .normal(&format!(" RGB({}, {}, {})", r, g, b))
+    theme.with_context(|| {
+        format!("🌟 {} Colors:", theme.name.info())
+            .normal()
             .println();
-    }
+        println!("──────────────────────────────────────────────");
 
-    println!();
+        println!("Background: {:?}", theme.bg_rgbs);
+        println!();
+
+        // Display semantic colors with visual preview
+        let semantic_colors = [
+            ("Heading1", &theme.palette.heading1),
+            ("Heading2", &theme.palette.heading2),
+            ("Heading3", &theme.palette.heading3),
+            ("Error", &theme.palette.error),
+            ("Warning", &theme.palette.warning),
+            ("Success", &theme.palette.success),
+            ("Info", &theme.palette.info),
+            ("Emphasis", &theme.palette.emphasis),
+            ("Code", &theme.palette.code),
+            ("Normal", &theme.palette.normal),
+            ("Subtle", &theme.palette.subtle),
+            ("Hint", &theme.palette.hint),
+            ("Debug", &theme.palette.debug),
+            ("Link", &theme.palette.link),
+            ("Quote", &theme.palette.quote),
+            ("Commentary", &theme.palette.commentary),
+        ];
+
+        println!("Semantic Colors:");
+        for (name, style) in semantic_colors {
+            let colored_text = style.paint(format!("{:>12}", name));
+            let rgb_info = extract_rgb_info(style);
+            println!("   {} {}", colored_text, theme.code(&rgb_info));
+        }
+
+        // Show background color preview if available
+        if let Some((r, g, b)) = theme.bg_rgbs.first() {
+            println!();
+            println!("Background Preview:");
+            print!("   ");
+            for _ in 0..20 {
+                print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
+            }
+            theme
+                .normal(&format!(" RGB({}, {}, {})", r, g, b))
+                .println();
+        }
+
+        println!();
+    });
 }
 
 /// Display side-by-side color comparison
 #[allow(clippy::too_many_lines)]
 fn display_color_comparison(theme: &Theme) {
-    format!("🔄 {} Color Mapping:", "ANSI vs Theme".info())
-        .normal()
+    theme.with_context(|| {
+        format!("🔄 {} Color Mapping:", "ANSI vs Theme".info())
+            .normal()
+            .println();
+        println!("───────────────────────────────");
+
+        // Corrected mappings that match thag_sync_palette behavior
+        let color_mappings = [
+            (
+                "Black (0)",
+                0,
+                "Background",
+                // get_best_dark_color(theme)
+                Some(theme.bg_rgbs[0]),
+            ),
+            (
+                "Red (1)",
+                1,
+                "Emphasis",
+                extract_rgb(&theme.palette.emphasis),
+            ),
+            (
+                "Green (2)",
+                2,
+                "Success",
+                extract_rgb(&theme.palette.success),
+            ),
+            (
+                "Yellow (3)",
+                3,
+                "Commentary",
+                extract_rgb(&theme.palette.commentary),
+            ),
+            ("Blue (4)", 4, "Info", extract_rgb(&theme.palette.info)),
+            (
+                "Magenta (5)",
+                5,
+                "Heading1",
+                extract_rgb(&theme.palette.heading1),
+            ),
+            ("Cyan (6)", 6, "Code", extract_rgb(&theme.palette.code)),
+            ("White (7)", 7, "Normal", extract_rgb(&theme.palette.normal)),
+            (
+                "Bright Black (8)",
+                8,
+                "Subtle",
+                extract_rgb(&theme.palette.subtle),
+            ),
+            (
+                "Bright Red (9)",
+                9,
+                "Error",
+                extract_rgb(&theme.palette.error),
+            ),
+            (
+                "Bright Green (10)",
+                10,
+                "Debug",
+                extract_rgb(&theme.palette.debug),
+            ),
+            (
+                "Bright Yellow (11)",
+                11,
+                "Warning",
+                extract_rgb(&theme.palette.warning),
+            ),
+            (
+                "Bright Blue (12)",
+                12,
+                "Link",
+                extract_rgb(&theme.palette.link),
+            ),
+            (
+                "Bright Magenta (13)",
+                13,
+                "Heading2",
+                extract_rgb(&theme.palette.heading2),
+            ),
+            (
+                "Bright Cyan (14)",
+                14,
+                "Hint",
+                extract_rgb(&theme.palette.hint),
+            ),
+            (
+                "Bright White (15)",
+                15,
+                "Quote",
+                extract_rgb(&theme.palette.quote),
+            ),
+        ];
+
+        format!(
+            "{:<20} {:<12} {:<26} Semantic Role",
+            "ANSI Color", "Current", "Expected (Theme)"
+        )
+        .heading3()
         .println();
-    println!("───────────────────────────────");
+        println!("{}", "─".repeat(80));
 
-    // Corrected mappings that match thag_sync_palette behavior
-    let color_mappings = [
-        (
-            "Black (0)",
-            0,
-            "Background",
-            // get_best_dark_color(theme)
-            Some(theme.bg_rgbs[0]),
-        ),
-        (
-            "Red (1)",
-            1,
-            "Emphasis",
-            extract_rgb(&theme.palette.emphasis),
-        ),
-        (
-            "Green (2)",
-            2,
-            "Success",
-            extract_rgb(&theme.palette.success),
-        ),
-        (
-            "Yellow (3)",
-            3,
-            "Commentary",
-            extract_rgb(&theme.palette.commentary),
-        ),
-        ("Blue (4)", 4, "Info", extract_rgb(&theme.palette.info)),
-        (
-            "Magenta (5)",
-            5,
-            "Heading1",
-            extract_rgb(&theme.palette.heading1),
-        ),
-        ("Cyan (6)", 6, "Code", extract_rgb(&theme.palette.code)),
-        ("White (7)", 7, "Normal", extract_rgb(&theme.palette.normal)),
-        (
-            "Bright Black (8)",
-            8,
-            "Subtle",
-            extract_rgb(&theme.palette.subtle),
-        ),
-        (
-            "Bright Red (9)",
-            9,
-            "Error",
-            extract_rgb(&theme.palette.error),
-        ),
-        (
-            "Bright Green (10)",
-            10,
-            "Debug",
-            extract_rgb(&theme.palette.debug),
-        ),
-        (
-            "Bright Yellow (11)",
-            11,
-            "Warning",
-            extract_rgb(&theme.palette.warning),
-        ),
-        (
-            "Bright Blue (12)",
-            12,
-            "Link",
-            extract_rgb(&theme.palette.link),
-        ),
-        (
-            "Bright Magenta (13)",
-            13,
-            "Heading2",
-            extract_rgb(&theme.palette.heading2),
-        ),
-        (
-            "Bright Cyan (14)",
-            14,
-            "Hint",
-            extract_rgb(&theme.palette.hint),
-        ),
-        (
-            "Bright White (15)",
-            15,
-            "Quote",
-            extract_rgb(&theme.palette.quote),
-        ),
-    ];
+        for (name, ansi_index, semantic_role, thag_rgb) in color_mappings {
+            // Current terminal color (visual sample)
+            let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
 
-    cprtln!(
-        Role::Heading3,
-        "{:<20} {:<12} {:<26} Semantic Role",
-        "ANSI Color",
-        "Current",
-        "Expected (Theme)"
-    );
-    println!("{}", "─".repeat(80));
+            // Expected thag color with RGB info
+            let thag_display = if let Some((r, g, b)) = thag_rgb {
+                format!(
+                    "\x1b[38;2;{};{};{}m████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})\x1b[0m",
+                    r, g, b, r, g, b, r, g, b
+                )
+            } else {
+                // Role::Normal.dim().paint("N/A").to_string()
+                "N/A".to_string()
+            };
 
-    for (name, ansi_index, semantic_role, thag_rgb) in color_mappings {
-        // Current terminal color (visual sample)
-        let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
+            // println!("thag_display={thag_display:?}");
+            println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
+        }
 
-        // Expected thag color with RGB info
-        let thag_display = if let Some((r, g, b)) = thag_rgb {
-            format!(
-                "\x1b[38;2;{};{};{}m████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})\x1b[0m",
-                r, g, b, r, g, b, r, g, b
-            )
-            // .code()
-        } else {
-            // Role::Normal.dim().paint("N/A").to_string()
-            "N/A".to_string()
-        };
-
-        // println!("thag_display={thag_display:?}");
-        println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
-    }
-
-    println!();
+        println!();
+    });
 }
 
 /// Display recommendations based on comparison
 fn display_recommendations(theme: &Theme) {
-    format!("💡 {} and Tips:", "Recommendations".info())
-        .normal()
-        .println();
-    println!("────────────────────────────");
-
-    println!("• If colors don't match expected values:");
-    println!("  - Your terminal may not support the theme correctly");
-    format!(
-        "  - Try using {} to synchronize the terminal palette with the `thag_styling` theme",
-        "thag_sync_palette".heading3()
-    )
-    .normal()
-    .println();
-    println!("  - Check if your terminal emulator supports the theme format");
-    println!();
-
-    format!("• For {} theme:", theme.name.heading3())
-        .normal()
-        .println();
-    match theme.term_bg_luma {
-        TermBgLuma::Dark => {
-            println!("  - Ensure your terminal has a dark background");
-            println!("  - ANSI 0 (Black) should match background color");
-        }
-        TermBgLuma::Light => {
-            println!("  - Ensure your terminal has a light background");
-            println!("  - Colors should be adjusted for light backgrounds");
-        }
-        TermBgLuma::Undetermined => {}
-    }
-    println!();
-
-    format!("• {} Commands:", "Useful".emphasis())
-        .normal()
-        .println();
-    format!(
-        "  - {}: Export theme to terminal formats",
-        "thag_gen_terminal_themes".heading3()
-    )
-    .normal()
-    .println();
-    format!(
-        "  - {}: Sync terminal palette",
-        format!("thag_sync_palette --apply {}", theme.name).heading3()
-    )
-    .normal()
-    .println();
-    format!(
-        "  - {}: Generate themes from images",
-        "thag_image_to_theme".heading3()
-    )
-    .normal()
-    .println();
-    println!();
-
-    // Show specific issues if detected
-    let issues = detect_potential_issues(theme);
-    if !issues.is_empty() {
-        format!("⚠️  {} Issues Detected:", "Potential".emphasis())
+    theme.with_context(|| {
+        format!("💡 {} and Tips:", "Recommendations".info())
             .normal()
             .println();
-        for issue in issues {
-            format!("   • {}", issue.emphasis()).normal().println();
+        println!("────────────────────────────");
+
+        println!("• If colors don't match expected values:");
+        println!("  - Your terminal may not support the theme correctly");
+        format!(
+            "  - Try using {} to synchronize the terminal palette with the `thag_styling` theme",
+            "thag_sync_palette".heading3()
+        )
+        .normal()
+        .println();
+        println!("  - Check if your terminal emulator supports the theme format");
+        println!();
+
+        format!("• For {} theme:", theme.name.heading3())
+            .normal()
+            .println();
+        match theme.term_bg_luma {
+            TermBgLuma::Dark => {
+                println!("  - Ensure your terminal has a dark background");
+                println!("  - ANSI 0 (Black) should match background color");
+            }
+            TermBgLuma::Light => {
+                println!("  - Ensure your terminal has a light background");
+                println!("  - Colors should be adjusted for light backgrounds");
+            }
+            TermBgLuma::Undetermined => {}
         }
         println!();
-    }
+
+        format!("• {} Commands:", "Useful".emphasis())
+            .normal()
+            .println();
+        format!(
+            "  - {}: Export theme to terminal formats",
+            "thag_gen_terminal_themes".heading3()
+        )
+        .normal()
+        .println();
+        format!(
+            "  - {}: Sync terminal palette",
+            format!("thag_sync_palette --apply {}", theme.name).heading3()
+        )
+        .normal()
+        .println();
+        format!(
+            "  - {}: Generate themes from images",
+            "thag_image_to_theme".heading3()
+        )
+        .normal()
+        .println();
+        println!();
+
+        // Show specific issues if detected
+        let issues = detect_potential_issues(theme);
+        if !issues.is_empty() {
+            format!("⚠️  {} Issues Detected:", "Potential".emphasis())
+                .normal()
+                .println();
+            for issue in issues {
+                format!("   • {}", issue.emphasis()).normal().println();
+            }
+            println!();
+        }
+    });
 }
 
 /// Detect potential issues with theme/terminal compatibility
 fn detect_potential_issues(theme: &Theme) -> Vec<String> {
-    let mut issues = Vec::new();
+    theme.with_context(|| {
+        let mut issues = Vec::new();
 
-    // Check if theme colors are too similar to background
-    if let Some(bg_rgb) = theme.bg_rgbs.first() {
-        if let Some(normal_rgb) = extract_rgb(&theme.palette.normal) {
-            let contrast = calculate_contrast_ratio(*bg_rgb, normal_rgb);
-            if contrast < 4.5 {
-                issues.push(format!(
+        // Check if theme colors are too similar to background
+        if let Some(bg_rgb) = theme.bg_rgbs.first() {
+            if let Some(normal_rgb) = extract_rgb(&theme.palette.normal) {
+                let contrast = calculate_contrast_ratio(*bg_rgb, normal_rgb);
+                if contrast < 4.5 {
+                    issues.push(format!(
                     "Low contrast between background and normal text ({}:1, recommended 4.5:1+)",
                     format_args!("{:.1}", contrast)
                 ));
+                }
             }
         }
-    }
 
-    // Check for missing color information
-    let essential_colors = [
-        ("Error", &theme.palette.error),
-        ("Warning", &theme.palette.warning),
-        ("Success", &theme.palette.success),
-        ("Normal", &theme.palette.normal),
-    ];
+        // Check for missing color information
+        let essential_colors = [
+            ("Error", &theme.palette.error),
+            ("Warning", &theme.palette.warning),
+            ("Success", &theme.palette.success),
+            ("Normal", &theme.palette.normal),
+        ];
 
-    for (name, style) in essential_colors {
-        if extract_rgb(style).is_none() {
-            issues.push(format!("{} color has no RGB information", name));
+        for (name, style) in essential_colors {
+            if extract_rgb(style).is_none() {
+                issues.push(format!("{} color has no RGB information", name));
+            }
         }
-    }
 
-    issues
+        issues
+    })
 }
 
 /// Calculate contrast ratio between two RGB colors

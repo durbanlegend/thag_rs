@@ -116,7 +116,7 @@ pub struct ColorInfo {
     /// The color value in one of the supported formats (`Basic`, `Color256`, or `TrueColor`)
     pub value: ColorValue,
     /// The ANSI escape sequence string for this color
-    pub ansi: &'static str,
+    pub ansi: String,
     /// The color palette index (0-255 for indexed colors, or closest match for RGB)
     pub index: u8,
 }
@@ -128,13 +128,13 @@ impl ColorInfo {
     /// * `ansi` - The ANSI escape sequence for this color
     /// * `index` - The color palette index (0-15 for basic colors)
     #[must_use]
-    pub fn basic(ansi: &'static str, index: u8) -> Self {
+    pub fn basic(ansi: &str, index: u8) -> Self {
         Self {
             value: ColorValue::Basic {
                 ansi: ansi.to_string(),
                 index, // This won't work with const fn
             },
-            ansi,
+            ansi: ansi.to_string(),
             index,
         }
     }
@@ -147,7 +147,7 @@ impl ColorInfo {
     pub fn color256(index: u8) -> Self {
         Self {
             value: ColorValue::Color256 { color256: index },
-            ansi: Box::leak(format!("\x1b[38;5;{index}m").into_boxed_str()),
+            ansi: format!("\x1b[38;5;{index}m"),
             index,
         }
     }
@@ -162,7 +162,7 @@ impl ColorInfo {
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self {
             value: ColorValue::TrueColor { rgb: [r, g, b] },
-            ansi: Box::leak(format!("\x1b[38;2;{r};{g};{b}m").into_boxed_str()),
+            ansi: format!("\x1b[38;2;{r};{g};{b}m"),
             index: 0,
         }
     }
@@ -217,7 +217,7 @@ impl Style {
             ColorValue::Basic { index, .. } => {
                 let index = *index;
                 let ansi = basic_index_to_ansi(index);
-                Self::fg(ColorInfo::basic(ansi, index))
+                Self::fg(ColorInfo::basic(&ansi, index))
             }
             ColorValue::Color256 { color256 } => Self::fg(ColorInfo::color256(*color256)),
             ColorValue::TrueColor { rgb } => {
@@ -352,7 +352,7 @@ impl Style {
         let mut reset_string: String = String::new();
 
         if let Some(color_info) = &self.foreground {
-            result.push_str(color_info.ansi);
+            result.push_str(&color_info.ansi);
             needs_reset = true;
             full_reset = true;
             reset_string.push_str("\x1b[0m");
@@ -417,7 +417,7 @@ impl Style {
         let mut result = String::new();
 
         if let Some(color_info) = &self.foreground {
-            result.push_str(color_info.ansi);
+            result.push_str(&color_info.ansi);
         }
         if self.bold {
             result.push_str("\x1b[1m");
@@ -438,14 +438,13 @@ impl Style {
 
 /// Use the index directly to get the `AnsiCode`
 #[must_use]
-pub fn basic_index_to_ansi(index: u8) -> &'static str {
+pub fn basic_index_to_ansi(index: u8) -> String {
     let code = if index <= 7 {
         index + 30
     } else {
         index + 90 - 8
     };
-    let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
-    ansi
+    format!("\x1b[{code}m")
 }
 
 impl Default for Style {
@@ -607,8 +606,8 @@ impl Color {
             } else {
                 index + 90 - 8
             };
-            let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
-            Style::fg(ColorInfo::basic(ansi, index))
+            let ansi = format!("\x1b[{code}m");
+            Style::fg(ColorInfo::basic(&ansi, index))
         } else {
             Style::fg(ColorInfo::color256(index))
         }
@@ -823,6 +822,11 @@ pub struct TermAttributes {
 static INSTANCE: OnceLock<TermAttributes> = OnceLock::new();
 /// Global flag to enable/disable logging
 pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
+
+thread_local! {
+    /// Thread-local storage for theme context override
+    static THEME_CONTEXT: std::cell::RefCell<Option<Theme>> = std::cell::RefCell::new(None);
+}
 
 impl TermAttributes {
     /// Creates a new `TermAttributes` instance with specified support and theme
@@ -1954,9 +1958,9 @@ impl Theme {
                         } else {
                             index + 90 - 8
                         };
-                        let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
+                        let ansi = format!("\x1b[{code}m");
                         // Corrected style conversion
-                        style.foreground = Some(ColorInfo::basic(ansi, index));
+                        style.foreground = Some(ColorInfo::basic(&ansi, index));
                     }
                     ColorValue::Color256 { color256 } => {
                         let index = *color256;
@@ -1966,9 +1970,9 @@ impl Theme {
                         } else {
                             index + 90 - 8
                         };
-                        let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
+                        let ansi = format!("\x1b[{code}m");
                         // Corrected style conversion
-                        style.foreground = Some(ColorInfo::basic(ansi, index));
+                        style.foreground = Some(ColorInfo::basic(&ansi, index));
                     }
                     ColorValue::Basic { .. } => (), // Already basic color
                 }
@@ -1982,11 +1986,143 @@ impl Theme {
         for style in self.palette.iter_mut() {
             let index = 0;
             let code = index + 30;
-            let ansi = Box::leak(format!("\x1b[{code}m").into_boxed_str());
-            style.foreground = Some(ColorInfo::basic(ansi, index));
+            let ansi = format!("\x1b[{code}m");
+            style.foreground = Some(ColorInfo::basic(&ansi, index));
             style.reset();
         }
         self.min_color_support = ColorSupport::None;
+    }
+
+    // Convenience methods for styling text with this theme
+
+    /// Style text with the Heading1 role from this theme
+    pub fn heading1<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Heading1))
+    }
+
+    /// Style text with the Heading2 role from this theme
+    pub fn heading2<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Heading2))
+    }
+
+    /// Style text with the Heading3 role from this theme
+    pub fn heading3<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Heading3))
+    }
+
+    /// Style text with the Error role from this theme
+    pub fn error<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Error))
+    }
+
+    /// Style text with the Warning role from this theme
+    pub fn warning<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Warning))
+    }
+
+    /// Style text with the Success role from this theme
+    pub fn success<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Success))
+    }
+
+    /// Style text with the Info role from this theme
+    pub fn info_text<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Info))
+    }
+
+    /// Style text with the Emphasis role from this theme
+    pub fn emphasis<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Emphasis))
+    }
+
+    /// Style text with the Code role from this theme
+    pub fn code<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Code))
+    }
+
+    /// Style text with the Normal role from this theme
+    pub fn normal<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Normal))
+    }
+
+    /// Style text with the Subtle role from this theme
+    pub fn subtle<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Subtle))
+    }
+
+    /// Style text with the Hint role from this theme
+    pub fn hint<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Hint))
+    }
+
+    /// Style text with the Debug role from this theme
+    pub fn debug<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Debug))
+    }
+
+    /// Style text with the Link role from this theme
+    pub fn link<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Link))
+    }
+
+    /// Style text with the Quote role from this theme
+    pub fn quote<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Quote))
+    }
+
+    /// Style text with the Commentary role from this theme
+    pub fn commentary<S: AsRef<str>>(&self, text: S) -> StyledString {
+        text.as_ref().style_with(self.style_for(Role::Commentary))
+    }
+
+    /// Execute a closure with this theme temporarily set as the active theme.
+    /// This allows using the normal role-based styling methods (.emphasis(), .error(), etc.)
+    /// while having them use this theme instead of the globally active one.
+    ///
+    /// # Example
+    /// ```rust
+    /// use thag_styling::{Theme, Styleable, StyledStringExt};
+    ///
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let guest_theme = Theme::get_builtin("Basic Light")?;
+    ///
+    /// guest_theme.with_context(|| {
+    ///     // These methods now use the guest theme instead of the active one
+    ///     "Success!".success().println();
+    ///     "Error occurred".error().println();
+    ///     "Important info".emphasis().println();
+    /// });
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn with_context<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        // Set the thread-local theme context
+        THEME_CONTEXT.with(|context| {
+            let previous = context.borrow().clone();
+            *context.borrow_mut() = Some(self.clone());
+
+            // Execute the closure
+            let result = f();
+
+            // Restore previous context
+            *context.borrow_mut() = previous;
+            result
+        })
+    }
+
+    /// Gets the current theme context, falling back to the active theme if none is set
+    fn current_theme_context() -> Theme {
+        THEME_CONTEXT.with(|context| {
+            if let Some(theme) = context.borrow().as_ref() {
+                theme.clone()
+            } else {
+                // Fall back to the active theme
+                TermAttributes::get_or_init().theme.clone()
+            }
+        })
     }
 }
 
@@ -3230,7 +3366,7 @@ impl StyleAnsiExt for Style {
         let mut codes = String::new();
 
         if let Some(color_info) = &self.foreground {
-            codes.push_str(color_info.ansi);
+            codes.push_str(&color_info.ansi);
         }
 
         if self.bold {
@@ -3267,82 +3403,98 @@ pub trait Styleable: std::fmt::Display {
 
     /// Style this text as an error message
     fn error(&self) -> StyledString {
-        self.style_with(Role::Error)
+        let theme = Theme::current_theme_context();
+        theme.error(self.to_string())
     }
 
     /// Style this text as a warning message
     fn warning(&self) -> StyledString {
-        self.style_with(Role::Warning)
+        let theme = Theme::current_theme_context();
+        theme.warning(self.to_string())
     }
 
     /// Style this text as a success message
     fn success(&self) -> StyledString {
-        self.style_with(Role::Success)
+        let theme = Theme::current_theme_context();
+        theme.success(self.to_string())
     }
 
     /// Style this text as an informational message
     fn info(&self) -> StyledString {
-        self.style_with(Role::Info)
+        let theme = Theme::current_theme_context();
+        theme.info_text(self.to_string())
     }
 
     /// Style this text as emphasized text
     fn emphasis(&self) -> StyledString {
-        self.style_with(Role::Emphasis)
+        let theme = Theme::current_theme_context();
+        theme.emphasis(self.to_string())
     }
 
     /// Style this text as code
     fn code(&self) -> StyledString {
-        self.style_with(Role::Code)
+        let theme = Theme::current_theme_context();
+        theme.code(self.to_string())
     }
 
     /// Style this text as normal text
     fn normal(&self) -> StyledString {
-        self.style_with(Role::Normal)
+        let theme = Theme::current_theme_context();
+        theme.normal(self.to_string())
     }
 
     /// Style this text as subtle text
     fn subtle(&self) -> StyledString {
-        self.style_with(Role::Subtle)
+        let theme = Theme::current_theme_context();
+        theme.subtle(self.to_string())
     }
 
     /// Style this text as hint text
     fn hint(&self) -> StyledString {
-        self.style_with(Role::Hint)
+        let theme = Theme::current_theme_context();
+        theme.hint(self.to_string())
     }
 
     /// Style this text as debug information
     fn debug(&self) -> StyledString {
-        self.style_with(Role::Debug)
+        let theme = Theme::current_theme_context();
+        theme.debug(self.to_string())
     }
 
     /// Style this text as a link
     fn link(&self) -> StyledString {
-        self.style_with(Role::Link)
+        let theme = Theme::current_theme_context();
+        theme.link(self.to_string())
     }
 
     /// Style this text as quoted content
     fn quote(&self) -> StyledString {
-        self.style_with(Role::Quote)
+        let theme = Theme::current_theme_context();
+        theme.quote(self.to_string())
     }
 
     /// Style this text as commentary or explanatory notes
     fn commentary(&self) -> StyledString {
-        self.style_with(Role::Commentary)
+        let theme = Theme::current_theme_context();
+        theme.commentary(self.to_string())
     }
 
     /// Style this text as a primary heading
     fn heading1(&self) -> StyledString {
-        self.style_with(Role::Heading1)
+        let theme = Theme::current_theme_context();
+        theme.heading1(self.to_string())
     }
 
     /// Style this text as a secondary heading
     fn heading2(&self) -> StyledString {
-        self.style_with(Role::Heading2)
+        let theme = Theme::current_theme_context();
+        theme.heading2(self.to_string())
     }
 
     /// Style this text as a tertiary heading
     fn heading3(&self) -> StyledString {
-        self.style_with(Role::Heading3)
+        let theme = Theme::current_theme_context();
+        theme.heading3(self.to_string())
     }
 }
 

@@ -14,7 +14,7 @@ rgb = [106, 138, 203]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [96, 120, 216]
+rgb = [160, 174, 232]
 style = ["bold"]
 
 [palette.error]
@@ -27,7 +27,7 @@ rgb = [168, 120, 48]
 rgb = [170, 170, 170]
 
 [palette.info]
-rgb = [48, 96, 168]
+rgb = [118, 157, 216]
 
 [palette.emphasis]
 rgb = [201, 147, 66]

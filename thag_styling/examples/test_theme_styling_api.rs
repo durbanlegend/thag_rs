@@ -3,7 +3,7 @@
 //! This demonstrates the new Theme methods for styling text with specific roles,
 //! making it easy to use a "guest" theme instead of the active theme.
 
-use thag_styling::{ColorInitStrategy, Role, Style, StyledStringExt, TermAttributes, Theme};
+use thag_styling::{ColorInitStrategy, Role, Styleable, StyledStringExt, TermAttributes, Theme};
 
 fn main() {
     println!("🎨 Testing Theme Styling API\n");
@@ -52,23 +52,26 @@ fn main() {
     // Test embedded usage (the main benefit)
     println!("=== Embedded Usage Examples ===");
 
-    theme.normal(&format!(
-        "Status: {} | Errors: {} | Warnings: {}",
-        theme.success("OK"),
-        theme.error("0"),
-        theme.warning("2")
-    )).println();
+    theme
+        .normal(&format!(
+            "Status: {} | Errors: {} | Warnings: {}",
+            theme.success("OK"),
+            theme.error("0"),
+            theme.warning("2")
+        ))
+        .println();
 
-    theme.normal(&format!(
-        "File: {} contains {} function calls",
-        theme.code("main.rs"),
-        theme.emphasis("42")
-    )).println();
+    theme
+        .normal(&format!(
+            "File: {} contains {} function calls",
+            theme.code("main.rs"),
+            theme.emphasis("42")
+        ))
+        .println();
 
-    theme.heading2(&format!(
-        "Section: {}",
-        theme.info_text("Configuration")
-    )).println();
+    theme
+        .heading2(&format!("Section: {}", theme.info_text("Configuration")))
+        .println();
 
     println!();
 
@@ -83,7 +86,9 @@ fn main() {
     old_way.style_with(theme.style_for(Role::Normal)).println();
 
     // New way (concise)
-    theme.normal(&format!("Status: {}", theme.success("OK"))).println();
+    theme
+        .normal(&format!("Status: {}", theme.success("OK")))
+        .println();
 
     println!("\n✨ The new API is much more concise and readable!");
 

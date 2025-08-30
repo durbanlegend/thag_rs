@@ -3,9 +3,7 @@
 //! This example demonstrates that we can now change themes dynamically without
 //! being stuck with static ANSI color codes from Box::leak.
 
-use thag_styling::{
-    ColorInfo, ColorInitStrategy, ColorSupport, Role, Style, TermAttributes, Theme,
-};
+use thag_styling::{ColorInfo, ColorInitStrategy, Role, Style, TermAttributes};
 
 fn main() {
     println!("🔄 Testing Dynamic Theme Changes\n");
@@ -16,7 +14,7 @@ fn main() {
     println!("1. Initial theme: {}", attrs.theme.name);
 
     // Create a style for the Success role
-    let mut success_style = Style::from(Role::Success);
+    let success_style = Style::from(Role::Success);
     println!(
         "   Initial Success color ANSI: {:?}",
         success_style.foreground.as_ref().map(|c| &c.ansi)

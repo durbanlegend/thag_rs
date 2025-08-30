@@ -3,131 +3,63 @@ description = "Converted from Dracula theme"
 term_bg_luma = "dark"
 min_color_support = "true_color"
 backgrounds = ["#282a36"]
-bg_rgbs = [[
-    40,
-    42,
-    54,
-]]
+bg_rgbs = [[40, 42, 54]]
 
 [palette.heading1]
-rgb = [
-    255,
-    121,
-    198,
-]
+rgb = [255, 121, 198]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [
-    189,
-    147,
-    249,
-]
+rgb = [189, 147, 249]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [
-    30,
-    32,
-    41,
-]
+rgb = [30, 32, 41]
 style = ["bold"]
 
 [palette.error]
-rgb = [
-    255,
-    85,
-    85,
-]
+rgb = [255, 85, 85]
 style = ["bold"]
 
 [palette.warning]
-rgb = [
-    255,
-    184,
-    108,
-]
+rgb = [255, 184, 108]
 style = ["bold"]
 
 [palette.success]
-rgb = [
-    255,
-    255,
-    255,
-]
+rgb = [255, 255, 255]
 
 [palette.info]
-rgb = [
-    128,
-    191,
-    255,
-]
+rgb = [128, 191, 255]
 
 [palette.emphasis]
-rgb = [
-    241,
-    250,
-    140,
-]
+rgb = [241, 250, 140]
 style = ["bold"]
 
 [palette.code]
-rgb = [
-    139,
-    233,
-    253,
-]
+rgb = [139, 233, 253]
 style = ["italic"]
 
 [palette.normal]
-rgb = [
-    248,
-    248,
-    242,
-]
+rgb = [248, 248, 242]
 
 [palette.subtle]
-rgb = [
-    54,
-    52,
-    71,
-]
+rgb = [54, 52, 71]
 
 [palette.hint]
-rgb = [
-    98,
-    114,
-    164,
-]
+rgb = [98, 114, 164]
 style = ["italic"]
 
 [palette.debug]
-rgb = [
-    158,
-    168,
-    199,
-]
+rgb = [158, 168, 199]
 style = ["dim"]
 
 [palette.link]
-rgb = [
-    80,
-    250,
-    123,
-]
+rgb = [80, 250, 123]
 style = ["underline"]
 
 [palette.quote]
-rgb = [
-    240,
-    241,
-    244,
-]
+rgb = [240, 241, 244]
 style = ["italic"]
 
 [palette.commentary]
-rgb = [
-    68,
-    71,
-    90,
-]
+rgb = [68, 71, 90]

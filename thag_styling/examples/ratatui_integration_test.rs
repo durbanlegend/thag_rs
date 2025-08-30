@@ -112,3 +112,6 @@ fn main() {
     println!("\n💡 If you see 'DIFFERENT RESULTS' or 'CONVERSION MISMATCH',");
     println!("   that explains why colors are wrong in your ratatui app!");
 }
+
+#[cfg(not(feature = "ratatui_support"))]
+fn main() {}

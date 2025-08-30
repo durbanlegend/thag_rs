@@ -349,16 +349,16 @@ fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8)
     )
 }
 
-/// Get the best dark color from the theme for black mapping
-fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-    // Try background first, then subtle, then create a dark color
-    theme
-        .bg_rgbs
-        .first()
-        .copied()
-        .or_else(|| get_rgb_from_style(&theme.palette.subtle))
-        .or(Some((16, 16, 16)))
-}
+// /// Get the best dark color from the theme for black mapping
+// fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
+//     // Try background first, then subtle, then create a dark color
+//     theme
+//         .bg_rgbs
+//         .first()
+//         .copied()
+//         .or_else(|| get_rgb_from_style(&theme.palette.subtle))
+//         .or(Some((16, 16, 16)))
+// }
 
 /// Extract RGB values from a Style's foreground color
 fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
@@ -463,24 +463,45 @@ fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{ColorSupport, Palette, TermBgLuma};
+fn create_test_theme() -> Theme {
+    use crate::{ColorInfo, ColorSupport, Palette, Style, TermBgLuma};
     use std::path::PathBuf;
 
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme for unit testing".to_string(),
-        }
+    let palette = Palette {
+        normal: Style::fg(ColorInfo::rgb(220, 220, 220)),
+        error: Style::fg(ColorInfo::rgb(255, 100, 100)),
+        heading1: Style::fg(ColorInfo::rgb(55, 85, 206)),
+        heading2: Style::fg(ColorInfo::rgb(106, 138, 203)),
+        heading3: Style::fg(ColorInfo::rgb(255, 100, 100)),
+        warning: Style::fg(ColorInfo::rgb(168, 120, 48)),
+        success: Style::fg(ColorInfo::rgb(170, 170, 170)),
+        info: Style::fg(ColorInfo::rgb(118, 157, 216)),
+        emphasis: Style::fg(ColorInfo::rgb(201, 147, 66)),
+        code: Style::fg(ColorInfo::rgb(66, 120, 201)),
+        subtle: Style::fg(ColorInfo::rgb(144, 144, 144)),
+        hint: Style::fg(ColorInfo::rgb(144, 144, 144)),
+        debug: Style::fg(ColorInfo::rgb(144, 144, 144)),
+        link: Style::fg(ColorInfo::rgb(160, 160, 160)),
+        quote: Style::fg(ColorInfo::rgb(178, 161, 161)),
+        commentary: Style::fg(ColorInfo::rgb(120, 98, 64)),
+    };
+
+    Theme {
+        name: "Test Theme".to_string(),
+        filename: PathBuf::from("test.toml"),
+        is_builtin: false,
+        term_bg_luma: TermBgLuma::Dark,
+        min_color_support: ColorSupport::TrueColor,
+        palette,
+        backgrounds: vec!["#1e1e2e".to_string()],
+        bg_rgbs: vec![(30, 30, 46)],
+        description: "A test theme".to_string(),
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[test]
     fn test_export_formats() {

@@ -5,8 +5,7 @@
 
 use crate::{
     exporters::{
-        adjust_color_brightness, dim_color, get_best_dark_color, get_rgb_from_style,
-        is_light_color, ThemeExporter,
+        adjust_color_brightness, dim_color, get_rgb_from_style, is_light_color, ThemeExporter,
     },
     StylingResult, Theme,
 };
@@ -23,7 +22,7 @@ impl ThemeExporter for KittyExporter {
         // Add header comment
         let _ = writeln!(
             output,
-            "# Kitty Color Scheme: {}\n# Generated from thag theme\n# {}\n\n",
+            "# Kitty Color Scheme: {}\n# Generated from thag theme\n# {}",
             theme.name, theme.description
         );
 
@@ -34,14 +33,14 @@ impl ThemeExporter for KittyExporter {
         output.push_str("# Basic colors\n");
         let _ = writeln!(
             output,
-            "background #{:02x}{:02x}{:02x}\n",
+            "background #{:02x}{:02x}{:02x}",
             bg_color.0, bg_color.1, bg_color.2
         );
 
         if let Some(fg_color) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(
                 output,
-                "foreground #{:02x}{:02x}{:02x}\n",
+                "foreground #{:02x}{:02x}{:02x}",
                 fg_color.0, fg_color.1, fg_color.2
             );
         }
@@ -53,14 +52,14 @@ impl ThemeExporter for KittyExporter {
         let selection_bg = adjust_color_brightness(bg_color, 1.4);
         let _ = writeln!(
             output,
-            "selection_background #{:02x}{:02x}{:02x}\n",
+            "selection_background #{:02x}{:02x}{:02x}",
             selection_bg.0, selection_bg.1, selection_bg.2
         );
 
         if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(
                 output,
-                "selection_foreground #{:02x}{:02x}{:02x}\n",
+                "selection_foreground #{:02x}{:02x}{:02x}",
                 selection_fg.0, selection_fg.1, selection_fg.2
             );
         }
@@ -74,7 +73,7 @@ impl ThemeExporter for KittyExporter {
         {
             let _ = writeln!(
                 output,
-                "cursor #{:02x}{:02x}{:02x}\n",
+                "cursor #{:02x}{:02x}{:02x}",
                 cursor_color.0, cursor_color.1, cursor_color.2
             );
 
@@ -86,7 +85,7 @@ impl ThemeExporter for KittyExporter {
             };
             let _ = writeln!(
                 output,
-                "cursor_text_color #{:02x}{:02x}{:02x}\n",
+                "cursor_text_color #{:02x}{:02x}{:02x}",
                 cursor_text.0, cursor_text.1, cursor_text.2
             );
         }
@@ -98,7 +97,7 @@ impl ThemeExporter for KittyExporter {
         if let Some(url_color) = get_rgb_from_style(&theme.palette.info) {
             let _ = writeln!(
                 output,
-                "url_color #{:02x}{:02x}{:02x}\n",
+                "url_color #{:02x}{:02x}{:02x}",
                 url_color.0, url_color.1, url_color.2
             );
         }
@@ -110,7 +109,7 @@ impl ThemeExporter for KittyExporter {
         if let Some(bell_color) = get_rgb_from_style(&theme.palette.warning) {
             let _ = writeln!(
                 output,
-                "visual_bell_color #{:02x}{:02x}{:02x}\n",
+                "visual_bell_color #{:02x}{:02x}{:02x}",
                 bell_color.0, bell_color.1, bell_color.2
             );
         }
@@ -122,7 +121,7 @@ impl ThemeExporter for KittyExporter {
         if let Some(active_border) = get_rgb_from_style(&theme.palette.emphasis) {
             let _ = writeln!(
                 output,
-                "active_border_color #{:02x}{:02x}{:02x}\n",
+                "active_border_color #{:02x}{:02x}{:02x}",
                 active_border.0, active_border.1, active_border.2
             );
         }
@@ -132,7 +131,7 @@ impl ThemeExporter for KittyExporter {
         {
             let _ = writeln!(
                 output,
-                "inactive_border_color #{:02x}{:02x}{:02x}\n",
+                "inactive_border_color #{:02x}{:02x}{:02x}",
                 inactive_border.0, inactive_border.1, inactive_border.2
             );
         }
@@ -144,7 +143,7 @@ impl ThemeExporter for KittyExporter {
         let tab_bg = adjust_color_brightness(bg_color, 0.9);
         let _ = writeln!(
             output,
-            "tab_bar_background #{:02x}{:02x}{:02x}\n",
+            "tab_bar_background #{:02x}{:02x}{:02x}",
             tab_bg.0, tab_bg.1, tab_bg.2
         );
 
@@ -153,14 +152,14 @@ impl ThemeExporter for KittyExporter {
         {
             let _ = writeln!(
                 output,
-                "active_tab_foreground #{:02x}{:02x}{:02x}\n",
+                "active_tab_foreground #{:02x}{:02x}{:02x}",
                 active_tab_fg.0, active_tab_fg.1, active_tab_fg.2
             );
         }
 
         let _ = writeln!(
             output,
-            "active_tab_background #{:02x}{:02x}{:02x}\n",
+            "active_tab_background #{:02x}{:02x}{:02x}",
             bg_color.0, bg_color.1, bg_color.2
         );
 
@@ -169,14 +168,14 @@ impl ThemeExporter for KittyExporter {
         {
             let _ = writeln!(
                 output,
-                "inactive_tab_foreground #{:02x}{:02x}{:02x}\n",
+                "inactive_tab_foreground #{:02x}{:02x}{:02x}",
                 inactive_tab_fg.0, inactive_tab_fg.1, inactive_tab_fg.2
             );
         }
 
         let _ = writeln!(
             output,
-            "inactive_tab_background #{:02x}{:02x}{:02x}\n",
+            "inactive_tab_background #{:02x}{:02x}{:02x}",
             tab_bg.0, tab_bg.1, tab_bg.2
         );
 
@@ -187,12 +186,12 @@ impl ThemeExporter for KittyExporter {
         if let Some(mark1_bg) = get_rgb_from_style(&theme.palette.warning) {
             let _ = writeln!(
                 output,
-                "mark1_background #{:02x}{:02x}{:02x}\n",
+                "mark1_background #{:02x}{:02x}{:02x}",
                 mark1_bg.0, mark1_bg.1, mark1_bg.2
             );
             let _ = writeln!(
                 output,
-                "mark1_foreground #{:02x}{:02x}{:02x}\n",
+                "mark1_foreground #{:02x}{:02x}{:02x}",
                 bg_color.0, bg_color.1, bg_color.2
             );
         }
@@ -200,12 +199,12 @@ impl ThemeExporter for KittyExporter {
         if let Some(mark2_bg) = get_rgb_from_style(&theme.palette.info) {
             let _ = writeln!(
                 output,
-                "mark2_background #{:02x}{:02x}{:02x}\n",
+                "mark2_background #{:02x}{:02x}{:02x}",
                 mark2_bg.0, mark2_bg.1, mark2_bg.2
             );
             let _ = writeln!(
                 output,
-                "mark2_foreground #{:02x}{:02x}{:02x}\n",
+                "mark2_foreground #{:02x}{:02x}{:02x}",
                 bg_color.0, bg_color.1, bg_color.2
             );
         }
@@ -213,12 +212,12 @@ impl ThemeExporter for KittyExporter {
         if let Some(mark3_bg) = get_rgb_from_style(&theme.palette.success) {
             let _ = writeln!(
                 output,
-                "mark3_background #{:02x}{:02x}{:02x}\n",
+                "mark3_background #{:02x}{:02x}{:02x}",
                 mark3_bg.0, mark3_bg.1, mark3_bg.2
             );
             let _ = writeln!(
                 output,
-                "mark3_foreground #{:02x}{:02x}{:02x}\n",
+                "mark3_foreground #{:02x}{:02x}{:02x}",
                 bg_color.0, bg_color.1, bg_color.2
             );
         }
@@ -229,67 +228,67 @@ impl ThemeExporter for KittyExporter {
         output.push_str("# The color table\n");
         output.push_str("#\n");
         output.push_str("# black\n");
-        if let Some((r, g, b)) = get_best_dark_color(theme) {
-            let _ = writeln!(output, "color0 #{:02x}{:02x}{:02x}\n", r, g, b);
+        if let Some((r, g, b)) = Some(theme.bg_rgbs[0]) {
+            let _ = writeln!(output, "color0 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.subtle).or(Some((64, 64, 64))) {
-            let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# red\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.emphasis) {
-            let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.error) {
-            let _ = writeln!(output, "color9 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color9 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# green\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.success) {
-            let _ = writeln!(output, "color2 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color2 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.debug) {
-            let _ = writeln!(output, "color10 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color10 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# yellow\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.commentary) {
-            let _ = writeln!(output, "color3 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color3 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.warning) {
-            let _ = writeln!(output, "color11 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color11 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# blue\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.info) {
-            let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.link) {
-            let _ = writeln!(output, "color12 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color12 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# magenta\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading1) {
-            let _ = writeln!(output, "color5 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color5 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading2) {
-            let _ = writeln!(output, "color13 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color13 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# cyan\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.code) {
-            let _ = writeln!(output, "color6 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color6 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.hint) {
-            let _ = writeln!(output, "color14 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color14 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# white\n");
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal) {
-            let _ = writeln!(output, "color7 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color7 #{:02x}{:02x}{:02x}", r, g, b);
         }
         if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.quote) {
-            let _ = writeln!(output, "color15 #{:02x}{:02x}{:02x}\n", r, g, b);
+            let _ = writeln!(output, "color15 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push('\n');
@@ -309,25 +308,9 @@ impl ThemeExporter for KittyExporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb},
-        ColorSupport, Palette, TermBgLuma,
+    use crate::exporters::{
+        basic_color_to_rgb, brighten_color, color_256_to_rgb, create_test_theme,
     };
-    use std::path::PathBuf;
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme".to_string(),
-        }
-    }
 
     #[test]
     fn test_kitty_export() {
@@ -336,6 +319,7 @@ mod tests {
 
         assert!(result.is_ok());
         let content = result.unwrap();
+        eprintln!("content={content}");
 
         // Check that the content contains expected configuration keys
         assert!(content.contains("background"));

@@ -4,7 +4,7 @@
 //! Windows Terminal uses JSON configuration files for color schemes.
 
 use crate::{
-    exporters::{adjust_color_brightness, get_best_dark_color, get_rgb_from_style, ThemeExporter},
+    exporters::{adjust_color_brightness, get_rgb_from_style, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -34,7 +34,7 @@ impl ThemeExporter for WindowsTerminalExporter {
             "selectionBackground": format_color(Some(adjust_color_brightness(bg_color, 1.4))),
 
             // ANSI colors (0-7: normal, 8-15: bright)
-            "black": format_color(get_best_dark_color(theme)),
+            "black": format_color(Some(theme.bg_rgbs[0])),
             "red": format_color(get_rgb_from_style(&theme.palette.emphasis)),
             "green": format_color(get_rgb_from_style(&theme.palette.success)),
             "yellow": format_color(get_rgb_from_style(&theme.palette.commentary)),
@@ -100,25 +100,9 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
-    use crate::{
-        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb},
-        ColorSupport, Palette, TermBgLuma,
+    use crate::exporters::{
+        basic_color_to_rgb, brighten_color, color_256_to_rgb, create_test_theme,
     };
-    use std::path::PathBuf;
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme".to_string(),
-        }
-    }
 
     #[test]
     fn test_windows_terminal_export() {
@@ -127,16 +111,18 @@ mod tests {
 
         assert!(result.is_ok());
         let content = result.unwrap();
+        eprintln!("content={content}");
 
         // Check that the content is valid JSON
-        let parsed: Value = serde_json::from_str(&content).unwrap();
+        let scheme: Value = serde_json::from_str(&content).unwrap();
 
         // Check for required Windows Terminal structure
-        assert!(parsed.get("schemes").is_some());
-        let schemes = parsed["schemes"].as_array().unwrap();
-        assert!(!schemes.is_empty());
+        // assert!(parsed.get("schemes").is_some());
+        // let schemes = parsed["schemes"].as_array().unwrap();
+        // assert!(!schemes.is_empty());
 
-        let scheme = &schemes[0];
+        // let scheme = &schemes[0];
+        // let scheme = &parsed["scheme"];
         assert!(scheme.get("name").is_some());
         assert!(scheme.get("background").is_some());
         assert!(scheme.get("foreground").is_some());

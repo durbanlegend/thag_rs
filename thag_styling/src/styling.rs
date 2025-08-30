@@ -825,7 +825,7 @@ pub static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 
 thread_local! {
     /// Thread-local storage for theme context override
-    static THEME_CONTEXT: std::cell::RefCell<Option<Theme>> = std::cell::RefCell::new(None);
+    static THEME_CONTEXT: std::cell::RefCell<Option<Theme>> = const { std::cell::RefCell::new(None) };
 }
 
 impl TermAttributes {
@@ -2076,7 +2076,8 @@ impl Theme {
     }
 
     /// Execute a closure with this theme temporarily set as the active theme.
-    /// This allows using the normal role-based styling methods (.emphasis(), .error(), etc.)
+    /// This allows using the normal role-based styling methods (.`emphasis()`,
+    /// .`error()`, etc.)
     /// while having them use this theme instead of the globally active one.
     ///
     /// # Example
@@ -2114,14 +2115,12 @@ impl Theme {
     }
 
     /// Gets the current theme context, falling back to the active theme if none is set
-    fn current_theme_context() -> Theme {
+    fn current_theme_context() -> Self {
         THEME_CONTEXT.with(|context| {
-            if let Some(theme) = context.borrow().as_ref() {
-                theme.clone()
-            } else {
-                // Fall back to the active theme
-                TermAttributes::get_or_init().theme.clone()
-            }
+            context.borrow().as_ref().map_or_else(
+                || TermAttributes::get_or_init().theme.clone(),
+                std::clone::Clone::clone,
+            )
         })
     }
 }
@@ -2141,7 +2140,7 @@ impl Theme {
 ///
 /// # Examples
 /// ```
-/// use thag_styling::index_to_rgb;
+/// use thag_styling::styling::index_to_rgb;
 ///
 /// // Basic colors
 /// assert_eq!(index_to_rgb(0), (0, 0, 0));     // Black
@@ -3748,7 +3747,7 @@ mod tests {
             .expect("Failed to load heading1 foreground color")
             .value
         {
-            assert_eq!(rgb, &[255, 85, 85]);
+            assert_eq!(rgb, &[255, 121, 198]);
         } else {
             panic!("Expected TrueColor for heading1");
         }

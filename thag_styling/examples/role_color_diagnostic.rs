@@ -12,7 +12,6 @@
 use ratatui::style::Style as RataStyle;
 #[cfg(feature = "ratatui_support")]
 use thag_styling::ThemedStyle;
-use thag_styling::{paint_for_role, Role, Style, TermAttributes};
 
 #[cfg(feature = "ratatui_support")]
 fn main() {
@@ -204,3 +203,6 @@ fn main() {
         term_attrs.theme.name.to_lowercase().replace(' ', "_")
     );
 }
+
+#[cfg(not(feature = "ratatui_support"))]
+fn main() {}

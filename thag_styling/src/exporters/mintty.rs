@@ -4,7 +4,7 @@
 //! Mintty theme files are simple key-value pairs stored without file extensions.
 
 use crate::{
-    exporters::{adjust_color_brightness, get_best_dark_color, get_rgb_from_style, ThemeExporter},
+    exporters::{adjust_color_brightness, get_rgb_from_style, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -75,7 +75,7 @@ impl ThemeExporter for MinttyExporter {
 
         // ANSI colors (0-15)
         // Black
-        if let Some(black) = get_best_dark_color(theme) {
+        if let Some(black) = Some(theme.bg_rgbs[0]) {
             let _ = writeln!(output, "Black={},{},{}", black.0, black.1, black.2);
         }
 
@@ -202,22 +202,7 @@ impl ThemeExporter for MinttyExporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ColorSupport, Palette, TermBgLuma};
-    use std::path::PathBuf;
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Mintty Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme for mintty".to_string(),
-        }
-    }
+    use crate::exporters::create_test_theme;
 
     #[test]
     fn test_mintty_export() {

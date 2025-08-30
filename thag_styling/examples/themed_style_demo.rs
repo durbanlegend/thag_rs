@@ -23,7 +23,7 @@ thag_common = { version = "0.2, thag-auto" }
 //! cargo run --example themed_style_demo --features "crossterm_support"
 //! ```
 
-use thag_styling::{Role, ThemedStyle};
+use thag_styling::Role;
 
 fn main() {
     println!("🎨 Thag Styling ThemedStyle Trait Demo\n");

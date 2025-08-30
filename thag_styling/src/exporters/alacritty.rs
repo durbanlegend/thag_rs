@@ -5,8 +5,7 @@
 
 use crate::{
     exporters::{
-        adjust_color_brightness, dim_color, get_best_dark_color, get_rgb_from_style,
-        is_light_color, ThemeExporter,
+        adjust_color_brightness, dim_color, get_rgb_from_style, is_light_color, ThemeExporter,
     },
     StylingResult, Theme,
 };
@@ -27,7 +26,7 @@ impl ThemeExporter for AlacrittyExporter {
         // Add header comment
         let _ = writeln!(
             output,
-            "# Alacritty Color Scheme: {}\n# Generated from thag theme\n# {}\n\n",
+            "# Alacritty Color Scheme: {}\n# Generated from thag theme\n# {}",
             theme.name, theme.description
         );
 
@@ -41,7 +40,7 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.primary]\n");
         let _ = writeln!(
             output,
-            "background = \"#{:02x}{:02x}{:02x}\"\n",
+            r##"background = "#{:02x}{:02x}{:02x}""##,
             bg_color.0, bg_color.1, bg_color.2
         );
 
@@ -49,7 +48,7 @@ impl ThemeExporter for AlacrittyExporter {
         if let Some(fg_color) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(
                 output,
-                "foreground = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"foreground = "#{:02x}{:02x}{:02x}""##,
                 fg_color.0, fg_color.1, fg_color.2
             );
         }
@@ -60,7 +59,7 @@ impl ThemeExporter for AlacrittyExporter {
         {
             let _ = writeln!(
                 output,
-                "bright_foreground = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"bright_foreground = "#{:02x}{:02x}{:02x}""##,
                 bright_fg.0, bright_fg.1, bright_fg.2
             );
         }
@@ -78,7 +77,7 @@ impl ThemeExporter for AlacrittyExporter {
         }) {
             let _ = writeln!(
                 output,
-                "dim_foreground = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"dim_foreground = "#{:02x}{:02x}{:02x}""##,
                 dim_fg.0, dim_fg.1, dim_fg.2
             );
         }
@@ -90,7 +89,7 @@ impl ThemeExporter for AlacrittyExporter {
 
         // Map semantic colors to ANSI colors
         let normal_colors = [
-            ("black", get_best_dark_color(theme)),
+            ("black", Some(theme.bg_rgbs[0])),
             ("red", get_rgb_from_style(&theme.palette.emphasis)),
             ("green", get_rgb_from_style(&theme.palette.success)),
             ("yellow", get_rgb_from_style(&theme.palette.commentary)),
@@ -103,7 +102,7 @@ impl ThemeExporter for AlacrittyExporter {
         eprintln!("Normal colors:");
         for (color_name, rgb_opt) in normal_colors {
             if let Some((r, g, b)) = rgb_opt {
-                let color = &format!("{} = \"#{:02x}{:02x}{:02x}\"\n", color_name, r, g, b);
+                let color = &format!(r##"{} = "#{:02x}{:02x}{:02x}""##, color_name, r, g, b);
                 eprintln!("color={color}");
                 output.push_str(color);
             }
@@ -128,7 +127,7 @@ impl ThemeExporter for AlacrittyExporter {
         eprintln!("Bright colors:");
         for (color_name, rgb_opt) in bright_colors {
             if let Some((r, g, b)) = rgb_opt {
-                let color = &format!("{} = \"#{:02x}{:02x}{:02x}\"\n", color_name, r, g, b);
+                let color = &format!(r##"{} = "#{:02x}{:02x}{:02x}""##, color_name, r, g, b);
                 eprintln!("color={color}");
                 output.push_str(color);
             }
@@ -178,7 +177,7 @@ impl ThemeExporter for AlacrittyExporter {
             if let Some((r, g, b)) = rgb_opt {
                 let _ = writeln!(
                     output,
-                    "{} = \"#{:02x}{:02x}{:02x}\"\n",
+                    r##"{} = "#{:02x}{:02x}{:02x}""##,
                     color_name, r, g, b
                 );
             }
@@ -193,7 +192,7 @@ impl ThemeExporter for AlacrittyExporter {
         {
             let _ = writeln!(
                 output,
-                "cursor = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"cursor = "#{:02x}{:02x}{:02x}""##,
                 cursor_color.0, cursor_color.1, cursor_color.2
             );
             // Cursor text should contrast with cursor color
@@ -204,7 +203,7 @@ impl ThemeExporter for AlacrittyExporter {
             };
             let _ = writeln!(
                 output,
-                "text = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"text = "#{:02x}{:02x}{:02x}""##,
                 text_color.0, text_color.1, text_color.2
             );
         }
@@ -218,14 +217,14 @@ impl ThemeExporter for AlacrittyExporter {
         let selection_bg = adjust_color_brightness(bg_color, 1.3);
         let _ = writeln!(
             output,
-            "background = \"#{:02x}{:02x}{:02x}\"\n",
+            r##"background = "#{:02x}{:02x}{:02x}""##,
             selection_bg.0, selection_bg.1, selection_bg.2
         );
 
         if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
             let _ = writeln!(
                 output,
-                "text = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"text = "#{:02x}{:02x}{:02x}""##,
                 selection_fg.0, selection_fg.1, selection_fg.2
             );
         }
@@ -239,12 +238,12 @@ impl ThemeExporter for AlacrittyExporter {
         if let Some(search_match) = get_rgb_from_style(&theme.palette.warning) {
             let _ = writeln!(
                 output,
-                "background = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"background = "#{:02x}{:02x}{:02x}""##,
                 search_match.0, search_match.1, search_match.2
             );
             let _ = writeln!(
                 output,
-                "foreground = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"foreground = "#{:02x}{:02x}{:02x}""##,
                 bg_color.0, bg_color.1, bg_color.2
             );
         }
@@ -253,12 +252,12 @@ impl ThemeExporter for AlacrittyExporter {
         if let Some(focused_match) = get_rgb_from_style(&theme.palette.emphasis) {
             let _ = writeln!(
                 output,
-                "background = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"background = "#{:02x}{:02x}{:02x}""##,
                 focused_match.0, focused_match.1, focused_match.2
             );
             let _ = writeln!(
                 output,
-                "foreground = \"#{:02x}{:02x}{:02x}\"\n",
+                r##"foreground = "#{:02x}{:02x}{:02x}""##,
                 bg_color.0, bg_color.1, bg_color.2
             );
         }
@@ -275,46 +274,12 @@ impl ThemeExporter for AlacrittyExporter {
     }
 }
 
-// /// Extract RGB values from a Style's foreground color
-// fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
-//     style.foreground.as_ref().and_then(|color_info| {
-//         eprintln!("Color value={:?}", color_info.value);
-//         match &color_info.value {
-//             ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-//             ColorValue::Color256 { color256 } => {
-//                 // Convert 256-color index to approximate RGB
-//                 Some(color_256_to_rgb(*color256))
-//             }
-//             ColorValue::Basic { index, .. } => {
-//                 // Convert basic color index to RGB
-//                 Some(basic_color_to_rgb(*index))
-//             }
-//         }
-//     })
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb},
-        ColorSupport, Palette, TermBgLuma,
+    use crate::exporters::{
+        basic_color_to_rgb, brighten_color, color_256_to_rgb, create_test_theme,
     };
-    use std::path::PathBuf;
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme".to_string(),
-        }
-    }
 
     #[test]
     fn test_alacritty_export() {
@@ -323,6 +288,8 @@ mod tests {
 
         assert!(result.is_ok());
         let content = result.unwrap();
+
+        dbg!(&content);
 
         // Check that the content contains expected sections
         assert!(content.contains("[colors]"));

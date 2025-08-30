@@ -4,10 +4,7 @@
 //! `WezTerm` uses TOML files in the colors directory, not Lua for color schemes.
 
 use crate::{
-    exporters::{
-        adjust_color_brightness, get_best_dark_color, get_rgb_from_style, is_light_color,
-        ThemeExporter,
-    },
+    exporters::{adjust_color_brightness, get_rgb_from_style, is_light_color, ThemeExporter},
     StylingResult, Theme,
 };
 use std::fmt::Write as _; // import without risk of name clashing
@@ -58,7 +55,7 @@ impl ThemeExporter for WezTermExporter {
         output.push_str("ansi = [\n");
 
         let normal_colors = [
-            ("Black", get_best_dark_color(theme)),
+            ("Black", Some(theme.bg_rgbs[0])),
             ("Red", get_rgb_from_style(&theme.palette.emphasis)),
             ("Green", get_rgb_from_style(&theme.palette.success)),
             ("Yellow", get_rgb_from_style(&theme.palette.commentary)),
@@ -186,7 +183,7 @@ impl ThemeExporter for WezTermExporter {
             (16, get_rgb_from_style(&theme.palette.warning)),
             (
                 17,
-                get_best_dark_color(theme).map(|c| adjust_color_brightness(c, 0.3)),
+                Some(theme.bg_rgbs[0]).map(|c| adjust_color_brightness(c, 0.3)),
             ),
             (18, Some(adjust_color_brightness(bg_color, 1.1))),
             (19, Some(adjust_color_brightness(bg_color, 1.2))),
@@ -215,25 +212,9 @@ impl ThemeExporter for WezTermExporter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        exporters::{basic_color_to_rgb, brighten_color, color_256_to_rgb, is_light_color},
-        ColorSupport, Palette, TermBgLuma,
+    use crate::exporters::{
+        basic_color_to_rgb, brighten_color, color_256_to_rgb, create_test_theme, is_light_color,
     };
-    use std::path::PathBuf;
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme".to_string(),
-        }
-    }
 
     #[test]
     fn test_wezterm_export() {

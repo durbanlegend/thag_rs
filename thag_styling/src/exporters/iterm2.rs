@@ -4,7 +4,7 @@
 //! iTerm2 uses .itermcolors files (plist XML) for color presets that can be imported through the UI.
 
 use crate::{
-    exporters::{adjust_color_brightness, get_best_dark_color, get_rgb_from_style, ThemeExporter},
+    exporters::{adjust_color_brightness, get_rgb_from_style, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -31,7 +31,7 @@ impl ThemeExporter for ITerm2Exporter {
         let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
 
         // ANSI Colors 0-15
-        write_color_entry(&mut output, "Ansi 0 Color", get_best_dark_color(theme))?;
+        write_color_entry(&mut output, "Ansi 0 Color", Some(theme.bg_rgbs[0]))?;
         write_color_entry(
             &mut output,
             "Ansi 1 Color",
@@ -190,25 +190,7 @@ fn write_color_entry(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        exporters::{basic_color_to_rgb, color_256_to_rgb},
-        ColorSupport, Palette, TermBgLuma,
-    };
-    use std::path::PathBuf;
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Theme".to_string(),
-            filename: PathBuf::from("test.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#1e1e2e".to_string()],
-            bg_rgbs: vec![(30, 30, 46)],
-            description: "A test theme".to_string(),
-        }
-    }
+    use crate::exporters::{basic_color_to_rgb, color_256_to_rgb, create_test_theme};
 
     #[test]
     fn test_iterm2_export() {
@@ -219,9 +201,9 @@ mod tests {
         let content = result.unwrap();
 
         // Check for XML structure
-        assert!(content.contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
+        assert!(content.contains(r#"<?xml version="1.0" encoding="UTF-8"?>"#));
         assert!(content.contains("<!DOCTYPE plist"));
-        assert!(content.contains("<plist version=\"1.0\">"));
+        assert!(content.contains(r#"<plist version="1.0">"#));
         assert!(content.contains("<dict>"));
         assert!(content.contains("</dict>"));
         assert!(content.contains("</plist>"));

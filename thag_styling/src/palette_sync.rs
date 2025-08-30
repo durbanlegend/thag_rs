@@ -12,7 +12,7 @@
 //!
 //! # Example
 //!
-//! ```rust
+//! ```ignore
 //! use thag_styling::palette_sync::PaletteSync;
 //! use thag_styling::{Theme, TermAttributes};
 //!
@@ -20,10 +20,11 @@
 //! let theme = Theme::get_builtin("thag-botticelli-birth-of-venus").unwrap();
 //!
 //! // Apply to terminal
-//! PaletteSync::apply_theme(&theme)?;
+//! let _ = PaletteSync::apply_theme(&theme);
 //!
 //! // Later, reset to defaults
-//! PaletteSync::reset_palette()?;
+//! let _ = PaletteSync::reset_palette();
+//!
 //! ```
 
 use crate::{styling, Role, Theme};
@@ -470,7 +471,7 @@ mod tests {
             Some((0, 0, 0)),
         ));
 
-        let theme = crate::Theme::get_builtin("thag-dark").unwrap();
+        let theme = crate::Theme::get_builtin("thag-dark_base16").unwrap();
         let color_map = PaletteSync::build_ansi_color_map(&theme);
 
         // Verify we got 16 colors

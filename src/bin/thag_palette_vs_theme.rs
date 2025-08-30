@@ -17,7 +17,7 @@ use thag_proc_macros::file_navigator;
 
 use thag_styling::{
     cprtln, select_builtin_theme, ColorInitStrategy, Role, Style, Styleable, StyledStringExt,
-    Styler, TermAttributes, TermBgLuma, Theme,
+    TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -48,8 +48,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!();
 
     // Display comprehensive comparison
-    display_terminal_info();
-    display_ansi_colors();
+    display_terminal_info(&theme);
+    display_ansi_colors(&theme);
     display_theme_colors(&theme);
     display_color_comparison(&theme);
     display_recommendations(&theme);
@@ -117,9 +117,9 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
 }
 
 /// Display basic terminal information
-fn display_terminal_info() {
-    format!("📟 {} Information:", "Terminal".info())
-        .normal()
+fn display_terminal_info(theme: &Theme) {
+    theme
+        .normal(&format!("📟 {} Information:", theme.info_text("Terminal")))
         .println();
     println!("────────────────────────");
 
@@ -130,19 +130,21 @@ fn display_terminal_info() {
 
     // Display relevant environment variables
     if let Ok(term) = std::env::var("TERM") {
-        format!("🖥️  TERM: {}", term.debug()).normal().println();
+        theme
+            .normal(&format!("🖥️  TERM: {}", theme.debug(&term)))
+            .println();
     }
     if let Ok(colorterm) = std::env::var("COLORTERM") {
-        format!("🌈 COLORTERM: {}", colorterm.debug())
-            .normal()
+        theme
+            .normal(&format!("🖥️  COLORTERM: {}", theme.debug(&colorterm)))
             .println();
     }
 
     // Try to detect terminal emulator
     let terminal_info = detect_terminal_emulator();
     if !terminal_info.is_empty() {
-        format!("🖥️  Detected: {}", terminal_info.emphasis())
-            .normal()
+        theme
+            .normal(&format!("🖥️  Detected: {}", theme.emphasis(&terminal_info)))
             .println();
     }
 
@@ -179,7 +181,7 @@ fn detect_terminal_emulator() -> String {
 }
 
 /// Display the 16 basic ANSI colors
-fn display_ansi_colors() {
+fn display_ansi_colors(theme: &Theme) {
     format!("🎨 {} ANSI Colors (0-15):", "Current Terminal".info())
         .normal()
         .println();
@@ -187,41 +189,52 @@ fn display_ansi_colors() {
 
     // Basic colors (0-7)
     println!("Standard Colors (0-7):");
-    display_color_row(&[
-        (0, "Black"),
-        (1, "Red"),
-        (2, "Green"),
-        (3, "Yellow"),
-        (4, "Blue"),
-        (5, "Magenta"),
-        (6, "Cyan"),
-        (7, "White"),
-    ]);
+    display_color_row(
+        &theme,
+        &[
+            (0, "Black"),
+            (1, "Red"),
+            (2, "Green"),
+            (3, "Yellow"),
+            (4, "Blue"),
+            (5, "Magenta"),
+            (6, "Cyan"),
+            (7, "White"),
+        ],
+    );
 
     println!();
 
     // Bright colors (8-15)
     println!("Bright Colors (8-15):");
-    display_color_row(&[
-        (8, "Bright Black"),
-        (9, "Bright Red"),
-        (10, "Bright Green"),
-        (11, "Bright Yellow"),
-        (12, "Bright Blue"),
-        (13, "Bright Magenta"),
-        (14, "Bright Cyan"),
-        (15, "Bright White"),
-    ]);
+    display_color_row(
+        &theme,
+        &[
+            (8, "Bright Black"),
+            (9, "Bright Red"),
+            (10, "Bright Green"),
+            (11, "Bright Yellow"),
+            (12, "Bright Blue"),
+            (13, "Bright Magenta"),
+            (14, "Bright Cyan"),
+            (15, "Bright White"),
+        ],
+    );
 
     println!();
 }
 
 /// Display a row of colors with their indices and names
-fn display_color_row(colors: &[(u8, &str)]) {
+fn display_color_row(theme: &Theme, colors: &[(u8, &str)]) {
     // Print color indices
     print!("   ");
     for (index, _) in colors {
-        print!("{}", Role::Emphasis.paint(format!("{:>12}", index)));
+        print!(
+            "{}",
+            theme
+                .style_for(Role::Emphasis)
+                .paint(format!("{:>12}", index))
+        );
     }
     println!();
 
@@ -249,8 +262,8 @@ fn display_color_row(colors: &[(u8, &str)]) {
 
 /// Display theme colors with visual preview
 fn display_theme_colors(theme: &Theme) {
-    format!("🌟 {} Colors:", theme.name.info())
-        .normal()
+    theme
+        .normal(&format!("🌟 {} Colors:", theme.info_text(&theme.name)))
         .println();
     println!("──────────────────────────────────────────────");
 
@@ -281,18 +294,20 @@ fn display_theme_colors(theme: &Theme) {
     for (name, style) in semantic_colors {
         let colored_text = style.paint(format!("{:>12}", name));
         let rgb_info = extract_rgb_info(style);
-        println!("   {} {}", colored_text, Role::Subtle.paint(&rgb_info));
+        println!("   {} {}", colored_text, theme.code(&rgb_info));
     }
 
     // Show background color preview if available
     if let Some((r, g, b)) = theme.bg_rgbs.first() {
         println!();
-        println!("Background Preview:");
+        theme.normal("Background Preview:").println();
         print!("   ");
         for _ in 0..20 {
             print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
         }
-        println!(" RGB({}, {}, {})", r, g, b);
+        theme
+            .normal(&format!(" RGB({}, {}, {})", r, g, b))
+            .println();
     }
 
     println!();
@@ -308,7 +323,13 @@ fn display_color_comparison(theme: &Theme) {
 
     // Corrected mappings that match thag_sync_palette behavior
     let color_mappings = [
-        ("Black (0)", 0, "Background", get_best_dark_color(theme)),
+        (
+            "Black (0)",
+            0,
+            "Background",
+            // get_best_dark_color(theme)
+            Some(theme.bg_rgbs[0]),
+        ),
         (
             "Red (1)",
             1,
@@ -402,21 +423,17 @@ fn display_color_comparison(theme: &Theme) {
         // Expected thag color with RGB info
         let thag_display = if let Some((r, g, b)) = thag_rgb {
             format!(
-                "\x1b[38;2;{};{};{}m████\x1b[0m #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
+                "\x1b[38;2;{};{};{}m████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})\x1b[0m",
                 r, g, b, r, g, b, r, g, b
             )
+            // .code()
         } else {
-            // Style::from(Role::Subtle).paint("N/A").to_string()
-            Role::Normal.dim().paint("N/A").to_string()
+            // Role::Normal.dim().paint("N/A").to_string()
+            "N/A".to_string()
         };
 
-        println!(
-            "{:<20} {:<5}         {:<26} {}",
-            name,
-            terminal_sample,
-            thag_display,
-            Role::Subtle.paint(semantic_role)
-        );
+        // println!("thag_display={thag_display:?}");
+        println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
     }
 
     println!();
@@ -588,15 +605,15 @@ fn extract_rgb(style: &Style) -> Option<(u8, u8, u8)> {
         })
 }
 
-/// Get the best dark color from the theme for black mapping
-fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-    theme
-        .bg_rgbs
-        .first()
-        .copied()
-        .or_else(|| extract_rgb(&theme.palette.subtle))
-        .or(Some((16, 16, 16)))
-}
+// /// Get the best dark color from the theme for black mapping
+// fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
+//     theme
+//         .bg_rgbs
+//         .first()
+//         .copied()
+//         .or_else(|| extract_rgb(&theme.palette.subtle))
+//         .or(Some((16, 16, 16)))
+// }
 
 /// Brighten a color by increasing its components
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]

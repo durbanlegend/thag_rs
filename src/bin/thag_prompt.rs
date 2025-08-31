@@ -16,10 +16,8 @@ use std::fmt::Write as _; // import without risk of name clashing
 use std::process::Command;
 use std::string::ToString;
 use thag_proc_macros::file_navigator;
-use thag_rs::{
-    auto_help, cprtln, help_system::check_help_and_exit, themed_inquire_config, Role, Style,
-};
-use thag_styling::{Styleable, StyledStringExt};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_styling::{cprtln, themed_inquire_config, Role, Style, Styleable, StyledStringExt};
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;

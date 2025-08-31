@@ -227,6 +227,11 @@ path = "src/bin/thag_show_themes.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_theme"
+path = "src/bin/thag_theme.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_to_rust_script"
 path = "src/bin/thag_to_rust_script.rs"
 required-features = ["tools"]

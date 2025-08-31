@@ -22,26 +22,17 @@
 - [ ]  Convert all inquire interfaces to use theming.
 - [ ]  RYO cargo-lookup?.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
-- [ ]  Add thag_theme tool to show current theme?
+- [ ]  DONE: Add thag_theme tool to show current theme?
 - [ ]  Demo script for styled! proc macro using thag_styling?
-- [ ]  thag_show_themes.rs - detect alacritty etc and give instructions accordingly. alacritty etc?
-- [ ]  DONE: StyleLike add prtln and embed trait methods to allow styles to embed styles.
+- [ ]  DONE: thag_show_themes.rs - detect alacritty etc and give instructions accordingly. alacritty etc?
 - [ ]  Incorporate bank/rata.rs example?
-- [ ]  DONE: Make detection or at least config mandatory.
-- [ ]  Add further attributes such as reversed to Style.
 - [ ]  Debug success, emphasis, code and subtle all getting the same colour.
-- [ ]  Thag tool for setting terminal theme to a thag theme.
-- [ ]  Thag tool for showing current terminal palette - customize demo/palette_with_vibrant_theme.rs to make it generic.
-- [ ]  Done: Generate mintty theme for Git Bash - nice and simple, needs bright colours.
-- [ ]  DONE: Consolidate tools in thag_rs/src/bin?.
+- [ ]  DONE: Thag tool for setting terminal theme to a thag theme.
+- [ ]  DONE Thag tool for showing current terminal palette - thag_palette_vs_theme.
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
-- [ ]  DONE: Different thag_styling dependencies in TOML block for Windows vs other.
-- [ ] DONE: Fix thag_gen_terminal_themes.rs for Windows at least.
-- [ ] Update demo/thag_theme.rs and other displays to use the new 15-colour palette.
-- [ ] Duplication between src/bin/thag_gen_theme.rs and src/bin/thag_image_to_theme.rs.
-- [ ] Force light or dark in theme name in src/bin/thag_image_to_theme.rs.
-- [ ] Fix writeln extra \n in exporters as per wezterm.
-- [ ] Figure out why `"#f0f0f0", # black` not accepted in WezTerm color config as foreground - clash with background?
+- [ ] Force light or dark in theme name in src/bin/thag_image_to_theme.rs?
+- [ ] thag_styling README.
+- [ ] Allow dynamically loading non-built_in themes.
 
 https://github.com/base16-project/base16
 
@@ -275,6 +266,8 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ]  Control logging level of -x compiled code?
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
+- [ ]  Add further attributes such as reversed to Style?
+
 
 ## Ideas / Future Enhancements
 - [ ]  Consider supporting alternative TOML embedding keywords so we can run demo/regex_capture_toml.rs and demo/parse_script.rs_toml.rs.

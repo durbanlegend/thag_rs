@@ -2,130 +2,60 @@ name = "thag-botticelli-birth-of-venus-light"
 description = "Generated from image analysis"
 term_bg_luma = "light"
 min_color_support = "true_color"
-backgrounds = ["#f8f8f8"]
-bg_rgbs = [[
-    248,
-    248,
-    248,
-]]
+backgrounds = ["#f3f8f8"]
+bg_rgbs = [[243, 248, 248]]
 
 [palette.heading1]
-rgb = [
-    158,
-    55,
-    96,
-]
+rgb = [158, 55, 96]
 style = ["bold"]
 
 [palette.heading2]
-rgb = [
-    192,
-    72,
-    120,
-]
+rgb = [192, 72, 120]
 style = ["bold"]
 
 [palette.heading3]
-rgb = [
-    96,
-    168,
-    168,
-]
+rgb = [96, 168, 168]
 style = ["bold"]
 
 [palette.error]
-rgb = [
-    137,
-    34,
-    34,
-]
+rgb = [137, 34, 34]
 
 [palette.warning]
-rgb = [
-    176,
-    115,
-    85,
-]
+rgb = [176, 115, 85]
 
 [palette.success]
-rgb = [
-    110,
-    55,
-    55,
-]
+rgb = [110, 55, 55]
 
 [palette.info]
-rgb = [
-    48,
-    120,
-    120,
-]
+rgb = [48, 120, 120]
 
 [palette.emphasis]
-rgb = [
-    174,
-    93,
-    93,
-]
+rgb = [174, 93, 93]
 
 [palette.code]
-rgb = [
-    120,
-    120,
-    120,
-]
+rgb = [120, 120, 120]
 
 [palette.normal]
-rgb = [
-    72,
-    72,
-    72,
-]
+rgb = [72, 72, 72]
 
 [palette.subtle]
-rgb = [
-    108,
-    150,
-    150,
-]
+rgb = [108, 150, 150]
 
 [palette.hint]
-rgb = [
-    144,
-    72,
-    72,
-]
+rgb = [144, 72, 72]
 style = ["italic"]
 
 [palette.debug]
-rgb = [
-    98,
-    98,
-    98,
-]
-style = ["dim"]
+rgb = [98, 98, 98]
 
 [palette.link]
-rgb = [
-    123,
-    30,
-    30,
-]
+rgb = [123, 30, 30]
 style = ["underline"]
 
 [palette.quote]
-rgb = [
-    91,
-    116,
-    116,
-]
+rgb = [91, 116, 116]
 style = ["italic"]
 
 [palette.commentary]
-rgb = [
-    129,
-    117,
-    117,
-]
-style = ["italic", "dim"]
-
+rgb = [129, 117, 117]
+style = ["italic"]

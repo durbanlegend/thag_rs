@@ -92,7 +92,9 @@ fn main() {
     println!("   {}", "Subtle text".subtle());
     println!("   {}", "Hint text".hint());
     println!("   {}", "Debug text".debug());
-    println!("   {}", "Trace text".trace());
+    println!("   {}", "Link text".link());
+    println!("   {}", "Quote text".quote());
+    println!("   {}", "Commentary text".commentary());
 
     println!("\n4. Environment check:");
     if let Ok(term) = std::env::var("TERM") {

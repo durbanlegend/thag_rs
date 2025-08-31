@@ -13,7 +13,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 //# Purpose: Debug and fix replace logic for multi-level nesting
 //# Categories: styling, debugging, prototypes
 use std::fmt;
-use thag_styling::{ColorInitStrategy, Role, Style, Styler, TermAttributes};
+use thag_styling::{ColorInitStrategy, Role, Style, TermAttributes};
 
 #[derive(Clone, Debug)]
 pub struct DebugStyledString {
@@ -159,7 +159,7 @@ impl StyleAnsiExt for Style {
         let mut codes = String::new();
 
         if let Some(color_info) = &self.foreground {
-            codes.push_str(color_info.ansi);
+            codes.push_str(&color_info.ansi);
         }
 
         if self.bold {

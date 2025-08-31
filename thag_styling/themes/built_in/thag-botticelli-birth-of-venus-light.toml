@@ -1,15 +1,23 @@
-name = "thag-botticelli-birth-of-venus-dark"
+name = "thag-botticelli-birth-of-venus-light"
 description = "Generated from image analysis"
-term_bg_luma = "dark"
+term_bg_luma = "light"
 min_color_support = "true_color"
-backgrounds = ["#181818"]
+backgrounds = ["#f8f8f8"]
 bg_rgbs = [[
-    24,
-    24,
-    24,
+    248,
+    248,
+    248,
 ]]
 
 [palette.heading1]
+rgb = [
+    158,
+    55,
+    96,
+]
+style = ["bold"]
+
+[palette.heading2]
 rgb = [
     192,
     72,
@@ -17,69 +25,61 @@ rgb = [
 ]
 style = ["bold"]
 
-[palette.heading2]
-rgb = [
-    205,
-    110,
-    148,
-]
-style = ["bold"]
-
 [palette.heading3]
-rgb = [
-    233,
-    161,
-    124,
-]
-style = ["bold"]
-
-[palette.error]
-rgb = [
-    174,
-    93,
-    93,
-]
-
-[palette.warning]
-rgb = [
-    208,
-    173,
-    155,
-]
-
-[palette.success]
 rgb = [
     96,
     168,
     168,
 ]
+style = ["bold"]
 
-[palette.info]
+[palette.error]
 rgb = [
-    146,
-    146,
-    146,
+    137,
+    34,
+    34,
 ]
 
-[palette.emphasis]
-rgb = [
-    192,
-    144,
-    120,
-]
-
-[palette.code]
+[palette.warning]
 rgb = [
     176,
     115,
     85,
 ]
 
+[palette.success]
+rgb = [
+    110,
+    55,
+    55,
+]
+
+[palette.info]
+rgb = [
+    48,
+    120,
+    120,
+]
+
+[palette.emphasis]
+rgb = [
+    174,
+    93,
+    93,
+]
+
+[palette.code]
+rgb = [
+    120,
+    120,
+    120,
+]
+
 [palette.normal]
 rgb = [
-    168,
-    192,
-    192,
+    72,
+    72,
+    72,
 ]
 
 [palette.subtle]
@@ -91,41 +91,41 @@ rgb = [
 
 [palette.hint]
 rgb = [
-    172,
-    172,
-    172,
+    144,
+    72,
+    72,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
-    138,
-    171,
-    171,
+    98,
+    98,
+    98,
 ]
 style = ["dim"]
 
 [palette.link]
 rgb = [
-    200,
-    144,
-    144,
+    123,
+    30,
+    30,
 ]
 style = ["underline"]
 
 [palette.quote]
 rgb = [
-    143,
-    166,
-    166,
+    91,
+    116,
+    116,
 ]
 style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    107,
-    126,
-    126,
+    129,
+    117,
+    117,
 ]
 style = ["italic", "dim"]
 

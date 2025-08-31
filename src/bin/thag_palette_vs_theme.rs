@@ -121,7 +121,7 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
 /// Display basic terminal information
 fn display_terminal_info(theme: &Theme) {
     theme
-        .normal(&format!("📟 {} Information:", theme.info_text("Terminal")))
+        .normal(format!("📟 {} Information:", theme.info_text("Terminal")))
         .println();
     println!("────────────────────────");
 
@@ -133,12 +133,12 @@ fn display_terminal_info(theme: &Theme) {
     // Display relevant environment variables
     if let Ok(term) = std::env::var("TERM") {
         theme
-            .normal(&format!("🖥️  TERM: {}", theme.debug(&term)))
+            .normal(format!("🖥️  TERM: {}", theme.debug(&term)))
             .println();
     }
     if let Ok(colorterm) = std::env::var("COLORTERM") {
         theme
-            .normal(&format!("🖥️  COLORTERM: {}", theme.debug(&colorterm)))
+            .normal(format!("🖥️  COLORTERM: {}", theme.debug(&colorterm)))
             .println();
     }
 
@@ -146,7 +146,7 @@ fn display_terminal_info(theme: &Theme) {
     let terminal_info = detect_terminal_emulator();
     if !terminal_info.is_empty() {
         theme
-            .normal(&format!("🖥️  Detected: {}", theme.emphasis(&terminal_info)))
+            .normal(format!("🖥️  Detected: {}", theme.emphasis(&terminal_info)))
             .println();
     }
 
@@ -193,7 +193,7 @@ fn display_ansi_colors(theme: &Theme) {
         // Basic colors (0-7)
         "Standard Colors (0-7):".normal().println();
         display_color_row(
-            &theme,
+            theme,
             &[
                 (0, "Black"),
                 (1, "Red"),
@@ -211,7 +211,7 @@ fn display_ansi_colors(theme: &Theme) {
         // Bright colors (8-15)
         println!("Bright Colors (8-15):");
         display_color_row(
-            &theme,
+            theme,
             &[
                 (8, "Bright Black"),
                 (9, "Bright Red"),
@@ -307,9 +307,7 @@ fn display_theme_colors(theme: &Theme) {
             for _ in 0..20 {
                 print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
             }
-            theme
-                .normal(&format!(" RGB({}, {}, {})", r, g, b))
-                .println();
+            theme.normal(format!(" RGB({}, {}, {})", r, g, b)).println();
         }
 
         println!();

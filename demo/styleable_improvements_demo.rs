@@ -30,7 +30,10 @@ fn main() {
     println!("\n   With chained attributes:");
     println!("   {}", "Bold error".style_with(Role::Error.bold()));
     println!("   {}", "Italic info".style_with(Role::Info.italic()));
-    println!("   {}", "Underlined warning".style_with(Role::Warning.underline()));
+    println!(
+        "   {}",
+        "Underlined warning".style_with(Role::Warning.underline())
+    );
 
     // Section 2: Individual role methods
     println!("\n2. Individual role methods (like colored's color methods):");
@@ -44,7 +47,9 @@ fn main() {
     println!("   {}", "Subtle text".subtle());
     println!("   {}", "Hint text".hint());
     println!("   {}", "Debug info".debug());
-    println!("   {}", "Trace data".trace());
+    println!("   {}", "Link data".link());
+    println!("   {}", "Quote data".quote());
+    println!("   {}", "Commentary data".commentary());
 
     // Section 3: Heading methods
     println!("\n3. Heading methods:");
@@ -81,9 +86,18 @@ fn main() {
 
     // Section 7: Complex styling with style_with
     println!("\n7. Complex styling with style_with:");
-    println!("   {}", "Bold italic error".style_with(Role::Error.bold().italic()));
-    println!("   {}", "Underlined dim info".style_with(Role::Info.underline().dim()));
-    println!("   {}", "All attributes".style_with(Role::Warning.bold().italic().underline().dim()));
+    println!(
+        "   {}",
+        "Bold italic error".style_with(Role::Error.bold().italic())
+    );
+    println!(
+        "   {}",
+        "Underlined dim info".style_with(Role::Info.underline().dim())
+    );
+    println!(
+        "   {}",
+        "All attributes".style_with(Role::Warning.bold().italic().underline().dim())
+    );
 
     // Section 8: Practical examples
     println!("\n8. Practical examples:");
@@ -99,15 +113,39 @@ fn main() {
     println!("   Old verbose: {}", Role::Error.paint("Error message"));
     println!("   New concise: {}", "Error message".error());
 
-    println!("   Old with formatting: {}", Role::Success.paint(format!("Done: {}", 100)));
-    println!("   New with formatting: {}", format!("Done: {}", 100).success());
+    println!(
+        "   Old with formatting: {}",
+        Role::Success.paint(format!("Done: {}", 100))
+    );
+    println!(
+        "   New with formatting: {}",
+        format!("Done: {}", 100).success()
+    );
 
     println!("\n=== Demo Complete ===");
     println!("\nKey improvements:");
-    cprtln!(Role::Success, "✓ Single style_with() method works with any Styler (Role or Style)");
-    cprtln!(Role::Success, "✓ Individual role methods: .error(), .success(), .info(), etc.");
-    cprtln!(Role::Success, "✓ Non-consuming (&self) - can reuse strings without moving them");
-    cprtln!(Role::Success, "✓ Very concise: 'text'.error() vs Role::Error.paint('text')");
-    cprtln!(Role::Success, "✓ Familiar API similar to colored crate but with thag_styling power");
-    cprtln!(Role::Info, "✓ Works with all string types: &str, String, format!() results");
+    cprtln!(
+        Role::Success,
+        "✓ Single style_with() method works with any Styler (Role or Style)"
+    );
+    cprtln!(
+        Role::Success,
+        "✓ Individual role methods: .error(), .success(), .info(), etc."
+    );
+    cprtln!(
+        Role::Success,
+        "✓ Non-consuming (&self) - can reuse strings without moving them"
+    );
+    cprtln!(
+        Role::Success,
+        "✓ Very concise: 'text'.error() vs Role::Error.paint('text')"
+    );
+    cprtln!(
+        Role::Success,
+        "✓ Familiar API similar to colored crate but with thag_styling power"
+    );
+    cprtln!(
+        Role::Info,
+        "✓ Works with all string types: &str, String, format!() results"
+    );
 }

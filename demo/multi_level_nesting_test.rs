@@ -15,7 +15,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 //# Purpose: Test multi-level nesting reset handling strategies
 //# Categories: styling, nesting, prototypes
 use std::fmt;
-use thag_styling::{ColorInitStrategy, Role, Style, Styler, TermAttributes};
+use thag_styling::{ColorInitStrategy, Role, Style, TermAttributes};
 
 /// Version 1: Insert approach (mimics colored)
 #[derive(Clone, Debug)]
@@ -180,7 +180,7 @@ impl StyleAnsiExt for Style {
         let mut codes = String::new();
 
         if let Some(color_info) = &self.foreground {
-            codes.push_str(color_info.ansi);
+            codes.push_str(&color_info.ansi);
         }
 
         if self.bold {

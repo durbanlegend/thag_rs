@@ -111,7 +111,7 @@ mod tests {
 
         assert!(result.is_ok());
         let content = result.unwrap();
-        eprintln!("content={content}");
+        // eprintln!("content={content}");
 
         // Check that the content is valid JSON
         let scheme: Value = serde_json::from_str(&content).unwrap();

@@ -159,7 +159,7 @@ impl StyleAnsiExt for Style {
         let mut codes = String::new();
 
         if let Some(color_info) = &self.foreground {
-            codes.push_str(color_info.ansi);
+            codes.push_str(&color_info.ansi);
         }
 
         if self.bold {

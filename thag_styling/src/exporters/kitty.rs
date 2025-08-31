@@ -319,7 +319,7 @@ mod tests {
 
         assert!(result.is_ok());
         let content = result.unwrap();
-        eprintln!("content={content}");
+        // eprintln!("content={content}");
 
         // Check that the content contains expected configuration keys
         assert!(content.contains("background"));

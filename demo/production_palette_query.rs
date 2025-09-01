@@ -200,7 +200,14 @@ fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
             let rgb_str = &rgb_data[..end_pos];
             let parts: Vec<&str> = rgb_str.split('/').collect();
 
-            if parts.len() >= 3 {
+            if parts.len() == 3
+                && parts[0].len() == 4
+                && parts[1].len() == 4
+                && parts[2].len() == 4
+                && parts
+                    .iter()
+                    .all(|part| part.chars().all(|c| c.is_ascii_hexdigit()))
+            {
                 if let (Ok(r), Ok(g), Ok(b)) = (
                     parse_hex_component(parts[0]),
                     parse_hex_component(parts[1]),

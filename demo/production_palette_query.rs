@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
-crossterm = "0.28"
-termbg = "0.6"
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+# crossterm = "0.28"
+# termbg = "0.6"
 */
 
 //! Production-Ready Terminal Palette Query
@@ -25,7 +25,7 @@ use std::io::{self, Read, Write};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
-use thag_styling::{ColorValue, Style, TermAttributes};
+use thag_styling::{ColorInitStrategy, ColorValue, Style, TermAttributes};
 
 /// RGB color representation
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
@@ -410,9 +410,9 @@ pub fn compare_with_theme(colors: &[Option<Rgb>]) -> Vec<(u8, String, Option<u16
         ),
         (
             1,
-            "Error",
-            extract_rgb_from_style(&theme.palette.error),
-            "Error messages",
+            "Emphasis",
+            extract_rgb_from_style(&theme.palette.emphasis),
+            "Emphasis",
         ),
         (
             2,
@@ -422,15 +422,27 @@ pub fn compare_with_theme(colors: &[Option<Rgb>]) -> Vec<(u8, String, Option<u16
         ),
         (
             3,
-            "Warning",
-            extract_rgb_from_style(&theme.palette.warning),
-            "Warnings",
+            "Commentary",
+            extract_rgb_from_style(&theme.palette.commentary),
+            "Commentary text",
         ),
         (
             4,
             "Info",
             extract_rgb_from_style(&theme.palette.info),
             "Information",
+        ),
+        (
+            5,
+            "Heading 1",
+            extract_rgb_from_style(&theme.palette.heading1),
+            "Main Headings",
+        ),
+        (
+            6,
+            "Code",
+            extract_rgb_from_style(&theme.palette.code),
+            "Code samples",
         ),
         (
             7,
@@ -444,11 +456,54 @@ pub fn compare_with_theme(colors: &[Option<Rgb>]) -> Vec<(u8, String, Option<u16
             extract_rgb_from_style(&theme.palette.subtle),
             "Subtle text",
         ),
+        (
+            9,
+            "Error",
+            extract_rgb_from_style(&theme.palette.error),
+            "Errors",
+        ),
+        (
+            10,
+            "Debug",
+            extract_rgb_from_style(&theme.palette.debug),
+            "Debug text",
+        ),
+        (
+            11,
+            "Warning",
+            extract_rgb_from_style(&theme.palette.warning),
+            "Warnings",
+        ),
+        (
+            12,
+            "Link",
+            extract_rgb_from_style(&theme.palette.link),
+            "Links",
+        ),
+        (
+            13,
+            "Heading 2",
+            extract_rgb_from_style(&theme.palette.heading2),
+            "Headings 2",
+        ),
+        (
+            14,
+            "Hint",
+            extract_rgb_from_style(&theme.palette.hint),
+            "Hints",
+        ),
+        (
+            15,
+            "Quote",
+            extract_rgb_from_style(&theme.palette.quote),
+            "Quoted text",
+        ),
     ];
 
     for (ansi_index, role_name, theme_rgb_opt, _description) in role_mappings {
         if let (Some(Some(queried_rgb)), Some(theme_rgb)) = (colors.get(ansi_index), theme_rgb_opt)
         {
+            eprintln!("queried_rgb={queried_rgb:?}, theme_rgb={theme_rgb:?}");
             let theme_rgb_struct = Rgb::new(theme_rgb.0, theme_rgb.1, theme_rgb.2);
             let distance = queried_rgb.distance_to(&theme_rgb_struct);
 
@@ -531,6 +586,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("This script uses the proven crossterm method for reliable palette detection.");
     println!();
 
+    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let theme = &term_attrs.theme;
+    println!("Current theme: {}", theme.name);
+
     // Show terminal info
     println!("🖥️  Terminal Environment:");
     if let Ok(term) = std::env::var("TERM") {
@@ -567,7 +626,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("🎯 Theme Compatibility Analysis:");
         println!("================================");
 
-        let term_attrs = TermAttributes::get_or_init();
+        // let term_attrs = TermAttributes::get_or_init();
         println!("Current theme: {}", term_attrs.theme.name);
         println!();
 

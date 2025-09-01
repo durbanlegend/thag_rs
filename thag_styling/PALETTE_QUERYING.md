@@ -65,11 +65,24 @@ Alternative format: `\x1b]4;<index>;#RRGGBB\x07`
 
 ## Implementation Challenges
 
-1. **Input Parsing**: OSC responses come via terminal input, not stdin events
+1. **Input Parsing**: OSC responses come via terminal input, not stdin events. A key fix was to wait for complete `rgb:rrrr/gggg/bbbb` sequences before parsing.
 2. **Timing**: Responses can be delayed or lost
 3. **Format Variations**: Different terminals use slightly different formats
 4. **Raw Mode**: Requires direct terminal access, not event-based I/O
 5. **Platform Differences**: Unix/Windows have different terminal APIs
+
+### The Crossterm Breakthrough:
+
+Only the **crossterm raw mode with threading** approach successfully captured the responses. This suggests that:
+
+- OSC responses require **specific terminal I/O handling** that crossterm provides
+- Responses don't go through normal stdin streams
+- **Raw mode + proper event handling** is essential
+- The **threading approach** may be necessary to avoid blocking issues
+
+So crossterm wasn't just convenient - it appears to be **technically necessary** for OSC response capture. The other approaches, while educational, confirmed that OSC responses exist but can't be captured through conventional I/O methods.
+
+This makes crossterm a valuable dependency for any production OSC querying functionality! 🎯
 
 ## Usage Examples
 
@@ -99,7 +112,7 @@ For production applications, consider these more reliable methods:
 The palette querying functionality integrates with thag_styling's existing capabilities:
 
 - **Theme Comparison**: Compare queried colors with current theme
-- **Palette Sync**: Use results to improve `PaletteSync` accuracy  
+- **Palette Sync**: Use results to improve `PaletteSync` accuracy
 - **Color Mapping**: Better ANSI color role assignments
 - **Terminal Detection**: Enhanced terminal capability detection
 
@@ -129,7 +142,7 @@ OSC sequences work at a lower level than typical terminal I/O:
 
 1. **Not stdin events**: Responses bypass normal input processing
 2. **Raw terminal access**: Need direct `/dev/tty` or equivalent
-3. **Timing sensitive**: Terminal may delay or batch responses  
+3. **Timing sensitive**: Terminal may delay or batch responses
 4. **Format variations**: No strict standard for response format
 5. **Terminal multiplexers**: Screen/tmux can interfere
 
@@ -140,7 +153,7 @@ Potential enhancements for a production implementation:
 - [ ] Windows-specific terminal I/O
 - [ ] Better timeout handling
 - [ ] Response caching
-- [ ] Async query batching  
+- [ ] Async query batching
 - [ ] Terminal-specific format handling
 - [ ] Integration with `crossterm`'s raw mode
 - [ ] Fallback to alternative detection methods

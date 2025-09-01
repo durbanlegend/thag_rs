@@ -32,7 +32,10 @@
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
 - [ ] Force light or dark in theme name in src/bin/thag_image_to_theme.rs?
 - [ ] thag_styling README.
-- [ ] Allow dynamically loading non-built_in themes.
+- [ ] Allow dynamically loading non-built-in themes.
+
+printf "\x1b]4;{};?\x07"
+printf "\x1b]4;01;?\x07"
 
 https://github.com/base16-project/base16
 

@@ -16,8 +16,8 @@ use std::error::Error;
 use thag_proc_macros::file_navigator;
 
 use thag_styling::{
-    cprtln, select_builtin_theme, ColorInitStrategy, Role, Style, Styleable, StyledStringExt,
-    TermAttributes, TermBgLuma, Theme,
+    cprtln, select_builtin_theme, styling::index_to_rgb, ColorInitStrategy, Role, Style, Styleable,
+    StyledStringExt, TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -64,17 +64,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> {
     use inquire::{Select, Text};
 
-    let selection_options = vec![
-        "Select theme file (.toml)",
-        "Use built-in theme by name",
-        "List available built-in themes",
-    ];
+    const FROM_DIR: &str = "Select theme file (.toml)";
+    const BUILT_IN: &str = "Use precompiled built-in theme by name";
+    const PRECOMPILED_LIST: &str = "Select from the list of precompiled built-in themes";
+    let selection_options = vec![FROM_DIR, BUILT_IN, PRECOMPILED_LIST];
 
     let selection_method =
         Select::new("How would you like to select a theme?", selection_options).prompt()?;
 
     match selection_method {
-        "Select theme file (.toml)" => {
+        FROM_DIR => {
             println!("\n📁 Select a theme file:");
             let Ok(theme_file) = select_file(navigator, Some("toml"), false) else {
                 return Err("No theme file selected".into());
@@ -90,7 +89,7 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
             Theme::load_from_file(&theme_file)
                 .map_err(|e| format!("Failed to load theme file: {}", e).into())
         }
-        "Use built-in theme by name" => {
+        BUILT_IN => {
             let theme_name = Text::new("Enter built-in theme name:")
                 .with_help_message("e.g., 'thag-vibrant-dark', 'dracula_official', 'gruvbox_dark'")
                 .prompt()?;
@@ -99,7 +98,7 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
                 format!("Failed to load built-in theme '{}': {}", theme_name, e).into()
             })
         }
-        "List available built-in themes" => {
+        PRECOMPILED_LIST => {
             format!("\n📚 {} Built-in themes:", "Available".info())
                 .normal()
                 .println();
@@ -255,7 +254,10 @@ fn display_color_row(theme: &Theme, colors: &[(u8, &str)]) {
         // Print sample text in each color
         print!("   ");
         for (index, _) in colors {
-            print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, "Sample");
+            // print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, "Sample");
+            let (r, g, b) = index_to_rgb(*index);
+            let rgb = format!("{r:>3},{g:>3},{b:>3}");
+            print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, rgb);
         }
         println!();
     });

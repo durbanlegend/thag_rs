@@ -1,8 +1,6 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
-# crossterm = "0.28"
-# termbg = "0.6"
 */
 
 //! Production-Ready Terminal Palette Query

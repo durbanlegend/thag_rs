@@ -36,6 +36,46 @@
 
 printf "\x1b]4;{};?\x07"
 printf "\x1b]4;01;?\x07"
+Mintty:
+^[]7704;index;?^G
+printf "\x1b]7704;01;?\x07"
+
+# Query mintty ANSI slot 0–15 and print fg bg hex
+mintty_color() {
+  local idx=$1 resp colors out=()
+
+  stty raw -echo < /dev/tty
+  printf '\033]7704;%d;?\a' "$idx" > /dev/tty
+  IFS= read -r -d $'\a' -t 1 resp < /dev/tty || true
+  stty sane < /dev/tty
+
+  # resp looks like: ^[]7704;rgb:5c5c/3f3f/1515;rgb:xxxx/yyyy/zzzz
+  colors=$(echo "$resp" | sed -E 's/.*7704;//; s/^[0-9]+;//; s/\x1b.*//')
+
+  for c in ${colors//;/ }; do
+    if [[ $c =~ rgb:([0-9a-fA-F]+)/([0-9a-fA-F]+)/([0-9a-fA-F]+) ]]; then
+      # take the first two hex digits of each component
+      out+=("#${BASH_REMATCH[1]:0:2}${BASH_REMATCH[2]:0:2}${BASH_REMATCH[3]:0:2}")
+    fi
+  done
+
+  if ((${#out[@]})); then
+    echo "${out[@]}"
+  else
+    echo "No match: $resp"
+    return 1
+  fi
+}
+
+mintty_color 2
+# → #5c3f15   (or two colors if fg/bg differ)
+
+And to see the whole 0–15 palette:
+
+for i in {0..15}; do
+  printf '%2d: %s\n' "$i" "$(mintty_color $i)"
+done
+
 
 https://github.com/base16-project/base16
 

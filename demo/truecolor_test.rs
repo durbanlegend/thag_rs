@@ -66,6 +66,61 @@ fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
     }
 }
 
+/// Detect if we're running in mintty
+fn is_mintty() -> bool {
+    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
+}
+
+/// Parse mintty OSC 7704 response for palette colors
+fn parse_mintty_response(response: &str) -> Option<Vec<Rgb>> {
+    // Response format: ESC]7704;rgb:RRRR/GGGG/BBBB;rgb:XXXX/YYYY/ZZZZ BEL
+    // First RGB is foreground, second is background
+
+    if let Some(start_pos) = response.find("\x1b]7704;") {
+        let response_part = &response[start_pos + 8..]; // Skip "ESC]7704;"
+
+        // Skip the index number and semicolon
+        if let Some(semicolon_pos) = response_part.find(';') {
+            let color_part = &response_part[semicolon_pos + 1..];
+
+            let mut colors = Vec::new();
+
+            // Split by semicolon to get individual rgb: sections
+            for rgb_section in color_part.split(';') {
+                if rgb_section.starts_with("rgb:") {
+                    let rgb_data = &rgb_section[4..];
+
+                    // Find end of this RGB section
+                    let end_pos = rgb_data
+                        .find('\x07')
+                        .or_else(|| rgb_data.find('\x1b'))
+                        .unwrap_or(rgb_data.len());
+
+                    let rgb_str = &rgb_data[..end_pos];
+                    let parts: Vec<&str> = rgb_str.split('/').collect();
+
+                    if parts.len() == 3 {
+                        // Take first 2 hex digits of each component (mintty uses 4-digit hex)
+                        if let (Ok(r), Ok(g), Ok(b)) = (
+                            u8::from_str_radix(&parts[0][..2.min(parts[0].len())], 16),
+                            u8::from_str_radix(&parts[1][..2.min(parts[1].len())], 16),
+                            u8::from_str_radix(&parts[2][..2.min(parts[2].len())], 16),
+                        ) {
+                            colors.push(Rgb::new(r, g, b));
+                        }
+                    }
+                }
+            }
+
+            if !colors.is_empty() {
+                return Some(colors);
+            }
+        }
+    }
+
+    None
+}
+
 /// Parse OSC 10 (foreground color) response
 fn parse_osc10_response(response: &str) -> Option<Rgb> {
     // Look for OSC 10 response: ESC]10;rgb:RRRR/GGGG/BBBB BEL
@@ -124,6 +179,56 @@ fn parse_osc10_response(response: &str) -> Option<Rgb> {
     None
 }
 
+// /// Parse mintty OSC 7704 response for palette colors
+// fn parse_mintty_response(response: &str) -> Option<Vec<Rgb>> {
+//     // Response format: ESC]7704;rgb:RRRR/GGGG/BBBB;rgb:XXXX/YYYY/ZZZZ BEL
+//     // First RGB is foreground, second is background
+
+//     if let Some(start_pos) = response.find("\x1b]7704;") {
+//         let response_part = &response[start_pos + 8..]; // Skip "ESC]7704;"
+
+//         // Skip the index number and semicolon
+//         if let Some(semicolon_pos) = response_part.find(';') {
+//             let color_part = &response_part[semicolon_pos + 1..];
+
+//             let mut colors = Vec::new();
+
+//             // Split by semicolon to get individual rgb: sections
+//             for rgb_section in color_part.split(';') {
+//                 if rgb_section.starts_with("rgb:") {
+//                     let rgb_data = &rgb_section[4..];
+
+//                     // Find end of this RGB section
+//                     let end_pos = rgb_data
+//                         .find('\x07')
+//                         .or_else(|| rgb_data.find('\x1b'))
+//                         .unwrap_or(rgb_data.len());
+
+//                     let rgb_str = &rgb_data[..end_pos];
+//                     let parts: Vec<&str> = rgb_str.split('/').collect();
+
+//                     if parts.len() == 3 {
+//                         // Take first 2 hex digits of each component (mintty uses 4-digit hex)
+//                         if let (Ok(r), Ok(g), Ok(b)) = (
+//                             u8::from_str_radix(&parts[0][..2.min(parts[0].len())], 16),
+//                             u8::from_str_radix(&parts[1][..2.min(parts[1].len())], 16),
+//                             u8::from_str_radix(&parts[2][..2.min(parts[2].len())], 16),
+//                         ) {
+//                             colors.push(Rgb::new(r, g, b));
+//                         }
+//                     }
+//                 }
+//             }
+
+//             if !colors.is_empty() {
+//                 return Some(colors);
+//             }
+//         }
+//     }
+
+//     None
+// }
+
 /// Query current foreground color using OSC 10
 fn query_foreground_color(timeout: Duration) -> Option<Rgb> {
     let (tx, rx) = mpsc::channel();
@@ -135,8 +240,12 @@ fn query_foreground_color(timeout: Duration) -> Option<Rgb> {
             let mut stdout = io::stdout();
             let mut stdin = io::stdin();
 
-            // Send OSC 10 query: ESC]10;?BEL
-            let query = "\x1b]10;?\x07";
+            // Send query (use mintty OSC 7704 if in mintty, otherwise standard OSC 10)
+            let query = if is_mintty() {
+                "\x1b]7704;7;?\x07" // Query palette color 7 (white/foreground) in mintty
+            } else {
+                "\x1b]10;?\x07"
+            };
             stdout.write_all(query.as_bytes()).ok()?;
             stdout.flush().ok()?;
 
@@ -152,9 +261,82 @@ fn query_foreground_color(timeout: Duration) -> Option<Rgb> {
                         if buffer.len() >= 20 {
                             let response = String::from_utf8_lossy(&buffer);
                             if response.contains('\x07') || response.contains("\x1b\\") {
-                                if let Some(rgb) = parse_osc10_response(&response) {
-                                    return Some(rgb);
+                                if is_mintty() {
+                                    if let Some(colors) = parse_mintty_response(&response) {
+                                        return colors.first().copied();
+                                    }
+                                } else {
+                                    if let Some(rgb) = parse_osc10_response(&response) {
+                                        return Some(rgb);
+                                    }
                                 }
+                            }
+                        }
+
+                        /// Query mintty palette color using OSC 7704
+                        fn query_mintty_palette_color(index: u8, timeout: Duration) -> Option<Rgb> {
+                            let (tx, rx) = mpsc::channel();
+
+                            let handle = thread::spawn(move || {
+                                let result = (|| -> Option<Rgb> {
+                                    enable_raw_mode().ok()?;
+
+                                    let mut stdout = io::stdout();
+                                    let mut stdin = io::stdin();
+
+                                    // Send mintty OSC 7704 query
+                                    let query = format!("\x1b]7704;{};?\x07", index);
+                                    stdout.write_all(query.as_bytes()).ok()?;
+                                    stdout.flush().ok()?;
+
+                                    let mut buffer = Vec::new();
+                                    let mut temp_buffer = [0u8; 1];
+                                    let start = Instant::now();
+
+                                    while start.elapsed() < timeout {
+                                        match stdin.read(&mut temp_buffer) {
+                                            Ok(1..) => {
+                                                buffer.push(temp_buffer[0]);
+
+                                                if buffer.len() >= 30 {
+                                                    let response = String::from_utf8_lossy(&buffer);
+                                                    if response.contains('\x07')
+                                                        || response.contains("\x1b\\")
+                                                    {
+                                                        if let Some(colors) =
+                                                            parse_mintty_response(&response)
+                                                        {
+                                                            // Return the foreground color (first in response)
+                                                            return colors.first().copied();
+                                                        }
+                                                    }
+                                                }
+
+                                                if buffer.len() > 512 {
+                                                    break;
+                                                }
+                                            }
+                                            Ok(0) => thread::sleep(Duration::from_millis(1)),
+                                            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                                                thread::sleep(Duration::from_millis(1))
+                                            }
+                                            Err(_) => break,
+                                        }
+                                    }
+
+                                    None
+                                })();
+
+                                let _ = disable_raw_mode();
+                                let _ = tx.send(result);
+                            });
+
+                            match rx.recv_timeout(timeout + Duration::from_millis(100)) {
+                                Ok(result) => {
+                                    let _ = handle.join();
+                                    result
+                                }
+                                Err(_) => None,
                             }
                         }
 
@@ -216,7 +398,10 @@ fn test_truecolor_support() -> (bool, String) {
         Some(color) => println!("   Original: RGB({}, {}, {})", color.r, color.g, color.b),
         None => {
             println!("   Could not query original color");
-            return (false, "Cannot query colors - terminal may not support OSC sequences".to_string());
+            return (
+                false,
+                "Cannot query colors - terminal may not support OSC sequences".to_string(),
+            );
         }
     }
 
@@ -238,7 +423,10 @@ fn test_truecolor_support() -> (bool, String) {
 
     let result = match queried_color {
         Some(color) => {
-            println!("   Queried back: RGB({}, {}, {})", color.r, color.g, color.b);
+            println!(
+                "   Queried back: RGB({}, {}, {})",
+                color.r, color.g, color.b
+            );
 
             let distance = test_color.distance_to(&color);
             println!("   Color distance: {}", distance);
@@ -253,9 +441,18 @@ fn test_truecolor_support() -> (bool, String) {
             if distance <= 10 {
                 (true, "TrueColor supported - exact match".to_string())
             } else if distance <= 50 {
-                (true, "TrueColor supported - close match (possible rounding)".to_string())
+                (
+                    true,
+                    "TrueColor supported - close match (possible rounding)".to_string(),
+                )
             } else {
-                (false, format!("TrueColor not supported - significant difference (distance: {})", distance))
+                (
+                    false,
+                    format!(
+                        "TrueColor not supported - significant difference (distance: {})",
+                        distance
+                    ),
+                )
             }
         }
         None => {
@@ -286,6 +483,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
         println!("TERM_PROGRAM: {}", term_program);
+    }
+
+    // Show detection method
+    if is_mintty() {
+        println!("Using mintty OSC 7704 for color queries");
+    } else {
+        println!("Using standard OSC 10 for color queries");
     }
     println!();
 

@@ -83,6 +83,54 @@ fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
     }
 }
 
+/// Parse mintty OSC 7704 response for palette colors
+fn parse_mintty_response(response: &str) -> Option<Rgb> {
+    // Response format: ESC]7704;index;rgb:RRRR/GGGG/BBBB;rgb:XXXX/YYYY/ZZZZ BEL
+    // First RGB is foreground, second is background - we want foreground
+
+    if let Some(start_pos) = response.find("\x1b]7704;") {
+        let response_part = &response[start_pos + 8..]; // Skip "ESC]7704;"
+
+        // Skip the index number and semicolon
+        if let Some(semicolon_pos) = response_part.find(';') {
+            let color_part = &response_part[semicolon_pos + 1..];
+
+            // Find first rgb: section
+            if let Some(rgb_start) = color_part.find("rgb:") {
+                let rgb_data = &color_part[rgb_start + 4..];
+
+                // Find end of first RGB section (before second semicolon)
+                let end_pos = rgb_data
+                    .find(';')
+                    .or_else(|| rgb_data.find('\x07'))
+                    .or_else(|| rgb_data.find('\x1b'))
+                    .unwrap_or(rgb_data.len());
+
+                let rgb_str = &rgb_data[..end_pos];
+                let parts: Vec<&str> = rgb_str.split('/').collect();
+
+                if parts.len() == 3 {
+                    // Take first 2 hex digits of each component (mintty uses 4-digit hex)
+                    if let (Ok(r), Ok(g), Ok(b)) = (
+                        u8::from_str_radix(&parts[0][..2.min(parts[0].len())], 16),
+                        u8::from_str_radix(&parts[1][..2.min(parts[1].len())], 16),
+                        u8::from_str_radix(&parts[2][..2.min(parts[2].len())], 16),
+                    ) {
+                        return Some(Rgb::new(r, g, b));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Detect if we're running in mintty
+fn is_mintty() -> bool {
+    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
+}
+
 /// Parse OSC 10 response
 fn parse_osc10_response(response: &str) -> Option<Rgb> {
     if let Some(start_pos) = response.find("\x1b]10;") {
@@ -140,7 +188,75 @@ fn parse_osc10_response(response: &str) -> Option<Rgb> {
     None
 }
 
-/// Set and query a color with timing
+/// Query mintty palette color using OSC 7704
+fn query_mintty_palette_color(index: u8, timeout: Duration) -> Option<Rgb> {
+    let (tx, rx) = mpsc::channel();
+
+    let handle = thread::spawn(move || {
+        let result = (|| -> Option<Rgb> {
+            enable_raw_mode().ok()?;
+
+            let mut stdout = io::stdout();
+            let mut stdin = io::stdin();
+
+            // Send mintty OSC 7704 query
+            let query = format!("\x1b]7704;{};?\x07", index);
+            stdout.write_all(query.as_bytes()).ok()?;
+            stdout.flush().ok()?;
+
+            let mut buffer = Vec::new();
+            let mut temp_buffer = [0u8; 1];
+            let start = Instant::now();
+
+            while start.elapsed() < timeout {
+                match stdin.read(&mut temp_buffer) {
+                    Ok(1..) => {
+                        buffer.push(temp_buffer[0]);
+
+                        if buffer.len() >= 20 {
+                            let response = String::from_utf8_lossy(&buffer);
+                            if response.contains('\x07') || response.contains("\x1b\\") {
+                                if is_mintty() {
+                                    if let Some(rgb) = parse_mintty_response(&response) {
+                                        return Some(rgb);
+                                    }
+                                } else {
+                                    if let Some(rgb) = parse_osc10_response(&response) {
+                                        return Some(rgb);
+                                    }
+                                }
+                            }
+                        }
+
+                        if buffer.len() > 512 {
+                            break;
+                        }
+                    }
+                    Ok(0) => thread::sleep(Duration::from_millis(1)),
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(1))
+                    }
+                    Err(_) => break,
+                }
+            }
+
+            None
+        })();
+
+        let _ = disable_raw_mode();
+        let _ = tx.send(result);
+    });
+
+    match rx.recv_timeout(timeout + Duration::from_millis(100)) {
+        Ok(result) => {
+            let _ = handle.join();
+            result
+        }
+        Err(_) => None,
+    }
+}
+
+/// Set and query a color with timing (supports mintty via OSC 7704)
 fn test_color(color: Rgb, timeout: Duration) -> Option<Rgb> {
     let (tx, rx) = mpsc::channel();
 
@@ -162,8 +278,14 @@ fn test_color(color: Rgb, timeout: Duration) -> Option<Rgb> {
             // Small delay
             thread::sleep(Duration::from_millis(20));
 
-            // Query it back
-            let query = "\x1b]10;?\x07";
+            // Query it back (use mintty OSC 7704 if in mintty, otherwise standard OSC 10)
+            let query = if is_mintty() {
+                // For mintty, we need to query the palette color we just set
+                // This is a bit of a hack since we're setting foreground but querying palette
+                "\x1b]7704;7;?\x07" // Query palette color 7 (white/foreground)
+            } else {
+                "\x1b]10;?\x07"
+            };
             stdout.write_all(query.as_bytes()).ok()?;
             stdout.flush().ok()?;
 
@@ -179,8 +301,14 @@ fn test_color(color: Rgb, timeout: Duration) -> Option<Rgb> {
                         if buffer.len() >= 20 {
                             let response = String::from_utf8_lossy(&buffer);
                             if response.contains('\x07') || response.contains("\x1b\\") {
-                                if let Some(rgb) = parse_osc10_response(&response) {
-                                    return Some(rgb);
+                                if is_mintty() {
+                                    if let Some(rgb) = parse_mintty_response(&response) {
+                                        return Some(rgb);
+                                    }
+                                } else {
+                                    if let Some(rgb) = parse_osc10_response(&response) {
+                                        return Some(rgb);
+                                    }
                                 }
                             }
                         }
@@ -279,13 +407,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Ok(term) = std::env::var("TERM") {
         println!("TERM: {}", term);
     }
+
+    // Show detection method
+    if is_mintty() {
+        println!("Using mintty OSC 7704 for color queries");
+    } else {
+        println!("Using standard OSC 10 for color queries");
+    }
     println!();
 
     let test_colors = generate_test_colors();
     let timeout = Duration::from_millis(150);
     let mut results = Vec::new();
 
-    println!("Testing {} colors...", test_colors.len());
+    println!("Testing {} pre-selected colors...", test_colors.len());
     println!();
 
     for (i, &color) in test_colors.iter().enumerate() {
@@ -357,19 +492,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let quantization_ratio = quantized_count as f64 / successful_tests.len() as f64;
 
     println!();
-    println!("📊 Detailed Results:");
+    println!("📊 Detailed Results with Visual Comparison:");
+    println!("   256-Color Approx    Actual Result      Status");
+    println!("   ───────────────    ─────────────      ──────");
+
     for (i, test) in results.iter().enumerate() {
         if let Some(output) = test.output {
             let status = if test.is_quantized {
                 "QUANTIZED"
             } else {
-                "TRUE"
+                "TRUE     "
             };
+
+            // Display color blocks: 256-color approximation on left, actual result on right
+            let expected_hex = test.expected_quantized.to_hex();
+            let actual_hex = output.to_hex();
+
+            // Create RGB values for ANSI escape codes
+            let exp = test.expected_quantized;
+            let act = output;
+
             println!(
-                "  {:2}: {} -> {} [{}]",
+                "  {:2}: \x1b[48;2;{};{};{}m     \x1b[0m {}  \x1b[48;2;{};{};{}m     \x1b[0m {}  [{}]",
                 i + 1,
-                test.input.to_hex(),
-                output.to_hex(),
+                exp.r, exp.g, exp.b, expected_hex,
+                act.r, act.g, act.b, actual_hex,
                 status
             );
         }

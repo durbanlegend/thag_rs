@@ -7,6 +7,15 @@ dirs = "5.0"
 serde_json = "1.0"
 */
 
+/// Windows Terminal theme installer with file navigator
+///
+/// This Windows-only tool installs thag themes into Windows Terminal by
+/// adding theme schemes to the settings.json configuration file. Supports
+/// selecting individual themes or entire directories of themes.
+//# Purpose: Install thag themes for Windows Terminal
+//# Categories: color, styling, terminal, theming, tools, windows
+#[cfg(target_os = "windows")]
+use colored::Colorize;
 #[cfg(target_os = "windows")]
 use std::{
     error::Error,
@@ -16,16 +25,7 @@ use std::{
 #[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
 #[cfg(target_os = "windows")]
-use thag_rs::Theme;
-/// Windows Terminal theme installer with file navigator
-///
-/// This Windows-only tool installs thag themes into Windows Terminal by
-/// adding theme schemes to the settings.json configuration file. Supports
-/// selecting individual themes or entire directories of themes.
-//# Purpose: Install thag themes for Windows Terminal
-//# Categories: color, styling, terminal, theming, tools, windows
-#[cfg(target_os = "windows")]
-use thag_styling::Styler;
+use thag_styling::{Styleable, Theme};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
@@ -40,9 +40,9 @@ fn main() {
 fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "🖥️  {} - Windows Terminal Theme Installer",
-        "thag_winterm_add_theme".style().info()
+        "thag_winterm_add_theme".info()
     );
-    println!("{}", "=".repeat(70).dimmed());
+    println!("{}", "=".repeat(70));
     println!();
 
     // Initialize file navigator
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("📁 Windows Terminal configuration:");
     println!(
         "   Settings file: {}",
-        settings_path.display().to_string().style().info()
+        settings_path.display().to_string().hint()
     );
 
     // Check if settings file exists
@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    println!("   Status: {}", "Found".style().success());
+    println!("   Status: {}", "Found".debug());
     println!();
 
     // Select themes to install
@@ -92,12 +92,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         match add_theme_to_settings(theme, &mut settings) {
             Ok(scheme_name) => {
                 added_schemes.push((theme.name.clone(), scheme_name));
-                println!("   ✅ {}", theme.name.bright_green());
+                println!("   ✅ {}", theme.name.debug());
             }
             Err(e) => {
                 let e_str = &(e).to_string();
                 installation_errors.push((theme.name.clone(), e));
-                println!("   ❌ {}: {}", theme.name.bright_red(), e_str.red());
+                println!("   ❌ {}: {}", theme.name.error(), e_str.emphasis());
             }
         }
     }
@@ -133,7 +133,7 @@ fn get_windows_terminal_settings_path() -> Result<PathBuf, Box<dyn Error>> {
 fn select_themes_for_installation(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::Select;
+    use inquire::{Select};
 
     let selection_options = vec![
         "Select theme files (.toml)",
@@ -174,8 +174,8 @@ fn select_individual_toml_themes(
                     Ok(theme) => {
                         println!(
                             "   📋 Loaded: {} - {}",
-                            theme.name.bright_cyan(),
-                            theme.description.dimmed()
+                            theme.name.hint(),
+                            theme.description
                         );
                         selected_themes.push(theme);
                     }
@@ -229,7 +229,7 @@ fn select_themes_from_directory(
                         println!(
                             "⚠️  Skipping {}: {}",
                             theme_file.file_name().unwrap_or_default().to_string_lossy(),
-                            e.to_string().yellow()
+                            e.to_string().commentary()
                         );
                     }
                 }
@@ -243,10 +243,9 @@ fn select_themes_from_directory(
                     .collect();
                 let len = theme_names.len();
 
-                let selected_names =
-                    MultiSelect::new("Select themes to install:", theme_names.clone())
-                        .with_default(&(0..len).collect::<Vec<_>>())
-                        .prompt()?;
+                let selected_names = MultiSelect::new("Select themes to install:", theme_names.clone())
+                    .with_default(&(0..len).collect::<Vec<_>>())
+                    .prompt()?;
 
                 let selected_themes = themes
                     .into_iter()
@@ -268,7 +267,7 @@ fn select_themes_from_directory(
 fn select_exported_json_themes(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::MultiSelect;
+    use inquire::{ MultiSelect};
 
     println!("\n📁 Select directory containing exported Windows Terminal themes (.json):");
     match select_directory(navigator, true) {
@@ -292,10 +291,9 @@ fn select_exported_json_themes(
                 .collect();
             let len = file_names.len();
 
-            let selected_names =
-                MultiSelect::new("Select theme files to install:", file_names.clone())
-                    .with_default(&(0..len).collect::<Vec<_>>())
-                    .prompt()?;
+            let selected_names = MultiSelect::new("Select theme files to install:", file_names.clone())
+                .with_default(&(0..len).collect::<Vec<_>>())
+                .prompt()?;
 
             let selected_files: Vec<_> = json_files
                 .into_iter()
@@ -309,14 +307,14 @@ fn select_exported_json_themes(
             for json_file in selected_files {
                 match load_theme_from_json(&json_file) {
                     Ok(theme) => {
-                        println!("   📋 Loaded JSON theme: {}", theme.name.bright_cyan());
+                        println!("   📋 Loaded JSON theme: {}", theme.name.hint());
                         themes.push(theme);
                     }
                     Err(e) => {
                         println!(
                             "   ⚠️  Failed to load {}: {}",
                             json_file.file_name().unwrap_or_default().to_string_lossy(),
-                            e.to_string().yellow()
+                            e.to_string().commentary()
                         );
                     }
                 }
@@ -340,8 +338,8 @@ fn select_builtin_theme_by_name() -> Result<Vec<Theme>, Box<dyn Error>> {
         Ok(theme) => {
             println!(
                 "📋 Found: {} - {}",
-                theme.name.bright_cyan(),
-                theme.description.dimmed()
+                theme.name.hint(),
+                theme.description
             );
             Ok(vec![theme])
         }
@@ -356,7 +354,7 @@ fn select_builtin_theme_by_name() -> Result<Vec<Theme>, Box<dyn Error>> {
 fn select_multiple_builtin_themes() -> Result<Vec<Theme>, Box<dyn Error>> {
     use inquire::MultiSelect;
 
-    println!("\n📚 {} Built-in themes:", "Available".bright_blue());
+    println!("\n📚 {} Built-in themes:", "Available".info());
 
     let common_themes = vec![
         "thag-vibrant-dark",
@@ -494,7 +492,7 @@ fn backup_settings_file(settings_path: &Path) -> Result<(), Box<dyn Error>> {
     fs::copy(settings_path, &backup_path)?;
     println!(
         "💾 Created backup: {}",
-        backup_path.display().to_string().dimmed()
+        backup_path.display().to_string()
     );
     Ok(())
 }
@@ -552,33 +550,40 @@ fn generate_windows_terminal_scheme(theme: &Theme) -> Result<serde_json::Value, 
     let bg_hex = format!("#{:02X}{:02X}{:02X}", bg_color.0, bg_color.1, bg_color.2);
 
     // Extract colors with fallbacks
+    let emphasis_color = extract_rgb(&theme.palette.emphasis).unwrap_or((192, 0, 0));
+    let success_color = extract_rgb(&theme.palette.success).unwrap_or((0, 192, 0));
+    let commentary_color = extract_rgb(&theme.palette.commentary).unwrap_or((192, 192, 0));
+    let info_color = extract_rgb(&theme.palette.info).unwrap_or((0, 0, 192));
+    let heading1_color = extract_rgb(&theme.palette.heading1).unwrap_or((192, 0, 192));
+    let code_color = extract_rgb(&theme.palette.code).unwrap_or((0, 192, 192));
     let normal_color = extract_rgb(&theme.palette.normal).unwrap_or((192, 192, 192));
-    let error_color = extract_rgb(&theme.palette.error).unwrap_or((255, 0, 0));
-    let success_color = extract_rgb(&theme.palette.success).unwrap_or((0, 255, 0));
-    let warning_color = extract_rgb(&theme.palette.warning).unwrap_or((255, 255, 0));
-    let info_color = extract_rgb(&theme.palette.info).unwrap_or((0, 0, 255));
-    let heading1_color = extract_rgb(&theme.palette.heading1).unwrap_or((255, 0, 255));
-    let heading3_color = extract_rgb(&theme.palette.heading3).unwrap_or((0, 255, 255));
-    let subtle_color = extract_rgb(&theme.palette.subtle).unwrap_or((128, 128, 128));
+    let subtle_color = extract_rgb(&theme.palette.subtle).unwrap_or((64, 64, 64));
+    let error_color = extract_rgb(&theme.palette.error).unwrap_or((255, 64, 64));
+    let debug_color = extract_rgb(&theme.palette.debug).unwrap_or((64, 255, 64));
+    let warning_color = extract_rgb(&theme.palette.warning).unwrap_or((255, 255, 64));
+    let link_color = extract_rgb(&theme.palette.link).unwrap_or((96, 96, 255));
+    let heading2_color = extract_rgb(&theme.palette.heading2).unwrap_or((255, 64, 255));
+    let hint_color = extract_rgb(&theme.palette.hint).unwrap_or((64, 255, 255));
+    let quote_color = extract_rgb(&theme.palette.quote).unwrap_or((255, 255, 255));
 
     let scheme = json!({
         "name": theme.name,
         "black": format!("#{:02X}{:02X}{:02X}", bg_color.0, bg_color.1, bg_color.2),
-        "red": format!("#{:02X}{:02X}{:02X}", error_color.0, error_color.1, error_color.2),
+        "red": format!("#{:02X}{:02X}{:02X}", emphasis_color.0, emphasis_color.1, emphasis_color.2),
         "green": format!("#{:02X}{:02X}{:02X}", success_color.0, success_color.1, success_color.2),
-        "yellow": format!("#{:02X}{:02X}{:02X}", warning_color.0, warning_color.1, warning_color.2),
+        "yellow": format!("#{:02X}{:02X}{:02X}", commentary_color.0, commentary_color.1, commentary_color.2),
         "blue": format!("#{:02X}{:02X}{:02X}", info_color.0, info_color.1, info_color.2),
         "purple": format!("#{:02X}{:02X}{:02X}", heading1_color.0, heading1_color.1, heading1_color.2),
-        "cyan": format!("#{:02X}{:02X}{:02X}", heading3_color.0, heading3_color.1, heading3_color.2),
+        "cyan": format!("#{:02X}{:02X}{:02X}", code_color.0, code_color.1, code_color.2),
         "white": format!("#{:02X}{:02X}{:02X}", normal_color.0, normal_color.1, normal_color.2),
         "brightBlack": format!("#{:02X}{:02X}{:02X}", subtle_color.0, subtle_color.1, subtle_color.2),
-        "brightRed": format!("#{:02X}{:02X}{:02X}", brighten_color(error_color).0, brighten_color(error_color).1, brighten_color(error_color).2),
-        "brightGreen": format!("#{:02X}{:02X}{:02X}", brighten_color(success_color).0, brighten_color(success_color).1, brighten_color(success_color).2),
-        "brightYellow": format!("#{:02X}{:02X}{:02X}", brighten_color(warning_color).0, brighten_color(warning_color).1, brighten_color(warning_color).2),
-        "brightBlue": format!("#{:02X}{:02X}{:02X}", brighten_color(info_color).0, brighten_color(info_color).1, brighten_color(info_color).2),
-        "brightPurple": format!("#{:02X}{:02X}{:02X}", brighten_color(heading1_color).0, brighten_color(heading1_color).1, brighten_color(heading1_color).2),
-        "brightCyan": format!("#{:02X}{:02X}{:02X}", brighten_color(heading3_color).0, brighten_color(heading3_color).1, brighten_color(heading3_color).2),
-        "brightWhite": format!("#{:02X}{:02X}{:02X}", brighten_color(normal_color).0, brighten_color(normal_color).1, brighten_color(normal_color).2),
+        "brightRed": format!("#{:02X}{:02X}{:02X}", error_color.0, error_color.1, error_color.2),
+        "brightGreen": format!("#{:02X}{:02X}{:02X}", debug_color.0, debug_color.1, debug_color.2),
+        "brightYellow": format!("#{:02X}{:02X}{:02X}", warning_color.0, warning_color.1, warning_color.2),
+        "brightBlue": format!("#{:02X}{:02X}{:02X}", link_color.0, link_color.1, link_color.2),
+        "brightPurple": format!("#{:02X}{:02X}{:02X}", heading2_color.0, heading2_color.1, heading2_color.2),
+        "brightCyan": format!("#{:02X}{:02X}{:02X}", hint_color.0, hint_color.1, hint_color.2),
+        "brightWhite": format!("#{:02X}{:02X}{:02X}", quote_color.0, quote_color.1, quote_color.2),
         "background": bg_hex,
         "foreground": format!("#{:02X}{:02X}{:02X}", normal_color.0, normal_color.1, normal_color.2)
     });
@@ -601,31 +606,31 @@ fn show_installation_summary(
     added_schemes: &[(String, String)],
     errors: &[(String, Box<dyn Error>)],
 ) {
-    println!("\n📊 {} Summary:", "Installation".bright_blue());
+    println!("\n📊 {} Summary:", "Installation".info());
     println!(
         "   Successfully added: {}",
-        added_schemes.len().to_string().bright_green()
+        added_schemes.len().to_string().debug()
     );
     println!(
         "   Failed installations: {}",
-        errors.len().to_string().bright_red()
+        errors.len().to_string().error()
     );
 
     if !added_schemes.is_empty() {
-        println!("\n✅ {} Color Schemes:", "Added".bright_green());
+        println!("\n✅ {} Color Schemes:", "Added".debug());
         for (theme_name, scheme_name) in added_schemes {
             println!(
                 "   • {} ({})",
-                theme_name.bright_cyan(),
-                scheme_name.dimmed()
+                theme_name.hint(),
+                scheme_name
             );
         }
     }
 
     if !errors.is_empty() {
-        println!("\n❌ {} Failures:", "Installation".bright_red());
+        println!("\n❌ {} Failures:", "Installation".error());
         for (theme_name, error) in errors {
-            println!("   • {}: {}", theme_name, error.to_string().red());
+            println!("   • {}: {}", theme_name, error.to_string().emphasis());
         }
     }
 }
@@ -636,22 +641,22 @@ fn show_usage_instructions(added_schemes: &[(String, String)]) {
         return;
     }
 
-    println!("\n💡 {} to Use:", "How".bright_blue());
+    println!("\n💡 {} to Use:", "How".info());
     println!("1. Open Windows Terminal");
     println!("2. Open Settings (Ctrl+,)");
     println!("3. Go to Profiles → Defaults (or specific profile)");
     println!("4. Under Appearance, select Color scheme:");
 
     for (_, scheme_name) in added_schemes {
-        println!("   • {}", scheme_name.bright_cyan());
+        println!("   • {}", scheme_name.hint());
     }
 
-    println!("\n📖 {} Steps:", "Additional".bright_blue());
+    println!("\n📖 {} Steps:", "Additional".info());
     println!("• Restart Windows Terminal to ensure changes take effect");
     println!("• You can also set color schemes per profile for different use cases");
     println!(
         "• Use {} to generate more theme formats",
-        "thag_gen_terminal_themes".bright_cyan()
+        "thag_gen_terminal_themes".hint()
     );
 }
 
@@ -664,16 +669,6 @@ fn extract_rgb(style: &thag_styling::Style) -> Option<(u8, u8, u8)> {
             thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
             _ => None,
         })
-}
-
-#[cfg(target_os = "windows")]
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    let factor = 1.3;
-    (
-        ((r as f32 * factor).min(255.0)) as u8,
-        ((g as f32 * factor).min(255.0)) as u8,
-        ((b as f32 * factor).min(255.0)) as u8,
-    )
 }
 
 #[cfg(test)]
@@ -709,16 +704,6 @@ mod tests {
             let style = Style::fg(ColorInfo::rgb(255, 128, 64));
             let rgb = extract_rgb(&style);
             assert_eq!(rgb, Some((255, 128, 64)));
-        }
-
-        #[test]
-        fn test_brighten_color() {
-            let original = (100, 150, 200);
-            let brightened = brighten_color(original);
-
-            assert!(brightened.0 >= original.0);
-            assert!(brightened.1 >= original.1);
-            assert!(brightened.2 >= original.2);
         }
 
         #[test]

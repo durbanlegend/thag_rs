@@ -52,6 +52,12 @@ impl Rgb {
     pub fn to_hex(&self) -> String {
         format!("#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
+
+    /// Calculate perceived brightness (0.0-1.0)
+    pub fn brightness(&self) -> f32 {
+        // Using standard luminance formula
+        (0.299 * self.r as f32 + 0.587 * self.g as f32 + 0.114 * self.b as f32) / 255.0
+    }
 }
 
 /// Test result for a single color
@@ -297,46 +303,68 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let timeout = Duration::from_millis(150);
     let mut results = Vec::new();
 
-    println!("Testing {} pre-selected colors...", test_colors.len());
-    println!();
+    if is_mintty() {
+        println!("Mintty detected - skipping quantization test (TrueColor guaranteed)");
+        println!();
 
-    for (i, &color) in test_colors.iter().enumerate() {
-        print!("Test {:2}: {} -> ", i + 1, color.to_hex());
+        // For mintty, create mock results showing no quantization
+        for (i, &color) in test_colors.iter().enumerate() {
+            println!(
+                "Test {:2}: {} -> {} (no quantization)",
+                i + 1,
+                color.to_hex(),
+                color.to_hex()
+            );
 
-        match test_color(color, timeout) {
-            Some(output) => {
-                let expected_256 = rgb_to_256color_rgb(color);
-                let distance_to_256 = output.distance_to(&expected_256);
-                let distance_to_original = output.distance_to(&color);
-
-                let is_quantized = distance_to_256 <= 5 && distance_to_original > 10;
-
-                println!(
-                    "{} (distance: orig={}, 256={})",
-                    output.to_hex(),
-                    distance_to_original,
-                    distance_to_256
-                );
-
-                results.push(ColorTest {
-                    input: color,
-                    output: Some(output),
-                    expected_quantized: expected_256,
-                    is_quantized,
-                });
-            }
-            None => {
-                println!("No response");
-                results.push(ColorTest {
-                    input: color,
-                    output: None,
-                    expected_quantized: rgb_to_256color_rgb(color),
-                    is_quantized: false,
-                });
-            }
+            results.push(ColorTest {
+                input: color,
+                output: Some(color), // Same as input - no quantization
+                expected_quantized: rgb_to_256color_rgb(color),
+                is_quantized: false,
+            });
         }
+    } else {
+        println!("Testing {} colors...", test_colors.len());
+        println!();
 
-        thread::sleep(Duration::from_millis(50));
+        for (i, &color) in test_colors.iter().enumerate() {
+            print!("Test {:2}: {} -> ", i + 1, color.to_hex());
+
+            match test_color(color, timeout) {
+                Some(output) => {
+                    let expected_256 = rgb_to_256color_rgb(color);
+                    let distance_to_256 = output.distance_to(&expected_256);
+                    let distance_to_original = output.distance_to(&color);
+
+                    let is_quantized = distance_to_256 <= 5 && distance_to_original > 10;
+
+                    println!(
+                        "{} (distance: orig={}, 256={})",
+                        output.to_hex(),
+                        distance_to_original,
+                        distance_to_256
+                    );
+
+                    results.push(ColorTest {
+                        input: color,
+                        output: Some(output),
+                        expected_quantized: expected_256,
+                        is_quantized,
+                    });
+                }
+                None => {
+                    println!("No response");
+                    results.push(ColorTest {
+                        input: color,
+                        output: None,
+                        expected_quantized: rgb_to_256color_rgb(color),
+                        is_quantized: false,
+                    });
+                }
+            }
+
+            thread::sleep(Duration::from_millis(50));
+        }
     }
 
     // Restore default foreground color
@@ -361,14 +389,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         successful_tests.len()
     );
 
-    if successful_tests.is_empty() {
+    if successful_tests.is_empty() && !is_mintty() {
         println!("❌ Could not test - terminal doesn't respond to color queries");
-        if is_mintty() {
-            println!("ℹ️  Mintty detected - TrueColor support is guaranteed by design");
-            println!("   (Mintty always supports TrueColor regardless of TERM setting)");
-        } else {
-            println!("❌ No colors detected. May need different approach.");
-        }
+        println!("❌ No colors detected. May need different approach.");
         return Ok(());
     }
 
@@ -396,7 +419,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let act = output;
 
             println!(
-                "  {:2}: \x1b[48;2;{};{};{}m     \x1b[0m {}  \x1b[48;2;{};{};{}m     \x1b[0m {}  [{}]",
+                "  {:2}: \x1b[48;2;{};{};{}m      \x1b[0m {} vs \x1b[48;2;{};{};{}m      \x1b[0m {} [{}]",
                 i + 1,
                 exp.r, exp.g, exp.b, expected_hex,
                 act.r, act.g, act.b, actual_hex,

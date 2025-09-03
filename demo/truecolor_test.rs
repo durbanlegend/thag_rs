@@ -163,73 +163,6 @@ fn query_foreground_color(timeout: Duration) -> Option<Rgb> {
                             }
                         }
 
-                        /// Query mintty palette color using OSC 7704
-                        fn query_mintty_palette_color(index: u8, timeout: Duration) -> Option<Rgb> {
-                            let (tx, rx) = mpsc::channel();
-
-                            let handle = thread::spawn(move || {
-                                let result = (|| -> Option<Rgb> {
-                                    enable_raw_mode().ok()?;
-
-                                    let mut stdout = io::stdout();
-                                    let mut stdin = io::stdin();
-
-                                    // Send mintty OSC 7704 query
-                                    let query = format!("\x1b]7704;{};?\x07", index);
-                                    stdout.write_all(query.as_bytes()).ok()?;
-                                    stdout.flush().ok()?;
-
-                                    let mut buffer = Vec::new();
-                                    let mut temp_buffer = [0u8; 1];
-                                    let start = Instant::now();
-
-                                    while start.elapsed() < timeout {
-                                        match stdin.read(&mut temp_buffer) {
-                                            Ok(1..) => {
-                                                buffer.push(temp_buffer[0]);
-
-                                                if buffer.len() >= 30 {
-                                                    let response = String::from_utf8_lossy(&buffer);
-                                                    if response.contains('\x07')
-                                                        || response.contains("\x1b\\")
-                                                    {
-                                                        if let Some(colors) =
-                                                            parse_mintty_response(&response)
-                                                        {
-                                                            // Return the foreground color (first in response)
-                                                            return colors.first().copied();
-                                                        }
-                                                    }
-                                                }
-
-                                                if buffer.len() > 512 {
-                                                    break;
-                                                }
-                                            }
-                                            Ok(0) => thread::sleep(Duration::from_millis(1)),
-                                            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                                                thread::sleep(Duration::from_millis(1))
-                                            }
-                                            Err(_) => break,
-                                        }
-                                    }
-
-                                    None
-                                })();
-
-                                let _ = disable_raw_mode();
-                                let _ = tx.send(result);
-                            });
-
-                            match rx.recv_timeout(timeout + Duration::from_millis(100)) {
-                                Ok(result) => {
-                                    let _ = handle.join();
-                                    result
-                                }
-                                Err(_) => None,
-                            }
-                        }
-
                         if buffer.len() > 512 {
                             break;
                         }
@@ -377,7 +310,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Show detection method
     if is_mintty() {
-        println!("Detected mintty - TrueColor always supported");
+        println!("Detected mintty - TrueColor always supported (no testing needed)");
     } else {
         println!("Using OSC 10 for TrueColor testing");
     }
@@ -406,7 +339,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("ℹ️  Mintty TrueColor Support:");
         println!("   • Always available regardless of TERM setting");
         println!("   • Based on official mintty documentation");
-        println!("   • Uses standard OSC sequences (no special handling needed)");
+        println!("   • No testing required - guaranteed by design");
     } else if supported {
         println!();
         println!("💡 This means:");

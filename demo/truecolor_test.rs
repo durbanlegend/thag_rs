@@ -179,56 +179,6 @@ fn parse_osc10_response(response: &str) -> Option<Rgb> {
     None
 }
 
-// /// Parse mintty OSC 7704 response for palette colors
-// fn parse_mintty_response(response: &str) -> Option<Vec<Rgb>> {
-//     // Response format: ESC]7704;rgb:RRRR/GGGG/BBBB;rgb:XXXX/YYYY/ZZZZ BEL
-//     // First RGB is foreground, second is background
-
-//     if let Some(start_pos) = response.find("\x1b]7704;") {
-//         let response_part = &response[start_pos + 8..]; // Skip "ESC]7704;"
-
-//         // Skip the index number and semicolon
-//         if let Some(semicolon_pos) = response_part.find(';') {
-//             let color_part = &response_part[semicolon_pos + 1..];
-
-//             let mut colors = Vec::new();
-
-//             // Split by semicolon to get individual rgb: sections
-//             for rgb_section in color_part.split(';') {
-//                 if rgb_section.starts_with("rgb:") {
-//                     let rgb_data = &rgb_section[4..];
-
-//                     // Find end of this RGB section
-//                     let end_pos = rgb_data
-//                         .find('\x07')
-//                         .or_else(|| rgb_data.find('\x1b'))
-//                         .unwrap_or(rgb_data.len());
-
-//                     let rgb_str = &rgb_data[..end_pos];
-//                     let parts: Vec<&str> = rgb_str.split('/').collect();
-
-//                     if parts.len() == 3 {
-//                         // Take first 2 hex digits of each component (mintty uses 4-digit hex)
-//                         if let (Ok(r), Ok(g), Ok(b)) = (
-//                             u8::from_str_radix(&parts[0][..2.min(parts[0].len())], 16),
-//                             u8::from_str_radix(&parts[1][..2.min(parts[1].len())], 16),
-//                             u8::from_str_radix(&parts[2][..2.min(parts[2].len())], 16),
-//                         ) {
-//                             colors.push(Rgb::new(r, g, b));
-//                         }
-//                     }
-//                 }
-//             }
-
-//             if !colors.is_empty() {
-//                 return Some(colors);
-//             }
-//         }
-//     }
-
-//     None
-// }
-
 /// Query current foreground color using OSC 10
 fn query_foreground_color(timeout: Duration) -> Option<Rgb> {
     let (tx, rx) = mpsc::channel();

@@ -38,9 +38,9 @@ fn main() {
 fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "🐙 {} - Mintty Theme Installer for Git Bash",
-        "thag_mintty_add_theme".bright_blue()
+        "thag_mintty_add_theme".info()
     );
-    println!("{}", "=".repeat(70).dimmed());
+    println!("{}", "═".repeat(70));
     println!();
 
     // Initialize file navigator
@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("📁 Mintty configuration:");
     println!(
         "   Themes directory: {}",
-        mintty_config.themes_dir.display().to_string().bright_cyan()
+        mintty_config.themes_dir.display().to_string().code()
     );
     println!(
         "   Config file: {}",
@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .config_file
             .display()
             .to_string()
-            .bright_cyan()
+            .code()
     );
 
     // Check if themes directory exists
@@ -434,7 +434,7 @@ fn update_mintty_config(
 fn show_installation_summary(installed_themes: &[(String, String)]) {
     println!();
     println!("🎉 Installation Summary:");
-    println!("{}", "=".repeat(50).dimmed());
+    println!("{}", "═".repeat(50));
 
     for (theme_name, filename) in installed_themes {
         println!("✅ {} → {}", theme_name.success(), filename.info());
@@ -450,7 +450,7 @@ fn show_installation_summary(installed_themes: &[(String, String)]) {
 #[cfg(target_os = "windows")]
 fn show_usage_instructions() {
     println!("🔧 How to use your new themes:");
-    println!("{}", "-".repeat(40).dimmed());
+    println!("{}", "▁".repeat(40));
     println!("1. Open Git Bash (Mintty)");
     println!("2. Right-click on the title bar and select 'Options...'");
     println!("3. Go to the 'Looks' tab");

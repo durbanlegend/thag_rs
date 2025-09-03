@@ -83,50 +83,7 @@ fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
     }
 }
 
-/// Parse mintty OSC 7704 response for palette colors
-fn parse_mintty_response(response: &str) -> Option<Rgb> {
-    // Response format: ESC]7704;index;rgb:RRRR/GGGG/BBBB;rgb:XXXX/YYYY/ZZZZ BEL
-    // First RGB is foreground, second is background - we want foreground
-
-    if let Some(start_pos) = response.find("\x1b]7704;") {
-        let response_part = &response[start_pos + 8..]; // Skip "ESC]7704;"
-
-        // Skip the index number and semicolon
-        if let Some(semicolon_pos) = response_part.find(';') {
-            let color_part = &response_part[semicolon_pos + 1..];
-
-            // Find first rgb: section
-            if let Some(rgb_start) = color_part.find("rgb:") {
-                let rgb_data = &color_part[rgb_start + 4..];
-
-                // Find end of first RGB section (before second semicolon)
-                let end_pos = rgb_data
-                    .find(';')
-                    .or_else(|| rgb_data.find('\x07'))
-                    .or_else(|| rgb_data.find('\x1b'))
-                    .unwrap_or(rgb_data.len());
-
-                let rgb_str = &rgb_data[..end_pos];
-                let parts: Vec<&str> = rgb_str.split('/').collect();
-
-                if parts.len() == 3 {
-                    // Take first 2 hex digits of each component (mintty uses 4-digit hex)
-                    if let (Ok(r), Ok(g), Ok(b)) = (
-                        u8::from_str_radix(&parts[0][..2.min(parts[0].len())], 16),
-                        u8::from_str_radix(&parts[1][..2.min(parts[1].len())], 16),
-                        u8::from_str_radix(&parts[2][..2.min(parts[2].len())], 16),
-                    ) {
-                        return Some(Rgb::new(r, g, b));
-                    }
-                }
-            }
-        }
-    }
-
-    None
-}
-
-/// Detect if we're running in mintty
+/// Detect if we're running in mintty (which always supports TrueColor)
 fn is_mintty() -> bool {
     std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
 }
@@ -188,74 +145,6 @@ fn parse_osc10_response(response: &str) -> Option<Rgb> {
     None
 }
 
-/// Query mintty palette color using OSC 7704
-fn query_mintty_palette_color(index: u8, timeout: Duration) -> Option<Rgb> {
-    let (tx, rx) = mpsc::channel();
-
-    let handle = thread::spawn(move || {
-        let result = (|| -> Option<Rgb> {
-            enable_raw_mode().ok()?;
-
-            let mut stdout = io::stdout();
-            let mut stdin = io::stdin();
-
-            // Send mintty OSC 7704 query
-            let query = format!("\x1b]7704;{};?\x07", index);
-            stdout.write_all(query.as_bytes()).ok()?;
-            stdout.flush().ok()?;
-
-            let mut buffer = Vec::new();
-            let mut temp_buffer = [0u8; 1];
-            let start = Instant::now();
-
-            while start.elapsed() < timeout {
-                match stdin.read(&mut temp_buffer) {
-                    Ok(1..) => {
-                        buffer.push(temp_buffer[0]);
-
-                        if buffer.len() >= 20 {
-                            let response = String::from_utf8_lossy(&buffer);
-                            if response.contains('\x07') || response.contains("\x1b\\") {
-                                if is_mintty() {
-                                    if let Some(rgb) = parse_mintty_response(&response) {
-                                        return Some(rgb);
-                                    }
-                                } else {
-                                    if let Some(rgb) = parse_osc10_response(&response) {
-                                        return Some(rgb);
-                                    }
-                                }
-                            }
-                        }
-
-                        if buffer.len() > 512 {
-                            break;
-                        }
-                    }
-                    Ok(0) => thread::sleep(Duration::from_millis(1)),
-                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                        thread::sleep(Duration::from_millis(1))
-                    }
-                    Err(_) => break,
-                }
-            }
-
-            None
-        })();
-
-        let _ = disable_raw_mode();
-        let _ = tx.send(result);
-    });
-
-    match rx.recv_timeout(timeout + Duration::from_millis(100)) {
-        Ok(result) => {
-            let _ = handle.join();
-            result
-        }
-        Err(_) => None,
-    }
-}
-
 /// Set and query a color with timing (supports mintty via OSC 7704)
 fn test_color(color: Rgb, timeout: Duration) -> Option<Rgb> {
     let (tx, rx) = mpsc::channel();
@@ -278,14 +167,8 @@ fn test_color(color: Rgb, timeout: Duration) -> Option<Rgb> {
             // Small delay
             thread::sleep(Duration::from_millis(20));
 
-            // Query it back (use mintty OSC 7704 if in mintty, otherwise standard OSC 10)
-            let query = if is_mintty() {
-                // For mintty, we need to query the palette color we just set
-                // This is a bit of a hack since we're setting foreground but querying palette
-                "\x1b]7704;7;?\x07" // Query palette color 7 (white/foreground)
-            } else {
-                "\x1b]10;?\x07"
-            };
+            // Query it back using standard OSC 10
+            let query = "\x1b]10;?\x07";
             stdout.write_all(query.as_bytes()).ok()?;
             stdout.flush().ok()?;
 
@@ -301,14 +184,8 @@ fn test_color(color: Rgb, timeout: Duration) -> Option<Rgb> {
                         if buffer.len() >= 20 {
                             let response = String::from_utf8_lossy(&buffer);
                             if response.contains('\x07') || response.contains("\x1b\\") {
-                                if is_mintty() {
-                                    if let Some(rgb) = parse_mintty_response(&response) {
-                                        return Some(rgb);
-                                    }
-                                } else {
-                                    if let Some(rgb) = parse_osc10_response(&response) {
-                                        return Some(rgb);
-                                    }
+                                if let Some(rgb) = parse_osc10_response(&response) {
+                                    return Some(rgb);
                                 }
                             }
                         }
@@ -410,9 +287,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Show detection method
     if is_mintty() {
-        println!("Using mintty OSC 7704 for color queries");
+        println!("Detected mintty - TrueColor always supported");
     } else {
-        println!("Using standard OSC 10 for color queries");
+        println!("Using OSC 10 for TrueColor testing");
     }
     println!();
 
@@ -486,6 +363,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if successful_tests.is_empty() {
         println!("❌ Could not test - terminal doesn't respond to color queries");
+        if is_mintty() {
+            println!("ℹ️  Mintty detected - TrueColor support is guaranteed by design");
+            println!("   (Mintty always supports TrueColor regardless of TERM setting)");
+        } else {
+            println!("❌ No colors detected. May need different approach.");
+        }
         return Ok(());
     }
 
@@ -524,7 +407,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!();
     println!("🎯 Conclusion:");
-    if quantization_ratio > 0.7 {
+    if is_mintty() {
+        println!("✅ MINTTY TRUECOLOR SUPPORT");
+        println!("   Mintty always supports TrueColor regardless of TERM setting");
+        println!("   Based on official documentation and environment detection");
+    } else if quantization_ratio > 0.7 {
         println!("❌ QUANTIZATION DETECTED");
         println!("   This terminal appears to silently quantize TrueColor to 256-color palette");
         println!(
@@ -551,10 +438,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!();
     println!("💡 Recommendation for thag_styling:");
-    if quantization_ratio > 0.5 {
-        println!("   Use ColorSupport::Color256 for this terminal");
-    } else {
+    if is_mintty() || quantization_ratio <= 0.5 {
         println!("   Use ColorSupport::TrueColor for this terminal");
+    } else {
+        println!("   Use ColorSupport::Color256 for this terminal");
     }
 
     Ok(())

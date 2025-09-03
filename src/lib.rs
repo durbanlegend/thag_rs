@@ -114,10 +114,6 @@ pub mod manifest;
 /// Configuration loader
 #[cfg(feature = "config")]
 pub use thag_common::config;
-// pub mod config;
-/// Assess terminal capabilities and current theme
-#[cfg(feature = "color_detect")]
-pub mod terminal; // Colour support and theme detection
 
 /// TUI file dialog
 #[cfg(feature = "tui")]
@@ -178,6 +174,9 @@ pub use {
 
 #[cfg(feature = "color_detect")]
 pub use termbg;
+
+#[cfg(feature = "color_detect")]
+pub use thag_common::terminal;
 
 #[cfg(all(feature = "color_detect", feature = "tools"))]
 pub use thag_styling::inquire_theming;

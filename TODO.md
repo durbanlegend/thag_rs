@@ -43,6 +43,9 @@ Mintty:
 ^[]7704;index;?^G
 printf "\x1b]7704;01;?\x07"
 
+terminal_sample="\x1b[38;5;15m████\x1b[0m"
+thag_display="\x1b[38;2;91;116;116m████ #5b7474 ( 91,116,116)\x1b[0m"
+
 # Query mintty ANSI slot 0–15 and print fg bg hex
 mintty_color() {
   local idx=$1 resp colors out=()

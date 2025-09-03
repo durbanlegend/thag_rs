@@ -6,7 +6,10 @@ use crate::{
     lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagCommonError, ThagCommonResult, V,
 };
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
-use std::io::{stdout, Write};
+use std::io::{stdin, stdout, Read, Write};
+use std::sync::mpsc;
+use std::thread;
+use std::time::{Duration, Instant};
 use supports_color::Stream;
 
 #[cfg(debug_assertions)]
@@ -77,8 +80,10 @@ impl Drop for TerminalStateGuard {
 
 /// Detects the terminal's color support level
 ///
-/// When the `color_detect` feature is enabled, this function uses `supports_color`
-/// to determine the actual terminal capabilities. Otherwise, it returns `ColorSupport::None`.
+/// Uses OSC-based TrueColor detection as the primary method, with `supports_color`
+/// as a fallback. This provides more accurate detection across different terminals
+/// and platforms, especially for mintty and terminals that don't set proper
+/// environment variables.
 ///
 /// # Raw Mode Handling
 ///
@@ -97,7 +102,7 @@ impl Drop for TerminalStateGuard {
 pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u8)) {
     if std::env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
-        debug_log!("Avoiding supports_color for testing");
+        debug_log!("Avoiding color detection for testing");
         return (&ColorSupport::Basic, &(0, 0, 0));
     }
 
@@ -117,15 +122,8 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
     let color_support = lazy_static_var!(ColorSupport, {
         vprtln!(V::V, "Checking colour support");
 
-        supports_color::on(Stream::Stdout).map_or(ColorSupport::None, |color_level| {
-            if color_level.has_16m {
-                ColorSupport::TrueColor
-            } else if color_level.has_256 {
-                ColorSupport::Color256
-            } else {
-                ColorSupport::Basic
-            }
-        })
+        // Try our OSC-based detection first
+        detect_color_support_osc()
     });
 
     let term_bg_rgb = lazy_static_var!((u8, u8, u8), {
@@ -134,6 +132,11 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
     });
 
     (color_support, term_bg_rgb)
+}
+
+/// Get fresh color detection without caching - useful when environment variables change
+pub fn get_fresh_color_support() -> ColorSupport {
+    detect_color_support_osc()
 }
 
 /// Detects the terminal's theme (light or dark)
@@ -312,6 +315,285 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
     })
     .as_ref()
     .map_err(|e| ThagCommonError::Generic(e.to_string()))
+}
+
+/// Detects color support using OSC sequences with fallback to supports_color
+fn detect_color_support_osc() -> ColorSupport {
+    // Check for mintty first - always supports TrueColor
+    if is_mintty() {
+        vprtln!(V::V, "Mintty detected - TrueColor supported");
+        return ColorSupport::TrueColor;
+    }
+
+    // Check environment variables for override/hints - these take precedence over terminal detection
+    if let Some(support) = check_env_color_support() {
+        vprtln!(V::V, "Environment variable override: {:?}", support);
+        return support;
+    }
+
+    // Check for problematic terminals that claim truecolor but don't handle it correctly
+    // This comes AFTER environment variable checks so users can override if needed
+    if is_zed_terminal() {
+        vprtln!(
+            V::V,
+            "Zed terminal detected - forcing 256-color mode due to RGB truecolor issues"
+        );
+        return ColorSupport::Color256;
+    }
+
+    // Try OSC-based TrueColor detection
+    if test_truecolor_support() {
+        vprtln!(V::V, "OSC TrueColor test passed");
+        return ColorSupport::TrueColor;
+    }
+
+    // Check for 256-color support
+    if supports_256_color() {
+        vprtln!(V::V, "256-color support detected");
+        return ColorSupport::Color256;
+    }
+
+    // Fallback to supports_color crate
+    vprtln!(V::V, "Using supports_color crate fallback");
+    supports_color::on(Stream::Stdout).map_or(ColorSupport::Basic, |color_level| {
+        if color_level.has_16m {
+            ColorSupport::TrueColor
+        } else if color_level.has_256 {
+            ColorSupport::Color256
+        } else {
+            ColorSupport::Basic
+        }
+    })
+}
+
+/// Check if running in mintty (always supports TrueColor)
+fn is_mintty() -> bool {
+    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
+}
+
+/// Detect if we're running in Zed terminal (which has RGB truecolor issues)
+fn is_zed_terminal() -> bool {
+    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "zed")
+}
+
+/// Check environment variables for color support hints
+fn check_env_color_support() -> Option<ColorSupport> {
+    // Check for NO_COLOR (takes precedence)
+    if std::env::var("NO_COLOR").is_ok() {
+        return Some(ColorSupport::None);
+    }
+
+    // Check for THAG_COLOR_MODE (thag-specific override)
+    if let Ok(thag_color_mode) = std::env::var("THAG_COLOR_MODE") {
+        match thag_color_mode.to_lowercase().as_str() {
+            "none" | "off" | "0" => return Some(ColorSupport::None),
+            "basic" | "16" | "1" => return Some(ColorSupport::Basic),
+            "256" | "2" => return Some(ColorSupport::Color256),
+            "truecolor" | "24bit" | "rgb" | "3" => return Some(ColorSupport::TrueColor),
+            _ => {}
+        }
+    }
+
+    // Check for FORCE_COLOR
+    if let Ok(force_color) = std::env::var("FORCE_COLOR") {
+        match force_color.as_str() {
+            "0" => return Some(ColorSupport::None),
+            "1" => return Some(ColorSupport::Basic),
+            "2" => return Some(ColorSupport::Color256),
+            "3" => return Some(ColorSupport::TrueColor),
+            _ => {}
+        }
+    }
+
+    // Check CLICOLOR_FORCE
+    if std::env::var("CLICOLOR_FORCE").is_ok() {
+        return Some(ColorSupport::Basic);
+    }
+
+    None
+}
+
+/// Test TrueColor support using OSC 10 sequences
+fn test_truecolor_support() -> bool {
+    // Skip OSC testing for terminals that don't respond to queries but may still support truecolor
+    if is_zed_terminal() {
+        vprtln!(V::V, "Skipping OSC truecolor test for Zed terminal");
+        return false; // Force fallback to 256-color mode for Zed
+    }
+
+    let timeout = Duration::from_millis(150);
+    let (tx, rx) = mpsc::channel();
+
+    let handle = thread::spawn(move || {
+        let result = (|| -> bool {
+            if enable_raw_mode().is_err() {
+                return false;
+            }
+
+            let mut stdout = stdout();
+            let mut stdin = stdin();
+
+            // Query original foreground color
+            let query = "\x1b]10;?\x07";
+            if stdout.write_all(query.as_bytes()).is_err() {
+                return false;
+            }
+            if stdout.flush().is_err() {
+                return false;
+            }
+
+            let original_color = match read_osc10_response(&mut stdin, timeout) {
+                Some(color) => color,
+                None => return false,
+            };
+
+            // Set test color
+            let test_color = (123u8, 234u8, 45u8);
+            let set_cmd = format!(
+                "\x1b]10;rgb:{:02x}{:02x}/{:02x}{:02x}/{:02x}{:02x}\x07",
+                test_color.0, test_color.0, test_color.1, test_color.1, test_color.2, test_color.2
+            );
+            if stdout.write_all(set_cmd.as_bytes()).is_err() {
+                return false;
+            }
+            if stdout.flush().is_err() {
+                return false;
+            }
+
+            thread::sleep(Duration::from_millis(20));
+
+            // Query it back
+            if stdout.write_all(query.as_bytes()).is_err() {
+                return false;
+            }
+            if stdout.flush().is_err() {
+                return false;
+            }
+
+            let queried_color = match read_osc10_response(&mut stdin, timeout) {
+                Some(color) => color,
+                None => return false,
+            };
+
+            // Restore original color
+            let restore_cmd = format!(
+                "\x1b]10;rgb:{:02x}{:02x}/{:02x}{:02x}/{:02x}{:02x}\x07",
+                original_color.0,
+                original_color.0,
+                original_color.1,
+                original_color.1,
+                original_color.2,
+                original_color.2
+            );
+            if stdout.write_all(restore_cmd.as_bytes()).is_err() {
+                return false;
+            }
+            if stdout.flush().is_err() {
+                return false;
+            }
+
+            // Check if colors match (within tolerance)
+            let distance = ((test_color.0 as i16 - queried_color.0 as i16).abs()
+                + (test_color.1 as i16 - queried_color.1 as i16).abs()
+                + (test_color.2 as i16 - queried_color.2 as i16).abs())
+                as u16;
+
+            distance <= 50
+        })();
+
+        let _ = disable_raw_mode();
+        let _ = tx.send(result);
+    });
+
+    match rx.recv_timeout(timeout + Duration::from_millis(100)) {
+        Ok(result) => {
+            let _ = handle.join();
+            result
+        }
+        Err(_) => false,
+    }
+}
+
+/// Read OSC 10 response from stdin
+fn read_osc10_response(stdin: &mut std::io::Stdin, timeout: Duration) -> Option<(u8, u8, u8)> {
+    let mut buffer = Vec::new();
+    let mut temp_buffer = [0u8; 1];
+    let start = Instant::now();
+
+    while start.elapsed() < timeout {
+        match stdin.read(&mut temp_buffer) {
+            Ok(1..) => {
+                buffer.push(temp_buffer[0]);
+
+                if buffer.len() >= 20 {
+                    let response = String::from_utf8_lossy(&buffer);
+                    if response.contains('\x07') || response.contains("\x1b\\") {
+                        if let Some(rgb) = parse_osc10_response(&response) {
+                            return Some(rgb);
+                        }
+                    }
+                }
+
+                if buffer.len() > 512 {
+                    break;
+                }
+            }
+            Ok(0) => thread::sleep(Duration::from_millis(1)),
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                thread::sleep(Duration::from_millis(1))
+            }
+            Err(_) => break,
+        }
+    }
+
+    None
+}
+
+/// Parse OSC 10 response to extract RGB values
+fn parse_osc10_response(response: &str) -> Option<(u8, u8, u8)> {
+    if let Some(start_pos) = response.find("\x1b]10;") {
+        let response_part = &response[start_pos..];
+
+        if let Some(rgb_pos) = response_part.find("rgb:") {
+            let rgb_data = &response_part[rgb_pos..];
+
+            let end_pos = rgb_data
+                .find('\x07')
+                .or_else(|| rgb_data.find('\x1b'))
+                .unwrap_or(rgb_data.len());
+
+            if end_pos >= 18 {
+                let rgb_sequence = &rgb_data[4..end_pos];
+                let parts: Vec<&str> = rgb_sequence.split('/').collect();
+
+                if parts.len() == 3
+                    && parts[0].len() == 4
+                    && parts[1].len() == 4
+                    && parts[2].len() == 4
+                    && parts
+                        .iter()
+                        .all(|part| part.chars().all(|c| c.is_ascii_hexdigit()))
+                {
+                    if let (Ok(r), Ok(g), Ok(b)) = (
+                        u16::from_str_radix(parts[0], 16).map(|v| (v >> 8) as u8),
+                        u16::from_str_radix(parts[1], 16).map(|v| (v >> 8) as u8),
+                        u16::from_str_radix(parts[2], 16).map(|v| (v >> 8) as u8),
+                    ) {
+                        return Some((r, g, b));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Check if terminal supports 256 colors based on TERM variable
+fn supports_256_color() -> bool {
+    std::env::var("TERM").map_or(false, |term| {
+        term.ends_with("256color") || term.ends_with("256")
+    })
 }
 
 /// Restore the raw or cooked terminal status as saved in the boolean argument.

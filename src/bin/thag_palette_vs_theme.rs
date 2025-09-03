@@ -436,6 +436,7 @@ fn display_color_comparison(theme: &Theme) {
 
             // println!("thag_display={thag_display:?}");
             println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
+            println!("terminal_sample={terminal_sample:?}\nthag_display={thag_display:?}");
         }
 
         println!();

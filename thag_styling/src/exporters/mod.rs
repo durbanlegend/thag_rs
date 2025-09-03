@@ -223,47 +223,6 @@ To use this theme with Alacritty:
 "#
             )
         }
-        ExportFormat::WezTerm => {
-            format!(
-                r"# WezTerm Theme Installation
-
-To use this theme with WezTerm:
-
-1. Copy the theme file to your WezTerm config directory:
-   - Linux/macOS: `~/.config/wezterm/colors/.`
-   - Windows: `%USERPROFILE%\.config\wezterm\colors\.`
-
-2. Add this to your wezterm.lua config file:
-   ```lua
-   local config = wezterm.config_builder()
-   config.color_scheme = '{theme_filename}'
-   return config
-   ```
-
-3. Restart WezTerm to apply the theme.
-
-Note: The theme name should match the filename without extension.
-WezTerm will use this TOML file format, which is different from Alacritty's TOML structure.
-"
-            )
-        }
-        ExportFormat::ITerm2 => {
-            format!(
-                r#"# iTerm2 Theme Installation
-
-To use this theme with iTerm2:
-
-1. Open iTerm2
-2. Go to Preferences > Profiles > Colors
-3. Click "Color Presets..." dropdown
-4. Select "Import..."
-5. Choose the {theme_filename} file
-6. Select the imported theme from the dropdown
-
-The theme will be applied to your current profile.
-"#
-            )
-        }
         ExportFormat::Kitty => {
             format!(
                 r"# Kitty Theme Installation
@@ -304,6 +263,47 @@ To use this theme with Mintty (Git Bash):
    - Restart Git Bash
 
 The theme will be applied to all new Mintty windows.
+"#
+            )
+        }
+        ExportFormat::WezTerm => {
+            format!(
+                r"# WezTerm Theme Installation
+
+To use this theme with WezTerm:
+
+1. Copy the theme file to your WezTerm config directory:
+   - Linux/macOS: `~/.config/wezterm/colors/.`
+   - Windows: `%USERPROFILE%\.config\wezterm\colors\.`
+
+2. Add this to your wezterm.lua config file:
+   ```lua
+   local config = wezterm.config_builder()
+   config.color_scheme = '{theme_filename}'
+   return config
+   ```
+
+3. Restart WezTerm to apply the theme.
+
+Note: The theme name should match the filename without extension.
+WezTerm will use this TOML file format, which is different from Alacritty's TOML structure.
+"
+            )
+        }
+        ExportFormat::ITerm2 => {
+            format!(
+                r#"# iTerm2 Theme Installation
+
+To use this theme with iTerm2:
+
+1. Open iTerm2
+2. Go to Preferences > Profiles > Colors
+3. Click "Color Presets..." dropdown
+4. Select "Import..."
+5. Choose the {theme_filename} file
+6. Select the imported theme from the dropdown
+
+The theme will be applied to your current profile.
 "#
             )
         }

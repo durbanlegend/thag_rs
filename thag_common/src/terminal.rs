@@ -332,11 +332,10 @@ fn detect_color_support_osc() -> ColorSupport {
     }
 
     // Check for problematic terminals that claim truecolor but don't handle it correctly
-    // This comes AFTER environment variable checks so users can override if needed
-    if is_zed_terminal() {
+    if is_apple_terminal() {
         vprtln!(
             V::V,
-            "Zed terminal detected - forcing 256-color mode due to RGB truecolor issues"
+            "Apple Terminal detected - forcing 256-color mode due to RGB rendering issues (salmon pink bug)"
         );
         return ColorSupport::Color256;
     }
@@ -371,9 +370,9 @@ fn is_mintty() -> bool {
     std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
 }
 
-/// Detect if we're running in Zed terminal (which has RGB truecolor issues)
-fn is_zed_terminal() -> bool {
-    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "zed")
+/// Detect if we're running in Apple Terminal (which has RGB rendering issues)
+fn is_apple_terminal() -> bool {
+    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "Apple_Terminal")
 }
 
 /// Check environment variables for color support hints
@@ -416,9 +415,9 @@ fn check_env_color_support() -> Option<ColorSupport> {
 /// Test TrueColor support using OSC 10 sequences
 fn test_truecolor_support() -> bool {
     // Skip OSC testing for terminals that don't respond to queries but may still support truecolor
-    if is_zed_terminal() {
-        vprtln!(V::V, "Skipping OSC truecolor test for Zed terminal");
-        return false; // Force fallback to 256-color mode for Zed
+    if is_apple_terminal() {
+        vprtln!(V::V, "Skipping OSC truecolor test for Apple Terminal");
+        return false; // Force fallback to 256-color mode for Apple Terminal
     }
 
     let timeout = Duration::from_millis(150);

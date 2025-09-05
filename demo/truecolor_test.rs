@@ -1,12 +1,11 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
-crossterm = "0.28"
 */
 
-//! Windows TrueColor Detection
+//! TrueColor Detection
 //!
-//! This script tests TrueColor support on Windows by sending a TrueColor escape
+//! This script tests TrueColor detection support by sending a TrueColor escape
 //! sequence and querying the result, as suggested by https://github.com/termstandard/colors.
 //!
 //! The approach:
@@ -16,8 +15,8 @@ crossterm = "0.28"
 //! 4. Restore original foreground color
 //! 5. Compare set vs queried values to determine TrueColor support
 
-//# Purpose: Test Windows TrueColor support using OSC sequence probing
-//# Categories: terminal, colors, windows
+//# Purpose: Test TrueColor support using OSC sequence probing
+//# Categories: ansi, color, styling, terminal, testing, theming, tools, windows, xterm
 
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
@@ -208,7 +207,7 @@ fn set_foreground_color(rgb: Rgb) -> bool {
 
 /// Test TrueColor support by setting and querying
 fn test_truecolor_support() -> (bool, String) {
-    println!("🔍 Testing TrueColor support on Windows...");
+    println!("🔍 Testing TrueColor Query support...");
     println!();
 
     let timeout = Duration::from_millis(200);
@@ -292,9 +291,9 @@ fn test_truecolor_support() -> (bool, String) {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("🖥️  Windows TrueColor Detection Test");
+    println!("🖥️  TrueColor Detection Test");
     println!("=====================================");
-    println!("Testing TrueColor support by setting and querying foreground colors.");
+    println!("Testing TrueColor detection support by setting and querying foreground colors.");
     println!();
 
     // Show environment info

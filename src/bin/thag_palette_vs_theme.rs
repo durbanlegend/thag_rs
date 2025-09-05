@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire"] }
 */
 #![allow(clippy::uninlined_format_args)]
@@ -12,15 +11,394 @@ thag_styling = { version = "0.2, thag-auto", default-features = false, features 
 /// mapping issues and verify theme installation.
 //# Purpose: Compare terminal palette with thag theme colors
 //# Categories: color, styling, terminal, theming, tools
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use std::collections::HashMap;
 use std::error::Error;
+use std::io::{self, Read, Write};
+use std::sync::mpsc;
+use std::thread;
+use std::time::{Duration, Instant};
 use thag_proc_macros::file_navigator;
-
 use thag_styling::{
-    cprtln, select_builtin_theme, styling::index_to_rgb, ColorInitStrategy, Role, Style, Styleable,
-    StyledStringExt, TermAttributes, TermBgLuma, Theme,
+    cprtln, select_builtin_theme, ColorInitStrategy, Role, Style, Styleable, StyledStringExt,
+    TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
+
+/// RGB color representation
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+pub struct Rgb {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl Rgb {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
+
+    /// Calculate color difference (Manhattan distance in RGB space)
+    pub fn distance_to(&self, other: &Rgb) -> u16 {
+        ((self.r as i16 - other.r as i16).abs()
+            + (self.g as i16 - other.g as i16).abs()
+            + (self.b as i16 - other.b as i16).abs()) as u16
+    }
+
+    /// Convert to hex string
+    pub fn to_hex(&self) -> String {
+        format!("#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
+    }
+
+    /// Calculate perceived brightness (0.0-1.0)
+    pub fn brightness(&self) -> f32 {
+        // Using standard luminance formula
+        (0.299 * self.r as f32 + 0.587 * self.g as f32 + 0.114 * self.b as f32) / 255.0
+    }
+
+    /// Check if this is a "dark" color
+    pub fn is_dark(&self) -> bool {
+        self.brightness() < 0.5
+    }
+}
+
+/// Error types for palette querying
+#[derive(Debug)]
+pub enum PaletteError {
+    Io(io::Error),
+    Timeout,
+    ParseError(String),
+    ThreadError,
+}
+
+impl From<io::Error> for PaletteError {
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
+    }
+}
+
+/// Cached palette query results
+#[derive(Debug, Clone)]
+pub struct PaletteCache {
+    colors: HashMap<u8, Rgb>,
+    timestamp: Instant,
+    terminal_id: String,
+}
+
+impl PaletteCache {
+    fn new(terminal_id: String) -> Self {
+        Self {
+            colors: HashMap::new(),
+            timestamp: Instant::now(),
+            terminal_id,
+        }
+    }
+
+    fn is_valid(&self, max_age: Duration, current_terminal: &str) -> bool {
+        self.timestamp.elapsed() < max_age && self.terminal_id == current_terminal
+    }
+
+    fn get_color(&self, index: u8) -> Option<Rgb> {
+        self.colors.get(&index).copied()
+    }
+
+    fn set_color(&mut self, index: u8, color: Rgb) {
+        self.colors.insert(index, color);
+    }
+
+    fn get_all_colors(&self) -> Vec<Option<Rgb>> {
+        (0..16).map(|i| self.colors.get(&i).copied()).collect()
+    }
+}
+
+/// Production-ready palette color query using crossterm threading
+pub fn query_palette_color(index: u8, timeout: Duration) -> Result<Rgb, PaletteError> {
+    let (tx, rx) = mpsc::channel();
+
+    // Spawn a thread to handle the terminal I/O
+    let handle = thread::spawn(move || {
+        let result = (|| -> Result<Rgb, PaletteError> {
+            // Enable raw mode
+            enable_raw_mode().map_err(PaletteError::Io)?;
+
+            let mut stdout = io::stdout();
+            let mut stdin = io::stdin();
+
+            // Send query
+            let query = format!("\x1b]4;{};?\x07", index);
+            stdout.write_all(query.as_bytes())?;
+            stdout.flush()?;
+
+            // Try to read response
+            let mut buffer = Vec::new();
+            let mut temp_buffer = [0u8; 1];
+            let start = Instant::now();
+
+            while start.elapsed() < timeout {
+                match stdin.read(&mut temp_buffer) {
+                    Ok(1..) => {
+                        buffer.push(temp_buffer[0]);
+
+                        // Try to parse response
+                        let response = String::from_utf8_lossy(&buffer);
+                        if let Some(rgb) = try_parse_osc4_response(&response, index) {
+                            return Ok(rgb);
+                        }
+
+                        // Prevent buffer overflow
+                        if buffer.len() > 256 {
+                            break;
+                        }
+                    }
+                    Ok(0) => {
+                        thread::sleep(Duration::from_millis(1));
+                    }
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(1));
+                    }
+                    Err(e) => return Err(PaletteError::Io(e)),
+                }
+            }
+
+            Err(PaletteError::Timeout)
+        })();
+
+        // Always disable raw mode
+        let _ = disable_raw_mode();
+
+        let _ = tx.send(result);
+    });
+
+    // Wait for result or timeout
+    match rx.recv_timeout(timeout + Duration::from_millis(50)) {
+        Ok(result) => {
+            let _ = handle.join();
+            result
+        }
+        Err(_) => Err(PaletteError::ThreadError),
+    }
+}
+
+/// Parse OSC 4 response from accumulated buffer
+fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
+    let pattern = format!("\x1b]4;{};", expected_index);
+
+    if let Some(start_pos) = response.find(&pattern) {
+        let response_part = &response[start_pos..];
+
+        // Handle rgb:RRRR/GGGG/BBBB format
+        if let Some(rgb_pos) = response_part.find("rgb:") {
+            let rgb_data = &response_part[rgb_pos + 4..];
+
+            let end_pos = rgb_data
+                .find('\x07')
+                .or_else(|| rgb_data.find('\x1b'))
+                .unwrap_or(rgb_data.len().min(20));
+
+            let rgb_str = &rgb_data[..end_pos];
+            let parts: Vec<&str> = rgb_str.split('/').collect();
+
+            if parts.len() == 3
+                && parts[0].len() == 4
+                && parts[1].len() == 4
+                && parts[2].len() == 4
+                && parts
+                    .iter()
+                    .all(|part| part.chars().all(|c| c.is_ascii_hexdigit()))
+            {
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    parse_hex_component(parts[0]),
+                    parse_hex_component(parts[1]),
+                    parse_hex_component(parts[2]),
+                ) {
+                    return Some(Rgb::new(r, g, b));
+                }
+            }
+        }
+
+        // Handle #RRGGBB format
+        if let Some(hash_pos) = response_part.find('#') {
+            let hex_data = &response_part[hash_pos + 1..];
+            if hex_data.len() >= 6 {
+                let hex_str = &hex_data[..6];
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    u8::from_str_radix(&hex_str[0..2], 16),
+                    u8::from_str_radix(&hex_str[2..4], 16),
+                    u8::from_str_radix(&hex_str[4..6], 16),
+                ) {
+                    return Some(Rgb::new(r, g, b));
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Parse hex component (2 or 4 digits)
+fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
+    let clean_hex: String = hex_str
+        .chars()
+        .take_while(|c| c.is_ascii_hexdigit())
+        .collect();
+
+    match clean_hex.len() {
+        4 => {
+            // 16-bit value, take high byte
+            let val = u16::from_str_radix(&clean_hex, 16)?;
+            Ok((val >> 8) as u8)
+        }
+        2 => {
+            // 8-bit value
+            u8::from_str_radix(&clean_hex, 16)
+        }
+        _ => {
+            // Try to parse whatever we have
+            let val = u16::from_str_radix(&clean_hex, 16).unwrap_or(0);
+            Ok((val.min(255)) as u8)
+        }
+    }
+}
+
+/// Get terminal identifier for caching
+fn get_terminal_id() -> String {
+    let mut id_parts = Vec::new();
+
+    if let Ok(term) = std::env::var("TERM") {
+        id_parts.push(format!("TERM={}", term));
+    }
+    if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
+        id_parts.push(format!("PROGRAM={}", term_program));
+    }
+    if let Ok(term_version) = std::env::var("TERM_PROGRAM_VERSION") {
+        id_parts.push(format!("VERSION={}", term_version));
+    }
+
+    if id_parts.is_empty() {
+        "unknown".to_string()
+    } else {
+        id_parts.join("|")
+    }
+}
+
+/// Production-ready palette detection with caching
+pub struct PaletteDetector {
+    cache: Option<PaletteCache>,
+    timeout: Duration,
+    cache_duration: Duration,
+}
+
+impl Default for PaletteDetector {
+    fn default() -> Self {
+        Self {
+            cache: None,
+            timeout: Duration::from_millis(100),
+            cache_duration: Duration::from_secs(300), // 5 minutes
+        }
+    }
+}
+
+impl PaletteDetector {
+    pub fn new(timeout: Duration, cache_duration: Duration) -> Self {
+        Self {
+            cache: None,
+            timeout,
+            cache_duration,
+        }
+    }
+
+    /// Query a specific palette color with caching
+    pub fn get_color(&mut self, index: u8) -> Option<Rgb> {
+        if index >= 16 {
+            return None;
+        }
+
+        let terminal_id = get_terminal_id();
+
+        // Check cache first
+        if let Some(cache) = &self.cache {
+            if cache.is_valid(self.cache_duration, &terminal_id) {
+                if let Some(color) = cache.get_color(index) {
+                    return Some(color);
+                }
+            }
+        }
+
+        // Query from terminal
+        match query_palette_color(index, self.timeout) {
+            Ok(color) => {
+                // Update cache
+                if self.cache.is_none()
+                    || !self
+                        .cache
+                        .as_ref()
+                        .unwrap()
+                        .is_valid(self.cache_duration, &terminal_id)
+                {
+                    self.cache = Some(PaletteCache::new(terminal_id));
+                }
+
+                if let Some(cache) = &mut self.cache {
+                    cache.set_color(index, color);
+                }
+
+                Some(color)
+            }
+            Err(_) => None,
+        }
+    }
+
+    /// Query all 16 palette colors
+    pub fn get_all_colors(&mut self) -> Vec<Option<Rgb>> {
+        let terminal_id = get_terminal_id();
+
+        // Check if we have a valid complete cache
+        if let Some(cache) = &self.cache {
+            if cache.is_valid(self.cache_duration, &terminal_id) && cache.colors.len() == 16 {
+                return cache.get_all_colors();
+            }
+        }
+
+        // Query all colors
+        let mut colors = Vec::with_capacity(16);
+        let mut cache = PaletteCache::new(terminal_id);
+
+        for i in 0..16 {
+            match query_palette_color(i, self.timeout) {
+                Ok(color) => {
+                    colors.push(Some(color));
+                    cache.set_color(i, color);
+                }
+                Err(_) => {
+                    colors.push(None);
+                }
+            }
+
+            // Small delay to avoid overwhelming terminal
+            thread::sleep(Duration::from_millis(5));
+        }
+
+        self.cache = Some(cache);
+        colors
+    }
+
+    /// Clear the cache (force re-query)
+    pub fn clear_cache(&mut self) {
+        self.cache = None;
+    }
+
+    /// Get cache statistics
+    pub fn cache_info(&self) -> Option<(usize, Duration, String)> {
+        self.cache.as_ref().map(|cache| {
+            (
+                cache.colors.len(),
+                cache.timestamp.elapsed(),
+                cache.terminal_id.clone(),
+            )
+        })
+    }
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Initialize styling system
@@ -183,6 +561,29 @@ fn detect_terminal_emulator() -> String {
 
 /// Display the 16 basic ANSI colors
 fn display_ansi_colors(theme: &Theme) {
+    // Create detector with production settings
+    let mut detector = PaletteDetector::new(
+        Duration::from_millis(150), // Reasonable timeout
+        Duration::from_secs(300),   // 5-minute cache
+    );
+
+    println!("🔍 Querying palette colors...");
+    let start_time = Instant::now();
+    let palette_colors = detector.get_all_colors();
+    let query_time = start_time.elapsed();
+
+    let successful = palette_colors.iter().filter(|c| c.is_some()).count();
+    let palette_colors = if successful > 0 {
+        Some(palette_colors)
+    } else {
+        None
+    };
+    println!(
+        "✅ Query completed in {:?}: {}/16 colors detected",
+        query_time, successful
+    );
+    println!();
+
     theme.with_context(|| {
         format!("🎨 {} ANSI Colors (0-15):", "Current Terminal".info())
             .normal()
@@ -203,6 +604,8 @@ fn display_ansi_colors(theme: &Theme) {
                 (6, "Cyan"),
                 (7, "White"),
             ],
+            &palette_colors,
+            0,
         );
 
         println!();
@@ -221,6 +624,8 @@ fn display_ansi_colors(theme: &Theme) {
                 (14, "Bright Cyan"),
                 (15, "Bright White"),
             ],
+            &palette_colors,
+            1,
         );
 
         println!();
@@ -228,38 +633,48 @@ fn display_ansi_colors(theme: &Theme) {
 }
 
 /// Display a row of colors with their indices and names
-fn display_color_row(theme: &Theme, colors: &[(u8, &str)]) {
+fn display_color_row(
+    theme: &Theme,
+    colors: &[(u8, &str)],
+    palette_colors: &Option<Vec<Option<Rgb>>>,
+    row: usize,
+) {
     theme.with_context(|| {
         // Print color indices
         print!("   ");
         for (index, _) in colors {
-            print!("{}", format!("{:>12}", index).emphasis());
+            print!("{}", format!("{:>13}", index).emphasis());
         }
         println!();
 
         // Print color names
         print!("   ");
         for (_, name) in colors {
-            print!("{:>12}", name);
+            print!("{:>13}", name);
         }
         println!();
 
         // Print colored blocks using ANSI escape codes
         print!("   ");
         for (index, _) in colors {
-            print!("\x1b[48;5;{}m{:>12}\x1b[0m", index, "");
+            print!("\x1b[48;5;{}m{:>13}\x1b[0m", index, "");
         }
         println!();
 
-        // Print sample text in each color
-        print!("   ");
-        for (index, _) in colors {
-            // print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, "Sample");
-            let (r, g, b) = index_to_rgb(*index);
-            let rgb = format!("{r:>3},{g:>3},{b:>3}");
-            print!("\x1b[38;5;{}m{:>12}\x1b[0m", index, rgb);
+        if let Some(palette_colors) = palette_colors {
+            // Print sample text in each color
+            print!("   ");
+            let start_index = row * 8;
+            for i in 0..8 {
+                let index = start_index + i;
+                if let Some(color) = palette_colors[index] {
+                    // print!("\x1b[38;5;{}m{:>13}\x1b[0m", index, "Sample");
+                    let rgb = format!("{:>3},{:>3},{:>3}", color.r, color.g, color.b);
+                    print!("\x1b[38;5;{}m{:>13}\x1b[0m", index, rgb);
+                }
+            }
+            println!();
         }
-        println!();
     });
 }
 
@@ -436,7 +851,7 @@ fn display_color_comparison(theme: &Theme) {
 
             // println!("thag_display={thag_display:?}");
             println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
-            println!("terminal_sample={terminal_sample:?}\nthag_display={thag_display:?}");
+            // println!("{terminal_sample:?}\nthag_display={thag_display:?}");
         }
 
         println!();

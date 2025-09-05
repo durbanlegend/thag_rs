@@ -16,8 +16,8 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 //# Categories: ansi, color, styling, terminal, theming, tools, xterm
 use thag_rs::{auto_help, help_system::check_help_and_exit};
 use thag_styling::{
-    cprtln, display_theme_details, display_theme_roles, ColorInitStrategy, Role, Style,
-    TermAttributes,
+    cprtln, display_terminal_attributes, display_theme_details, display_theme_roles,
+    ColorInitStrategy, Role, Style, TermAttributes,
 };
 
 fn main() {
@@ -36,4 +36,5 @@ fn main() {
     );
     display_theme_roles(theme);
     display_theme_details(theme);
+    display_terminal_attributes(theme);
 }

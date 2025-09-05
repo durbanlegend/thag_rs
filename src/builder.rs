@@ -1331,7 +1331,6 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
         build_state.source_stem.to_string()
     };
 
-    // #[cfg(target_os = "windows")]
     let release_path = &build_state.target_dir_path.join("target/release");
     let output_path = cargo_bin_path.join(&build_state.source_stem);
 

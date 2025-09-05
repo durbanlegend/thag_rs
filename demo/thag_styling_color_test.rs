@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
 //! Thag Styling Color Output Test
@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn display_environment() {
     println!("📊 Environment:");
     let vars = [
+        "THAG_THEME",
         "THAG_COLOR_MODE",
         "FORCE_COLOR",
         "NO_COLOR",

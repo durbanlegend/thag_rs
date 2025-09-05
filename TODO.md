@@ -36,6 +36,8 @@
 - [ ] Fix palette_vs_theme bad display in Apple Terminal and ?
 - [ ] Test truecolor tests on mintty.
 - [ ] Replace current TrueColor detection  (color_support crate) by truecolor_test.rs logic.
+- [ ] Theme conversion or loading - consider improving contrast on palette colours where necessary.
+- [ ] Debug src/bin/thag_theme.rs .
 
 printf "\x1b]4;{};?\x07"
 printf "\x1b]4;01;?\x07"

@@ -15,7 +15,7 @@ use thag_common::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, V};
 use thag_proc_macros::{preload_themes, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
-use thag_common::terminal::{self, get_term_bg_rgb, is_light_color};
+use thag_common::terminal::{self, is_light_color};
 
 #[cfg(feature = "config")]
 use crate::StylingConfigProvider;
@@ -726,25 +726,8 @@ impl ColorInitStrategy {
                 #[cfg(debug_assertions)]
                 debug_log!("Avoiding colour detection for testing");
                 Self::Default
-            } else if cfg!(target_os = "windows") {
-                #[cfg(feature = "config")]
-                if let Some(config) = maybe_config() {
-                    let term_bg_luma = config.styling.term_bg_luma;
-                    let term_bg_luma = match term_bg_luma {
-                        TermBgLuma::Undetermined => *terminal::get_term_bg_luma(),
-                        _ => term_bg_luma,
-                    };
-                    Self::Configure(
-                        config.styling.color_support,
-                        term_bg_luma,
-                        resolve_config_term_bg_rgb(&config),
-                    )
-                } else {
-                    Self::Default
-                }
-                #[cfg(not(feature = "config"))]
-                Self::Default
             } else {
+                // Use unified auto-detection for all platforms including Windows
                 Self::Match
             };
 
@@ -777,16 +760,6 @@ impl ColorInitStrategy {
 
             strategy
         })
-    }
-}
-
-// #[cfg(feature = "color_detect")]
-#[cfg(all(feature = "color_detect", feature = "config"))]
-fn resolve_config_term_bg_rgb(config: &thag_common::config::Config) -> Option<(u8, u8, u8)> {
-    let term_bg_rgb = config.styling.term_bg_rgb;
-    match term_bg_rgb {
-        None => get_term_bg_rgb().map_or(None, |rgb| Some(*rgb)),
-        _ => term_bg_rgb,
     }
 }
 
@@ -911,6 +884,47 @@ impl TermAttributes {
                 ColorInitStrategy::Match => {
                     #[cfg(feature = "color_detect")]
                     {
+                        // Check for THAG_THEME environment variable first
+                        if let Ok(theme_name) = std::env::var("THAG_THEME") {
+                            vprtln!(V::V, "Using THAG_THEME environment variable: {}", theme_name);
+
+                            let (color_support, term_bg_rgb_ref) =
+                                thag_common::terminal::detect_term_capabilities();
+                            let term_bg_rgb = Some(*term_bg_rgb_ref);
+                            let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
+
+                            // Load the specified theme directly
+                            let theme = Theme::get_theme_with_color_support(&theme_name, *color_support)
+                                .unwrap_or_else(|_| {
+                                    vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
+                                    Theme::auto_detect(*color_support, TermBgLuma::Dark, Some(term_bg_rgb_ref))
+                                        .expect("Failed to auto-detect fallback theme")
+                                });
+
+                            // Determine theme's background luma from the theme itself
+                            let term_bg_luma = if let Some((r, g, b)) = theme.bg_rgbs.first() {
+                                if is_light_color((*r, *g, *b)) {
+                                    TermBgLuma::Light
+                                } else {
+                                    TermBgLuma::Dark
+                                }
+                            } else if is_light_color(*term_bg_rgb_ref) {
+                                TermBgLuma::Light
+                            } else {
+                                TermBgLuma::Dark
+                            };
+
+                            return Self {
+                                how_initialized: HowInitialized::Detected,
+                                color_support: *color_support,
+                                term_bg_hex,
+                                term_bg_rgb,
+                                term_bg_luma,
+                                theme,
+                            };
+                        }
+
+                        // Original auto-detection logic when THAG_THEME is not set
                         let (color_support, term_bg_rgb_ref) =
                             thag_common::terminal::detect_term_capabilities();
                         // let term_bg_rgb_ref = terminal::get_term_bg_rgb().ok();

@@ -18,7 +18,6 @@ thag_styling = { version = "0.2, thag-auto", features = ["config", "image_themes
 //# Categories: color, styling, terminal, theming, tools
 use std::error::Error;
 use std::fs;
-use std::path::Path;
 use thag_proc_macros::file_navigator;
 use thag_styling::{
     cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, Styleable, StylingError,
@@ -65,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!();
 
     // Get configuration from user
-    let config = get_theme_config(&image_path)?;
+    let config = get_theme_config()?;
 
     // Generate theme from image
     println!("🎨 Analyzing image and generating theme...");
@@ -79,25 +78,45 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
+    let image_name = image_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("image");
+
+    let theme_type_suffix = match theme.term_bg_luma {
+        TermBgLuma::Light => "light",
+        TermBgLuma::Dark => "dark",
+        TermBgLuma::Undetermined => "",
+    };
+
     // Set the theme name
-    theme.name = config.theme_name_prefix.unwrap_or_else(|| {
-        let base_name = image_path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("image");
+    let default_name = format!(
+        "thag-{}-{theme_type_suffix}",
+        image_name.to_lowercase().replace(' ', "-"),
+    );
+    theme.name = Text::new("Enter theme name:")
+        .with_default(&default_name)
+        .prompt()?;
 
-        let theme_type_suffix = match theme.term_bg_luma {
-            TermBgLuma::Light => "-light",
-            TermBgLuma::Dark => "-dark",
-            TermBgLuma::Undetermined => "",
-        };
+    // // Set the theme name
+    // theme.name = config.theme_name_prefix.unwrap_or_else(|| {
+    //     let base_name = image_path
+    //         .file_stem()
+    //         .and_then(|s| s.to_str())
+    //         .unwrap_or("image");
 
-        format!(
-            "thag-{}{}",
-            base_name.to_lowercase().replace(' ', "-"),
-            theme_type_suffix
-        )
-    });
+    //     let theme_type_suffix = match theme.term_bg_luma {
+    //         TermBgLuma::Light => "-light",
+    //         TermBgLuma::Dark => "-dark",
+    //         TermBgLuma::Undetermined => "",
+    //     };
+
+    //     format!(
+    //         "thag-{}{}",
+    //         base_name.to_lowercase().replace(' ', "-"),
+    //         theme_type_suffix
+    //     )
+    // });
 
     // Display theme information
     display_theme_info(&theme);
@@ -110,19 +129,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 /// Get theme configuration from user input
-fn get_theme_config(image_path: &Path) -> Result<ImageThemeConfig, Box<dyn Error>> {
-    use inquire::{Confirm, CustomType, Select, Text};
-
-    let image_name = image_path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("image");
-
-    // Theme name
-    let default_name = format!("thag-{}", image_name.to_lowercase().replace(' ', "-"));
-    let theme_name = Text::new("Enter theme name:")
-        .with_default(&default_name)
-        .prompt()?;
+fn get_theme_config() -> Result<ImageThemeConfig, Box<dyn Error>> {
+    use inquire::{Confirm, CustomType, Select};
 
     // Theme type detection
     let theme_type_options = vec![
@@ -174,7 +182,7 @@ fn get_theme_config(image_path: &Path) -> Result<ImageThemeConfig, Box<dyn Error
         saturation_threshold,
         auto_detect_theme_type: auto_detect,
         force_theme_type: force_type,
-        theme_name_prefix: Some(theme_name),
+        theme_name_prefix: None,
     })
 }
 

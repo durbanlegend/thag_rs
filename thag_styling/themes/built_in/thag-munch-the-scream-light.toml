@@ -1,131 +1,131 @@
-name = "thag-morning-coffee-dark"
+name = "thag-munch-the-scream-light"
 description = "Generated from image analysis"
-term_bg_luma = "dark"
+term_bg_luma = "light"
 min_color_support = "true_color"
-backgrounds = ["#000000"]
+backgrounds = ["#f8f8f8"]
 bg_rgbs = [[
-    0,
-    0,
-    0,
+    248,
+    248,
+    248,
 ]]
 
 [palette.heading1]
 rgb = [
-    140,
-    158,
-    227,
+    1,
+    12,
+    44,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    135,
-    154,
-    226,
+    2,
+    25,
+    94,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    220,
-    227,
-    242,
+    3,
+    35,
+    130,
 ]
 style = ["bold"]
 
 [palette.error]
 rgb = [
-    255,
-    255,
-    255,
+    0,
+    0,
+    0,
 ]
 
 [palette.warning]
 rgb = [
-    224,
-    193,
-    146,
+    87,
+    68,
+    49,
 ]
 
 [palette.success]
 rgb = [
-    180,
-    180,
-    180,
+    20,
+    69,
+    119,
 ]
 
 [palette.info]
 rgb = [
-    146,
-    177,
-    224,
+    47,
+    73,
+    73,
 ]
 
 [palette.emphasis]
 rgb = [
-    179,
-    179,
-    179,
+    74,
+    74,
+    60,
 ]
 
 [palette.code]
 rgb = [
-    226,
-    190,
-    137,
+    109,
+    92,
+    26,
 ]
 
 [palette.normal]
 rgb = [
-    144,
-    168,
-    216,
+    117,
+    45,
+    17,
 ]
 
 [palette.subtle]
 rgb = [
-    121,
-    143,
-    188,
+    142,
+    23,
+    23,
 ]
 
 [palette.hint]
 rgb = [
-    198,
-    164,
-    114,
+    54,
+    109,
+    136,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
-    189,
-    200,
-    222,
+    6,
+    77,
+    183,
 ]
 style = ["italic"]
 
 [palette.link]
 rgb = [
-    255,
-    255,
-    255,
+    0,
+    0,
+    0,
 ]
 style = ["underline"]
 
 [palette.quote]
 rgb = [
-    131,
-    146,
-    178,
+    160,
+    5,
+    5,
 ]
 style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    155,
-    172,
-    205,
+    177,
+    58,
+    11,
 ]
 style = ["italic"]
 

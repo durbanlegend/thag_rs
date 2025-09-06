@@ -2,6 +2,8 @@
 //!
 //! This example demonstrates that we can now change themes dynamically without
 //! being stuck with static ANSI color codes from Box::leak.
+//!
+//! Run with: cargo run -p thag_styling --example test_dynamic_theme
 
 use thag_styling::{ColorInfo, ColorInitStrategy, Role, Style, TermAttributes};
 

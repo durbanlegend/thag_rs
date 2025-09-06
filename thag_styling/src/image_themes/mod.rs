@@ -116,8 +116,8 @@ impl ColorAnalysis {
     fn has_good_contrast_against(&self, background: &Self) -> bool {
         let lightness_diff = (self.lightness - background.lightness).abs();
         // dbg!(lightness_diff);
-        let has_good_contrast_against = lightness_diff > 0.4 && lightness_diff < 0.7; // Minimum contrast requirement
-                                                                                      // dbg!(has_good_contrast_against);
+        let has_good_contrast_against = lightness_diff > 0.4; // Minimum contrast requirement only, no upper limit
+                                                              // dbg!(has_good_contrast_against);
         vprtln!(V::V, "self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", Style::new().with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), background.lightness);
         has_good_contrast_against
     }
@@ -423,6 +423,74 @@ impl ImageThemeGenerator {
         weighted_lightness > self.config.light_threshold
     }
 
+    /// Adjust color contrast against background, with saturation adjustments optimized for theme type
+    fn adjust_color_contrast(
+        color: &ColorAnalysis,
+        background: &ColorAnalysis,
+        min_lightness_diff: f32,
+        is_light_theme: bool,
+        adjust_saturation: bool,
+        color_name: &str,
+    ) -> ColorAnalysis {
+        let mut adjusted_lightness = color.lightness;
+        let mut lightness_diff = (adjusted_lightness - background.lightness).abs();
+
+        // Adjust lightness to meet minimum contrast requirement
+        while lightness_diff < min_lightness_diff {
+            if is_light_theme {
+                if adjusted_lightness > background.lightness {
+                    // Color is lighter than background, make it lighter
+                    adjusted_lightness = (adjusted_lightness * 1.05).min(0.95);
+                } else {
+                    // Color is darker than background, make it darker
+                    adjusted_lightness = (adjusted_lightness / 1.05).max(0.05);
+                }
+            } else {
+                if adjusted_lightness > background.lightness {
+                    // Color is lighter than background, make it lighter
+                    adjusted_lightness = (adjusted_lightness * 1.05).min(0.95);
+                } else {
+                    // Color is darker than background, make it darker
+                    adjusted_lightness = (adjusted_lightness / 1.05).max(0.05);
+                }
+            }
+            lightness_diff = (adjusted_lightness - background.lightness).abs();
+        }
+
+        // Adjust saturation based on theme type
+        let adjusted_saturation = if adjust_saturation {
+            if is_light_theme {
+                // Boost saturation for light themes to preserve vibrancy when darkening colors
+                (color.saturation * 1.3).min(0.95)
+            } else {
+                // Reduce saturation for dark themes for better readability
+                (color.saturation * 0.7).max(0.05)
+            }
+        } else {
+            // For semantic/core colors, apply light theme boost to maintain vibrancy
+            if is_light_theme {
+                (color.saturation * 1.1).min(0.95)
+            } else {
+                color.saturation
+            }
+        };
+
+        let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
+
+        // Debug output
+        println!(
+            "{}: {}",
+            color_name,
+            Style::new().with_rgb(rgb).paint(format!(
+                "lightness_diff={:.3}, rgb={}",
+                lightness_diff,
+                rgb_to_hex(&rgb.into())
+            ))
+        );
+
+        ColorAnalysis::new(rgb, 0.0)
+    }
+
     /// Map extracted colors to semantic roles with improved contrast and diversity
     #[allow(clippy::too_many_lines)]
     fn map_colors_to_roles(
@@ -560,7 +628,7 @@ impl ImageThemeGenerator {
         vprtln!(V::V, "");
         assert!(used_colors.contains(&semantic_colors.error));
         let subtle_color =
-            Self::find_most_different_color(&enhanced_colors, &used_colors, background_color);
+            Self::find_most_different_color(&enhanced_colors, &used_colors[..], background_color);
         vprtln!(
             V::V,
             "subtle_color={}",
@@ -570,19 +638,21 @@ impl ImageThemeGenerator {
                 subtle_color.hue
             ))
         );
-        println!(
-            "Subtle: {}",
-            Style::new().with_rgb(subtle_color.rgb).paint(format!(
-                "lightness_diff={}, rgb={}",
-                (subtle_color.lightness - background_color.lightness).abs(),
-                rgb_to_hex(&subtle_color.rgb.into())
-            ))
+
+        // Apply contrast adjustment to subtle color
+        let adjusted_subtle_color = Self::adjust_color_contrast(
+            subtle_color,
+            background_color,
+            0.6,
+            is_light_theme,
+            true,
+            "Subtle",
         );
 
         used_colors.push(subtle_color);
 
         let hint_color =
-            Self::find_most_different_color(&enhanced_colors, &used_colors, background_color);
+            Self::find_most_different_color(&enhanced_colors, &used_colors[..], background_color);
         vprtln!(
             V::V,
             "hint_color={}",
@@ -592,20 +662,22 @@ impl ImageThemeGenerator {
                 hint_color.hue
             ))
         );
-        println!(
-            "Hint: {}",
-            Style::new().with_rgb(hint_color.rgb).paint(format!(
-                "lightness_diff={}, rgb={}",
-                (hint_color.lightness - background_color.lightness).abs(),
-                rgb_to_hex(&hint_color.rgb.into())
-            ))
+
+        // Apply contrast adjustment to hint color
+        let adjusted_hint_color = Self::adjust_color_contrast(
+            hint_color,
+            background_color,
+            0.6,
+            is_light_theme,
+            true,
+            "Hint",
         );
 
         used_colors.push(hint_color);
 
         // Debug and trace should be different from subtle and hint
         let debug_color =
-            Self::find_most_different_color(&enhanced_colors, &used_colors, background_color);
+            Self::find_most_different_color(&enhanced_colors, &used_colors[..], background_color);
         vprtln!(
             V::V,
             "debug_color={}",
@@ -615,97 +687,99 @@ impl ImageThemeGenerator {
                 debug_color.hue
             ))
         );
-        println!(
-            "Debug: {}",
-            Style::new().with_rgb(debug_color.rgb).paint(format!(
-                "lightness_diff={}, rgb={}",
-                (debug_color.lightness - background_color.lightness).abs(),
-                rgb_to_hex(&debug_color.rgb.into())
-            ))
+
+        // Apply contrast adjustment to debug color
+        let adjusted_debug_color = Self::adjust_color_contrast(
+            debug_color,
+            background_color,
+            0.6,
+            is_light_theme,
+            true,
+            "Debug",
         );
 
         // Derive three distinct colors for the new roles from existing palette colors
         used_colors.push(debug_color);
 
+        // Apply contrast adjustment to semantic colors (0.7 minimum for better readability)
+        let adjusted_error = Self::adjust_color_contrast(
+            semantic_colors.error,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Error",
+        );
+        let adjusted_warning = Self::adjust_color_contrast(
+            semantic_colors.warning,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Warning",
+        );
+        let adjusted_success = Self::adjust_color_contrast(
+            semantic_colors.success,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Success",
+        );
+        let adjusted_info = Self::adjust_color_contrast(
+            semantic_colors.info,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Info",
+        );
+        let adjusted_code = Self::adjust_color_contrast(
+            semantic_colors.code,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Code",
+        );
+        let adjusted_emphasis = Self::adjust_color_contrast(
+            semantic_colors.emphasis,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Emphasis",
+        );
+
         // Link color: derive from error color (typically red/bright for visibility)
-        let link_color = {
-            let base = semantic_colors.error;
-            let adjusted_lightness = if is_light_theme {
-                (base.lightness - 0.15).max(0.3) // Darker for light themes
-            } else {
-                (base.lightness + 0.15).min(0.85) // Brighter for dark themes
-            };
-            let rgb = hsl_to_rgb(base.hue, base.saturation, adjusted_lightness);
-            println!(
-                "Link with adjusted saturation: {}",
-                Style::new().with_rgb(rgb).paint(format!(
-                    "lightness_diff={}, rgb={}",
-                    (adjusted_lightness - background_color.lightness).abs(),
-                    rgb_to_hex(&rgb.into())
-                ))
-            );
-            ColorAnalysis::new(rgb, 0.0)
-        };
+        let link_color = Self::adjust_color_contrast(
+            &adjusted_error,
+            background_color,
+            0.6,
+            is_light_theme,
+            true,
+            "Link",
+        );
 
         // Quote color: derive from subtle color with reduced saturation for muted appearance
-        let quote_color = {
-            let base = subtle_color;
-            let adjusted_saturation = (base.saturation * 0.7).max(0.1);
-            let adjusted_lightness = if is_light_theme {
-                (base.lightness - 0.1).max(0.4)
-            } else {
-                (base.lightness + 0.1).min(0.75)
-            };
-            let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
-            println!(
-                "Quote with adjusted saturation: {}",
-                Style::new().with_rgb(rgb).paint(format!(
-                    "lightness_diff={}, rgb={}",
-                    (adjusted_lightness - background_color.lightness).abs(),
-                    rgb_to_hex(&rgb.into())
-                ))
-            );
-            ColorAnalysis::new(rgb, 0.0)
-        };
+        let quote_color = Self::adjust_color_contrast(
+            &adjusted_subtle_color,
+            background_color,
+            0.6,
+            is_light_theme,
+            true,
+            "Quote",
+        );
 
-        // Commentary color: derive from normal color, dimmed slightly
-        let commentary_color = {
-            let base = normal_color;
-            let mut adjusted_lightness = if is_light_theme {
-                (base.lightness + 0.1).min(0.6) // Lighter for light themes
-            } else {
-                (base.lightness - 0.15).max(0.4) // Much darker for dark themes
-            };
-            let mut lightness_diff = (adjusted_lightness - background_color.lightness).abs();
-            // dbg!(lightness_diff);
-            while lightness_diff <= 0.6 {
-                if is_light_theme {
-                    adjusted_lightness /= 1.05 // Darker for light themes
-                } else {
-                    adjusted_lightness *= 1.05 // Lighter for dark themes
-                };
-                lightness_diff = (adjusted_lightness - background_color.lightness).abs();
-                let rgb = hsl_to_rgb(base.hue, base.saturation, adjusted_lightness);
-                println!(
-                    "Commentary {}",
-                    Style::new().with_rgb(rgb).paint(format!(
-                        "lightness_diff={}, rgb={}",
-                        (adjusted_lightness - background_color.lightness).abs(),
-                        rgb_to_hex(&rgb.into())
-                    ))
-                );
-            }
-            let adjusted_saturation = (base.saturation * 0.5).max(0.05);
-            let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
-            println!(
-                "Commentary with reduced saturation: {}",
-                Style::new().with_rgb(rgb).paint(format!(
-                    "lightness_diff={lightness_diff}, rgb={}",
-                    rgb_to_hex(&rgb.into())
-                ))
-            );
-            ColorAnalysis::new(rgb, 0.0)
-        };
+        // Commentary color: derive from normal color
+        let commentary_color = Self::adjust_color_contrast(
+            &normal_color,
+            background_color,
+            0.6,
+            is_light_theme,
+            true,
+            "Commentary",
+        );
 
         vprtln!(
             V::V,
@@ -735,20 +809,58 @@ impl ImageThemeGenerator {
             ))
         );
 
+        // Apply contrast adjustment to heading colors
+        let adjusted_heading_colors = (
+            Self::adjust_color_contrast(
+                &heading_colors.0,
+                background_color,
+                0.7,
+                is_light_theme,
+                false,
+                "Heading1",
+            ),
+            Self::adjust_color_contrast(
+                &heading_colors.1,
+                background_color,
+                0.7,
+                is_light_theme,
+                false,
+                "Heading2",
+            ),
+            Self::adjust_color_contrast(
+                &heading_colors.2,
+                background_color,
+                0.7,
+                is_light_theme,
+                false,
+                "Heading3",
+            ),
+        );
+
+        // Apply contrast adjustment to normal color
+        let adjusted_normal_color = Self::adjust_color_contrast(
+            &normal_color,
+            background_color,
+            0.7,
+            is_light_theme,
+            false,
+            "Normal",
+        );
+
         Palette {
-            normal: Style::new().with_rgb(normal_color.rgb),
-            subtle: Style::new().with_rgb(subtle_color.rgb),
-            hint: Style::new().with_rgb(hint_color.rgb).italic(),
-            heading1: Style::new().with_rgb(heading_colors.0.rgb).bold(),
-            heading2: Style::new().with_rgb(heading_colors.1.rgb).bold(),
-            heading3: Style::new().with_rgb(heading_colors.2.rgb).bold(),
-            error: Style::new().with_rgb(semantic_colors.error.rgb),
-            warning: Style::new().with_rgb(semantic_colors.warning.rgb),
-            success: Style::new().with_rgb(semantic_colors.success.rgb),
-            info: Style::new().with_rgb(semantic_colors.info.rgb),
-            code: Style::new().with_rgb(semantic_colors.code.rgb),
-            emphasis: Style::new().with_rgb(semantic_colors.emphasis.rgb),
-            debug: Style::new().with_rgb(debug_color.rgb).italic(),
+            normal: Style::new().with_rgb(adjusted_normal_color.rgb),
+            subtle: Style::new().with_rgb(adjusted_subtle_color.rgb),
+            hint: Style::new().with_rgb(adjusted_hint_color.rgb).italic(),
+            heading1: Style::new().with_rgb(adjusted_heading_colors.0.rgb).bold(),
+            heading2: Style::new().with_rgb(adjusted_heading_colors.1.rgb).bold(),
+            heading3: Style::new().with_rgb(adjusted_heading_colors.2.rgb).bold(),
+            error: Style::new().with_rgb(adjusted_error.rgb),
+            warning: Style::new().with_rgb(adjusted_warning.rgb),
+            success: Style::new().with_rgb(adjusted_success.rgb),
+            info: Style::new().with_rgb(adjusted_info.rgb),
+            code: Style::new().with_rgb(adjusted_code.rgb),
+            emphasis: Style::new().with_rgb(adjusted_emphasis.rgb),
+            debug: Style::new().with_rgb(adjusted_debug_color.rgb).italic(),
             link: Style::new().with_rgb(link_color.rgb).underline(),
             quote: Style::new().with_rgb(quote_color.rgb).italic(),
             commentary: Style::new().with_rgb(commentary_color.rgb).italic(),
@@ -1557,7 +1669,7 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
         2 => (0.0, c, x),
         3 => (0.0, x, c),
         4 => (x, 0.0, c),
-        _ => (c, 0.0, x),
+        5 | _ => (c, 0.0, x),
     };
 
     let m = l - c / 2.0;
@@ -1777,6 +1889,131 @@ const fn color_256_to_rgb(color: u8) -> [u8; 3] {
 mod tests {
     use super::*;
     use image::{Rgb, RgbImage};
+
+    #[test]
+    fn test_contrast_adjustment_light_theme() {
+        // Create a light background
+        let background = ColorAnalysis::new([240, 240, 240], 0.0); // Very light gray
+
+        // Create a color that's too close to the background
+        let low_contrast_color = ColorAnalysis::new([220, 220, 220], 0.0); // Light gray
+
+        // Test that contrast adjustment increases the difference for light theme
+        let adjusted = ImageThemeGenerator::adjust_color_contrast(
+            &low_contrast_color,
+            &background,
+            0.6,   // minimum lightness difference
+            true,  // is_light_theme
+            false, // adjust_saturation
+            "TestColor",
+        );
+
+        let lightness_diff = (adjusted.lightness - background.lightness).abs();
+        assert!(
+            lightness_diff >= 0.6,
+            "Lightness difference should be at least 0.6, got {}",
+            lightness_diff
+        );
+    }
+
+    #[test]
+    fn test_contrast_adjustment_dark_theme() {
+        // Create a dark background
+        let background = ColorAnalysis::new([30, 30, 30], 0.0); // Very dark gray
+
+        // Create a color that's too close to the background
+        let low_contrast_color = ColorAnalysis::new([50, 50, 50], 0.0); // Dark gray
+
+        // Test that contrast adjustment increases the difference for dark theme
+        let adjusted = ImageThemeGenerator::adjust_color_contrast(
+            &low_contrast_color,
+            &background,
+            0.7,   // minimum lightness difference (semantic colors)
+            false, // is_light_theme
+            false, // adjust_saturation
+            "TestColor",
+        );
+
+        let lightness_diff = (adjusted.lightness - background.lightness).abs();
+        assert!(
+            lightness_diff >= 0.7,
+            "Lightness difference should be at least 0.7, got {}",
+            lightness_diff
+        );
+    }
+
+    #[test]
+    fn test_saturation_adjustment() {
+        let background = ColorAnalysis::new([128, 128, 128], 0.0); // Mid gray
+        let high_saturation_color = ColorAnalysis::new([255, 0, 0], 0.0); // Pure red
+
+        let original_saturation = high_saturation_color.saturation;
+
+        // Test light theme - should boost saturation
+        let adjusted_light = ImageThemeGenerator::adjust_color_contrast(
+            &high_saturation_color,
+            &background,
+            0.6,
+            true, // is_light_theme
+            true, // adjust_saturation
+            "TestColor",
+        );
+
+        // Should have boosted saturation for light theme
+        assert!(
+            adjusted_light.saturation > original_saturation,
+            "Light theme saturation should be boosted from {} to {}",
+            original_saturation,
+            adjusted_light.saturation
+        );
+
+        // Test dark theme - should reduce saturation
+        let adjusted_dark = ImageThemeGenerator::adjust_color_contrast(
+            &high_saturation_color,
+            &background,
+            0.6,
+            false, // is_light_theme (dark theme)
+            true,  // adjust_saturation
+            "TestColor",
+        );
+
+        // Should have reduced saturation for dark theme
+        assert!(
+            adjusted_dark.saturation < original_saturation,
+            "Dark theme saturation should be reduced from {} to {}",
+            original_saturation,
+            adjusted_dark.saturation
+        );
+        assert!(
+            adjusted_dark.saturation >= 0.05,
+            "Saturation should not go below minimum of 0.05"
+        );
+    }
+
+    #[test]
+    fn test_contrast_adjustment_preserves_hue() {
+        let background = ColorAnalysis::new([128, 128, 128], 0.0);
+        let test_color = ColorAnalysis::new([100, 150, 200], 0.0); // Some blue-ish color
+
+        let original_hue = test_color.hue;
+
+        let adjusted = ImageThemeGenerator::adjust_color_contrast(
+            &test_color,
+            &background,
+            0.6,
+            true,
+            false,
+            "TestColor",
+        );
+
+        // Hue should remain the same
+        assert!(
+            (adjusted.hue - original_hue).abs() < 1.0,
+            "Hue should be preserved, original: {}, adjusted: {}",
+            original_hue,
+            adjusted.hue
+        );
+    }
 
     fn create_test_image() -> DynamicImage {
         let mut img = RgbImage::new(100, 100);

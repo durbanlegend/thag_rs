@@ -122,26 +122,6 @@ impl ColorAnalysis {
         has_good_contrast_against
     }
 
-    // /// Check if this color is suitable as an accent color
-    // fn is_accent_suitable(&self, saturation_threshold: f32) -> bool {
-    //     // dbg!(self.saturation);
-    //     // dbg!(self.lightness);
-    //     // dbg!(
-    //     //     self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9
-    //     // );
-
-    //     let is_accent_suitable =
-    //         self.saturation >= saturation_threshold && self.lightness > 0.2 && self.lightness < 0.9;
-    //     // dbg!(is_accent_suitable);
-    //     vprtln!(V::V,
-    //         "self.rgb={}, is_accent_suitable={is_accent_suitable}",
-    //         Style::new()
-    //             .with_rgb(self.rgb)
-    //             .paint(format!("{:?}", self.rgb))
-    //     );
-    //     is_accent_suitable
-    // }
-
     /// Calculate perceptual distance to another color using Delta E
     fn distance_to(&self, other: &Self) -> f32 {
         let delta_l = self.lab.l - other.lab.l;
@@ -590,6 +570,14 @@ impl ImageThemeGenerator {
                 subtle_color.hue
             ))
         );
+        println!(
+            "Subtle: {}",
+            Style::new().with_rgb(subtle_color.rgb).paint(format!(
+                "lightness_diff={}, rgb={}",
+                (subtle_color.lightness - background_color.lightness).abs(),
+                rgb_to_hex(&subtle_color.rgb.into())
+            ))
+        );
 
         used_colors.push(subtle_color);
 
@@ -602,6 +590,14 @@ impl ImageThemeGenerator {
                 "{}, hue={}",
                 rgb_to_hex(&hint_color.rgb.into()),
                 hint_color.hue
+            ))
+        );
+        println!(
+            "Hint: {}",
+            Style::new().with_rgb(hint_color.rgb).paint(format!(
+                "lightness_diff={}, rgb={}",
+                (hint_color.lightness - background_color.lightness).abs(),
+                rgb_to_hex(&hint_color.rgb.into())
             ))
         );
 
@@ -619,6 +615,14 @@ impl ImageThemeGenerator {
                 debug_color.hue
             ))
         );
+        println!(
+            "Debug: {}",
+            Style::new().with_rgb(debug_color.rgb).paint(format!(
+                "lightness_diff={}, rgb={}",
+                (debug_color.lightness - background_color.lightness).abs(),
+                rgb_to_hex(&debug_color.rgb.into())
+            ))
+        );
 
         // Derive three distinct colors for the new roles from existing palette colors
         used_colors.push(debug_color);
@@ -632,6 +636,14 @@ impl ImageThemeGenerator {
                 (base.lightness + 0.15).min(0.85) // Brighter for dark themes
             };
             let rgb = hsl_to_rgb(base.hue, base.saturation, adjusted_lightness);
+            println!(
+                "Link with adjusted saturation: {}",
+                Style::new().with_rgb(rgb).paint(format!(
+                    "lightness_diff={}, rgb={}",
+                    (adjusted_lightness - background_color.lightness).abs(),
+                    rgb_to_hex(&rgb.into())
+                ))
+            );
             ColorAnalysis::new(rgb, 0.0)
         };
 
@@ -645,19 +657,53 @@ impl ImageThemeGenerator {
                 (base.lightness + 0.1).min(0.75)
             };
             let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
+            println!(
+                "Quote with adjusted saturation: {}",
+                Style::new().with_rgb(rgb).paint(format!(
+                    "lightness_diff={}, rgb={}",
+                    (adjusted_lightness - background_color.lightness).abs(),
+                    rgb_to_hex(&rgb.into())
+                ))
+            );
             ColorAnalysis::new(rgb, 0.0)
         };
 
         // Commentary color: derive from normal color, dimmed slightly
         let commentary_color = {
             let base = normal_color;
-            let adjusted_lightness = if is_light_theme {
+            let mut adjusted_lightness = if is_light_theme {
                 (base.lightness + 0.1).min(0.6) // Lighter for light themes
             } else {
                 (base.lightness - 0.15).max(0.4) // Much darker for dark themes
             };
+            let mut lightness_diff = (adjusted_lightness - background_color.lightness).abs();
+            // dbg!(lightness_diff);
+            while lightness_diff <= 0.6 {
+                if is_light_theme {
+                    adjusted_lightness /= 1.05 // Darker for light themes
+                } else {
+                    adjusted_lightness *= 1.05 // Lighter for dark themes
+                };
+                lightness_diff = (adjusted_lightness - background_color.lightness).abs();
+                let rgb = hsl_to_rgb(base.hue, base.saturation, adjusted_lightness);
+                println!(
+                    "Commentary {}",
+                    Style::new().with_rgb(rgb).paint(format!(
+                        "lightness_diff={}, rgb={}",
+                        (adjusted_lightness - background_color.lightness).abs(),
+                        rgb_to_hex(&rgb.into())
+                    ))
+                );
+            }
             let adjusted_saturation = (base.saturation * 0.5).max(0.05);
             let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
+            println!(
+                "Commentary with reduced saturation: {}",
+                Style::new().with_rgb(rgb).paint(format!(
+                    "lightness_diff={lightness_diff}, rgb={}",
+                    rgb_to_hex(&rgb.into())
+                ))
+            );
             ColorAnalysis::new(rgb, 0.0)
         };
 

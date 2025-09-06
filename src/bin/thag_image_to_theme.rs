@@ -219,7 +219,7 @@ fn display_color_palette(theme: &Theme) {
     for (name, style) in palette_items {
         let styled_name = style.paint(format!("{:>12}", name));
         let rgb_info = extract_rgb_info(style);
-        println!("   {} {}", styled_name, rgb_info);
+        println!("   {styled_name} {rgb_info}");
     }
 
     // Show background colors

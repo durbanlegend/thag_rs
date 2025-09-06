@@ -238,30 +238,45 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
 
     lazy_static_var!(
         Result < (u8, u8, u8),
-        termbg::Error >, {
+        ThagCommonError >, {
             // Save initial state
-            let raw_before = is_raw_mode_enabled()?;
+            let raw_before = is_raw_mode_enabled()
+                .map_err(|e| ThagCommonError::Generic(e.to_string()))?;
 
             // Ensure raw mode for detection
             if !raw_before {
-                enable_raw_mode()?;
+                enable_raw_mode()
+                    .map_err(|e| ThagCommonError::Generic(e.to_string()))?;
             }
 
             let _guard = RawModeGuard(raw_before);
 
-            // Now do theme detection
-            vprtln!(V::V, "Checking terminal background");
-            let timeout = std::time::Duration::from_millis(500);
-            let bg_rgb = termbg::rgb(timeout)?;
+            // Try custom OSC 11 implementation first (more reliable timeout)
+            vprtln!(V::V, "Checking terminal background with OSC 11");
+            if let Some(rgb) = query_background_osc11_with_timeout(Duration::from_millis(300)) {
+                vprtln!(V::V, "OSC 11 query successful: {:?}", rgb);
+                return Ok(rgb);
+            }
 
-            // Convert 16-bit RGB to 8-bit RGB
-            let (r, g, b): (u8, u8, u8) = (
-                (bg_rgb.r >> 8) as u8,
-                (bg_rgb.g >> 8) as u8,
-                (bg_rgb.b >> 8) as u8,
-            );
-
-            Ok((r, g, b))
+            // Fallback to termbg with shorter timeout
+            vprtln!(V::V, "OSC 11 failed, trying termbg");
+            let timeout = std::time::Duration::from_millis(200);
+            match termbg::rgb(timeout) {
+                Ok(bg_rgb) => {
+                    // Convert 16-bit RGB to 8-bit RGB
+                    let rgb = (
+                        (bg_rgb.r >> 8) as u8,
+                        (bg_rgb.g >> 8) as u8,
+                        (bg_rgb.b >> 8) as u8,
+                    );
+                    vprtln!(V::V, "termbg successful: {:?}", rgb);
+                    Ok(rgb)
+                }
+                Err(e) => {
+                    vprtln!(V::V, "Both OSC 11 and termbg failed: {}", e);
+                    Err(ThagCommonError::Generic(format!("Background detection failed: {}", e)))
+                }
+            }
         }
     )
     .as_ref()
@@ -299,19 +314,33 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
     // Now do theme detection
     lazy_static_var!(
     Result < (u8, u8, u8),
-    termbg::Error >, {
-        vprtln!(V::V, "Checking terminal background");
-        let timeout = std::time::Duration::from_millis(500);
-        let bg_rgb = termbg::rgb(timeout)?;
+    ThagCommonError >, {
+        // Try custom OSC 11 implementation first (more reliable timeout)
+        vprtln!(V::V, "Checking terminal background with OSC 11 (unguarded)");
+        if let Some(rgb) = query_background_osc11_with_timeout(Duration::from_millis(300)) {
+            vprtln!(V::V, "OSC 11 query successful: {:?}", rgb);
+            return Ok(rgb);
+        }
 
-        // Convert 16-bit RGB to 8-bit RGB
-        let (r, g, b): (u8, u8, u8) = (
-            (bg_rgb.r >> 8) as u8,
-            (bg_rgb.g >> 8) as u8,
-            (bg_rgb.b >> 8) as u8,
-        );
-
-        Ok((r, g, b))
+        // Fallback to termbg with shorter timeout
+        vprtln!(V::V, "OSC 11 failed, trying termbg (unguarded)");
+        let timeout = std::time::Duration::from_millis(200);
+        match termbg::rgb(timeout) {
+            Ok(bg_rgb) => {
+                // Convert 16-bit RGB to 8-bit RGB
+                let rgb = (
+                    (bg_rgb.r >> 8) as u8,
+                    (bg_rgb.g >> 8) as u8,
+                    (bg_rgb.b >> 8) as u8,
+                );
+                vprtln!(V::V, "termbg successful: {:?}", rgb);
+                Ok(rgb)
+            }
+            Err(e) => {
+                vprtln!(V::V, "Both OSC 11 and termbg failed: {}", e);
+                Err(ThagCommonError::Generic(format!("Background detection failed: {}", e)))
+            }
+        }
     })
     .as_ref()
     .map_err(|e| ThagCommonError::Generic(e.to_string()))
@@ -370,9 +399,178 @@ fn is_mintty() -> bool {
     std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
 }
 
-/// Detect if we're running in Apple Terminal (which has RGB rendering issues)
+/// Check if running in Apple Terminal (which has RGB rendering issues)
 fn is_apple_terminal() -> bool {
     std::env::var("TERM_PROGRAM").map_or(false, |term| term == "Apple_Terminal")
+}
+
+/// Query background color using OSC 11 with robust timeout handling
+fn query_background_osc11_with_timeout(timeout: Duration) -> Option<(u8, u8, u8)> {
+    use std::sync::mpsc;
+    use std::thread;
+
+    let (tx, rx) = mpsc::channel();
+
+    let handle = thread::spawn(move || {
+        let result = (|| -> Option<(u8, u8, u8)> {
+            if enable_raw_mode().is_err() {
+                return None;
+            }
+
+            let mut stdout = std::io::stdout();
+            let mut stdin = std::io::stdin();
+
+            // Send OSC 11 query (background color)
+            let query = "\x1b]11;?\x07";
+            stdout.write_all(query.as_bytes()).ok()?;
+            stdout.flush().ok()?;
+
+            // Read response with timeout
+            let response = read_terminal_response_with_timeout(&mut stdin, timeout)?;
+
+            // Parse OSC 11 response
+            parse_osc11_background_response(&response)
+        })();
+
+        let _ = disable_raw_mode();
+        let _ = tx.send(result);
+    });
+
+    // Wait for result with timeout
+    match rx.recv_timeout(timeout + Duration::from_millis(50)) {
+        Ok(result) => {
+            let _ = handle.join();
+            result
+        }
+        Err(_) => {
+            vprtln!(V::V, "OSC 11 query timed out");
+            None
+        }
+    }
+}
+
+/// Read terminal response with proper timeout handling
+fn read_terminal_response_with_timeout(
+    stdin: &mut std::io::Stdin,
+    timeout: Duration,
+) -> Option<String> {
+    use std::io::Read;
+
+    let mut buffer = Vec::new();
+    let mut temp_buffer = [0u8; 1];
+    let start = Instant::now();
+
+    while start.elapsed() < timeout {
+        match stdin.read(&mut temp_buffer) {
+            Ok(1) => {
+                buffer.push(temp_buffer[0]);
+
+                // Check for response terminators
+                if temp_buffer[0] == 0x07 || // BEL
+                   (buffer.len() >= 2 && buffer[buffer.len()-2] == 0x1b && buffer[buffer.len()-1] == b'\\')
+                {
+                    break;
+                }
+
+                // Safety limit to prevent infinite buffering
+                if buffer.len() > 1024 {
+                    vprtln!(V::V, "OSC response buffer limit exceeded");
+                    break;
+                }
+            }
+            Ok(0) => {
+                thread::sleep(Duration::from_millis(1));
+            }
+            Ok(_) => {
+                // Handle case where more than 1 byte is read
+                thread::sleep(Duration::from_millis(1));
+            }
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                thread::sleep(Duration::from_millis(1));
+            }
+            Err(_) => {
+                vprtln!(V::V, "Error reading terminal response");
+                break;
+            }
+        }
+    }
+
+    if buffer.is_empty() {
+        None
+    } else {
+        Some(String::from_utf8_lossy(&buffer).to_string())
+    }
+}
+
+/// Parse OSC 11 background color response
+fn parse_osc11_background_response(response: &str) -> Option<(u8, u8, u8)> {
+    // OSC 11 response format: ESC]11;rgb:RRRR/GGGG/BBBB BEL
+    if let Some(start_pos) = response.find("\x1b]11;") {
+        let response_part = &response[start_pos..];
+
+        if let Some(rgb_pos) = response_part.find("rgb:") {
+            let rgb_data = &response_part[rgb_pos + 4..];
+
+            let end_pos = rgb_data
+                .find('\x07')
+                .or_else(|| rgb_data.find('\x1b'))
+                .unwrap_or(rgb_data.len());
+
+            if end_pos > 0 {
+                let rgb_sequence = &rgb_data[..end_pos];
+                let parts: Vec<&str> = rgb_sequence.split('/').collect();
+
+                if parts.len() == 3 {
+                    if let (Ok(r), Ok(g), Ok(b)) = (
+                        parse_hex_component_bg(parts[0]),
+                        parse_hex_component_bg(parts[1]),
+                        parse_hex_component_bg(parts[2]),
+                    ) {
+                        return Some((r, g, b));
+                    }
+                }
+            }
+        }
+
+        // Also try #RRGGBB format
+        if let Some(hash_pos) = response_part.find('#') {
+            let hex_data = &response_part[hash_pos + 1..];
+            if hex_data.len() >= 6 {
+                let hex_str = &hex_data[..6];
+                if hex_str.chars().all(|c| c.is_ascii_hexdigit()) {
+                    if let (Ok(r), Ok(g), Ok(b)) = (
+                        u8::from_str_radix(&hex_str[0..2], 16),
+                        u8::from_str_radix(&hex_str[2..4], 16),
+                        u8::from_str_radix(&hex_str[4..6], 16),
+                    ) {
+                        return Some((r, g, b));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Parse hex component from OSC response (for background detection)
+fn parse_hex_component_bg(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
+    let clean_hex: String = hex_str
+        .chars()
+        .take_while(|c| c.is_ascii_hexdigit())
+        .collect();
+
+    match clean_hex.len() {
+        4 => {
+            // Take first 2 characters for 8-bit value (high byte)
+            u8::from_str_radix(&clean_hex[0..2], 16)
+        }
+        2 => u8::from_str_radix(&clean_hex, 16),
+        _ => {
+            let val = u16::from_str_radix(&clean_hex, 16).unwrap_or(0);
+            Ok(val.min(255) as u8)
+        }
+    }
 }
 
 /// Check environment variables for color support hints

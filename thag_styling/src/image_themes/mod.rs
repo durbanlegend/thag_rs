@@ -648,13 +648,13 @@ impl ImageThemeGenerator {
             ColorAnalysis::new(rgb, 0.0)
         };
 
-        // Commentary color: derive from normal color, dimmed significantly
+        // Commentary color: derive from normal color, dimmed slightly
         let commentary_color = {
             let base = normal_color;
             let adjusted_lightness = if is_light_theme {
-                (base.lightness + 0.2).min(0.6) // Lighter for light themes
+                (base.lightness + 0.1).min(0.6) // Lighter for light themes
             } else {
-                (base.lightness - 0.25).max(0.35) // Much darker for dark themes
+                (base.lightness - 0.15).max(0.4) // Much darker for dark themes
             };
             let adjusted_saturation = (base.saturation * 0.5).max(0.05);
             let rgb = hsl_to_rgb(base.hue, adjusted_saturation, adjusted_lightness);
@@ -702,10 +702,10 @@ impl ImageThemeGenerator {
             info: Style::new().with_rgb(semantic_colors.info.rgb),
             code: Style::new().with_rgb(semantic_colors.code.rgb),
             emphasis: Style::new().with_rgb(semantic_colors.emphasis.rgb),
-            debug: Style::new().with_rgb(debug_color.rgb).dim(),
+            debug: Style::new().with_rgb(debug_color.rgb).italic(),
             link: Style::new().with_rgb(link_color.rgb).underline(),
             quote: Style::new().with_rgb(quote_color.rgb).italic(),
-            commentary: Style::new().with_rgb(commentary_color.rgb).italic().dim(),
+            commentary: Style::new().with_rgb(commentary_color.rgb).italic(),
         }
     }
 

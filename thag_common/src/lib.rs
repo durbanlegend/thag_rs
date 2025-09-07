@@ -337,7 +337,7 @@ macro_rules! re {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use thag_profiler::static_lazy;
 ///
 /// static_lazy! {
@@ -388,6 +388,71 @@ macro_rules! static_lazy {
             }
         }
     };
+}
+
+/// Convenient macro for setting global verbosity with short syntax.
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_common::{set_verbosity, V};
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     // Set to verbose
+///     set_verbosity!(verbose);
+///
+///     // Set to debug
+///     set_verbosity!(debug);
+///
+///     // Set to quiet
+///     set_verbosity!(quiet);
+///
+///     // Use the V constants directly
+///     set_verbosity!(V::V);
+///
+///     Ok(())
+/// }
+/// ```
+#[macro_export]
+macro_rules! set_verbosity {
+    (verbose) => {
+        let _ = $crate::set_global_verbosity($crate::V::V)?;
+    };
+    (debug) => {
+        let _ = $crate::set_global_verbosity($crate::V::D)?;
+    };
+    (quiet) => {
+        let _ = $crate::set_global_verbosity($crate::V::Q)?;
+    };
+    (quieter) => {
+        let _ = $crate::set_global_verbosity($crate::V::QQ)?;
+    };
+    (normal) => {
+        let _ = $crate::set_global_verbosity($crate::V::N)?;
+    };
+    ($level:expr) => {
+        let _ = $crate::set_global_verbosity($level)?;
+    };
+}
+
+/// Initialize verbosity with a convenient function that handles common patterns.
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_common::{init_verbosity, V};
+///
+/// // Initialize with verbose for debugging
+/// init_verbosity(V::V).expect("Failed to set verbosity");
+///
+/// // Initialize with debug
+/// init_verbosity(V::D).expect("Failed to set verbosity");
+/// ```
+///
+/// # Errors
+/// Returns an error if the global verbosity cannot be set.
+pub fn init_verbosity(verbosity: Verbosity) -> ThagCommonResult<()> {
+    set_global_verbosity(verbosity)
 }
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.

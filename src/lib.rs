@@ -142,8 +142,8 @@ pub use {
     log, // re-export log crate for debug_log
     thag_common::{
         debug_log, debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string,
-        get_verbosity, lazy_static_var, re, set_global_verbosity, static_lazy, thousands, vprtln,
-        ColorSupport, TermBgLuma, Verbosity, OUTPUT_MANAGER, V,
+        get_verbosity, init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity,
+        static_lazy, thousands, vprtln, ColorSupport, TermBgLuma, Verbosity, OUTPUT_MANAGER, V,
     },
     thag_styling::{
         cprtln, cvprtln, display_theme_details, display_theme_roles, find_closest_color,

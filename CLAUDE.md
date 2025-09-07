@@ -39,6 +39,23 @@ These scripts need full doc comments (/// or //:, not //!) a `//# Purpose:` one-
 
 Scripts that are evolved into particularly useful generic tools may be promoted to thag_rs/src/bin for inclusion as binaries in the main project. This should be done only in consultation with me. Their .toml blocks should normally be left in place, but they will need entries in Cargo.toml - see existing tools.
 
+- **Verbosity**: To control the verbosity of output, use a verbosity-gating macro like `thag::common::vprtln!` in conjunction with the Verbosity enum (alias V) and setting the global verbosity, e.g. `thag::common::init_verbosity(V::V)?;` or `thag::common::set_verbosity!(debug)`, all re-exported by the other thag crates like `thag_styling`. E.g.:
+```
+/*[toml]
+[dependencies]
+thag_styling = { version = "0.2, thag-auto" }
+*/
+use thag_styling::{init_verbosity, set_verbosity, vprtln, V};
+
+// Macro method
+set_verbosity!(verbose);
+vprtln!(V::V, "Verbose mode");
+
+// Alternatively, function method:
+init_verbosity(V::D)?;
+vprtln!(V::D, "Debug mode");
+```
+
 ## Code Style Guidelines
 - **Imports**: Group std imports first, then external crates, then internal modules
 - **Conditional imports**: Use `#[cfg(feature = "feature_name")]` for feature-gated imports

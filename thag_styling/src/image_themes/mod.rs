@@ -1234,8 +1234,8 @@ impl ImageThemeGenerator {
 
         let emphasis_color = Self::find_unique_color_by_hue(
             &available_colors,
-            0.0,
-            120.0,
+            15.0,
+            45.0,
             normal_color,
             used_colors,
         );
@@ -1426,6 +1426,23 @@ impl ImageThemeGenerator {
         fallback: &'a ColorAnalysis,
         used_colors: &[&ColorAnalysis],
     ) -> &'a ColorAnalysis {
+        vprtln!(
+            V::V,
+            "Finding color in hue range {:.0}-{:.0}:",
+            hue_start,
+            hue_end
+        );
+        vprtln!(V::V, "Available colors:");
+        for (i, color) in colors.iter().enumerate() {
+            vprtln!(
+                V::V,
+                "  [{}] hue={:.0} rgb={} {}",
+                i,
+                color.hue,
+                rgb_to_hex(&color.rgb.into()),
+                Style::new().with_rgb(color.rgb).paint("■")
+            );
+        }
         // First try: exact hue match that's not already used
         if let Some(color) = colors
             .iter()
@@ -1466,7 +1483,7 @@ impl ImageThemeGenerator {
             return color;
         }
 
-        // Second try: any color that's different enough from used colors
+        // Second try: prefer colors closer to target hue range, but different enough from used colors
         vprtln!(V::V, "2. used_colors.len()={}", used_colors.len());
         let min_distance = 5.0;
         if let Some(color) = colors
@@ -1492,18 +1509,33 @@ impl ImageThemeGenerator {
                     rgb_to_hex(&c.rgb.into())
                 );
             })
-            .max_by(|a, b| {
-                // Prefer colors that are maximally different from all used colors
-                let min_dist_a = used_colors
-                    .iter()
-                    .map(|used| used.distance_to(a))
-                    .fold(f32::INFINITY, f32::min);
-                let min_dist_b = used_colors
-                    .iter()
-                    .map(|used| used.distance_to(b))
-                    .fold(f32::INFINITY, f32::min);
-                min_dist_a
-                    .partial_cmp(&min_dist_b)
+            .min_by(|a, b| {
+                // Prefer colors closer to the target hue range
+                let hue_distance_a = {
+                    let hue = a.hue;
+                    if hue >= hue_start && hue < hue_end {
+                        0.0 // Perfect match
+                    } else {
+                        // Calculate shortest angular distance to the range
+                        let dist_to_start =
+                            (hue - hue_start).abs().min(360.0 - (hue - hue_start).abs());
+                        let dist_to_end = (hue - hue_end).abs().min(360.0 - (hue - hue_end).abs());
+                        dist_to_start.min(dist_to_end)
+                    }
+                };
+                let hue_distance_b = {
+                    let hue = b.hue;
+                    if hue >= hue_start && hue < hue_end {
+                        0.0 // Perfect match
+                    } else {
+                        let dist_to_start =
+                            (hue - hue_start).abs().min(360.0 - (hue - hue_start).abs());
+                        let dist_to_end = (hue - hue_end).abs().min(360.0 - (hue - hue_end).abs());
+                        dist_to_start.min(dist_to_end)
+                    }
+                };
+                hue_distance_a
+                    .partial_cmp(&hue_distance_b)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {

@@ -94,7 +94,9 @@ pub use {
         disable_profiling, extract_filename_timestamp, is_profiling_enabled, Profile,
         ProfileConfiguration, ProfileType,
     },
-    thag_common::{lazy_static_var, re, static_lazy},
+    thag_common::{
+        init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity, static_lazy, V,
+    },
     thag_proc_macros::{fn_name, internal_doc},
 };
 

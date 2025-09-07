@@ -423,55 +423,66 @@ impl ImageThemeGenerator {
         weighted_lightness > self.config.light_threshold
     }
 
-    /// Adjust color contrast against background, with saturation adjustments optimized for theme type
-    fn adjust_color_contrast(
+    /// Adjust color contrast against background, with tiered requirements and color family preservation
+    fn adjust_color_contrast_tiered(
         color: &ColorAnalysis,
         background: &ColorAnalysis,
         min_lightness_diff: f32,
         is_light_theme: bool,
         adjust_saturation: bool,
         color_name: &str,
+        preserve_family_gradient: bool,
     ) -> ColorAnalysis {
         let mut adjusted_lightness = color.lightness;
         let mut lightness_diff = (adjusted_lightness - background.lightness).abs();
 
-        // Adjust lightness to meet minimum contrast requirement
+        // Adjust lightness to meet minimum contrast requirement, but preserve relative relationships
+        let adjustment_factor = if preserve_family_gradient { 1.02 } else { 1.05 };
+
         while lightness_diff < min_lightness_diff {
             if is_light_theme {
                 if adjusted_lightness > background.lightness {
                     // Color is lighter than background, make it lighter
-                    adjusted_lightness = (adjusted_lightness * 1.05).min(0.95);
+                    adjusted_lightness = (adjusted_lightness * adjustment_factor).min(0.95);
                 } else {
                     // Color is darker than background, make it darker
-                    adjusted_lightness = (adjusted_lightness / 1.05).max(0.05);
+                    adjusted_lightness = (adjusted_lightness / adjustment_factor).max(0.05);
                 }
             } else {
                 if adjusted_lightness > background.lightness {
                     // Color is lighter than background, make it lighter
-                    adjusted_lightness = (adjusted_lightness * 1.05).min(0.95);
+                    adjusted_lightness = (adjusted_lightness * adjustment_factor).min(0.95);
                 } else {
                     // Color is darker than background, make it darker
-                    adjusted_lightness = (adjusted_lightness / 1.05).max(0.05);
+                    adjusted_lightness = (adjusted_lightness / adjustment_factor).max(0.05);
                 }
             }
             lightness_diff = (adjusted_lightness - background.lightness).abs();
         }
 
-        // Adjust saturation based on theme type
+        // Adjust saturation based on theme type and family preservation
         let adjusted_saturation = if adjust_saturation {
             if is_light_theme {
                 // Boost saturation for light themes to preserve vibrancy when darkening colors
                 (color.saturation * 1.3).min(0.95)
             } else {
-                // Reduce saturation for dark themes for better readability
-                (color.saturation * 0.7).max(0.05)
+                // Much less aggressive reduction for dark themes to preserve color richness
+                if preserve_family_gradient {
+                    (color.saturation * 0.95).max(0.2) // Minimal reduction for family colors
+                } else {
+                    (color.saturation * 0.8).max(0.1) // Less reduction for standalone colors
+                }
             }
         } else {
-            // For semantic/core colors, apply light theme boost to maintain vibrancy
+            // For semantic/core colors, preserve more saturation in dark themes
             if is_light_theme {
                 (color.saturation * 1.1).min(0.95)
             } else {
-                color.saturation
+                if preserve_family_gradient {
+                    color.saturation // No reduction for family gradient preservation
+                } else {
+                    color.saturation
+                }
             }
         };
 
@@ -489,6 +500,42 @@ impl ImageThemeGenerator {
         );
 
         ColorAnalysis::new(rgb, 0.0)
+    }
+
+    /// Wrapper for backward compatibility
+    fn adjust_color_contrast(
+        color: &ColorAnalysis,
+        background: &ColorAnalysis,
+        min_lightness_diff: f32,
+        is_light_theme: bool,
+        adjust_saturation: bool,
+        color_name: &str,
+    ) -> ColorAnalysis {
+        Self::adjust_color_contrast_tiered(
+            color,
+            background,
+            min_lightness_diff,
+            is_light_theme,
+            adjust_saturation,
+            color_name,
+            false,
+        )
+    }
+
+    /// Get tiered contrast requirements based on color role importance
+    fn get_contrast_requirement(color_name: &str) -> f32 {
+        match color_name {
+            // Critical colors need high contrast
+            "Error" | "Success" | "Normal" => 0.65,
+            // Important colors need good contrast
+            "Warning" | "Info" | "Code" | "Emphasis" | "Heading1" => 0.55,
+            // Secondary colors need moderate contrast
+            "Heading2" | "Link" | "Quote" => 0.45,
+            // Supporting colors can have lower contrast to preserve gradients
+            "Subtle" | "Hint" | "Debug" | "Commentary" | "Heading3" => 0.35,
+            // Fallback
+            _ => 0.5,
+        }
     }
 
     /// Map extracted colors to semantic roles with improved contrast and diversity
@@ -639,14 +686,15 @@ impl ImageThemeGenerator {
             ))
         );
 
-        // Apply contrast adjustment to subtle color
-        let adjusted_subtle_color = Self::adjust_color_contrast(
+        // Apply tiered contrast adjustment to subtle color
+        let adjusted_subtle_color = Self::adjust_color_contrast_tiered(
             subtle_color,
             background_color,
-            0.6,
+            Self::get_contrast_requirement("Subtle"),
             is_light_theme,
             true,
             "Subtle",
+            true, // preserve family gradients
         );
 
         used_colors.push(subtle_color);
@@ -663,14 +711,15 @@ impl ImageThemeGenerator {
             ))
         );
 
-        // Apply contrast adjustment to hint color
-        let adjusted_hint_color = Self::adjust_color_contrast(
+        // Apply tiered contrast adjustment to hint color
+        let adjusted_hint_color = Self::adjust_color_contrast_tiered(
             hint_color,
             background_color,
-            0.6,
+            Self::get_contrast_requirement("Hint"),
             is_light_theme,
             true,
             "Hint",
+            true, // preserve family gradients
         );
 
         used_colors.push(hint_color);
@@ -688,97 +737,107 @@ impl ImageThemeGenerator {
             ))
         );
 
-        // Apply contrast adjustment to debug color
-        let adjusted_debug_color = Self::adjust_color_contrast(
+        // Apply tiered contrast adjustment to debug color
+        let adjusted_debug_color = Self::adjust_color_contrast_tiered(
             debug_color,
             background_color,
-            0.6,
+            Self::get_contrast_requirement("Debug"),
             is_light_theme,
             true,
             "Debug",
+            true, // preserve family gradients
         );
 
         // Derive three distinct colors for the new roles from existing palette colors
         used_colors.push(debug_color);
 
-        // Apply contrast adjustment to semantic colors (0.7 minimum for better readability)
-        let adjusted_error = Self::adjust_color_contrast(
+        // Apply tiered contrast adjustment to semantic colors
+        let adjusted_error = Self::adjust_color_contrast_tiered(
             semantic_colors.error,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Error"),
             is_light_theme,
             false,
             "Error",
+            true, // preserve family gradients
         );
-        let adjusted_warning = Self::adjust_color_contrast(
+        let adjusted_warning = Self::adjust_color_contrast_tiered(
             semantic_colors.warning,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Warning"),
             is_light_theme,
             false,
             "Warning",
+            true, // preserve family gradients
         );
-        let adjusted_success = Self::adjust_color_contrast(
+        let adjusted_success = Self::adjust_color_contrast_tiered(
             semantic_colors.success,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Success"),
             is_light_theme,
             false,
             "Success",
+            true, // preserve family gradients
         );
-        let adjusted_info = Self::adjust_color_contrast(
+        let adjusted_info = Self::adjust_color_contrast_tiered(
             semantic_colors.info,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Info"),
             is_light_theme,
             false,
             "Info",
+            true, // preserve family gradients
         );
-        let adjusted_code = Self::adjust_color_contrast(
+        let adjusted_code = Self::adjust_color_contrast_tiered(
             semantic_colors.code,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Code"),
             is_light_theme,
             false,
             "Code",
+            true, // preserve family gradients
         );
-        let adjusted_emphasis = Self::adjust_color_contrast(
+        let adjusted_emphasis = Self::adjust_color_contrast_tiered(
             semantic_colors.emphasis,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Emphasis"),
             is_light_theme,
             false,
             "Emphasis",
+            true, // preserve family gradients
         );
 
         // Link color: derive from error color (typically red/bright for visibility)
-        let link_color = Self::adjust_color_contrast(
+        let link_color = Self::adjust_color_contrast_tiered(
             &adjusted_error,
             background_color,
-            0.6,
+            Self::get_contrast_requirement("Link"),
             is_light_theme,
             true,
             "Link",
+            true, // preserve family gradients
         );
 
         // Quote color: derive from subtle color with reduced saturation for muted appearance
-        let quote_color = Self::adjust_color_contrast(
+        let quote_color = Self::adjust_color_contrast_tiered(
             &adjusted_subtle_color,
             background_color,
-            0.6,
+            Self::get_contrast_requirement("Quote"),
             is_light_theme,
             true,
             "Quote",
+            true, // preserve family gradients
         );
 
         // Commentary color: derive from normal color
-        let commentary_color = Self::adjust_color_contrast(
+        let commentary_color = Self::adjust_color_contrast_tiered(
             &normal_color,
             background_color,
-            0.6,
+            Self::get_contrast_requirement("Commentary"),
             is_light_theme,
             true,
             "Commentary",
+            true, // preserve family gradients
         );
 
         vprtln!(
@@ -811,40 +870,44 @@ impl ImageThemeGenerator {
 
         // Apply contrast adjustment to heading colors
         let adjusted_heading_colors = (
-            Self::adjust_color_contrast(
+            Self::adjust_color_contrast_tiered(
                 &heading_colors.0,
                 background_color,
-                0.7,
+                Self::get_contrast_requirement("Heading1"),
                 is_light_theme,
                 false,
                 "Heading1",
+                true, // preserve family gradients
             ),
-            Self::adjust_color_contrast(
+            Self::adjust_color_contrast_tiered(
                 &heading_colors.1,
                 background_color,
-                0.7,
+                Self::get_contrast_requirement("Heading2"),
                 is_light_theme,
                 false,
                 "Heading2",
+                true, // preserve family gradients
             ),
-            Self::adjust_color_contrast(
+            Self::adjust_color_contrast_tiered(
                 &heading_colors.2,
                 background_color,
-                0.7,
+                Self::get_contrast_requirement("Heading3"),
                 is_light_theme,
                 false,
                 "Heading3",
+                true, // preserve family gradients
             ),
         );
 
-        // Apply contrast adjustment to normal color
-        let adjusted_normal_color = Self::adjust_color_contrast(
+        // Apply tiered contrast adjustment to normal color
+        let adjusted_normal_color = Self::adjust_color_contrast_tiered(
             &normal_color,
             background_color,
-            0.7,
+            Self::get_contrast_requirement("Normal"),
             is_light_theme,
             false,
             "Normal",
+            true, // preserve family gradients
         );
 
         Palette {

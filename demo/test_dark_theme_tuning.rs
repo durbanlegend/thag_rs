@@ -3,11 +3,11 @@
 thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 */
 
-/// Simple demo showing the most important fine-tuning effects
+/// Dark theme tuning previewer - shows fine-tuning effects optimized for dark themes
 ///
-/// This script demonstrates the three key fine-tuning controls:
-/// saturation multiplier, lightness adjustment, and contrast multiplier.
-//# Purpose: Simple demo of fine-tuning controls for image themes
+/// This script demonstrates fine-tuning controls with parameter ranges
+/// optimized for dark theme generation. For light themes, use test_light_theme_tuning.rs
+//# Purpose: Preview and tune dark theme generation with optimized parameters
 //# Categories: color, styling, terminal, theming, tools
 use std::path::Path;
 use thag_styling::{ImageThemeConfig, ImageThemeGenerator, StylingResult, TermBgLuma};
@@ -52,7 +52,7 @@ fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> Styli
 }
 
 fn main() -> StylingResult<()> {
-    println!("🔧 Fine-Tuning Controls - Simple Demo");
+    println!("🌙 Dark Theme Fine-Tuning Previewer");
     println!("{}", "=".repeat(50));
     println!();
 
@@ -131,12 +131,12 @@ fn main() -> StylingResult<()> {
         },
     )?;
 
-    println!("💡 Quick Guide:");
-    println!("• saturation_multiplier: 0.5-2.0 (vibrancy)");
-    println!("• lightness_adjustment: -0.3 to +0.3 (brightness)");
-    println!("• contrast_multiplier: 0.5-1.5 (drama/subtlety)");
+    println!("💡 Dark Theme Parameter Guide:");
+    println!("• saturation_multiplier: 0.7-2.0 (dark themes can handle higher saturation)");
+    println!("• lightness_adjustment: -0.1 to +0.3 (brighten colors for dark backgrounds)");
+    println!("• contrast_multiplier: 0.8-1.5 (dramatic contrast works well)");
     println!();
-    println!("🎯 Try these in your ImageThemeConfig!");
+    println!("🎯 For light themes, use test_light_theme_tuning.rs instead!");
 
     Ok(())
 }

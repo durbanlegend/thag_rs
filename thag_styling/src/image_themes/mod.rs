@@ -157,6 +157,7 @@ fn to_lab_hsl(rgb: [u8; 3]) -> (Lab, Hsl) {
 }
 
 /// Theme generator from images
+#[derive(Debug)]
 pub struct ImageThemeGenerator {
     config: ImageThemeConfig,
 }

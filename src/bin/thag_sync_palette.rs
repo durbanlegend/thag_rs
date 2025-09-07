@@ -1,3 +1,7 @@
+/*[toml]
+[dependencies]
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
+*/
 /// Terminal palette synchronization using OSC sequences
 ///
 /// This binary provides command-line access to `thag_styling`'s palette synchronization
@@ -6,8 +10,7 @@
 //# Categories: ansi, color, customization, interactive, styling, terminal, theming, tools, windows, xterm
 use std::env;
 use std::process;
-use thag_common::get_verbosity;
-use thag_styling::{ColorInitStrategy, PaletteSync, TermAttributes, Theme, V};
+use thag_styling::{get_verbosity, ColorInitStrategy, PaletteSync, TermAttributes, Theme, V};
 
 fn main() {
     let args: Vec<String> = env::args().collect();

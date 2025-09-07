@@ -1,4 +1,4 @@
-name = "thag-morning-coffee-dark"
+name = "thag-morning-coffee-vivid-dark"
 description = "Generated from image analysis"
 term_bg_luma = "dark"
 min_color_support = "true_color"
@@ -11,25 +11,25 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    72,
-    100,
-    210,
+    120,
+    144,
+    244,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
     96,
-    120,
-    216,
+    125,
+    242,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    220,
-    227,
-    242,
+    234,
+    239,
+    250,
 ]
 style = ["bold"]
 
@@ -42,90 +42,89 @@ rgb = [
 
 [palette.warning]
 rgb = [
-    205,
-    155,
-    80,
+    239,
+    195,
+    127,
 ]
 
 [palette.success]
 rgb = [
+    249,
     221,
-    179,
-    117,
+    181,
 ]
 
 [palette.info]
 rgb = [
-    80,
-    130,
-    205,
+    127,
+    172,
+    239,
 ]
 
 [palette.emphasis]
 rgb = [
-    205,
-    154,
-    79,
+    239,
+    194,
+    126,
 ]
 
 [palette.code]
 rgb = [
-    106,
-    138,
-    203,
+    135,
+    167,
+    231,
 ]
 
 [palette.normal]
 rgb = [
-    144,
-    168,
-    216,
+    189,
+    206,
+    242,
 ]
 
 [palette.subtle]
 rgb = [
-    146,
-    98,
-    98,
+    168,
+    102,
+    102,
 ]
 
 [palette.hint]
 rgb = [
-    187,
-    153,
-    153,
+    203,
+    163,
+    163,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
-    224,
-    190,
-    139,
+    243,
+    204,
+    145,
 ]
 style = ["italic"]
 
 [palette.link]
 rgb = [
-    245,
-    239,
-    239,
+    246,
+    238,
+    238,
 ]
 style = ["underline"]
 
 [palette.quote]
 rgb = [
-    146,
-    98,
-    98,
+    188,
+    112,
+    112,
 ]
 style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    146,
-    169,
-    214,
+    153,
+    180,
+    232,
 ]
 style = ["italic"]
-

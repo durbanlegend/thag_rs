@@ -160,7 +160,13 @@ fn get_theme_config() -> Result<ImageThemeConfig, Box<dyn Error>> {
         .with_default(false)
         .prompt()?;
 
-    let (light_threshold, saturation_threshold) = if show_advanced {
+    let (
+        light_threshold,
+        saturation_threshold,
+        saturation_multiplier,
+        lightness_adjustment,
+        contrast_multiplier,
+    ) = if show_advanced {
         let light_thresh: f32 = CustomType::new("Light threshold (0.0-1.0):")
             .with_default(0.7)
             .with_help_message("Higher values = more strict light theme detection")
@@ -171,9 +177,33 @@ fn get_theme_config() -> Result<ImageThemeConfig, Box<dyn Error>> {
             .with_help_message("Higher values = more saturated colors required")
             .prompt()?;
 
-        (light_thresh.clamp(0.0, 1.0), sat_thresh.clamp(0.0, 1.0))
+        println!();
+        println!("🎨 Fine-tuning Controls:");
+
+        let sat_mult: f32 = CustomType::new("Saturation multiplier (0.5-2.0):")
+            .with_default(1.0)
+            .with_help_message("1.0=natural, <1.0=muted, >1.0=vivid")
+            .prompt()?;
+
+        let light_adj: f32 = CustomType::new("Lightness adjustment (-0.3 to +0.3):")
+            .with_default(0.0)
+            .with_help_message("Negative=darker, positive=brighter")
+            .prompt()?;
+
+        let contrast_mult: f32 = CustomType::new("Contrast multiplier (0.5-1.5):")
+            .with_default(1.0)
+            .with_help_message("1.0=balanced, <1.0=subtle, >1.0=high contrast")
+            .prompt()?;
+
+        (
+            light_thresh.clamp(0.0, 1.0),
+            sat_thresh.clamp(0.0, 1.0),
+            sat_mult.clamp(0.5, 2.0),
+            light_adj.clamp(-0.3, 0.3),
+            contrast_mult.clamp(0.5, 1.5),
+        )
     } else {
-        (0.7, 0.3)
+        (0.7, 0.3, 1.0, 0.0, 1.0)
     };
 
     Ok(ImageThemeConfig {
@@ -183,6 +213,9 @@ fn get_theme_config() -> Result<ImageThemeConfig, Box<dyn Error>> {
         auto_detect_theme_type: auto_detect,
         force_theme_type: force_type,
         theme_name_prefix: None,
+        saturation_multiplier,
+        lightness_adjustment,
+        contrast_multiplier,
     })
 }
 

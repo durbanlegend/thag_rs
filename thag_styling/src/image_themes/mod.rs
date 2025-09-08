@@ -463,7 +463,7 @@ impl ImageThemeGenerator {
         }
     }
 
-    /// Light theme specific contrast adjustment - simple direct calculation
+    /// Light theme specific contrast adjustment - responsive to fine-tuning parameters
     fn adjust_color_contrast_light_theme(
         color: &ColorAnalysis,
         background: &ColorAnalysis,
@@ -473,23 +473,29 @@ impl ImageThemeGenerator {
     ) -> ColorAnalysis {
         let bg_lightness = background.lightness;
 
-        // Simple approach: set target lightness directly based on requirements
-        let target_lightness = match color_name {
-            "Normal" | "Error" | "Success" => 0.25, // Important colors: medium dark
+        // Base target lightness by importance - more varied ranges
+        let base_target = match color_name {
+            "Normal" | "Error" | "Success" => 0.25, // Important colors: darkest
             "Warning" | "Info" | "Code" | "Emphasis" | "Heading1" => 0.35, // Secondary colors
-            "Heading2" | "Link" | "Quote" => 0.45,  // Tertiary colors
-            _ => 0.55,                              // Supporting colors: lighter
+            "Heading2" | "Link" | "Quote" => 0.5,   // Tertiary colors
+            _ => 0.65,                              // Supporting colors: lighter
         };
 
-        // Ensure we have some variation based on original color
-        let variation = (color.lightness * 0.3).clamp(0.0, 0.15);
-        let adjusted_lightness = (target_lightness + variation).clamp(0.2, 0.65);
+        // Make contrast requirement more flexible - don't force everything to same level
+        let flexible_contrast = min_lightness_diff * 0.8; // Less aggressive contrast forcing
+        let variation = (color.lightness * 0.3).clamp(0.0, 0.15); // More original character
+        let mut adjusted_lightness = (base_target - flexible_contrast + variation).clamp(0.1, 0.75);
 
-        // Light theme saturation: more conservative
+        // Only enforce minimum contrast if we're really too close
+        if (adjusted_lightness - bg_lightness).abs() < (min_lightness_diff * 0.5) {
+            adjusted_lightness = (bg_lightness - min_lightness_diff * 0.7).clamp(0.1, 0.75);
+        }
+
+        // Light theme saturation: keep more original saturation
         let adjusted_saturation = if adjust_saturation {
-            (color.saturation * 0.85).clamp(0.25, 0.8)
+            (color.saturation * 0.9).clamp(0.15, 0.85)
         } else {
-            (color.saturation * 0.95).clamp(0.3, 0.9)
+            color.saturation.clamp(0.2, 0.95)
         };
 
         let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
@@ -591,15 +597,17 @@ impl ImageThemeGenerator {
         is_light_theme: bool,
     ) -> ColorAnalysis {
         if is_light_theme {
-            // Light theme adjustments: more conservative approach with safeguards
-            let adjusted_saturation =
-                (color.saturation * self.config.saturation_multiplier.min(1.2)).clamp(0.2, 0.9);
-            let mut adjusted_lightness =
-                (color.lightness + (self.config.lightness_adjustment * 0.5)).clamp(0.15, 0.6);
+            // Light theme adjustments: make fine-tuning parameters much more dramatic
+            let saturation_effect = self.config.saturation_multiplier;
+            let adjusted_saturation = (color.saturation * saturation_effect).clamp(0.05, 0.95);
 
-            // Safeguard: prevent colors from becoming too dark/black in light themes
-            if adjusted_lightness < 0.2 {
-                adjusted_lightness = 0.2;
+            // Make lightness adjustment more dramatic with wider range
+            let lightness_effect = self.config.lightness_adjustment * 1.5; // Amplify effect
+            let mut adjusted_lightness = (color.lightness + lightness_effect).clamp(0.1, 0.8);
+
+            // Less restrictive safeguard - allow more variation
+            if adjusted_lightness < 0.15 {
+                adjusted_lightness = 0.15;
             }
 
             let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
@@ -619,8 +627,9 @@ impl ImageThemeGenerator {
     fn get_adjusted_contrast_requirement(&self, color_name: &str, is_light_theme: bool) -> f32 {
         let base_requirement = Self::get_contrast_requirement(color_name);
         if is_light_theme {
-            // Light themes: use fixed low requirements since we use direct calculation
-            0.15 // Fixed low value for light themes
+            // Light themes: make contrast multiplier more dramatic
+            let contrast_effect = self.config.contrast_multiplier;
+            (base_requirement * contrast_effect * 0.6).clamp(0.05, 0.5)
         } else {
             // Dark themes: normal contrast requirements
             (base_requirement * self.config.contrast_multiplier).clamp(0.2, 1.0)

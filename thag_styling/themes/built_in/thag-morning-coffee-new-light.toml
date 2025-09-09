@@ -1,0 +1,126 @@
+name = "thag-morning-coffee-new-light"
+description = "Generated from image analysis"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fdeddc"]
+bg_rgbs = [[253, 237, 220]]
+
+[palette.heading1]
+rgb = [
+    22,
+    22,
+    78,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    38,
+    81,
+    149,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    78,
+    78,
+    203,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    46,
+    30,
+    30,
+]
+
+[palette.warning]
+rgb = [
+    109,
+    76,
+    26,
+]
+
+[palette.success]
+rgb = [
+    61,
+    43,
+    16,
+]
+
+[palette.info]
+rgb = [
+    26,
+    59,
+    109,
+]
+
+[palette.emphasis]
+rgb = [
+    78,
+    50,
+    22,
+]
+
+[palette.code]
+rgb = [
+    19,
+    19,
+    66,
+]
+
+[palette.normal]
+rgb = [
+    47,
+    29,
+    29,
+]
+
+[palette.subtle]
+rgb = [
+    154,
+    114,
+    114,
+]
+
+[palette.hint]
+rgb = [
+    82,
+    131,
+    205,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    197,
+    141,
+    85,
+]
+style = ["italic"]
+
+[palette.link]
+rgb = [
+    106,
+    69,
+    69,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    134,
+    95,
+    95,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    138,
+    99,
+    99,
+]
+style = ["italic"]

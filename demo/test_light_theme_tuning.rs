@@ -23,6 +23,14 @@ fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> Styli
     match generator.generate_from_file(image_path) {
         Ok(theme) => {
             // Show the palette colours
+            let (r, g, b) = theme.bg_rgbs[0];
+            println!(
+                "{}",
+                Style::with_rgb([r, g, b]).paint(format!(
+                    "Background:  ■■■■■ {} = ({r:>3},{g:>3},{b:>3})",
+                    rgb_to_hex(&(r, g, b))
+                ))
+            );
             theme.palette.iter().for_each(|(style_name, style)| {
                 if let Some([r, g, b]) = style.rgb() {
                     println!(
@@ -91,6 +99,19 @@ fn main() -> StylingResult<()> {
     )?;
 
     // Higher saturation - ... or do they?
+    test_config(
+        "Higher Saturation (1.2x) - Distinct Colors",
+        image_path,
+        ImageThemeConfig {
+            force_theme_type: Some(TermBgLuma::Light),
+            saturation_multiplier: 1.2,
+            lightness_adjustment: 0.1,
+            contrast_multiplier: 1.2,
+            ..Default::default()
+        },
+    )?;
+
+    // Extreme saturation, for comparison
     test_config(
         "Exaggerated Saturation (1.4x) - Extreme Colors",
         image_path,

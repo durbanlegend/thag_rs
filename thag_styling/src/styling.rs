@@ -872,8 +872,8 @@ impl TermAttributes {
                         ) => "basic_dark",
                         (_, TermBgLuma::Dark | TermBgLuma::Undetermined, _) => "espresso",
                     };
-                    let theme = Theme::get_theme_with_color_support(theme_name, support)
-                        .expect("Failed to load builtin theme");
+                    let theme = Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, support)
+                        .expect("Failed to load theme");
                     Self {
                         how_initialized: HowInitialized::Configured,
                         color_support: support,
@@ -888,7 +888,7 @@ impl TermAttributes {
                 }
                 ColorInitStrategy::Default => {
                     let theme =
-                        Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
+                        Theme::get_theme_runtime_or_builtin_with_color_support("basic_dark", ColorSupport::Basic)
                             .expect("Failed to load basic dark theme");
                     Self {
                         how_initialized: HowInitialized::Defaulted,
@@ -911,8 +911,14 @@ impl TermAttributes {
                             let term_bg_rgb = Some(*term_bg_rgb_ref);
                             let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
 
-                            // Load the specified theme directly
-                            let theme = Theme::get_theme_with_color_support(&theme_name, *color_support)
+                            // Load the specified theme directly (try runtime first, then builtin)
+                            let theme = Theme::get_theme_runtime_or_builtin(&theme_name)
+                                .and_then(|mut theme| {
+                                    if *color_support != ColorSupport::TrueColor {
+                                        theme.convert_to_color_support(*color_support);
+                                    }
+                                    Ok(theme)
+                                })
                                 .unwrap_or_else(|_| {
                                     vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
                                     Theme::auto_detect(*color_support, TermBgLuma::Dark, Some(term_bg_rgb_ref))
@@ -975,7 +981,7 @@ impl TermAttributes {
                             let color_support = config.styling.color_support;
                             let term_bg_luma = config.styling.term_bg_luma;
                             let theme = if color_support == ColorSupport::None {
-                                Theme::get_builtin("none").expect("Failed to load `none` theme")
+                                Theme::get_theme_runtime_or_builtin("none").expect("Failed to load `none` theme")
                             } else {
                                 Theme::auto_detect(color_support, term_bg_luma, Some(&term_bg_rgb))
                                     .expect("Failed to auto-detect theme")
@@ -989,7 +995,7 @@ impl TermAttributes {
                                 theme,
                             }
                         } else {
-                            let theme = Theme::get_theme_with_color_support(
+                            let theme = Theme::get_theme_runtime_or_builtin_with_color_support(
                                 "basic_dark",
                                 ColorSupport::Basic,
                             )
@@ -1007,7 +1013,7 @@ impl TermAttributes {
                     #[cfg(all(not(feature = "config"), not(feature = "color_detect")))]
                     {
                         let theme =
-                            Theme::get_theme_with_color_support("basic_dark", ColorSupport::Basic)
+                            Theme::get_theme_runtime_or_builtin_with_color_support("basic_dark", ColorSupport::Basic)
                                 .expect("Failed to load basic dark theme");
                         Self {
                             how_initialized: HowInitialized::Defaulted,
@@ -1073,7 +1079,7 @@ impl TermAttributes {
     /// * The theme is incompatible with current terminal capabilities
     /// * Theme validation fails
     pub fn with_theme(mut self, theme_name: &str, support: ColorSupport) -> StylingResult<Self> {
-        self.theme = Theme::get_theme_with_color_support(theme_name, support)?;
+        self.theme = Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, support)?;
         Ok(self)
     }
 
@@ -1642,6 +1648,188 @@ impl Theme {
         }
         // eprintln!("Theme={:#?}", theme);
         Ok(theme)
+    }
+
+    /// Loads a theme with runtime loading support and specified color support level.
+    ///
+    /// This method first attempts to load from user-specified directories, then falls back
+    /// to built-in themes. Colors are automatically converted to match the specified
+    /// color support level.
+    ///
+    /// # Arguments
+    /// * `theme_name` - The name of the theme to load
+    /// * `color_support` - The target color support level
+    ///
+    /// # Returns
+    /// A new `Theme` instance with colors adjusted for the specified support level
+    ///
+    /// # Errors
+    /// Returns `StylingError` if the theme cannot be found or loaded
+    pub fn get_theme_runtime_or_builtin_with_color_support(
+        theme_name: &str,
+        color_support: ColorSupport,
+    ) -> StylingResult<Self> {
+        let mut theme = Self::get_theme_runtime_or_builtin(theme_name)?;
+        if color_support != ColorSupport::TrueColor {
+            vprtln!(V::VV, "Converting to {color_support:?}");
+            theme.convert_to_color_support(color_support);
+        }
+        Ok(theme)
+    }
+
+    /// Attempts to load a theme from user-specified directories first, then falls back to built-in themes.
+    ///
+    /// This method first checks for user-defined themes in directories specified by:
+    /// 1. THAG_THEME_DIR environment variable (highest priority)
+    /// 2. theme_dir configuration option
+    /// 3. Falls back to built-in themes if not found
+    ///
+    /// # Arguments
+    /// * `theme_name` - The name of the theme to load
+    ///
+    /// # Returns
+    /// A new `Theme` instance
+    ///
+    /// # Errors
+    /// Returns `StylingError` if the theme cannot be found or loaded
+    pub fn get_theme_runtime_or_builtin(theme_name: &str) -> StylingResult<Self> {
+        // First try to load from user-specified directory
+        if let Ok(theme) = Self::try_load_from_user_dirs(theme_name) {
+            return Ok(theme);
+        }
+
+        // Fall back to built-in theme
+        Self::get_builtin(theme_name)
+    }
+
+    /// Attempts to load a theme from user-specified directories.
+    ///
+    /// Checks the following locations in order:
+    /// 1. THAG_THEME_DIR environment variable
+    /// 2. theme_dir from configuration
+    ///
+    /// # Arguments
+    /// * `theme_name` - The name of the theme to load
+    ///
+    /// # Returns
+    /// A new `Theme` instance if found in user directories
+    ///
+    /// # Errors
+    /// Returns `StylingError` if no theme is found in user directories
+    fn try_load_from_user_dirs(theme_name: &str) -> StylingResult<Self> {
+        // Check THAG_THEME_DIR environment variable first
+        if let Ok(theme_dir) = std::env::var("THAG_THEME_DIR") {
+            match Self::load_from_directory(&theme_dir, theme_name) {
+                Ok(theme) => {
+                    vprtln!(
+                        V::V,
+                        "Loaded theme '{}' from THAG_THEME_DIR: {}",
+                        theme_name,
+                        theme_dir
+                    );
+                    return Ok(theme);
+                }
+                Err(e) => {
+                    vprtln!(
+                        V::V,
+                        "Error loading theme '{}' from THAG_THEME_DIR {}: {}",
+                        theme_name,
+                        theme_dir,
+                        e
+                    );
+                }
+            }
+        }
+
+        // Check config theme_dir
+        #[cfg(feature = "config")]
+        if let Some(config) = maybe_config() {
+            if let Some(ref theme_dir) = config.styling.theme_dir {
+                match Self::load_from_directory(theme_dir, theme_name) {
+                    Ok(theme) => {
+                        vprtln!(
+                            V::V,
+                            "Loaded theme '{}' from config theme_dir: {}",
+                            theme_name,
+                            theme_dir
+                        );
+                        return Ok(theme);
+                    }
+                    Err(e) => {
+                        vprtln!(
+                            V::V,
+                            "Error loading theme '{}' from config theme_dir {}: {}",
+                            theme_name,
+                            theme_dir,
+                            e
+                        );
+                    }
+                }
+            }
+        }
+
+        Err(StylingError::FromStr(format!(
+            "Theme '{}' not found in user directories",
+            theme_name
+        )))
+    }
+
+    /// Loads a theme from a specific directory.
+    ///
+    /// Looks for theme files with the following naming patterns:
+    /// - `{theme_name}.toml`
+    /// - `thag-{theme_name}.toml`
+    /// - `thag-{theme_name}-light.toml` (if theme_name doesn't end in -light/-dark)
+    /// - `thag-{theme_name}-dark.toml` (if theme_name doesn't end in -light/-dark)
+    ///
+    /// # Arguments
+    /// * `dir` - Directory path to search in
+    /// * `theme_name` - The name of the theme to load
+    ///
+    /// # Returns
+    /// A new `Theme` instance if found
+    ///
+    /// # Errors
+    /// Returns `StylingError` if no matching theme file is found or cannot be loaded
+    fn load_from_directory(dir: &str, theme_name: &str) -> StylingResult<Self> {
+        use std::path::Path;
+
+        let dir_path = Path::new(dir);
+        if !dir_path.exists() {
+            return Err(StylingError::FromStr(format!(
+                "Theme directory does not exist: {}",
+                dir
+            )));
+        }
+
+        // Try different filename patterns
+        let mut patterns = vec![
+            format!("{}.toml", theme_name),
+            format!("thag-{}.toml", theme_name),
+        ];
+
+        // If theme name doesn't already have a variant suffix, try both
+        if !theme_name.ends_with("-light") && !theme_name.ends_with("-dark") {
+            patterns.push(format!("thag-{}-light.toml", theme_name));
+            patterns.push(format!("thag-{}-dark.toml", theme_name));
+        }
+
+        for pattern in patterns {
+            let theme_path = dir_path.join(&pattern);
+            if theme_path.exists() {
+                match Self::load_from_file(&theme_path) {
+                    Ok(theme) => return Ok(theme),
+                    Err(_e) => {
+                        // Continue trying other patterns
+                    }
+                }
+            }
+        }
+
+        Err(StylingError::FromStr(format!(
+            "Theme file for '{}' not found in directory: {}",
+            theme_name, dir
+        )))
     }
 
     /// Creates a theme from a theme definition.
@@ -2232,13 +2420,16 @@ fn fallback_theme(term_bg_luma: TermBgLuma) -> StylingResult<Theme> {
         "basic_dark"
     };
 
-    Theme::from_toml(
-        name,
-        THEME_INDEX
-            .get(name)
-            .expect("Basic theme not found")
-            .content,
-    )
+    Theme::get_theme_runtime_or_builtin(name).or_else(|_| {
+        // Absolute fallback using THEME_INDEX if runtime loading fails
+        Theme::from_toml(
+            name,
+            THEME_INDEX
+                .get(name)
+                .expect("Basic theme not found")
+                .content,
+        )
+    })
 }
 
 #[allow(clippy::missing_const_for_fn)]
@@ -2566,7 +2757,7 @@ pub fn main() -> StylingResult<()> {
         TermBgLuma::Light => "basic_light",
         TermBgLuma::Dark | TermBgLuma::Undetermined => "basic_dark",
     };
-    let theme = Theme::get_builtin(theme_name)?;
+    let theme = Theme::get_theme_runtime_or_builtin(theme_name)?;
 
     // Section 2: ANSI-16 color palette using basic styles
     let header = format!("ANSI-16 color palette in use for {theme_name} theme:\n");
@@ -3614,8 +3805,9 @@ mod tests {
                 ) => "dracula",
                 (ColorSupport::TrueColor, TermBgLuma::Light) => "one-light",
             };
-            let theme = Theme::get_theme_with_color_support(theme_name, color_support)
-                .expect("Failed to load or resolve builtin theme {theme_name}");
+            let theme =
+                Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, color_support)
+                    .expect("Failed to load or resolve builtin theme {theme_name}");
             Self::new(color_support, Some(BLACK_BG).copied(), term_bg_luma, theme)
         }
     }

@@ -45,3 +45,6 @@ color_detect = ["config", "ratatui", "scopeguard", "supports-color", "termbg"]
 [lib]
 name = "thag_common"
 path = "src/lib.rs"
+
+[lints.clippy]
+uninlined_format_args = "allow"

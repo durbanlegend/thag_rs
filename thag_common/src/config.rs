@@ -561,7 +561,7 @@ pub struct Styling {
     #[serde(default)]
     /// Light or dark terminal background override (user should coordinate this with `term_bg_rgb`)
     pub term_bg_luma: TermBgLuma,
-    /// Directory to search for user-defined themes (can be overridden by THAG_THEME_DIR env var)
+    /// Directory to search for user-defined themes (can be overridden by `THAG_THEME_DIR` env var)
     #[serde(default)]
     pub theme_dir: Option<String>,
     /// First one is primary

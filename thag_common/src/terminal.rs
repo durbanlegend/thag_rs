@@ -80,7 +80,7 @@ impl Drop for TerminalStateGuard {
 
 /// Detects the terminal's color support level
 ///
-/// Uses OSC-based TrueColor detection as the primary method, with `supports_color`
+/// Uses OSC-based `TrueColor` detection as the primary method, with `supports_color`
 /// as a fallback. This provides more accurate detection across different terminals
 /// and platforms, especially for mintty and terminals that don't set proper
 /// environment variables.
@@ -254,7 +254,7 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
             // Try custom OSC 11 implementation first (more reliable timeout)
             vprtln!(V::V, "Checking terminal background with OSC 11");
             if let Some(rgb) = query_background_osc11_with_timeout(Duration::from_millis(300)) {
-                vprtln!(V::V, "OSC 11 query successful: {:?}", rgb);
+                vprtln!(V::V, "OSC 11 query successful: {rgb:?}");
                 return Ok(rgb);
             }
 
@@ -269,11 +269,11 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
                         (bg_rgb.g >> 8) as u8,
                         (bg_rgb.b >> 8) as u8,
                     );
-                    vprtln!(V::V, "termbg successful: {:?}", rgb);
+                    vprtln!(V::V, "termbg successful: {rgb:?}");
                     Ok(rgb)
                 }
                 Err(e) => {
-                    vprtln!(V::V, "Both OSC 11 and termbg failed: {}", e);
+                    vprtln!(V::V, "Both OSC 11 and termbg failed: {e}");
                     Err(ThagCommonError::Generic(format!("Background detection failed: {}", e)))
                 }
             }
@@ -318,7 +318,7 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
         // Try custom OSC 11 implementation first (more reliable timeout)
         vprtln!(V::V, "Checking terminal background with OSC 11 (unguarded)");
         if let Some(rgb) = query_background_osc11_with_timeout(Duration::from_millis(300)) {
-            vprtln!(V::V, "OSC 11 query successful: {:?}", rgb);
+            vprtln!(V::V, "OSC 11 query successful: {rgb:?}");
             return Ok(rgb);
         }
 
@@ -333,12 +333,12 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
                     (bg_rgb.g >> 8) as u8,
                     (bg_rgb.b >> 8) as u8,
                 );
-                vprtln!(V::V, "termbg successful: {:?}", rgb);
+                vprtln!(V::V, "termbg successful: {rgb:?}");
                 Ok(rgb)
             }
             Err(e) => {
-                vprtln!(V::V, "Both OSC 11 and termbg failed: {}", e);
-                Err(ThagCommonError::Generic(format!("Background detection failed: {}", e)))
+                vprtln!(V::V, "Both OSC 11 and termbg failed: {e}");
+                Err(ThagCommonError::Generic(format!("Background detection failed: {e}")))
             }
         }
     })
@@ -346,7 +346,7 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
     .map_err(|e| ThagCommonError::Generic(e.to_string()))
 }
 
-/// Detects color support using OSC sequences with fallback to supports_color
+/// Detects color support using OSC sequences with fallback to `supports_color`
 fn detect_color_support_osc() -> ColorSupport {
     // Check for mintty first - always supports TrueColor
     if is_mintty() {
@@ -369,7 +369,7 @@ fn detect_color_support_osc() -> ColorSupport {
         return ColorSupport::Color256;
     }
 
-    // Try OSC-based TrueColor detection
+    // Try OSC-based `TrueColor` detection
     if test_truecolor_support() {
         vprtln!(V::V, "OSC TrueColor test passed");
         return ColorSupport::TrueColor;
@@ -381,7 +381,7 @@ fn detect_color_support_osc() -> ColorSupport {
         return ColorSupport::Color256;
     }
 
-    // Fallback to supports_color crate
+    // Fallback to `supports_color` crate
     vprtln!(V::V, "Using supports_color crate fallback");
     supports_color::on(Stream::Stdout).map_or(ColorSupport::Basic, |color_level| {
         if color_level.has_16m {
@@ -394,14 +394,14 @@ fn detect_color_support_osc() -> ColorSupport {
     })
 }
 
-/// Check if running in mintty (always supports TrueColor)
+/// Check if running in mintty (always supports `TrueColor`)
 fn is_mintty() -> bool {
-    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "mintty")
+    std::env::var("TERM_PROGRAM").is_ok_and(|term| term == "mintty")
 }
 
 /// Check if running in Apple Terminal (which has RGB rendering issues)
 fn is_apple_terminal() -> bool {
-    std::env::var("TERM_PROGRAM").map_or(false, |term| term == "Apple_Terminal")
+    std::env::var("TERM_PROGRAM").is_ok_and(|term| term == "Apple_Terminal")
 }
 
 /// Query background color using OSC 11 with robust timeout handling
@@ -437,16 +437,17 @@ fn query_background_osc11_with_timeout(timeout: Duration) -> Option<(u8, u8, u8)
     });
 
     // Wait for result with timeout
-    match rx.recv_timeout(timeout + Duration::from_millis(50)) {
-        Ok(result) => {
-            let _ = handle.join();
-            result
-        }
-        Err(_) => {
-            vprtln!(V::V, "OSC 11 query timed out");
-            None
-        }
-    }
+    rx.recv_timeout(timeout + Duration::from_millis(50))
+        .map_or_else(
+            |_| {
+                vprtln!(V::V, "OSC 11 query timed out");
+                None
+            },
+            |result| {
+                let _ = handle.join();
+                result
+            },
+        )
 }
 
 /// Read terminal response with proper timeout handling
@@ -557,7 +558,7 @@ fn parse_osc11_background_response(response: &str) -> Option<(u8, u8, u8)> {
 fn parse_hex_component_bg(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
     let clean_hex: String = hex_str
         .chars()
-        .take_while(|c| c.is_ascii_hexdigit())
+        .take_while(char::is_ascii_hexdigit)
         .collect();
 
     match clean_hex.len() {
@@ -610,7 +611,7 @@ fn check_env_color_support() -> Option<ColorSupport> {
     None
 }
 
-/// Test TrueColor support using OSC 10 sequences
+/// Test `TrueColor` support using OSC 10 sequences
 fn test_truecolor_support() -> bool {
     // Skip OSC testing for terminals that don't respond to queries but may still support truecolor
     if is_apple_terminal() {
@@ -639,9 +640,8 @@ fn test_truecolor_support() -> bool {
                 return false;
             }
 
-            let original_color = match read_osc10_response(&mut stdin, timeout) {
-                Some(color) => color,
-                None => return false,
+            let Some(original_color) = read_osc10_response(&mut stdin, timeout) else {
+                return false;
             };
 
             // Set test color
@@ -667,9 +667,8 @@ fn test_truecolor_support() -> bool {
                 return false;
             }
 
-            let queried_color = match read_osc10_response(&mut stdin, timeout) {
-                Some(color) => color,
-                None => return false,
+            let Some(queried_color) = read_osc10_response(&mut stdin, timeout) else {
+                return false;
             };
 
             // Restore original color
@@ -690,9 +689,9 @@ fn test_truecolor_support() -> bool {
             }
 
             // Check if colors match (within tolerance)
-            let distance = ((test_color.0 as i16 - queried_color.0 as i16).abs()
-                + (test_color.1 as i16 - queried_color.1 as i16).abs()
-                + (test_color.2 as i16 - queried_color.2 as i16).abs())
+            let distance = ((i16::from(test_color.0) - i16::from(queried_color.0)).abs()
+                + (i16::from(test_color.1) - i16::from(queried_color.1)).abs()
+                + (i16::from(test_color.2) - i16::from(queried_color.2)).abs())
                 as u16;
 
             distance <= 50
@@ -702,13 +701,11 @@ fn test_truecolor_support() -> bool {
         let _ = tx.send(result);
     });
 
-    match rx.recv_timeout(timeout + Duration::from_millis(100)) {
-        Ok(result) => {
+    rx.recv_timeout(timeout + Duration::from_millis(100))
+        .map_or(false, |result| {
             let _ = handle.join();
             result
-        }
-        Err(_) => false,
-    }
+        })
 }
 
 /// Read OSC 10 response from stdin
@@ -737,7 +734,7 @@ fn read_osc10_response(stdin: &mut std::io::Stdin, timeout: Duration) -> Option<
             }
             Ok(0) => thread::sleep(Duration::from_millis(1)),
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(1))
+                thread::sleep(Duration::from_millis(1));
             }
             Err(_) => break,
         }
@@ -788,9 +785,7 @@ fn parse_osc10_response(response: &str) -> Option<(u8, u8, u8)> {
 
 /// Check if terminal supports 256 colors based on TERM variable
 fn supports_256_color() -> bool {
-    std::env::var("TERM").map_or(false, |term| {
-        term.ends_with("256color") || term.ends_with("256")
-    })
+    std::env::var("TERM").is_ok_and(|term| term.ends_with("256color") || term.ends_with("256"))
 }
 
 /// Restore the raw or cooked terminal status as saved in the boolean argument.

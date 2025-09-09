@@ -913,11 +913,11 @@ impl TermAttributes {
 
                             // Load the specified theme directly (try runtime first, then builtin)
                             let theme = Theme::get_theme_runtime_or_builtin(&theme_name)
-                                .and_then(|mut theme| {
+                                .map(|mut theme| {
                                     if *color_support != ColorSupport::TrueColor {
                                         theme.convert_to_color_support(*color_support);
                                     }
-                                    Ok(theme)
+                                    theme
                                 })
                                 .unwrap_or_else(|_| {
                                     vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
@@ -1680,8 +1680,8 @@ impl Theme {
     /// Attempts to load a theme from user-specified directories first, then falls back to built-in themes.
     ///
     /// This method first checks for user-defined themes in directories specified by:
-    /// 1. THAG_THEME_DIR environment variable (highest priority)
-    /// 2. theme_dir configuration option
+    /// 1. `THAG_THEME_DIR` environment variable (highest priority)
+    /// 2. `theme_dir` configuration option
     /// 3. Falls back to built-in themes if not found
     ///
     /// # Arguments
@@ -1705,8 +1705,8 @@ impl Theme {
     /// Attempts to load a theme from user-specified directories.
     ///
     /// Checks the following locations in order:
-    /// 1. THAG_THEME_DIR environment variable
-    /// 2. theme_dir from configuration
+    /// 1. `THAG_THEME_DIR` environment variable
+    /// 2. `theme_dir` from configuration
     ///
     /// # Arguments
     /// * `theme_name` - The name of the theme to load
@@ -1779,8 +1779,8 @@ impl Theme {
     /// Looks for theme files with the following naming patterns:
     /// - `{theme_name}.toml`
     /// - `thag-{theme_name}.toml`
-    /// - `thag-{theme_name}-light.toml` (if theme_name doesn't end in -light/-dark)
-    /// - `thag-{theme_name}-dark.toml` (if theme_name doesn't end in -light/-dark)
+    /// - `thag-{theme_name}-light.toml` (if `theme_name` doesn't end in -light/-dark)
+    /// - `thag-{theme_name}-dark.toml` (if `theme_name` doesn't end in -light/-dark)
     ///
     /// # Arguments
     /// * `dir` - Directory path to search in

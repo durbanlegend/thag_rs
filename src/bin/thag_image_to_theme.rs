@@ -64,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Generate theme from image
     println!("🎨 Analyzing image and generating theme...");
-    let generator = ImageThemeGenerator::with_config(config.clone());
+    let generator = ImageThemeGenerator::with_config(config);
 
     let mut theme = match generator.generate_from_file(&image_path) {
         Ok(theme) => theme,

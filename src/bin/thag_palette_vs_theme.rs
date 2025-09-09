@@ -27,7 +27,7 @@ use thag_styling::{
 file_navigator! {}
 
 /// RGB color representation
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,
@@ -35,29 +35,38 @@ pub struct Rgb {
 }
 
 impl Rgb {
-    pub fn new(r: u8, g: u8, b: u8) -> Self {
+    #[must_use]
+    pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
 
     /// Calculate color difference (Manhattan distance in RGB space)
-    pub fn distance_to(&self, other: &Rgb) -> u16 {
-        ((self.r as i16 - other.r as i16).abs()
-            + (self.g as i16 - other.g as i16).abs()
-            + (self.b as i16 - other.b as i16).abs()) as u16
+    #[must_use]
+    #[allow(clippy::cast_sign_loss)]
+    pub fn distance_to(&self, other: &Self) -> u16 {
+        ((i16::from(self.r) - i16::from(other.r)).abs()
+            + (i16::from(self.g) - i16::from(other.g)).abs()
+            + (i16::from(self.b) - i16::from(other.b)).abs()) as u16
     }
 
     /// Convert to hex string
+    #[must_use]
     pub fn to_hex(&self) -> String {
         format!("#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
 
     /// Calculate perceived brightness (0.0-1.0)
+    #[must_use]
     pub fn brightness(&self) -> f32 {
         // Using standard luminance formula
-        (0.299 * self.r as f32 + 0.587 * self.g as f32 + 0.114 * self.b as f32) / 255.0
+        0.114f32.mul_add(
+            f32::from(self.b),
+            0.299 * f32::from(self.r) + 0.587 * f32::from(self.g),
+        ) / 255.0
     }
 
     /// Check if this is a "dark" color
+    #[must_use]
     pub fn is_dark(&self) -> bool {
         self.brightness() < 0.5
     }
@@ -113,6 +122,10 @@ impl PaletteCache {
 }
 
 /// Production-ready palette color query using crossterm threading
+///
+/// # Errors
+///
+/// Will bubble up any terminal errors encountered.
 pub fn query_palette_color(index: u8, timeout: Duration) -> Result<Rgb, PaletteError> {
     let (tx, rx) = mpsc::channel();
 
@@ -171,13 +184,13 @@ pub fn query_palette_color(index: u8, timeout: Duration) -> Result<Rgb, PaletteE
     });
 
     // Wait for result or timeout
-    match rx.recv_timeout(timeout + Duration::from_millis(50)) {
-        Ok(result) => {
+    rx.recv_timeout(timeout + Duration::from_millis(50)).map_or(
+        Err(PaletteError::ThreadError),
+        |result| {
             let _ = handle.join();
             result
-        }
-        Err(_) => Err(PaletteError::ThreadError),
-    }
+        },
+    )
 }
 
 /// Parse OSC 4 response from accumulated buffer
@@ -389,6 +402,7 @@ impl PaletteDetector {
     }
 
     /// Get cache statistics
+    #[must_use]
     pub fn cache_info(&self) -> Option<(usize, Duration, String)> {
         self.cache.as_ref().map(|cache| {
             (

@@ -488,7 +488,9 @@ impl ImageThemeGenerator {
 
         // Only enforce minimum contrast if we're really too close
         if (adjusted_lightness - bg_lightness).abs() < (min_lightness_diff * 0.5) {
-            adjusted_lightness = (bg_lightness - min_lightness_diff * 0.7).clamp(0.1, 0.75);
+            adjusted_lightness = min_lightness_diff
+                .mul_add(-0.7, bg_lightness)
+                .clamp(0.1, 0.75);
         }
 
         // Light theme saturation: keep more original saturation
@@ -523,12 +525,12 @@ impl ImageThemeGenerator {
         color_name: &str,
         preserve_family_gradient: bool,
     ) -> ColorAnalysis {
+        const MAX_ITERATIONS: u32 = 100;
         let mut adjusted_lightness = color.lightness;
         let mut lightness_diff = (adjusted_lightness - background.lightness).abs();
 
         let adjustment_factor = if preserve_family_gradient { 1.02 } else { 1.05 };
         let mut iterations = 0;
-        const MAX_ITERATIONS: u32 = 100;
 
         while lightness_diff < min_lightness_diff && iterations < MAX_ITERATIONS {
             if adjusted_lightness > background.lightness {
@@ -547,11 +549,7 @@ impl ImageThemeGenerator {
                 (color.saturation * 0.8).max(0.1)
             }
         } else {
-            if preserve_family_gradient {
-                color.saturation
-            } else {
-                color.saturation
-            }
+            color.saturation
         };
 
         let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
@@ -649,6 +647,7 @@ impl ImageThemeGenerator {
     }
 
     /// Get tiered contrast requirements based on color role importance
+    #[allow(clippy::match_same_arms)]
     fn get_contrast_requirement(color_name: &str) -> f32 {
         match color_name {
             // Critical colors need high contrast
@@ -1020,7 +1019,7 @@ impl ImageThemeGenerator {
         let color_name = "Commentary";
         let commentary_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
-                &normal_color,
+                normal_color,
                 background_color,
                 self.get_adjusted_contrast_requirement("Commentary", is_light_theme),
                 is_light_theme,
@@ -1067,7 +1066,7 @@ impl ImageThemeGenerator {
         let adjusted_heading_colors = (
             self.apply_global_adjustments(
                 &Self::adjust_color_contrast_tiered(
-                    &heading_colors.0,
+                    heading_colors.0,
                     background_color,
                     self.get_adjusted_contrast_requirement("Heading1", is_light_theme),
                     is_light_theme,
@@ -1080,7 +1079,7 @@ impl ImageThemeGenerator {
             ),
             self.apply_global_adjustments(
                 &Self::adjust_color_contrast_tiered(
-                    &heading_colors.1,
+                    heading_colors.1,
                     background_color,
                     self.get_adjusted_contrast_requirement("Heading2", is_light_theme),
                     is_light_theme,
@@ -1093,7 +1092,7 @@ impl ImageThemeGenerator {
             ),
             self.apply_global_adjustments(
                 &Self::adjust_color_contrast_tiered(
-                    &heading_colors.2,
+                    heading_colors.2,
                     background_color,
                     self.get_adjusted_contrast_requirement("Heading3", is_light_theme),
                     is_light_theme,
@@ -1110,7 +1109,7 @@ impl ImageThemeGenerator {
         let normal = "Normal";
         let adjusted_normal_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
-                &normal_color,
+                normal_color,
                 background_color,
                 self.get_adjusted_contrast_requirement("Normal", is_light_theme),
                 is_light_theme,
@@ -1694,7 +1693,7 @@ impl ImageThemeGenerator {
     }
 
     /// Find unique color by hue that doesn't conflict with already used colors
-    fn find_unique_color_by_hue<'a>(
+#[allow(clippy::too_many_lines)]    fn find_unique_color_by_hue<'a>(
         colors: &[&'a ColorAnalysis],
         hue_start: f32,
         hue_end: f32,
@@ -1976,7 +1975,7 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
         2 => (0.0, c, x),
         3 => (0.0, x, c),
         4 => (x, 0.0, c),
-        5 | _ => (c, 0.0, x),
+        _ => (c, 0.0, x),
     };
 
     let m = l - c / 2.0;

@@ -665,6 +665,7 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
         preferred_dark: vec![],
         fallback_light: vec![],
         fallback_dark: vec![],
+        theme_dir: None,
     }))
 }
 

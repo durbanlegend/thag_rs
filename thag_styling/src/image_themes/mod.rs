@@ -501,15 +501,15 @@ impl ImageThemeGenerator {
         let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
         let final_lightness_diff = (adjusted_lightness - bg_lightness).abs();
 
+        let [r, g, b] = rgb;
         println!(
             "{}: {}",
             color_name,
             Style::new().with_rgb(rgb).paint(format!(
-                "lightness_diff={:.3}, rgb={}",
-                final_lightness_diff,
+                "min_lightness_diff={min_lightness_diff:.3}, lightness_diff={final_lightness_diff:.3}, rgb={}=({r},{g},{b})",
                 rgb_to_hex(&rgb.into())
-            ))
-        );
+            )
+        ));
 
         ColorAnalysis::new(rgb, 0.0)
     }
@@ -640,15 +640,15 @@ impl ImageThemeGenerator {
     fn get_contrast_requirement(color_name: &str) -> f32 {
         match color_name {
             // Critical colors need high contrast
-            "Error" | "Success" | "Normal" => 0.6,
+            "Error" | "Success" | "Normal" => 0.45,
             // Important colors need good contrast
-            "Warning" | "Info" | "Code" | "Emphasis" | "Heading1" => 0.5,
+            "Warning" | "Info" | "Code" | "Emphasis" | "Heading1" => 0.4,
             // Secondary colors need moderate contrast
-            "Heading2" | "Link" | "Quote" => 0.4,
+            "Heading2" | "Link" | "Quote" => 0.38,
             // Supporting colors can have lower contrast to preserve gradients
-            "Subtle" | "Hint" | "Debug" | "Commentary" | "Heading3" => 0.3,
+            "Subtle" | "Hint" | "Debug" | "Commentary" | "Heading3" => 0.35,
             // Fallback
-            _ => 0.45,
+            _ => 0.4,
         }
     }
 

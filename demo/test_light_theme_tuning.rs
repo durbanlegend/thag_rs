@@ -12,14 +12,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 use std::path::Path;
 use thag_styling::{ImageThemeConfig, ImageThemeGenerator, StylingResult, TermBgLuma};
 
-fn test_config(name: &str, config: ImageThemeConfig) -> StylingResult<()> {
-    let image_path = Path::new("assets/thag_morning_coffee_figma.png");
-
-    if !image_path.exists() {
-        println!("❌ Test image not found: {}", image_path.display());
-        return Ok(());
-    }
-
+fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> StylingResult<()> {
     println!("🎨 {}", name);
     println!("{}", "-".repeat(40));
 
@@ -30,7 +23,10 @@ fn test_config(name: &str, config: ImageThemeConfig) -> StylingResult<()> {
             // Show key colors that demonstrate the effects
             println!(
                 "Normal:   {}",
-                theme.palette.normal.paint("■■■■■ Regular text")
+                theme
+                    .palette
+                    .normal
+                    .paint(format!("■■■■■ Regular text ({:?})", theme.palette.normal))
             );
             println!(
                 "Warning:  {}",
@@ -49,6 +45,8 @@ fn test_config(name: &str, config: ImageThemeConfig) -> StylingResult<()> {
                 theme.palette.quote.paint("■■■■■ Quoted text")
             );
             println!();
+            println!("{generator:#?}");
+            println!();
         }
         Err(e) => println!("❌ Error: {}", e),
     }
@@ -61,9 +59,29 @@ fn main() -> StylingResult<()> {
     println!("{}", "=".repeat(50));
     println!();
 
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() != 2 {
+        eprintln!(
+            "{}: Explore fine-tuning of theme generation from an image",
+            args[0]
+        );
+        eprintln!("Usage: {} <image_file_path>", args[0]);
+        std::process::exit(1);
+    }
+
+    let image_path = Path::new(&args[1]);
+
+    // Ensure image file exists
+    if !image_path.exists() {
+        eprintln!("Error: Umage file does not exist: {}", image_path.display());
+        std::process::exit(1);
+    }
+
     // Default light theme settings
     test_config(
         "Default Light Settings (baseline)",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             ..Default::default()
@@ -73,6 +91,7 @@ fn main() -> StylingResult<()> {
     // Moderate saturation - light themes look better with less aggressive saturation
     test_config(
         "Moderate Saturation (0.9x) - Refined Colors",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             saturation_multiplier: 0.9,
@@ -80,9 +99,23 @@ fn main() -> StylingResult<()> {
         },
     )?;
 
+    // Higher saturation - ... or do they?
+    test_config(
+        "Higher Saturation (1.4x) - Richer Colors",
+        image_path,
+        ImageThemeConfig {
+            force_theme_type: Some(TermBgLuma::Light),
+            saturation_multiplier: 1.4,
+            lightness_adjustment: 0.2,
+            contrast_multiplier: 1.4,
+            ..Default::default()
+        },
+    )?;
+
     // Darker theme - darken colors for better contrast against light background
     test_config(
         "Darker Colors (-0.1) - Better Contrast",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             lightness_adjustment: -0.1,
@@ -93,6 +126,7 @@ fn main() -> StylingResult<()> {
     // Higher contrast - more dramatic differences
     test_config(
         "Higher Contrast (1.2x) - More Definition",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             contrast_multiplier: 1.2,
@@ -103,6 +137,7 @@ fn main() -> StylingResult<()> {
     // Professional look - subtle saturation with good contrast
     test_config(
         "Professional (0.85x sat, -0.05 light, 1.1x contrast)",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             saturation_multiplier: 0.85,
@@ -115,6 +150,7 @@ fn main() -> StylingResult<()> {
     // Rich but refined - preserve color character while ensuring readability
     test_config(
         "Rich & Refined (1.1x sat, -0.08 light, 1.15x contrast)",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             saturation_multiplier: 1.1,
@@ -127,6 +163,7 @@ fn main() -> StylingResult<()> {
     // High contrast accessibility
     test_config(
         "High Contrast Accessibility (0.8x sat, -0.15, 1.4x contrast)",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             saturation_multiplier: 0.8,
@@ -139,6 +176,7 @@ fn main() -> StylingResult<()> {
     // Subtle and elegant
     test_config(
         "Subtle & Elegant (0.75x sat, -0.02, 0.9x contrast)",
+        image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),
             saturation_multiplier: 0.75,

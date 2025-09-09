@@ -75,9 +75,9 @@ fn main() -> StylingResult<()> {
         std::process::exit(1);
     }
 
-    // Default settings
+    // Default dark theme settings
     test_config(
-        "Default Settings (baseline)",
+        "Default Dark Settings (baseline)",
         image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Dark),

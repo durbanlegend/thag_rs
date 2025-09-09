@@ -37,7 +37,8 @@
 - [ ] Test truecolor tests on mintty.
 - [ ] Replace current TrueColor detection  (color_support crate) by truecolor_test.rs logic.
 - [ ] Theme conversion or loading - consider improving contrast on palette colours where necessary.
-- [ ] Debug src/bin/thag_theme.rs .
+- [ ] Debug src/bin/thag_theme.rs?.
+- [ ] Debug demo/test_light_theme_tuning.rs (and dark counterpart) - mod.rs showing wrong colours line 509 before global modification.
 
 printf "\x1b]4;{};?\x07"
 printf "\x1b]4;01;?\x07"

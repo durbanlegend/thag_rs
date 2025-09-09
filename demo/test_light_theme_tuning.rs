@@ -10,7 +10,9 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 //# Purpose: Preview and tune light theme generation with optimized parameters
 //# Categories: color, styling, terminal, theming, tools
 use std::path::Path;
-use thag_styling::{ImageThemeConfig, ImageThemeGenerator, StylingResult, TermBgLuma};
+use thag_styling::{
+    styling::rgb_to_hex, ImageThemeConfig, ImageThemeGenerator, StylingResult, TermBgLuma,
+};
 
 fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> StylingResult<()> {
     println!("🎨 {}", name);
@@ -20,30 +22,19 @@ fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> Styli
 
     match generator.generate_from_file(image_path) {
         Ok(theme) => {
-            // Show key colors that demonstrate the effects
-            println!(
-                "Normal:   {}",
-                theme
-                    .palette
-                    .normal
-                    .paint(format!("■■■■■ Regular text ({:?})", theme.palette.normal))
-            );
-            println!(
-                "Warning:  {}",
-                theme.palette.warning.paint("■■■■■ Warning message")
-            );
-            println!(
-                "Code:     {}",
-                theme.palette.code.paint("■■■■■ Code snippet")
-            );
-            println!(
-                "Success:  {}",
-                theme.palette.success.paint("■■■■■ Success message")
-            );
-            println!(
-                "Quote:    {}",
-                theme.palette.quote.paint("■■■■■ Quoted text")
-            );
+            // Show the palette colours
+            theme.palette.iter().for_each(|(style_name, style)| {
+                if let Some([r, g, b]) = style.rgb() {
+                    println!(
+                        "{}",
+                        style.paint(format!(
+                            "{style_name:<12} ■■■■■ {} = ({r:>3},{g:>3},{b:>3})",
+                            rgb_to_hex(&(r, g, b))
+                        ))
+                    );
+                }
+            });
+
             println!();
             println!("{generator:#?}");
             println!();
@@ -101,7 +92,7 @@ fn main() -> StylingResult<()> {
 
     // Higher saturation - ... or do they?
     test_config(
-        "Higher Saturation (1.4x) - Richer Colors",
+        "Exaggerated Saturation (1.4x) - Extreme Colors",
         image_path,
         ImageThemeConfig {
             force_theme_type: Some(TermBgLuma::Light),

@@ -285,6 +285,24 @@ impl Style {
         self
     }
 
+    /// Returns the Style with RGB foreground color
+    #[must_use]
+    pub fn rgb(&self) -> Option<[u8; 3]> {
+        let Some(fg) = &self.foreground else {
+            return None;
+        };
+        match &fg.value {
+            ColorValue::Basic { index, .. } => {
+                // Return nominal value unless we interrogate terminal
+                let index_to_rgb = index_to_rgb(*index);
+                // index_to_rgb.map(|(r, g, b)| [r, g, b])
+                Some(index_to_rgb.into())
+            }
+            ColorValue::Color256 { color256 } => Some(index_to_rgb(*color256).into()), // .map(|(r, g, b)| [r, g, b]),
+            ColorValue::TrueColor { rgb } => Some(*rgb),
+        }
+    }
+
     /// Returns the Style with bold formatting enabled
     #[must_use]
     pub const fn bold(mut self) -> Self {

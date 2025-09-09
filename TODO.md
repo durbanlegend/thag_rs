@@ -38,7 +38,23 @@
 - [ ] Replace current TrueColor detection  (color_support crate) by truecolor_test.rs logic.
 - [ ] Theme conversion or loading - consider improving contrast on palette colours where necessary.
 - [ ] Debug src/bin/thag_theme.rs?.
-- [ ] Debug demo/test_light_theme_tuning.rs (and dark counterpart) - mod.rs showing wrong colours line 509 before global modification.
+- [ ] DONE: Debug demo/test_light_theme_tuning.rs (and dark counterpart) - mod.rs showing wrong colours line 509 before global modification.
+
+Enhancing Theme Color Contrast Algorithm
+From running demo/test_light_theme_tuning.rs, there is an issue with thag_styling/src/image_themes/mod.rs, in that it displays each palette colour in fn adjust_color_contrast_tiered *before* the global adjustments of fn apply_global_adjustments. So while the small subset of bars shown in demo/test_light_theme_tuning.rs reflect the real colours, the colour listings that precede them (from mod.rs lines 505-512) are from the previous stage before the global adjustment and are visible very different, as I first noticed in the clearest example, lines 102-113 of demo/test_light_theme_tuning.rs which I added to test the boundaries of saturation when I couldn't get a satisfactory theme.
+
+cargo test -p thag_proc_macros
+failures:
+    thag_proc_macros/src/lib.rs - category_enum (line 138)
+    thag_proc_macros/src/lib.rs - safe_eprintln (line 784)
+    thag_proc_macros/src/lib.rs - safe_osc (line 806)
+    thag_proc_macros/src/lib.rs - styled (line 830)
+
+test result: FAILED. 9 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1343.71s
+
+error: doctest failed, to rerun pass `-p thag_proc_macros --doc`
+
+
 
 printf "\x1b]4;{};?\x07"
 printf "\x1b]4;01;?\x07"

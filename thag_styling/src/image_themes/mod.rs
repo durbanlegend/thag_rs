@@ -499,17 +499,17 @@ impl ImageThemeGenerator {
         };
 
         let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
-        let final_lightness_diff = (adjusted_lightness - bg_lightness).abs();
+        // let final_lightness_diff = (adjusted_lightness - bg_lightness).abs();
 
-        let [r, g, b] = rgb;
-        println!(
-            "{}: {}",
-            color_name,
-            Style::new().with_rgb(rgb).paint(format!(
-                "min_lightness_diff={min_lightness_diff:.3}, lightness_diff={final_lightness_diff:.3}, rgb={}=({r},{g},{b})",
-                rgb_to_hex(&rgb.into())
-            )
-        ));
+        // let [r, g, b] = rgb;
+        // println!(
+        //     "{}: {}",
+        //     color_name,
+        //     Style::new().with_rgb(rgb).paint(format!(
+        //         "min_lightness_diff={min_lightness_diff:.3}, lightness_diff={final_lightness_diff:.3}, rgb={}=({r},{g},{b})",
+        //         rgb_to_hex(&rgb.into())
+        //     )
+        // ));
 
         ColorAnalysis::new(rgb, 0.0)
     }
@@ -594,9 +594,10 @@ impl ImageThemeGenerator {
     fn apply_global_adjustments(
         &self,
         color: &ColorAnalysis,
+        color_name: &str,
         is_light_theme: bool,
     ) -> ColorAnalysis {
-        if is_light_theme {
+        let color_analysis = if is_light_theme {
             // Light theme adjustments: make fine-tuning parameters much more dramatic
             let saturation_effect = self.config.saturation_multiplier;
             let adjusted_saturation = (color.saturation * saturation_effect).clamp(0.05, 0.95);
@@ -620,7 +621,18 @@ impl ImageThemeGenerator {
                 (color.lightness + self.config.lightness_adjustment).clamp(0.2, 0.95);
             let rgb = hsl_to_rgb(color.hue, adjusted_saturation, adjusted_lightness);
             ColorAnalysis::new(rgb, 0.0)
-        }
+        };
+
+        let [r, g, b] = color_analysis.rgb;
+        vprtln!(
+            V::V,
+            "{}",
+            Style::new().with_rgb(color_analysis.rgb).paint(format!(
+                "{color_name}, rgb={}=({r},{g},{b})",
+                rgb_to_hex(&color_analysis.rgb.into())
+            ))
+        );
+        color_analysis
     }
 
     /// Apply global adjustments to contrast requirements
@@ -802,6 +814,7 @@ impl ImageThemeGenerator {
         );
 
         // Apply tiered contrast adjustment to subtle color
+        let color_name = "Subtle";
         let adjusted_subtle_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 subtle_color,
@@ -809,9 +822,10 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Subtle", is_light_theme),
                 is_light_theme,
                 true,
-                "Subtle",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
@@ -830,6 +844,7 @@ impl ImageThemeGenerator {
         );
 
         // Apply tiered contrast adjustment to hint color
+        let color_name = "Hint";
         let adjusted_hint_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 hint_color,
@@ -837,9 +852,10 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Hint", is_light_theme),
                 is_light_theme,
                 true,
-                "Hint",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
@@ -859,6 +875,7 @@ impl ImageThemeGenerator {
         );
 
         // Apply tiered contrast adjustment to debug color
+        let color_name = "Debug";
         let adjusted_debug_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 debug_color,
@@ -866,9 +883,10 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Debug", is_light_theme),
                 is_light_theme,
                 true,
-                "Debug",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
@@ -876,6 +894,7 @@ impl ImageThemeGenerator {
         used_colors.push(debug_color);
 
         // Apply tiered contrast adjustment to semantic colors
+        let color_name = "Error";
         let adjusted_error = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 semantic_colors.error,
@@ -883,11 +902,14 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Error", is_light_theme),
                 is_light_theme,
                 false,
-                "Error",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
+
+        let color_name = "Warning";
         let adjusted_warning = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 semantic_colors.warning,
@@ -895,11 +917,14 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Warning", is_light_theme),
                 is_light_theme,
                 false,
-                "Warning",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
+
+        let color_name = "Success";
         let adjusted_success = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 semantic_colors.success,
@@ -907,11 +932,14 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Success", is_light_theme),
                 is_light_theme,
                 false,
-                "Success",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
+
+        let color_name = "Info";
         let adjusted_info = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 semantic_colors.info,
@@ -919,11 +947,14 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Info", is_light_theme),
                 is_light_theme,
                 false,
-                "Info",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
+
+        let color_name = "Code";
         let adjusted_code = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 semantic_colors.code,
@@ -931,11 +962,14 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Code", is_light_theme),
                 is_light_theme,
                 false,
-                "Code",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
+
+        let color_name = "Emphasis";
         let adjusted_emphasis = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 semantic_colors.emphasis,
@@ -943,13 +977,15 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Emphasis", is_light_theme),
                 is_light_theme,
                 false,
-                "Emphasis",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
         // Link color: derive from error color (typically red/bright for visibility)
+        let color_name = "Link";
         let link_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 &adjusted_error,
@@ -957,13 +993,15 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Link", is_light_theme),
                 is_light_theme,
                 true,
-                "Link",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
         // Quote color: derive from subtle color with reduced saturation for muted appearance
+        let color_name = "Quote";
         let quote_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 &adjusted_subtle_color,
@@ -971,13 +1009,15 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Quote", is_light_theme),
                 is_light_theme,
                 true,
-                "Quote",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
         // Commentary color: derive from normal color
+        let color_name = "Commentary";
         let commentary_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 &normal_color,
@@ -985,9 +1025,10 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Commentary", is_light_theme),
                 is_light_theme,
                 true,
-                "Commentary",
+                color_name,
                 true, // preserve family gradients
             ),
+            color_name,
             is_light_theme,
         );
 
@@ -1020,6 +1061,9 @@ impl ImageThemeGenerator {
         );
 
         // Apply contrast adjustment to heading colors
+        let heading1 = "Heading1";
+        let heading2 = "Heading2";
+        let heading3 = "Heading3";
         let adjusted_heading_colors = (
             self.apply_global_adjustments(
                 &Self::adjust_color_contrast_tiered(
@@ -1028,9 +1072,10 @@ impl ImageThemeGenerator {
                     self.get_adjusted_contrast_requirement("Heading1", is_light_theme),
                     is_light_theme,
                     false,
-                    "Heading1",
+                    heading1,
                     true, // preserve family gradients
                 ),
+                heading1,
                 is_light_theme,
             ),
             self.apply_global_adjustments(
@@ -1040,9 +1085,10 @@ impl ImageThemeGenerator {
                     self.get_adjusted_contrast_requirement("Heading2", is_light_theme),
                     is_light_theme,
                     false,
-                    "Heading2",
+                    heading2,
                     true, // preserve family gradients
                 ),
+                heading2,
                 is_light_theme,
             ),
             self.apply_global_adjustments(
@@ -1052,14 +1098,16 @@ impl ImageThemeGenerator {
                     self.get_adjusted_contrast_requirement("Heading3", is_light_theme),
                     is_light_theme,
                     false,
-                    "Heading3",
+                    heading3,
                     true, // preserve family gradients
                 ),
+                heading3,
                 is_light_theme,
             ),
         );
 
         // Apply tiered contrast adjustment to normal color
+        let normal = "Normal";
         let adjusted_normal_color = self.apply_global_adjustments(
             &Self::adjust_color_contrast_tiered(
                 &normal_color,
@@ -1067,9 +1115,10 @@ impl ImageThemeGenerator {
                 self.get_adjusted_contrast_requirement("Normal", is_light_theme),
                 is_light_theme,
                 false,
-                "Normal",
+                normal,
                 true, // preserve family gradients
             ),
+            normal,
             is_light_theme,
         );
 

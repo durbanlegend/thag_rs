@@ -36,6 +36,28 @@ pub fn palette_methods_impl(input: TokenStream) -> TokenStream {
         }
     });
 
+    // Generate style name and reference pairs for regular iterator
+    let style_name_refs = fields.iter().map(|f| {
+        let field_name = &f.ident;
+        let field_name_str = field_name.as_ref().unwrap().to_string();
+
+        // Convert snake_case to Title case (e.g., "heading_1" -> "Heading1")
+        let title_case = field_name_str
+            .split('_')
+            .map(|word| {
+                let mut chars = word.chars();
+                match chars.next() {
+                    None => String::new(),
+                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                }
+            })
+            .collect::<String>();
+
+        quote! {
+            (#title_case, &self.#field_name)
+        }
+    });
+
     let output = quote! {
         impl Palette {
             /// Validates all styles in the palette against the minimum color support level.
@@ -67,12 +89,22 @@ pub fn palette_methods_impl(input: TokenStream) -> TokenStream {
                 })
             }
 
-            /// New method to get mutable iterator over all styles
+            /// Get mutable iterator over all styles
             pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Style> {
                  vec![
                      #(#style_refs,)*
                  ].into_iter()
-             }
+            }
+
+            /// Get iterator over all styles with their names
+            ///
+            /// Returns an iterator of tuples where the first element is the style name
+            /// in Title case (e.g., "Heading1") and the second element is a reference to the Style
+            pub fn iter(&self) -> impl Iterator<Item = (&'static str, &Style)> {
+                vec![
+                    #(#style_name_refs,)*
+                ].into_iter()
+            }
         }
     };
 

@@ -25,6 +25,9 @@ syn = { version = "2.0", default-features = false, features = [
 ] }
 toml = { version = "0.9" }
 
+[dev-dependencies]
+strum = { version = "0.27", features = ["derive", "phf"] }
+
 [features]
 time_profiling = []                 # New feature for conditional compilation
 full_profiling = ["time_profiling"]

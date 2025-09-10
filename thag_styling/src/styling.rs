@@ -913,16 +913,15 @@ impl TermAttributes {
 
                             // Load the specified theme directly (try runtime first, then builtin)
                             let theme = Theme::get_theme_runtime_or_builtin(&theme_name)
-                                .map(|mut theme| {
+                                .map_or_else(|_| {
+                                    vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
+                                    Theme::auto_detect(*color_support, TermBgLuma::Dark, Some(term_bg_rgb_ref))
+                                        .expect("Failed to auto-detect fallback theme")
+                                }, |mut theme| {
                                     if *color_support != ColorSupport::TrueColor {
                                         theme.convert_to_color_support(*color_support);
                                     }
                                     theme
-                                })
-                                .unwrap_or_else(|_| {
-                                    vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
-                                    Theme::auto_detect(*color_support, TermBgLuma::Dark, Some(term_bg_rgb_ref))
-                                        .expect("Failed to auto-detect fallback theme")
                                 });
 
                             // Determine theme's background luma from the theme itself

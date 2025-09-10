@@ -61,7 +61,7 @@ impl Rgb {
         // Using standard luminance formula
         0.114f32.mul_add(
             f32::from(self.b),
-            0.299 * f32::from(self.r) + 0.587 * f32::from(self.g),
+            0.299f32.mul_add(f32::from(self.r), 0.587 * f32::from(self.g)),
         ) / 255.0
     }
 
@@ -207,7 +207,7 @@ fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
             let end_pos = rgb_data
                 .find('\x07')
                 .or_else(|| rgb_data.find('\x1b'))
-                .unwrap_or(rgb_data.len().min(20));
+                .unwrap_or_else(|| rgb_data.len().min(20));
 
             let rgb_str = &rgb_data[..end_pos];
             let parts: Vec<&str> = rgb_str.split('/').collect();
@@ -253,7 +253,7 @@ fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
 fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
     let clean_hex: String = hex_str
         .chars()
-        .take_while(|c| c.is_ascii_hexdigit())
+        .take_while(char::is_ascii_hexdigit)
         .collect();
 
     match clean_hex.len() {
@@ -313,7 +313,8 @@ impl Default for PaletteDetector {
 }
 
 impl PaletteDetector {
-    pub fn new(timeout: Duration, cache_duration: Duration) -> Self {
+    #[must_use]
+    pub const fn new(timeout: Duration, cache_duration: Duration) -> Self {
         Self {
             cache: None,
             timeout,
@@ -322,6 +323,9 @@ impl PaletteDetector {
     }
 
     /// Query a specific palette color with caching
+    ///
+    /// # Panics
+    ///
     pub fn get_color(&mut self, index: u8) -> Option<Rgb> {
         if index >= 16 {
             return None;
@@ -342,13 +346,11 @@ impl PaletteDetector {
         match query_palette_color(index, self.timeout) {
             Ok(color) => {
                 // Update cache
-                if self.cache.is_none()
-                    || !self
-                        .cache
-                        .as_ref()
-                        .unwrap()
-                        .is_valid(self.cache_duration, &terminal_id)
-                {
+                if let Some(cache) = &self.cache {
+                    if !cache.is_valid(self.cache_duration, &terminal_id) {
+                        self.cache = Some(PaletteCache::new(terminal_id));
+                    }
+                } else {
                     self.cache = Some(PaletteCache::new(terminal_id));
                 }
 
@@ -588,7 +590,7 @@ fn display_ansi_colors(theme: &Theme) {
 
     let successful = palette_colors.iter().filter(|c| c.is_some()).count();
     let palette_colors = if successful > 0 {
-        Some(palette_colors)
+        Some(palette_colors.as_ref())
     } else {
         None
     };
@@ -618,7 +620,7 @@ fn display_ansi_colors(theme: &Theme) {
                 (6, "Cyan"),
                 (7, "White"),
             ],
-            &palette_colors,
+            palette_colors,
             0,
         );
 
@@ -638,7 +640,7 @@ fn display_ansi_colors(theme: &Theme) {
                 (14, "Bright Cyan"),
                 (15, "Bright White"),
             ],
-            &palette_colors,
+            palette_colors,
             1,
         );
 
@@ -650,7 +652,7 @@ fn display_ansi_colors(theme: &Theme) {
 fn display_color_row(
     theme: &Theme,
     colors: &[(u8, &str)],
-    palette_colors: &Option<Vec<Option<Rgb>>>,
+    palette_colors: Option<&[Option<Rgb>]>,
     row: usize,
 ) {
     theme.with_context(|| {

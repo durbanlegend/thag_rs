@@ -20,28 +20,19 @@
 - [ ]  Make a plan for styling dependencies to be in thag_proc_macros or common subcrate? - lazy_static_var, vprtln, ColorSupport, TermBgLuma, [ThagError, ThagResult], V. All not bracketed are in shared.rs.
 - [ ]  Tools auto_help to accept file!() rather than name as string literal?
 - [ ]  Convert all inquire interfaces to use theming.
-- [ ]  RYO cargo-lookup?.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
-- [ ]  DONE: Add thag_theme tool to show current theme?
 - [ ]  Demo script for styled! proc macro using thag_styling?
-- [ ]  DONE: thag_show_themes.rs - detect alacritty etc and give instructions accordingly. alacritty etc?
+instructions accordingly. alacritty etc?
 - [ ]  Incorporate bank/rata.rs example?
 - [ ]  Debug success, emphasis, code and subtle all getting the same colour.
-- [ ]  DONE: Thag tool for setting terminal theme to a thag theme.
-- [ ]  DONE Thag tool for showing current terminal palette - thag_palette_vs_theme.
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
-- [ ] Force light or dark in theme name in src/bin/thag_image_to_theme.rs?
+- [ ] DONE Force light or dark in theme name in src/bin/thag_image_to_theme.rs?
 - [ ] thag_styling README.
-- [ ] DONE: Allow dynamically loading non-built-in themes - env var?
 - [ ] Fix palette_vs_theme bad display in Apple Terminal and ?
 - [ ] Test truecolor tests on mintty.
 - [ ] Replace current TrueColor detection  (color_support crate) by truecolor_test.rs logic.
 - [ ] Theme conversion or loading - consider improving contrast on palette colours where necessary.
 - [ ] Debug src/bin/thag_theme.rs?.
-- [ ] DONE: Debug demo/test_light_theme_tuning.rs (and dark counterpart) - mod.rs showing wrong colours line 509 before global modification.
-
-Enhancing Theme Color Contrast Algorithm
-From running demo/test_light_theme_tuning.rs, there is an issue with thag_styling/src/image_themes/mod.rs, in that it displays each palette colour in fn adjust_color_contrast_tiered *before* the global adjustments of fn apply_global_adjustments. So while the small subset of bars shown in demo/test_light_theme_tuning.rs reflect the real colours, the colour listings that precede them (from mod.rs lines 505-512) are from the previous stage before the global adjustment and are visible very different, as I first noticed in the clearest example, lines 102-113 of demo/test_light_theme_tuning.rs which I added to test the boundaries of saturation when I couldn't get a satisfactory theme.
 
 cargo test -p thag_proc_macros
 failures:
@@ -293,7 +284,7 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Look into fuzzing the tests such as test_merge_manifest.
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Sort and flesh out keywords (u16 etc) in shared::is_valid_crate_name. (make HashSet? phf?)
-
+- [ ]  RYO cargo-lookup?.
 
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 stem=macro_lazy_static_var_advanced

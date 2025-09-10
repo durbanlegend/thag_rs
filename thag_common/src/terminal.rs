@@ -135,6 +135,7 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
 }
 
 /// Get fresh color detection without caching - intended for dynamic changes
+#[must_use]
 pub fn get_fresh_color_support() -> ColorSupport {
     detect_color_support_osc()
 }
@@ -612,6 +613,7 @@ fn check_env_color_support() -> Option<ColorSupport> {
 }
 
 /// Test `TrueColor` support using OSC 10 sequences
+#[allow(clippy::cast_sign_loss, missing_docs)]
 fn test_truecolor_support() -> bool {
     // Skip OSC testing for terminals that don't respond to queries but may still support truecolor
     if is_apple_terminal() {
@@ -702,7 +704,7 @@ fn test_truecolor_support() -> bool {
     });
 
     rx.recv_timeout(timeout + Duration::from_millis(100))
-        .map_or(false, |result| {
+        .is_ok_and(|result| {
             let _ = handle.join();
             result
         })

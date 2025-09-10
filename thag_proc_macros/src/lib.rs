@@ -136,9 +136,9 @@ impl Parse for AttrArgs {
 /// Simply invoke the macro in your project:
 ///
 /// ```rust
-/// use demo_proc_macros::category_enum;
+/// use thag_proc_macros::category_enum;
 ///
-/// category_enum!();
+/// category_enum! {};
 /// ```
 ///
 /// This generates:
@@ -785,6 +785,7 @@ pub fn safe_eprint(input: TokenStream) -> TokenStream {
 /// use thag_proc_macros::safe_eprintln;
 ///
 /// safe_eprintln!("Error occurred!");
+/// let error_msg = "Demo error sample";
 /// safe_eprintln!("Error: {}", error_msg);
 /// ```
 ///
@@ -810,6 +811,8 @@ pub fn safe_eprintln(input: TokenStream) -> TokenStream {
 /// safe_osc!("\x1b]0;My Title\x1b\\");
 ///
 /// // Set hyperlink
+/// let url = "https://example.com";
+/// let text = "Sample text";
 /// safe_osc!("\x1b]8;;{}\x1b\\{}\\x1b]8;;\x1b\\", url, text);
 /// ```
 ///
@@ -828,8 +831,8 @@ pub fn safe_osc(input: TokenStream) -> TokenStream {
 /// # Usage
 ///
 /// ```rust
-/// use thag_proc_macros::styled;
-///
+/// use thag_proc_macros::{ansi_styling_support, styled};
+/// ansi_styling_support! {}
 /// styled!("Hello, world!");
 /// ```
 #[proc_macro]

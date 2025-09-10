@@ -4353,6 +4353,7 @@ dependencies = [
  "proc-macro2 1.0.95",
  "quote 1.0.40",
  "strict",
+ "strum 0.27.1",
  "syn 2.0.99",
  "toml 0.9.3",
 ]

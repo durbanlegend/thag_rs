@@ -6,7 +6,6 @@ use std::{error::Error, io};
 use strum::ParseError as StrumParseError;
 use thag_common::disentangle;
 use thag_common::{ColorSupport, TermBgLuma};
-use thag_profiler::profiled;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
 
@@ -77,6 +76,7 @@ pub enum ThagError {
     /// Integer parsing error
     ParseInt(ParseIntError),
     /// Profiling system error
+    #[cfg(feature = "profiling")]
     Profiling(String),
     #[cfg(feature = "reedline")]
     /// Reedline terminal interaction error
@@ -110,14 +110,12 @@ pub enum ThagError {
 }
 
 impl From<FromUtf8Error> for ThagError {
-    #[profiled]
     fn from(err: FromUtf8Error) -> Self {
         Self::FromUtf8(err)
     }
 }
 
 impl From<io::Error> for ThagError {
-    #[profiled]
     fn from(err: io::Error) -> Self {
         // Enable backtraces in all build types - this is a development tool after all
         use std::backtrace::Backtrace;
@@ -138,35 +136,30 @@ impl From<io::Error> for ThagError {
 
 #[cfg(feature = "clap")]
 impl From<ClapError> for ThagError {
-    #[profiled]
     fn from(err: ClapError) -> Self {
         Self::ClapError(err)
     }
 }
 
 impl From<StrumParseError> for ThagError {
-    #[profiled]
     fn from(err: StrumParseError) -> Self {
         Self::StrumParse(err)
     }
 }
 
 impl From<ThemeError> for ThagError {
-    #[profiled]
     fn from(err: ThemeError) -> Self {
         Self::Theme(err)
     }
 }
 
 impl From<TomlDeError> for ThagError {
-    #[profiled]
     fn from(err: TomlDeError) -> Self {
         Self::TomlDe(err)
     }
 }
 
 impl From<TomlSerError> for ThagError {
-    #[profiled]
     fn from(err: TomlSerError) -> Self {
         Self::TomlSer(err)
     }
@@ -174,33 +167,30 @@ impl From<TomlSerError> for ThagError {
 
 #[cfg(feature = "cargo_toml")]
 impl From<CargoTomlError> for ThagError {
-    #[profiled]
     fn from(err: CargoTomlError) -> Self {
         Self::Toml(err)
     }
 }
 
 impl From<String> for ThagError {
-    #[profiled]
     fn from(s: String) -> Self {
         Self::FromStr(Cow::Owned(s))
     }
 }
 
 impl From<&'static str> for ThagError {
-    #[profiled]
     fn from(s: &'static str) -> Self {
         Self::FromStr(Cow::Borrowed(s))
     }
 }
 
 impl From<ParseIntError> for ThagError {
-    #[profiled]
     fn from(err: ParseIntError) -> Self {
         Self::ParseInt(err)
     }
 }
 
+#[cfg(feature = "profiling")]
 impl From<thag_profiler::ProfileError> for ThagError {
     fn from(err: thag_profiler::ProfileError) -> Self {
         Self::Profiling(err.to_string())
@@ -209,7 +199,6 @@ impl From<thag_profiler::ProfileError> for ThagError {
 
 #[cfg(feature = "reedline")]
 impl From<ReedlineError> for ThagError {
-    #[profiled]
     fn from(err: ReedlineError) -> Self {
         Self::Reedline(err)
     }
@@ -217,7 +206,6 @@ impl From<ReedlineError> for ThagError {
 
 #[cfg(feature = "serde_merge")]
 impl From<SerdeMergeError> for ThagError {
-    #[profiled]
     fn from(err: SerdeMergeError) -> Self {
         Self::SerdeMerge(err)
     }
@@ -225,14 +213,12 @@ impl From<SerdeMergeError> for ThagError {
 
 #[cfg(feature = "syn")]
 impl From<SynError> for ThagError {
-    #[profiled]
     fn from(err: SynError) -> Self {
         Self::Syn(err)
     }
 }
 
 impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
-    #[profiled]
     fn from(_err: LockError<MutexGuard<'a, T>>) -> Self {
         Self::LockMutexGuard("Lock poisoned")
     }
@@ -240,14 +226,12 @@ impl<'a, T> From<LockError<MutexGuard<'a, T>>> for ThagError {
 
 #[cfg(feature = "bitflags")]
 impl From<BitFlagsParseError> for ThagError {
-    #[profiled]
     fn from(err: BitFlagsParseError) -> Self {
         Self::BitFlagsParse(err)
     }
 }
 
 impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
-    #[profiled]
     fn from(err: Box<dyn Error + Send + Sync + 'static>) -> Self {
         Self::Dyn(err)
     }
@@ -255,21 +239,18 @@ impl From<Box<dyn Error + Send + Sync + 'static>> for ThagError {
 
 #[cfg(feature = "color_detect")]
 impl From<termbg::Error> for ThagError {
-    #[profiled]
     fn from(err: termbg::Error) -> Self {
         Self::Termbg(err)
     }
 }
 
 impl From<std::env::VarError> for ThagError {
-    #[profiled]
     fn from(err: std::env::VarError) -> Self {
         Self::VarError(err)
     }
 }
 
 impl std::fmt::Display for ThagError {
-    #[profiled]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             // Use display formatting instead of debug formatting where possible
@@ -303,6 +284,7 @@ impl std::fmt::Display for ThagError {
             Self::OsString(o) => writeln!(f, "<invalid UTF-8: {o:?}>"),
             Self::Parse => write!(f, "Error parsing source data"),
             Self::ParseInt(e) => write!(f, "{e}"),
+            #[cfg(feature = "profiling")]
             Self::Profiling(e) => write!(f, "{e}"),
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => write!(f, "{e}"),
@@ -349,7 +331,6 @@ impl std::fmt::Display for ThagError {
 }
 
 impl Error for ThagError {
-    #[profiled]
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         // Force all match arms to return the same type by providing an explicit type annotation
         let result: Option<&(dyn Error + 'static)> = match self {
@@ -370,6 +351,7 @@ impl Error for ThagError {
             Self::OsString(_) => None,
             Self::Parse => None,
             Self::ParseInt(e) => Some(e),
+            #[cfg(feature = "profiling")]
             Self::Profiling(_) => None,
             #[cfg(feature = "reedline")]
             Self::Reedline(e) => Some(e),
@@ -444,7 +426,6 @@ pub enum ThemeError {
 }
 
 impl std::fmt::Display for ThemeError {
-    #[profiled]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BackgroundDetectionFailed => {

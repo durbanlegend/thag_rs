@@ -278,11 +278,13 @@ impl Style {
 
     /// Returns the Style with RGB foreground color
     #[must_use]
-    pub fn with_rgb(mut self, rgb: [u8; 3]) -> Self {
+    pub fn with_rgb(rgb: [u8; 3]) -> Self {
         let mut color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
         color_info.index = find_closest_color((rgb[0], rgb[1], rgb[2]));
-        self.foreground = Some(color_info);
-        self
+        Self {
+            foreground: Some(color_info),
+            ..Default::default()
+        }
     }
 
     /// Returns the Style with RGB foreground color

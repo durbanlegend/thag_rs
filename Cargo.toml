@@ -72,7 +72,6 @@ side-by-side-diff = { version = "0.1.2", optional = true }
 simplelog = { version = "0.12.2", optional = true }
 strict = "0.2.0"
 strum = { version = "0.27", features = ["derive", "phf"] }
-supports-color = { version = "3.0.2", optional = true }
 syn = { version = "2", features = [
     "extra-traits",
     "full",
@@ -84,7 +83,7 @@ termbg = { version = "0.6.2", optional = true }
 terminal-light = { version = "1.8.0", optional = true }
 thag_common = { path = "thag_common", version = "0.2.0" }
 thag_proc_macros = { version = "0.2", path = "thag_proc_macros" }
-thag_profiler = { path = "thag_profiler", version = "0.1" }
+thag_profiler = { path = "thag_profiler", version = "0.1", optional = true }
 thag_styling = { path = "thag_styling", version = "0.2.0", optional = true }
 tinyget = { version = "1.0.2", features = ["https"], optional = true }
 tokio = { version = "1.36.0", features = [
@@ -302,6 +301,7 @@ env_logger = ["dep:env_logger", "log_impl"]
 ## AST and Parsing
 ast = [
     "core",  # Explicit dependency on core for logging
+    "profiling",    # As long as we have instrumentation at this level
     "quote",
     "syn",
 ]
@@ -314,8 +314,6 @@ color_detect = [
     "config",
     "ratatui",
     "scopeguard",
-    "supports-color",
-    "termbg",
     "thag_styling/color_detect",
 ]
 
@@ -368,6 +366,7 @@ tools = [
     "dep:serde_yaml_ok",
     "dep:simplelog",
     "dep:tempfile",
+    "dep:termbg",
     "dep:terminal-light",
     "dep:tinyget",
     "dep:tokio",
@@ -402,6 +401,7 @@ terminal-light = ["dep:terminal-light"]
 #     │    |  │   │   │   ├── log_impl           # Basic logging infrastructure
 #     │    |  │   │   │   │   └── (simplelog | env_logger)
 #     │    |  │   │   │   └── styling            # Basic terminal styling
+#     │    |  │   │   ├── profiling              # As long as we use instrumentation at this level
 #     │    |  │   │   ├── quote
 #     │    |  │   │   └── syn
 #     │    |  │   ├── config
@@ -422,9 +422,8 @@ terminal-light = ["dep:terminal-light"]
 #         ├── config
 #         ├── ratatui      # TUI framework (shared with build)
 #         ├── scopeguard   # (shared with tui)
-#         ├── supports-color
-#         └── termbg
-
+#         └── thag_styling/color_detect
+#
 # Core Feature Set (★):
 # - Basic logging and error handling
 # - Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex

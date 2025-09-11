@@ -383,7 +383,7 @@ fn detect_color_support_osc() -> ColorSupport {
     }
 
     // Fallback to `supports_color` crate
-    vprtln!(V::V, "Using supports_color crate fallback");
+    vprtln!(V::N, "Using supports_color crate fallback");
     supports_color::on(Stream::Stdout).map_or(ColorSupport::Basic, |color_level| {
         if color_level.has_16m {
             ColorSupport::TrueColor

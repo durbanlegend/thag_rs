@@ -11,7 +11,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 //# Categories: color, styling, terminal, theming, tools
 use std::path::Path;
 use thag_styling::{
-    styling::rgb_to_hex, ImageThemeConfig, ImageThemeGenerator, StylingResult, TermBgLuma,
+    styling::rgb_to_hex, ImageThemeConfig, ImageThemeGenerator, Style, StylingResult, TermBgLuma,
 };
 
 fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> StylingResult<()> {

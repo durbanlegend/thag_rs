@@ -115,7 +115,7 @@ impl ColorAnalysis {
         };
         vprtln!(V::V,
             "is_light_theme={is_light_theme}, self.rgb={}, self.lightness={}, is_text_suitable={is_text_suitable}",
-            Style::new().with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), self.lightness
+            Style::with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), self.lightness
         );
         // dbg!(is_text_suitable);
         is_text_suitable
@@ -127,7 +127,7 @@ impl ColorAnalysis {
         // dbg!(lightness_diff);
         let has_good_contrast_against = lightness_diff > 0.4; // Minimum contrast requirement only, no upper limit
                                                               // dbg!(has_good_contrast_against);
-        vprtln!(V::V, "self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", Style::new().with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), background.lightness);
+        vprtln!(V::V, "self.rgb={}, background.lightness={}, lightness_diff={lightness_diff}, has_good_contrast_against={has_good_contrast_against}", Style::with_rgb(self.rgb).paint(format!("{:?}", self.rgb)), background.lightness);
         has_good_contrast_against
     }
 
@@ -209,7 +209,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "{} with frequency {freq:.3}",
-                Style::new().with_rgb(*color).paint(format!(
+                Style::with_rgb(*color).paint(format!(
                     "{color:?} = hue: {:.0}",
                     hsl.hue.into_positive_degrees()
                 ))
@@ -223,9 +223,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "Selected background color={} ({:?})",
-            Style::new()
-                .with_rgb(background_color.rgb)
-                .paint(format!("{:?}", background_color.rgb)),
+            format!("{:?}", background_color.rgb),
             background_color.rgb
         );
 
@@ -364,7 +362,7 @@ impl ImageThemeGenerator {
                 vprtln!(
                     V::V,
                     "New color {}",
-                    Style::new().with_rgb(lighter).paint(format!("{lighter:?}"))
+                    Style::with_rgb(lighter).paint(format!("{lighter:?}"))
                 );
                 colors.push((lighter, artificial_freq));
                 if colors.len() >= min_colors {
@@ -382,7 +380,7 @@ impl ImageThemeGenerator {
                 vprtln!(
                     V::V,
                     "New color {}",
-                    Style::new().with_rgb(darker).paint(format!("{darker:?}"))
+                    Style::with_rgb(darker).paint(format!("{darker:?}"))
                 );
                 colors.push((darker, artificial_freq));
             }
@@ -557,7 +555,7 @@ impl ImageThemeGenerator {
         println!(
             "{}: {}",
             color_name,
-            Style::new().with_rgb(rgb).paint(format!(
+            Style::with_rgb(rgb).paint(format!(
                 "lightness_diff={:.3}, rgb={}",
                 lightness_diff,
                 rgb_to_hex(&rgb.into())
@@ -625,7 +623,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "{}",
-            Style::new().with_rgb(color_analysis.rgb).paint(format!(
+            Style::with_rgb(color_analysis.rgb).paint(format!(
                 "{color_name}, rgb={}=({r},{g},{b})",
                 rgb_to_hex(&color_analysis.rgb.into())
             ))
@@ -696,7 +694,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "{}",
-                Style::new().with_rgb(color.rgb).paint(format!(
+                Style::with_rgb(color.rgb).paint(format!(
                     "{} {:?} = hue: {:.0}",
                     rgb_to_hex(&color.rgb.into()),
                     color.rgb,
@@ -744,7 +742,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "Heading1={}",
-            Style::new().with_rgb(hd1.rgb).bold().paint(format!(
+            Style::with_rgb(hd1.rgb).bold().paint(format!(
                 "{}, hue: {}, saturation: {}, lightness: {}",
                 rgb_to_hex(&hd1.rgb.into()),
                 hd1.hue,
@@ -755,7 +753,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "Heading2={}",
-            Style::new().with_rgb(hd2.rgb).bold().paint(format!(
+            Style::with_rgb(hd2.rgb).bold().paint(format!(
                 "{}, hue: {}, saturation: {}, lightness: {}",
                 rgb_to_hex(&hd2.rgb.into()),
                 hd2.hue,
@@ -766,7 +764,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "Heading3={}",
-            Style::new().with_rgb(hd3.rgb).bold().paint(format!(
+            Style::with_rgb(hd3.rgb).bold().paint(format!(
                 "{}, hue: {}, saturation: {}, lightness: {}",
                 rgb_to_hex(&hd3.rgb.into()),
                 hd3.hue,
@@ -805,7 +803,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "subtle_color={}",
-            Style::new().with_rgb(subtle_color.rgb).paint(format!(
+            Style::with_rgb(subtle_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&subtle_color.rgb.into()),
                 subtle_color.hue
@@ -835,7 +833,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "hint_color={}",
-            Style::new().with_rgb(hint_color.rgb).paint(format!(
+            Style::with_rgb(hint_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&hint_color.rgb.into()),
                 hint_color.hue
@@ -866,7 +864,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "debug_color={}",
-            Style::new().with_rgb(debug_color.rgb).paint(format!(
+            Style::with_rgb(debug_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&debug_color.rgb.into()),
                 debug_color.hue
@@ -1034,7 +1032,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "link_color={}",
-            Style::new().with_rgb(link_color.rgb).paint(format!(
+            Style::with_rgb(link_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&link_color.rgb.into()),
                 link_color.hue
@@ -1043,7 +1041,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "quote_color={}",
-            Style::new().with_rgb(quote_color.rgb).paint(format!(
+            Style::with_rgb(quote_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&quote_color.rgb.into()),
                 quote_color.hue
@@ -1052,7 +1050,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "commentary_color={}",
-            Style::new().with_rgb(commentary_color.rgb).paint(format!(
+            Style::with_rgb(commentary_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&commentary_color.rgb.into()),
                 commentary_color.hue
@@ -1122,22 +1120,22 @@ impl ImageThemeGenerator {
         );
 
         Palette {
-            normal: Style::new().with_rgb(adjusted_normal_color.rgb),
-            subtle: Style::new().with_rgb(adjusted_subtle_color.rgb),
-            hint: Style::new().with_rgb(adjusted_hint_color.rgb).italic(),
-            heading1: Style::new().with_rgb(adjusted_heading_colors.0.rgb).bold(),
-            heading2: Style::new().with_rgb(adjusted_heading_colors.1.rgb).bold(),
-            heading3: Style::new().with_rgb(adjusted_heading_colors.2.rgb).bold(),
-            error: Style::new().with_rgb(adjusted_error.rgb),
-            warning: Style::new().with_rgb(adjusted_warning.rgb),
-            success: Style::new().with_rgb(adjusted_success.rgb),
-            info: Style::new().with_rgb(adjusted_info.rgb),
-            code: Style::new().with_rgb(adjusted_code.rgb),
-            emphasis: Style::new().with_rgb(adjusted_emphasis.rgb),
-            debug: Style::new().with_rgb(adjusted_debug_color.rgb).italic(),
-            link: Style::new().with_rgb(link_color.rgb).underline(),
-            quote: Style::new().with_rgb(quote_color.rgb).italic(),
-            commentary: Style::new().with_rgb(commentary_color.rgb).italic(),
+            normal: Style::with_rgb(adjusted_normal_color.rgb),
+            subtle: Style::with_rgb(adjusted_subtle_color.rgb),
+            hint: Style::with_rgb(adjusted_hint_color.rgb).italic(),
+            heading1: Style::with_rgb(adjusted_heading_colors.0.rgb).bold(),
+            heading2: Style::with_rgb(adjusted_heading_colors.1.rgb).bold(),
+            heading3: Style::with_rgb(adjusted_heading_colors.2.rgb).bold(),
+            error: Style::with_rgb(adjusted_error.rgb),
+            warning: Style::with_rgb(adjusted_warning.rgb),
+            success: Style::with_rgb(adjusted_success.rgb),
+            info: Style::with_rgb(adjusted_info.rgb),
+            code: Style::with_rgb(adjusted_code.rgb),
+            emphasis: Style::with_rgb(adjusted_emphasis.rgb),
+            debug: Style::with_rgb(adjusted_debug_color.rgb).italic(),
+            link: Style::with_rgb(link_color.rgb).underline(),
+            quote: Style::with_rgb(quote_color.rgb).italic(),
+            commentary: Style::with_rgb(commentary_color.rgb).italic(),
         }
     }
 
@@ -1162,9 +1160,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "Existing color {}",
-                Style::new()
-                    .with_rgb(colors[idx].rgb)
-                    .paint(format!("{:?}", colors[idx].rgb))
+                Style::with_rgb(colors[idx].rgb).paint(format!("{:?}", colors[idx].rgb))
             );
 
             let l = colors[idx].lightness;
@@ -1180,7 +1176,7 @@ impl ImageThemeGenerator {
                 vprtln!(
                     V::V,
                     "New color {}",
-                    Style::new().with_rgb(lighter).paint(format!("{lighter:?}"))
+                    Style::with_rgb(lighter).paint(format!("{lighter:?}"))
                 );
                 colors.push(ColorAnalysis::new(lighter, 0.0));
                 new_count += 1;
@@ -1200,7 +1196,7 @@ impl ImageThemeGenerator {
                 vprtln!(
                     V::V,
                     "New color {}",
-                    Style::new().with_rgb(darker).paint(format!("{darker:?}"))
+                    Style::with_rgb(darker).paint(format!("{darker:?}"))
                 );
                 colors.push(ColorAnalysis::new(darker, 0.0));
                 new_count += 1;
@@ -1234,9 +1230,7 @@ impl ImageThemeGenerator {
                 vprtln!(
                     V::V,
                     "Found best text color {}",
-                    Style::new()
-                        .with_rgb(best.rgb)
-                        .paint(format!("{:?}", best.rgb))
+                    Style::with_rgb(best.rgb).paint(format!("{:?}", best.rgb))
                 );
                 return Some(*best);
             }
@@ -1262,9 +1256,7 @@ impl ImageThemeGenerator {
                     vprtln!(
                         V::V,
                         "Falling back to text color {}",
-                        Style::new()
-                            .with_rgb(best.rgb)
-                            .paint(format!("{:?}", best.rgb))
+                        Style::with_rgb(best.rgb).paint(format!("{:?}", best.rgb))
                     );
                     Some(*best)
                 },
@@ -1272,9 +1264,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "Selected best_text {}",
-            Style::new()
-                .with_rgb(best_text.unwrap().rgb)
-                .paint(format!("{:?}", best_text.unwrap().rgb))
+            Style::with_rgb(best_text.unwrap().rgb).paint(format!("{:?}", best_text.unwrap().rgb))
         );
         best_text
     }
@@ -1404,7 +1394,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "error_color={}",
-            Style::new().with_rgb(error_color.rgb).paint(format!(
+            Style::with_rgb(error_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&error_color.rgb.into()),
                 error_color.hue
@@ -1426,7 +1416,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "warning_color={}",
-            Style::new().with_rgb(warning_color.rgb).paint(format!(
+            Style::with_rgb(warning_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&warning_color.rgb.into()),
                 warning_color.hue
@@ -1447,7 +1437,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "success_color={}",
-            Style::new().with_rgb(success_color.rgb).paint(format!(
+            Style::with_rgb(success_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&success_color.rgb.into()),
                 success_color.hue
@@ -1469,7 +1459,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "info_color={}",
-            Style::new().with_rgb(info_color.rgb).paint(format!(
+            Style::with_rgb(info_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&info_color.rgb.into()),
                 info_color.hue
@@ -1492,7 +1482,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "code_color={}",
-            Style::new().with_rgb(code_color.rgb).paint(format!(
+            Style::with_rgb(code_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&code_color.rgb.into()),
                 code_color.hue
@@ -1516,7 +1506,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "emphasis_color={}",
-            Style::new().with_rgb(emphasis_color.rgb).paint(format!(
+            Style::with_rgb(emphasis_color.rgb).paint(format!(
                 "{}, hue={}",
                 rgb_to_hex(&emphasis_color.rgb.into()),
                 emphasis_color.hue
@@ -1617,9 +1607,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "Defaulting HD1 to {}",
-                Style::new()
-                    .with_rgb(colors[0].rgb)
-                    .paint(format!("{:?}", &colors[0].rgb))
+                Style::with_rgb(colors[0].rgb).paint(format!("{:?}", &colors[0].rgb))
             );
             &colors[0]
         });
@@ -1627,8 +1615,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "Defaulting HD2 to {}",
-                Style::new()
-                    .with_rgb(colors[1 % colors.len()].rgb)
+                Style::with_rgb(colors[1 % colors.len()].rgb)
                     .paint(format!("{:?}", &colors[1 % colors.len()].rgb))
             );
             &colors[1 % colors.len()]
@@ -1637,8 +1624,7 @@ impl ImageThemeGenerator {
             vprtln!(
                 V::V,
                 "Defaulting HD3 to {}",
-                Style::new()
-                    .with_rgb(colors[2 % colors.len()].rgb)
+                Style::with_rgb(colors[2 % colors.len()].rgb)
                     .paint(format!("{:?}", &colors[2 % colors.len()].rgb))
             );
             &colors[2 % colors.len()]
@@ -1693,7 +1679,8 @@ impl ImageThemeGenerator {
     }
 
     /// Find unique color by hue that doesn't conflict with already used colors
-#[allow(clippy::too_many_lines)]    fn find_unique_color_by_hue<'a>(
+    #[allow(clippy::too_many_lines)]
+    fn find_unique_color_by_hue<'a>(
         colors: &[&'a ColorAnalysis],
         hue_start: f32,
         hue_end: f32,
@@ -1714,7 +1701,7 @@ impl ImageThemeGenerator {
                 i,
                 color.hue,
                 rgb_to_hex(&color.rgb.into()),
-                Style::new().with_rgb(color.rgb).paint("■")
+                Style::with_rgb(color.rgb).paint("■")
             );
         }
         // First try: exact hue match that's not already used
@@ -1729,12 +1716,8 @@ impl ImageThemeGenerator {
                         vprtln!(
                             V::V,
                             "c={}, used={}, distance_to={distance_to}, eligible: {}",
-                            Style::new()
-                                .with_rgb(c.rgb)
-                                .paint(rgb_to_hex(&c.rgb.into())),
-                            Style::new()
-                                .with_rgb(used.rgb)
-                                .paint(rgb_to_hex(&used.rgb.into())),
+                            Style::with_rgb(c.rgb).paint(rgb_to_hex(&c.rgb.into())),
+                            Style::with_rgb(used.rgb).paint(rgb_to_hex(&used.rgb.into())),
                             distance_to >= 15.0
                         );
                         used == *c || distance_to < 15.0

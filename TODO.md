@@ -28,11 +28,13 @@ instructions accordingly. alacritty etc?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
 - [ ] DONE Force light or dark in theme name in src/bin/thag_image_to_theme.rs?
 - [ ] thag_styling README.
-- [ ] Fix palette_vs_theme bad display in Apple Terminal and ?
+- [ ] DONE Fix thag_palette_vs_theme bad display in Apple Terminal and other 256
 - [ ] Test truecolor tests on mintty.
-- [ ] Replace current TrueColor detection  (color_support crate) by truecolor_test.rs logic.
+- [ ] Replace current TrueColor detection (supports-color crate) by truecolor_test.rs logic.
 - [ ] Theme conversion or loading - consider improving contrast on palette colours where necessary.
 - [ ] Debug src/bin/thag_theme.rs?.
+- [ ] Fix demo/test_light_theme_tuning.rs on Apple terminal (256) as per thag_palette_vs_theme
+- [ ] Fix styling::with_rgb to accept the color_support and adjust the ansi value accordingly. And/or have a color paint function to paint from RGB according to color_support.
 
 cargo test -p thag_proc_macros
 failures:

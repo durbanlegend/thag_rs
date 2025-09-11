@@ -18,10 +18,12 @@ use std::io::{self, Read, Write};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+use thag_common::terminal;
+use thag_common::ColorSupport;
 use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, select_builtin_theme, ColorInitStrategy, Role, Style, Styleable, StyledStringExt,
-    TermAttributes, TermBgLuma, Theme,
+    cprtln, select_builtin_theme, styling::index_to_rgb, ColorInitStrategy, ColorValue, Role,
+    Style, Styleable, StyledStringExt, TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -432,8 +434,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Initialize file navigator
     let mut navigator = FileNavigator::new();
 
+    // Determine color support
+    let color_support = terminal::get_fresh_color_support();
+
     // Select theme to compare
-    let theme = select_theme(&mut navigator)?;
+    let mut theme = select_theme(&mut navigator)?;
+    if color_support != ColorSupport::TrueColor {
+        theme.convert_to_color_support(color_support);
+    }
 
     theme.with_context(|| {
         format!("📋 Selected theme: {}", &theme.name.heading3())
@@ -757,89 +765,35 @@ fn display_color_comparison(theme: &Theme) {
         println!("───────────────────────────────");
 
         // Corrected mappings that match thag_sync_palette behavior
+        let (r, g, b) = theme.bg_rgbs[0];
         let color_mappings = [
             (
                 "Black (0)",
                 0,
                 "Background",
                 // get_best_dark_color(theme)
-                Some(theme.bg_rgbs[0]),
+                &Style::with_rgb([r, g, b]),
             ),
-            (
-                "Red (1)",
-                1,
-                "Emphasis",
-                extract_rgb(&theme.palette.emphasis),
-            ),
-            (
-                "Green (2)",
-                2,
-                "Success",
-                extract_rgb(&theme.palette.success),
-            ),
-            (
-                "Yellow (3)",
-                3,
-                "Commentary",
-                extract_rgb(&theme.palette.commentary),
-            ),
-            ("Blue (4)", 4, "Info", extract_rgb(&theme.palette.info)),
-            (
-                "Magenta (5)",
-                5,
-                "Heading1",
-                extract_rgb(&theme.palette.heading1),
-            ),
-            ("Cyan (6)", 6, "Code", extract_rgb(&theme.palette.code)),
-            ("White (7)", 7, "Normal", extract_rgb(&theme.palette.normal)),
-            (
-                "Bright Black (8)",
-                8,
-                "Subtle",
-                extract_rgb(&theme.palette.subtle),
-            ),
-            (
-                "Bright Red (9)",
-                9,
-                "Error",
-                extract_rgb(&theme.palette.error),
-            ),
-            (
-                "Bright Green (10)",
-                10,
-                "Debug",
-                extract_rgb(&theme.palette.debug),
-            ),
-            (
-                "Bright Yellow (11)",
-                11,
-                "Warning",
-                extract_rgb(&theme.palette.warning),
-            ),
-            (
-                "Bright Blue (12)",
-                12,
-                "Link",
-                extract_rgb(&theme.palette.link),
-            ),
+            ("Red (1)", 1, "Emphasis", &theme.palette.emphasis),
+            ("Green (2)", 2, "Success", &theme.palette.success),
+            ("Yellow (3)", 3, "Commentary", &theme.palette.commentary),
+            ("Blue (4)", 4, "Info", &theme.palette.info),
+            ("Magenta (5)", 5, "Heading1", &theme.palette.heading1),
+            ("Cyan (6)", 6, "Code", &theme.palette.code),
+            ("White (7)", 7, "Normal", &theme.palette.normal),
+            ("Bright Black (8)", 8, "Subtle", &theme.palette.subtle),
+            ("Bright Red (9)", 9, "Error", &theme.palette.error),
+            ("Bright Green (10)", 10, "Debug", &theme.palette.debug),
+            ("Bright Yellow (11)", 11, "Warning", &theme.palette.warning),
+            ("Bright Blue (12)", 12, "Link", &theme.palette.link),
             (
                 "Bright Magenta (13)",
                 13,
                 "Heading2",
-                extract_rgb(&theme.palette.heading2),
+                &theme.palette.heading2,
             ),
-            (
-                "Bright Cyan (14)",
-                14,
-                "Hint",
-                extract_rgb(&theme.palette.hint),
-            ),
-            (
-                "Bright White (15)",
-                15,
-                "Quote",
-                extract_rgb(&theme.palette.quote),
-            ),
+            ("Bright Cyan (14)", 14, "Hint", &theme.palette.hint),
+            ("Bright White (15)", 15, "Quote", &theme.palette.quote),
         ];
 
         format!(
@@ -850,16 +804,25 @@ fn display_color_comparison(theme: &Theme) {
         .println();
         println!("{}", "─".repeat(80));
 
-        for (name, ansi_index, semantic_role, thag_rgb) in color_mappings {
+        for (name, ansi_index, semantic_role, style) in color_mappings {
             // Current terminal color (visual sample)
             let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
 
             // Expected thag color with RGB info
-            let thag_display = if let Some((r, g, b)) = thag_rgb {
-                format!(
-                    "\x1b[38;2;{};{};{}m████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})\x1b[0m",
-                    r, g, b, r, g, b, r, g, b
-                )
+            let rgb = style
+                .foreground
+                .as_ref()
+                .map(|color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => *rgb,
+                    ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
+                    ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
+                });
+
+            let thag_display = if let Some([r, g, b]) = rgb {
+                style.paint(format!(
+                    "████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
+                    r, g, b, r, g, b
+                ))
             } else {
                 // Role::Normal.dim().paint("N/A").to_string()
                 "N/A".to_string()
@@ -1040,7 +1003,8 @@ fn extract_rgb(style: &Style) -> Option<(u8, u8, u8)> {
         .as_ref()
         .and_then(|color_info| match &color_info.value {
             thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-            _ => None,
+            ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
+            ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
         })
 }
 

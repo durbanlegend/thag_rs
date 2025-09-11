@@ -1,7 +1,8 @@
 /*[toml]
 [dependencies]
 log = "0.4.27"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_common = { version = "0.2, thag-auto" }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog", "tools"] }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal
@@ -15,7 +16,7 @@ use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 use std::fs::File;
-use supports_color::Stream;
+use thag_common::terminal;
 use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 fn main() {
@@ -111,17 +112,14 @@ fn main() {
         Err(_) => println!("terminal_light::background_color() not supported"),
     }
 
-    println!("\nCrate supports-color:");
+    println!("\nInternal detection with fallback to crate `supports-color`:");
 
-    if let Some(support) = supports_color::on(Stream::Stdout) {
-        if support.has_16m {
-            println!("16 million (RGB) colors are supported");
-        } else if support.has_256 {
-            println!("256 colors are supported.");
-        } else if support.has_basic {
-            println!("Only basic ANSI colors are supported.");
-        }
-    } else {
-        println!("No color support.");
+    let color_support = terminal::get_fresh_color_support();
+    match color_support {
+        thag_rs::ColorSupport::Undetermined => println!("Color support could not be determined"),
+        thag_rs::ColorSupport::None => println!("No color support"),
+        thag_rs::ColorSupport::Basic => println!("Only basic ANSI colors are supported."),
+        thag_rs::ColorSupport::Color256 => println!("256 colors are supported."),
+        thag_rs::ColorSupport::TrueColor => println!("16 million (RGB) colors are supported"),
     }
 }

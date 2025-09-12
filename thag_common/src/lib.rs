@@ -202,7 +202,6 @@ impl OutputManager {
     /// Output a message if it passes the verbosity filter.
     pub fn vprtln(&self, verbosity: Verbosity, message: &str) {
         if verbosity as u8 <= self.verbosity() as u8 {
-            dbg!();
             println!("{message}");
         }
     }
@@ -235,11 +234,9 @@ pub static OUTPUT_MANAGER: LazyLock<ReentrantMutex<OutputManager>> =
 /// # Panics
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
 pub fn set_global_verbosity(verbosity: Verbosity) {
-    dbg!("Locking OUTPUT_MANAGER");
     OUTPUT_MANAGER.lock().set_verbosity(verbosity);
     #[cfg(debug_assertions)]
     assert_eq!(get_verbosity(), verbosity);
-    dbg!("Releasing OUTPUT_MANAGER");
 }
 
 /// Initializes and returns the global verbosity setting.
@@ -249,9 +246,7 @@ pub fn set_global_verbosity(verbosity: Verbosity) {
 /// Will panic if it can't unwrap the lock on the mutex protecting the `OUTPUT_MANAGER` static variable.
 #[must_use]
 pub fn get_verbosity() -> Verbosity {
-    dbg!("Locking OUTPUT_MANAGER");
     let verbosity = OUTPUT_MANAGER.lock().verbosity();
-    dbg!("Releasing OUTPUT_MANAGER");
     verbosity
 }
 

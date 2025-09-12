@@ -150,7 +150,7 @@ impl ColorInfo {
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self {
             value: ColorValue::TrueColor { rgb: [r, g, b] },
-            index: 0,
+            index: find_closest_color((r, g, b)),
         }
     }
 
@@ -1724,14 +1724,10 @@ impl Theme {
         theme_name: &str,
         color_support: ColorSupport,
     ) -> StylingResult<Self> {
-        dbg!();
         let mut theme = Self::get_theme_runtime_or_builtin(theme_name)?;
-        dbg!();
         if color_support != ColorSupport::TrueColor {
-            dbg!();
             // Note: vprtln! call disabled to prevent deadlock during TermAttributes initialization
             // vprtln!(V::VV, "Converting to {color_support:?}");
-            dbg!();
             theme.convert_to_color_support(color_support);
         }
         Ok(theme)
@@ -2202,14 +2198,12 @@ impl Theme {
     /// # Arguments
     /// * `target` - The target color support level to convert to
     pub fn convert_to_color_support(&mut self, target: ColorSupport) {
-        dbg!();
         match target {
             ColorSupport::TrueColor => (), // No conversion needed
             ColorSupport::Color256 => self.convert_to_256(),
             ColorSupport::Basic | ColorSupport::Undetermined => self.convert_to_basic(),
             ColorSupport::None => self.convert_to_none(),
         }
-        dbg!();
     }
 
     fn convert_to_256(&mut self) {

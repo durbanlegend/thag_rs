@@ -134,7 +134,8 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
     (color_support, term_bg_rgb)
 }
 
-/// Get fresh color detection without caching - intended for dynamic changes
+/// Get fresh color detection without caching - intended for dynamic changes.
+/// This should normally be stored in TermAttributes
 #[must_use]
 pub fn get_fresh_color_support() -> ColorSupport {
     detect_color_support_osc()

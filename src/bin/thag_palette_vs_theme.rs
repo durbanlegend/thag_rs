@@ -18,7 +18,7 @@ use std::io::{self, Read, Write};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
-use thag_common::terminal;
+
 use thag_common::ColorSupport;
 use thag_proc_macros::file_navigator;
 use thag_styling::{
@@ -435,13 +435,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut navigator = FileNavigator::new();
 
     // Determine color support
-    let color_support = terminal::get_fresh_color_support();
+    // let color_support = terminal::get_fresh_color_support();
+    let term_attrs = TermAttributes::get_or_init();
+    let color_support = term_attrs.color_support;
 
     // Select theme to compare
     let mut theme = select_theme(&mut navigator)?;
-    if color_support != ColorSupport::TrueColor {
-        theme.convert_to_color_support(color_support);
-    }
+    // No longer needed - colors now adapt dynamically at paint time
 
     theme.with_context(|| {
         format!("📋 Selected theme: {}", &theme.name.heading3())
@@ -1076,9 +1076,6 @@ mod tests {
         assert!(brightened.0 >= original.0);
         assert!(brightened.1 >= original.1);
         assert!(brightened.2 >= original.2);
-        assert!(brightened.0 <= 255);
-        assert!(brightened.1 <= 255);
-        assert!(brightened.2 <= 255);
     }
 
     #[test]

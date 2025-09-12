@@ -39,6 +39,8 @@ These scripts need full doc comments (/// or //:, not //!) a `//# Purpose:` one-
 
 Scripts that are evolved into particularly useful generic tools may be promoted to thag_rs/src/bin for inclusion as binaries in the main project. This should be done only in consultation with me. Their .toml blocks should normally be left in place, but they will need entries in Cargo.toml - see existing tools.
 
+- **The bank/ subdirectory** is an unofficial scratchpad and scrapyard for code that doesn't merit being in demo/ but may be of some future use, even if just as a historical reference. Some of the examples are still valid and working, but by and large code in bank/ does not need to be kept up to date.
+
 - **Verbosity**: To control the verbosity of output, use a verbosity-gating macro like `thag::common::vprtln!` in conjunction with the Verbosity enum (alias V) and setting the global verbosity, e.g. `thag::common::init_verbosity(V::V)?;` or `thag::common::set_verbosity!(debug)`, all re-exported by the other thag crates like `thag_styling`. E.g.:
 ```
 /*[toml]
@@ -74,3 +76,6 @@ vprtln!(V::D, "Debug mode");
 ## thag_styling file formats
 - **thag_styling themes**: Filenames and `name` field should be (lower) kebab case. The files should be in TOML format with the .toml suffix, and the file name stem should start with `thag-`, end in `-light` or `-dark` as appropriate.
 - **generated terminal themes**: The file name stem should consist of or start with the stem of the source thag_styling theme. Since Alacritty and WezTerm both have the same .toml extension, _alacritty or _wezterm should be appended to the stem as appropriate for these 2 formats to distinguish between them. These should all be exported to the appropriate subdirectories of ./exported_themes
+
+## Timeouts
+You can run `function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }` which will allow you to use the `timeout` command in scripts. This statement is now at the end of /Users/donf/.zshrc and /Users/donf/.bashrc on my Mac so that I always have the timeout command available when running in zsh or bash.

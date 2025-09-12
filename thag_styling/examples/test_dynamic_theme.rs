@@ -19,7 +19,10 @@ fn main() {
     let success_style = Style::from(Role::Success);
     println!(
         "   Initial Success color ANSI: {:?}",
-        success_style.foreground.as_ref().map(|c| &c.ansi)
+        success_style
+            .foreground
+            .as_ref()
+            .map(|c| c.to_ansi_for_support(TermAttributes::get_or_init().color_support))
     );
 
     // Paint some text with the initial theme
@@ -48,7 +51,10 @@ fn main() {
 
         // Verify the ANSI code is properly stored as owned String
         if let Some(color_info) = &style.foreground {
-            println!("      ANSI: {}", color_info.ansi);
+            println!(
+                "      ANSI: {}",
+                color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support)
+            );
         }
     }
 
@@ -65,7 +71,10 @@ fn main() {
         println!("   Index {}: {}", i, painted);
 
         if let Some(color_info) = &style.foreground {
-            println!("      ANSI: {}", color_info.ansi);
+            println!(
+                "      ANSI: {}",
+                color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support)
+            );
         }
     }
 
@@ -86,9 +95,18 @@ fn main() {
         (&style1.foreground, &style2.foreground, &style3.foreground)
     {
         println!("   ANSI codes are independent:");
-        println!("     Style 1: {}", c1.ansi);
-        println!("     Style 2: {}", c2.ansi);
-        println!("     Style 3: {}", c3.ansi);
+        println!(
+            "     Style 1: {}",
+            c1.to_ansi_for_support(TermAttributes::get_or_init().color_support)
+        );
+        println!(
+            "     Style 2: {}",
+            c2.to_ansi_for_support(TermAttributes::get_or_init().color_support)
+        );
+        println!(
+            "     Style 3: {}",
+            c3.to_ansi_for_support(TermAttributes::get_or_init().color_support)
+        );
     }
 
     println!("\n✅ Dynamic theme change test complete!");

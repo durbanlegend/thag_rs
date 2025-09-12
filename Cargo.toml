@@ -314,6 +314,7 @@ color_detect = [
     "config",
     "ratatui",
     "scopeguard",
+    "termbg",
     "thag_styling/color_detect",
 ]
 
@@ -366,7 +367,6 @@ tools = [
     "dep:serde_yaml_ok",
     "dep:simplelog",
     "dep:tempfile",
-    "dep:termbg",
     "dep:terminal-light",
     "dep:tinyget",
     "dep:tokio",
@@ -422,6 +422,7 @@ terminal-light = ["dep:terminal-light"]
 #         ├── config
 #         ├── ratatui      # TUI framework (shared with build)
 #         ├── scopeguard   # (shared with tui)
+#         └── termbg
 #         └── thag_styling/color_detect
 #
 # Core Feature Set (★):

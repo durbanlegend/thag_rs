@@ -622,7 +622,8 @@ impl Style {
         let mut needs_reset = false;
 
         if let Some(color_info) = &self.foreground {
-            result.push_str(color_info.ansi);
+            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
+            result.push_str(&ansi);
             needs_reset = true;
         }
         if self.bold {

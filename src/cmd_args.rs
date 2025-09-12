@@ -194,7 +194,8 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     } else {
         V::Normal
     };
-    Ok(set_global_verbosity(verbosity)?)
+    set_global_verbosity(verbosity);
+    Ok(())
 }
 
 bitflags! {

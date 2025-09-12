@@ -201,7 +201,7 @@ fn main() {{
         let output = child.wait_with_output().expect("Failed to read stdout");
 
         reset_global_output_manager();
-        set_global_verbosity(Verbosity::Normal).expect("Error setting global verbosity");
+        set_global_verbosity(Verbosity::Normal);
         output
     }
 }

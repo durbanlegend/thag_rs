@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test 1: Original way (still works)
     println!("1. Testing original set_global_verbosity function:");
-    let _ = set_global_verbosity(V::V)?;
+    set_global_verbosity(V::V);
     println!("   Set to verbose using set_global_verbosity(V::V)");
     println!("   Current verbosity: {:?}", get_verbosity());
     vprtln!(V::V, "   This verbose message should appear");
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n=== All tests completed successfully! ===");
     println!("\n=== Usage Summary ===");
-    println!("Old way:  let _ = set_global_verbosity(V::V)?;");
+    println!("Old way:  set_global_verbosity(V::V);");
     println!("New ways:");
     println!("  - init_verbosity(V::V)?;");
     println!("  - set_verbosity!(verbose);");

@@ -501,7 +501,7 @@ fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<
 
     let mut cli = create_demo_cli_with_args(&demo_path, verbose, args);
 
-    set_global_verbosity(if verbose { V::D } else { V::N })?;
+    set_global_verbosity(if verbose { V::D } else { V::N });
 
     configure_log();
 
@@ -824,7 +824,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     // Configure CLI args for thag_rs
     let mut cli = create_demo_cli(&script_path, verbose);
 
-    set_global_verbosity(if verbose { V::D } else { V::N })?;
+    set_global_verbosity(if verbose { V::D } else { V::N });
     eprintln!("verbosity={}", get_verbosity());
 
     configure_log();

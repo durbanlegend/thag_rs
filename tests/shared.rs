@@ -62,16 +62,18 @@ mod tests {
         set_up();
         reset_global_output_manager();
 
-        set_global_verbosity(Verbosity::Verbose).expect("Error setting global verbosity");
+        set_global_verbosity(Verbosity::Verbose);
+        dbg!("Locking OUTPUT_MANAGER");
         {
-            let output_manager = OUTPUT_MANAGER.lock().unwrap();
-            assert_eq!(output_manager.verbosity, Verbosity::Verbose);
+            let output_manager = OUTPUT_MANAGER.lock();
+            assert_eq!(output_manager.verbosity(), Verbosity::Verbose);
         }
+        dbg!("Releasing OUTPUT_MANAGER");
 
-        set_global_verbosity(Verbosity::Quiet).expect("Error setting global verbosity");
+        set_global_verbosity(Verbosity::Quiet);
         {
-            let output_manager = OUTPUT_MANAGER.lock().unwrap();
-            assert_eq!(output_manager.verbosity, Verbosity::Quiet);
+            let output_manager = OUTPUT_MANAGER.lock();
+            assert_eq!(output_manager.verbosity(), Verbosity::Quiet);
         }
     }
 }

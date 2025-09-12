@@ -71,7 +71,9 @@ fn main() {
             };
             println!(
                 "{} Index={:3} ANSI={}",
-                rgb, color_info.index, color_info.ansi
+                rgb,
+                color_info.index,
+                color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support)
             );
         } else {
             println!("No foreground color");

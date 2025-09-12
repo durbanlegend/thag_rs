@@ -79,7 +79,10 @@ fn main() {
         if let Some(color_info) = &style.foreground {
             println!("                   value = {:?}", color_info.value);
             println!("                   index = {}", color_info.index);
-            println!("                   ansi = {}", color_info.ansi);
+            println!(
+                "                   ansi = {}",
+                color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support)
+            );
         }
     }
 

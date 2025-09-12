@@ -15,9 +15,10 @@ pub mod config;
 pub mod terminal;
 
 use documented::{Documented, DocumentedVariants};
+use parking_lot::ReentrantMutex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use std::sync::{LazyLock, Mutex};
+use std::sync::LazyLock;
 use std::{path::PathBuf, time::Instant};
 use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 
@@ -181,14 +182,16 @@ impl Default for TermBgLuma {
 #[derive(Debug)]
 pub struct OutputManager {
     /// The current verbosity level for this output manager
-    pub verbosity: Verbosity,
+    verbosity: std::cell::UnsafeCell<Verbosity>,
 }
 
 impl OutputManager {
     /// Construct a new `OutputManager` with the given Verbosity level.
     #[must_use]
-    pub const fn new(verbosity: Verbosity) -> Self {
-        Self { verbosity }
+    pub fn new(verbosity: Verbosity) -> Self {
+        Self {
+            verbosity: std::cell::UnsafeCell::new(verbosity),
+        }
     }
 
     /// Output a message whether or not it passes the verbosity filter.
@@ -198,39 +201,45 @@ impl OutputManager {
 
     /// Output a message if it passes the verbosity filter.
     pub fn vprtln(&self, verbosity: Verbosity, message: &str) {
-        if verbosity as u8 <= self.verbosity as u8 {
+        if verbosity as u8 <= self.verbosity() as u8 {
+            dbg!();
             println!("{message}");
         }
     }
 
     /// Set the verbosity level.
-    pub fn set_verbosity(&mut self, verbosity: Verbosity) {
-        self.verbosity = verbosity;
+    /// Updates the verbosity setting and logs the change
+    pub fn set_verbosity(&self, verbosity: Verbosity) {
+        // SAFETY: We use UnsafeCell for interior mutability since we need to modify
+        // verbosity from within a ReentrantMutex which only provides immutable access.
+        // This is safe because the ReentrantMutex ensures exclusive access per thread.
+        unsafe {
+            *self.verbosity.get() = verbosity;
+        }
         debug_log!("Verbosity set to {verbosity:?}");
     }
 
     /// Return the verbosity level
     #[allow(clippy::missing_const_for_fn)]
-    pub fn verbosity(&mut self) -> Verbosity {
-        self.verbosity
+    pub fn verbosity(&self) -> Verbosity {
+        // SAFETY: Reading from UnsafeCell is safe when we have any kind of lock
+        unsafe { *self.verbosity.get() }
     }
 }
 
-/// Global output manager instance protected by a mutex for thread-safe access
-pub static OUTPUT_MANAGER: LazyLock<Mutex<OutputManager>> =
-    LazyLock::new(|| Mutex::new(OutputManager::new(V::N)));
+/// Global output manager instance protected by a reentrant mutex for thread-safe access
+pub static OUTPUT_MANAGER: LazyLock<ReentrantMutex<OutputManager>> =
+    LazyLock::new(|| ReentrantMutex::new(OutputManager::new(V::N)));
 
 /// Set the output verbosity for the current execution.
-/// # Errors
-/// Will return `Err` if the output manager mutex cannot be locked.
 /// # Panics
 /// Will panic in debug mode if the global verbosity value is not the value we just set.
-pub fn set_global_verbosity(verbosity: Verbosity) -> ThagCommonResult<()> {
-    OUTPUT_MANAGER.lock()?.set_verbosity(verbosity);
+pub fn set_global_verbosity(verbosity: Verbosity) {
+    dbg!("Locking OUTPUT_MANAGER");
+    OUTPUT_MANAGER.lock().set_verbosity(verbosity);
     #[cfg(debug_assertions)]
     assert_eq!(get_verbosity(), verbosity);
-
-    Ok(())
+    dbg!("Releasing OUTPUT_MANAGER");
 }
 
 /// Initializes and returns the global verbosity setting.
@@ -240,7 +249,10 @@ pub fn set_global_verbosity(verbosity: Verbosity) -> ThagCommonResult<()> {
 /// Will panic if it can't unwrap the lock on the mutex protecting the `OUTPUT_MANAGER` static variable.
 #[must_use]
 pub fn get_verbosity() -> Verbosity {
-    OUTPUT_MANAGER.lock().unwrap().verbosity
+    dbg!("Locking OUTPUT_MANAGER");
+    let verbosity = OUTPUT_MANAGER.lock().verbosity();
+    dbg!("Releasing OUTPUT_MANAGER");
+    verbosity
 }
 
 /// Ungated print line macro for user messages
@@ -248,7 +260,7 @@ pub fn get_verbosity() -> Verbosity {
 macro_rules! prtln {
     ($($arg:tt)*) => {
         {
-            $crate::OUTPUT_MANAGER.lock().unwrap().prtln(&format!($($arg)*))
+            $crate::OUTPUT_MANAGER.lock().prtln(&format!($($arg)*));
         }
     };
 }
@@ -258,7 +270,7 @@ macro_rules! prtln {
 macro_rules! vprtln {
     ($verbosity:expr, $($arg:tt)*) => {
         {
-            $crate::OUTPUT_MANAGER.lock().unwrap().vprtln($verbosity, &format!($($arg)*))
+            $crate::OUTPUT_MANAGER.lock().vprtln($verbosity, &format!($($arg)*));
         }
     };
 }
@@ -416,22 +428,22 @@ macro_rules! static_lazy {
 #[macro_export]
 macro_rules! set_verbosity {
     (verbose) => {
-        let _ = $crate::set_global_verbosity($crate::V::V)?;
+        $crate::set_global_verbosity($crate::V::V);
     };
     (debug) => {
-        let _ = $crate::set_global_verbosity($crate::V::D)?;
+        $crate::set_global_verbosity($crate::V::D);
     };
     (quiet) => {
-        let _ = $crate::set_global_verbosity($crate::V::Q)?;
+        $crate::set_global_verbosity($crate::V::Q);
     };
     (quieter) => {
-        let _ = $crate::set_global_verbosity($crate::V::QQ)?;
+        $crate::set_global_verbosity($crate::V::QQ);
     };
     (normal) => {
-        let _ = $crate::set_global_verbosity($crate::V::N)?;
+        $crate::set_global_verbosity($crate::V::N);
     };
     ($level:expr) => {
-        let _ = $crate::set_global_verbosity($level)?;
+        $crate::set_global_verbosity($level);
     };
 }
 
@@ -452,7 +464,8 @@ macro_rules! set_verbosity {
 /// # Errors
 /// Returns an error if the global verbosity cannot be set.
 pub fn init_verbosity(verbosity: Verbosity) -> ThagCommonResult<()> {
-    set_global_verbosity(verbosity)
+    set_global_verbosity(verbosity);
+    Ok(())
 }
 
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.

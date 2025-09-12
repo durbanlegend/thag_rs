@@ -82,14 +82,9 @@ const THRESHOLD: f32 = 30.0; // Adjust this value as needed
 pub enum ColorValue {
     /// Basic ANSI color with code and index
     Basic {
-        // /// Array containing ANSI code and index as strings
-        // basic: [String; 2],
-        // ansi: &'static str,  // Causes serde deserialization flatten issue
-        /// ANSI code for string highlighting
-        ansi: String,
         /// Basic color index
         index: u8,
-    }, // [ANSI code, index]
+    },
     /// 256-color palette index
     Color256 {
         /// Color index in the 256-color palette
@@ -115,8 +110,6 @@ struct StyleConfig {
 pub struct ColorInfo {
     /// The color value in one of the supported formats (`Basic`, `Color256`, or `TrueColor`)
     pub value: ColorValue,
-    /// The ANSI escape sequence string for this color
-    pub ansi: String,
     /// The color palette index (0-255 for indexed colors, or closest match for RGB)
     pub index: u8,
 }
@@ -125,16 +118,12 @@ impl ColorInfo {
     /// Creates a new `ColorInfo` with basic ANSI color format
     ///
     /// # Arguments
-    /// * `ansi` - The ANSI escape sequence for this color
+    /// * `ansi` - The ANSI escape sequence for this color (unused, kept for compatibility)
     /// * `index` - The color palette index (0-15 for basic colors)
     #[must_use]
-    pub fn basic(ansi: &str, index: u8) -> Self {
+    pub fn basic(_ansi: &str, index: u8) -> Self {
         Self {
-            value: ColorValue::Basic {
-                ansi: ansi.to_string(),
-                index, // This won't work with const fn
-            },
-            ansi: ansi.to_string(),
+            value: ColorValue::Basic { index },
             index,
         }
     }
@@ -147,7 +136,6 @@ impl ColorInfo {
     pub fn color256(index: u8) -> Self {
         Self {
             value: ColorValue::Color256 { color256: index },
-            ansi: format!("\x1b[38;5;{index}m"),
             index,
         }
     }
@@ -162,7 +150,6 @@ impl ColorInfo {
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self {
             value: ColorValue::TrueColor { rgb: [r, g, b] },
-            ansi: format!("\x1b[38;2;{r};{g};{b}m"),
             index: 0,
         }
     }
@@ -178,6 +165,71 @@ impl ColorInfo {
             ColorSupport::TrueColor => Self::rgb(rgb.0, rgb.1, rgb.2),
             ColorSupport::Color256 => Self::color256(find_closest_color(rgb)),
             _ => Self::color256(find_closest_basic_color(rgb)),
+        }
+    }
+
+    /// Generates the appropriate ANSI escape sequence for this color based on terminal support
+    ///
+    /// # Arguments
+    /// * `support` - The color support level of the terminal
+    #[must_use]
+    pub fn to_ansi_for_support(&self, support: ColorSupport) -> String {
+        match (&self.value, support) {
+            // TrueColor support - use RGB values directly
+            (ColorValue::TrueColor { rgb }, ColorSupport::TrueColor) => {
+                format!("\x1b[38;2;{};{};{}m", rgb[0], rgb[1], rgb[2])
+            }
+            // TrueColor color but limited support - use closest color index
+            (ColorValue::TrueColor { .. }, ColorSupport::Color256) => {
+                format!("\x1b[38;5;{}m", self.index)
+            }
+            (ColorValue::TrueColor { .. }, ColorSupport::Basic | ColorSupport::Undetermined) => {
+                let basic_index = if self.index > 15 {
+                    self.index % 16
+                } else {
+                    self.index
+                };
+                let code = if basic_index <= 7 {
+                    basic_index + 30
+                } else {
+                    basic_index + 90 - 8
+                };
+                format!("\x1b[{}m", code)
+            }
+            // 256-color support
+            (
+                ColorValue::Color256 { color256 },
+                ColorSupport::TrueColor | ColorSupport::Color256,
+            ) => {
+                format!("\x1b[38;5;{}m", color256)
+            }
+            (
+                ColorValue::Color256 { color256 },
+                ColorSupport::Basic | ColorSupport::Undetermined,
+            ) => {
+                let basic_index = if *color256 > 15 {
+                    color256 % 16
+                } else {
+                    *color256
+                };
+                let code = if basic_index <= 7 {
+                    basic_index + 30
+                } else {
+                    basic_index + 90 - 8
+                };
+                format!("\x1b[{}m", code)
+            }
+            // Basic color support
+            (ColorValue::Basic { index, .. }, _) => {
+                let code = if *index <= 7 {
+                    index + 30
+                } else {
+                    index + 90 - 8
+                };
+                format!("\x1b[{}m", code)
+            }
+            // No color support
+            (_, ColorSupport::None) => String::new(),
         }
     }
 }
@@ -372,7 +424,8 @@ impl Style {
         let mut reset_string: String = String::new();
 
         if let Some(color_info) = &self.foreground {
-            result.push_str(&color_info.ansi);
+            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
+            result.push_str(&ansi);
             needs_reset = true;
             full_reset = true;
             reset_string.push_str("\x1b[0m");
@@ -437,7 +490,8 @@ impl Style {
         let mut result = String::new();
 
         if let Some(color_info) = &self.foreground {
-            result.push_str(&color_info.ansi);
+            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
+            result.push_str(&ansi);
         }
         if self.bold {
             result.push_str("\x1b[1m");
@@ -1670,9 +1724,14 @@ impl Theme {
         theme_name: &str,
         color_support: ColorSupport,
     ) -> StylingResult<Self> {
+        dbg!();
         let mut theme = Self::get_theme_runtime_or_builtin(theme_name)?;
+        dbg!();
         if color_support != ColorSupport::TrueColor {
-            vprtln!(V::VV, "Converting to {color_support:?}");
+            dbg!();
+            // Note: vprtln! call disabled to prevent deadlock during TermAttributes initialization
+            // vprtln!(V::VV, "Converting to {color_support:?}");
+            dbg!();
             theme.convert_to_color_support(color_support);
         }
         Ok(theme)
@@ -2143,12 +2202,14 @@ impl Theme {
     /// # Arguments
     /// * `target` - The target color support level to convert to
     pub fn convert_to_color_support(&mut self, target: ColorSupport) {
+        dbg!();
         match target {
             ColorSupport::TrueColor => (), // No conversion needed
             ColorSupport::Color256 => self.convert_to_256(),
             ColorSupport::Basic | ColorSupport::Undetermined => self.convert_to_basic(),
             ColorSupport::None => self.convert_to_none(),
         }
+        dbg!();
     }
 
     fn convert_to_256(&mut self) {
@@ -3589,7 +3650,8 @@ impl StyleAnsiExt for Style {
         let mut codes = String::new();
 
         if let Some(color_info) = &self.foreground {
-            codes.push_str(&color_info.ansi);
+            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
+            codes.push_str(&ansi);
         }
 
         if self.bold {

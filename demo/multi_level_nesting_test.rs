@@ -180,7 +180,8 @@ impl StyleAnsiExt for Style {
         let mut codes = String::new();
 
         if let Some(color_info) = &self.foreground {
-            codes.push_str(&color_info.ansi);
+            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
+            codes.push_str(&ansi);
         }
 
         if self.bold {

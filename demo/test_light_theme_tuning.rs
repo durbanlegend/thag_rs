@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
+thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 */
 
 /// Light theme tuning previewer - shows fine-tuning effects optimized for light themes

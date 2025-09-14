@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-inquire = "0.7"
-thag_rs = { version = "0.2, thag-auto", features = ["color_detect"] }
+thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
 //! Demo script showcasing the color distance optimization for inquire prompts
@@ -12,7 +11,7 @@ thag_rs = { version = "0.2, thag-auto", features = ["color_detect"] }
 
 use inquire::ui::{Attributes, Color, RenderConfig, StyleSheet};
 use inquire::Select;
-use thag_rs::styling::{ColorValue, Role, TermAttributes};
+use thag_styling::{ColorValue, Role, TermAttributes};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Color Distance Optimization Demo");
@@ -204,7 +203,7 @@ fn get_optimized_render_config() -> RenderConfig<'static> {
 }
 
 /// Extract RGB values from a thag role for color distance calculations
-fn get_rgb_from_role(role: Role, theme: &thag_rs::styling::Theme) -> Option<(u8, u8, u8)> {
+fn get_rgb_from_role(role: Role, theme: &thag_styling::Theme) -> Option<(u8, u8, u8)> {
     let style = theme.style_for(role);
     if let Some(color_info) = &style.foreground {
         match &color_info.value {

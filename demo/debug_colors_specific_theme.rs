@@ -11,7 +11,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
 /// 3. RGB values and indices for the monet theme
 /// 4. Comparison with auto-detected theme
 //# Purpose: Debug specific theme loading vs auto-detection
-//# Categories: debugging, styling, colors, themes
+//# Categories: color, debugging, styling, theming
 use thag_styling::{ColorInitStrategy, Role, Styleable, TermAttributes, Theme};
 
 fn main() {

@@ -1,9 +1,6 @@
 /*[toml]
-[target.'cfg(not(target_os = "windows"))'.dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["config"] }
+[dependencies]
+thag_styling = { version = "0.2, thag-auto" }
 */
 
 /// Debug the replace logic to find why colors are wrong and resets aren't removed
@@ -11,7 +8,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// This demonstrates step-by-step what the replace logic is doing wrong
 /// and provides a corrected implementation
 //# Purpose: Debug and fix replace logic for multi-level nesting
-//# Categories: styling, debugging, prototypes
+//# Categories: debugging, prototype, styling
 use std::fmt;
 use thag_styling::{ColorInitStrategy, Role, Style, TermAttributes};
 

@@ -35,7 +35,7 @@ thag_styling = { version = "0.2, thag-auto", features = [...] }  # features if n
  ```
 The thag-auto is used by thag to decide whether to use crates.io, git or a local path. Generally as we are testing new thag functionality, any script with a thag-auto dependency should be run with the env var THAG_DEV_PATH=$PWD from the project dir. The thag-auto must be specified exactly as shown, not as thag-auto = true.
 
-These scripts need full doc comments (/// or //:, not //!) a `//# Purpose:` one-liner and a `//# Categories: xxx, xxx, xxx, ...` one-liner where the categories are the lower-case versions listed in lines 82ff of thag_proc_macros/src/category_enum.rs, unquoted. See existing scripts for the format.
+These scripts need full doc comments (/// or //:, not //!) a `//# Purpose:` one-liner and a `//# Categories: xxx, xxx, xxx, ...` one-liner where the categories are the lower-case versions listed in lines 82ff of thag_proc_macros/src/category_enum.rs, unquoted. See existing scripts for the format. Recommend new categories by all means, but do not make up your own.
 
 Scripts that are evolved into particularly useful generic tools may be promoted to thag_rs/src/bin for inclusion as binaries in the main project. This should be done only in consultation with me. Their .toml blocks should normally be left in place, but they will need entries in Cargo.toml - see existing tools.
 

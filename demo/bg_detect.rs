@@ -1,20 +1,19 @@
 /*[toml]
 [dependencies]
 thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
-crossterm = "0.28"
 */
 
-//! Windows Background Color Detection
+//! Background Color Detection
 //!
 //! This script investigates querying palette color 0 as a proxy for background color
-//! detection in Windows environments. This approach might work where OSC 11 queries
+//! detection. This approach might work where OSC 11 queries
 //! fail, particularly in PowerShell and regular Windows terminals.
 //!
 //! Based on the observation that demo/truecolor*.rs files work in PowerShell,
 //! suggesting we can interrogate palette colors from Rust instead of shell scripts.
 
-//# Purpose: Test Windows background color detection via palette color 0 query
-//# Categories: terminal, colors, windows, background, detection
+//# Purpose: Test background color detection via palette color 0 query
+//# Categories: ansi, color, terminal, windows, xterm
 
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
@@ -54,7 +53,7 @@ impl Rgb {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("🖥️  Windows Background Color Detection Test");
+    println!("🖥️  Background Color Detection Test");
     println!("=============================================");
     println!("Testing palette color 0 query as background detection method");
     println!();
@@ -118,7 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("\n💡 Windows-Specific Notes:");
     println!("===========================");
-    display_windows_analysis();
+    display_analysis();
 
     Ok(())
 }
@@ -339,7 +338,7 @@ fn color_distance(c1: Rgb, c2: Rgb) -> f32 {
     (dr * dr + dg * dg + db * db).sqrt()
 }
 
-fn display_windows_analysis() {
+fn display_analysis() {
     println!("🔍 Key Insights:");
 
     if cfg!(windows) {
@@ -354,8 +353,8 @@ fn display_windows_analysis() {
 
     println!("\n💡 If OSC 4;0 works where OSC 11 fails:");
     println!("   • Palette color 0 can serve as background proxy");
-    println!("   • This method might work in more Windows terminals");
-    println!("   • Could solve Windows background detection issues");
+    println!("   • This method might work in more terminals");
+    println!("   • Could solve background detection issues");
 
     println!("\n🔧 Implementation Strategy:");
     println!("   1. Try OSC 11 first (standard method)");

@@ -11,7 +11,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// This isolates the specific problem where "end3" loses its bold attribute
 /// in deeply nested styling scenarios.
 //# Purpose: Debug deeply nested attribute restoration issue
-//# Categories: styling, debugging, nesting
+//# Categories: debugging, styling
 use thag_styling::{ColorInitStrategy, Styleable, TermAttributes};
 
 fn escape_ansi(s: &str) -> String {

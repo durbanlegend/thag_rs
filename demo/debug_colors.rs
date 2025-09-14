@@ -14,7 +14,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// 3. RGB values and indices
 /// 4. Comparison with expected palette colors
 //# Purpose: Debug theme and color loading issues
-//# Categories: debugging, styling, colors
+//# Categories: color, debugging, styling
 use thag_styling::{ColorInitStrategy, Role, Styleable, TermAttributes};
 
 fn main() {

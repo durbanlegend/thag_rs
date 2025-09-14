@@ -85,7 +85,7 @@ pub fn category_enum_impl(_input: TokenStream) -> TokenStream {
        ///     "ansi",
        ///     "ast",
        ///     "cli",
-       ///     "DSL",
+       ///     "dsl",
        ///     "repl",
        ///     "async",
        ///     "attribute_macros",

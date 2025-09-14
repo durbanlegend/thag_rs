@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
+thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquire_theming"] }
 */
 
 #![allow(clippy::uninlined_format_args)]
@@ -12,12 +12,13 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_
 /// (light/dark) and customizable color extraction parameters.
 //# Purpose: Generate custom `thag_styling` themes from images
 //# Categories: color, styling, terminal, theming, tools
+use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::error::Error;
 use std::fs;
 use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, Styleable, StylingError,
-    StylingResult, TermBgLuma, Theme,
+    cprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig, ImageThemeGenerator, Role,
+    Styleable, StylingError, StylingResult, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -29,6 +30,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     println!("{}", "=".repeat(60));
     println!();
+
+    set_global_render_config(themed_inquire_config());
 
     // Initialize file navigator
     let mut navigator = FileNavigator::new();

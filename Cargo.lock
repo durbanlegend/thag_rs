@@ -2118,6 +2118,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "inquire"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95b8b5b4fd6d0ef1235f11c2e8ce9734be5736c21230ff585c3bae2e940abced"
+dependencies = [
+ "bitflags 2.9.0",
+ "crossterm 0.28.1",
+ "dyn-clone",
+ "fuzzy-matcher",
+ "unicode-segmentation",
+ "unicode-width 0.1.14",
+]
+
+[[package]]
 name = "instability"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4326,7 +4340,7 @@ dependencies = [
  "colored",
  "dirs",
  "inferno",
- "inquire",
+ "inquire 0.7.5",
  "shell-words",
  "thag_profiler",
  "thag_rs",
@@ -4371,7 +4385,7 @@ dependencies = [
  "document-features",
  "inferno",
  "inline_colorization",
- "inquire",
+ "inquire 0.8.0",
  "once_cell",
  "parking_lot",
  "ra_ap_syntax",
@@ -4413,7 +4427,7 @@ dependencies = [
  "either",
  "env_logger",
  "heck",
- "inquire",
+ "inquire 0.8.0",
  "lazy_static",
  "log",
  "mockall",
@@ -4468,7 +4482,7 @@ dependencies = [
  "console",
  "crossterm 0.28.1",
  "image",
- "inquire",
+ "inquire 0.8.0",
  "kmeans_colors",
  "log",
  "nu-ansi-term",

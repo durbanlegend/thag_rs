@@ -12,7 +12,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// in its content with its own ANSI color codes, ensuring that outer context is
 /// always restored after inner styled content.
 //# Purpose: Demonstrate correct reset replacement for perfect context preservation
-//# Categories: styling, nesting, prototypes
+//# Categories: ansi, prototype, styling
 use std::fmt;
 use thag_styling::{ColorInitStrategy, Role, Style, TermAttributes};
 

@@ -611,7 +611,7 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
     }
 }
 
-/// Lookup dependencies and add them to the manifest's dependency map.
+/// Look up dependencies and add them to the manifest's dependency map.
 ///
 /// This function takes a list of inferred dependency names from Rust source code
 /// and attempts to look up their versions using cargo lookup. Based on the

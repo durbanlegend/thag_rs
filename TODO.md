@@ -3,21 +3,7 @@
 ## High Priority
 
 ## On the go
-- [ ]  Think of ways to run thag remotely or with minimal effort.
-- [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
-- [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
-- [ ]  Tool for running tests for all feature sets?
-- [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
-- [ ]  ?Use curl to download a compiled binary of a profiling demo.
-- [ ]  Thag tool for invoking thag as a library and running a remote source file.
-- [ ]  "Playground" naming. Multifaceted playground.
-- [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
-- [ ]  Consider a tool to show the current theme and switch via OSC?
-- [ ]  ?Improve filtering algo in thag_demo browse (inquire Scorer).
-- [ ]  Don't check features in crates.io when using local or git version of thag_rs.
-- [ ]  Consider error enum per module/subcrate with module entries in main errors enum.
-- [ ]  Make a plan for styling dependencies to be in thag_proc_macros or common subcrate? - lazy_static_var, vprtln, ColorSupport, TermBgLuma, [ThagError, ThagResult], V. All not bracketed are in shared.rs.
 - [ ]  Tools auto_help to accept file!() rather than name as string literal?
 - [ ]  Convert all inquire interfaces to use theming.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
@@ -290,6 +276,17 @@ validate_state only when feature minimal not engaged - instead switched off debu
 - [ ]  Consider dropping our termbg module if termbg 0.6.1 is working fine.
 - [ ]  Sort and flesh out keywords (u16 etc) in shared::is_valid_crate_name. (make HashSet? phf?)
 - [ ]  RYO cargo-lookup?.
+- [ ]  Think of ways to run thag remotely or with minimal effort.
+- [ ]  Demo readmes: Give thag_url alternative options for crate demos - test first of course.
+- [ ]  Tool for comparing / ?merging? line ranges of different files, or clipboard paste to line range of file.
+- [ ]  Tool for running tests for all feature sets?
+- [ ]  Consider thag --altedit(-D) option to use built-in editor, and/or key option to open TextArea in better editor.
+- [ ]  ?Use curl to download a compiled binary of a profiling demo.
+- [ ]  Thag tool for invoking thag as a library and running a remote source file.
+- [ ]  Upgrade demo graphs headers to be same quality as thag_profile.
+- [ ]  Consider a tool to show the current theme and switch via OSC?
+- [ ]  ?Improve filtering algo in thag_demo browse (inquire Scorer).
+- [ ]  Don't check features in crates.io when using local or git version of thag_rs.
 
 - [ ]  Testing fib scripts: ls -1 demo/fib_*.rs | grep -v basic | grep -v binet | while read f; do echo $f;  cargo run -- $f -qq -- 100 | grep 354224848179261915075 || echo "...failed"; done
 stem=macro_lazy_static_var_advanced

@@ -17,7 +17,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// 3. Optimizes the reset sequence to avoid redundant operations
 /// 4. Maintains perfect context preservation across all nesting levels
 //# Purpose: Test enhanced reset replacement with text attribute handling
-//# Categories: styling, testing, nesting, attributes
+//# Categories: ansi, styling, terminal, testing
 use thag_styling::{ColorInitStrategy, Role, Styleable, Styler, TermAttributes};
 
 fn main() {

@@ -1,14 +1,9 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
-use std::clone::Clone;
-use std::error::Error;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::string::ToString;
-use thag_proc_macros::file_navigator;
 /// Install generated themes for Alacritty terminal emulator
 ///
 /// This tool installs Alacritty themes into Alacritty's configuration directory
@@ -16,12 +11,21 @@ use thag_proc_macros::file_navigator;
 /// The themes will typically have been created by `thag_gen_terminal_themes.rs`.
 //# Purpose: Install and configure thag themes for Alacritty terminal
 //# Categories: color, styling, terminal, theming, tools
-use thag_styling::Styleable;
+use inquire::set_global_render_config;
+use std::clone::Clone;
+use std::error::Error;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::string::ToString;
+use thag_proc_macros::file_navigator;
+use thag_styling::{themed_inquire_config, Styleable};
 use toml_edit::{DocumentMut, Item, Value};
 
 file_navigator! {}
 
 fn main() -> Result<(), Box<dyn Error>> {
+    set_global_render_config(themed_inquire_config());
+
     println!(
         "🎨 {} - Alacritty Theme Installer",
         "thag_install_alacritty_theme".info()

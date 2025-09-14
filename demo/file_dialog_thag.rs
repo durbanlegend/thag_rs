@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
 /// Demo of invoking the Rust formatter programmatically, using `thag_proc_macros`
@@ -8,15 +9,18 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 /// Compare with `demo/file_dialog_gui.rs`, which uses the platform's native gui.
 //# Purpose: Demo file chooser and calling an external program, in this case the Rust formatter.
 //# Categories: crates, technique
-use inquire;
 use std::error::Error;
-use std::path::PathBuf;
+// use inquire;
+use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::process::Command;
 use thag_proc_macros::file_navigator;
 
 file_navigator! {}
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // For optional theming of `inquire`
+    set_global_render_config(thag_styling::themed_inquire_config());
+
     let mut navigator = FileNavigator::new();
 
     // Check if rustfmt is available

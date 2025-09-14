@@ -6,22 +6,28 @@
 # - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
 # E.g. from `thag_rs` project dir: `THAG_DEV_PATH=$PWD thag demo/download_demos.rs`
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
+
+# [features]
+# default = ["thag_styling/inquire_theming"] # For optional theming of `inquire`
 */
 
 /// Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`
 /// with subdirectory support. Git `sparse-checkout` approach suggested and written
 /// by ChatGPT, local directory handling assisted by Claude.
+///
+/// `thag_styling` included
 //# Purpose: Prototype for `thag_get_demo_dir`.
 //# Categories: crates, prototype, technique
 use colored::Colorize;
-use inquire;
+use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::error::Error;
 use std::fs;
 use std::io::Write as _;
 use std::path::PathBuf;
 use std::process::Command;
 use thag_proc_macros::file_navigator;
+use thag_styling::themed_inquire_config; // For optional theming of `inquire`
 
 file_navigator! {}
 
@@ -36,6 +42,9 @@ impl Drop for TempCleanupGuard {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // For optional theming of `inquire`
+    set_global_render_config(themed_inquire_config());
+
     // 1) Select a target parent directory
     let mut navigator = FileNavigator::new();
 

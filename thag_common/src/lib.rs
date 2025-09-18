@@ -188,7 +188,7 @@ pub struct OutputManager {
 impl OutputManager {
     /// Construct a new `OutputManager` with the given Verbosity level.
     #[must_use]
-    pub fn new(verbosity: Verbosity) -> Self {
+    pub const fn new(verbosity: Verbosity) -> Self {
         Self {
             verbosity: std::cell::UnsafeCell::new(verbosity),
         }

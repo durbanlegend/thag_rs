@@ -22,7 +22,6 @@ static LOGGING_INIT: Once = Once::new();
 
 /// Enables debug logging by setting the global debug flag to true.
 #[allow(clippy::module_name_repetitions)]
-
 pub fn enable_debug_logging() {
     DEBUG_LOG_ENABLED.store(true, Ordering::SeqCst);
 }

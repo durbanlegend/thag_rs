@@ -58,7 +58,8 @@ pub fn file_navigator_impl(_input: TokenStream) -> TokenStream {
                     .flatten()
                     .filter(|entry| {
                         entry.file_type().map(|ft| ft.is_file()).unwrap_or(false)
-                            && entry.path().extension().is_some_and(|ext| includes.as_ref().is_some_and(|incl| incl.contains(&ext.to_string_lossy().to_string())))
+                            && (entry.path().extension().is_some_and(|ext| includes.as_ref().is_some_and(|incl| incl.contains(&ext.to_string_lossy().to_string())))
+                               || entry.path().extension().is_none() && includes.is_none())
                     })
                     .map(|entry| entry.file_name().to_string_lossy().into_owned())
                     .collect();

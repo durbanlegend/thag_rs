@@ -121,7 +121,7 @@ impl ColorInfo {
     /// * `ansi` - The ANSI escape sequence for this color (unused, kept for compatibility)
     /// * `index` - The color palette index (0-15 for basic colors)
     #[must_use]
-    pub fn basic(_ansi: &str, index: u8) -> Self {
+    pub const fn basic(_ansi: &str, index: u8) -> Self {
         Self {
             value: ColorValue::Basic { index },
             index,
@@ -133,7 +133,7 @@ impl ColorInfo {
     /// # Arguments
     /// * `index` - The color index in the 256-color palette (0-255)
     #[must_use]
-    pub fn color256(index: u8) -> Self {
+    pub const fn color256(index: u8) -> Self {
         Self {
             value: ColorValue::Color256 { color256: index },
             index,

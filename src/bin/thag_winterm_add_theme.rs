@@ -133,25 +133,25 @@ fn get_windows_terminal_settings_path() -> Result<PathBuf, Box<dyn Error>> {
 fn select_themes_for_installation(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{Select};
+    use inquire::Select;
 
     let selection_options = vec![
-        "Select theme files (.toml)",
-        "Select all themes from directory",
+        "Select individual `thag_styling` theme files (.toml)",
+        "Select `thag_styling` theme files from directory",
         "Select exported Windows Terminal themes (.json)",
-        "Install built-in theme by name",
-        "Select from multiple built-in themes",
+        "Install `thag_styling` built-in theme by name",
+        "Select from multiple `thag_styling` built-in themes",
     ];
 
     let selection_method =
         Select::new("How would you like to select themes?", selection_options).prompt()?;
 
     match selection_method {
-        "Select theme files (.toml)" => select_individual_toml_themes(navigator),
-        "Select all themes from directory" => select_themes_from_directory(navigator),
+        "Select individual `thag_styling` theme files (.toml)" => select_individual_toml_themes(navigator),
+        "Select `thag_styling` theme files from directory" => select_themes_from_directory(navigator),
         "Select exported Windows Terminal themes (.json)" => select_exported_json_themes(navigator),
-        "Install built-in theme by name" => select_builtin_theme_by_name(),
-        "Select from multiple built-in themes" => select_multiple_builtin_themes(),
+        "Install `thag_styling` built-in theme by name" => select_builtin_theme_by_name(),
+        "Select from multiple `thag_styling` built-in themes" => select_multiple_builtin_themes(),
         _ => Ok(vec![]),
     }
 }
@@ -243,9 +243,10 @@ fn select_themes_from_directory(
                     .collect();
                 let len = theme_names.len();
 
-                let selected_names = MultiSelect::new("Select themes to install:", theme_names.clone())
-                    .with_default(&(0..len).collect::<Vec<_>>())
-                    .prompt()?;
+                let selected_names =
+                    MultiSelect::new("Select themes to install:", theme_names.clone())
+                        .with_default(&(0..len).collect::<Vec<_>>())
+                        .prompt()?;
 
                 let selected_themes = themes
                     .into_iter()
@@ -267,7 +268,7 @@ fn select_themes_from_directory(
 fn select_exported_json_themes(
     navigator: &mut FileNavigator,
 ) -> Result<Vec<Theme>, Box<dyn Error>> {
-    use inquire::{ MultiSelect};
+    use inquire::MultiSelect;
 
     println!("\n📁 Select directory containing exported Windows Terminal themes (.json):");
     match select_directory(navigator, true) {
@@ -291,9 +292,10 @@ fn select_exported_json_themes(
                 .collect();
             let len = file_names.len();
 
-            let selected_names = MultiSelect::new("Select theme files to install:", file_names.clone())
-                .with_default(&(0..len).collect::<Vec<_>>())
-                .prompt()?;
+            let selected_names =
+                MultiSelect::new("Select theme files to install:", file_names.clone())
+                    .with_default(&(0..len).collect::<Vec<_>>())
+                    .prompt()?;
 
             let selected_files: Vec<_> = json_files
                 .into_iter()
@@ -336,11 +338,7 @@ fn select_builtin_theme_by_name() -> Result<Vec<Theme>, Box<dyn Error>> {
 
     match Theme::get_builtin(&theme_name) {
         Ok(theme) => {
-            println!(
-                "📋 Found: {} - {}",
-                theme.name.hint(),
-                theme.description
-            );
+            println!("📋 Found: {} - {}", theme.name.hint(), theme.description);
             Ok(vec![theme])
         }
         Err(e) => {
@@ -490,10 +488,7 @@ fn load_windows_terminal_settings(
 fn backup_settings_file(settings_path: &Path) -> Result<(), Box<dyn Error>> {
     let backup_path = settings_path.with_extension("bak");
     fs::copy(settings_path, &backup_path)?;
-    println!(
-        "💾 Created backup: {}",
-        backup_path.display().to_string()
-    );
+    println!("💾 Created backup: {}", backup_path.display().to_string());
     Ok(())
 }
 
@@ -619,11 +614,7 @@ fn show_installation_summary(
     if !added_schemes.is_empty() {
         println!("\n✅ {} Color Schemes:", "Added".debug());
         for (theme_name, scheme_name) in added_schemes {
-            println!(
-                "   • {} ({})",
-                theme_name.hint(),
-                scheme_name
-            );
+            println!("   • {} ({})", theme_name.hint(), scheme_name);
         }
     }
 

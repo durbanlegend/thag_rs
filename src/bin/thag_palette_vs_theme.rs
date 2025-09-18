@@ -761,14 +761,13 @@ fn display_color_comparison(theme: &Theme) {
         println!("───────────────────────────────");
 
         // Corrected mappings that match thag_sync_palette behavior
-        let (r, g, b) = theme.bg_rgbs[0];
         let color_mappings = [
             (
                 "Black (0)",
                 0,
                 "Background",
                 // get_best_dark_color(theme)
-                &Style::with_rgb([r, g, b]),
+                &Style::with_rgb(theme.bg_rgbs[0].into()),
             ),
             ("Red (1)", 1, "Emphasis", &theme.palette.emphasis),
             ("Green (2)", 2, "Success", &theme.palette.success),

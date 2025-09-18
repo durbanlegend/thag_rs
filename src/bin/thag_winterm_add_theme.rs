@@ -2,9 +2,7 @@
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
-dirs = "5.0"
-serde_json = "1.0"
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Windows Terminal theme installer with file navigator
@@ -25,7 +23,7 @@ use std::{
 #[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
 #[cfg(target_os = "windows")]
-use thag_styling::{Styleable, Theme};
+use thag_styling::{themed_inquire_config, Styleable, Theme};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
@@ -38,6 +36,8 @@ fn main() {
 
 #[cfg(target_os = "windows")]
 fn main() -> Result<(), Box<dyn Error>> {
+    set_global_render_config(themed_inquire_config());
+
     println!(
         "🖥️  {} - Windows Terminal Theme Installer",
         "thag_winterm_add_theme".info()

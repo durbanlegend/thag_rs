@@ -2,8 +2,7 @@
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
-dirs = "5.0"
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Mintty theme installer for Git Bash on Windows
@@ -23,7 +22,7 @@ use std::{
 #[cfg(target_os = "windows")]
 use thag_proc_macros::file_navigator;
 #[cfg(target_os = "windows")]
-use thag_styling::Styleable;
+use thag_styling::{themed_inquire_config, Styleable};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
@@ -36,6 +35,8 @@ fn main() {
 
 #[cfg(target_os = "windows")]
 fn main() -> Result<(), Box<dyn Error>> {
+    set_global_render_config(themed_inquire_config());
+
     println!(
         "🐙 {} - Mintty Theme Installer for Git Bash",
         "thag_mintty_add_theme".info()

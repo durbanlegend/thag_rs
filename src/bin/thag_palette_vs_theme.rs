@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire"] }
+thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
 */
 #![allow(clippy::uninlined_format_args)]
 /// Terminal palette comparison tool with theme selection
@@ -12,6 +12,7 @@ thag_styling = { version = "0.2, thag-auto", default-features = false, features 
 //# Purpose: Compare terminal palette with thag theme colors
 //# Categories: color, styling, terminal, theming, tools
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::collections::HashMap;
 use std::error::Error;
 use std::io::{self, Read, Write};
@@ -19,11 +20,10 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use thag_common::ColorSupport;
 use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, select_builtin_theme, styling::index_to_rgb, ColorInitStrategy, ColorValue, Role,
-    Style, Styleable, StyledStringExt, TermAttributes, TermBgLuma, Theme,
+    cprtln, select_builtin_theme, styling::index_to_rgb, themed_inquire_config, ColorInitStrategy,
+    ColorValue, Role, Style, Styleable, StyledStringExt, TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -419,6 +419,8 @@ impl PaletteDetector {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    set_global_render_config(themed_inquire_config());
+
     // Initialize styling system
     TermAttributes::initialize(&ColorInitStrategy::Match);
 
@@ -434,14 +436,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Initialize file navigator
     let mut navigator = FileNavigator::new();
 
-    // Determine color support
-    // let color_support = terminal::get_fresh_color_support();
-    let term_attrs = TermAttributes::get_or_init();
-    let color_support = term_attrs.color_support;
-
     // Select theme to compare
-    let mut theme = select_theme(&mut navigator)?;
-    // No longer needed - colors now adapt dynamically at paint time
+    let theme = select_theme(&mut navigator)?;
 
     theme.with_context(|| {
         format!("📋 Selected theme: {}", &theme.name.heading3())

@@ -60,7 +60,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
 /// # Or use the full feature set:
 /// cargo run -p thag_styling --example zero_config --features "full"
 /// ```
-// use color_eyre::Result;
+use std::error::Error;
 use std::io::{self};
 #[cfg(feature = "ratatui_support")]
 use thag_styling::ThemedStyle;
@@ -306,7 +306,7 @@ fn ratatui_user_input_example() {
             self.reset_cursor();
         }
 
-        fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        fn run(mut self, mut terminal: DefaultTerminal) -> Result<(), Box<dyn Error>> {
             loop {
                 terminal.draw(|frame| self.draw(frame))?;
 
@@ -430,12 +430,14 @@ fn ratatui_user_input_example() {
 
 #[cfg(feature = "inquire_theming")]
 fn show_interactive_prompts() -> io::Result<()> {
+    use inquire::set_global_render_config; // For Option B
     use inquire::{Confirm, Select, Text};
+    use thag_styling::themed_inquire_config; // For Option B
 
     println!("💬 Interactive Prompts with `inquire`:");
     println!("  (Automatically themed to match your terminal)\n");
 
-    // Use the themed inquire config - completely automatic
+    // Option A: Use the themed inquire config - requires `with_render_config` at each `inquire` prompt.
     let config = thag_styling::themed_inquire_config();
 
     // Simple text input with theming
@@ -446,19 +448,18 @@ fn show_interactive_prompts() -> io::Result<()> {
         println!("  Hello, {}! 👋\n", paint_for_role(Role::Emphasis, &name));
     }
 
+    // Option B (recommended): Even simpler: set the default
+    set_global_render_config(themed_inquire_config());
+
     // Selection with themed options
     let options = vec!["Coffee", "Tea", "Soft drink", "Water", "Other"];
-    if let Ok(choice) = Select::new("What can I offer you?", options)
-        .with_render_config(config.clone())
-        .prompt()
-    {
+    if let Ok(choice) = Select::new("What can I offer you?", options).prompt() {
         println!("\n  You chose: {}\n", paint_for_role(Role::Success, choice));
     }
 
     // Confirmation with theming
     if let Ok(confirmed) = Confirm::new("Continue with zero-config demo?")
         .with_default(true)
-        .with_render_config(config)
         .prompt()
     {
         if confirmed {

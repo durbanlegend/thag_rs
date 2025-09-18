@@ -236,7 +236,7 @@ impl PaletteSync {
         println!("\x1b[33m● Commentary - Highlighted notes and annotations (ANSI 3: Yellow)");
         println!("\x1b[34m● Info - Informational message (ANSI 4: Blue)");
         println!("\x1b[35m● Heading1 - Major sections (ANSI 5: Magenta)");
-        println!("\x1b[36m● Code - `code blocks and filenames` (ANSI 6: Cyan)");
+        println!("\x1b[36m● Code - code blocks and filenames (ANSI 6: Cyan)");
         println!("\x1b[37m● Normal - Regular text (ANSI 7: White)");
         println!("\x1b[90m● Subtle - Secondary information (ANSI 8: Bright Black)");
         println!(

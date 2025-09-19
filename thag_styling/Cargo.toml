@@ -101,6 +101,7 @@ name = "thag_styling"
 path = "src/lib.rs"
 
 [dev-dependencies]
+crossterm = "0.28.1"
 ratatui = "0.29.0"
 serial_test = "3.2.0"
 supports-color = "3.0.2"

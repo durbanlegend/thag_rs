@@ -38,7 +38,7 @@ mod tests {
     fn reset_global_output_manager() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
-            drop(OUTPUT_MANAGER.lock().unwrap());
+            drop(OUTPUT_MANAGER.lock());
         });
     }
 
@@ -47,13 +47,13 @@ mod tests {
     fn test_shared_output_manager_new() {
         set_up();
         let output_manager = OutputManager::new(Verbosity::Quiet);
-        assert_eq!(output_manager.verbosity, Verbosity::Quiet);
+        assert_eq!(output_manager.verbosity(), Verbosity::Quiet);
 
         let output_manager = OutputManager::new(Verbosity::Normal);
-        assert_eq!(output_manager.verbosity, Verbosity::Normal);
+        assert_eq!(output_manager.verbosity(), Verbosity::Normal);
 
         let output_manager = OutputManager::new(Verbosity::Verbose);
-        assert_eq!(output_manager.verbosity, Verbosity::Verbose);
+        assert_eq!(output_manager.verbosity(), Verbosity::Verbose);
     }
 
     #[test]

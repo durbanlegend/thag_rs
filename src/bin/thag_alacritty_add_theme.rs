@@ -414,10 +414,13 @@ fn show_installation_summary(installed_themes: &[String], errors: &[(String, Box
 /// Show verification steps
 fn show_verification_steps(_installed_themes: &[String]) {
     println!("\n🔍 {} Steps:", "Verification".info());
-    println!("1. Restart Alacritty if necessary");
-    println!("2. Check that colors match the expected theme");
+    println!(r#"1. Ensure your `thag_styling` theme is set to match.
+E.g. `export THAG_THEME=<corresponding thag_styling theme>"#` in `~/.bashrc` or `~/.zshrc`
+or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal));
+    println!("2. Restart Alacritty if necessary");
+    println!("3. Check that colors match the expected theme");
     println!(
-        "3. Run: {} (to check for config errors)",
+        "34. Run: {} (to check for config errors)",
         "alacritty --print-events".info()
     );
 }

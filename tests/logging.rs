@@ -58,7 +58,7 @@ mod tests {
     fn reset_global_output_manager() {
         static INIT: Once = Once::new();
         INIT.call_once(|| {
-            drop(OUTPUT_MANAGER.lock().unwrap());
+            drop(OUTPUT_MANAGER.lock());
         });
     }
 

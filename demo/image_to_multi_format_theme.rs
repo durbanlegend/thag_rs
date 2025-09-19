@@ -47,6 +47,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         auto_detect_theme_type: true,
         force_theme_type: None,
         theme_name_prefix: Some("ImageTheme".to_string()),
+        saturation_multiplier: 1.0,
+        lightness_adjustment: 0.0,
+        contrast_multiplier: 1.0,
     };
 
     // Generate theme from image

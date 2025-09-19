@@ -60,6 +60,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
 /// # Or use the full feature set:
 /// cargo run -p thag_styling --example zero_config --features "full"
 /// ```
+#[cfg(feature = "ratatui_support")]
 use std::error::Error;
 use std::io::{self};
 #[cfg(feature = "ratatui_support")]

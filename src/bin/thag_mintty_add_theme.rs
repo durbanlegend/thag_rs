@@ -452,11 +452,14 @@ fn show_installation_summary(installed_themes: &[(String, String)]) {
 fn show_usage_instructions() {
     println!("🔧 How to use your new themes:");
     println!("{}", "▁".repeat(40));
-    println!("1. Open Git Bash (Mintty)");
-    println!("2. Right-click on the title bar and select 'Options...'");
-    println!("3. Go to the 'Looks' tab");
-    println!("4. Select your theme from the 'Theme' dropdown");
-    println!("5. Click 'Apply' or 'OK'");
+    println!(r#"1. Ensure your `thag_styling` theme is set to match.
+E.g. `export THAG_THEME=<corresponding thag_styling theme>"#` in `~/.bashrc` or `~/.zshrc`
+or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal));
+    println!("2. Open Git Bash (Mintty)");
+    println!("3. Right-click on the title bar and select 'Options...'");
+    println!("4. Go to the 'Looks' tab");
+    println!("5. Select your theme from the 'Theme' dropdown");
+    println!("6. Click 'Apply' or 'OK'");
     println!();
     println!("💡 Tip: The theme will apply to all new Mintty windows.");
     println!("   Existing windows may need to be restarted to see the changes.");

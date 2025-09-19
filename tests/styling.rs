@@ -44,6 +44,7 @@ mod tests {
             TermBgLuma::Light,
             None,
         ));
+        eprintln!("attrs={attrs:#?}");
         eprintln!("attrs.color_support={0:#?}", attrs.color_support);
         assert!(matches!(attrs.color_support, ColorSupport::Color256));
         assert!(matches!(attrs.theme.term_bg_luma, TermBgLuma::Light));

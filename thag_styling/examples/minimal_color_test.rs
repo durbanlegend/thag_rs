@@ -8,6 +8,7 @@
 //! ```
 
 use std::env;
+use std::time::Duration;
 
 fn main() {
     println!("🧪 Minimal Color Detection Test\n");
@@ -45,14 +46,14 @@ fn main() {
     println!("\n3. Direct termbg test:");
     #[cfg(feature = "color_detect")]
     {
-        match termbg::rgb() {
+        match termbg::rgb(Duration::from_millis(500)) {
             Ok(rgb) => {
+                let (r, g, b) = (rgb.r, rgb.g, rgb.b);
                 println!("   ✅ Background RGB detected: {:?}", rgb);
-                let hex = format!("{:02x}{:02x}{:02x}", rgb.0, rgb.1, rgb.2);
+                let hex = format!("{:02x}{:02x}{:02x}", r, g, b);
                 println!("   Background hex: #{}", hex);
 
-                let is_light =
-                    rgb.0 as f64 * 0.299 + rgb.1 as f64 * 0.587 + rgb.2 as f64 * 0.114 > 127.5;
+                let is_light = r as f64 * 0.299 + g as f64 * 0.587 + b as f64 * 0.114 > 127.5;
                 println!("   Is light: {}", is_light);
             }
             Err(e) => {

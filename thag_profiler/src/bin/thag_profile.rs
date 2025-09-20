@@ -1,3 +1,9 @@
+/*[toml]
+[dependencies]
+thag_proc_macros = { version = "0.2, thag-auto" }
+thag_profiler = { version = "0.1, thag-auto", features = ["analyze_tool"] }
+thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
+*/
 use chrono::{DateTime, Local};
 use inferno::flamegraph::{
     self,
@@ -101,10 +107,6 @@ impl ChartType {
 /// thag_profile .
 /// ```
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Apply theme-aware styling to inquire prompts
-    // inquire_theming::apply_global_theming();
-    set_global_render_config(themed_inquire_config());
-
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         return Err("Usage: analyze <directory>".to_string().into());
@@ -112,6 +114,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Directory for .folded files
     let dir_path = PathBuf::from(args[1].clone());
+
+    // Apply theme-aware styling to inquire prompts
+    // inquire_theming::apply_global_theming();
+    set_global_render_config(themed_inquire_config());
 
     loop {
         let analysis_types = vec![

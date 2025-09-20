@@ -203,7 +203,7 @@ impl StyleAnsiExt for Style {
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Multi-Level Nesting Test ===\n");
 

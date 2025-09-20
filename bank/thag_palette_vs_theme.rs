@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
+thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
 */
 #![allow(clippy::uninlined_format_args)]
@@ -26,6 +27,8 @@ use thag_styling::{
     ColorValue, Role, Style, Styleable, StyledStringExt, TermAttributes, TermBgLuma, Theme,
 };
 
+use thag_profiler::{enable_profiling, profiled};
+
 file_navigator! {}
 
 /// RGB color representation
@@ -45,6 +48,7 @@ impl Rgb {
     /// Calculate color difference (Manhattan distance in RGB space)
     #[must_use]
     #[allow(clippy::cast_sign_loss)]
+    #[profiled]
     pub fn distance_to(&self, other: &Self) -> u16 {
         ((i16::from(self.r) - i16::from(other.r)).abs()
             + (i16::from(self.g) - i16::from(other.g)).abs()
@@ -53,12 +57,14 @@ impl Rgb {
 
     /// Convert to hex string
     #[must_use]
+    #[profiled]
     pub fn to_hex(&self) -> String {
         format!("#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
 
     /// Calculate perceived brightness (0.0-1.0)
     #[must_use]
+    #[profiled]
     pub fn brightness(&self) -> f32 {
         // Using standard luminance formula
         0.114f32.mul_add(
@@ -69,6 +75,7 @@ impl Rgb {
 
     /// Check if this is a "dark" color
     #[must_use]
+    #[profiled]
     pub fn is_dark(&self) -> bool {
         self.brightness() < 0.5
     }
@@ -84,6 +91,7 @@ pub enum PaletteError {
 }
 
 impl From<io::Error> for PaletteError {
+    #[profiled]
     fn from(err: io::Error) -> Self {
         Self::Io(err)
     }
@@ -98,6 +106,7 @@ pub struct PaletteCache {
 }
 
 impl PaletteCache {
+    #[profiled]
     fn new(terminal_id: String) -> Self {
         Self {
             colors: HashMap::new(),
@@ -106,18 +115,22 @@ impl PaletteCache {
         }
     }
 
+    #[profiled]
     fn is_valid(&self, max_age: Duration, current_terminal: &str) -> bool {
         self.timestamp.elapsed() < max_age && self.terminal_id == current_terminal
     }
 
+    #[profiled]
     fn get_color(&self, index: u8) -> Option<Rgb> {
         self.colors.get(&index).copied()
     }
 
+    #[profiled]
     fn set_color(&mut self, index: u8, color: Rgb) {
         self.colors.insert(index, color);
     }
 
+    #[profiled]
     fn get_all_colors(&self) -> Vec<Option<Rgb>> {
         (0..16).map(|i| self.colors.get(&i).copied()).collect()
     }
@@ -128,6 +141,7 @@ impl PaletteCache {
 /// # Errors
 ///
 /// Will bubble up any terminal errors encountered.
+#[profiled]
 pub fn query_palette_color(index: u8, timeout: Duration) -> Result<Rgb, PaletteError> {
     let (tx, rx) = mpsc::channel();
 
@@ -196,6 +210,7 @@ pub fn query_palette_color(index: u8, timeout: Duration) -> Result<Rgb, PaletteE
 }
 
 /// Parse OSC 4 response from accumulated buffer
+#[profiled]
 fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
     let pattern = format!("\x1b]4;{};", expected_index);
 
@@ -252,6 +267,7 @@ fn try_parse_osc4_response(response: &str, expected_index: u8) -> Option<Rgb> {
 }
 
 /// Parse hex component (2 or 4 digits)
+#[profiled]
 fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
     let clean_hex: String = hex_str
         .chars()
@@ -277,6 +293,7 @@ fn parse_hex_component(hex_str: &str) -> Result<u8, std::num::ParseIntError> {
 }
 
 /// Get terminal identifier for caching
+#[profiled]
 fn get_terminal_id() -> String {
     let mut id_parts = Vec::new();
 
@@ -305,6 +322,7 @@ pub struct PaletteDetector {
 }
 
 impl Default for PaletteDetector {
+    #[profiled]
     fn default() -> Self {
         Self {
             cache: None,
@@ -328,6 +346,7 @@ impl PaletteDetector {
     ///
     /// # Panics
     ///
+    #[profiled]
     pub fn get_color(&mut self, index: u8) -> Option<Rgb> {
         if index >= 16 {
             return None;
@@ -367,6 +386,7 @@ impl PaletteDetector {
     }
 
     /// Query all 16 palette colors
+    #[profiled]
     pub fn get_all_colors(&mut self) -> Vec<Option<Rgb>> {
         let terminal_id = get_terminal_id();
 
@@ -401,12 +421,14 @@ impl PaletteDetector {
     }
 
     /// Clear the cache (force re-query)
+    #[profiled]
     pub fn clear_cache(&mut self) {
         self.cache = None;
     }
 
     /// Get cache statistics
     #[must_use]
+    #[profiled]
     pub fn cache_info(&self) -> Option<(usize, Duration, String)> {
         self.cache.as_ref().map(|cache| {
             (
@@ -418,6 +440,7 @@ impl PaletteDetector {
     }
 }
 
+#[enable_profiling(runtime)]
 fn main() -> Result<(), Box<dyn Error>> {
     set_global_render_config(themed_inquire_config());
 
@@ -459,6 +482,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 /// Select a theme using file navigator or built-in themes
+#[profiled]
 fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> {
     use inquire::{Select, Text};
 
@@ -516,6 +540,7 @@ fn select_theme(navigator: &mut FileNavigator) -> Result<Theme, Box<dyn Error>> 
 }
 
 /// Display basic terminal information
+#[profiled]
 fn display_terminal_info(theme: &Theme) {
     theme
         .normal(format!("📟 {} Information:", theme.info_text("Terminal")))
@@ -551,6 +576,7 @@ fn display_terminal_info(theme: &Theme) {
 }
 
 /// Attempt to detect terminal emulator
+#[profiled]
 fn detect_terminal_emulator() -> String {
     // Check various environment variables that indicate terminal type
     if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
@@ -580,6 +606,7 @@ fn detect_terminal_emulator() -> String {
 }
 
 /// Display the 16 basic ANSI colors
+#[profiled]
 fn display_ansi_colors(theme: &Theme) {
     // Create detector with production settings
     let mut detector = PaletteDetector::new(
@@ -653,6 +680,7 @@ fn display_ansi_colors(theme: &Theme) {
 }
 
 /// Display a row of colors with their indices and names
+#[profiled]
 fn display_color_row(
     theme: &Theme,
     colors: &[(u8, &str)],
@@ -699,6 +727,7 @@ fn display_color_row(
 }
 
 /// Display theme colors with visual preview
+#[profiled]
 fn display_theme_colors(theme: &Theme) {
     theme.with_context(|| {
         format!("🌟 {} Colors:", theme.name.info())
@@ -753,6 +782,7 @@ fn display_theme_colors(theme: &Theme) {
 
 /// Display side-by-side color comparison
 #[allow(clippy::too_many_lines)]
+#[profiled]
 fn display_color_comparison(theme: &Theme) {
     theme.with_context(|| {
         format!("🔄 {} Color Mapping:", "ANSI vs Theme".info())
@@ -833,6 +863,7 @@ fn display_color_comparison(theme: &Theme) {
 }
 
 /// Display recommendations based on comparison
+#[profiled]
 fn display_recommendations(theme: &Theme) {
     theme.with_context(|| {
         format!("💡 {} and Tips:", "Recommendations".info())
@@ -905,6 +936,7 @@ fn display_recommendations(theme: &Theme) {
 }
 
 /// Detect potential issues with theme/terminal compatibility
+#[profiled]
 fn detect_potential_issues(theme: &Theme) -> Vec<String> {
     theme.with_context(|| {
         let mut issues = Vec::new();
@@ -941,7 +973,9 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
 }
 
 /// Calculate contrast ratio between two RGB colors
+#[profiled]
 fn calculate_contrast_ratio(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f64 {
+    #[profiled]
     fn luminance(rgb: (u8, u8, u8)) -> f64 {
         let (r, g, b) = (
             f64::from(rgb.0) / 255.0,
@@ -971,6 +1005,7 @@ fn calculate_contrast_ratio(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f64 {
 }
 
 /// Extract RGB information from a style for display
+#[profiled]
 fn extract_rgb_info(style: &Style) -> String {
     style.foreground.as_ref().map_or_else(
         || "No color".to_string(),
@@ -992,6 +1027,7 @@ fn extract_rgb_info(style: &Style) -> String {
 }
 
 /// Extract RGB tuple from a style
+#[profiled]
 fn extract_rgb(style: &Style) -> Option<(u8, u8, u8)> {
     style
         .foreground
@@ -1015,6 +1051,7 @@ fn extract_rgb(style: &Style) -> Option<(u8, u8, u8)> {
 
 /// Brighten a color by increasing its components
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]
+#[profiled]
 fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
     let factor = 1.3;
     (
@@ -1030,6 +1067,7 @@ mod tests {
     use std::path::PathBuf;
     use thag_styling::{ColorInfo, ColorSupport, Palette, TermBgLuma};
 
+    #[profiled]
     fn create_test_theme() -> Theme {
         let mut palette = Palette::default();
         palette.normal = Style::fg(ColorInfo::rgb(220, 220, 220));

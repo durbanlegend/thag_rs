@@ -28,7 +28,7 @@ fn escape_ansi(s: &str) -> String {
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Simple Stress Test with Raw ANSI ===\n");
 

@@ -328,7 +328,7 @@ rgb = [131, 165, 152]
             env::set_var("THAG_THEME", "integration-test");
 
             // This should use our custom theme through the normal initialization flow
-            let attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+            let attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
             println!(
                 "✅ TermAttributes initialized with theme: {}",

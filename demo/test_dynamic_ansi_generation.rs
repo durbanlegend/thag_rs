@@ -59,7 +59,7 @@ fn test_current_terminal_support() -> StylingResult<()> {
     println!();
 
     // Initialize terminal attributes
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let term_attrs = TermAttributes::get_or_init();
 
     println!("Detected color support: {:?}", term_attrs.color_support);

@@ -15,7 +15,7 @@ use thag_styling::styling::{Color, ColorInitStrategy, Role, Style, TermAttribute
 fn main() {
     // Initialize styling
     let strategy = ColorInitStrategy::determine();
-    TermAttributes::initialize(strategy);
+    TermAttributes::get_or_init_with_strategy(&strategy);
 
     println!("Testing cprtln! macro with different input types:\n");
 

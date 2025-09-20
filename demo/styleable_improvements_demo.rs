@@ -16,7 +16,7 @@ use thag_styling::{cprtln, ColorInitStrategy, Role, Styleable, Styler, TermAttri
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Styleable Improvements Demo ===\n");
 

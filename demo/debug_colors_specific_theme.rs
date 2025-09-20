@@ -19,7 +19,7 @@ fn main() {
 
     println!("1. AUTO-DETECTED THEME:");
     // Initialize with auto-detection
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let auto_attrs = TermAttributes::get_or_init();
     println!("   Theme: {}", auto_attrs.theme.name);
     print_role_colors("auto-detected", &auto_attrs.theme);

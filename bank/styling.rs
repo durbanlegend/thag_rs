@@ -2616,7 +2616,7 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
 // }
 
 pub fn main() -> ThagResult<()> {
-    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let color_support = term_attrs.color_support;
     let theme = &term_attrs.theme;
     let header_style = Style::for_role(Role::Normal).underline();
@@ -2696,7 +2696,7 @@ pub fn main() -> ThagResult<()> {
     println!();
 
     // Section 4: Current terminal color palette
-    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let theme = &term_attrs.theme;
     // let user_config = maybe_config();
     // let current = user_config.clone().unwrap_or_default();

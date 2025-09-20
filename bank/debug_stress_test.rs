@@ -28,7 +28,7 @@ fn escape_ansi(s: &str) -> String {
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Debug Stress Test Nesting Issue ===\n");
 

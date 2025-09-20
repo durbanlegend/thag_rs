@@ -12,7 +12,7 @@ fn main() {
 
     // Initialize with a basic theme
     let strategy = ColorInitStrategy::Default;
-    let attrs = TermAttributes::initialize(&strategy);
+    let attrs = TermAttributes::get_or_init_with_strategy(&strategy);
     println!("1. Initial theme: {}", attrs.theme.name);
 
     // Create a style for the Success role

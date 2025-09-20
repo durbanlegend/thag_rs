@@ -1421,7 +1421,9 @@ This ensures that the profile correctly associates the section with its async pa
 
 ### Common Issues
 
-**1. Missing profile output**: Ensure profiling is enabled and you have write permissions in the current directory.
+**1. Missing profile output**: Ensure that the `time_profiling` or `full_profiling` feature of the `thag_profiler` dependency is enabled.
+
+Ensure profiling is enabled and you have write permissions in the current directory.
 
 Ensure your code is compiled with the `debug` option while profiling. E.g. in release mode:
 

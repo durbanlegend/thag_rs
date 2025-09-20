@@ -465,7 +465,7 @@ mod tests {
     #[test]
     fn test_ansi_color_mapping() {
         // Initialize with a basic theme for testing
-        TermAttributes::initialize(&ColorInitStrategy::Configure(
+        TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Configure(
             crate::ColorSupport::TrueColor,
             crate::TermBgLuma::Dark,
             Some((0, 0, 0)),

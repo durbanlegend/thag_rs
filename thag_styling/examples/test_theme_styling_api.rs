@@ -10,7 +10,7 @@ fn main() {
 
     // Initialize styling
     let strategy = ColorInitStrategy::Default;
-    let _attrs = TermAttributes::initialize(&strategy);
+    let _attrs = TermAttributes::get_or_init_with_strategy(&strategy);
 
     // Get a theme to use for demonstration
     let theme = match Theme::get_builtin("Basic Dark") {

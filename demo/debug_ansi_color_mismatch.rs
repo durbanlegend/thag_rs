@@ -184,7 +184,7 @@ fn test_current_terminal_detection() -> StylingResult<()> {
 
 fn main() -> StylingResult<()> {
     // Initialize terminal attributes
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("🐛 ANSI Color Generation Diagnostic");
     println!("{}", "=".repeat(80));

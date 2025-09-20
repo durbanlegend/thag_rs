@@ -591,7 +591,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("This script uses the proven crossterm method for reliable palette detection.");
     println!();
 
-    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let theme = &term_attrs.theme;
     println!("Current theme: {}", theme.name);
 

@@ -134,7 +134,7 @@ fn main() {
     #[cfg(feature = "color_detect")]
     {
         println!("\n7. Force ColorInitStrategy::Match test:");
-        let match_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+        let match_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
         println!("   - how_initialized: {:?}", match_attrs.how_initialized);
         println!("   - color_support: {:?}", match_attrs.color_support);
         println!("   - theme.name: {}", match_attrs.theme.name);

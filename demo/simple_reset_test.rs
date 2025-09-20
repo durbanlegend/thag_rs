@@ -16,7 +16,7 @@ use thag_styling::{ColorInitStrategy, Styleable, TermAttributes};
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Simple Reset Test ===\n");
 

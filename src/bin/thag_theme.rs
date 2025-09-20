@@ -25,7 +25,7 @@ fn main() {
     let help = auto_help!("thag_theme");
     check_help_and_exit(&help);
 
-    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let theme = &term_attrs.theme;
 
     print!("\t");

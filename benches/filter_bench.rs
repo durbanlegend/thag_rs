@@ -1,8 +1,9 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use lazy_static::lazy_static;
 use phf::phf_set;
 use regex::Regex;
 use std::collections::HashSet;
+use std::hint::black_box;
 
 // Approach 1: phf::Set with all terms
 static PHF_FILTER: phf::Set<&'static str> = phf_set! {

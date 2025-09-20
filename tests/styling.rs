@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use thag_rs::{Color, ColorSupport, Style, TermBgLuma};
-    use thag_styling::{ColorInitStrategy, TermAttributes};
+    use thag_styling::{TermAttributes, Theme};
 
     // Helper function to make ANSI sequences visible in test output
     fn debug_ansi(s: &str) -> String {
@@ -27,26 +27,34 @@ mod tests {
         );
     }
 
-    #[ignore = "because fails as runs second and you can only initialise once"]
     #[test]
     fn test_styling_term_attributes_init_default() {
-        // Test default initialization
-        let attrs = TermAttributes::initialize(&ColorInitStrategy::Default);
-        assert!(matches!(attrs.color_support, ColorSupport::Basic));
-        assert!(matches!(attrs.theme.term_bg_luma, TermBgLuma::Dark));
+        // Test default initialization using context pattern
+        let theme = Theme::get_builtin("basic_dark").unwrap();
+        let attrs = TermAttributes::for_testing(ColorSupport::Basic, None, TermBgLuma::Dark, theme);
+        attrs.with_context(|| {
+            let current_attrs = TermAttributes::current();
+            assert!(matches!(current_attrs.color_support, ColorSupport::Basic));
+            assert!(matches!(current_attrs.theme.term_bg_luma, TermBgLuma::Dark));
+        });
     }
 
     #[test]
     fn test_styling_term_attributes_init_config() {
-        // Test explicit configuration
-        let attrs = TermAttributes::initialize(&ColorInitStrategy::Configure(
-            ColorSupport::Color256,
-            TermBgLuma::Light,
-            None,
-        ));
-        eprintln!("attrs={attrs:#?}");
-        eprintln!("attrs.color_support={0:#?}", attrs.color_support);
-        assert!(matches!(attrs.color_support, ColorSupport::Color256));
-        assert!(matches!(attrs.theme.term_bg_luma, TermBgLuma::Light));
+        // Test explicit configuration using context pattern
+        let theme = Theme::get_builtin("github").unwrap();
+        let attrs =
+            TermAttributes::for_testing(ColorSupport::Color256, None, TermBgLuma::Light, theme);
+        attrs.with_context(|| {
+            let current_attrs = TermAttributes::current();
+            assert!(matches!(
+                current_attrs.color_support,
+                ColorSupport::Color256
+            ));
+            assert!(matches!(
+                current_attrs.theme.term_bg_luma,
+                TermBgLuma::Light
+            ));
+        });
     }
 }

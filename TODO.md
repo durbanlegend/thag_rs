@@ -7,13 +7,9 @@
 - [ ]  Tools auto_help to accept file!() rather than name as string literal?
 - [ ]  DONE: Convert all inquire interfaces to use theming.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
-- [ ]  DONE: Demo script for styled! proc macro using thag_styling?
 - [ ]  Incorporate bank/rata.rs example?
-- [ ]  DONE: Debug success, emphasis, code and subtle all getting the same colour.
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
-- [ ]  DONE Force light or dark in theme name in src/bin/thag_image_to_theme.rs?
 - [ ]  thag_styling README.
-- [ ]  DONE Fix thag_palette_vs_theme bad display in Apple Terminal and other 256
 - [ ]  Test truecolor tests on mintty.
 - [ ]  Replace current TrueColor detection (supports-color crate) by truecolor_test.rs logic.
 - [ ]  Theme conversion or loading - consider improving contrast on palette colours where necessary.
@@ -23,6 +19,8 @@
 - [ ]  Get rid of terminal::get_fresh_color_support.
 
 Option 1 makes sense, but the implementation step `2. Add a method to get current `ColorSupport`` raises an issue. I think we need to review how we are doing that. Assuming the `color_detect` feature is active, and that we call styling::TermAttributes::initialize(ColorInitStrategy::Match), this function gets the ColorSupport variant by calling detect_term_capabilities on thag_common/src/terminal.rs and stores it in the color_support field of the static TermAttributes struct instance being constructed. We have also recently added fn terminal::get_fresh_color_support to support dynamic querying. I'm not sure we actually have a good use case for this, and it gives a second version of the truth, which is not great. So I'm reminded to get the applicable ColorSupport variant thus: `TermAttributes::get_or_init().color_support`, and have accordingly commented out and replaced line 438 of src/bin/thag_palette_vs_theme.rs by lines 439f since your response.
+
+I don't know if that might being it into conflict with thag_profiler, which has some potential incompatibilities with thread-locals. (Although I've created and tested bank/thag_palette_vs_theme.rs full profiling without issue.)
 
 cargo test -p thag_proc_macros
 failures:

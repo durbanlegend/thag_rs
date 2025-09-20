@@ -22,7 +22,7 @@ use thag_styling::{ColorInitStrategy, Role, Styleable, Styler, TermAttributes};
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Enhanced Reset Replacement with Text Attributes Test ===\n");
 

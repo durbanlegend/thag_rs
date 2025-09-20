@@ -17,7 +17,7 @@ use thag_styling::{ColorInitStrategy, PaletteSync, TermAttributes, Theme};
 
 fn main() {
     // Initialize thag_styling system
-    TermAttributes::initialize(&ColorInitStrategy::Default);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Default);
 
     let args: Vec<String> = env::args().collect();
 

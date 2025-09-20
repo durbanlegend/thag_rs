@@ -187,7 +187,7 @@ fn test_theme_conversion_no_longer_needed() -> StylingResult<()> {
 
 fn main() -> StylingResult<()> {
     // Initialize terminal attributes
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     test_original_problem_scenario()?;
     println!();

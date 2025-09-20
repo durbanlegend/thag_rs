@@ -11,7 +11,7 @@ fn main() {
 
     // Initialize styling
     let strategy = ColorInitStrategy::Default;
-    let _attrs = TermAttributes::initialize(&strategy);
+    let _attrs = TermAttributes::get_or_init_with_strategy(&strategy);
 
     // Get themes for demonstration - use fallback if specific themes not available
     let dark_theme = Theme::get_builtin("basic_dark")

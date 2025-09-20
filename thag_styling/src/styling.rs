@@ -11,7 +11,7 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, IntoEnumIterator};
-use thag_common::{lazy_static_var, vprtln, ColorSupport, TermBgLuma, V};
+use thag_common::{vprtln, ColorSupport, TermBgLuma, V};
 use thag_proc_macros::{preload_themes, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
@@ -424,7 +424,7 @@ impl Style {
         let mut reset_string: String = String::new();
 
         if let Some(color_info) = &self.foreground {
-            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
+            let ansi = color_info.to_ansi_for_support(TermAttributes::current().color_support);
             result.push_str(&ansi);
             needs_reset = true;
             full_reset = true;
@@ -480,7 +480,7 @@ impl Style {
     #[must_use]
     /// Get the `Style` for a `Role` from the currently loaded theme.
     pub fn for_role(role: Role) -> Self {
-        TermAttributes::get_or_init().theme.style_for(role)
+        TermAttributes::current().theme.style_for(role)
     }
 
     /// Generate only the ANSI codes for this style without any content or reset
@@ -792,52 +792,50 @@ impl ColorInitStrategy {
     /// - With config only: Uses `Configure` or `Match` based on configuration completeness
     /// - No features: Uses `Default` strategy
     #[must_use]
-    pub fn determine() -> &'static Self {
-        lazy_static_var!(ColorInitStrategy, {
-            // `color_detect` feature overrides configured colour support.
-            #[cfg(feature = "color_detect")]
-            let strategy = if std::env::var("TEST_ENV").is_ok() {
-                #[cfg(debug_assertions)]
-                debug_log!("Avoiding colour detection for testing");
-                Self::Default
-            } else {
-                // Use unified auto-detection for all platforms including Windows
-                Self::Match
-            };
+    pub fn determine() -> Self {
+        // `color_detect` feature overrides configured colour support.
+        #[cfg(feature = "color_detect")]
+        let strategy = if std::env::var("TEST_ENV").is_ok() {
+            #[cfg(debug_assertions)]
+            debug_log!("Avoiding colour detection for testing");
+            Self::Default
+        } else {
+            // Use unified auto-detection for all platforms including Windows
+            Self::Match
+        };
 
-            #[cfg(all(not(feature = "color_detect"), feature = "config"))]
-            let strategy = if std::env::var("TEST_ENV").is_ok() {
-                #[cfg(debug_assertions)]
-                debug_log!("Avoiding colour detection for testing");
-                Self::Default
-            } else if let Some(config) = maybe_config() {
-                match (
+        #[cfg(all(not(feature = "color_detect"), feature = "config"))]
+        let strategy = if std::env::var("TEST_ENV").is_ok() {
+            #[cfg(debug_assertions)]
+            debug_log!("Avoiding colour detection for testing");
+            Self::Default
+        } else if let Some(config) = maybe_config() {
+            match (
+                config.styling.color_support,
+                config.styling.term_bg_luma,
+                config.styling.term_bg_rgb,
+            ) {
+                (ColorSupport::Undetermined, _, _)
+                | (_, TermBgLuma::Undetermined, _)
+                | (_, _, None) => Self::Configure(
                     config.styling.color_support,
                     config.styling.term_bg_luma,
                     config.styling.term_bg_rgb,
-                ) {
-                    (ColorSupport::Undetermined, _, _)
-                    | (_, TermBgLuma::Undetermined, _)
-                    | (_, _, None) => Self::Configure(
-                        config.styling.color_support,
-                        config.styling.term_bg_luma,
-                        config.styling.term_bg_rgb,
-                    ),
-                    _ => Self::Match,
-                }
-            } else {
-                Self::Default
-            };
+                ),
+                _ => Self::Match,
+            }
+        } else {
+            Self::Default
+        };
 
-            #[cfg(all(not(feature = "color_detect"), not(feature = "config")))]
-            let strategy = Self::Default;
+        #[cfg(all(not(feature = "color_detect"), not(feature = "config")))]
+        let strategy = Self::Default;
 
-            strategy
-        })
+        strategy
     }
 }
 
-#[derive(Debug, Display)]
+#[derive(Clone, Debug, Display)]
 /// Indicates how terminal attributes were initialized
 pub enum HowInitialized {
     /// Attributes were explicitly configured by the user
@@ -849,8 +847,11 @@ pub enum HowInitialized {
 }
 
 /// Manages terminal color attributes and styling based on terminal capabilities and theme
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+/// The complete styling attributes for terminal output
 pub struct TermAttributes {
+    /// The initialization strategy used
+    pub init_strategy: ColorInitStrategy,
     /// Indicates how the terminal attributes were initialized (configured, defaulted, or detected)
     pub how_initialized: HowInitialized,
     /// The level of color support available in the terminal
@@ -861,7 +862,7 @@ pub struct TermAttributes {
     pub term_bg_rgb: Option<(u8, u8, u8)>,
     /// The luminance (light/dark) of the terminal background
     pub term_bg_luma: TermBgLuma,
-    /// The currently loaded theme containing color palette and styling information
+    /// The theme used for styling text and interface elements
     pub theme: Theme,
 }
 
@@ -875,6 +876,11 @@ thread_local! {
     static THEME_CONTEXT: std::cell::RefCell<Option<Theme>> = const { std::cell::RefCell::new(None) };
 }
 
+thread_local! {
+    /// Thread-local storage for TermAttributes context override
+    static TERM_ATTRIBUTES_CONTEXT: std::cell::RefCell<Option<TermAttributes>> = const { std::cell::RefCell::new(None) };
+}
+
 impl TermAttributes {
     /// Creates a new `TermAttributes` instance with specified support and theme
     #[allow(dead_code)]
@@ -885,6 +891,7 @@ impl TermAttributes {
         theme: Theme,
     ) -> Self {
         Self {
+            init_strategy: ColorInitStrategy::Default,
             how_initialized: HowInitialized::Defaulted,
             color_support,
             term_bg_hex: None,
@@ -894,23 +901,22 @@ impl TermAttributes {
         }
     }
 
-    /// Initialize terminal attributes based on the provided strategy.
+    /// Internal initialization method - use get_or_init() or get_or_init_with_strategy() instead
     ///
     /// This function initializes the terminal attributes singleton with color support
     /// and theme settings according to the specified strategy.
     ///
     /// # Arguments
-    /// * `strategy` - The initialization strategy to use (Configure, Default, or Detect)
+    /// * `strategy` - The color initialization strategy to use
     ///
     /// # Returns
     /// A reference to the initialized `TermAttributes` instance
     ///
     /// # Panics
-    /// Panics if:
     /// * Built-in theme loading fails (which should never happen with correct installation)
     /// * Theme conversion fails during initialization
     #[allow(clippy::too_many_lines)]
-    pub fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
+    fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
         let get_or_init = INSTANCE.get_or_init(|| -> Self {
             #[cfg(feature = "config")]
             let Some(_config) = maybe_config() else {
@@ -931,6 +937,7 @@ impl TermAttributes {
                     let theme = Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, support)
                         .expect("Failed to load theme");
                     Self {
+                        init_strategy: strategy.clone(),
                         how_initialized: HowInitialized::Configured,
                         color_support: support,
                         theme,
@@ -947,6 +954,7 @@ impl TermAttributes {
                         Theme::get_theme_runtime_or_builtin_with_color_support("basic_dark", ColorSupport::Basic)
                             .expect("Failed to load basic dark theme");
                     Self {
+                        init_strategy: strategy.clone(),
                         how_initialized: HowInitialized::Defaulted,
                         color_support: ColorSupport::Basic,
                         term_bg_hex: None,
@@ -994,6 +1002,7 @@ impl TermAttributes {
                             };
 
                             return Self {
+                                init_strategy: strategy.clone(),
                                 how_initialized: HowInitialized::Detected,
                                 color_support: *color_support,
                                 term_bg_hex,
@@ -1018,6 +1027,7 @@ impl TermAttributes {
                             Theme::auto_detect(*color_support, term_bg_luma, Some(term_bg_rgb_ref))
                                 .expect("Failed to auto-detect theme");
                         Self {
+                            init_strategy: strategy.clone(),
                             how_initialized: HowInitialized::Detected,
                             color_support: *color_support,
                             term_bg_hex,
@@ -1042,6 +1052,7 @@ impl TermAttributes {
                                     .expect("Failed to auto-detect theme")
                             };
                             Self {
+                                init_strategy: strategy.clone(),
                                 how_initialized: HowInitialized::Configured,
                                 color_support,
                                 term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)),
@@ -1056,6 +1067,7 @@ impl TermAttributes {
                             )
                             .expect("Failed to load basic dark theme");
                             Self {
+                                init_strategy: strategy.clone(),
                                 how_initialized: HowInitialized::Defaulted,
                                 color_support: ColorSupport::Basic,
                                 term_bg_hex: None,
@@ -1071,6 +1083,7 @@ impl TermAttributes {
                             Theme::get_theme_runtime_or_builtin_with_color_support("basic_dark", ColorSupport::Basic)
                                 .expect("Failed to load basic dark theme");
                         Self {
+                            init_strategy: strategy.clone(),
                             how_initialized: HowInitialized::Defaulted,
                             color_support: ColorSupport::Basic,
                             term_bg_hex: None,
@@ -1095,7 +1108,10 @@ impl TermAttributes {
         INSTANCE.get()
     }
 
-    /// Gets the `TermAttributes` instance, initializing if necessary.
+    /// Gets the `TermAttributes` instance, initializing with auto-determined strategy if necessary.
+    ///
+    /// This method uses `ColorInitStrategy::determine()` to automatically choose the best
+    /// initialization strategy based on available features and environment.
     ///
     /// If not already initialized:
     /// - With `color_detect` feature: performs auto-detection
@@ -1107,16 +1123,118 @@ impl TermAttributes {
     /// # Panics
     /// Panics if theme initialization fails
     pub fn get_or_init() -> &'static Self {
-        // eprintln!(
-        //     "strategy={strategy:?}. initialized={}",
-        //     Self::is_initialized()
-        // );
         if !Self::is_initialized() {
-            Self::initialize(ColorInitStrategy::determine());
+            Self::initialize(&ColorInitStrategy::determine());
         }
         // Safe to unwrap as we just checked/initialized it
-        // vprtln!(V::VV, "INSTANCE.get()={:?}", INSTANCE.get());
         INSTANCE.get().unwrap()
+    }
+
+    /// Execute a closure with a temporary TermAttributes context
+    /// This allows testing and temporary overrides without affecting the global state
+    pub fn with_context<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        TERM_ATTRIBUTES_CONTEXT.with(|context| {
+            let previous = context.borrow().clone();
+            *context.borrow_mut() = Some(self.clone());
+
+            let result = f();
+
+            *context.borrow_mut() = previous;
+            result
+        })
+    }
+
+    /// Gets the current context, falling back to the global instance if no context is set
+    pub fn current() -> Self {
+        TERM_ATTRIBUTES_CONTEXT.with(|context| {
+            if let Some(ctx) = context.borrow().as_ref() {
+                ctx.clone()
+            } else {
+                Self::get_or_init().clone()
+            }
+        })
+    }
+
+    /// Initialize with a specific strategy, for testing and special cases
+    ///
+    /// Returns Ok if successfully initialized or if already initialized with a compatible strategy.
+    /// Returns Err if already initialized with an incompatible strategy.
+    ///
+    /// # Arguments
+    /// * `strategy` - The specific ColorInitStrategy to use
+    ///
+    /// # Returns
+    /// * `Ok(&'static Self)` - Reference to the TermAttributes instance
+    /// * `Err(String)` - Error message if incompatible strategy already used
+    pub fn try_initialize_with_strategy(
+        strategy: ColorInitStrategy,
+    ) -> Result<&'static Self, String> {
+        if let Some(existing) = INSTANCE.get() {
+            if std::mem::discriminant(&existing.init_strategy) != std::mem::discriminant(&strategy)
+            {
+                return Err(format!(
+                    "TermAttributes already initialized with strategy {:?}, cannot reinitialize with {:?}",
+                    existing.init_strategy, strategy
+                ));
+            }
+            return Ok(existing);
+        }
+        Ok(Self::initialize(&strategy))
+    }
+
+    /// Gets or initializes TermAttributes with the specified strategy
+    ///
+    /// This method initializes TermAttributes with the given strategy if not already initialized,
+    /// or returns the existing instance if already initialized (regardless of the original strategy).
+    ///
+    /// This is the recommended method when you need a specific initialization strategy.
+    ///
+    /// # Arguments
+    /// * `strategy` - The ColorInitStrategy to use for initialization
+    ///
+    /// # Returns
+    /// Reference to the TermAttributes instance
+    ///
+    /// # Panics
+    /// Panics if theme initialization fails
+    pub fn get_or_init_with_strategy(strategy: &ColorInitStrategy) -> &'static Self {
+        if !Self::is_initialized() {
+            Self::initialize(strategy)
+        } else {
+            INSTANCE.get().unwrap()
+        }
+    }
+
+    /// Check if TermAttributes can be initialized with a given strategy.
+    /// This is useful for testing to verify strategy compatibility.
+    #[cfg(test)]
+    pub fn can_initialize_with_strategy(strategy: &ColorInitStrategy) -> bool {
+        if let Some(existing) = INSTANCE.get() {
+            std::mem::discriminant(&existing.init_strategy) == std::mem::discriminant(strategy)
+        } else {
+            true
+        }
+    }
+
+    /// Creates a new TermAttributes instance for testing purposes
+    pub fn for_testing(
+        color_support: ColorSupport,
+        term_bg_rgb: Option<(u8, u8, u8)>,
+        term_bg_luma: TermBgLuma,
+        theme: Theme,
+    ) -> Self {
+        Self {
+            init_strategy: ColorInitStrategy::Default,
+            how_initialized: HowInitialized::Defaulted,
+            color_support,
+            term_bg_hex: term_bg_rgb.map(|rgb| rgb_to_hex(&rgb)),
+            term_bg_rgb,
+            term_bg_luma,
+            theme,
+        }
     }
 
     /// Updates the current theme to the specified built-in theme.
@@ -2777,7 +2895,7 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
 /// Returns any errors encountered.
 #[allow(dead_code)]
 pub fn main() -> StylingResult<()> {
-    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let color_support = term_attrs.color_support;
     let theme = &term_attrs.theme;
     let header_style = Style::for_role(Role::Normal).underline();
@@ -2843,7 +2961,7 @@ pub fn main() -> StylingResult<()> {
     println!();
 
     // Section 4: Current terminal color palette
-    let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+    let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
     let theme = &term_attrs.theme;
     // let user_config = maybe_config();
     // let current = user_config.clone().unwrap_or_default();
@@ -3110,7 +3228,7 @@ pub fn display_theme_details(theme: &Theme) {
 /// # Examples
 /// ```
 /// use thag_styling::{display_terminal_attributes, ColorInitStrategy, TermAttributes};
-/// let term_attrs = TermAttributes::initialize(&ColorInitStrategy::Match);
+/// let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 /// let theme = &term_attrs.theme;
 /// display_terminal_attributes(theme);
 /// ```

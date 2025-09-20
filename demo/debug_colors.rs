@@ -19,7 +19,7 @@ use thag_styling::{ColorInitStrategy, Role, Styleable, TermAttributes};
 
 fn main() {
     // Initialize styling system
-    TermAttributes::initialize(&ColorInitStrategy::Match);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
 
     println!("=== Color Debug Demo ===\n");
 

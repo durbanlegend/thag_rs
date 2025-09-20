@@ -16,7 +16,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     // Initialize thag_styling system
-    TermAttributes::initialize(&ColorInitStrategy::Default);
+    TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Default);
 
     match args.get(1).map(String::as_str) {
         Some("apply") => {

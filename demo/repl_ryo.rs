@@ -1407,7 +1407,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
 
     // Initialize TermAttributes for message styling
     let strategy = ColorInitStrategy::determine();
-    TermAttributes::initialize(strategy);
+    TermAttributes::get_or_init_with_strategy(&strategy);
 
     let proc_flags = get_proc_flags(args)?;
 

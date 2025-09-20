@@ -69,7 +69,7 @@ use std::{
 };
 use thag_common::{self, debug_log, re, vprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, paint_for_role, ColorInitStrategy, TermAttributes};
+use thag_styling::{cvprtln, paint_for_role, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -537,8 +537,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     let start = Instant::now();
 
     // Initialize TermAttributes for message styling
-    let strategy = ColorInitStrategy::determine();
-    TermAttributes::initialize(strategy);
+    TermAttributes::get_or_init();
 
     let proc_flags = get_proc_flags(args)?;
 

@@ -633,9 +633,9 @@ fn show_usage_instructions(added_schemes: &[(String, String)]) {
     }
 
     println!("\n💡 {} to Use:", "How".info());
-    println!(r#"1. Ensure your `thag_styling` theme is set to match.
-E.g. `$env:THAG_THEME = <corresponding thag_styling theme>"#` in your `PowerShell` profile file.
-or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal));
+    println!("1. Ensure your `thag_styling` theme is set to match.");
+    println!("   E.g. `$env:THAG_THEME = <corresponding thag_styling theme>` in your `PowerShell` profile file.");
+    println!("   or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal)");
     println!("2. Open Windows Terminal");
     println!("3. Open Settings (Ctrl+,)");
     println!("4. Go to Profiles → Defaults (or specific profile)");

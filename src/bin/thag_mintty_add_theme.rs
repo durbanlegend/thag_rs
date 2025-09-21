@@ -452,9 +452,9 @@ fn show_installation_summary(installed_themes: &[(String, String)]) {
 fn show_usage_instructions() {
     println!("🔧 How to use your new themes:");
     println!("{}", "▁".repeat(40));
-    println!(r#"1. Ensure your `thag_styling` theme is set to match.
-E.g. `export THAG_THEME=<corresponding thag_styling theme>"#` in `~/.bashrc` or `~/.zshrc`
-or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal));
+    println!("1. Ensure your `thag_styling` theme is set to match.");
+    println!("   E.g. `export THAG_THEME=<corresponding thag_styling theme>` in `~/.bashrc` or `~/.zshrc`");
+    println!("   or as preferred light/dark theme via `thag -C` (ensure background color of `thag_styling` theme matches that of terminal)");
     println!("2. Open Git Bash (Mintty)");
     println!("3. Right-click on the title bar and select 'Options...'");
     println!("4. Go to the 'Looks' tab");

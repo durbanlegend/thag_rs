@@ -11,25 +11,25 @@ keywords = ["styling", "terminal", "themes", "colors", "ansi"]
 rust-version = "1.82"
 
 [dependencies]
-log = "0.4.27"
-nu-ansi-term = { version = "0.50.1", optional = true }
+log = "0.4"
+nu-ansi-term = { version = "0.50", optional = true }
 phf = { version = "0.12", features = ["macros"] }
-regex = "1.11.1"
-serde = { version = "1.0.219", features = ["derive"] }
+regex = "1.11"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 strum = { version = "0.27", features = ["derive", "phf"] }
-thag_common = { path = "../thag_common", version = "0.2.0" }
+thag_common = { path = "../thag_common", version = "0.2" }
 thag_proc_macros = { path = "../thag_proc_macros", version = "0.2" }
 thiserror = "2.0"
 toml = "0.9"
 
 # Optional dependencies for advanced features
-console = { version = "0.15.8", optional = true }
-crossterm = { version = "0.28.1", optional = true }
-inquire = { version = "0.8", optional = true }
-ratatui = { version = "0.29.0", optional = true }
-scopeguard = { version = "1.2.0", optional = true }
-termbg = { version = "0.6.2", optional = true }
+console = { version = "0.16", optional = true }
+crossterm = { version = "0.28", optional = true }
+inquire = { version = "0.9", optional = true }
+ratatui = { version = "0.29", optional = true }
+scopeguard = { version = "1.2", optional = true }
+termbg = { version = "0.6", optional = true }
 
 # Image processing dependencies for theme generation
 image = { version = "0.25", optional = true }
@@ -41,7 +41,7 @@ palette = { version = "0.7", optional = true }
 phf = { version = "0.12", features = ["macros"] }
 tempfile = "3.20"
 thag_proc_macros = { path = "../thag_proc_macros", version = "0.2" }
-toml = "0.9.0"
+toml = "0.9"
 
 [features]
 default = ["color_detect"]
@@ -101,10 +101,10 @@ name = "thag_styling"
 path = "src/lib.rs"
 
 [dev-dependencies]
-crossterm = "0.28.1"
-ratatui = "0.29.0"
-serial_test = "3.2.0"
-supports-color = "3.0.2"
+crossterm = "0.28"
+ratatui = "0.29"
+serial_test = "3.2"
+supports-color = "3.0"
 
 [lints.clippy]
 uninlined_format_args = "allow"

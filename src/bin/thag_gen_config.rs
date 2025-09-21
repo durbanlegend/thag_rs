@@ -21,7 +21,7 @@ toml = "0.8"
 /// using a text editor.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
-use convert_case::{Converter, Pattern};
+use convert_case::{pattern, Converter};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::{
     error::CustomUserError,
@@ -720,7 +720,7 @@ fn prompt_dependencies_config(
                         _ => {
                             let conv = Converter::new()
                                 .set_delim(" ")
-                                .set_pattern(Pattern::Sentence);
+                                .set_pattern(pattern::sentence);
                             println!(
                                 "  {:<width$}: {doc}",
                                 conv.convert(field_name),

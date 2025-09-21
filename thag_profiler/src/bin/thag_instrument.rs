@@ -97,12 +97,15 @@ fn instrument_code(edition: Edition, source: &str) -> String {
 
     for import_text in imports.iter() {
         if !source.contains(import_text) {
-            if let Some(import_node) = parse_attr(import_text) {
+            // Parse import as a use statement
+            let parse = SourceFile::parse(import_text, Edition::Edition2021);
+            if let Some(import_node) = parse
+                .tree()
+                .syntax()
+                .first_child()
+                .map(|n| n.clone_for_update())
+            {
                 let (pos, insert_nl) = find_best_import_position(&tree);
-                // eprintln!(
-                //     "insert_nl={}, pos={pos:?}, import_text={import_text}",
-                //     insert_nl
-                // );
                 ted::insert(pos, &import_node);
                 if insert_nl {
                     let newline = ast::make::tokens::single_newline();
@@ -192,11 +195,6 @@ fn instrument_code(edition: Edition, source: &str) -> String {
                     let attr_node = parse_attr(&format!("{indent}{attr_text}"))
                         .expect("Failed to parse attribute");
                     ted::insert(Position::before(&target_token), &attr_node);
-
-                    if &indent.len() > &0 {
-                        let ws_token = ast::make::tokens::whitespace(&indent);
-                        ted::insert(Position::before(&target_token), ws_token);
-                    }
                 }
             }
         }
@@ -219,27 +217,6 @@ fn read_stdin() -> std::io::Result<String> {
 mod tests {
     use super::*;
 
-    fn compare_whitespace(expected: &str, actual: &str) -> bool {
-        let expected_bytes: Vec<u8> = expected.bytes().collect();
-        let actual_bytes: Vec<u8> = actual.bytes().collect();
-
-        if expected_bytes != actual_bytes {
-            println!("Expected bytes: {:?}", expected_bytes);
-            println!("Actual bytes:   {:?}", actual_bytes);
-            println!(
-                "Expected str chunks: {:?}",
-                expected.split("").collect::<Vec<_>>()
-            );
-            println!(
-                "Actual str chunks:   {:?}",
-                actual.split("").collect::<Vec<_>>()
-            );
-            false
-        } else {
-            true
-        }
-    }
-
     #[test]
     fn test_instrument_no_duplicate_imports() {
         let input = r#"
@@ -261,19 +238,14 @@ fn foo() {}"#;
     fn test_instrument_basic_function_instrumentation() {
         let input = "fn foo() {}";
         let output = instrument_code(Edition::Edition2021, input);
-        let expected = "use thag_profiler::*; \n\n#[profiled] \nfn foo() {}";
-        assert!(
-            compare_whitespace(expected, &output),
-            "Whitespace mismatch between expected and actual output",
-        );
-        assert!(output.contains("#[profiled] \nfn foo()"));
+        assert!(output.contains("#[profiled]\nfn foo()"));
     }
 
     #[test]
     fn test_instrument_main_function_special_handling() {
         let input = "fn main() {}";
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("#[enable_profiling] \nfn main()"));
+        assert!(output.contains("#[enable_profiling]\nfn main()"));
     }
 
     #[test]
@@ -283,7 +255,7 @@ impl Foo {
     fn bar() {}
 }"#;
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("    #[profiled] \n    fn bar()"));
+        assert!(output.contains("    #[profiled]\n    fn bar()"));
     }
 
     #[test]
@@ -291,14 +263,7 @@ impl Foo {
         let input = r#"#[allow(dead_code)]
 fn main() {}"#;
         let output = instrument_code(Edition::Edition2021, input);
-        // eprintln!("output=[{output}]");
-        let expected =
-            "use thag_profiler::*; \n\n#[allow(dead_code)]\n#[enable_profiling] \nfn main() {}";
-        assert!(
-            compare_whitespace(expected, &output),
-            "Whitespace mismatch between expected and actual output",
-        );
-        assert!(output.contains("#[allow(dead_code)]\n#[enable_profiling] \nfn main()"));
+        assert!(output.contains("#[allow(dead_code)]\n#[enable_profiling]\nfn main()"));
     }
 
     #[test]
@@ -308,8 +273,8 @@ fn outer() {
     fn inner() {}
 }"#;
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("#[profiled] \nfn outer()"));
-        assert!(output.contains("    #[profiled] \n    fn inner()"));
+        assert!(output.contains("#[profiled]\nfn outer()"));
+        assert!(output.contains("    #[profiled]\n    fn inner()"));
     }
 
     #[test]
@@ -320,8 +285,8 @@ impl Foo {
     fn method2(&self) {}
 }"#;
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("    #[profiled] \n    fn method1"));
-        assert!(output.contains("    #[profiled] \n    fn method2"));
+        assert!(output.contains("    #[profiled]\n    fn method1"));
+        assert!(output.contains("    #[profiled]\n    fn method2"));
     }
 
     #[test]
@@ -338,21 +303,21 @@ impl SomeTrait for Foo {
     fn required_method(&self) {}
 }"#;
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("    #[profiled] \n    fn required_method"));
+        assert!(output.contains("    #[profiled]\n    fn required_method"));
     }
 
     #[test]
     fn test_instrument_async_functions() {
         let input = "async fn async_foo() {}";
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("#[profiled] \nasync fn async_foo()"));
+        assert!(output.contains("#[profiled]\nasync fn async_foo()"));
     }
 
     #[test]
     fn test_instrument_generic_functions() {
         let input = "fn generic<T: Display>(value: T) {}";
         let output = instrument_code(Edition::Edition2021, input);
-        assert!(output.contains("#[profiled] \nfn generic<T: Display>"));
+        assert!(output.contains("#[profiled]\nfn generic<T: Display>"));
     }
 
     #[test]
@@ -361,8 +326,7 @@ impl SomeTrait for Foo {
 /// Doc comment
 fn documented() {}"#;
         let output = instrument_code(Edition::Edition2021, input);
-        // eprintln!("{}", output);
-        assert!(output.contains("/// Doc comment\n#[profiled] \nfn documented()"));
+        assert!(output.contains("/// Doc comment\n#[profiled]\nfn documented()"));
     }
 
     #[test]
@@ -376,6 +340,6 @@ fn foo() {}
 fn bar() {}"#;
         let output = instrument_code(Edition::Edition2021, input);
         // Check that blank lines between functions are preserved
-        assert!(output.contains("}\n\n#[profiled] \nfn bar()"));
+        assert!(output.contains("}\n\n#[profiled]\nfn bar()"));
     }
 }

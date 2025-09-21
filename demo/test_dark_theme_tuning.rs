@@ -11,7 +11,8 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 //# Categories: color, styling, terminal, theming, tools
 use std::path::Path;
 use thag_styling::{
-    styling::rgb_to_hex, ImageThemeConfig, ImageThemeGenerator, StylingResult, TermBgLuma,
+    styling::rgb_to_hex, ImageThemeConfig, ImageThemeGenerator, Style, StylingResult,
+    TermAttributes, TermBgLuma,
 };
 
 fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> StylingResult<()> {
@@ -23,13 +24,28 @@ fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> Styli
     match generator.generate_from_file(image_path) {
         Ok(theme) => {
             // Show the palette colours
+            let (r, g, b) = theme.bg_rgbs[0];
+            println!(
+                "{}",
+                Style::with_rgb([r, g, b]).paint(format!(
+                    "Background:  ■■■■■ {} = ({r:>3},{g:>3},{b:>3})",
+                    rgb_to_hex(&(r, g, b))
+                ))
+            );
+            let color_support = TermAttributes::get_or_init().color_support;
             theme.palette.iter().for_each(|(style_name, style)| {
                 if let Some([r, g, b]) = style.rgb() {
                     println!(
                         "{}",
                         style.paint(format!(
-                            "{style_name:<12} ■■■■■ {} = ({r:>3},{g:>3},{b:>3})",
-                            rgb_to_hex(&(r, g, b))
+                            "{style_name:<12} ■■■■■ {} = ({r:>3},{g:>3},{b:>3}, color_support={color_support}, ansi={})",
+                            rgb_to_hex(&(r, g, b)),
+
+                            &style
+                                .foreground
+                                .as_ref()
+                                .unwrap()
+                                .to_ansi_for_support(color_support)
                         ))
                     );
                 }

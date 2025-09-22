@@ -1,31 +1,21 @@
-use cargo_lookup::{Query, Result};
-use std::collections::BTreeMap;
-use std::env;
+use cargo_lookup::{Query, Package, Release, Result};
 
-/// Explore querying crates.io information for a crate.
-///
-/// Format: `thag demo/cargo_lookup.rs -- <crate_name>`
-//# Purpose: Proof of concept
-//# Categories: crates, technique
-//# Sample arguments: `-- serde`
+fn highest_release(pkg: &Package) -> Option<&Release> {
+    pkg.releases()
+        .iter()
+        .filter(|r| !r.yanked)
+        .max_by_key(|r| r.vers.clone()) // vers is already semver::Version
+}
+
 fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <crate_name>", args[0]);
-        std::process::exit(1);
-    }
+    // Create a Query from the crate name
+    let query: Query = "inquire".parse()?;
+    let pkg: Package = query.package()?;  // fetch the package info
 
-    let query: Query = args[1].parse()?;
-    let latest = query.package()?.into_latest().unwrap();
-    println!("version={}", latest.vers);
-
-    let features: BTreeMap<String, Vec<String>> = latest.features;
-    let maybe_features2: Option<BTreeMap<String, Vec<String>>> = latest.features2;
-
-    // println!("features={features:?}");
-    println!("features={:?}", features.keys());
-    if let Some(features2) = maybe_features2 {
-        println!("features2={:?}", features2.keys());
+    if let Some(best) = highest_release(&pkg) {
+        println!("{} = \"{}\"", pkg.name(), best.vers);
+    } else {
+        println!("No non-yanked versions found for {}", pkg.name());
     }
 
     Ok(())

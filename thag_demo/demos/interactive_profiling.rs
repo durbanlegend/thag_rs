@@ -304,34 +304,34 @@ fn show_insights(functions: &[(String, u128)], _total_duration_us: u128) {
     println!("💡 Performance Insights:");
     println!("─────────────────────");
 
-    if functions.len() >= 2 {
-        let slowest = &functions[0];
-        let fastest = &functions[functions.len() - 1];
+    // if functions.len() >= 2 {
+    //     let slowest = &functions[0];
+    //     let fastest = &functions[functions.len() - 1];
 
-        if fastest.1 > 0 {
-            let speedup = slowest.1 as f64 / fastest.1 as f64;
-            println!(
-                "🐌 Slowest: {} ({:.3}ms)",
-                slowest.0,
-                slowest.1 as f64 / 1000.0
-            );
-            println!(
-                "🚀 Fastest: {} ({:.3}ms)",
-                fastest.0,
-                fastest.1 as f64 / 1000.0
-            );
-            println!("⚡ Speedup: {:.1}x faster", speedup);
+    //     if fastest.1 > 0 {
+    //         let speedup = slowest.1 as f64 / fastest.1 as f64;
+    //         println!(
+    //             "🐌 Slowest: {} ({:.3}ms)",
+    //             slowest.0,
+    //             slowest.1 as f64 / 1000.0
+    //         );
+    //         println!(
+    //             "🚀 Fastest: {} ({:.3}ms)",
+    //             fastest.0,
+    //             fastest.1 as f64 / 1000.0
+    //         );
+    //         println!("⚡ Speedup: {:.1}x faster", speedup);
 
-            if speedup > 100.0 {
-                println!("🎯 Huge performance difference! Algorithm choice matters!");
-            }
-        }
-    }
+    //         if speedup > 100.0 {
+    //             println!("🎯 Huge performance difference! Algorithm choice matters!");
+    //         }
+    //     }
+    // }
 
     // Look for patterns
-    let has_recursive = functions.iter().any(|(name, _)| name.contains("recursive"));
+    let has_recursive = functions.iter().any(|(name, _)| name.contains("recurs"));
     let has_cached = functions.iter().any(|(name, _)| name.contains("cached"));
-    let has_iterative = functions.iter().any(|(name, _)| name.contains("iterative"));
+    let has_iterative = functions.iter().any(|(name, _)| name.contains("iter"));
 
     if has_recursive && has_cached {
         println!("🔧 Tip: Caching transforms exponential algorithms into linear ones!");
@@ -386,7 +386,7 @@ fn generate_flamegraph(
         println!("⚠️  Could not open browser automatically: {}", e);
         println!("💡 You can manually open: {}", svg_path);
     } else {
-        println!("🌐 Flamegraph opened in your default browser!");
+        println!("🌐 Flamegraph opened in your default browser");
         println!("🔍 Hover over and click on the bars to explore the performance visualization");
         println!("📊 Function width = time spent, height = call stack depth");
     }

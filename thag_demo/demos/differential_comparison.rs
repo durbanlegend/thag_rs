@@ -960,7 +960,7 @@ fn generate_and_show_differential_flamegraph() -> Result<(), Box<dyn std::error:
         println!("⚠️  Could not open browser automatically: {}", e);
         println!("💡 You can manually open: {}", output_path);
     } else {
-        println!("🌐 Differential flamegraph opened in your default browser!");
+        println!("🌐 Differential flamegraph opened in your default browser");
         println!(
             "🔍 Red bars show functions that got slower, blue bars show functions that got faster"
         );

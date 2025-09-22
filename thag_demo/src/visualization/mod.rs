@@ -192,6 +192,7 @@ pub fn show_interactive_prompt(
         AnalysisType::Single => {
             println!("🎯 Would you like to view an interactive flamechart?");
             println!("This will generate a visual flamechart and open it in your browser.");
+            println!("Note that your reaction time will appear as the `await_enter` function.");
         }
         AnalysisType::Differential {
             ref before_name,
@@ -255,7 +256,7 @@ fn generate_and_show_single_visualization(
         println!("⚠️  Could not open browser automatically: {e}");
         println!("💡 You can manually open: {output_path}");
     } else {
-        println!("🌐 Flamechart opened in your default browser!");
+        println!("🌐 Flamechart opened in your default browser");
         println!("🔍 Hover over and click on the bars to explore the performance visualization");
         println!("📊 Function width = time spent, height = call stack depth");
     }
@@ -308,7 +309,7 @@ fn generate_and_show_differential_visualization(
         println!("⚠️  Could not open browser automatically: {e}");
         println!("💡 You can manually open: {output_path}");
     } else {
-        println!("🌐 Differential comparison opened in your default browser!");
+        println!("🌐 Differential comparison opened in your default browser");
         println!(
             "🔍 Red bars show functions that got slower, blue bars show functions that got faster"
         );

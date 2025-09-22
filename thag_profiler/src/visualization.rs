@@ -190,8 +190,9 @@ pub fn analyze_profile(
                 // Extract function names from the stack
                 let functions: Vec<&str> = stack.split(';').collect();
 
-                // Skip root function
-                for &func_name in &functions[1..] {
+                // Skip root function if profiled
+                let n = if functions.len() > 1 { 1 } else { 0 };
+                for &func_name in &functions[n..] {
                     let clean_name = clean_function_name(func_name);
                     // eprintln!("clean_name={clean_name}, value={value}");
                     *function_value_map.entry(clean_name).or_insert(0) += value;
@@ -287,7 +288,7 @@ pub fn display_analysis(profile_type: ProfileType, analysis: &ProfileAnalysis) {
     for insight in &analysis.insights {
         println!("{}", insight);
     }
-    println!();
+
     let _ = std::io::stdout().flush();
 }
 
@@ -547,7 +548,7 @@ fn generate_and_show_flamegraph(
         ..Default::default()
     };
     let output_path = format!("{demo_name}_{profile_type}_{analysis_type_lower}.svg");
-    eprintln!("\nprofile_type={profile_type}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
+    eprintln!("profile_type={profile_type}, analysis_type_lower={analysis_type_lower}, output_path={output_path}\n");
     generate_flamegraph_from_file(&files[0], &output_path, config)?;
     println!("✅ {profile_type_title} {analysis_type} generated: {output_path}");
 
@@ -555,7 +556,7 @@ fn generate_and_show_flamegraph(
         println!("⚠️ Could not open browser automatically: {e}");
         println!("💡 You can manually open: {output_path}");
     } else {
-        println!("🌐 {profile_type_title} {analysis_type} opened in your default browser!");
+        println!("🌐 {profile_type_title} {analysis_type} opened in your default browser");
         println!(
             "🔍 Hover over and click on the bars to explore {}",
             metric_desc
@@ -638,34 +639,34 @@ fn generate_insights(
     };
     let mut insights = Vec::new();
 
-    if functions.len() >= 2 {
-        let biggest = &functions[0];
-        let smallest = &functions[functions.len() - 1];
+    // if functions.len() >= 2 {
+    //     let biggest = &functions[0];
+    //     let smallest = &functions[functions.len() - 1];
 
-        if smallest.1 > 0 {
-            let ratio = biggest.1 as f64 / smallest.1 as f64;
-            insights.push(format!(
-                "🐌 {greatest_desc}: {} ({:.3}{thousands})",
-                biggest.0,
-                biggest.1 as f64 / 1000.0
-            ));
-            insights.push(format!(
-                "🚀 {least_desc}: {} ({:.3}{thousands})",
-                smallest.0,
-                smallest.1 as f64 / 1000.0
-            ));
-            insights.push(format!("⚡ Performance difference: {:.1}x", ratio));
+    //     if smallest.1 > 0 {
+    //         let ratio = biggest.1 as f64 / smallest.1 as f64;
+    //         insights.push(format!(
+    //             "🐌 {greatest_desc}: {} ({:.3}{thousands})",
+    //             biggest.0,
+    //             biggest.1 as f64 / 1000.0
+    //         ));
+    //         insights.push(format!(
+    //             "🚀 {least_desc}: {} ({:.3}{thousands})",
+    //             smallest.0,
+    //             smallest.1 as f64 / 1000.0
+    //         ));
+    //         insights.push(format!("⚡ Performance difference: {:.1}x", ratio));
 
-            if ratio > threshold {
-                insights.push(format!(
-                    "🎯 Consider using the {better_desc} algorithm(s) in production, if applicable"
-                ));
-            }
-        }
-    }
+    //         if ratio > threshold {
+    //             insights.push(format!(
+    //                 "🎯 Consider using the {better_desc} algorithm(s) in production, if applicable"
+    //             ));
+    //         }
+    //     }
+    // }
 
     // Look for specific patterns
-    let has_recursive = functions.iter().any(|(name, _)| name.contains("recursive"));
+    let has_recursive = functions.iter().any(|(name, _)| name.contains("recurs"));
     let has_cached = functions.iter().any(|(name, _)| name.contains("cached"));
     let has_iter = functions.iter().any(|(name, _)| name.contains("iter"));
     let has_vectors = functions.iter().any(|(name, _)| name.contains("vector"));

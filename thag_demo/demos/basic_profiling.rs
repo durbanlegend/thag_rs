@@ -13,7 +13,7 @@ strip = false
 //# Categories: profiling, demo, timing
 use ibig::{ubig, UBig};
 use num_traits::identities::One;
-use std::io::Write;
+use std::io;
 use std::iter::successors;
 use std::thread;
 use std::time::Duration;
@@ -22,8 +22,9 @@ use thag_profiler::{
     enable_profiling, profiled, prompted_analysis, timing, AnalysisType, ProfileType,
 };
 
-const FIB_N: usize = 45;
+const FIB_N: usize = 42;
 const HUNDREDFOLD: usize = FIB_N * 100;
+const THOUSANDFOLD: usize = FIB_N * 1000;
 
 #[profiled]
 #[timing]
@@ -90,71 +91,74 @@ fn simulated_io_work() {
     println!("I/O work completed");
 }
 
-#[profiled]
+// #[profiled]
 fn nested_function_calls() {
     cpu_intensive_work();
     simulated_io_work();
 
     // Calculate some fibonacci numbers
-    println!("\nHey, it's-a me, Fibonacci!\n");
+    println!();
     println!(
-        "Let's calculate my {FIB_N}th Fibonacci number recursively, because {FIB_N} makes for a chunky computation, but not insanely so."
+        "Let's calculate the {FIB_N}{} Fibonacci number recursively, because {FIB_N} will take a few seconds, but not ages.", get_ordinal_suffix(FIB_N)
     );
-    println!("Elapsed time for recursion increases exponentially with the Fibonacci number, so we don't want to overdo it.\n");
+    println!("Elapsed time for recursion increases exponentially with the Fibonacci number, so we don't want to overdo it.");
+    println!();
+    await_enter();
+    println!("Processing, please wait...");
 
     // First recursively - bad idea as O(2^n)
     fibonacci_recursions(FIB_N);
 
-    println!("\nOof, bad idea. And it will quickly get a lot worse for bigger numbers.");
-    // let _ = std::io::stdout().flush();
-    pause_awhile();
+    println!();
+    println!("Well, that was quite slow. And it will quickly get a LOT worse for bigger numbers, because this recursion's performance is O(2^n).");
+    println!("Also, the call stack will soon overflow.");
 }
 
-// Pause to display output and help drill down to the tiny flamegraph bars for fast functions
-#[profiled]
-fn pause_awhile() {
-    let _ = std::io::stdout().flush();
-    thread::sleep(Duration::from_secs(2));
-}
-
-#[profiled]
+// #[profiled]
 fn alt_fibonacci_cached() {
-    println!("\nHow about we use thag's demo #[cached] attribute on the fibonacci function?\n");
+    println!();
+    println!("Let's try speeding it up by simply adding thag's demo #[cached] attribute to the recursive fibonacci function (-> `fn fibonacci_cached`).");
+    println!();
 
-    pause_awhile();
+    await_enter();
+    println!("Processing, please wait...");
 
     // Then with cached functions
     fibonacci_recursions_cached(FIB_N);
 
-    println!("\nThat's insane!");
-    println!(
-        "\nA little bird told me I can go up two orders of magnitude and calculate my {}th number and still come out way ahead!\n",
-        HUNDREDFOLD
-    );
+    println!();
+    println!("That probably ran a whole lot faster!");
+    println!();
+    println!("Lets try going up two orders of magnitude and calculating the {HUNDREDFOLD}th number, still with #[cached]. I'm predicting we'll still come out way ahead!");
+    println!();
 
-    pause_awhile();
+    await_enter();
 
     // Then with cached functions
     fibonacci_recursions_cached(HUNDREDFOLD);
 
-    println!("\nHoly smokes! What a difference! Recursion is not always your friend, but #[cached] is your friend - at least up until the stack overflows from too much recursion.");
+    println!();
+    println!("What a difference! Recursion is not always your friend, but #[cached] is your friend - at least up until the stack still overflows from too much recursion.");
 }
 
-#[profiled]
+// #[profiled]
 fn alt_fibonacci_iter() {
-    println!("\nWhat if we try Rust iterators instead, still for F({HUNDREDFOLD})?\n");
+    println!();
+    println!("What if we try Rust iterators instead, and go up yet another order of magnitude to F({THOUSANDFOLD}) to make sure that it will still be visible on the flamegraph?");
+    println!();
 
-    pause_awhile();
+    await_enter();
+    println!("Processing, please wait...");
 
     // Non-nested with Rust iterator. Even then, will it show up in profiling?
-    fibonacci_iter(HUNDREDFOLD);
+    fibonacci_iter(THOUSANDFOLD);
 
-    println!(
-        "\n🤯 Not too shabby! But we can go a lot bigger and faster still with no overflows - you can go down the fibonacci rabbit hole in the demo collection of the `thag_rs` crate. Ciao!\n"
-    );
+    println!();
+    println!("🤯 Already a big improvement, but with this approach (Rust iterators) we can go a lot bigger and faster still with no overflows.");
+    println!("If you want, you can go down the fibonacci rabbit hole in the demo collection of the `thag_rs` crate.");
 }
 
-#[enable_profiling(time)]
+#[enable_profiling(time, function(none))]
 fn demo() {
     println!("🔥 Basic Profiling Demo");
     println!("═══════════════════════");
@@ -170,6 +174,35 @@ fn demo() {
     alt_fibonacci_iter();
 }
 
+// #[profiled]
+fn await_enter() {
+    println!("Press Enter to continue...");
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+}
+
+fn get_ordinal_suffix(n: usize) -> String {
+    if n == 0 {
+        return "th".to_string(); // Or handle as an error/special case if 0 shouldn't have a suffix
+    }
+
+    let last_digit = n % 10;
+    let last_two_digits = n % 100;
+
+    if last_two_digits == 11 || last_two_digits == 12 || last_two_digits == 13 {
+        "th".to_string()
+    } else {
+        match last_digit {
+            1 => "st".to_string(),
+            2 => "nd".to_string(),
+            3 => "rd".to_string(),
+            _ => "th".to_string(),
+        }
+    }
+}
 fn main() {
     // Ensure no stack overflow at hundredfold scale on all platforms
     let child = thread::Builder::new()

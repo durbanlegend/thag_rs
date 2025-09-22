@@ -43,6 +43,8 @@ struct FunctionProfileArgs {
     both: bool,
     /// Flag for using global profiling settings
     global: bool,
+    /// Flag to suppress profiling of the current function
+    none: bool,
     /// Flag for creating profile clone for testing
     test: bool,
 }
@@ -67,6 +69,7 @@ impl Parse for FunctionProfileArgs {
                 "mem_detail" => args.mem_detail = true,
                 "both" => args.both = true,
                 "global" => args.global = true,
+                "none" => args.none = true,
                 "test" => args.test = true,
                 _ => {
                     return Err(syn::Error::new(
@@ -78,7 +81,13 @@ impl Parse for FunctionProfileArgs {
         }
 
         // If no profiling type was specified, default to global
-        if !args.time && !args.mem_summary && !args.mem_detail && !args.both && !args.global {
+        if !args.none
+            && !args.time
+            && !args.mem_summary
+            && !args.mem_detail
+            && !args.both
+            && !args.global
+        {
             args.global = true;
         }
 
@@ -274,6 +283,20 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
         .as_ref()
         .is_some_and(|fn_args| fn_args.mem_detail);
 
+    let profile_this_fn = args.function_args.as_ref().map_or_else(
+        || {
+            eprintln!("In default, returning true");
+            true
+        },
+        |fn_args| {
+            if fn_args.none {
+                false
+            } else {
+                true
+            }
+        },
+    );
+
     // Function profiling type
     #[allow(unused_variables)]
     let function_profile_type = args.function_args.as_ref().map_or_else(
@@ -287,6 +310,8 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                     quote! { ::thag_profiler::ProfileType::Time }
                 } else if fn_args.mem_summary || fn_args.mem_detail {
                     quote! { ::thag_profiler::ProfileType::Memory }
+                } else if fn_args.none {
+                    quote! { ::thag_profiler::ProfileType::None }
                 } else {
                     // Default to global
                     quote! { ::thag_profiler::get_global_profile_type() }
@@ -298,24 +323,42 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             // });
             // When not using full_profiling, always use Time regardless of memory settings
             #[cfg(not(feature = "full_profiling"))]
-            let profile_type = quote! { ::thag_profiler::ProfileType::Time };
+            let profile_type = if profile_this_fn {
+                quote! { ::thag_profiler::ProfileType::Time }
+            } else {
+                quote! { ::thag_profiler::ProfileType::None }
+            };
             profile_type
         },
     );
 
-    let profile_new = quote! {
-        ::thag_profiler::Profile::new(None, Some(#fn_name_str), #function_profile_type, #is_async, #is_detailed_memory, file!(), None, None)
+    let profile_new = if profile_this_fn {
+        quote! {
+            ::thag_profiler::Profile::new(None, Some(#fn_name_str), #function_profile_type, #is_async, #is_detailed_memory, file!(), None, None)
+        }
+    } else {
+        quote! {}
     };
 
     #[cfg(not(feature = "full_profiling"))]
-    let profile_drop = quote! {
-        drop(profile);
+    let profile_drop = if profile_this_fn {
+        quote! {
+            drop(profile);
+        }
+    } else {
+        quote! {}
     };
 
     #[cfg(feature = "full_profiling")]
-    let profile_drop = quote! {
-        ::thag_profiler::safe_alloc!(drop(profile););
+    let profile_drop = if profile_this_fn {
+        quote! {
+            ::thag_profiler::safe_alloc!(drop(profile););
+        }
+    } else {
+        quote! {}
     };
+
+    eprintln!("profile_drop={profile_drop}");
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_init = match args.mode {
@@ -451,6 +494,13 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             #wrapped_block
         },
         ProfilingMode::Enabled => {
+            let profile_clause = if profile_this_fn {
+                quote! {
+                    let profile = #profile_new;
+                }
+            } else {
+                quote! {}
+            };
             quote! {
                 // Acquire the mutex to ensure only one instance can be profiling at a time
                 let _guard = PROFILING_MUTEX.lock();
@@ -460,7 +510,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
                 profile_config.set_profile_type(#profile_type);
                 init_profiling(module_path!(), #profile_type);
 
-                let profile = #profile_new;
+                #profile_clause
 
                 #wrapped_block
             }
@@ -494,27 +544,36 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
             #wrapped_block
         },
-        ProfilingMode::Enabled => quote! {
-            // Acquire the mutex to ensure only one instance can be profiling at a time
-            let _guard = ::thag_profiler::safe_alloc! {
-                PROFILING_MUTEX.lock()
+        ProfilingMode::Enabled => {
+            let profile_clause = if profile_this_fn {
+                quote! {
+                    let profile = ::thag_profiler::safe_alloc! {
+                        #profile_new
+                    };
+                }
+            } else {
+                quote! {}
             };
+            quote! {
+                // Acquire the mutex to ensure only one instance can be profiling at a time
+                let _guard = ::thag_profiler::safe_alloc! {
+                    PROFILING_MUTEX.lock()
+                };
 
-            // Initialize profiling
-            let profile_config = ::thag_profiler::safe_alloc! {
-                // ProfileConfiguration { profile_type: #profile_type, ..Default::default() };
-                let mut profile_config = ProfileConfiguration::default();
-                profile_config.set_profile_type(#profile_type);
-                profile_config
-            };
-            init_profiling(module_path!(), #profile_type);  // Already uses ::thag_profiler::safe_alloc!(... internally
+                // Initialize profiling
+                let profile_config = ::thag_profiler::safe_alloc! {
+                    // ProfileConfiguration { profile_type: #profile_type, ..Default::default() };
+                    let mut profile_config = ProfileConfiguration::default();
+                    profile_config.set_profile_type(#profile_type);
+                    profile_config
+                };
+                init_profiling(module_path!(), #profile_type);  // Already uses ::thag_profiler::safe_alloc!(... internally
 
-            let profile = ::thag_profiler::safe_alloc! {
-                #profile_new
-            };
+                #profile_clause
 
-            #wrapped_block
-        },
+                #wrapped_block
+            }
+        }
         ProfilingMode::Disabled => unreachable!(),
     };
 

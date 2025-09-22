@@ -341,32 +341,32 @@ fn clean_function_name(name: &str) -> String {
 fn generate_insights(functions: &[(String, u128)], /* , total_duration_us: u128 */) -> Vec<String> {
     let mut insights = Vec::new();
 
-    if functions.len() >= 2 {
-        let slowest = &functions[0];
-        let fastest = &functions[functions.len() - 1];
+    // if functions.len() >= 2 {
+    //     let slowest = &functions[0];
+    //     let fastest = &functions[functions.len() - 1];
 
-        if fastest.1 > 0 {
-            let speedup = slowest.1 as f64 / fastest.1 as f64;
-            insights.push(format!(
-                "🐌 Slowest: {} ({:.3}ms)",
-                slowest.0,
-                slowest.1 as f64 / 1000.0
-            ));
-            insights.push(format!(
-                "🚀 Fastest: {} ({:.3}ms)",
-                fastest.0,
-                fastest.1 as f64 / 1000.0
-            ));
-            insights.push(format!("⚡ Performance difference: {:.1}x", speedup));
+    //     if fastest.1 > 0 {
+    //         let speedup = slowest.1 as f64 / fastest.1 as f64;
+    //         insights.push(format!(
+    //             "🐌 Slowest: {} ({:.3}ms)",
+    //             slowest.0,
+    //             slowest.1 as f64 / 1000.0
+    //         ));
+    //         insights.push(format!(
+    //             "🚀 Fastest: {} ({:.3}ms)",
+    //             fastest.0,
+    //             fastest.1 as f64 / 1000.0
+    //         ));
+    //         insights.push(format!("⚡ Performance difference: {:.1}x", speedup));
 
-            if speedup > 1000.0 {
-                insights.push("🎯 Consider using faster algorithms in production!".to_string());
-            }
-        }
-    }
+    //         if speedup > 1000.0 {
+    //             insights.push("🎯 Consider using faster algorithms in production!".to_string());
+    //         }
+    //     }
+    // }
 
     // Look for specific patterns
-    let has_recursive = functions.iter().any(|(name, _)| name.contains("recursive"));
+    let has_recursive = functions.iter().any(|(name, _)| name.contains("recurs"));
     let has_cached = functions.iter().any(|(name, _)| name.contains("cached"));
     let has_iter = functions.iter().any(|(name, _)| name.contains("iter"));
     let has_bubble_sort = functions

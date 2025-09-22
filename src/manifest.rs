@@ -5,10 +5,9 @@ use crate::{
     config::DependencyInference,
     maybe_config, Ast, BuildState, Dependencies, Style, ThagError, ThagResult,
 };
-use cargo_lookup::Query;
+use cargo_lookup::{Package, Query, Release};
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
 use regex::Regex;
-use semver::VersionReq;
 use serde_merge::omerge;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
@@ -56,9 +55,6 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
                     package.releases().len()
                 );
 
-                // Request only stable versions (no pre-release)
-                let req = VersionReq::parse("*").unwrap();
-
                 // Log all available versions and their pre-release status
                 // #[cfg(debug_assertions)]
                 // for release in package.releases() {
@@ -73,7 +69,7 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
                 //     );
                 // }
 
-                let release = package.version(&req).filter(|r| r.vers.pre.is_empty());
+                let release = highest_release(&package);
 
                 match release {
                     Some(r) => {
@@ -98,6 +94,14 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
     }
 
     None
+}
+
+fn highest_release(pkg: &Package) -> Option<&Release> {
+    pkg.releases()
+        .iter()
+        .filter(|r| !r.yanked)
+        .filter(|r| r.vers.pre.is_empty())
+        .max_by_key(|r| r.vers.clone()) // vers is already semver::Version
 }
 
 /// Attempt to capture the dependency name and version from the first line returned by

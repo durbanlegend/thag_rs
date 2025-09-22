@@ -1,18 +1,15 @@
 /*[toml]
 [dependencies]
 # Specifying these in the toml block to ensure compatibility with thag_rs's Cargo.toml.
-clap = { version = "4.5.41", features = ["cargo", "derive"] }
-edit = "0.1.5"
-nu-ansi-term = { version = "0.50.1", features = ["derive_serde_style"] }
-ratatui = { version = "0.29.0", features = ["crossterm"] }
-reedline = "0.41.0"
-regex = "1.11.1"
-strum = { version = "0.27.2", features = ["derive"] }
-tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
+clap = { version = "4.5", features = ["cargo", "derive"] }
+nu-ansi-term = { version = "0.50", features = ["derive_serde_style"] }
+ratatui = { version = "0.29", features = ["crossterm"] }
+strum = { version = "0.27", features = ["derive"] }
+tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
 
 thag_profiler = { version = "0.1, thag-auto", default-features = false }
 thag_rs = { version = "0.2, thag-auto", features = ["repl", "reedline", "simplelog"] }
-thag_styling = { version = "0.1, thag-auto" }
+thag_styling = { version = "0.2, thag-auto" }
 
 [features]
 debug_logging = ["thag_rs/debug_logging"]

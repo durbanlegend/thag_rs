@@ -96,6 +96,21 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
     None
 }
 
+/// Returns the highest non-yanked release for a package, matching how
+/// `cargo search` resolves versions.
+///
+/// Note:
+/// - `cargo_lookup::Package::latest()` returns the *last uploaded* release,
+///   which may not be the highest semver (e.g. an 0.8.x patch uploaded after
+///   a 0.9.x release).
+/// - To mirror `cargo search`, we must manually:
+///   1. Filter out yanked releases,
+///   2. Compare using semver ordering,
+///   3. Return the highest version.
+///
+/// Example:
+/// If crates.io has `0.9.1`, `0.9.0` (yanked), and `0.8.1` (uploaded last),
+/// `Package::latest()` gives `0.8.1`, but this function returns `0.9.1`.
 fn highest_release(pkg: &Package) -> Option<&Release> {
     pkg.releases()
         .iter()

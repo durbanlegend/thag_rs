@@ -1,12 +1,8 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["ratatui_support", "color_detect"] }
+thag_styling = { version = "0.2, thag-auto", features = ["ratatui_support"] }
 ratatui = "0.29"
 crossterm = "0.28"
-
-[features]
-ratatui_support = []
-default = ["ratatui_support"]
 */
 
 /// Simple Ratatui + thag_styling Integration Demo
@@ -16,39 +12,32 @@ default = ["ratatui_support"]
 ///
 /// E.g.:
 /// ```
-/// thag demo/ratatui_integration_demo.rs -m
+/// thag demo/ratatui_integration_demo.rs
 /// ```
-
 //# Purpose: Basic demonstration of ratatui integration with thag_styling
 //# Categories: demo, gui, theming
-
-#[cfg(feature = "ratatui_support")]
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-#[cfg(feature = "ratatui_support")]
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Style, Stylize},
+    style::{Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Gauge, List, ListItem, Paragraph},
     Frame, Terminal,
 };
 
-#[cfg(feature = "ratatui_support")]
 use thag_styling::{
     integrations::{RatatuiStyleExt, ThemedStyle},
     Role,
 };
 
-#[cfg(feature = "ratatui_support")]
 use std::io;
 
-#[cfg(feature = "ratatui_support")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup terminal
     enable_raw_mode()?;
@@ -79,7 +68,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(feature = "ratatui_support")]
 fn run_demo<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
     let mut counter = 0;
 
@@ -98,7 +86,6 @@ fn run_demo<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Res
     Ok(())
 }
 
-#[cfg(feature = "ratatui_support")]
 fn draw_demo(frame: &mut Frame, counter: usize) {
     let area = frame.area();
 
@@ -227,16 +214,7 @@ fn draw_demo(frame: &mut Frame, counter: usize) {
     frame.render_widget(instructions_widget, chunks[3]);
 }
 
-#[cfg(not(feature = "ratatui_support"))]
-fn main() {
-    eprintln!("❌ This demo requires the 'ratatui_support' feature.");
-    eprintln!("Run with:");
-    eprintln!("  thag demo/ratatui_integration_demo.rs");
-    eprintln!("  THAG_DEV_PATH=$PWD thag demo/ratatui_integration_demo.rs -m");
-    std::process::exit(1);
-}
-
-#[cfg(all(test, feature = "ratatui_support"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

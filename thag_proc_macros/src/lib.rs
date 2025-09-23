@@ -2,7 +2,7 @@
 #![warn(missing_docs)]
 //! # `thag_proc_macros`
 //!
-//! Proc macros for `thag_rs` (`thag`) and `thag_profiler`.
+//! Proc macros for `thag_rs` (`thag`) and its subcrates.
 //!
 //! ## Features
 //!
@@ -827,13 +827,16 @@ pub fn safe_osc(input: TokenStream) -> TokenStream {
 ///
 /// This macro processes styling directives to format text output with colors and styles.
 /// It supports various color and style combinations for terminal output formatting.
+/// The actual colors used will be the indexed colors 0-15 of the current terminal palette.
+/// To ensure that the actual named colors are used, ensure that the terminal palette is
+/// set accordingly, e.g. 1 = Red (170,0,0), 2 = Green (0,170,0), etc.
 ///
 /// # Usage
 ///
 /// ```rust
 /// use thag_proc_macros::{ansi_styling_support, styled};
 /// ansi_styling_support! {}
-/// styled!("Hello, world!");
+/// println!("{}", styled!("Green italic reversed", fg = Green, italic, reversed));
 /// ```
 #[proc_macro]
 pub fn styled(input: TokenStream) -> TokenStream {

@@ -12,6 +12,22 @@
 - [ ]  Theme conversion or loading - consider improving contrast on palette colours where necessary.
 - [ ]  Get rid of terminal::get_fresh_color_support.
 - [ ]  DONE: Check if owo-colors uses indexed terminal palette colours or basic 15 fg colours. - Looks like indexed 0-15, the rest from the 256-colour palette.
+- [ ]  Add owo-colors integration.
+- [ ]  Make thag -d and repl edit use ratatui integration.
+- [ ]  Consider styled! with actual colours - or don't bother, use a regular colour package instead. Or add a theme with the basic colours.
+- [ ]  Rename all cprtln! and cvprtln! invocations to sprtln! and svprtln! - and in README.md.
+- [ ]  Guest Themes and TermAttributes with context.
+- [ ]  Replace paint_for_role examples with "xxx".println()
+
+    println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
+    println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));
+    println!("{}", paint_for_role(Role::Warning, "⚠️  High memory usage detected"));
+    println!("{}", paint_for_role(Role::Code, "cargo run --release"));
+
+    "✅ Operation completed successfully".success().println();
+    "❌ Connection failed".error().println();
+    "⚠️  High memory usage detected".warning().println();
+    "cargo run --release".code().println();
 
 Option 1 makes sense, but the implementation step `2. Add a method to get current `ColorSupport`` raises an issue. I think we need to review how we are doing that. Assuming the `color_detect` feature is active, and that we call styling::TermAttributes::initialize(ColorInitStrategy::Match), this function gets the ColorSupport variant by calling detect_term_capabilities on thag_common/src/terminal.rs and stores it in the color_support field of the static TermAttributes struct instance being constructed. We have also recently added fn terminal::get_fresh_color_support to support dynamic querying. I'm not sure we actually have a good use case for this, and it gives a second version of the truth, which is not great. So I'm reminded to get the applicable ColorSupport variant thus: `TermAttributes::get_or_init().color_support`, and have accordingly commented out and replaced line 438 of src/bin/thag_palette_vs_theme.rs by lines 439f since your response.
 

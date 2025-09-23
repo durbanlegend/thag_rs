@@ -6,7 +6,7 @@
 
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["ratatui_support", "color_detect"] }
+thag_styling = { version = "0.2, thag-auto", features = ["ratatui_support"] }
 ratatui = "0.29"
 crossterm = "0.28"
 */
@@ -14,14 +14,12 @@ crossterm = "0.28"
 //# Purpose: Comprehensive showcase of ratatui integration with thag_styling themes
 //# Categories: gui, demo, theming
 
-#[cfg(feature = "ratatui_support")]
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
-#[cfg(feature = "ratatui_support")]
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
@@ -34,16 +32,13 @@ use ratatui::{
     Frame, Terminal,
 };
 
-#[cfg(feature = "ratatui_support")]
 use thag_styling::{
     integrations::{RatatuiStyleExt, ThemedStyle},
     Role,
 };
 
-#[cfg(feature = "ratatui_support")]
 use std::io;
 
-#[cfg(feature = "ratatui_support")]
 #[derive(Default)]
 struct App {
     tab_index: usize,
@@ -53,13 +48,11 @@ struct App {
     log_entries: Vec<LogEntry>,
 }
 
-#[cfg(feature = "ratatui_support")]
 struct LogEntry {
     level: Role,
     message: String,
 }
 
-#[cfg(feature = "ratatui_support")]
 impl App {
     fn new() -> Self {
         Self {
@@ -129,7 +122,6 @@ impl App {
     }
 }
 
-#[cfg(feature = "ratatui_support")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Setup terminal
     enable_raw_mode()?;
@@ -158,7 +150,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(feature = "ratatui_support")]
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
@@ -182,7 +173,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
     }
 }
 
-#[cfg(feature = "ratatui_support")]
 fn ui(f: &mut Frame, app: &mut App) {
     let size = f.area();
 
@@ -211,7 +201,6 @@ fn ui(f: &mut Frame, app: &mut App) {
     }
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_header(f: &mut Frame, area: Rect) {
     let title = Paragraph::new("🎨 Thag Styling + Ratatui Integration Showcase")
         .style(Style::themed(Role::Heading1).bold())
@@ -225,7 +214,6 @@ fn render_header(f: &mut Frame, area: Rect) {
     f.render_widget(title, area);
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_content(f: &mut Frame, area: Rect, app: &App) {
     // Create tab titles
     let tab_titles: Vec<Line> = vec![
@@ -265,7 +253,6 @@ fn render_content(f: &mut Frame, area: Rect, app: &App) {
     }
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_dashboard_tab(f: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -391,7 +378,6 @@ fn render_dashboard_tab(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(status_widget, chunks[2]);
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_logs_tab(f: &mut Frame, area: Rect, app: &App) {
     let items: Vec<ListItem> = app
         .log_entries
@@ -453,7 +439,6 @@ fn render_logs_tab(f: &mut Frame, area: Rect, app: &App) {
     );
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_settings_tab(f: &mut Frame, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -553,7 +538,6 @@ fn render_settings_tab(f: &mut Frame, area: Rect) {
     f.render_widget(advanced_widget, chunks[2]);
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_about_tab(f: &mut Frame, area: Rect) {
     let about_text = Text::from(vec![
         Line::from(""),
@@ -660,7 +644,6 @@ fn render_about_tab(f: &mut Frame, area: Rect) {
     f.render_widget(about_widget, area);
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_footer(f: &mut Frame, area: Rect) {
     let footer_text = Line::from(vec![
         Span::styled("Press ", Style::themed(Role::Subtle)),
@@ -684,7 +667,6 @@ fn render_footer(f: &mut Frame, area: Rect) {
     f.render_widget(footer, area);
 }
 
-#[cfg(feature = "ratatui_support")]
 fn render_help_popup(f: &mut Frame, area: Rect) {
     let popup_area = centered_rect(60, 50, area);
 
@@ -770,7 +752,6 @@ fn render_help_popup(f: &mut Frame, area: Rect) {
     f.render_widget(help_popup, popup_area);
 }
 
-#[cfg(feature = "ratatui_support")]
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
@@ -791,15 +772,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-#[cfg(not(feature = "ratatui_support"))]
-fn main() {
-    eprintln!("❌ This example requires the 'ratatui_support' feature to be enabled.");
-    eprintln!("Run with:");
-    eprintln!("  cargo run --example ratatui_theming_showcase --features \"ratatui_support,color_detect\"");
-    std::process::exit(1);
-}
-
-#[cfg(all(test, feature = "ratatui_support"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

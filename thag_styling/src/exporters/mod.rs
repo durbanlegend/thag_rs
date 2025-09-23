@@ -1,7 +1,7 @@
-//! Multi-format terminal theme exporters for converting thag themes to various terminal emulator formats
+//! Format-specific theme export implementations.
 //!
-//! This module provides functionality to export thag themes to popular terminal emulator formats,
-//! enabling users to apply generated themes across different terminal applications.
+//! Contains exporters for Alacritty, WezTerm, Windows Terminal, and other terminal emulators.
+//! Each exporter converts thag themes to the appropriate configuration format.
 
 use crate::{ColorValue, StylingError, StylingResult, Theme};
 use std::path::Path;

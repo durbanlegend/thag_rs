@@ -17,11 +17,11 @@ This example showcases a full-featured TUI application that demonstrates:
 ### Running the Example
 
 ```bash
-# Basic run (requires ratatui_support and color_detect features)
-cargo run --example ratatui_theming_showcase -p thag_styling --features "ratatui_support,color_detect"
+# Basic run - themes automatically detected
+cargo run --example ratatui_theming_showcase -p thag_styling
 
-# Without color detection (falls back to basic themes)
-cargo run --example ratatui_theming_showcase -p thag_styling --features "ratatui_support"
+# Or from the demo directory
+cargo run demo/ratatui_integration_demo.rs
 ```
 
 ### Navigation
@@ -117,7 +117,7 @@ The example includes comprehensive tests covering:
 
 Run tests with:
 ```bash
-cargo test --example ratatui_theming_showcase -p thag_styling --features "ratatui_support,color_detect"
+cargo test --example ratatui_theming_showcase -p thag_styling
 ```
 
 ### Integration Requirements
@@ -127,7 +127,7 @@ To use `thag_styling` with `ratatui` in your own project:
 1. **Dependencies** in `Cargo.toml`:
 ```toml
 [dependencies]
-thag_styling = { version = "0.2", features = ["ratatui_support", "color_detect"] }
+thag_styling = { version = "0.2", features = ["ratatui_support"] }
 ratatui = "0.29"
 ```
 

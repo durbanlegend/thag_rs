@@ -2739,6 +2739,15 @@ macro_rules! cvprtln {
     }};
 }
 
+/// Styled verbosity-gated print line macro (alias for `cvprtln!`)
+/// Conditionally logs a message with verbosity control and styling.
+#[macro_export]
+macro_rules! svprtln {
+    ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
+        $crate::cvprtln!($style, $verbosity, $($arg)*)
+    }};
+}
+
 fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
     let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;
     let dg = f64::from(i32::from(c1.1) - i32::from(c2.1)) * 0.59;
@@ -3946,6 +3955,16 @@ macro_rules! cprtln {
         let content = format!("{}", format_args!($($arg)*));
         let painted = $crate::styling::Styler::to_style(&$style).paint(content);
         println!("{painted}");
+    }};
+}
+
+/// Styled print line macro (alias for `cprtln!`)
+/// Format: `sprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+/// Also accepts Role: `sprtln!(Role::Code, "Hello {}", "world");`
+#[macro_export]
+macro_rules! sprtln {
+    ($style:expr, $($arg:tt)*) => {{
+        $crate::cprtln!($style, $($arg)*)
     }};
 }
 

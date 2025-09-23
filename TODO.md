@@ -9,14 +9,9 @@
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
 - [ ]  thag_styling README.
-- [ ]  DONE: Test truecolor tests on mintty - doesn't support the interrogation, but behaves correctly.
-- [ ]  DONE: Replace current TrueColor detection (supports-color crate) by truecolor_test.rs logic.
 - [ ]  Theme conversion or loading - consider improving contrast on palette colours where necessary.
-- [ ]  DONE: Debug src/bin/thag_theme.rs.
-- [ ]  DONE: Fix demo/test_light_theme_tuning.rs on Apple terminal (256) as per thag_palette_vs_theme
-- [ ]  DONE: Fix styling::with_rgb to accept the color_support and adjust the ansi value accordingly. And/or have a color paint function to paint from RGB according to color_support.
 - [ ]  Get rid of terminal::get_fresh_color_support.
-- [ ]  Check if owo-colors uses indexed terminal palette colours or basic 15 fg colours.
+- [ ]  DONE: Check if owo-colors uses indexed terminal palette colours or basic 15 fg colours. - Looks like indexed 0-15, the rest from the 256-colour palette.
 
 Option 1 makes sense, but the implementation step `2. Add a method to get current `ColorSupport`` raises an issue. I think we need to review how we are doing that. Assuming the `color_detect` feature is active, and that we call styling::TermAttributes::initialize(ColorInitStrategy::Match), this function gets the ColorSupport variant by calling detect_term_capabilities on thag_common/src/terminal.rs and stores it in the color_support field of the static TermAttributes struct instance being constructed. We have also recently added fn terminal::get_fresh_color_support to support dynamic querying. I'm not sure we actually have a good use case for this, and it gives a second version of the truth, which is not great. So I'm reminded to get the applicable ColorSupport variant thus: `TermAttributes::get_or_init().color_support`, and have accordingly commented out and replaced line 438 of src/bin/thag_palette_vs_theme.rs by lines 439f since your response.
 

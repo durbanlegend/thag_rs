@@ -12,7 +12,7 @@
 - Profile: `cargo run --features profiling -- [args]`
 
 ## Demo and sample scripts
-- Unless there's a strong case for placing these in a subcrate's `examples` dir, prefer the demo subdirectory.
+- Unless requested or unless there's a strong case for placing these in a subcrate's `examples` dir, prefer the demo subdirectory.
 Run with `cargo run demo/script_name.rs`. Any valid Cargo.toml info can be placed in the normal format in a toml block at the top of the program, like this:
 ```Rust
 /*[toml]

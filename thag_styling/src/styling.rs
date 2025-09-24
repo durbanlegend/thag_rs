@@ -3744,7 +3744,36 @@ pub trait StyledStringExt {
     fn vprintln(self, verbosity: thag_common::Verbosity);
 }
 
+/// Alias for StyledStringExt with a more intuitive name
+pub trait StyledPrint {
+    /// Print the styled string to stdout
+    fn print(self);
+
+    /// Print the styled string to stdout with a newline
+    fn println(self);
+
+    /// Print the styled string with verbosity gating
+    fn vprintln(self, verbosity: thag_common::Verbosity);
+}
+
 impl StyledStringExt for StyledString {
+    fn print(self) {
+        print!("{}", self);
+    }
+
+    fn println(self) {
+        println!("{}", self);
+    }
+
+    fn vprintln(self, verbosity: thag_common::Verbosity) {
+        let current_verbosity = thag_common::get_verbosity();
+        if verbosity <= current_verbosity {
+            println!("{}", self);
+        }
+    }
+}
+
+impl StyledPrint for StyledString {
     fn print(self) {
         print!("{}", self);
     }
@@ -3913,6 +3942,73 @@ impl Styleable for &str {
 impl Styleable for String {
     fn style_with(&self, styler: impl Styler) -> StyledString {
         StyledString::new(self.clone(), styler.to_style())
+    }
+}
+
+// Implementations for common numeric types
+impl Styleable for i32 {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for i64 {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for u32 {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for u64 {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for f32 {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for f64 {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for usize {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for isize {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for bool {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for char {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
+    }
+}
+
+impl Styleable for std::path::Display<'_> {
+    fn style_with(&self, styler: impl Styler) -> StyledString {
+        StyledString::new(self.to_string(), styler.to_style())
     }
 }
 

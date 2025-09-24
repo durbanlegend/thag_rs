@@ -4,18 +4,37 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**A semantic terminal styling system with automatic theme detection and rich color palette support.**
+**A semantic terminal styling system that extends and enhances existing terminal themes with automatic color detection and extensive tool integration.**
 
-`thag_styling` provides a comprehensive solution for terminal applications that need consistent, professional theming. Instead of hardcoding colors, you define content by *semantic meaning* — errors, warnings, code, headings — and the library automatically applies coordinated colors that work beautifully together.
+`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **over 300 curated themes** plus original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Features
 
-- **🎨 Semantic Styling** — Style content by meaning (`Role::Error`, `Role::Success`) rather than specific colors
-- **🔍 Automatic Theme Detection** — Detects terminal capabilities and applies appropriate themes automatically
-- **🎯 Rich Color Palettes** — Uses coordinated 15-color palettes from the full TrueColor or 256-color spectrum
-- **📚 Library Integration** — Seamless integration with popular terminal libraries (ratatui, crossterm, console, nu-ansi-term)
-- **♿ Accessibility First** — Ensures legibility with tested contrast ratios using proven theme colors
-- **⚡ Zero Runtime Cost** — All theme resolution happens at compile time or initialization
+### Core Styling System
+- **🎨 Semantic Roles** — Style by meaning (`Role::Error`, `Role::Success`) not colors
+- **🔍 Automatic Detection** — Terminal capabilities and theme selection
+- **🎯 Rich Palettes** — Coordinated 15-color schemes from TrueColor/256-color spectrum
+- **♿ Proven Legibility** — Based on tested terminal themes with proper contrast
+- **⚡ Zero Overhead** — Compile-time theme resolution
+
+### Styling APIs
+- **`StyledString`** — Fluent method chaining: `"text".error().println()`
+- **Styled Macros** — Direct printing: `sprtln!(Role::Warning, "Alert: {}", msg)`
+- **Paint Functions** — Functional style: `paint_for_role(Role::Code, code)`
+- **ANSI Macros** — Low-level styling: `styled!("text", fg = Red, bold)`
+
+### Library Integrations
+- **Ratatui** — Complete TUI theming with `Style::themed(Role::Error)`
+- **Crossterm** — Terminal manipulation with themed helpers
+- **Console** — Popular styling library integration
+- **Nu-ANSI-Term** — Shell and REPL theming support
+
+### Theme Ecosystem
+- **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, and many more
+- **Theme Generation** — From images using advanced color extraction
+- **Multi-Format Export** — Alacritty, Apple Terminal, iTerm2, Kitty, Mintty, WezTerm, Windows Terminal
+- **Palette Sync** — Runtime terminal palette updates via OSC sequences  
+- **Base16/Base24** — Standard theme format support with original extensions
 
 ## Quick Start
 
@@ -29,14 +48,18 @@ thag_styling = "0.2"
 Basic usage:
 
 ```rust
-use thag_styling::{paint_for_role, Role};
+use thag_styling::{Styleable, StyledStringExt};
 
 fn main() {
-    // Semantic styling - colors automatically coordinated
-    println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
-    println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));
-    println!("{}", paint_for_role(Role::Warning, "⚠️  High memory usage detected"));
-    println!("{}", paint_for_role(Role::Code, "cargo run --release"));
+    // Fluent method chaining - natural and composable
+    "✅ Operation completed successfully".success().println();
+    "❌ Connection failed".error().println();
+    "⚠️  High memory usage detected".warning().println();
+    "cargo run --release".code().println();
+    
+    // Works with any Display type
+    42.success().println();              // Numbers
+    std::path::Path::new("/usr/bin").display().code().println(); // Paths
 }
 ```
 
@@ -49,18 +72,18 @@ Instead of manually selecting and coordinating colors, `thag_styling` provides c
 ```rust
 // Manual color coordination - error prone
 println!("{}", "Error".red().bold());
-println!("{}", "Warning".yellow());
+println!("{}", "Warning".yellow()); 
 println!("{}", "Success".green());
 // Do these colors work well together? 🤷
 ```
 
 **After:**
-```rust
+```rust  
 // Semantic coordination - guaranteed harmony
-println!("{}", paint_for_role(Role::Error, "Error"));
-println!("{}", paint_for_role(Role::Warning, "Warning"));
-println!("{}", paint_for_role(Role::Success, "Success"));
-// Colors automatically coordinated ✨
+"Error".error().println();
+"Warning".warning().println();
+"Success".success().println();
+// Perfect color coordination automatically ✨
 ```
 
 ### 👀 **Assured Legibility**
@@ -73,43 +96,40 @@ Focus on your application logic instead of color theory. Define content semantic
 
 `thag_styling` integrates seamlessly with popular terminal libraries:
 
-### Ratatui Integration
+### Ratatui TUI Integration
 
 ```rust
 use thag_styling::integrations::ThemedStyle;
-use ratatui::style::Style;
+use ratatui::{style::Style, widgets::Gauge};
 
-// Theme-aware TUI components
+// Semantic TUI styling
 let error_style = Style::themed(Role::Error);
-let success_gauge = Gauge::default().gauge_style(Style::themed(Role::Success));
+let success_gauge = Gauge::default()
+    .gauge_style(Style::themed(Role::Success))
+    .block(Block::default()
+        .border_style(Style::themed(Role::Subtle))
+        .title_style(Style::themed(Role::Heading2)));
 
-// Add to Cargo.toml:
-// thag_styling = { version = "0.2", features = ["ratatui_support"] }
+// Cargo.toml: features = ["ratatui_support"]
 ```
 
-### Crossterm Integration
+### Multiple API Styles
 
 ```rust
-use thag_styling::integrations::crossterm_integration::crossterm_helpers;
+// Method chaining (recommended)
+format!("Status: {} | Memory: {}", "OK".success(), "85%".warning())
+    .info().println();
 
-// Pre-configured styles for common use cases
-let prompt_style = crossterm_helpers::prompt_style();
-let error_style = crossterm_helpers::error_style();
+// Styled print macros  
+sprtln!(Role::Error, "Connection failed: {}", error_msg);
+svprtln!(Role::Debug, Verbosity::Debug, "Processing {}", item);
 
-// Add to Cargo.toml:
-// thag_styling = { version = "0.2", features = ["crossterm_support"] }
-```
+// Functional style
+println!("{}", paint_for_role(Role::Code, "fn main()"));
 
-### Console Integration
-
-```rust
-use thag_styling::integrations::ThemedStyle;
-use console::Style;
-
-let themed_style = Style::themed(Role::Warning);
-
-// Add to Cargo.toml:
-// thag_styling = { version = "0.2", features = ["console_support"] }
+// Low-level ANSI (when you need specific colors)
+use thag_styling::styled;
+println!("{}", styled!("Alert", fg = Red, bold, underline));
 ```
 
 ## Semantic Roles
@@ -139,46 +159,57 @@ let themed_style = Style::themed(Role::Warning);
 
 ## Advanced Features
 
-### StyledString for Complex Styling
+### Complex Nested Styling
 ```rust
 use thag_styling::{StyledStringExt, Styleable};
 
-// Chain styling methods naturally
-format!("Status: {} and {}",
-        "success".success(),
-        "warning".warning())
+// Unlimited nesting with method chaining
+format!("Server {} responded with {} in {}ms",
+        server_name.emphasis(),
+        format!("HTTP {}", status_code.success()),  // Nested styling
+        latency.code())
     .info()
     .println();
 
 // Verbosity-controlled output
-format!("Debug: {}", "value".code())
+format!("Debug: {}", diagnostic_data.code())
     .debug()
-    .vprintln(thag_styling::Verbosity::Debug);
+    .vprintln(Verbosity::Debug);
 ```
 
-### Styled Print Macros
+### Theme Generation from Images
 ```rust
-use thag_styling::{sprtln, svprtln, Role, Verbosity};
+// Generate themes from any image (requires 'image_themes' feature)
+use thag_styling::image_themes::generate_theme_from_image;
 
-// Direct styled printing
-sprtln!(Role::Error, "Connection failed: {}", error_msg);
-
-// Verbosity-controlled styled printing  
-svprtln!(Role::Debug, Verbosity::Debug, "Processing item {}", item_id);
-
-// Legacy names (cprtln, cvprtln) still supported for backward compatibility
+let theme = generate_theme_from_image("sunset.jpg", "my-sunset-theme")?;
+theme.save_to_file("themes/my-sunset-theme.toml")?;
 ```
 
-### Theme Management
+### Multi-Format Theme Export
 ```rust
-use thag_styling::{TermAttributes, ColorInitStrategy};
+use thag_styling::{export_theme_to_file, ExportFormat};
 
-// Initialize with specific strategy
-TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
+let theme = Theme::load_from_file("my-theme.toml")?;
 
-// Display theme information
-thag_styling::display_theme_details();
-thag_styling::display_theme_roles();
+// Export to various terminal formats (alphabetically)
+export_theme_to_file(&theme, "alacritty.toml", ExportFormat::Alacritty)?;
+export_theme_to_file(&theme, "apple-terminal.terminal", ExportFormat::AppleTerminal)?;
+export_theme_to_file(&theme, "iterm2.itermcolors", ExportFormat::ITerm2)?;
+export_theme_to_file(&theme, "kitty.conf", ExportFormat::Kitty)?;
+export_theme_to_file(&theme, "mintty.config", ExportFormat::Mintty)?;
+export_theme_to_file(&theme, "wezterm.toml", ExportFormat::WezTerm)?;
+export_theme_to_file(&theme, "windows-terminal.json", ExportFormat::WindowsTerminal)?;
+```
+
+### Runtime Palette Synchronization  
+```rust
+use thag_styling::PaletteSync;
+
+// Sync terminal palette with theme colors
+let sync = PaletteSync::new()?;
+sync.apply_theme_palette(&theme)?;
+// Terminal colors now match your theme!
 ```
 
 ## Examples
@@ -192,28 +223,131 @@ The library includes comprehensive examples:
 
 Run examples:
 ```bash
-# Styling migration guide (includes StyledString examples)
+# Complete styling system demonstration  
 cargo run demo/styling_migration_guide.rs
 
-# Interactive TUI showcase
+# Interactive TUI showcase (full-featured application)
 cargo run --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
 
-# Basic theming demo
+# Quick integration demo
 cargo run demo/ratatui_integration_demo.rs
 
-# View all available examples
-ls thag_styling/examples/
+# Theme generation from images
+cargo run demo/image_theme_generation.rs
+
+# View all examples
+ls thag_styling/examples/ demo/
+```
+
+## Theme Management Tools
+
+`thag_styling` includes a comprehensive suite of command-line tools for theme management. These tools are part of the main `thag_rs` project and provide powerful theme generation, conversion, and management capabilities.
+
+### Installation
+
+The tools are installed as part of `thag_rs` with the `tools` feature:
+
+```bash
+# Install from crates.io with tools
+cargo install thag_rs --features tools
+
+# Install from GitHub repository  
+cargo install --git https://github.com/durbanlegend/thag_rs thag_rs --features tools
+
+# Or build from source
+git clone https://github.com/durbanlegend/thag_rs
+cd thag_rs
+cargo install --path . --features tools
+```
+
+**Note**: The tools are part of `thag_rs`, not `thag_styling` directly. This allows them to integrate the full `thag_rs` ecosystem while being available to `thag_styling` users.
+
+### Theme Generation Tools
+```bash
+# Generate theme from image
+thag_image_to_theme sunset.jpg my-sunset-theme
+
+# Convert between theme formats  
+thag_convert_themes input-theme.toml output-format
+
+# Generate terminal emulator themes
+thag_gen_terminal_themes my-theme.toml --all-formats
+```
+
+### Theme Management Tools  
+```bash
+# Display available themes
+thag_show_themes
+
+# Apply theme and sync terminal palette
+thag_theme my-theme-name
+thag_sync_palette
+
+# Compare theme vs terminal palette
+thag_palette_vs_theme
+
+# Add themes to specific terminals (alphabetically)
+thag_alacritty_add_theme my-theme.toml
+thag_mintty_add_theme my-theme.toml      # Cygwin, Git Bash
+thag_winterm_add_theme my-theme.toml     # Windows Terminal
+```
+
+### Theme Development
+```bash
+# Detect terminal capabilities
+thag_detect_term
+
+# Test theme legibility
+thag_legible my-theme.toml
+```
+
+## Integration Examples
+
+### Complete TUI Application
+See `examples/ratatui_theming_showcase.rs` for a 4-tab TUI demonstrating:
+- Dashboard with metrics and progress bars
+- Log viewer with semantic severity colors  
+- Settings and configuration display
+- Comprehensive help system
+
+All styled consistently using semantic roles.
+
+### Library Integration Patterns
+```rust
+// Ratatui - semantic TUI theming
+let gauge = Gauge::default()
+    .gauge_style(Style::themed(Role::Success))
+    .label("Progress");
+
+// Crossterm - terminal control with theming  
+let styled_text = crossterm_helpers::success_style()
+    .apply("Operation completed");
+
+// Console - popular styling library integration
+let warning = console::Style::themed(Role::Warning)
+    .apply_to("High CPU usage");
+
+// Enhanced styled! macro with true colors
+println!("{}", styled!("Error", fg = Rgb(220, 50, 47), bold));
+println!("{}", styled!("Warning", fg = Color256(214), underline));
 ```
 
 ## Documentation
 
 - **[API Documentation](https://docs.rs/thag_styling)** — Complete API reference
-- **[Integration Guide](examples/)** — Library-specific integration examples
-- **[Theme Creation](themes/)** — Custom theme development guide
+- **[Integration Guide](examples/)** — Library-specific examples and patterns
+- **[Theme Development](themes/)** — Custom theme creation and tools
+- **[Tool Reference](src/bin/README.md)** — Command-line tool documentation
 
 ## Contributing
 
-Contributions are welcome! Please see our [contributing guidelines](CONTRIBUTING.md) for details.
+Contributions welcome! Areas needing help:
+- Additional terminal emulator export formats
+- More library integrations (owo-colors, indicatif, etc.)
+- Theme collection expansion
+- Performance optimizations
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 

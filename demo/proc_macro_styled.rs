@@ -25,6 +25,7 @@ fn main() {
 
     // Demonstrate more styling options now that we have the full implementation
     println!("{}", styled!("Red and bold", fg = Red, bold));
+    println!("{}", styled!("Red and bold", fg = Rgb(170, 0, 0), bold));
     println!("{}", styled!("Blue underlined", fg = Blue, underline));
     println!(
         "{}",

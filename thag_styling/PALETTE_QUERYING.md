@@ -37,7 +37,8 @@ An experimental script that attempts actual OSC 4 queries:
 
 ### Response Format
 ```
-\x1b]4;<index>;rgb:<r>/<g>/<b>\x07
+\x1b]4;<index>;
+:<r>/<g>/<b>\x07
 ```
 Example: `\x1b]4;1;rgb:ff00/0000/8000\x07` means Color 1 = RGB(255, 0, 128)
 

@@ -18,6 +18,10 @@ pub fn ansi_styling_support_impl(_input: TokenStream) -> TokenStream {
             Magenta,
             Cyan,
             White,
+            // 256-color support
+            Color256(u8),
+            // RGB support
+            Rgb(u8, u8, u8),
         }
 
         // ANSI text effects
@@ -94,16 +98,22 @@ pub fn ansi_styling_support_impl(_input: TokenStream) -> TokenStream {
                 }
 
                 if let Some(color) = self.fg {
-                    codes.push(match color {
-                        Color::Black => "30",
-                        Color::Red => "31",
-                        Color::Green => "32",
-                        Color::Yellow => "33",
-                        Color::Blue => "34",
-                        Color::Magenta => "35",
-                        Color::Cyan => "36",
-                        Color::White => "37",
-                    });
+                    match color {
+                        Color::Black => codes.push("30"),
+                        Color::Red => codes.push("31"),
+                        Color::Green => codes.push("32"),
+                        Color::Yellow => codes.push("33"),
+                        Color::Blue => codes.push("34"),
+                        Color::Magenta => codes.push("35"),
+                        Color::Cyan => codes.push("36"),
+                        Color::White => codes.push("37"),
+                        Color::Color256(index) => {
+                            return format!("\x1b[38;5;{}m{}\x1b[0m", index, self.text);
+                        },
+                        Color::Rgb(r, g, b) => {
+                            return format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, self.text);
+                        },
+                    }
                 }
 
                 format!("\x1b[{}m", codes.join(";"))

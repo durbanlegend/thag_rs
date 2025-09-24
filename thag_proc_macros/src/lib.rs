@@ -369,7 +369,7 @@ pub fn ansi_styling_support(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn generate_theme_types(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(
-        false,
+        true,
         "generate_theme_types",
         &input,
         generate_theme_types_impl,

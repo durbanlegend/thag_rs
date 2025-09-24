@@ -24,7 +24,7 @@ thag_common = { version = "0.2, thag-auto" }
 /// - Better performance (no macro overhead)
 /// - Cleaner, more maintainable code
 //# Purpose: Migration guide from old embedding systems to StyledString
-//# Categories: styling, migration, documentation, examples
+//# Categories: documentation, examples, migration, styling
 use thag_common::Verbosity;
 use thag_styling::{ColorInitStrategy, Styleable, StyledStringExt, TermAttributes};
 

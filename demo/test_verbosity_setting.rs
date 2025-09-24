@@ -5,7 +5,7 @@ thag_rs = { version = "0.2, thag-auto" }
 
 //: Test the new verbosity setting functionality
 //# Purpose: Demonstrate and test the improved verbosity setting API
-//# Categories: debugging, logging, utilities
+//# Categories: debugging, testing
 
 use thag_rs::{get_verbosity, init_verbosity, set_global_verbosity, set_verbosity, vprtln, V};
 

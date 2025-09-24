@@ -4,19 +4,17 @@ thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
 crossterm = "0.28"
 */
 
-//! Mintty Color Detection Test
-//!
-//! This script tests mintty's special OSC 7704 sequence for querying palette colors.
-//! Mintty uses a non-standard but more reliable method for color queries compared
-//! to standard OSC sequences. This can help detect background colors and verify
-//! palette colors in mintty terminals.
-//!
-//! Based on the shell script in TODO.md lines 49-74, this implements the same
-//! functionality in Rust to query mintty ANSI slots 0-15.
-
+/// Mintty Color Detection Test
+///
+/// This script tests mintty's special OSC 7704 sequence for querying palette colors.
+/// Mintty uses a non-standard but more reliable method for color queries compared
+/// to standard OSC sequences. This can help detect background colors and verify
+/// palette colors in mintty terminals.
+///
+/// Based on the shell script in TODO.md lines 49-74, this implements the same
+/// functionality in Rust to query mintty ANSI slots 0-15.
 //# Purpose: Test mintty-specific color detection using OSC 7704 sequences
-//# Categories: terminal, colors, mintty, windows, detection
-
+//# Categories: color, detection, mintty, terminal, windows
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::thread;
@@ -102,7 +100,7 @@ fn display_environment() {
         "TERM",
         "TERM_PROGRAM",
         "COLORTERM",
-        "MSYSTEM",     // MSYS2/MinGW environment
+        "MSYSTEM",      // MSYS2/MinGW environment
         "MINGW_PREFIX", // MinGW environment
     ];
 
@@ -113,7 +111,14 @@ fn display_environment() {
         }
     }
 
-    println!("   Platform: {}", if cfg!(windows) { "Windows" } else { "Unix-like" });
+    println!(
+        "   Platform: {}",
+        if cfg!(windows) {
+            "Windows"
+        } else {
+            "Unix-like"
+        }
+    );
     println!("   Is Mintty: {}", is_mintty());
     println!();
 }
@@ -128,24 +133,32 @@ fn test_specific_colors(indices: &[u8]) {
     for &index in indices {
         print!("Color {index:2}: ");
         match query_mintty_color(index, Duration::from_millis(300)) {
-            Some(colors) => {
-                match (colors.foreground, colors.background) {
-                    (Some(fg), Some(bg)) => {
-                        println!("FG: {} {} BG: {} {}",
-                            fg.to_hex(), if fg.is_light() { "Light" } else { "Dark" },
-                            bg.to_hex(), if bg.is_light() { "Light" } else { "Dark" });
-                    }
-                    (Some(fg), None) => {
-                        println!("FG: {} {} (no background)",
-                            fg.to_hex(), if fg.is_light() { "Light" } else { "Dark" });
-                    }
-                    (None, Some(bg)) => {
-                        println!("BG: {} {} (no foreground)",
-                            bg.to_hex(), if bg.is_light() { "Light" } else { "Dark" });
-                    }
-                    (None, None) => println!("❌ No colors detected"),
+            Some(colors) => match (colors.foreground, colors.background) {
+                (Some(fg), Some(bg)) => {
+                    println!(
+                        "FG: {} {} BG: {} {}",
+                        fg.to_hex(),
+                        if fg.is_light() { "Light" } else { "Dark" },
+                        bg.to_hex(),
+                        if bg.is_light() { "Light" } else { "Dark" }
+                    );
                 }
-            }
+                (Some(fg), None) => {
+                    println!(
+                        "FG: {} {} (no background)",
+                        fg.to_hex(),
+                        if fg.is_light() { "Light" } else { "Dark" }
+                    );
+                }
+                (None, Some(bg)) => {
+                    println!(
+                        "BG: {} {} (no foreground)",
+                        bg.to_hex(),
+                        if bg.is_light() { "Light" } else { "Dark" }
+                    );
+                }
+                (None, None) => println!("❌ No colors detected"),
+            },
             None => println!("❌ Query failed or timeout"),
         }
     }
@@ -196,10 +209,13 @@ fn test_full_palette() {
     if !background_candidates.is_empty() {
         println!("   Background color candidates from palette 0:");
         for (source, rgb) in background_candidates {
-            println!("   • {}: {} {} (luminance: {:.2})",
-                source, rgb.to_hex(),
+            println!(
+                "   • {}: {} {} (luminance: {:.2})",
+                source,
+                rgb.to_hex(),
                 if rgb.is_light() { "Light" } else { "Dark" },
-                rgb.luminance());
+                rgb.luminance()
+            );
         }
     }
 }
@@ -351,10 +367,18 @@ fn analyze_background_detection() {
         match (colors.foreground, colors.background) {
             (Some(fg), Some(bg)) => {
                 println!("✅ Palette 0 returned both FG and BG colors:");
-                println!("   Foreground: {} {} (luminance: {:.2})",
-                    fg.to_hex(), if fg.is_light() { "Light" } else { "Dark" }, fg.luminance());
-                println!("   Background: {} {} (luminance: {:.2})",
-                    bg.to_hex(), if bg.is_light() { "Light" } else { "Dark" }, bg.luminance());
+                println!(
+                    "   Foreground: {} {} (luminance: {:.2})",
+                    fg.to_hex(),
+                    if fg.is_light() { "Light" } else { "Dark" },
+                    fg.luminance()
+                );
+                println!(
+                    "   Background: {} {} (luminance: {:.2})",
+                    bg.to_hex(),
+                    if bg.is_light() { "Light" } else { "Dark" },
+                    bg.luminance()
+                );
                 println!("   💡 Background color can be used for theme detection");
             }
             (Some(fg), None) => {
@@ -375,8 +399,12 @@ fn analyze_background_detection() {
     println!("   thag_common color support: {:?}", color_support);
     if *term_bg_rgb != (0, 0, 0) {
         let bg_rgb = Rgb::new(term_bg_rgb.0, term_bg_rgb.1, term_bg_rgb.2);
-        println!("   thag_common background: {} {} (luminance: {:.2})",
-            bg_rgb.to_hex(), if bg_rgb.is_light() { "Light" } else { "Dark" }, bg_rgb.luminance());
+        println!(
+            "   thag_common background: {} {} (luminance: {:.2})",
+            bg_rgb.to_hex(),
+            if bg_rgb.is_light() { "Light" } else { "Dark" },
+            bg_rgb.luminance()
+        );
     } else {
         println!("   thag_common: No background detected");
     }

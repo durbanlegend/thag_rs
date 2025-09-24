@@ -4,23 +4,21 @@ thag_styling = { version = "0.2, thag-auto" }
 crossterm = "0.28"
 */
 
-//! Terminal Color Diagnostics
-//!
-//! This script performs comprehensive diagnostics of terminal color capabilities,
-//! specifically designed to investigate issues where RGB truecolor sequences
-//! display incorrectly while palette-indexed colors work correctly.
-//!
-//! The script tests multiple aspects of color handling:
-//! - Basic ANSI color support
-//! - 256-color palette support
-//! - RGB truecolor support
-//! - OSC sequence handling
-//! - Terminal environment detection
-//! - Color profile and gamma correction issues
-
+/// Terminal Color Diagnostics
+///
+/// This script performs comprehensive diagnostics of terminal color capabilities,
+/// specifically designed to investigate issues where RGB truecolor sequences
+/// display incorrectly while palette-indexed colors work correctly.
+///
+/// The script tests multiple aspects of color handling:
+/// - Basic ANSI color support
+/// - 256-color palette support
+/// - RGB truecolor support
+/// - OSC sequence handling
+/// - Terminal environment detection
+/// - Color profile and gamma correction issues
 //# Purpose: Comprehensive terminal color capability diagnostics and troubleshooting
-//# Categories: terminal, colors, debugging, diagnostics
-
+//# Categories: color, debugging, diagnosis, terminal
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::thread;

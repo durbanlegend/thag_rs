@@ -4,22 +4,20 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Enhanced styled! Macro Demonstration
-//!
-//! This demo showcases the enhanced styled! macro with support for:
-//! - Basic ANSI colors (original functionality)
-//! - 256-color palette indices
-//! - True RGB colors
-//! - Multiple text effects
-//!
-//! The enhanced macro now supports three color formats:
-//! 1. Basic colors: Red, Green, Blue, etc. (uses terminal palette)
-//! 2. Color256(index): 256-color palette (0-255)
-//! 3. Rgb(r, g, b): True RGB colors (0-255 per component)
-
+/// Enhanced styled! Macro Demonstration
+///
+/// This demo showcases the enhanced styled! macro with support for:
+/// - Basic ANSI colors (original functionality)
+/// - 256-color palette indices
+/// - True RGB colors
+/// - Multiple text effects
+///
+/// The enhanced macro now supports three color formats:
+/// 1. Basic colors: Red, Green, Blue, etc. (uses terminal palette)
+/// 2. Color256(index): 256-color palette (0-255)
+/// 3. Rgb(r, g, b): True RGB colors (0-255 per component)
 //# Purpose: Demonstrate enhanced styled! macro with 256-color and RGB support
 //# Categories: styling, macros, color, demo
-
 use thag_proc_macros::{ansi_styling_support, styled};
 
 // Enable the ANSI styling support

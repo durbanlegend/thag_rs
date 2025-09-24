@@ -3,21 +3,19 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! TrueColor Detection
-//!
-//! This script tests TrueColor detection support by sending a TrueColor escape
-//! sequence and querying the result, as suggested by https://github.com/termstandard/colors.
-//!
-//! The approach:
-//! 1. Query current foreground color (OSC 10)
-//! 2. Set a specific TrueColor foreground (OSC 10 with RGB)
-//! 3. Query the foreground color again
-//! 4. Restore original foreground color
-//! 5. Compare set vs queried values to determine TrueColor support
-
+/// TrueColor Detection
+///
+/// This script tests TrueColor detection support by sending a TrueColor escape
+/// sequence and querying the result, as suggested by https://github.com/termstandard/colors.
+///
+/// The approach:
+/// 1. Query current foreground color (OSC 10)
+/// 2. Set a specific TrueColor foreground (OSC 10 with RGB)
+/// 3. Query the foreground color again
+/// 4. Restore original foreground color
+/// 5. Compare set vs queried values to determine TrueColor support
 //# Purpose: Test TrueColor support using OSC sequence probing
 //# Categories: ansi, color, styling, terminal, testing, theming, tools, windows, xterm
-
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::sync::mpsc;

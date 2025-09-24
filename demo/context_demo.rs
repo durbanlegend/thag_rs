@@ -2,10 +2,9 @@
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
 */
-
+/// TermAttributes context pattern demo.
 //# Purpose: Demonstrate TermAttributes context pattern for testing and temporary overrides
-//# Categories: styling, testing, context
-
+//# Categories: styling, terminal, testing
 use thag_styling::{ColorSupport, Style, TermAttributes, TermBgLuma, Theme};
 
 fn main() {

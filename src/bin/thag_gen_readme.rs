@@ -1,8 +1,9 @@
 /*[toml]
 [dependencies]
-strum = { version = "0.26", features = ["derive", "phf"] }
+regex = "1.11"
+strum = { version = "0.27", features = ["derive", "phf"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["simplelog", "tui"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["simplelog", "tools", "tui"] }
 */
 
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate

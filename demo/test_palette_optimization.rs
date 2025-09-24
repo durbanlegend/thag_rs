@@ -4,14 +4,13 @@ thag_rs = { version = "0.2, thag-auto", features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Test script to verify the palette optimization changes
-//!
-//! This script demonstrates the new roles (Link, Quote, Commentary) that replaced
-//! the old Trace role, ensuring the perfect 1:1 mapping with 16-color terminal palette.
-//!
+/// Test script to verify the palette optimization changes
+///
+/// This script demonstrates the new roles (Link, Quote, Commentary) that replaced
+/// the old Trace role, ensuring the perfect 1:1 mapping with 16-color terminal palette.
+///
 //# Purpose: Test and demonstrate the palette optimization changes
-//# Categories: styling, testing, development
-
+//# Categories: styling, testing
 use thag_styling::{styling::Role, Styleable, Styler};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

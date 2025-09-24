@@ -4,16 +4,14 @@ thag_styling = { version = "0.2, thag-auto" }
 crossterm = "0.28"
 */
 
-//! Simple OSC 4 Test
-//!
-//! A minimal test script to debug OSC 4 response capture issues.
-//! This script sends a single OSC 4 query and tries different methods
-//! to capture the response, helping identify why responses are visible
-//! but not being captured programmatically.
-
+/// Simple OSC 4 Test
+///
+/// A minimal test script to debug OSC 4 response capture issues.
+/// This script sends a single OSC 4 query and tries different methods
+/// to capture the response, helping identify why responses are visible
+/// but not being captured programmatically.
 //# Purpose: Debug OSC 4 response capture mechanisms
-//# Categories: terminal, debugging, experimental
-
+//# Categories: debugging, exploration, terminal
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::process::{Command, Stdio};

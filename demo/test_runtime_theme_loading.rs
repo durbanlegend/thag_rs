@@ -5,7 +5,7 @@ thag_common = { version = "0.2, thag-auto" }
 */
 
 //# Purpose: Test runtime theme loading from user-specified directories
-//# Categories: demos, styling, themes
+//# Categories: demo, styling, theming
 
 /// Demo script that tests the new runtime theme loading functionality.
 ///

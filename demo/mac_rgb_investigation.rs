@@ -4,18 +4,16 @@ thag_styling = { version = "0.2, thag-auto" }
 crossterm = "0.28"
 */
 
-//! Mac RGB Color Investigation
-//!
-//! This script investigates the specific issue on Mac where:
-//! - Palette-indexed colors (ESC[38;5;Nm) display correctly
-//! - RGB truecolor sequences (ESC[38;2;R;G;Bm) display incorrectly as washed-out colors
-//!
-//! The script tests various color output methods to understand what's happening
-//! with RGB color interpretation on macOS terminals.
-
+/// Mac RGB Color Investigation
+///
+/// This script investigates the specific issue on Mac where:
+/// - Palette-indexed colors (ESC[38;5;Nm) display correctly
+/// - RGB truecolor sequences (ESC[38;2;R;G;Bm) display incorrectly as washed-out colors
+///
+/// The script tests various color output methods to understand what's happening
+/// with RGB color interpretation on macOS terminals.
 //# Purpose: Investigate Mac RGB color display issues with different escape sequence methods
-//# Categories: terminal, colors, debugging, macos
-
+//# Categories: color, debugging, mac_os, terminal
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::thread;

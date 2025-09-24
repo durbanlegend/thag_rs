@@ -4,24 +4,22 @@ thag_styling = { version = "0.2, thag-auto" }
 crossterm = "0.28"
 */
 
-//! TrueColor Quantization Detection Test
-//!
-//! This test detects whether a terminal silently quantizes TrueColor values
-//! to a 256-color palette, as suspected with Apple Terminal. The strategy:
-//!
-//! 1. Test colors that should be identical in TrueColor but different in 256-color
-//! 2. Test colors that fall between 256-color palette entries
-//! 3. Use statistical analysis of multiple color tests
-//! 4. Compare expected vs actual color distances
-//!
-//! If the terminal silently quantizes, we'll see:
-//! - Colors that should be different become identical
-//! - Systematic rounding to 256-color palette values
-//! - Loss of precision in color gradients
-
+/// TrueColor Quantization Detection Test
+///
+/// This test detects whether a terminal silently quantizes TrueColor values
+/// to a 256-color palette, as suspected with Apple Terminal. The strategy:
+///
+/// 1. Test colors that should be identical in TrueColor but different in 256-color
+/// 2. Test colors that fall between 256-color palette entries
+/// 3. Use statistical analysis of multiple color tests
+/// 4. Compare expected vs actual color distances
+///
+/// If the terminal silently quantizes, we'll see:
+/// - Colors that should be different become identical
+/// - Systematic rounding to 256-color palette values
+/// - Loss of precision in color gradients
 //# Purpose: Detect silent TrueColor quantization in terminals
-//# Categories: terminal, colors, testing
-
+//# Categories: terminal, color, testing
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::sync::mpsc;

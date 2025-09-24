@@ -3,16 +3,14 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Visual RGB Rendering Test
-//!
-//! This script tests whether terminals actually render RGB truecolor sequences correctly
-//! by displaying them side-by-side with their closest 256-color palette equivalents.
-//! This helps detect terminals that accept RGB sequences but render them incorrectly
-//! (like Apple Terminal showing salmon pink instead of duck-egg blue-green).
-
+/// Visual RGB Rendering Test
+///
+/// This script tests whether terminals actually render RGB truecolor sequences correctly
+/// by displaying them side-by-side with their closest 256-color palette equivalents.
+/// This helps detect terminals that accept RGB sequences but render them incorrectly
+/// (like Apple Terminal showing salmon pink instead of duck-egg blue-green).
 //# Purpose: Visual test to detect accurate RGB truecolor rendering vs palette quantization
-//# Categories: terminal, colors, testing, truecolor, diagnostics
-
+//# Categories: color, diagnosis, terminal, testing
 use std::io::{self, Write};
 
 /// Test colors specifically chosen to reveal rendering issues
@@ -27,19 +25,37 @@ struct TestColor {
 
 impl TestColor {
     const fn new(r: u8, g: u8, b: u8, name: &'static str, description: &'static str) -> Self {
-        Self { r, g, b, name, description }
+        Self {
+            r,
+            g,
+            b,
+            name,
+            description,
+        }
     }
 }
 
 /// Colors designed to reveal different types of rendering issues
 const DIAGNOSTIC_COLORS: &[TestColor] = &[
-    TestColor::new(91, 116, 116, "Duck-egg Blue-green", "Known to render as salmon pink in Apple Terminal"),
+    TestColor::new(
+        91,
+        116,
+        116,
+        "Duck-egg Blue-green",
+        "Known to render as salmon pink in Apple Terminal",
+    ),
     TestColor::new(123, 234, 45, "Lime Green", "Distinctive non-standard green"),
     TestColor::new(200, 100, 50, "Burnt Orange", "Mid-range RGB values"),
     TestColor::new(75, 150, 225, "Sky Blue", "Should be clearly blue"),
     TestColor::new(180, 80, 190, "Purple-Magenta", "Distinctive purple hue"),
     TestColor::new(64, 64, 64, "Dark Gray", "Low RGB values test"),
-    TestColor::new(220, 220, 100, "Pale Yellow", "High RGB values with color cast"),
+    TestColor::new(
+        220,
+        220,
+        100,
+        "Pale Yellow",
+        "High RGB values with color cast",
+    ),
 ];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -89,13 +105,19 @@ fn display_environment_info() {
 fn test_color_rendering(color: &TestColor) {
     let closest_256 = find_closest_256_color(color.r, color.g, color.b);
 
-    println!("🎨 {} RGB({}, {}, {})", color.name, color.r, color.g, color.b);
+    println!(
+        "🎨 {} RGB({}, {}, {})",
+        color.name, color.r, color.g, color.b
+    );
     println!("   Description: {}", color.description);
     println!();
 
     // RGB rendering test
     print!("   RGB Sequence:  ");
-    print!("\x1b[38;2;{};{};{}m████████████████\x1b[0m", color.r, color.g, color.b);
+    print!(
+        "\x1b[38;2;{};{};{}m████████████████\x1b[0m",
+        color.r, color.g, color.b
+    );
     println!(" ESC[38;2;{};{};{}m", color.r, color.g, color.b);
     io::stdout().flush().unwrap();
 
@@ -106,7 +128,10 @@ fn test_color_rendering(color: &TestColor) {
 
     // Background comparison too
     print!("   RGB Background:  ");
-    print!("\x1b[48;2;{};{};{}m                \x1b[0m", color.r, color.g, color.b);
+    print!(
+        "\x1b[48;2;{};{};{}m                \x1b[0m",
+        color.r, color.g, color.b
+    );
     println!(" Background RGB");
 
     print!("   256-BG Ref:      ");
@@ -223,7 +248,14 @@ fn find_closest_256_color(r: u8, g: u8, b: u8) -> u8 {
     // Grayscale ramp (232-255): 24 grays
     for i in 232..=255 {
         let gray_value = 8 + (i - 232) * 10;
-        let distance = color_distance(r, g, b, gray_value as u8, gray_value as u8, gray_value as u8);
+        let distance = color_distance(
+            r,
+            g,
+            b,
+            gray_value as u8,
+            gray_value as u8,
+            gray_value as u8,
+        );
         if distance < best_distance {
             best_distance = distance;
             best_index = i as u8;
@@ -248,10 +280,10 @@ mod tests {
     #[test]
     fn test_find_closest_256_color() {
         // Test pure colors
-        assert_eq!(find_closest_256_color(255, 0, 0), 9);   // Bright red
-        assert_eq!(find_closest_256_color(0, 255, 0), 10);  // Bright green
-        assert_eq!(find_closest_256_color(0, 0, 255), 12);  // Bright blue
-        assert_eq!(find_closest_256_color(0, 0, 0), 0);     // Black
+        assert_eq!(find_closest_256_color(255, 0, 0), 9); // Bright red
+        assert_eq!(find_closest_256_color(0, 255, 0), 10); // Bright green
+        assert_eq!(find_closest_256_color(0, 0, 255), 12); // Bright blue
+        assert_eq!(find_closest_256_color(0, 0, 0), 0); // Black
         assert_eq!(find_closest_256_color(255, 255, 255), 15); // White
     }
 

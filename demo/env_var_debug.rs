@@ -3,14 +3,12 @@
 thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
-//! Environment Variable Debug
-//!
-//! This script directly tests the environment variable parsing for color support
-//! to debug why THAG_COLOR_MODE=256 isn't working as expected.
-
+/// Environment Variable Debug
+///
+/// This script directly tests the environment variable parsing for color support
+/// to debug why THAG_COLOR_MODE=256 isn't working as expected.
 //# Purpose: Debug environment variable parsing for color support
-//# Categories: terminal, colors, debugging, environment
-
+//# Categories: terminal, color, debugging, environment
 use thag_common::{
     terminal::detect_term_capabilities, terminal::get_fresh_color_support, ColorSupport,
 };

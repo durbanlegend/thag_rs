@@ -3,8 +3,9 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Quick test to verify filename handling for different formats
-
+/// Quick test to verify filename handling for different formats
+//# Purpose: Test filename handling
+//# Categories: file_handling, testing
 use thag_styling::{export_theme_to_file, ExportFormat, Theme};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

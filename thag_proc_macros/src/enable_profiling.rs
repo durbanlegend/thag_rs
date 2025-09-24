@@ -285,7 +285,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
 
     let profile_this_fn = args.function_args.as_ref().map_or_else(
         || {
-            eprintln!("In default, returning true");
+            // eprintln!("In default, returning true");
             true
         },
         |fn_args| {
@@ -357,8 +357,6 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
     } else {
         quote! {}
     };
-
-    eprintln!("profile_drop={profile_drop}");
 
     #[cfg(not(feature = "full_profiling"))]
     let profile_init = match args.mode {

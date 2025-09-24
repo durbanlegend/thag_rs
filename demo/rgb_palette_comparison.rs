@@ -3,16 +3,14 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! RGB vs Palette Color Comparison
-//!
-//! This script directly demonstrates the issue where RGB truecolor sequences
-//! display differently than expected compared to palette-indexed colors.
-//! It tests the specific color mentioned: RGB(91, 116, 116) which should be
-//! a dark duck-egg blue-green but appears as washed-out salmon pink.
-
+/// RGB vs Palette Color Comparison
+///
+/// This script directly demonstrates the issue where RGB truecolor sequences
+/// display differently than expected compared to palette-indexed colors.
+/// It tests the specific color mentioned: RGB(91, 116, 116) which should be
+/// a dark duck-egg blue-green but appears as washed-out salmon pink.
 //# Purpose: Demonstrate RGB vs palette color display differences on Mac
-//# Categories: terminal, colors, debugging, macos
-
+//# Categories: color, debugging, mac_os, terminal
 use std::io::{self, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

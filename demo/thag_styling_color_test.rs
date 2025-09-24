@@ -3,16 +3,14 @@
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
-//! Thag Styling Color Output Test
-//!
-//! This script tests what thag_styling actually outputs when THAG_COLOR_MODE
-//! is set. Unlike the diagnostic comparison scripts, this shows the real
-//! escape sequences that thag_styling generates based on the detected
-//! color support mode.
-
+/// Thag Styling Color Output Test
+///
+/// This script tests what thag_styling actually outputs when THAG_COLOR_MODE
+/// is set. Unlike the diagnostic comparison scripts, this shows the real
+/// escape sequences that thag_styling generates based on the detected
+/// color support mode.
 //# Purpose: Test actual thag_styling color output with THAG_COLOR_MODE environment variable
-//# Categories: terminal, colors, testing, styling
-
+//# Categories: terminal, color, testing, styling
 use thag_styling::{Style, TermAttributes};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

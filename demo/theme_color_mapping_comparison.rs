@@ -3,11 +3,12 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Theme Color Mapping Comparison Tool
-//!
-//! This tool shows exactly how the source thag-vibrant-dark theme colors
-//! map to the exported Alacritty format, helping debug color differences.
-
+/// Theme Color Mapping Comparison Tool
+///
+/// This tool shows exactly how the source thag-vibrant-dark theme colors
+/// map to the exported Alacritty format, helping debug color differences.
+//# Purpose: Test color mapping.
+//# Categories: color, testing, theming
 use thag_styling::{ExportFormat, Theme, ThemeExporter};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

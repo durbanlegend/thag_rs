@@ -4,7 +4,7 @@ thag_styling = { version = "0.2, thag-auto" }
 */
 
 //# Purpose: Simple test for runtime theme loading functionality
-//# Categories: demos, styling, themes
+//# Categories: demo, styling, theming
 
 /// Simple test to debug theme loading issues
 use std::env;

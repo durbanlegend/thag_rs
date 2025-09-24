@@ -1,18 +1,16 @@
 /*[toml]
 [dependencies]
-# thag_rs = { version = "0.2, thag-auto", features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
-//! Urgency Hierarchy Demonstration
-//!
-//! This script demonstrates the new urgency-based ANSI color hierarchy where
-//! bright colors are used for the most critical/urgent messages, following
-//! established ANSI safety color standards and terminal application conventions.
-//!
+/// Urgency Hierarchy Demonstration
+///
+/// This script demonstrates the new urgency-based ANSI color hierarchy where
+/// bright colors are used for the most critical/urgent messages, following
+/// established ANSI safety color standards and terminal application conventions.
+///
 //# Purpose: Demonstrate the urgency-based color hierarchy in terminal output
-//# Categories: styling, testing, development
-
+//# Categories: demo, styling, testing
 use thag_styling::{styling::Role, Styleable, Styler};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,5 +1,9 @@
 use std::env;
-use sysinfo::{System, ProcessesToUpdate};
+/// Prototype of PowerShell detection
+//# Purpose: Detect if we're running under PowerShell.
+//# Categories: detection, terminal, testing, windows
+use std::io::{self, Read};
+use sysinfo::{ProcessesToUpdate, System};
 
 fn is_powershell() -> bool {
     // Heuristic: check PSModulePath first
@@ -20,8 +24,7 @@ fn is_powershell() -> bool {
                     let name = parent.name();
                     if let Some(name_str) = name.to_str() {
                         let name_lower = name_str.to_ascii_lowercase();
-                        return name_lower.contains("powershell")
-                            || name_lower.contains("pwsh");
+                        return name_lower.contains("powershell") || name_lower.contains("pwsh");
                     }
                 }
             }

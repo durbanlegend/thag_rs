@@ -4,13 +4,11 @@ thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Simple test for enhanced styled! macro
-//!
-//! Tests the four color formats: Basic ANSI, 256-color, RGB, and Hex
-
+/// Simple test for enhanced styled! macro
+///
+/// Tests the four color formats: Basic ANSI, 256-color, RGB, and Hex
 //# Purpose: Simple test of enhanced styled! macro with all color formats
-//# Categories: styling, macros, color, test
-
+//# Categories: color, macros, styling, testing
 use thag_proc_macros::{ansi_styling_support, styled};
 
 // Enable the ANSI styling support

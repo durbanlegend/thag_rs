@@ -259,82 +259,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_
 
 ---
 
-### Script: ansi_styling.rs
-
-**Description:**  Demonstrates simple RYO styling of `&str` and `String` types for output via a trait.
-
- E.g. `thag demo/ansi_styling.rs`
-
-**Purpose:** Demonstrate styling text via traits.
-
-**Crates:** `thag_styling`
-
-**Type:** Program
-
-**Categories:** ansi, color, demo, dsl, learning, reference, styling, technique, terminal, trait_implementation, xterm
-
-**Link:** [ansi_styling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling.rs
-```
-
----
-
-### Script: ansi_styling_support.rs
-
-**Description:**  Demonstrates using the ansi_styling_support! macro to generate ANSI styling capabilities
-
- E.g. `thag demo/ansi_styling_support.rs`
-
-**Purpose:** Demonstrate the ansi_styling_support! macro for standalone ANSI styling.
-
-**Crates:** `thag_proc_macros`
-
-**Type:** Program
-
-**Categories:** ansi, color, demo, macros, proc_macros, styling, terminal
-
-**Link:** [ansi_styling_support.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling_support.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ansi_styling_support.rs
-```
-
----
-
-### Script: any.rs
-
-**Description:**  Demo determining at run-time whether an expression returns a unit value
- so that it can be handled appropriately.
-
- `thag` needs to know whether an expression returns a unit type or a value
- that we should display. When using a code template this approach using `Any`
- is short and sweet, but it has to be included in the template and thus the
- generated code, whereas the alternative of using an AST is quite a mission
- but works with any arbitrary snippet and doesn't pollute the generated
- source code, so `thag` went with the latter.
-
-**Purpose:** Demo Rust's answer to dynamic typing.
-
-**Type:** Snippet
-
-**Categories:** exploration, type_identification, technique
-
-**Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/any.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/any.rs
-```
-
----
-
 ### Script: append_option_to_iter.rs
 
 **Description:**  Demo: Optionally append one item to an iterator.
@@ -352,6 +276,37 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/any.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/append_option_to_iter.rs
+```
+
+---
+
+### Script: attribute_reset_replacement_test.rs
+
+**Description:**  Test enhanced reset replacement with proper text attribute handling
+
+ This demonstrates the fix for text attributes (bold/dim, italic, underline) that
+ were previously leaking from inner styled content when using reset replacement.
+
+ The enhanced system:
+ 1. Analyzes the outer style's ANSI codes
+ 2. Only resets attributes that won't be reapplied
+ 3. Optimizes the reset sequence to avoid redundant operations
+ 4. Maintains perfect context preservation across all nesting levels
+
+**Purpose:** Test enhanced reset replacement with text attribute handling
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, styling, terminal, testing
+
+**Link:** [attribute_reset_replacement_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/attribute_reset_replacement_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/attribute_reset_replacement_test.rs
 ```
 
 ---
@@ -424,6 +379,44 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_firest
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_profile.rs
+```
+
+---
+
+### Script: bg_detect.rs
+
+**Description:**  Background Color Detection
+
+ This script investigates querying palette color 0 as a proxy for background color
+ detection. This approach might work where OSC 11 queries
+ fail, particularly in PowerShell and regular Windows terminals.
+
+ Based on the observation that demo/truecolor*.rs files work in PowerShell,
+ suggesting we can interrogate palette colors from Rust instead of shell scripts.
+ RGB color representation
+ Query background color using standard OSC 11
+ Query palette color 0 using OSC 4 (potential background proxy)
+ Generic OSC color query function
+ Read terminal response with timeout
+ Parse OSC color response (handles both OSC 11 and OSC 4 responses)
+ Parse hex component from OSC response
+ Compare different detection methods
+ Calculate color distance (simple Euclidean)
+
+**Purpose:** Test background color detection via palette color 0 query
+
+**Crates:** `crossterm`, `thag_common`
+
+**Type:** Program
+
+**Categories:** ansi, color, terminal, windows, xterm
+
+**Link:** [bg_detect.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bg_detect.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bg_detect.rs
 ```
 
 ---
@@ -591,26 +584,26 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_debug_test
 
 ---
 
-### Script: cargo_lookup.rs
+### Script: cargo_lookup_highest.rs
 
-**Description:**  Explore querying crates.io information for a crate.
+**Description:**  Updated prototype of getting the highest valid release of a crate via `cargo-lookup`.
+ The crate in its raw state only gets the latest. `thag_rs` was picking up `inquire`
+ 8.1 because it was released after 9.1 to fix the same issue on the previous version.
 
- Format: `thag demo/cargo_lookup.rs -- <crate_name>`
-
-**Purpose:** Proof of concept
+**Purpose:** Originally used to debug and then prototype crate lookup, now brought up to date.
 
 **Crates:** `cargo_lookup`
 
 **Type:** Program
 
-**Categories:** crates, technique
+**Categories:** debugging, prototype
 
-**Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup.rs)
+**Link:** [cargo_lookup_highest.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup_highest.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup.rs -- serde
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup_highest.rs
 ```
 
 ---
@@ -1123,6 +1116,54 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_test
 
 ---
 
+### Script: context_demo.rs
+
+**Description:**  TermAttributes context pattern demo.
+
+**Purpose:** Demonstrate TermAttributes context pattern for testing and temporary overrides
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, terminal, testing
+
+**Link:** [context_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/context_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/context_demo.rs
+```
+
+---
+
+### Script: correct_reset_replacement.rs
+
+**Description:**  Correct implementation of reset replacement approach for multi-level nesting
+
+ This implements the approach where each level replaces all reset sequences (\x1b[0m)
+ in its content with its own ANSI color codes, ensuring that outer context is
+ always restored after inner styled content.
+
+**Purpose:** Demonstrate correct reset replacement for perfect context preservation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, prototype, styling
+
+**Link:** [correct_reset_replacement.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/correct_reset_replacement.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/correct_reset_replacement.rs
+```
+
+---
+
 ### Script: count_main_methods.rs
 
 **Description:**  Prototype of a function required by thag_rs to count the main methods
@@ -1580,6 +1621,137 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_
 
 ---
 
+### Script: debug_ansi_color_mismatch.rs
+
+**Description:**  Debug ANSI color generation mismatch
+
+ This script investigates why RGB values don't match the displayed colors
+ by examining the ANSI codes being generated for specific RGB values.
+
+**Purpose:** Diagnose ANSI color generation mismatch in dynamic color system
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, debugging, terminal
+
+**Link:** [debug_ansi_color_mismatch.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_color_mismatch.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_color_mismatch.rs
+```
+
+---
+
+### Script: debug_ansi_parsing.rs
+
+**Description:**  Debug ANSI code generation and parsing
+
+ This script helps debug how ANSI codes are generated by the styling system
+ and tests the parsing logic for detecting attributes in ANSI sequences.
+
+**Purpose:** Debug ANSI code generation and attribute detection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [debug_ansi_parsing.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing.rs
+```
+
+---
+
+### Script: debug_ansi_parsing_alt.rs
+
+**Description:**  Debug ANSI code generation and parsing
+
+ This script helps debug how ANSI codes are generated by the styling system
+ and tests the parsing logic for detecting attributes in ANSI sequences.
+
+**Purpose:** Debug ANSI code generation and attribute detection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [debug_ansi_parsing_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing_alt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing_alt.rs
+```
+
+---
+
+### Script: debug_colors.rs
+
+**Description:**  Debug demo to check theme loading and color values
+
+ This demonstrates:
+ 1. Current theme information
+ 2. Color values for each role
+ 3. RGB values and indices
+ 4. Comparison with expected palette colors
+
+**Purpose:** Debug theme and color loading issues
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, debugging, styling
+
+**Link:** [debug_colors.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors.rs
+```
+
+---
+
+### Script: debug_colors_specific_theme.rs
+
+**Description:**  Debug demo to check specific theme loading and color values
+
+ This demonstrates:
+ 1. Explicit theme selection instead of auto-detection
+ 2. Color values for each role with specific theme
+ 3. RGB values and indices for the monet theme
+ 4. Comparison with auto-detected theme
+
+**Purpose:** Debug specific theme loading vs auto-detection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, debugging, styling, theming
+
+**Link:** [debug_colors_specific_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors_specific_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors_specific_theme.rs
+```
+
+---
+
 ### Script: debug_detection.rs
 
 **Description:**  Simple diagnostic script to debug the terminal corruption detection
@@ -1604,6 +1776,80 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_detection.rs
+```
+
+---
+
+### Script: debug_light_theme.rs
+
+**Description:**  Minimal debug script to isolate light theme processing issues
+
+ This script tests light theme generation with minimal parameters
+ to identify where the infinite loop or color issues are occurring.
+
+**Purpose:** Debug light theme generation issues
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [debug_light_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_light_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_light_theme.rs
+```
+
+---
+
+### Script: debug_replace_logic.rs
+
+**Description:**  Debug the replace logic to find why colors are wrong and resets aren't removed
+
+ This demonstrates step-by-step what the replace logic is doing wrong
+ and provides a corrected implementation
+
+**Purpose:** Debug and fix replace logic for multi-level nesting
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** debugging, prototype, styling
+
+**Link:** [debug_replace_logic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_replace_logic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_replace_logic.rs
+```
+
+---
+
+### Script: debug_styled_issue.rs
+
+**Description:**  Debug styled! duplication issue
+
+ Minimal test to isolate the double-printing problem
+
+**Purpose:** Debug styled! macro duplication issue
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** debugging, styling, testing
+
+**Link:** [debug_styled_issue.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_styled_issue.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_styled_issue.rs
 ```
 
 ---
@@ -1883,9 +2129,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_depen
  with subdirectory support. Git `sparse-checkout` approach suggested and written
  by ChatGPT, local directory handling assisted by Claude.
 
+ `thag_styling` included
+
 **Purpose:** Prototype for `thag_get_demo_dir`.
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`
+**Crates:** `colored`, `inquire`, `thag_proc_macros`, `thag_styling`
 
 **Type:** Program
 
@@ -2006,7 +2254,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs
 
 **Type:** Program
 
-**Categories:** crates, prototype
+**Categories:** crates, gui, prototype
 
 **Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs)
 
@@ -2041,6 +2289,32 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/enum_select.rs
+```
+
+---
+
+### Script: env_var_debug.rs
+
+**Description:**  Environment Variable Debug
+
+ This script directly tests the environment variable parsing for color support
+ to debug why THAG_COLOR_MODE=256 isn't working as expected.
+ Direct implementation of check_env_color_support for testing
+
+**Purpose:** Debug environment variable parsing for color support
+
+**Crates:** `thag_common`
+
+**Type:** Program
+
+**Categories:** terminal, color, debugging, environment
+
+**Link:** [env_var_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/env_var_debug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/env_var_debug.rs
 ```
 
 ---
@@ -2244,7 +2518,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_
  digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
  edging out `fibo` at this scale.
 
- The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
 
  E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
@@ -2335,6 +2612,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic_ibig.r
 
  Using `clap` here is complete overkill, but this is just a demo.
  On Linux you may need to install the m4 package.
+
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
 
 **Purpose:** Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
 
@@ -2579,6 +2862,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_ite
  This version is derived from `demo/fib_doubling_iterative.rs` with the following
  change: that we reduce bloat as best we can  by purging redundant entries from the memo
  cache as soon as it's safe to do so.
+
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
 
 **Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 
@@ -2901,6 +3190,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_ibig.
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
 
 **Purpose:** Demo a very fast precise computation for large individual Fibonacci numbers.
 
@@ -2979,7 +3273,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_gui.
 
 **Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
 
-**Crates:** `inquire`, `thag_proc_macros`
+**Crates:** `inquire`, `thag_proc_macros`, `thag_styling`
 
 **Type:** Program
 
@@ -2991,6 +3285,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_gui.
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_thag.rs
+```
+
+---
+
+### Script: final_original_problem_test.rs
+
+**Description:**  Final test recreating the exact original problem scenario
+
+ This demonstrates the complete solution to your original embedding issue:
+ - Multi-level nesting with different styles and attributes
+ - Perfect context preservation using reset replacement
+ - Direct comparison with the original broken approach
+
+**Purpose:** Final verification that original embedding problem is completely solved
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, testing, validation
+
+**Link:** [final_original_problem_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/final_original_problem_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/final_original_problem_test.rs
 ```
 
 ---
@@ -3150,6 +3471,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_select.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/gen_names.rs
+```
+
+---
+
+### Script: generate_theme_from_image.rs
+
+**Description:**  Demo of generating a `thag_styling` theme from an image.
+
+**Purpose:** Demo making your own themes
+
+**Crates:** `thag_styling`
+
+**Type:** Snippet
+
+**Categories:** color, styling, technique, xterm
+
+**Link:** [generate_theme_from_image.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/generate_theme_from_image.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/generate_theme_from_image.rs
 ```
 
 ---
@@ -3438,6 +3781,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iced_tour.rs
 
 ---
 
+### Script: image_to_multi_format_theme.rs
+
+**Description:**  Demo of generating multi-format terminal themes from images
+
+ This example demonstrates the complete workflow:
+ 1. Generate a theme from an image using image analysis
+ 2. Export that theme to all supported terminal emulator formats
+ 3. Provide installation instructions for each format
+ Extract RGB values from a style for display purposes
+
+**Purpose:** Generate multi-format terminal themes from an image
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, color, demo, styling, technique, terminal, xterm
+
+**Link:** [image_to_multi_format_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/image_to_multi_format_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/image_to_multi_format_theme.rs
+```
+
+---
+
 ### Script: in_place.rs
 
 **Description:**  Published example from `in-place crate` disemvowels the file somefile.txt.
@@ -3529,9 +3900,44 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorizat
 
 ---
 
+### Script: install_alacritty_theme.rs
+
+**Description:**  Alacritty Theme Installation Script
+
+ This script properly installs the thag-vibrant-dark theme for Alacritty:
+ 1. Creates the correct theme file with fixed color mappings
+ 2. Installs it in the right location
+ 3. Updates or creates the Alacritty config with proper import syntax
+ 4. Provides verification steps
+ Generate corrected Alacritty theme with proper color mappings
+ Update or create Alacritty config file
+ Show expected color mapping
+ Extract RGB from style
+ Brighten a color
+ Adjust brightness
+ Check if color is light
+
+**Purpose:** Install and configure thag themes for Alacritty terminal
+
+**Crates:** `dirs`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [install_alacritty_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/install_alacritty_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/install_alacritty_theme.rs
+```
+
+---
+
 ### Script: interactive_clap_adv_struct.rs
 
-**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`:
+**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`, and added theming of the `inquire::Select` UI:
 
  This example shows further functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
 
@@ -3552,7 +3958,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorizat
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `clap`, `color_eyre`, `inquire`, `interactive_clap`, `shell_words`, `strum`
+**Crates:** `clap`, `color_eyre`, `inquire`, `interactive_clap`, `shell_words`, `strum`, `thag_styling`
 
 **Type:** Program
 
@@ -3564,6 +3970,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorizat
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/interactive_clap_adv_struct.rs
+```
+
+---
+
+### Script: is_unit_expr.rs
+
+**Description:**  Demo determining at run-time whether an expression returns a unit value
+ so that it can be handled appropriately.
+
+ `thag` needs to know whether an expression returns a unit type or a value
+ that we should display. When using a code template this approach using `Any`
+ is short and sweet, but it has to be included in the template and thus the
+ generated code, whereas the alternative of using an AST is quite a mission
+ but works with any arbitrary snippet and doesn't pollute the generated
+ source code, so `thag` went with the latter.
+
+**Purpose:** Demo Rust's answer to dynamic typing.
+
+**Type:** Snippet
+
+**Categories:** exploration, type_identification, technique
+
+**Link:** [is_unit_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/is_unit_expr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/is_unit_expr.rs
 ```
 
 ---
@@ -3748,6 +4182,44 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_expr.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
+```
+
+---
+
+### Script: mac_rgb_investigation.rs
+
+**Description:**  Mac RGB Color Investigation
+
+ This script investigates the specific issue on Mac where:
+ - Palette-indexed colors (ESC[38;5;Nm) display correctly
+ - RGB truecolor sequences (ESC[38;2;R;G;Bm) display incorrectly as washed-out colors
+
+ The script tests various color output methods to understand what's happening
+ with RGB color interpretation on macOS terminals.
+ Test color struct for our investigations
+ Test colors - specifically chosen to be distinctive
+ Display a color using different methods for comparison
+ Find the closest 256-color palette index for an RGB color
+ Calculate color distance (simple Manhattan distance)
+ Test OSC sequence color setting and querying
+ Query terminal capabilities using OSC sequences
+ Read a terminal response with timeout
+ Display environment information that might affect color handling
+
+**Purpose:** Investigate Mac RGB color display issues with different escape sequence methods
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** color, debugging, mac_os, terminal
+
+**Link:** [mac_rgb_investigation.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/mac_rgb_investigation.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mac_rgb_investigation.rs
 ```
 
 ---
@@ -3960,6 +4432,50 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs
 
 ---
 
+### Script: mintty_color_detect.rs
+
+**Description:**  Mintty Color Detection Test
+
+ This script tests mintty's special OSC 7704 sequence for querying palette colors.
+ Mintty uses a non-standard but more reliable method for color queries compared
+ to standard OSC sequences. This can help detect background colors and verify
+ palette colors in mintty terminals.
+
+ Based on the shell script in TODO.md lines 49-74, this implements the same
+ functionality in Rust to query mintty ANSI slots 0-15.
+ RGB color representation
+ Color pair for foreground and background
+ Check if running in mintty
+ Test specific palette color indices
+ Test the full palette (0-15)
+ Query mintty palette color using OSC 7704
+ Read terminal response with timeout
+ Parse mintty OSC 7704 response
+ Expected format: ESC]7704;rgb:RRRR/GGGG/BBBB;rgb:RRRR/GGGG/BBBBBEL
+ or: ESC]7704;{index};rgb:RRRR/GGGG/BBBB;rgb:RRRR/GGGG/BBBBBEL
+ Parse a single rgb: component from mintty response
+ Parse hex component (mintty uses 4-digit hex, we want the high byte)
+ Analyze background detection possibilities
+ Show suggestions for integrating mintty detection
+
+**Purpose:** Test mintty-specific color detection using OSC 7704 sequences
+
+**Crates:** `crossterm`, `thag_common`
+
+**Type:** Program
+
+**Categories:** color, detection, mintty, terminal, windows
+
+**Link:** [mintty_color_detect.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/mintty_color_detect.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mintty_color_detect.rs
+```
+
+---
+
 ### Script: mock_edit.rs
 
 **Description:**  Used to debug a doctest.
@@ -3978,6 +4494,60 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs
+```
+
+---
+
+### Script: multi_format_theme_export.rs
+
+**Description:**  Demo of multi-format theme export functionality
+
+ This example demonstrates how to export a thag theme to multiple terminal emulator formats
+ including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.
+
+**Purpose:** Export thag themes to multiple terminal emulator formats
+
+**Crates:** `env`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming
+
+**Link:** [multi_format_theme_export.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_format_theme_export.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_format_theme_export.rs
+```
+
+---
+
+### Script: multi_level_nesting_test.rs
+
+**Description:**  Test multi-level nesting behavior with different reset handling approaches
+
+ This demonstrates the difference between:
+ 1. Insert approach (like colored): Inserts outer codes after each reset
+ 2. Replace approach: Replaces inner codes with outer codes
+ 3. Manual construction to show what should happen
+ Version 1: Insert approach (mimics colored)
+ Version 2: Replace approach (your suggested improvement)
+
+**Purpose:** Test multi-level nesting reset handling strategies
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** prototype, styling
+
+**Link:** [multi_level_nesting_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_level_nesting_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_level_nesting_test.rs
 ```
 
 ---
@@ -4622,6 +5192,48 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.
 
 ---
 
+### Script: production_palette_query.rs
+
+**Description:**  Production-Ready Terminal Palette Query
+
+ This script demonstrates a production-ready implementation of OSC 4 palette
+ querying using the crossterm method, which has been proven to work reliably
+ across all major macOS terminals (Zed, WezTerm, Apple Terminal, iTerm2,
+ Alacritty, and Kitty).
+
+ Unlike the experimental version, this focuses on the reliable crossterm
+ approach and includes proper error handling, caching, and integration
+ patterns suitable for use in the thag_styling subcrate.
+ RGB color representation
+ Error types for palette querying
+ Cached palette query results
+ Production-ready palette color query using crossterm threading
+ Parse OSC 4 response from accumulated buffer
+ Parse hex component (2 or 4 digits)
+ Get terminal identifier for caching
+ Production-ready palette detection with caching
+ Compare palette colors with current thag theme
+ Extract RGB from a thag Style
+ Display palette colors in a formatted table
+
+**Purpose:** Production-ready palette querying with crossterm
+
+**Crates:** `crossterm`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal
+
+**Link:** [production_palette_query.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/production_palette_query.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/production_palette_query.rs
+```
+
+---
+
 ### Script: profile_file.rs
 
 **Description:**  An early profiling prototype that tries to profile a file with macros via injection
@@ -4783,6 +5395,36 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/py_thag.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tree.rs
+```
+
+---
+
+### Script: ratatui_integration_demo.rs
+
+**Description:**  Simple Ratatui + thag_styling Integration Demo
+
+ This demo shows how to create a basic themed TUI application using ratatui
+ and thag_styling's semantic role system.
+
+ E.g.:
+ ```
+ thag demo/ratatui_integration_demo.rs
+ ```
+
+**Purpose:** Basic demonstration of ratatui integration with thag_styling
+
+**Crates:** `crossterm`, `ratatui`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, gui, theming
+
+**Link:** [ratatui_integration_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integration_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integration_demo.rs
 ```
 
 ---
@@ -5232,7 +5874,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_st
  thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/subcommands.rs
  ```
 
- Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+ This requires you to have first installed `thag_rs` with the `tools` feature.
 
 
 **Purpose:** Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
@@ -5452,13 +6094,45 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs
 
 ---
 
+### Script: rgb_palette_comparison.rs
+
+**Description:**  RGB vs Palette Color Comparison
+
+ This script directly demonstrates the issue where RGB truecolor sequences
+ display differently than expected compared to palette-indexed colors.
+ It tests the specific color mentioned: RGB(91, 116, 116) which should be
+ a dark duck-egg blue-green but appears as washed-out salmon pink.
+ Find the closest 256-color palette index for an RGB color
+ Calculate color distance (Manhattan distance)
+
+**Purpose:** Demonstrate RGB vs palette color display differences on Mac
+
+**Type:** Program
+
+**Categories:** color, debugging, mac_os, terminal
+
+**Link:** [rgb_palette_comparison.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rgb_palette_comparison.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rgb_palette_comparison.rs
+```
+
+---
+
 ### Script: rug_arbitrary_precision_nums.rs
 
 **Description:**  Published example from the `rug` crate, showcasing the use of the crate. I added the
  last line to return a tuple of the state of the values of interest, as a quick way
  of displaying them.
 
- Won't work with default Windows 11 because of `rug` crate.
+
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
  On Linux you may need to install the m4 package.
 
 
@@ -5606,6 +6280,112 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/semver_exclude_p
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/side_by_side_diff.rs
+```
+
+---
+
+### Script: simple_osc4_test.rs
+
+**Description:**  Simple OSC 4 Test
+
+ A minimal test script to debug OSC 4 response capture issues.
+ This script sends a single OSC 4 query and tries different methods
+ to capture the response, helping identify why responses are visible
+ but not being captured programmatically.
+ RGB color representation
+ Try to parse OSC 4 response
+ Method 1: Direct stdin reading with crossterm raw mode
+ Method 2: Try using shell command with script/expect
+ Method 3: Use expect-like approach
+ Method 4: Manual observation test
+ Method 5: Redirect to file test
+
+**Purpose:** Debug OSC 4 response capture mechanisms
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** debugging, exploration, terminal
+
+**Link:** [simple_osc4_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_osc4_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_osc4_test.rs
+```
+
+---
+
+### Script: simple_reset_test.rs
+
+**Description:**  Simple test to see if reset replacement is being called
+
+ This creates the exact scenario from the stress test to see where
+ the reset replacement logic is failing.
+
+**Purpose:** Debug reset replacement execution
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [simple_reset_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_reset_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_reset_test.rs
+```
+
+---
+
+### Script: simple_stress_test.rs
+
+**Description:**  Simple stress test with raw ANSI inspection
+
+ This recreates the stress test scenario and shows the raw ANSI codes
+ to verify if the reset replacement is working correctly.
+
+**Purpose:** Debug stress test with raw ANSI inspection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [simple_stress_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_stress_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_stress_test.rs
+```
+
+---
+
+### Script: simple_theme_test.rs
+
+**Description:**  Simple test to debug theme loading issues
+
+**Purpose:** Simple test for runtime theme loading functionality
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, styling, theming
+
+**Link:** [simple_theme_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_theme_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_theme_test.rs
 ```
 
 ---
@@ -6034,6 +6814,95 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gp
 
 ---
 
+### Script: styleable_improvements_demo.rs
+
+**Description:**  Demo showcasing improved Styleable trait with individual role methods
+
+ This demonstrates:
+ 1. Consolidated style_with() method that works with any Styler
+ 2. Individual role methods: .error(), .success(), .info(), etc.
+ 3. Comparison with Role.paint() approach
+ 4. Using &self instead of self (non-consuming)
+
+**Purpose:** Demo improved Styleable trait with role methods
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ergonomics, styling
+
+**Link:** [styleable_improvements_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styleable_improvements_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styleable_improvements_demo.rs
+```
+
+---
+
+### Script: styled_macro_enhanced.rs
+
+**Description:**  Enhanced styled! Macro Demonstration
+
+ This demo showcases the enhanced styled! macro with support for:
+ - Basic ANSI colors (original functionality)
+ - 256-color palette indices
+ - True RGB colors
+ - Multiple text effects
+
+ The enhanced macro now supports three color formats:
+ 1. Basic colors: Red, Green, Blue, etc. (uses terminal palette)
+ 2. Color256(index): 256-color palette (0-255)
+ 3. Rgb(r, g, b): True RGB colors (0-255 per component)
+
+**Purpose:** Demonstrate enhanced styled! macro with 256-color and RGB support
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** styling, macros, color, demo
+
+**Link:** [styled_macro_enhanced.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_macro_enhanced.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_macro_enhanced.rs
+```
+
+---
+
+### Script: styled_string_concept.rs
+
+**Description:**  Concept demo for StyledString that preserves outer styling context
+
+ This demonstrates a potential StyledString type that could work like
+ colored's ColoredString, automatically restoring outer styling after
+ inner reset sequences.
+ A styled string that preserves styling context like colored's ColoredString
+ Extended Styleable trait that returns StyledString instead of plain String
+
+**Purpose:** Concept for context-preserving styled strings
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** concepts, prototype, styling
+
+**Link:** [styled_string_concept.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_concept.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_concept.rs
+```
+
+---
+
 ### Script: styling_demo.rs
 
 **Description:**  Demonstrates the colour and styling options of `thag_rs`.
@@ -6055,6 +6924,46 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gp
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs
+```
+
+---
+
+### Script: styling_migration_guide.rs
+
+**Description:**  Comprehensive migration guide from old embedding systems to StyledString
+
+ This demo shows side-by-side comparisons of:
+ 1. cprtln_with_embeds! → StyledString with println!
+ 2. cvprtln_with_embeds! → StyledString with vprintln!
+ 3. format_with_embeds → format! with StyledString
+ 4. Embedded struct → StyledString directly
+
+ IMPORTANT: This guide is specifically about replacing the EMBEDDING system.
+ The Styled<T> struct (.style().bold()) serves a different purpose and remains:
+ - Styled<T>: General text effects (bold, italic, etc.) - KEEP USING
+ - StyledString: Semantic roles + embedding/nesting - NEW PREFERRED WAY
+
+ The new StyledString approach provides:
+ - Better attribute reset handling (no bleeding)
+ - More natural Rust syntax with method chaining
+ - Unlimited nesting depth without pre-planning
+ - Better performance (no macro overhead)
+ - Cleaner, more maintainable code
+
+**Purpose:** Migration guide from old embedding systems to StyledString
+
+**Crates:** `thag_common`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** documentation, examples, migration, styling
+
+**Link:** [styling_migration_guide.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_migration_guide.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_migration_guide.rs
 ```
 
 ---
@@ -6448,6 +7357,47 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tempfile.rs
 
 ---
 
+### Script: terminal_color_diagnostics.rs
+
+**Description:**  Terminal Color Diagnostics
+
+ This script performs comprehensive diagnostics of terminal color capabilities,
+ specifically designed to investigate issues where RGB truecolor sequences
+ display incorrectly while palette-indexed colors work correctly.
+
+ The script tests multiple aspects of color handling:
+ - Basic ANSI color support
+ - 256-color palette support
+ - RGB truecolor support
+ - OSC sequence handling
+ - Terminal environment detection
+ - Color profile and gamma correction issues
+ Test color struct for diagnostics
+ Diagnostic test colors chosen to highlight color handling issues
+ Terminal capability flags
+ Analyze terminal environment variables and settings
+ Read terminal response with timeout
+ Find closest 256-color index for RGB color
+ Calculate Manhattan distance between colors
+
+**Purpose:** Comprehensive terminal color capability diagnostics and troubleshooting
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** color, debugging, diagnosis, terminal
+
+**Link:** [terminal_color_diagnostics.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_color_diagnostics.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_color_diagnostics.rs
+```
+
+---
+
 ### Script: terminal_light.rs
 
 **Description:**  Demo of `terminal_light`, a crate that "answers the question "Is the terminal dark
@@ -6517,6 +7467,43 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_s
 
 ---
 
+### Script: terminal_palette_display.rs
+
+**Description:**  Terminal Palette Display Tool
+
+ This tool displays the current terminal's color palette, including:
+ - All 16 ANSI colors (0-15)
+ - Extended 256-color palette samples
+ - True color capability test
+ - Terminal background detection
+ - Current thag theme colors for comparison
+ Display basic terminal information
+ Display the 16 basic ANSI colors
+ Display a row of colors with their indices and names
+ Display samples from the 256-color palette
+ Test true color capability with a gradient
+ Display current thag theme colors
+ Extract RGB information from a style for display
+ Convert HSL to RGB (simple implementation)
+
+**Purpose:** Show terminal palette colors
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming
+
+**Link:** [terminal_palette_display.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_palette_display.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_palette_display.rs
+```
+
+---
+
 ### Script: terminal_reset_test.rs
 
 **Description:**  Demo script to test terminal reset functionality for OSC sequence corruption
@@ -6539,6 +7526,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_s
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_test.rs
+```
+
+---
+
+### Script: test_ansi_parsing_logic.rs
+
+**Description:**  Simple test for ANSI parsing logic
+
+ This tests the has_ansi_code function directly to verify it correctly
+ distinguishes between color codes and text attributes.
+
+**Purpose:** Test ANSI parsing logic for text attributes
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, styling, testing
+
+**Link:** [test_ansi_parsing_logic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsing_logic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsing_logic.rs
 ```
 
 ---
@@ -6573,6 +7585,58 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.r
 
 ---
 
+### Script: test_coffee_theme.rs
+
+**Description:**  Test script to debug color selection for the morning coffee image
+
+ This script specifically tests the hue range assignments and fallback logic
+ to understand why colors aren't matching their intended hue ranges.
+
+**Purpose:** Debug hue range assignments in morning coffee theme generation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_coffee_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_coffee_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_coffee_theme.rs
+```
+
+---
+
+### Script: test_color_mode_override.rs
+
+**Description:**  Test Color Mode Override
+
+ This script tests the THAG_COLOR_MODE environment variable override
+ functionality to force specific color modes in thag_styling.
+ This is particularly useful for working around terminal issues
+ like Zed's RGB truecolor handling problems.
+
+**Purpose:** Test THAG_COLOR_MODE environment variable functionality
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** terminal, color, testing, configuration
+
+**Link:** [test_color_mode_override.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_color_mode_override.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_color_mode_override.rs
+```
+
+---
+
 ### Script: test_cprtln.rs
 
 **Description:**  Test script to verify cprtln macro works with both Style and Role
@@ -6591,6 +7655,306 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.r
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_cprtln.rs
+```
+
+---
+
+### Script: test_dark_theme_tuning.rs
+
+**Description:**  Dark theme tuning previewer - shows fine-tuning effects optimized for dark themes
+
+ This script demonstrates fine-tuning controls with parameter ranges
+ optimized for dark theme generation. For light themes, use test_light_theme_tuning.rs
+
+**Purpose:** Preview and tune dark theme generation with optimized parameters
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_dark_theme_tuning.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dark_theme_tuning.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dark_theme_tuning.rs
+```
+
+---
+
+### Script: test_dynamic_ansi_generation.rs
+
+**Description:**  Test dynamic ANSI generation for different color support levels
+
+ This script verifies that our new dynamic ANSI generation approach
+ correctly adapts ANSI escape sequences based on terminal color support.
+
+**Purpose:** Test and demonstrate dynamic ANSI generation for different terminal capabilities
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, testing
+
+**Link:** [test_dynamic_ansi_generation.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dynamic_ansi_generation.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dynamic_ansi_generation.rs
+```
+
+---
+
+### Script: test_filename_handling.rs
+
+**Description:**  Quick test to verify filename handling for different formats
+
+**Purpose:** Test filename handling
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** file_handling, testing
+
+**Link:** [test_filename_handling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_filename_handling.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_filename_handling.rs
+```
+
+---
+
+### Script: test_fine_tuning.rs
+
+**Description:**  Test script to demonstrate fine-tuning controls for theme generation
+
+ This script shows how to use the saturation multiplier, lightness adjustment,
+ and contrast multiplier to fine-tune generated themes.
+
+**Purpose:** Demonstrate fine-tuning controls for image theme generation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_fine_tuning.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_fine_tuning.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_fine_tuning.rs
+```
+
+---
+
+### Script: test_image_theme_contrast.rs
+
+**Description:**  Test script to demonstrate improved contrast in image theme generation
+
+ This script shows the enhanced contrast adjustment functionality
+ with minimum lightness differences for better readability.
+
+**Purpose:** Demonstrate improved contrast in image theme generation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_image_theme_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_image_theme_contrast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_image_theme_contrast.rs
+```
+
+---
+
+### Script: test_light_extreme.rs
+
+**Description:**  Extreme parameter test for light themes to verify fine-tuning is working
+
+ This script tests light theme generation with extreme parameter differences
+ to see if the fine-tuning system is actually responsive.
+
+**Purpose:** Test extreme light theme parameter differences
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_light_extreme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_extreme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_extreme.rs
+```
+
+---
+
+### Script: test_light_theme_tuning.rs
+
+**Description:**  Light theme tuning previewer - shows fine-tuning effects optimized for light themes
+
+ This script demonstrates fine-tuning controls with parameter ranges
+ optimized for light theme generation. For dark themes, use test_dark_theme_tuning.rs
+
+**Purpose:** Preview and tune light theme generation with optimized parameters
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_light_theme_tuning.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_theme_tuning.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_theme_tuning.rs
+```
+
+---
+
+### Script: test_mintty_comprehensive.rs
+
+**Description:**  Comprehensive test for all mintty functionality
+
+ This demo script thoroughly tests the mintty theme exporter functionality
+ including exporting themes, validating output format, and checking integration
+ with the theme generation system.
+
+**Purpose:** Comprehensive test of mintty theme functionality
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, demo
+
+**Link:** [test_mintty_comprehensive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_comprehensive.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_comprehensive.rs
+```
+
+---
+
+### Script: test_mintty_export.rs
+
+**Description:**  Test script for mintty theme exporter
+
+ This demo script tests the mintty theme exporter functionality
+ by loading a built-in theme and exporting it to mintty format.
+
+**Purpose:** Test mintty theme export functionality
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, demo
+
+**Link:** [test_mintty_export.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_export.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_export.rs
+```
+
+---
+
+### Script: test_mintty_in_gen.rs
+
+**Description:**  Test that mintty format is included in theme generator
+
+ This demo script tests that the mintty exporter is properly integrated
+ into the theme generation system by checking if it's in the list of formats.
+
+**Purpose:** Test mintty format integration in theme generator
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, demo
+
+**Link:** [test_mintty_in_gen.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_in_gen.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_in_gen.rs
+```
+
+---
+
+### Script: test_original_color_issue.rs
+
+**Description:**  Test to verify the original color issue is fixed
+
+ This script simulates the original problem where TrueColor themes
+ would generate inappropriate ANSI codes for terminals with limited
+ color support, and verifies that our dynamic ANSI generation fix works.
+
+**Purpose:** Test and verify the fix for the original TrueColor/256-color compatibility issue
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, testing, debugging
+
+**Link:** [test_original_color_issue.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_original_color_issue.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_original_color_issue.rs
+```
+
+---
+
+### Script: test_palette_optimization.rs
+
+**Description:**  Test script to verify the palette optimization changes
+
+ This script demonstrates the new roles (Link, Quote, Commentary) that replaced
+ the old Trace role, ensuring the perfect 1:1 mapping with 16-color terminal palette.
+
+
+**Purpose:** Test and demonstrate the palette optimization changes
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, testing
+
+**Link:** [test_palette_optimization.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_palette_optimization.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_palette_optimization.rs
 ```
 
 ---
@@ -6686,6 +8050,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_de
 
 ---
 
+### Script: test_runtime_theme_loading.rs
+
+**Description:**  Demo script that tests the new runtime theme loading functionality.
+
+ This script demonstrates:
+ 1. Loading themes from user-specified directories via config
+ 2. Loading themes via THAG_THEME_DIR environment variable
+ 3. Fallback to built-in themes when user themes aren't found
+ 4. Proper error handling for missing directories/themes
+
+**Purpose:** Test runtime theme loading from user-specified directories
+
+**Crates:** `thag_common`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, styling, theming
+
+**Link:** [test_runtime_theme_loading.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_runtime_theme_loading.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_runtime_theme_loading.rs
+```
+
+---
+
 ### Script: test_safe_print_macros.rs
 
 **Description:**  Demo script to test the new safe print macros for terminal synchronization
@@ -6710,6 +8102,79 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_de
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_macros.rs
+```
+
+---
+
+### Script: test_styled_simple.rs
+
+**Description:**  Simple test for enhanced styled! macro
+
+ Tests the four color formats: Basic ANSI, 256-color, RGB, and Hex
+
+**Purpose:** Simple test of enhanced styled! macro with all color formats
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** color, macros, styling, testing
+
+**Link:** [test_styled_simple.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_styled_simple.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_styled_simple.rs
+```
+
+---
+
+### Script: test_urgency_hierarchy.rs
+
+**Description:**  Urgency Hierarchy Demonstration
+
+ This script demonstrates the new urgency-based ANSI color hierarchy where
+ bright colors are used for the most critical/urgent messages, following
+ established ANSI safety color standards and terminal application conventions.
+
+
+**Purpose:** Demonstrate the urgency-based color hierarchy in terminal output
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, styling, testing
+
+**Link:** [test_urgency_hierarchy.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_urgency_hierarchy.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_urgency_hierarchy.rs
+```
+
+---
+
+### Script: test_verbosity_setting.rs
+
+**Description:**  Test the new verbosity setting functionality
+
+**Purpose:** Demonstrate and test the improved verbosity setting API
+
+**Crates:** `thag_rs`
+
+**Type:** Program
+
+**Categories:** debugging, testing
+
+**Link:** [test_verbosity_setting.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_verbosity_setting.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_verbosity_setting.rs
 ```
 
 ---
@@ -6824,26 +8289,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_prompt.rs
 
 ---
 
-### Script: thag_theme.rs
+### Script: thag_styling_color_test.rs
 
-**Description:**  Displays the current theme palette and attributes.
+**Description:**  Thag Styling Color Output Test
 
- E.g. `thag demo/thag_theme.rs`
+ This script tests what thag_styling actually outputs when THAG_COLOR_MODE
+ is set. Unlike the diagnostic comparison scripts, this shows the real
+ escape sequences that thag_styling generates based on the detected
+ color support mode.
 
-**Purpose:** Show current theme.
+**Purpose:** Test actual thag_styling color output with THAG_COLOR_MODE environment variable
 
 **Crates:** `thag_styling`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** tools
+**Categories:** terminal, color, testing, styling
 
-**Link:** [thag_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_theme.rs)
+**Link:** [thag_styling_color_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_styling_color_test.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_theme.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_styling_color_test.rs
 ```
 
 ---
@@ -6867,6 +8335,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_theme.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_validate_precise.rs
+```
+
+---
+
+### Script: theme_color_mapping_comparison.rs
+
+**Description:**  Theme Color Mapping Comparison Tool
+
+ This tool shows exactly how the source thag-vibrant-dark theme colors
+ map to the exported Alacritty format, helping debug color differences.
+ Display the source theme's semantic colors with RGB values
+ Show the mapping logic from semantic to ANSI colors
+ Extract RGB values from a style
+ Extract RGB information from a style for display
+
+**Purpose:** Test color mapping.
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, testing, theming
+
+**Link:** [theme_color_mapping_comparison.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_color_mapping_comparison.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_color_mapping_comparison.rs
 ```
 
 ---
@@ -7039,6 +8536,88 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_shor
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_world.rs
+```
+
+---
+
+### Script: truecolor_quantization_test.rs
+
+**Description:**  TrueColor Quantization Detection Test
+
+ This test detects whether a terminal silently quantizes TrueColor values
+ to a 256-color palette, as suspected with Apple Terminal. The strategy:
+
+ 1. Test colors that should be identical in TrueColor but different in 256-color
+ 2. Test colors that fall between 256-color palette entries
+ 3. Use statistical analysis of multiple color tests
+ 4. Compare expected vs actual color distances
+
+ If the terminal silently quantizes, we'll see:
+ - Colors that should be different become identical
+ - Systematic rounding to 256-color palette values
+ - Loss of precision in color gradients
+ RGB color representation
+ Test result for a single color
+ Parse hex component from OSC response
+ Detect if we're running in mintty (which always supports TrueColor)
+ Parse OSC 10 response
+ Set and query a color with timing (supports mintty via OSC 7704)
+ Convert RGB to nearest 256-color palette equivalent
+ Generate test colors that reveal quantization
+
+**Purpose:** Detect silent TrueColor quantization in terminals
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** terminal, color, testing
+
+**Link:** [truecolor_quantization_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_quantization_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_quantization_test.rs
+```
+
+---
+
+### Script: truecolor_test.rs
+
+**Description:**  TrueColor Detection
+
+ This script tests TrueColor detection support by sending a TrueColor escape
+ sequence and querying the result, as suggested by https://github.com/termstandard/colors.
+
+ The approach:
+ 1. Query current foreground color (OSC 10)
+ 2. Set a specific TrueColor foreground (OSC 10 with RGB)
+ 3. Query the foreground color again
+ 4. Restore original foreground color
+ 5. Compare set vs queried values to determine TrueColor support
+ RGB color representation
+ Parse hex component from OSC response
+ Detect if we're running in mintty (which always supports TrueColor)
+ Parse OSC 10 (foreground color) response
+ Query current foreground color using OSC 10
+ Set foreground color using OSC 10
+ Test TrueColor support by setting and querying
+
+**Purpose:** Test TrueColor support using OSC sequence probing
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** ansi, color, styling, terminal, testing, theming, tools, windows, xterm
+
+**Link:** [truecolor_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.rs
 ```
 
 ---
@@ -7298,6 +8877,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs
 
 ---
 
+### Script: visual_rgb_test.rs
+
+**Description:**  Visual RGB Rendering Test
+
+ This script tests whether terminals actually render RGB truecolor sequences correctly
+ by displaying them side-by-side with their closest 256-color palette equivalents.
+ This helps detect terminals that accept RGB sequences but render them incorrectly
+ (like Apple Terminal showing salmon pink instead of duck-egg blue-green).
+ Test colors specifically chosen to reveal rendering issues
+ Colors designed to reveal different types of rendering issues
+ Find the closest 256-color palette index for an RGB color
+ Calculate Manhattan distance between two RGB colors
+
+**Purpose:** Visual test to detect accurate RGB truecolor rendering vs palette quantization
+
+**Type:** Program
+
+**Categories:** color, diagnosis, terminal, testing
+
+**Link:** [visual_rgb_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/visual_rgb_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/visual_rgb_test.rs
+```
+
+---
+
 ### Script: warn_once.rs
 
 **Description:**  This script demonstrates the usage of the `warn_once` pattern for suppressing repeated
@@ -7545,6 +9153,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_termina
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs
+```
+
+---
+
+### Script: windows_detect_powershell.rs
+
+**Description:**  Prototype of PowerShell detection
+
+**Purpose:** Detect if we're running under PowerShell.
+
+**Crates:** `sysinfo`
+
+**Type:** Program
+
+**Categories:** detection, terminal, testing, windows
+
+**Link:** [windows_detect_powershell.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_powershell.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_powershell.rs
 ```
 
 ---

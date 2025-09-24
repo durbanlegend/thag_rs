@@ -3,14 +3,15 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Alacritty Theme Installation Script
-//!
-//! This script properly installs the thag-vibrant-dark theme for Alacritty:
-//! 1. Creates the correct theme file with fixed color mappings
-//! 2. Installs it in the right location
-//! 3. Updates or creates the Alacritty config with proper import syntax
-//! 4. Provides verification steps
-
+/// Alacritty Theme Installation Script
+///
+/// This script properly installs the thag-vibrant-dark theme for Alacritty:
+/// 1. Creates the correct theme file with fixed color mappings
+/// 2. Installs it in the right location
+/// 3. Updates or creates the Alacritty config with proper import syntax
+/// 4. Provides verification steps
+//# Purpose: Install and configure thag themes for Alacritty terminal
+//# Categories: color, styling, terminal, theming, tools
 use std::fs;
 use std::path::{Path, PathBuf};
 use thag_styling::{ExportFormat, Theme, ThemeExporter};

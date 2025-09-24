@@ -3,20 +3,18 @@
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
-//! Production-Ready Terminal Palette Query
-//!
-//! This script demonstrates a production-ready implementation of OSC 4 palette
-//! querying using the crossterm method, which has been proven to work reliably
-//! across all major macOS terminals (Zed, WezTerm, Apple Terminal, iTerm2,
-//! Alacritty, and Kitty).
-//!
-//! Unlike the experimental version, this focuses on the reliable crossterm
-//! approach and includes proper error handling, caching, and integration
-//! patterns suitable for use in the thag_styling subcrate.
-
+/// Production-Ready Terminal Palette Query
+///
+/// This script demonstrates a production-ready implementation of OSC 4 palette
+/// querying using the crossterm method, which has been proven to work reliably
+/// across all major macOS terminals (Zed, WezTerm, Apple Terminal, iTerm2,
+/// Alacritty, and Kitty).
+///
+/// Unlike the experimental version, this focuses on the reliable crossterm
+/// approach and includes proper error handling, caching, and integration
+/// patterns suitable for use in the thag_styling subcrate.
 //# Purpose: Production-ready palette querying with crossterm
-//# Categories: terminal, styling, colors, production
-
+//# Categories: color, styling, terminal
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::collections::HashMap;
 use std::io::{self, Read, Write};

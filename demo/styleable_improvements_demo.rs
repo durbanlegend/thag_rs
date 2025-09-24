@@ -11,7 +11,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// 3. Comparison with Role.paint() approach
 /// 4. Using &self instead of self (non-consuming)
 //# Purpose: Demo improved Styleable trait with role methods
-//# Categories: styling, ergonomics
+//# Categories: ergonomics, styling
 use thag_styling::{cprtln, ColorInitStrategy, Role, Styleable, Styler, TermAttributes};
 
 fn main() {

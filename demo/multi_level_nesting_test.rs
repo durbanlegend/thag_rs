@@ -13,7 +13,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// 2. Replace approach: Replaces inner codes with outer codes
 /// 3. Manual construction to show what should happen
 //# Purpose: Test multi-level nesting reset handling strategies
-//# Categories: styling, nesting, prototypes
+//# Categories: prototype, styling
 use std::fmt;
 use thag_styling::{ColorInitStrategy, Role, Style, TermAttributes};
 

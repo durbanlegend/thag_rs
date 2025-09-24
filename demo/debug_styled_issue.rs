@@ -3,13 +3,11 @@
 thag_proc_macros = { version = "0.2, thag-auto" }
 */
 
-//! Debug styled! duplication issue
-//!
-//! Minimal test to isolate the double-printing problem
-
+/// Debug styled! duplication issue
+///
+/// Minimal test to isolate the double-printing problem
 //# Purpose: Debug styled! macro duplication issue
-//# Categories: debug, test, styling
-
+//# Categories: debugging, styling, testing
 use thag_proc_macros::{ansi_styling_support, styled};
 
 // Enable the ANSI styling support

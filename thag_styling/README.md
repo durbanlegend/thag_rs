@@ -4,18 +4,22 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**A cross-platform semantic terminal styling system for Rust applications that extends and enhances existing terminal themes with automatic color detection and extensive tool integration.**
+**A semantic terminal styling system for Rust applications across platforms.**
+
+**Extend and enhance existing terminal themes with automatic color detection and extensive tool integration.**
+
+**Generate gorgeous `thag_styling` and terminal themes automatically from your favourite artwork.**
 
 `thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **over 300 curated themes** plus original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Features
 
 ### Core Styling System
-- **🎨 Semantic Roles** — Style by meaning (`Role::Error`, `Role::Success`) not colors
+- **🚦 Semantic Roles** — Style by meaning (`Role::Error`, `Role::Success`) not colors
 - **🔍 Automatic Detection** — Terminal capabilities and theme selection
-- **🎯 Rich Palettes** — Coordinated 15-color schemes from TrueColor/256-color spectrum
-- **♿ Proven Legibility** — Based on tested terminal themes with proper contrast
-- **⚡ Zero Overhead** — Compile-time theme resolution
+- **🎨 Rich Palettes** — Coordinated 15-color schemes from TrueColor/256-color spectrum
+- **👓 Proven Legibility** — Based on tested terminal themes with proper contrast
+- **🪶 Zero Overhead** — Compile-time theme resolution
 
 ### Styling APIs
 - **`StyledString`** — Fluent method chaining: `"text".error().println()`
@@ -48,7 +52,7 @@ thag_styling = "0.2"
 Basic usage:
 
 ```rust
-use thag_styling::{Styleable, StyledStringExt};
+use thag_styling::{Styleable, StyledPrint};
 
 fn main() {
     // Fluent method chaining - natural and composable
@@ -164,7 +168,7 @@ println!("{}", styled!("Hex", fg = "#ff6347", underline));            // Hex tom
 
 ### Complex Nested Styling
 ```rust
-use thag_styling::{StyledStringExt, Styleable};
+use thag_styling::{Styleable, StyledPrint};
 
 // Unlimited nesting with method chaining
 format!("Server {} responded with {} in {}ms",

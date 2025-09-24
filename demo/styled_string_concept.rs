@@ -12,7 +12,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// colored's ColoredString, automatically restoring outer styling after
 /// inner reset sequences.
 //# Purpose: Concept for context-preserving styled strings
-//# Categories: styling, concepts, prototypes
+//# Categories: concepts, prototype, styling
 use std::fmt;
 use thag_styling::{ColorInitStrategy, Role, Style, Styleable, Styler, TermAttributes};
 

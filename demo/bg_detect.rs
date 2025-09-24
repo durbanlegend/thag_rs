@@ -3,18 +3,16 @@
 thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
-//! Background Color Detection
-//!
-//! This script investigates querying palette color 0 as a proxy for background color
-//! detection. This approach might work where OSC 11 queries
-//! fail, particularly in PowerShell and regular Windows terminals.
-//!
-//! Based on the observation that demo/truecolor*.rs files work in PowerShell,
-//! suggesting we can interrogate palette colors from Rust instead of shell scripts.
-
+/// Background Color Detection
+///
+/// This script investigates querying palette color 0 as a proxy for background color
+/// detection. This approach might work where OSC 11 queries
+/// fail, particularly in PowerShell and regular Windows terminals.
+///
+/// Based on the observation that demo/truecolor*.rs files work in PowerShell,
+/// suggesting we can interrogate palette colors from Rust instead of shell scripts.
 //# Purpose: Test background color detection via palette color 0 query
 //# Categories: ansi, color, terminal, windows, xterm
-
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{self, Read, Write};
 use std::thread;

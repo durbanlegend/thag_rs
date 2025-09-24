@@ -3,15 +3,16 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Terminal Palette Display Tool
-//!
-//! This tool displays the current terminal's color palette, including:
-//! - All 16 ANSI colors (0-15)
-//! - Extended 256-color palette samples
-//! - True color capability test
-//! - Terminal background detection
-//! - Current thag theme colors for comparison
-
+/// Terminal Palette Display Tool
+///
+/// This tool displays the current terminal's color palette, including:
+/// - All 16 ANSI colors (0-15)
+/// - Extended 256-color palette samples
+/// - True color capability test
+/// - Terminal background detection
+/// - Current thag theme colors for comparison
+//# Purpose: Show terminal palette colors
+//# Categories: color, styling, terminal, theming
 use thag_styling::{Style, TermAttributes};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

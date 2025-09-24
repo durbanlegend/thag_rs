@@ -11,7 +11,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 /// This tests the has_ansi_code function directly to verify it correctly
 /// distinguishes between color codes and text attributes.
 //# Purpose: Test ANSI parsing logic for text attributes
-//# Categories: styling, testing, parsing
+//# Categories: ansi, styling, testing
 use thag_styling::{ColorInitStrategy, TermAttributes};
 
 // We need to access the StyledString implementation directly

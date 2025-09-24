@@ -86,32 +86,32 @@ pub fn ansi_styling_support_impl(_input: TokenStream) -> TokenStream {
             }
 
             fn to_ansi_code(&self) -> String {
-                let mut codes = Vec::new();
+                let mut codes: Vec<String> = Vec::new();
 
                 for effect in &self.effects {
                     codes.push(match effect {
-                        Effect::Bold => "1",
-                        Effect::Underline => "4",
-                        Effect::Italic => "3",
-                        Effect::Reversed => "7",
+                        Effect::Bold => "1".to_string(),
+                        Effect::Underline => "4".to_string(),
+                        Effect::Italic => "3".to_string(),
+                        Effect::Reversed => "7".to_string(),
                     });
                 }
 
                 if let Some(color) = self.fg {
                     match color {
-                        Color::Black => codes.push("30"),
-                        Color::Red => codes.push("31"),
-                        Color::Green => codes.push("32"),
-                        Color::Yellow => codes.push("33"),
-                        Color::Blue => codes.push("34"),
-                        Color::Magenta => codes.push("35"),
-                        Color::Cyan => codes.push("36"),
-                        Color::White => codes.push("37"),
+                        Color::Black => codes.push("30".to_string()),
+                        Color::Red => codes.push("31".to_string()),
+                        Color::Green => codes.push("32".to_string()),
+                        Color::Yellow => codes.push("33".to_string()),
+                        Color::Blue => codes.push("34".to_string()),
+                        Color::Magenta => codes.push("35".to_string()),
+                        Color::Cyan => codes.push("36".to_string()),
+                        Color::White => codes.push("37".to_string()),
                         Color::Color256(index) => {
-                            return format!("\x1b[38;5;{}m{}\x1b[0m", index, self.text);
+                            codes.push(format!("38;5;{}", index));
                         },
                         Color::Rgb(r, g, b) => {
-                            return format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, self.text);
+                            codes.push(format!("38;2;{};{};{}", r, g, b));
                         },
                     }
                 }
@@ -120,19 +120,19 @@ pub fn ansi_styling_support_impl(_input: TokenStream) -> TokenStream {
             }
 
             fn to_ansi_reset_codes(&self) -> String {
-                let mut codes = Vec::new();
+                let mut codes: Vec<String> = Vec::new();
 
                 for effect in &self.effects {
                     codes.push(match effect {
-                        Effect::Bold => "22",
-                        Effect::Underline => "24",
-                        Effect::Italic => "23",
-                        Effect::Reversed => "27",
+                        Effect::Bold => "22".to_string(),
+                        Effect::Underline => "24".to_string(),
+                        Effect::Italic => "23".to_string(),
+                        Effect::Reversed => "27".to_string(),
                     });
                 }
 
                 if self.fg.is_some() {
-                    codes.push("39"); // Reset foreground
+                    codes.push("39".to_string()); // Reset foreground
                 }
 
                 format!("\x1b[{}m", codes.join(";"))

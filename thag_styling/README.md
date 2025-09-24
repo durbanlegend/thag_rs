@@ -21,7 +21,7 @@
 - **`StyledString`** — Fluent method chaining: `"text".error().println()`
 - **Styled Macros** — Direct printing: `sprtln!(Role::Warning, "Alert: {}", msg)`
 - **Paint Functions** — Functional style: `paint_for_role(Role::Code, code)`
-- **ANSI Macros** — Low-level styling: `styled!("text", fg = Red, bold)`
+- **ANSI Macros** — Enhanced styling: `styled!("text", fg = "#ff0000", bold)`
 
 ### Library Integrations
 - **Ratatui** — Complete TUI theming with `Style::themed(Role::Error)`
@@ -32,7 +32,7 @@
 ### Theme Ecosystem
 - **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, and many more
 - **Theme Generation** — From images using advanced color extraction
-- **Multi-Format Export** — Alacritty, Apple Terminal, iTerm2, Kitty, Mintty, WezTerm, Windows Terminal
+- **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty, WezTerm, Windows Terminal
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences  
 - **Base16/Base24** — Standard theme format support with original extensions
 
@@ -127,9 +127,12 @@ svprtln!(Role::Debug, Verbosity::Debug, "Processing {}", item);
 // Functional style
 println!("{}", paint_for_role(Role::Code, "fn main()"));
 
-// Low-level ANSI (when you need specific colors)
+// Low-level ANSI with enhanced color support
 use thag_styling::styled;
-println!("{}", styled!("Alert", fg = Red, bold, underline));
+println!("{}", styled!("Alert", fg = Red, bold, underline));          // Basic ANSI
+println!("{}", styled!("Custom", fg = Rgb(255, 165, 0), italic));     // RGB orange
+println!("{}", styled!("Palette", fg = Color256(93), bold));          // 256-color purple
+println!("{}", styled!("Hex", fg = "#ff6347", underline));            // Hex tomato
 ```
 
 ## Semantic Roles
@@ -194,7 +197,6 @@ let theme = Theme::load_from_file("my-theme.toml")?;
 
 // Export to various terminal formats (alphabetically)
 export_theme_to_file(&theme, "alacritty.toml", ExportFormat::Alacritty)?;
-export_theme_to_file(&theme, "apple-terminal.terminal", ExportFormat::AppleTerminal)?;
 export_theme_to_file(&theme, "iterm2.itermcolors", ExportFormat::ITerm2)?;
 export_theme_to_file(&theme, "kitty.conf", ExportFormat::Kitty)?;
 export_theme_to_file(&theme, "mintty.config", ExportFormat::Mintty)?;
@@ -206,10 +208,33 @@ export_theme_to_file(&theme, "windows-terminal.json", ExportFormat::WindowsTermi
 ```rust
 use thag_styling::PaletteSync;
 
-// Sync terminal palette with theme colors
+// Sync terminal palette with theme colors (programmatically)
 let sync = PaletteSync::new()?;
 sync.apply_theme_palette(&theme)?;
 // Terminal colors now match your theme!
+```
+
+For terminals that don't support theme files (like Apple Terminal), you can use shell integration to automatically sync palettes on startup:
+
+**Unix shells (~/.bashrc or ~/.zshrc):**
+```bash
+if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
+    export THAG_COLOR_MODE=256
+    export THAG_THEME=thag-botticelli-birth-of-venus-dark
+    thag_sync_palette apply $THAG_THEME
+elif [[ "$TERM_PROGRAM" == "WezTerm" ]]; then
+    export THAG_COLOR_MODE=truecolor
+    export THAG_THEME=thag-raphael-school-of-athens-dark
+    thag_sync_palette apply $THAG_THEME
+fi
+```
+
+**Windows PowerShell ($PROFILE):**
+```powershell
+$env:PATH += ";C:\Users\my_name\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"
+$env:THAG_COLOR_MODE = "truecolor"
+$env:THAG_THEME = "thag-morning-coffee-light"
+thag_sync_palette apply $THAG_THEME
 ```
 
 ## Examples
@@ -234,6 +259,9 @@ cargo run demo/ratatui_integration_demo.rs
 
 # Theme generation from images
 cargo run demo/image_theme_generation.rs
+
+# Enhanced styled! macro demonstration
+cargo run demo/styled_macro_enhanced.rs
 
 # View all examples
 ls thag_styling/examples/ demo/
@@ -327,9 +355,11 @@ let styled_text = crossterm_helpers::success_style()
 let warning = console::Style::themed(Role::Warning)
     .apply_to("High CPU usage");
 
-// Enhanced styled! macro with true colors
-println!("{}", styled!("Error", fg = Rgb(220, 50, 47), bold));
-println!("{}", styled!("Warning", fg = Color256(214), underline));
+// Enhanced styled! macro with multiple color formats
+println!("{}", styled!("Error", fg = Rgb(220, 50, 47), bold));        // RGB
+println!("{}", styled!("Warning", fg = Color256(214), underline));    // 256-color
+println!("{}", styled!("Success", fg = "#00ff00", italic));           // Hex
+println!("{}", styled!("Info", fg = Blue, reversed));                 // Basic ANSI
 ```
 
 ## Documentation

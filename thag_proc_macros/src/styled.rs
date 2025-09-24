@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Expr, Ident, Token,
+    parse_macro_input, Expr, Ident, LitInt, LitStr, Token,
 };
 
 struct StyleArgs {
@@ -12,8 +12,15 @@ struct StyleArgs {
 }
 
 enum StyleEntry {
-    Flag(Ident),            // e.g. bold
-    KeyValue(Ident, Ident), // e.g. fg = Red
+    Flag(Ident),                // e.g. bold
+    KeyValue(Ident, ColorSpec), // e.g. fg = Red, fg = Color256(196), fg = "#ff0000"
+}
+
+enum ColorSpec {
+    Basic(Ident),                // Red, Green, etc.
+    Color256(LitInt),            // Color256(196)
+    Rgb(LitInt, LitInt, LitInt), // Rgb(255, 0, 0)
+    Hex(LitStr),                 // "#ff0000"
 }
 
 impl Parse for StyleArgs {
@@ -31,8 +38,43 @@ impl Parse for StyleArgs {
                 // key = value
                 let key: Ident = input.parse()?;
                 input.parse::<Token![=]>()?;
-                let val: Ident = input.parse()?;
-                styles.push(StyleEntry::KeyValue(key, val));
+
+                // Parse different color specifications
+                let color_spec = if input.peek(Ident) {
+                    let ident: Ident = input.parse()?;
+                    let ident_str = ident.to_string();
+
+                    if ident_str == "Color256" && input.peek(syn::token::Paren) {
+                        // Color256(n)
+                        let content;
+                        syn::parenthesized!(content in input);
+                        let n: LitInt = content.parse()?;
+                        ColorSpec::Color256(n)
+                    } else if ident_str == "Rgb" && input.peek(syn::token::Paren) {
+                        // Rgb(r, g, b)
+                        let content;
+                        syn::parenthesized!(content in input);
+                        let r: LitInt = content.parse()?;
+                        content.parse::<Token![,]>()?;
+                        let g: LitInt = content.parse()?;
+                        content.parse::<Token![,]>()?;
+                        let b: LitInt = content.parse()?;
+                        ColorSpec::Rgb(r, g, b)
+                    } else {
+                        // Basic color like Red, Green, etc.
+                        ColorSpec::Basic(ident)
+                    }
+                } else if input.peek(LitStr) {
+                    // Hex string like "#ff0000"
+                    let hex: LitStr = input.parse()?;
+                    ColorSpec::Hex(hex)
+                } else {
+                    return Err(input.error(
+                        "Expected color specification (Red, Color256(n), Rgb(r,g,b), or \"#hex\")",
+                    ));
+                };
+
+                styles.push(StyleEntry::KeyValue(key, color_spec));
             } else if input.peek(Ident) {
                 // single flag
                 let flag: Ident = input.parse()?;
@@ -56,8 +98,44 @@ pub fn styled_impl(input: TokenStream) -> TokenStream {
             StyleEntry::Flag(flag) => {
                 expr_tokens = quote! { #expr_tokens.#flag() };
             }
-            StyleEntry::KeyValue(key, val) => {
-                expr_tokens = quote! { #expr_tokens.#key(Color::#val) };
+            StyleEntry::KeyValue(key, color_spec) => {
+                match color_spec {
+                    ColorSpec::Basic(ident) => {
+                        expr_tokens = quote! { #expr_tokens.#key(Color::#ident) };
+                    }
+                    ColorSpec::Color256(n) => {
+                        expr_tokens = quote! { #expr_tokens.#key(Color::Color256(#n)) };
+                    }
+                    ColorSpec::Rgb(r, g, b) => {
+                        expr_tokens = quote! { #expr_tokens.#key(Color::Rgb(#r, #g, #b)) };
+                    }
+                    ColorSpec::Hex(hex_str) => {
+                        // Convert hex to RGB at compile time
+                        let hex = hex_str.value();
+                        let hex = hex.trim_start_matches('#');
+                        if hex.len() != 6 {
+                            return TokenStream::from(quote! {
+                                compile_error!("Hex color must be 6 characters (e.g., \"#ff0000\")")
+                            });
+                        }
+
+                        // Parse hex to RGB values
+                        match (
+                            u8::from_str_radix(&hex[0..2], 16),
+                            u8::from_str_radix(&hex[2..4], 16),
+                            u8::from_str_radix(&hex[4..6], 16),
+                        ) {
+                            (Ok(r), Ok(g), Ok(b)) => {
+                                expr_tokens = quote! { #expr_tokens.#key(Color::Rgb(#r, #g, #b)) };
+                            }
+                            _ => {
+                                return TokenStream::from(quote! {
+                                    compile_error!("Invalid hex color format. Use \"#rrggbb\" format.")
+                                });
+                            }
+                        }
+                    }
+                }
             }
         }
     }

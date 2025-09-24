@@ -4,7 +4,7 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**A semantic terminal styling system that extends and enhances existing terminal themes with automatic color detection and extensive tool integration.**
+**A cross-platform semantic terminal styling system for Rust applications that extends and enhances existing terminal themes with automatic color detection and extensive tool integration.**
 
 `thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **over 300 curated themes** plus original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
@@ -33,7 +33,7 @@
 - **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, and many more
 - **Theme Generation** — From images using advanced color extraction
 - **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty, WezTerm, Windows Terminal
-- **Palette Sync** — Runtime terminal palette updates via OSC sequences  
+- **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Standard theme format support with original extensions
 
 ## Quick Start
@@ -56,7 +56,7 @@ fn main() {
     "❌ Connection failed".error().println();
     "⚠️  High memory usage detected".warning().println();
     "cargo run --release".code().println();
-    
+
     // Works with any Display type
     42.success().println();              // Numbers
     std::path::Path::new("/usr/bin").display().code().println(); // Paths
@@ -72,13 +72,13 @@ Instead of manually selecting and coordinating colors, `thag_styling` provides c
 ```rust
 // Manual color coordination - error prone
 println!("{}", "Error".red().bold());
-println!("{}", "Warning".yellow()); 
+println!("{}", "Warning".yellow());
 println!("{}", "Success".green());
 // Do these colors work well together? 🤷
 ```
 
 **After:**
-```rust  
+```rust
 // Semantic coordination - guaranteed harmony
 "Error".error().println();
 "Warning".warning().println();
@@ -120,7 +120,7 @@ let success_gauge = Gauge::default()
 format!("Status: {} | Memory: {}", "OK".success(), "85%".warning())
     .info().println();
 
-// Styled print macros  
+// Styled print macros
 sprtln!(Role::Error, "Connection failed: {}", error_msg);
 svprtln!(Role::Debug, Verbosity::Debug, "Processing {}", item);
 
@@ -204,7 +204,7 @@ export_theme_to_file(&theme, "wezterm.toml", ExportFormat::WezTerm)?;
 export_theme_to_file(&theme, "windows-terminal.json", ExportFormat::WindowsTerminal)?;
 ```
 
-### Runtime Palette Synchronization  
+### Runtime Palette Synchronization
 ```rust
 use thag_styling::PaletteSync;
 
@@ -248,7 +248,7 @@ The library includes comprehensive examples:
 
 Run examples:
 ```bash
-# Complete styling system demonstration  
+# Complete styling system demonstration
 cargo run demo/styling_migration_guide.rs
 
 # Interactive TUI showcase (full-featured application)
@@ -279,7 +279,7 @@ The tools are installed as part of `thag_rs` with the `tools` feature:
 # Install from crates.io with tools
 cargo install thag_rs --features tools
 
-# Install from GitHub repository  
+# Install from GitHub repository
 cargo install --git https://github.com/durbanlegend/thag_rs thag_rs --features tools
 
 # Or build from source
@@ -295,14 +295,14 @@ cargo install --path . --features tools
 # Generate theme from image
 thag_image_to_theme sunset.jpg my-sunset-theme
 
-# Convert between theme formats  
+# Convert between theme formats
 thag_convert_themes input-theme.toml output-format
 
 # Generate terminal emulator themes
 thag_gen_terminal_themes my-theme.toml --all-formats
 ```
 
-### Theme Management Tools  
+### Theme Management Tools
 ```bash
 # Display available themes
 thag_show_themes
@@ -334,7 +334,7 @@ thag_legible my-theme.toml
 ### Complete TUI Application
 See `examples/ratatui_theming_showcase.rs` for a 4-tab TUI demonstrating:
 - Dashboard with metrics and progress bars
-- Log viewer with semantic severity colors  
+- Log viewer with semantic severity colors
 - Settings and configuration display
 - Comprehensive help system
 
@@ -347,7 +347,7 @@ let gauge = Gauge::default()
     .gauge_style(Style::themed(Role::Success))
     .label("Progress");
 
-// Crossterm - terminal control with theming  
+// Crossterm - terminal control with theming
 let styled_text = crossterm_helpers::success_style()
     .apply("Operation completed");
 

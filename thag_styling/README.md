@@ -10,7 +10,7 @@
 
 **Generate gorgeous `thag_styling` and terminal themes automatically from your favourite artwork.**
 
-`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **over 300 curated themes** plus original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Features
 
@@ -38,7 +38,7 @@
 - **Theme Generation** — From images using advanced color extraction
 - **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty, WezTerm, Windows Terminal
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
-- **Base16/Base24** — Standard theme format support with original extensions
+- **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 
 ## Quick Start
 

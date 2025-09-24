@@ -30,6 +30,15 @@
     "⚠️  High memory usage detected".warning().println();
     "cargo run --release".code().println();
 
+$PROFILE (C:\Users\donforbes\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1):
+
+$env:PATH += ";C:\Users\donforbes\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"
+$env:RUST_LOG = "build_run=debug"
+$env:THAG_COLOR_MODE = "truecolor"
+$env:THAG_THEME = "thag-morning-coffee-light"
+thag_sync_palette apply $THAG_THEME
+
+
 
 Option 1 makes sense, but the implementation step `2. Add a method to get current `ColorSupport`` raises an issue. I think we need to review how we are doing that. Assuming the `color_detect` feature is active, and that we call styling::TermAttributes::initialize(ColorInitStrategy::Match), this function gets the ColorSupport variant by calling detect_term_capabilities on thag_common/src/terminal.rs and stores it in the color_support field of the static TermAttributes struct instance being constructed. We have also recently added fn terminal::get_fresh_color_support to support dynamic querying. I'm not sure we actually have a good use case for this, and it gives a second version of the truth, which is not great. So I'm reminded to get the applicable ColorSupport variant thus: `TermAttributes::get_or_init().color_support`, and have accordingly commented out and replaced line 438 of src/bin/thag_palette_vs_theme.rs by lines 439f since your response.
 

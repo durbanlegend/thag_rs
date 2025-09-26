@@ -218,6 +218,7 @@ impl BaseTheme {
     }
 
     /// Convert RGB to HSL color space
+    #[allow(clippy::many_single_char_names)]
     fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
         let r = f32::from(rgb[0]) / 255.0;
         let g = f32::from(rgb[1]) / 255.0;
@@ -257,6 +258,7 @@ impl BaseTheme {
     }
 
     /// Enhance palette contrast for all colors with role-specific thresholds
+    #[allow(clippy::too_many_lines)]
     fn enhance_palette_contrast(
         mut palette: Palette,
         background_rgb: (u8, u8, u8),
@@ -268,6 +270,7 @@ impl BaseTheme {
 
         // Define role-specific contrast requirements
         let get_contrast_threshold = |role: &str| -> f32 {
+            #[allow(clippy::match_same_arms)]
             match role {
                 // Critical colors need highest contrast
                 "normal" | "error" | "success" => {

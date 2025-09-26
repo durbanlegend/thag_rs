@@ -13,9 +13,9 @@ thag_styling = { version = "0.2, thag-auto" }
 /// - Current thag theme colors for comparison
 //# Purpose: Show terminal palette colors
 //# Categories: color, styling, terminal, theming
-use thag_styling::{display_color_comparison, hsl_to_rgb, Style, TermAttributes};
+use thag_styling::{display_color_comparison, hsl_to_rgb, ColorValue, Style, TermAttributes};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     println!("🎨 Terminal Palette Display Tool");
     println!("================================\n");
 
@@ -44,8 +44,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     display_color_comparison(theme);
 
     println!("\n🎉 Palette display complete!");
-
-    Ok(())
 }
 
 /// Display basic terminal information
@@ -170,6 +168,7 @@ fn display_256_color_samples() {
 }
 
 /// Test true color capability with a gradient
+#[allow(clippy::cast_precision_loss)]
 fn display_true_color_test() {
     println!("🌟 True Color (24-bit) Test:");
     println!("=============================");
@@ -255,20 +254,20 @@ fn display_thag_theme_colors() {
 
 /// Extract RGB information from a style for display
 fn extract_rgb_info(style: &Style) -> String {
-    match &style.foreground {
-        Some(color_info) => match &color_info.value {
-            thag_styling::ColorValue::TrueColor { rgb } => {
+    style.foreground.as_ref().map_or_else(
+        || "No color".to_string(),
+        |color_info| match &color_info.value {
+            ColorValue::TrueColor { rgb } => {
                 format!("RGB({}, {}, {})", rgb[0], rgb[1], rgb[2])
             }
-            thag_styling::ColorValue::Color256 { color256 } => {
+            ColorValue::Color256 { color256 } => {
                 format!("256-Color({})", color256)
             }
-            thag_styling::ColorValue::Basic { index, .. } => {
+            ColorValue::Basic { index, .. } => {
                 format!("Basic({})", index)
             }
         },
-        None => "No color".to_string(),
-    }
+    )
 }
 
 // /// Convert HSL to RGB (simple implementation)

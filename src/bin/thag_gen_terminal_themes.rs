@@ -404,6 +404,7 @@ fn process_theme_file(
             ExportFormat::Kitty => export_base_dir.join("kitty"),
             ExportFormat::Mintty => export_base_dir.join("mintty"),
             ExportFormat::WindowsTerminal => export_base_dir.join("windows"),
+            ExportFormat::Konsole => export_base_dir.join("konsole"),
         };
 
         fs::create_dir_all(&format_dir)?;

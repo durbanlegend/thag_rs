@@ -21,9 +21,9 @@
 - [ ]  DONE: Consider Styleable impl for Path/PathBuf instead of just std::path::Display
 - [ ]  DONE: Resolve StyledStringExt to StyledPrint.
 - [ ]  DONE: Styling Readme: PNG examples of styles.
-- [ ]  Styling Readme: use with_context of TermAttributes and Themes to nest guest attributes and themes.
+- [ ]  DONE: Styling Readme: use with_context of TermAttributes and Themes to nest guest attributes and themes.
 - [ ]  KDE Konsole doesn't accept OSC.
-- [ ]  .
+- [ ]  DONE: thag_styling README.md: Document 256-color themes not needed because thag_styling does conversion from TrueColor automatically.
 
     println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
     println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));

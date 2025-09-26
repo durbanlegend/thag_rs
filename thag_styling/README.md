@@ -47,7 +47,7 @@
 ### Core Styling System
 - **🚦 Semantic Roles** — Style by meaning (`Role::Error`, `Role::Success`) not colors
 - **🔍 Automatic Detection** — Terminal capabilities and theme selection
-- **🎨 Rich Palettes** — Coordinated 15-color schemes from TrueColor/256-color spectrum
+- **🎨 Rich Palettes** — Coordinated 15-color schemes for TrueColor/256-color spectrums
 - **👓 Proven Legibility** — Based on tested terminal themes with proper contrast
 - **🪶 Zero Overhead** — Compile-time theme resolution
 
@@ -190,7 +190,7 @@ println!("{}", styled!("Hex", fg = "#ff6347", underline));            // Hex tom
 `thag_styling` automatically adapts to your terminal's capabilities:
 
 - **TrueColor terminals** (16M colors) — Full RGB palette with rich gradients
-- **256-color terminals** — Carefully mapped colors maintaining theme integrity
+- **256-color terminals** — Carefully mapped colors maintaining theme integrity. Themes are stored as TrueColor and automatically mapped to the closest color in the 256-color palette.
 - **Basic terminals** (16 colors) — Graceful fallback to standard ANSI colors
 - **Monochrome terminals** — Uses styling attributes (bold, italic, underline)
 
@@ -290,10 +290,10 @@ test_attrs.with_context(|| {
     let current = TermAttributes::current();
     println!("Color support: {:?}", current.color_support);
     println!("Theme: {}", current.theme.name);
-    
+
     // Styling automatically uses the context attributes
     "Test message".error().println();
-    
+
     // Contexts can be nested
     other_attrs.with_context(|| {
         "Nested context message".success().println();
@@ -320,11 +320,11 @@ dark_theme.with_context(|| {
     // All .role() methods now use the dark theme
     "Error in dark theme context".error().println();
     "Success in dark theme context".success().println();
-    
+
     format!(
         "Complex: {} | {} | {}",
         "OK".success(),
-        "Warning".warning(), 
+        "Warning".warning(),
         "Error".error()
     ).normal().println();
 });
@@ -342,11 +342,11 @@ dark_theme.with_context(|| {
 // Nested theme contexts
 dark_theme.with_context(|| {
     "Outer context (dark)".heading1().println();
-    
+
     light_theme.with_context(|| {
         "Inner context (light)".heading2().println();
     });
-    
+
     "Back to outer (dark)".heading2().println();
 });
 ```

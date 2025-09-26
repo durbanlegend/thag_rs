@@ -9,6 +9,7 @@ use std::path::Path;
 pub mod alacritty;
 pub mod iterm2;
 pub mod kitty;
+pub mod konsole;
 pub mod mintty;
 pub mod wezterm;
 pub mod windows_terminal;
@@ -40,6 +41,8 @@ pub enum ExportFormat {
     ITerm2,
     ///`Kitty` terminal emulator (Config format)
     Kitty,
+    /// `Konsole` terminal emulator (colorscheme format)
+    Konsole,
     /// `Mintty` terminal emulator (INI format)
     Mintty,
     /// `Windows Terminal` (JSON)
@@ -55,6 +58,7 @@ impl ExportFormat {
             Self::WezTerm,
             Self::ITerm2,
             Self::Kitty,
+            Self::Konsole,
             Self::Mintty,
             Self::WindowsTerminal,
         ]
@@ -68,6 +72,7 @@ impl ExportFormat {
             Self::WezTerm => wezterm::WezTermExporter::file_extension(),
             Self::ITerm2 => iterm2::ITerm2Exporter::file_extension(),
             Self::Kitty => kitty::KittyExporter::file_extension(),
+            Self::Konsole => konsole::KonsoleExporter::file_extension(),
             Self::Mintty => mintty::MinttyExporter::file_extension(),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::file_extension(),
         }
@@ -81,6 +86,7 @@ impl ExportFormat {
             Self::WezTerm => wezterm::WezTermExporter::format_name(),
             Self::ITerm2 => iterm2::ITerm2Exporter::format_name(),
             Self::Kitty => kitty::KittyExporter::format_name(),
+            Self::Konsole => konsole::KonsoleExporter::format_name(),
             Self::Mintty => mintty::MinttyExporter::format_name(),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::format_name(),
         }
@@ -97,6 +103,7 @@ impl ExportFormat {
             Self::WezTerm => wezterm::WezTermExporter::export_theme(theme),
             Self::ITerm2 => iterm2::ITerm2Exporter::export_theme(theme),
             Self::Kitty => kitty::KittyExporter::export_theme(theme),
+            Self::Konsole => konsole::KonsoleExporter::export_theme(theme),
             Self::Mintty => mintty::MinttyExporter::export_theme(theme),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::export_theme(theme),
         }
@@ -202,6 +209,7 @@ pub fn export_theme_to_file<P: AsRef<Path>>(
 
 /// Generate installation instructions for a specific format
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn generate_installation_instructions(format: ExportFormat, theme_filename: &str) -> String {
     match format {
         ExportFormat::Alacritty => {
@@ -321,6 +329,34 @@ TODO: Formalise: Run `thag demo/windows_terminal_add_theme.rs <json`
 5. Add "colorScheme": "{theme_filename}" to your profile settings
 
 Alternatively, you can merge the JSON content directly into your settings.json file.
+"#
+            )
+        }
+        ExportFormat::Konsole => {
+            format!(
+                r#"# Konsole Theme Installation
+
+To use this theme with Konsole:
+
+1. Copy the theme file to your Konsole color schemes directory:
+   - Linux: `~/.local/share/konsole/` or `/usr/share/konsole/`
+   - The file should have a `.colorscheme` extension
+
+2. Option A - Using Konsole Settings:
+   - Open Konsole
+   - Go to Settings > Edit Current Profile...
+   - Click on "Appearance" tab
+   - Select your theme from the "Color scheme" dropdown
+
+3. Option B - Command line:
+   - Use: `konsoleprofile ColorScheme={theme_filename}`
+   - Note: Use the filename without the .colorscheme extension
+
+4. Option C - For persistent changes:
+   - Edit your profile configuration in `~/.local/share/konsole/`
+   - Add `ColorScheme={theme_filename}` to the profile file
+
+The theme will be applied immediately to new Konsole sessions.
 "#
             )
         }

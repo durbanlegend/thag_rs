@@ -407,7 +407,8 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
 
 /// Helper: RGB -> HSL
 #[allow(clippy::many_single_char_names)]
-fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
+#[must_use]
+pub fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
     let r = f32::from(rgb[0]) / 255.0;
     let g = f32::from(rgb[1]) / 255.0;
     let b = f32::from(rgb[2]) / 255.0;
@@ -628,15 +629,15 @@ mod tests {
     #[test]
     fn test_hsl_to_rgb() {
         // Test pure red (hue = 0)
-        let (r, g, b) = hsl_to_rgb(0.0, 1.0, 0.5);
+        let [r, g, b] = hsl_to_rgb(0.0, 1.0, 0.5);
         assert_eq!((r, g, b), (255, 0, 0));
 
         // Test pure green (hue = 120)
-        let (r, g, b) = hsl_to_rgb(120.0, 1.0, 0.5);
+        let [r, g, b] = hsl_to_rgb(120.0, 1.0, 0.5);
         assert_eq!((r, g, b), (0, 255, 0));
 
         // Test pure blue (hue = 240)
-        let (r, g, b) = hsl_to_rgb(240.0, 1.0, 0.5);
+        let [r, g, b] = hsl_to_rgb(240.0, 1.0, 0.5);
         assert_eq!((r, g, b), (0, 0, 255));
     }
 }

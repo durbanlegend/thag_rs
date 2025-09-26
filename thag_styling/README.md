@@ -14,7 +14,7 @@
 
 **Generate gorgeous `thag_styling` and terminal themes automatically from your favourite artwork.**
 
-`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (e.g. warnings, code, headings), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Examples of built-in themes
 
@@ -66,7 +66,7 @@
 ### Theme Ecosystem
 - **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, and many more
 - **Theme Generation** — From images using advanced color extraction
-- **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. These and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, e.g. Apple terminal, VS Code and Zed.
+- **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. These and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, e.g. Apple terminal, GNOME Terminal, VS Code and Zed.
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 
@@ -269,6 +269,86 @@ $env:PATH += ";C:\Users\my_name\.rustup\toolchains\stable-x86_64-pc-windows-msvc
 $env:THAG_COLOR_MODE = "truecolor"
 $env:THAG_THEME = "thag-morning-coffee-light"
 thag_sync_palette apply $THAG_THEME
+```
+
+### Terminal Attribute Contexts
+```rust
+use thag_styling::{ColorSupport, TermAttributes, TermBgLuma, Theme};
+
+// Create custom terminal attributes for testing or special scenarios
+let custom_theme = Theme::get_builtin("basic_dark")?;
+let test_attrs = TermAttributes::for_testing(
+    ColorSupport::Basic,
+    Some((64, 64, 64)),  // Background RGB
+    TermBgLuma::Dark,
+    custom_theme,
+);
+
+// Execute code with temporary attributes context
+test_attrs.with_context(|| {
+    // All styling within this block uses the custom attributes
+    let current = TermAttributes::current();
+    println!("Color support: {:?}", current.color_support);
+    println!("Theme: {}", current.theme.name);
+    
+    // Styling automatically uses the context attributes
+    "Test message".error().println();
+    
+    // Contexts can be nested
+    other_attrs.with_context(|| {
+        "Nested context message".success().println();
+    });
+});
+
+// Global attributes restored outside context
+```
+
+### Theme Contexts
+```rust
+use thag_styling::{Styleable, StyledPrint, Theme};
+
+// Load guest themes without changing the global theme
+let dark_theme = Theme::get_builtin("dracula")?;
+let light_theme = Theme::get_builtin("github")?;
+
+// Method 1: Direct theme styling (most efficient)
+dark_theme.error("Dark theme error message").println();
+light_theme.success("Light theme success message").println();
+
+// Method 2: Context switching (most ergonomic for styling blocks)
+dark_theme.with_context(|| {
+    // All .role() methods now use the dark theme
+    "Error in dark theme context".error().println();
+    "Success in dark theme context".success().println();
+    
+    format!(
+        "Complex: {} | {} | {}",
+        "OK".success(),
+        "Warning".warning(), 
+        "Error".error()
+    ).normal().println();
+});
+
+// Mixed usage example
+dark_theme.with_context(|| {
+    format!(
+        "Status: {} | Config: {} | Result: {}",
+        "Running".info(),                    // Uses dark theme context
+        light_theme.code("config.toml"),    // Direct light theme method
+        "Complete".success()                 // Uses dark theme context
+    ).normal().println();                   // Uses dark theme context
+});
+
+// Nested theme contexts
+dark_theme.with_context(|| {
+    "Outer context (dark)".heading1().println();
+    
+    light_theme.with_context(|| {
+        "Inner context (light)".heading2().println();
+    });
+    
+    "Back to outer (dark)".heading2().println();
+});
 ```
 
 ## Examples

@@ -9,7 +9,7 @@
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
 - [ ]  thag_styling README.
-- [ ]  Theme conversion or loading - consider improving contrast on palette colours where necessary.
+- [ ]  DROP since fixed conversion: Theme conversion or loading - consider improving contrast on palette colours where necessary.
 - [ ]  Get rid of terminal::get_fresh_color_support.
 - [ ]  DONE: Check if owo-colors uses indexed terminal palette colours or basic 15 fg colours. - Looks like indexed 0-15, the rest from the 256-colour palette.
 - [ ]  Add owo-colors integration.
@@ -20,8 +20,10 @@
 - [ ]  DONE: Replace paint_for_role examples with "xxx".println()
 - [ ]  DONE: Consider Styleable impl for Path/PathBuf instead of just std::path::Display
 - [ ]  DONE: Resolve StyledStringExt to StyledPrint.
-- [ ]  Styling Readme: PNG examples of styles.
+- [ ]  DONE: Styling Readme: PNG examples of styles.
 - [ ]  Styling Readme: use with_context of TermAttributes and Themes to nest guest attributes and themes.
+- [ ]  KDE Konsole doesn't accept OSC.
+- [ ]  .
 
     println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
     println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));

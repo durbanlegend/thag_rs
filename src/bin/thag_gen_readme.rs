@@ -24,9 +24,9 @@ use std::{
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
-    auto_help, code_utils, cvprtln, find_crates, find_metadata,
+    auto_help, code_utils, find_crates, find_metadata,
     help_system::check_help_and_exit,
-    lazy_static_var, re, themed_inquire_config, Role, V,
+    lazy_static_var, re, svprtln, themed_inquire_config, Role, V,
 };
 
 file_navigator! {}
@@ -90,7 +90,7 @@ fn parse_metadata(relative_dir: &Path, file_path: &Path) -> Option<ScriptMetadat
                             categories.iter().all(|cat| {
                                 let found = valid_categories.contains(&cat.as_str().to_snake_case());
                                 if !found {
-                                    cvprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
+                                    svprtln!(Role::ERR, V::N, "Unknown or invalid category: `{cat}`");
                                 }
                                 found
                             }),

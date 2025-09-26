@@ -4,7 +4,7 @@
 //! 1. Direct theme methods: theme.error("text")
 //! 2. Context switching: theme.with_context(|| { "text".error() })
 
-use thag_styling::{ColorInitStrategy, Styleable, StyledStringExt, TermAttributes, Theme};
+use thag_styling::{ColorInitStrategy, Styleable, StyledPrint, TermAttributes, Theme};
 
 fn main() {
     println!("🎨 Testing Theme Context API\n");

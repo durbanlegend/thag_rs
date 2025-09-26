@@ -28,7 +28,7 @@ use syn::{
 };
 use thag_common::{debug_log, re, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, Role};
+use thag_styling::{svprtln, Role};
 
 #[cfg(debug_assertions)]
 use {crate::debug_timings, std::time::Instant};
@@ -450,7 +450,7 @@ pub fn infer_deps_from_source(code: &str) -> Vec<String> {
     let maybe_ast = extract_and_wrap_uses(code);
     let mut dependencies = maybe_ast.map_or_else(
         |_| {
-            cvprtln!(
+            svprtln!(
                 Role::ERR,
                 V::QQ,
                 "Could not parse code into an abstract syntax tree"
@@ -830,7 +830,7 @@ pub fn is_last_stmt_unit_type<S: BuildHasher>(
             expr_return.expr.is_none()
         }
         _ => {
-            cvprtln!(
+            svprtln!(
                 Role::WARN,
                 V::Q,
                 "Expression not catered for: {expr:#?}, wrapping expression in println!()"

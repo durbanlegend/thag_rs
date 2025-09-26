@@ -256,6 +256,11 @@ path = "src/bin/thag_gen_terminal_themes.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_palette"
+path = "src/bin/thag_palette.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_palette_vs_theme"
 path = "src/bin/thag_palette_vs_theme.rs"
 required-features = ["tools"]

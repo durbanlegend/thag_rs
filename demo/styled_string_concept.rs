@@ -97,7 +97,7 @@ impl fmt::Display for StyledString {
 }
 
 /// Extended Styleable trait that returns StyledString instead of plain String
-trait StyledStringExt {
+trait StyledPrint {
     fn styled_error(&self) -> StyledString;
     fn styled_warning(&self) -> StyledString;
     fn styled_success(&self) -> StyledString;
@@ -105,7 +105,7 @@ trait StyledStringExt {
     fn styled_with(&self, styler: impl Styler) -> StyledString;
 }
 
-impl StyledStringExt for str {
+impl StyledPrint for str {
     fn styled_error(&self) -> StyledString {
         StyledString::new(self.to_string(), Style::from(Role::Error))
     }
@@ -127,7 +127,7 @@ impl StyledStringExt for str {
     }
 }
 
-impl StyledStringExt for String {
+impl StyledPrint for String {
     fn styled_error(&self) -> StyledString {
         StyledString::new(self.clone(), Style::from(Role::Error))
     }

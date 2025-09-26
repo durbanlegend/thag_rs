@@ -33,7 +33,7 @@ use std::{
     path::PathBuf,
 };
 use thag_rs::{
-    cvprtln, debug_log, lazy_static_var, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V,
+    debug_log, lazy_static_var, svprtln, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V,
 };
 
 /// Initializes and returns the configuration.
@@ -369,10 +369,10 @@ fn main() -> ThagResult<()> {
     match maybe_ok_config {
         Ok(maybe_config) => {
             if let Some(config) = maybe_config {
-                cvprtln!(Role::EMPH, V::QQ, "Loaded config:");
+                svprtln!(Role::EMPH, V::QQ, "Loaded config:");
                 let toml = &toml::to_string_pretty(&config)?;
                 for line in toml.lines() {
-                    cvprtln!(Role::SUCC, V::QQ, "{line}");
+                    svprtln!(Role::SUCC, V::QQ, "{line}");
                 }
                 eprintln!();
                 eprintln!(

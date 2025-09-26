@@ -39,7 +39,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use thag_common::{ColorSupport, TermBgLuma};
 use thag_rs::auto_help;
-use thag_styling::{find_closest_color, ColorValue, Palette, Style, Theme};
+use thag_styling::{find_closest_color, hsl_to_rgb, ColorValue, Palette, Style, Theme};
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
@@ -108,6 +108,13 @@ impl BaseTheme {
         let backgrounds = vec![format!("#{bg}")];
         let bg_rgbs = vec![hex_to_rgb(&bg)?];
 
+        let is_light_theme = matches!(
+            detect_background_luma(&self.palette.base00)?,
+            TermBgLuma::Light
+        );
+        let bg_rgb = bg_rgbs[0];
+        let enhanced_palette = Self::enhance_palette_contrast(palette, bg_rgb, is_light_theme);
+
         Ok(Theme {
             name: self.scheme.clone(),
             description: self
@@ -116,7 +123,7 @@ impl BaseTheme {
                 .unwrap_or_else(|| format!("Converted from {} theme", self.scheme)),
             term_bg_luma: detect_background_luma(&self.palette.base00)?,
             min_color_support: ColorSupport::TrueColor,
-            palette,
+            palette: enhanced_palette,
             backgrounds,
             bg_rgbs,
             is_builtin: false,
@@ -158,12 +165,14 @@ impl BaseTheme {
             heading1: Style::from_fg_hex(&self.palette.base0_e)?.bold(),
             // base0F -> Heading2 (brown - deprecated/secondary)
             heading2: Style::from_fg_hex(&self.palette.base0_f)?.bold(),
-            // For Base24, we can use additional colors for heading3
+            // For Base24, choose a better color for heading3 (avoid base10 which is often dark)
             heading3: Style::from_fg_hex(
                 self.palette
-                    .base10
+                    .base12 // Often a bright accent color
                     .as_ref()
-                    .unwrap_or(&self.palette.base0_c),
+                    .or(self.palette.base15.as_ref()) // Fallback to another bright color
+                    .or(self.palette.base16.as_ref()) // Another fallback
+                    .unwrap_or(&self.palette.base0_c), // Final fallback to base16 color
             )?
             .bold(),
         })
@@ -206,6 +215,313 @@ impl BaseTheme {
             // For Base16, we must reuse a color for heading3 since we only have 16 colors for 16 roles
             heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(), // Reuse cyan but with bold
         })
+    }
+
+    /// Convert RGB to HSL color space
+    fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
+        let r = f32::from(rgb[0]) / 255.0;
+        let g = f32::from(rgb[1]) / 255.0;
+        let b = f32::from(rgb[2]) / 255.0;
+
+        let max = r.max(g).max(b);
+        let min = r.min(g).min(b);
+        let delta = max - min;
+
+        let l = (max + min) / 2.0;
+        let (s, mut h) = if delta == 0.0 {
+            (0.0, 0.0)
+        } else {
+            let s = if l > 0.5 {
+                delta / (2.0 - max - min)
+            } else {
+                delta / (max + min)
+            };
+
+            let h = if (max - r).abs() < f32::EPSILON {
+                ((g - b) / delta) % 6.0
+            } else if (max - g).abs() < f32::EPSILON {
+                ((b - r) / delta) + 2.0
+            } else {
+                ((r - g) / delta) + 4.0
+            } * 60.0;
+
+            (s, h)
+        };
+
+        // Ensure hue is positive
+        if h < 0.0 {
+            h += 360.0;
+        }
+
+        (h, s, l)
+    }
+
+    /// Enhance palette contrast for all colors with role-specific thresholds
+    fn enhance_palette_contrast(
+        mut palette: Palette,
+        background_rgb: (u8, u8, u8),
+        is_light_theme: bool,
+    ) -> Palette {
+        // Convert background to array for HSL conversion
+        let bg_array = [background_rgb.0, background_rgb.1, background_rgb.2];
+        let (_bg_h, _bg_s, bg_l) = Self::rgb_to_hsl(bg_array);
+
+        // Define role-specific contrast requirements
+        let get_contrast_threshold = |role: &str| -> f32 {
+            match role {
+                // Critical colors need highest contrast
+                "normal" | "error" | "success" => {
+                    if is_light_theme {
+                        0.60
+                    } else {
+                        0.65
+                    }
+                }
+                // Important colors need high contrast
+                "warning" | "info" | "emphasis" | "heading1" => {
+                    if is_light_theme {
+                        0.55
+                    } else {
+                        0.60
+                    }
+                }
+                // Secondary colors need good contrast
+                "heading2" | "code" | "link" => {
+                    if is_light_theme {
+                        0.50
+                    } else {
+                        0.55
+                    }
+                }
+                // Supporting colors - formerly problematic ones
+                "subtle" | "hint" | "debug" | "commentary" => {
+                    if is_light_theme {
+                        0.50
+                    } else {
+                        0.55
+                    }
+                }
+                // Quote can be slightly lower contrast
+                "quote" => {
+                    if is_light_theme {
+                        0.45
+                    } else {
+                        0.50
+                    }
+                }
+                // Heading3 often problematic in base24
+                "heading3" => {
+                    if is_light_theme {
+                        0.50
+                    } else {
+                        0.55
+                    }
+                }
+                _ => {
+                    if is_light_theme {
+                        0.45
+                    } else {
+                        0.50
+                    }
+                }
+            }
+        };
+
+        // Adjust all colors for proper contrast
+        palette.normal = Self::adjust_color_contrast(
+            &palette.normal,
+            bg_l,
+            get_contrast_threshold("normal"),
+            is_light_theme,
+            "normal",
+        );
+        palette.subtle = Self::adjust_color_contrast(
+            &palette.subtle,
+            bg_l,
+            get_contrast_threshold("subtle"),
+            is_light_theme,
+            "subtle",
+        );
+        palette.hint = Self::adjust_color_contrast(
+            &palette.hint,
+            bg_l,
+            get_contrast_threshold("hint"),
+            is_light_theme,
+            "hint",
+        );
+        palette.debug = Self::adjust_color_contrast(
+            &palette.debug,
+            bg_l,
+            get_contrast_threshold("debug"),
+            is_light_theme,
+            "debug",
+        );
+        palette.commentary = Self::adjust_color_contrast(
+            &palette.commentary,
+            bg_l,
+            get_contrast_threshold("commentary"),
+            is_light_theme,
+            "commentary",
+        );
+        palette.heading1 = Self::adjust_color_contrast(
+            &palette.heading1,
+            bg_l,
+            get_contrast_threshold("heading1"),
+            is_light_theme,
+            "heading1",
+        );
+        palette.heading2 = Self::adjust_color_contrast(
+            &palette.heading2,
+            bg_l,
+            get_contrast_threshold("heading2"),
+            is_light_theme,
+            "heading2",
+        );
+        palette.heading3 = Self::adjust_color_contrast(
+            &palette.heading3,
+            bg_l,
+            get_contrast_threshold("heading3"),
+            is_light_theme,
+            "heading3",
+        );
+        palette.error = Self::adjust_color_contrast(
+            &palette.error,
+            bg_l,
+            get_contrast_threshold("error"),
+            is_light_theme,
+            "error",
+        );
+        palette.warning = Self::adjust_color_contrast(
+            &palette.warning,
+            bg_l,
+            get_contrast_threshold("warning"),
+            is_light_theme,
+            "warning",
+        );
+        palette.success = Self::adjust_color_contrast(
+            &palette.success,
+            bg_l,
+            get_contrast_threshold("success"),
+            is_light_theme,
+            "success",
+        );
+        palette.info = Self::adjust_color_contrast(
+            &palette.info,
+            bg_l,
+            get_contrast_threshold("info"),
+            is_light_theme,
+            "info",
+        );
+        palette.emphasis = Self::adjust_color_contrast(
+            &palette.emphasis,
+            bg_l,
+            get_contrast_threshold("emphasis"),
+            is_light_theme,
+            "emphasis",
+        );
+        palette.code = Self::adjust_color_contrast(
+            &palette.code,
+            bg_l,
+            get_contrast_threshold("code"),
+            is_light_theme,
+            "code",
+        );
+        palette.link = Self::adjust_color_contrast(
+            &palette.link,
+            bg_l,
+            get_contrast_threshold("link"),
+            is_light_theme,
+            "link",
+        );
+        palette.quote = Self::adjust_color_contrast(
+            &palette.quote,
+            bg_l,
+            get_contrast_threshold("quote"),
+            is_light_theme,
+            "quote",
+        );
+
+        palette
+    }
+
+    /// Adjust a single color's contrast against the background
+    fn adjust_color_contrast(
+        style: &Style,
+        bg_lightness: f32,
+        min_lightness_diff: f32,
+        is_light_theme: bool,
+        role_name: &str,
+    ) -> Style {
+        // Extract RGB from the style
+        if let Some(color_info) = &style.foreground {
+            match &color_info.value {
+                ColorValue::TrueColor { rgb } => {
+                    let (h, s, l) = Self::rgb_to_hsl(*rgb);
+                    let lightness_diff = (l - bg_lightness).abs();
+
+                    // If contrast is sufficient, return as-is
+                    if lightness_diff >= min_lightness_diff {
+                        return style.clone();
+                    }
+
+                    // Adjust lightness for better contrast
+                    let adjusted_lightness = if is_light_theme {
+                        // For light themes, make text darker
+                        if l > bg_lightness {
+                            // Color is lighter than background, make it darker
+                            (bg_lightness - min_lightness_diff).max(0.1)
+                        } else {
+                            // Color is darker than background, make it even darker
+                            (bg_lightness - min_lightness_diff).max(0.15)
+                        }
+                    } else {
+                        // For dark themes, make text lighter
+                        if l < bg_lightness {
+                            // Color is darker than background, make it lighter
+                            (bg_lightness + min_lightness_diff).min(0.9)
+                        } else {
+                            // Color is lighter than background, make it even lighter
+                            (bg_lightness + min_lightness_diff).min(0.85)
+                        }
+                    };
+
+                    // Apply role-specific saturation adjustments
+                    let adjusted_saturation = match role_name {
+                        // Formerly problematic colors - boost significantly
+                        "subtle" | "hint" | "commentary" | "debug" => (s * 1.5).min(0.8),
+                        // Heading3 often needs boost in base24
+                        "heading3" => (s * 1.4).min(0.8),
+                        // Critical colors - moderate boost to maintain readability
+                        "normal" | "error" | "success" | "warning" | "info" => (s * 1.2).min(0.9),
+                        // Other colors - slight boost or maintain
+                        _ => (s * 1.1).min(0.9),
+                    };
+
+                    let adjusted_rgb = hsl_to_rgb(h, adjusted_saturation, adjusted_lightness);
+
+                    // Create new style with adjusted color, preserving other attributes
+                    let mut new_style = Style::with_rgb(adjusted_rgb);
+                    if style.bold {
+                        new_style = new_style.bold();
+                    }
+                    if style.italic {
+                        new_style = new_style.italic();
+                    }
+                    if style.dim {
+                        new_style = new_style.dim();
+                    }
+                    if style.underline {
+                        new_style = new_style.underline();
+                    }
+
+                    new_style
+                }
+                // For other color types, return as-is
+                _ => style.clone(),
+            }
+        } else {
+            style.clone()
+        }
     }
 }
 

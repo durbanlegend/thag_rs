@@ -8,7 +8,7 @@ use inquire::{set_global_render_config, Select};
 use std::{env, io};
 use thag_rs::{auto_help, ThagResult};
 use thag_styling::{
-    cprtln, display_theme_details, display_theme_roles, styling, themed_inquire_config, Role,
+    display_theme_details, display_theme_roles, sprtln, styling, themed_inquire_config, Role,
     TermAttributes, Theme,
 };
 
@@ -151,7 +151,7 @@ fn show_theme(theme_name: &str) {
 }
 
 fn show_terminal_instructions(theme: &Theme) {
-    cprtln!(
+    sprtln!(
         theme.style_for(Role::HD2).bold(),
         "\t{}",
         "Terminal Setup Instructions:"
@@ -180,22 +180,22 @@ fn show_terminal_instructions(theme: &Theme) {
     let fg = styling::rgb_to_hex(&fg_rgb);
     let bg = &bg_color;
 
-    cprtln!(
+    sprtln!(
         theme.style_for(Role::Normal),
         r"        To view the colors clearly, set your terminal background to {bg} and foreground and cursor to {fg}."
     );
 
-    cprtln!(
+    sprtln!(
         theme.style_for(Role::Normal),
         "\tCommand-line shortcut for *nix and other OSC-compliant terminals do this:"
     );
-    cprtln!(
+    sprtln!(
         theme.style_for(Role::Code),
         r#"
         printf "\x1b]10;{fg}\x07\x1b]12;{fg}\x07\x1b]11;{bg}\x07""#
     );
     println!();
-    cprtln!(
+    sprtln!(
         theme.style_for(Role::Normal),
         r"        For best results, rather configure the desired theme in your terminal settings.
         To be sure that `thag` will identify the desired theme from the background color, edit your configuration with `thag -C`.
@@ -206,7 +206,7 @@ fn show_terminal_instructions(theme: &Theme) {
 
     // Detect environment and provide specific instructions
     let instructions = get_terminal_setup_instructions(bg_color, &theme.term_bg_luma.to_string());
-    cprtln!(theme.style_for(Role::Normal), "{}", instructions);
+    sprtln!(theme.style_for(Role::Normal), "{}", instructions);
 }
 
 fn get_terminal_setup_instructions(bg_color: &str, luma: &str) -> String {

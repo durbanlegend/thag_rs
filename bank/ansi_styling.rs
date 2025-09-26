@@ -11,7 +11,7 @@ thag_styling = { version = "0.2, thag-auto" }
 //# Categories: ansi, color, demo, dsl, learning, reference, styling, technique, terminal, trait_implementation, xterm
 use std::fmt;
 use std::fmt::Display;
-use thag_styling::{cvprtln, styled, Role, V};
+use thag_styling::{styled, svprtln, Role, V};
 
 // ANSI color codes
 #[derive(Clone, Copy)]
@@ -209,7 +209,7 @@ fn main() {
     // Doesn't work either - to revert to the previous colour we must track and reinstate it or split the message printing.
     println!("{}{} world", outer, outer.embed(inner));
 
-    cvprtln!(
+    svprtln!(
         Role::WARN,
         V::N,
         "Hello {}, how are you?",

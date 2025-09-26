@@ -8,7 +8,7 @@ thag_styling = { version = "0.2, thag-auto" }
 //# Purpose: Test the styled! macro with generated ANSI styling support.
 //# Categories: ansi, color, demo, macros, proc_macros, styling, terminal
 use thag_proc_macros::{ansi_styling_support, styled};
-use thag_styling::{cprtln, Role};
+use thag_styling::{sprtln, Role};
 
 // Generate ANSI styling support - no need to import AnsiStyleExt!
 ansi_styling_support! {}
@@ -17,7 +17,7 @@ fn main() {
     let name = "Should be bold";
     println!("Should be normal {} Should be normal", styled!(name, bold));
 
-    cprtln!(
+    sprtln!(
         Role::Success,
         "error={}, now for some boilerplate",
         styled!(name, italic, underline)

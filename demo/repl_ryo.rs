@@ -53,10 +53,10 @@ use thag_rs::{
     builder::process_expr,
     cmd_args::set_verbosity,
     code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
-    cvprtln, debug_log, debug_timings, get_verbosity, key, lazy_static_var,
+    debug_log, debug_timings, get_verbosity, key, lazy_static_var,
     logging::configure_log,
     manifest::extract,
-    re,
+    re, svprtln,
     tui_editor::{
         script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
         ManagedTerminal, RataStyle,
@@ -679,7 +679,7 @@ pub fn process_source(
         build_state.ast = Some(Ast::Expr(expr_ast));
         process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        cvprtln!(
+        svprtln!(
             Role::ERR,
             get_verbosity(),
             "Error parsing code: {maybe_ast:#?}"
@@ -1032,7 +1032,7 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
 #[profiled]
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
-    cvprtln!(
+    svprtln!(
         Role::EMPH,
         get_verbosity(),
         "Key bindings - subject to your terminal settings"
@@ -1326,7 +1326,7 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 // Display the REPL banner.
 #[profiled]
 pub fn disp_repl_banner(cmd_list: &str) {
-    cvprtln!(
+    svprtln!(
         Role::HD1,
         get_verbosity(),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
@@ -1334,13 +1334,13 @@ pub fn disp_repl_banner(cmd_list: &str) {
 
     println!();
 
-    cvprtln!(
+    svprtln!(
         Role::HD2,
         get_verbosity(),
         r"Expressions in matching braces, brackets or quotes may span multiple lines."
     );
 
-    cvprtln!(
+    svprtln!(
         Role::HD2,
         get_verbosity(),
         r"Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."

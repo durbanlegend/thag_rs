@@ -14,7 +14,7 @@ use syn::{parse_file, File};
 use thag_common::{debug_log, get_verbosity, re, vprtln, V};
 use thag_proc_macros::styled;
 use thag_profiler::{end, profile, profiled};
-use thag_styling::{cvprtln, AnsiStyleExt, Role};
+use thag_styling::{svprtln, AnsiStyleExt, Role};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -498,12 +498,12 @@ fn resolve_thag_dependency(
 }
 
 fn display_thag_auto_help() {
-    cvprtln!(
+    svprtln!(
         Role::ERR,
         V::N,
         "Build failed - thag dependency issue detected"
     );
-    cvprtln!(
+    svprtln!(
         Role::EMPH,
         V::N,
         r"
@@ -663,7 +663,7 @@ pub fn lookup_deps(
     let styled_inference_level = actual_style.paint(inference_level.to_string());
     let styled_recomm_inf_level = recomm_style.paint(recomm_inf_level.to_string());
     // Hack: use reset string \x1b[0m here to avoid mystery white-on-white bug.
-    cvprtln!(
+    svprtln!(
         Role::NORM,
         V::V,
         "\x1b[0mRecommended dependency inference_level={styled_recomm_inf_level}, actual={styled_inference_level}"
@@ -824,7 +824,7 @@ fn proc_macros_magic(
     dep_name: &str,
     dir_name: &str,
 ) {
-    cvprtln!(
+    svprtln!(
         Role::INFO,
         V::V,
         r#"Found magic import `{dep_name}`: attempting to generate path dependency from `proc_macros.(...)proc_macro_crate_path` in config file ".../config.toml"."#
@@ -849,14 +849,14 @@ fn proc_macros_magic(
         },
     );
     let magic_proc_macros_dir = maybe_magic_proc_macros_dir.as_ref().map_or_else(|| {
-        cvprtln!(
+        svprtln!(
             Role::INFO,
             V::V,
             r#"No `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
         );
         default_proc_macros_dir
     }, |proc_macros_dir| {
-        cvprtln!(Role::INFO, V::V, "Found {proc_macros_dir:#?}.");
+        svprtln!(Role::INFO, V::V, "Found {proc_macros_dir:#?}.");
         proc_macros_dir.to_string()
     });
 

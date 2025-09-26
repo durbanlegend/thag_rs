@@ -23,8 +23,8 @@ use std::time::{Duration, Instant};
 
 use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, select_builtin_theme, styling::index_to_rgb, themed_inquire_config, ColorInitStrategy,
-    ColorValue, Role, Style, Styleable, StyledStringExt, TermAttributes, TermBgLuma, Theme,
+    select_builtin_theme, sprtln, styling::index_to_rgb, themed_inquire_config, ColorInitStrategy,
+    ColorValue, Role, Style, Styleable, StyledPrint, TermAttributes, TermBgLuma, Theme,
 };
 
 use thag_profiler::{enable_profiling, profiled};
@@ -453,7 +453,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )
     .warning()
     .println();
-    cprtln!(Role::Subtle, "{}", "═".repeat(63));
+    sprtln!(Role::Subtle, "{}", "═".repeat(63));
     println!();
 
     // Initialize file navigator

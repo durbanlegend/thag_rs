@@ -17,7 +17,7 @@ use std::process::Command;
 use std::string::ToString;
 use thag_proc_macros::file_navigator;
 use thag_rs::{auto_help, help_system::check_help_and_exit};
-use thag_styling::{cprtln, themed_inquire_config, Role, Style, Styleable, StyledStringExt};
+use thag_styling::{sprtln, themed_inquire_config, Role, Style, Styleable, StyledPrint};
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;
@@ -238,7 +238,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     set_global_render_config(themed_inquire_config());
 
-    cprtln!(
+    sprtln!(
         Style::for_role(Role::Heading3),
         "🚀 Thag Prompt - Interactive Thag Builder",
     );
@@ -276,7 +276,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         // Script mode - select a file
         let mut navigator = FileNavigator::new();
-        cprtln!(
+        sprtln!(
             Style::for_role(Role::Emphasis),
             "\nStep: Select a script file"
         );
@@ -846,7 +846,7 @@ serde = "1.0""#,
             let status = cmd.status()?;
 
             if !status.success() {
-                cprtln!(
+                sprtln!(
                     Style::for_role(Role::Error),
                     "\nError: Command failed with exit code: {:?}",
                     status.code()
@@ -855,15 +855,15 @@ serde = "1.0""#,
         }
         "Copy command to clipboard" => {
             let shell_command = format!("{}{}", env_prefix, cmd_display);
-            cprtln!(
+            sprtln!(
                 Style::for_role(Role::Info),
                 "\nInfo: Command copied to clipboard:",
             );
-            cprtln!(Style::for_role(Role::Code), "{shell_command}");
+            sprtln!(Style::for_role(Role::Code), "{shell_command}");
 
             // Try to copy to clipboard (cross-platform)
             if let Err(e) = copy_to_clipboard(&shell_command) {
-                cprtln!(
+                sprtln!(
                     Style::for_role(Role::Warning),
                     "Warning: Failed to copy to clipboard: {e}"
                 );
@@ -872,7 +872,7 @@ serde = "1.0""#,
         }
         "Print command to stdout" => {
             let shell_command = format!("{}{}", env_prefix, cmd_display);
-            cprtln!(Style::for_role(Role::Code), "{shell_command}");
+            sprtln!(Style::for_role(Role::Code), "{shell_command}");
         }
         _ => {}
     }

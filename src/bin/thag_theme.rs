@@ -16,7 +16,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 //# Categories: ansi, color, styling, terminal, theming, tools, xterm
 use thag_rs::{auto_help, help_system::check_help_and_exit};
 use thag_styling::{
-    cprtln, display_terminal_attributes, display_theme_details, display_theme_roles,
+    display_terminal_attributes, display_theme_details, display_theme_roles, sprtln,
     ColorInitStrategy, Role, Style, TermAttributes,
 };
 
@@ -29,7 +29,7 @@ fn main() {
     let theme = &term_attrs.theme;
 
     print!("\t");
-    cprtln!(
+    sprtln!(
         Style::from(Role::NORM).underline(),
         "Current theme on this terminal\x1b[24m: {}\n",
         Style::from(Role::HD1).underline().paint(&theme.name)

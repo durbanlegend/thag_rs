@@ -28,7 +28,7 @@ use std::{
 };
 use thag_common::{debug_log, lazy_static_var};
 use thag_profiler::profiled;
-use thag_styling::Role;
+use thag_styling::{integrations::ThemedStyle, Role};
 use tui_textarea::{Input, TextArea};
 
 /// File dialog mode to distinguish between Open and Save dialogs
@@ -233,7 +233,7 @@ impl FileDialog<'_> {
                 .title(title.clone())
                 .borders(Borders::ALL)
                 .border_style(if file_list_focus {
-                    ratatui::style::Style::from(&crate::Style::for_role(Role::Heading1))
+                    ratatui::style::Style::themed(Role::Heading1)
                 } else {
                     ratatui::style::Style::default()
                         .fg(ratatui::style::Color::DarkGray)
@@ -247,15 +247,9 @@ impl FileDialog<'_> {
                 .collect();
             let list = List::new(list_items)
                 .block(block)
-                .highlight_style(
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Role::EMPH)))
-                        .bold(),
-                )
+                .highlight_style(Style::themed(Role::EMPH).bold())
                 .style(if file_list_focus {
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Role::HD2)))
-                        .not_bold()
+                    Style::themed(Role::HD2).not_bold()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
                 });
@@ -266,9 +260,7 @@ impl FileDialog<'_> {
             if self.mode == DialogMode::Save {
                 // Create a Block for the input area with borders and background
                 let input_style = if input_focus {
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Role::HD1)))
-                        .bold()
+                    Style::themed(Role::HD1).bold()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
                 };
@@ -287,13 +279,7 @@ impl FileDialog<'_> {
                 if input_focus {
                     self.input.set_style(Style::default());
                     self.input
-                        .set_selection_style(Style::default().bg(Color::Blue));
-                    self.input.set_cursor_style(Style::default()); //.on_magenta());
-                    self.input.set_cursor_line_style(
-                        Style::default()
-                            .fg(Color::Indexed(u8::from(&Role::EMPH)))
-                            .bold(),
-                    );
+                        .set_selection_style(Style::themed(Role::EMPH).bold());
                 } else {
                     self.input.set_style(Style::default().dim());
                     self.input.set_selection_style(Style::default().hidden());

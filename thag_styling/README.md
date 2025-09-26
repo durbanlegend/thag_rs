@@ -6,11 +6,18 @@
 
 **A semantic terminal styling system for Rust applications across platforms.**
 
+**Uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.**
+
 **Extend and enhance existing terminal themes with automatic color detection and extensive tool integration.**
+
+**Works with the most popular terminal emulators.**
 
 **Generate gorgeous `thag_styling` and terminal themes automatically from your favourite artwork.**
 
 `thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+
+![thag-raphael-school-of-athens-dark](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
+<!--(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)]-->
 
 ## Features
 
@@ -36,7 +43,7 @@
 ### Theme Ecosystem
 - **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, and many more
 - **Theme Generation** — From images using advanced color extraction
-- **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty, WezTerm, Windows Terminal
+- **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. These and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, e.g. Apple terminal, VS Code and Zed.
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 
@@ -315,7 +322,10 @@ thag_show_themes
 thag_theme my-theme-name
 thag_sync_palette
 
-# Compare theme vs terminal palette
+# Show terminal palette and compare with current theme
+thag_palette
+
+# Compare terminal palette with selected theme
 thag_palette_vs_theme
 
 # Add themes to specific terminals (alphabetically)

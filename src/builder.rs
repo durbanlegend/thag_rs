@@ -69,7 +69,7 @@ use std::{
 };
 use thag_common::{self, debug_log, re, vprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, paint_for_role, TermAttributes};
+use thag_styling::{paint_for_role, svprtln, TermAttributes};
 
 #[cfg(feature = "tui")]
 use crate::{
@@ -971,7 +971,7 @@ pub fn gen_build_run(
 
         generate(build_state, maybe_rs_source, proc_flags)?;
     } else {
-        cvprtln!(
+        svprtln!(
             Role::EMPH,
             V::N,
             "Skipping unnecessary generation step.  Use --force (-f) to override."
@@ -988,7 +988,7 @@ pub fn gen_build_run(
             } else {
                 "Skipping unnecessary cargo build step. Use --force (-f) to override."
             };
-        cvprtln!(Role::EMPH, V::N, "{build_qualifier}");
+        svprtln!(Role::EMPH, V::N, "{build_qualifier}");
     }
     if proc_flags.contains(ProcFlags::RUN) {
         run(proc_flags, &args.args, build_state)?;
@@ -1169,7 +1169,7 @@ fn build_command_args(
     } else if proc_flags.contains(ProcFlags::CARGO) {
         args.extend_from_slice(&build_state.args[1..]);
     } else if proc_flags.contains(ProcFlags::TEST_ONLY) && !build_state.args.is_empty() {
-        cvprtln!(Role::INFO, V::V, "build_state.args={:#?}", build_state.args);
+        svprtln!(Role::INFO, V::V, "build_state.args={:#?}", build_state.args);
         args.push("--".to_string());
         args.extend_from_slice(&build_state.args[..]);
     }
@@ -1210,7 +1210,7 @@ fn configure_command_output(command: &mut Command, proc_flags: &ProcFlags) {
 fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    cvprtln!(Role::INFO, V::V, "cargo_command={cargo_command:#?}");
+    svprtln!(Role::INFO, V::V, "cargo_command={cargo_command:#?}");
 
     let output = cargo_command.output()?;
 
@@ -1230,7 +1230,7 @@ fn handle_expand(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult
 fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> ThagResult<()> {
     let mut cargo_command = create_cargo_command(proc_flags, build_state)?;
 
-    cvprtln!(Role::INFO, V::VV, "cargo_command={cargo_command:#?}");
+    svprtln!(Role::INFO, V::VV, "cargo_command={cargo_command:#?}");
 
     let status = cargo_command.spawn()?.wait()?;
 
@@ -1279,13 +1279,13 @@ fn display_build_failure(inference_level: &DependencyInference) {
         config::DependencyInference::Max => "It may be that maximal dependency inference is specifying conflicting features. Consider trying `config` or failing that, a `toml` block",
     };
 
-    cvprtln!(
+    svprtln!(
         Role::HD3,
         V::V,
         r"Dependency inference_level={inference_level:#?}
 If the problem is a dependency error, consider the following advice:"
     );
-    cvprtln!(
+    svprtln!(
         Role::EMPH,
         V::V,
         r"{advice}
@@ -1360,14 +1360,14 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     }
 
     repeat_dash!(70);
-    cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
+    svprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
 
     vprtln!(
         V::QQ,
         "Executable built and moved to ~/{cargo_bin_subdir}/{executable_stem}"
     );
 
-    cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
+    svprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
     Ok(())
 }
 
@@ -1398,12 +1398,12 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
     // Sandwich command between two lines of dashes in the terminal
 
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
-    cvprtln!(Role::EMPH, V::Q, "{dash_line}");
+    svprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     let exit_status = run_command.status()?;
-    // cvprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
+    // svprtln!(Role::EMPH, V::N, "Exit status={exit_status:#?}");
 
-    cvprtln!(Role::EMPH, V::Q, "{dash_line}");
+    svprtln!(Role::EMPH, V::Q, "{dash_line}");
 
     // #[cfg(debug_assertions)]
     // debug_log!("Exit status={exit_status:#?}");

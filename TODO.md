@@ -15,10 +15,13 @@
 - [ ]  Add owo-colors integration.
 - [ ]  Make thag -d and repl edit use ratatui integration.
 - [ ]  Consider styled! with actual colours - or don't bother, use a regular colour package instead. Or add a theme with the basic colours.
-- [ ]  Rename all cprtln! and cvprtln! invocations to sprtln! and svprtln! - and in README.md.
+- [ ]  DONE: Rename all cprtln! and cvprtln! invocations to sprtln! and svprtln! - and in README.md.
 - [ ]  Guest Themes and TermAttributes with context.
-- [ ]  Replace paint_for_role examples with "xxx".println()
-- [ ]  Consider Styleable impl for Path/PathBuf instead of just std::path::Display
+- [ ]  DONE: Replace paint_for_role examples with "xxx".println()
+- [ ]  DONE: Consider Styleable impl for Path/PathBuf instead of just std::path::Display
+- [ ]  DONE: Resolve StyledStringExt to StyledPrint.
+- [ ]  Styling Readme: PNG examples of styles.
+- [ ]  Styling Readme: use with_context of TermAttributes and Themes to nest guest attributes and themes.
 
     println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
     println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));

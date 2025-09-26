@@ -12,7 +12,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, Style, V};
+use thag_rs::{auto_help, help_system::check_help_and_exit, svprtln, Role, Style, V};
 
 struct TestCase {
     name: &'static str,
@@ -84,7 +84,7 @@ const TEST_CASES: &[TestCase] = &[
 ];
 
 fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, String> {
-    cvprtln!(
+    svprtln!(
         Role::INFO,
         V::N,
         "\nTesting {}: {}",
@@ -101,17 +101,17 @@ fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, Stri
     match cmd.output() {
         Ok(output) => {
             if output.status.success() {
-                cvprtln!(Role::SUCC, V::N, "✓ {} passed", test_case.name);
+                svprtln!(Role::SUCC, V::N, "✓ {} passed", test_case.name);
                 Ok(true)
             } else {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                cvprtln!(Role::ERR, V::N, "✗ {} failed", test_case.name);
-                cvprtln!(Role::ERR, V::N, "Error: {}", stderr);
+                svprtln!(Role::ERR, V::N, "✗ {} failed", test_case.name);
+                svprtln!(Role::ERR, V::N, "Error: {}", stderr);
                 Ok(false)
             }
         }
         Err(e) => {
-            cvprtln!(
+            svprtln!(
                 Role::ERR,
                 V::N,
                 "✗ {} failed to execute: {}",
@@ -132,7 +132,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let current_dir = env::current_dir()?;
     let thag_dev_path = current_dir.to_string_lossy();
 
-    cvprtln!(
+    svprtln!(
         Role::INFO,
         V::N,
         "Testing proc macro examples with THAG_DEV_PATH={}",
@@ -141,7 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Check if we're in the right directory
     if !current_dir.join("demo").exists() {
-        cvprtln!(
+        svprtln!(
             Role::ERR,
             V::N,
             "Error: demo directory not found. Please run from the thag_rs root directory."
@@ -150,7 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !current_dir.join("demo/proc_macros").exists() {
-        cvprtln!(
+        svprtln!(
             Role::ERR,
             V::N,
             "Error: demo/proc_macros directory not found."
@@ -158,7 +158,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    cvprtln!(
+    svprtln!(
         Role::INFO,
         V::N,
         "Running {} test cases...",
@@ -180,23 +180,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    cvprtln!(Role::INFO, V::N, "\n=== Test Results ===");
-    cvprtln!(Role::SUCC, V::N, "Passed: {}", passed);
+    svprtln!(Role::INFO, V::N, "\n=== Test Results ===");
+    svprtln!(Role::SUCC, V::N, "Passed: {}", passed);
 
     if failed > 0 {
-        cvprtln!(Role::ERR, V::N, "Failed: {}", failed);
+        svprtln!(Role::ERR, V::N, "Failed: {}", failed);
 
         if !errors.is_empty() {
-            cvprtln!(Role::ERR, V::N, "\nExecution errors:");
+            svprtln!(Role::ERR, V::N, "\nExecution errors:");
             for error in &errors {
-                cvprtln!(Role::ERR, V::N, "  {}", error);
+                svprtln!(Role::ERR, V::N, "  {}", error);
             }
         }
     }
 
     #[allow(clippy::cast_precision_loss)]
     {
-        cvprtln!(
+        svprtln!(
             Role::INFO,
             V::N,
             "Total: {} ({:.1}% success rate)",
@@ -206,15 +206,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if failed > 0 {
-        cvprtln!(
+        svprtln!(
             Role::WARN,
             V::N,
             "\nSome tests failed. This might be due to:"
         );
-        cvprtln!(Role::WARN, V::N, "  - Missing dependencies in examples");
-        cvprtln!(Role::WARN, V::N, "  - Compilation errors in proc macros");
-        cvprtln!(Role::WARN, V::N, "  - Environment setup issues");
-        cvprtln!(
+        svprtln!(Role::WARN, V::N, "  - Missing dependencies in examples");
+        svprtln!(Role::WARN, V::N, "  - Compilation errors in proc macros");
+        svprtln!(Role::WARN, V::N, "  - Environment setup issues");
+        svprtln!(
             Role::WARN,
             V::N,
             "  - Run individual tests for more details"
@@ -222,6 +222,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    cvprtln!(Role::SUCC, V::N, "\nAll tests passed! 🎉");
+    svprtln!(Role::SUCC, V::N, "\nAll tests passed! 🎉");
     Ok(())
 }

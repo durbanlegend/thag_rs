@@ -20,7 +20,7 @@ use syn::{
 };
 use thag_common::{debug_log, re, vprtln, V};
 use thag_profiler::profiled;
-use thag_styling::{cvprtln, Role};
+use thag_styling::{svprtln, Role};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -207,19 +207,19 @@ pub fn to_ast(sourch_path_string: &str, source_code: &str) -> Option<Ast> {
     if let Ok(tree) = { syn::parse_file(source_code) } {
         #[cfg(debug_assertions)]
         {
-            cvprtln!(Role::Emphasis, V::V, "Parsed to syn::File");
+            svprtln!(Role::Emphasis, V::V, "Parsed to syn::File");
             debug_timings(&start_ast, "Completed successful AST parse to syn::File");
         }
         Some(Ast::File(tree))
     } else if let Ok(tree) = { extract_ast_expr(source_code) } {
         #[cfg(debug_assertions)]
         {
-            cvprtln!(Role::Emphasis, V::V, "Parsed to syn::Expr");
+            svprtln!(Role::Emphasis, V::V, "Parsed to syn::Expr");
             debug_timings(&start_ast, "Completed successful AST parse to syn::Expr");
         }
         Some(Ast::Expr(tree))
     } else {
-        cvprtln!(Role::Warning, V::V,
+        svprtln!(Role::Warning, V::V,
             "Error parsing syntax tree for `{sourch_path_string}`. Using `rustfmt` to help you debug the script."
         );
         rustfmt(sourch_path_string);

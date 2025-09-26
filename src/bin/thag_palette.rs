@@ -13,7 +13,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// - Current thag theme colors for comparison
 //# Purpose: Show terminal palette colors
 //# Categories: color, styling, terminal, theming
-use thag_styling::{Style, TermAttributes};
+use thag_styling::{display_color_comparison, hsl_to_rgb, Style, TermAttributes};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Terminal Palette Display Tool");
@@ -34,8 +34,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Display current thag theme colors if available
     display_thag_theme_colors();
 
+    println!(
+        "💡 Comparing with your configured or detected `thag_styling` theme's palette colors:"
+    );
+
+    let term_attrs = TermAttributes::get_or_init();
+    let theme = &term_attrs.theme;
+
+    display_color_comparison(theme);
+
     println!("\n🎉 Palette display complete!");
-    println!("💡 Use this to compare with your terminal emulator's color settings.");
 
     Ok(())
 }
@@ -190,7 +198,7 @@ fn display_true_color_test() {
     print!("   ");
     for i in 0..32 {
         let hue = (i as f32 / 32.0) * 360.0;
-        let (r, g, b) = hsl_to_rgb(hue, 1.0, 0.5);
+        let [r, g, b] = hsl_to_rgb(hue, 1.0, 0.5);
         print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
     }
     println!();
@@ -263,51 +271,37 @@ fn extract_rgb_info(style: &Style) -> String {
     }
 }
 
-/// Convert HSL to RGB (simple implementation)
-fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
-    let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
-    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
-    let m = l - c / 2.0;
+// /// Convert HSL to RGB (simple implementation)
+// #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+// fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
+//     let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+//     let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
+//     let m = l - c / 2.0;
 
-    let (r_prime, g_prime, b_prime) = if h < 60.0 {
-        (c, x, 0.0)
-    } else if h < 120.0 {
-        (x, c, 0.0)
-    } else if h < 180.0 {
-        (0.0, c, x)
-    } else if h < 240.0 {
-        (0.0, x, c)
-    } else if h < 300.0 {
-        (x, 0.0, c)
-    } else {
-        (c, 0.0, x)
-    };
+//     let (r_prime, g_prime, b_prime) = if h < 60.0 {
+//         (c, x, 0.0)
+//     } else if h < 120.0 {
+//         (x, c, 0.0)
+//     } else if h < 180.0 {
+//         (0.0, c, x)
+//     } else if h < 240.0 {
+//         (0.0, x, c)
+//     } else if h < 300.0 {
+//         (x, 0.0, c)
+//     } else {
+//         (c, 0.0, x)
+//     };
 
-    (
-        ((r_prime + m) * 255.0) as u8,
-        ((g_prime + m) * 255.0) as u8,
-        ((b_prime + m) * 255.0) as u8,
-    )
-}
+//     (
+//         ((r_prime + m) * 255.0) as u8,
+//         ((g_prime + m) * 255.0) as u8,
+//         ((b_prime + m) * 255.0) as u8,
+//     )
+// }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_hsl_to_rgb() {
-        // Test pure red (hue = 0)
-        let (r, g, b) = hsl_to_rgb(0.0, 1.0, 0.5);
-        assert_eq!((r, g, b), (255, 0, 0));
-
-        // Test pure green (hue = 120)
-        let (r, g, b) = hsl_to_rgb(120.0, 1.0, 0.5);
-        assert_eq!((r, g, b), (0, 255, 0));
-
-        // Test pure blue (hue = 240)
-        let (r, g, b) = hsl_to_rgb(240.0, 1.0, 0.5);
-        assert_eq!((r, g, b), (0, 0, 255));
-    }
 
     #[test]
     fn test_extract_rgb_info() {

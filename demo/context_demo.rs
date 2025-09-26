@@ -62,7 +62,7 @@ fn main() {
 
         // Nested context test
         println!("\n   3a. Nested context test:");
-        let nested_theme = Theme::get_builtin("github").unwrap();
+        let nested_theme = Theme::get_builtin("solarized-dark").unwrap();
         let nested_attrs = TermAttributes::for_testing(
             ColorSupport::TrueColor,
             Some((248, 248, 248)),
@@ -104,7 +104,7 @@ fn main() {
     println!("   Background Luma: {:?}", restored_attrs.term_bg_luma);
     println!(
         "   Styled message: {}",
-        Style::for_role(thag_styling::Role::Warning).paint("Global context restored!")
+        Style::for_role(thag_styling::Role::Success).paint("Global context restored!")
     );
 
     println!("\n=== Context Demo Complete ===");

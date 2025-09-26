@@ -236,7 +236,7 @@ pub fn key(input: TokenStream) -> TokenStream {
 ///
 /// ```Rust
 /// repeat_dash!(70);
-/// cvprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
+/// svprtln!(Role::EMPH, V::Q, "{DASH_LINE}");
 /// ```
 ///
 #[proc_macro]

@@ -10,20 +10,20 @@ use thag_rs::logging::V;
 //# Purpose: Demo `git` dependencies as a snippet.
 //# Categories: technique
 // The colors module was removed, so we'll just demonstrate a simple color message
-use thag_rs::{cvprtln, Lvl};
+use thag_rs::{svprtln, Lvl};
 
 // Simple color demonstration replacing the removed colors module
-cvprtln!(
+svprtln!(
     Lvl::EMPHASIS,
     V::N,
     "This demonstrates git dependency usage with thag_rs"
 );
-cvprtln!(
+svprtln!(
     Lvl::NORMAL,
     V::N,
     "The colors module was removed after v0.1.9"
 );
-cvprtln!(
+svprtln!(
     Lvl::DEBUG,
     V::N,
     "Use demo/colors.rs for color demonstrations"

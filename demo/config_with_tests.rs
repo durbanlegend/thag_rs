@@ -41,7 +41,7 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    cprtln, cvprtln, lazy_static_var, logging, Color, ColorSupport, Role, Style, TermBgLuma,
+    lazy_static_var, logging, sprtln, svprtln, Color, ColorSupport, Role, Style, TermBgLuma,
     ThagError, ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
@@ -335,7 +335,7 @@ impl Dependencies {
                     if all_features.contains(feature) {
                         config_features.push(feature.clone());
                     } else {
-                        cvprtln!(
+                        svprtln!(
                             Role::WARN,
                             V::QQ,
                             "Configured feature `{}` does not exist in crate {}. Available features are:",
@@ -343,7 +343,7 @@ impl Dependencies {
                             crate_name
                         );
                         for available in all_features {
-                            cvprtln!(Role::SUCC, V::QQ, "{}", available);
+                            svprtln!(Role::SUCC, V::QQ, "{}", available);
                         }
                     }
                 }
@@ -619,7 +619,7 @@ fn maybe_load_config() -> Option<Config> {
             None
         }
         Err(e) => {
-            cprtln!(Role::Error, "Failed to load config: {e}");
+            sprtln!(Role::Error, "Failed to load config: {e}");
             // sleep(Duration::from_secs(1));
             // println!("Failed to load config: {e}");
             std::process::exit(1);
@@ -662,7 +662,7 @@ pub fn load(context: &Arc<dyn Context>) -> ThagResult<Option<Config>> {
     debug!("config_path={config_path:?}");
 
     if !config_path.exists() {
-        cprtln!(
+        sprtln!(
             Role::Warning,
             "Configuration file path {} not found. No config loaded. System defaults will be used.",
             config_path.display()
@@ -692,7 +692,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
         let dir_path = &config_path.parent().ok_or("Can't create directory")?;
         fs::create_dir_all(dir_path)?;
 
-        cprtln!(
+        sprtln!(
             &Color::yellow().bold(), // using our Color type
             "No configuration file found at {}. Creating one using system defaults...",
             config_path.display()
@@ -803,7 +803,7 @@ mod tests {
         sync::{Arc, OnceLock},
     };
     use tempfile::TempDir;
-    use thag_rs::{cvprtln, debug_log, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V};
+    use thag_rs::{debug_log, svprtln, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V};
 
     static LOGGER: OnceLock<()> = OnceLock::new();
 
@@ -849,7 +849,7 @@ mod tests {
         let config_path = match std::env::var(test_cfg_path) {
             Ok(config_path) => config_path,
             Err(err) => {
-                cvprtln!(
+                svprtln!(
                     Role::ERR,
                     V::QQ,
                     "Environment variable {test_cfg_path} must be set to location of test config.toml"

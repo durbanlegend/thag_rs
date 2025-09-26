@@ -12,7 +12,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// 4. Comparison with old verbose syntax
 //# Purpose: Demo new Styler trait direct methods and chaining
 //# Categories: styling, ergonomics
-use thag_styling::{cprtln, ColorInitStrategy, Role, Style, Styleable, Styler, TermAttributes};
+use thag_styling::{sprtln, ColorInitStrategy, Role, Style, Styleable, Styler, TermAttributes};
 
 fn main() {
     // Initialize styling system
@@ -186,27 +186,27 @@ fn main() {
 
     println!("\n=== Demo Complete ===");
     println!("\nKey improvements:");
-    cprtln!(
+    sprtln!(
         Role::Success,
         "✓ Role::Error.paint('text') instead of Style::from(Role::Error).paint('text')"
     );
-    cprtln!(
+    sprtln!(
         Role::Success,
         "✓ Role::Info.bold().paint('text') - direct chaining from Role"
     );
-    cprtln!(
+    sprtln!(
         Role::Success,
         "✓ Chaining returns Style, allowing continued attribute chaining"
     );
-    cprtln!(
+    sprtln!(
         Role::Success,
         "✓ String extensions: 'text'.error() and 'text'.as_styled(Role::Info.bold())"
     );
-    cprtln!(
+    sprtln!(
         Role::Success,
         "✓ Much more concise and readable than previous verbose syntax"
     );
-    cprtln!(
+    sprtln!(
         Role::Info,
         "✓ Backward compatible - old Style::from(Role::X) syntax still works"
     );

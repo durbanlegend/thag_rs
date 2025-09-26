@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
 use thag_rs::{
-    builder::execute, configure_log, cvprtln, get_verbosity, set_global_verbosity,
+    builder::execute, configure_log, get_verbosity, set_global_verbosity, svprtln,
     themed_inquire_config, Cli, Role, V,
 };
 
@@ -677,7 +677,7 @@ fn main() -> Result<()> {
 
     let args = DemoArgs::parse();
 
-    cvprtln!(
+    svprtln!(
         Role::Heading1,
         V::QQ,
         "🔥 thag_demo v{}",
@@ -713,7 +713,7 @@ fn main() -> Result<()> {
 
 fn list_demos() {
     // println!("{}", "Available demos:".bold().green());
-    cvprtln!(Role::Heading2, V::QQ, "Available demos:");
+    svprtln!(Role::Heading2, V::QQ, "Available demos:");
     println!();
 
     let demos = vec![
@@ -738,25 +738,25 @@ fn list_demos() {
 
     for (name, description) in demos {
         // println!("  {} - {}", name.bold().green(), description.dimmed());
-        cvprtln!(Role::Heading3, V::QQ, "  {name} - {}", description.dimmed());
+        svprtln!(Role::Heading3, V::QQ, "  {name} - {}", description.dimmed());
     }
 
     println!();
-    cvprtln!(Role::Heading2, V::QQ, "Interactive Commands:");
+    svprtln!(Role::Heading2, V::QQ, "Interactive Commands:");
     println!();
-    cvprtln!(
+    svprtln!(
         Role::Heading3,
         V::QQ,
         "  browse - {}",
         "Interactive demo script browser".dimmed()
     );
-    cvprtln!(
+    svprtln!(
         Role::Heading3,
         V::QQ,
         "  manage - {}",
         "Manage demo directory (download/update)".dimmed()
     );
-    cvprtln!(
+    svprtln!(
         Role::Heading3,
         V::QQ,
         "  list-scripts - {}",
@@ -765,12 +765,12 @@ fn list_demos() {
 
     println!();
     // println!("{}", "Usage:".bold());
-    cvprtln!(Role::Emphasis, V::QQ, "Usage:");
-    cvprtln!(Role::Heading3, V::QQ, "  thag_demo <demo_name>");
-    cvprtln!(Role::Heading3, V::QQ, "  thag_demo script <script_name>");
-    cvprtln!(Role::Heading3, V::QQ, "  thag_demo browse");
-    cvprtln!(Role::Heading3, V::QQ, "  thag_demo manage");
-    cvprtln!(Role::Heading3, V::QQ, "  thag_demo list-scripts");
+    svprtln!(Role::Emphasis, V::QQ, "Usage:");
+    svprtln!(Role::Heading3, V::QQ, "  thag_demo <demo_name>");
+    svprtln!(Role::Heading3, V::QQ, "  thag_demo script <script_name>");
+    svprtln!(Role::Heading3, V::QQ, "  thag_demo browse");
+    svprtln!(Role::Heading3, V::QQ, "  thag_demo manage");
+    svprtln!(Role::Heading3, V::QQ, "  thag_demo list-scripts");
     println!();
 }
 

@@ -17,7 +17,7 @@ use std::error::Error;
 use std::fs;
 use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig, ImageThemeGenerator, Role,
+    sprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig, ImageThemeGenerator, Role,
     Styleable, StylingError, StylingResult, TermBgLuma, Theme,
 };
 
@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut theme = match generator.generate_from_file(&image_path) {
         Ok(theme) => theme,
         Err(e) => {
-            cprtln!(Role::Error, "❌ Failed to generate theme: {}", e);
+            sprtln!(Role::Error, "❌ Failed to generate theme: {}", e);
             return Err(e.into());
         }
     };
@@ -96,26 +96,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     theme.name = Text::new("Enter theme name:")
         .with_default(&default_name)
         .prompt()?;
-
-    // // Set the theme name
-    // theme.name = config.theme_name_prefix.unwrap_or_else(|| {
-    //     let base_name = image_path
-    //         .file_stem()
-    //         .and_then(|s| s.to_str())
-    //         .unwrap_or("image");
-
-    //     let theme_type_suffix = match theme.term_bg_luma {
-    //         TermBgLuma::Light => "-light",
-    //         TermBgLuma::Dark => "-dark",
-    //         TermBgLuma::Undetermined => "",
-    //     };
-
-    //     format!(
-    //         "thag-{}{}",
-    //         base_name.to_lowercase().replace(' ', "-"),
-    //         theme_type_suffix
-    //     )
-    // });
 
     // Display theme information
     display_theme_info(&theme);

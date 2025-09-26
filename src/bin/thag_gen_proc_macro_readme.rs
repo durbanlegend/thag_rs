@@ -13,7 +13,7 @@ use std::{
     path::Path,
 };
 use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
-use thag_rs::{auto_help, cvprtln, help_system::check_help_and_exit, Role, V};
+use thag_rs::{auto_help, help_system::check_help_and_exit, svprtln, Role, V};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -421,7 +421,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verify paths exist
     if !lib_path.exists() {
-        cvprtln!(
+        svprtln!(
             Role::ERR,
             V::N,
             "lib.rs not found at: {}",
@@ -431,7 +431,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !demo_dir.exists() {
-        cvprtln!(
+        svprtln!(
             Role::ERR,
             V::N,
             "demo directory not found at: {}",
@@ -447,7 +447,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let macros = parse_proc_macros(&lib_path, &demo_dir)?;
 
     if macros.is_empty() {
-        cvprtln!(
+        svprtln!(
             Role::WARN,
             V::N,
             "No proc macros found in {}",

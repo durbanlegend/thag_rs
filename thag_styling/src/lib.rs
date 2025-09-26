@@ -33,9 +33,9 @@ pub use thag_common::{
 
 pub use styling::{
     display_terminal_attributes, display_theme_details, display_theme_roles, find_closest_color,
-    get_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue,
-    HowInitialized, Palette, PaletteConfig, Role, Style, Styleable, Styled, StyledPrint,
-    StyledString, StyledStringExt, Styler, TermAttributes, Theme,
+    get_rgb, index_to_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy,
+    ColorValue, HowInitialized, Palette, PaletteConfig, Role, Style, Styleable, Styled,
+    StyledPrint, StyledString, Styler, TermAttributes, Theme,
 };
 
 // Re-export integration traits and types
@@ -216,6 +216,87 @@ impl StylingConfigProvider for NoConfigProvider {
     }
 }
 
+/// Display side-by-side color comparison of terminal palette vs `thag_styling` theme.
+#[allow(clippy::too_many_lines)]
+pub fn display_color_comparison(theme: &Theme) {
+    theme.with_context(|| {
+        format!("🔄 {} Color Mapping:", "ANSI vs Theme".info())
+            .normal()
+            .println();
+        println!("───────────────────────────────");
+
+        // Corrected mappings that match thag_sync_palette behavior
+        let color_mappings = [
+            (
+                "Black (0)",
+                0,
+                "Background",
+                // get_best_dark_color(theme)
+                &Style::with_rgb(theme.bg_rgbs[0].into()),
+            ),
+            ("Red (1)", 1, "Emphasis", &theme.palette.emphasis),
+            ("Green (2)", 2, "Success", &theme.palette.success),
+            ("Yellow (3)", 3, "Commentary", &theme.palette.commentary),
+            ("Blue (4)", 4, "Info", &theme.palette.info),
+            ("Magenta (5)", 5, "Heading1", &theme.palette.heading1),
+            ("Cyan (6)", 6, "Code", &theme.palette.code),
+            ("White (7)", 7, "Normal", &theme.palette.normal),
+            ("Bright Black (8)", 8, "Subtle", &theme.palette.subtle),
+            ("Bright Red (9)", 9, "Error", &theme.palette.error),
+            ("Bright Green (10)", 10, "Debug", &theme.palette.debug),
+            ("Bright Yellow (11)", 11, "Warning", &theme.palette.warning),
+            ("Bright Blue (12)", 12, "Link", &theme.palette.link),
+            (
+                "Bright Magenta (13)",
+                13,
+                "Heading2",
+                &theme.palette.heading2,
+            ),
+            ("Bright Cyan (14)", 14, "Hint", &theme.palette.hint),
+            ("Bright White (15)", 15, "Quote", &theme.palette.quote),
+        ];
+
+        format!(
+            "{:<20} {:<12} {:<26} Semantic Role",
+            "ANSI Color", "Current", "Expected (Theme)"
+        )
+        .heading3()
+        .println();
+        println!("{}", "─".repeat(80));
+
+        for (name, ansi_index, semantic_role, style) in color_mappings {
+            // Current terminal color (visual sample)
+            let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
+
+            // Expected thag color with RGB info
+            let rgb = style
+                .foreground
+                .as_ref()
+                .map(|color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => *rgb,
+                    ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
+                    ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
+                });
+
+            let thag_display = if let Some([r, g, b]) = rgb {
+                style.paint(format!(
+                    "████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
+                    r, g, b, r, g, b
+                ))
+            } else {
+                // Role::Normal.dim().paint("N/A").to_string()
+                "N/A".to_string()
+            };
+
+            // println!("thag_display={thag_display:?}");
+            println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
+            // println!("{terminal_sample:?}\nthag_display={thag_display:?}");
+        }
+
+        println!();
+    });
+}
+
 /// Select a built-in theme using `inquire`.
 ///
 /// # Panics
@@ -291,6 +372,80 @@ pub fn select_builtin_theme() -> Option<String> {
         }
     };
     maybe_theme_name
+}
+
+/// Helper: HSL -> RGB
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::many_single_char_names,
+    clippy::cast_sign_loss
+)]
+#[must_use]
+pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
+    let c = (1.0 - 2.0f32.mul_add(l, -1.0).abs()) * s;
+    let h_prime = h / 60.0;
+    let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
+
+    let (r1, g1, b1) = match h_prime as u32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+
+    let m = l - c / 2.0;
+    let (r, g, b) = (r1 + m, g1 + m, b1 + m);
+
+    [
+        (r * 255.0).round() as u8,
+        (g * 255.0).round() as u8,
+        (b * 255.0).round() as u8,
+    ]
+}
+
+/// Helper: RGB -> HSL
+#[allow(clippy::many_single_char_names)]
+fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
+    let r = f32::from(rgb[0]) / 255.0;
+    let g = f32::from(rgb[1]) / 255.0;
+    let b = f32::from(rgb[2]) / 255.0;
+
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let delta = max - min;
+
+    let l = (max + min) / 2.0;
+    let s;
+    let mut h;
+
+    if delta == 0.0 {
+        h = 0.0;
+        s = 0.0;
+    } else {
+        s = if l > 0.5 {
+            delta / (2.0 - max - min)
+        } else {
+            delta / (max + min)
+        };
+
+        let error_margin = 0.001;
+        h = if (max - r).abs() < error_margin {
+            ((g - b) / delta) % 6.0
+        } else if (max - g).abs() < error_margin {
+            ((b - r) / delta) + 2.0
+        } else {
+            ((r - g) / delta) + 4.0
+        } * 60.0;
+
+        // Ensure hue is positive
+        if h < 0.0 {
+            h += 360.0;
+        }
+    }
+
+    (h, s, l)
 }
 
 /// Helper functions for inquire UI theming integration
@@ -463,5 +618,25 @@ pub mod inquire_theming {
             inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Subtle));
 
         render_config
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hsl_to_rgb() {
+        // Test pure red (hue = 0)
+        let (r, g, b) = hsl_to_rgb(0.0, 1.0, 0.5);
+        assert_eq!((r, g, b), (255, 0, 0));
+
+        // Test pure green (hue = 120)
+        let (r, g, b) = hsl_to_rgb(120.0, 1.0, 0.5);
+        assert_eq!((r, g, b), (0, 255, 0));
+
+        // Test pure blue (hue = 240)
+        let (r, g, b) = hsl_to_rgb(240.0, 1.0, 0.5);
+        assert_eq!((r, g, b), (0, 0, 255));
     }
 }

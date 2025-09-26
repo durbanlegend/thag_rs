@@ -3,7 +3,7 @@
 //! This demonstrates the new Theme methods for styling text with specific roles,
 //! making it easy to use a "guest" theme instead of the active theme.
 
-use thag_styling::{ColorInitStrategy, Role, Styleable, StyledStringExt, TermAttributes, Theme};
+use thag_styling::{ColorInitStrategy, Role, Styleable, StyledPrint, TermAttributes, Theme};
 
 fn main() {
     println!("🎨 Testing Theme Styling API\n");

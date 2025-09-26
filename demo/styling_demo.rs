@@ -13,7 +13,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 //# Categories: prototype, reference, testing
 use strum::{Display, EnumIter, IntoEnumIterator};
 use thag_styling::{
-    cvprtln, display_theme_details, display_theme_roles, vprtln, Color, ColorInitStrategy,
+    display_theme_details, display_theme_roles, svprtln, vprtln, Color, ColorInitStrategy,
     ColorSupport, Role, Style, TermAttributes, TermBgLuma, Theme, V,
 };
 
@@ -48,7 +48,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             // color.paint(format!("{:<col_width$}", "Normal"))
         );
         let dash_line = "─".repeat(col_width * 4);
-        cvprtln!(Role::HD2, V::Q, "{dash_line}");
+        svprtln!(Role::HD2, V::Q, "{dash_line}");
         XtermColor::iter().for_each(|variant| {
             let color_string = variant.to_string();
             let pad_color_string = format!("{color_string:<col_width$}");

@@ -7,8 +7,8 @@ thag_common = { version = "0.2, thag-auto" }
 /// Comprehensive migration guide from old embedding systems to StyledString
 ///
 /// This demo shows side-by-side comparisons of:
-/// 1. cprtln_with_embeds! → StyledString with println!
-/// 2. cvprtln_with_embeds! → StyledString with vprintln!
+/// 1. sprtln_with_embeds! → StyledString with println!
+/// 2. svprtln_with_embeds! → StyledString with vprintln!
 /// 3. format_with_embeds → format! with StyledString
 /// 4. Embedded struct → StyledString directly
 ///
@@ -26,7 +26,7 @@ thag_common = { version = "0.2, thag-auto" }
 //# Purpose: Migration guide from old embedding systems to StyledString
 //# Categories: documentation, examples, migration, styling
 use thag_common::Verbosity;
-use thag_styling::{ColorInitStrategy, Styleable, StyledStringExt, TermAttributes};
+use thag_styling::{ColorInitStrategy, Styleable, StyledPrint, TermAttributes};
 
 fn main() {
     // Initialize styling system
@@ -36,14 +36,14 @@ fn main() {
 
     // Example 1: Basic embedding
     println!("1. Basic embedding:");
-    println!("   OLD: cprtln_with_embeds!(Role::Warning, \"Warning {{}} warning\", &[embed]);");
+    println!("   OLD: sprtln_with_embeds!(Role::Warning, \"Warning {{}} warning\", &[embed]);");
     println!("   NEW: format!(\"Warning {{}} warning\", \"error\".error()).warning().println();");
     println!();
 
     println!("   Old approach would have required:");
     println!("   let embed = \"error\".embed_with(Role::Error);");
     println!(
-        "   thag_styling::cprtln_with_embeds!(Role::Warning, \"Warning {{}} warning\", &[embed]);"
+        "   thag_styling::sprtln_with_embeds!(Role::Warning, \"Warning {{}} warning\", &[embed]);"
     );
     println!();
 
@@ -56,7 +56,7 @@ fn main() {
     // Example 2: Multiple embeds
     println!("2. Multiple embeds:");
     println!(
-        "   OLD: cprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);"
+        "   OLD: sprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);"
     );
     println!("   NEW: format!(\"Status: {{}} and {{}}\", \"success\".success(), \"warning\".warning()).info().println();");
     println!();
@@ -64,7 +64,7 @@ fn main() {
     println!("   Old approach would have required:");
     println!("   let embed1 = \"success\".embed_with(Role::Success);");
     println!("   let embed2 = \"warning\".embed_with(Role::Warning);");
-    println!("   thag_styling::cprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);");
+    println!("   thag_styling::sprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);");
     println!();
 
     println!("   New approach:");
@@ -79,13 +79,13 @@ fn main() {
 
     // Example 3: Verbosity-gated printing
     println!("3. Verbosity-gated printing:");
-    println!("   OLD: cvprtln_with_embeds!(Role::Debug, V::Debug, \"Debug: {{}}\", &[embed]);");
+    println!("   OLD: svprtln_with_embeds!(Role::Debug, V::Debug, \"Debug: {{}}\", &[embed]);");
     println!("   NEW: format!(\"Debug: {{}}\", \"value\".code()).debug().vprintln(V::Debug);");
     println!();
 
     println!("   Old approach would have required:");
     println!("   let debug_embed = \"value\".embed_with(Role::Code);");
-    println!("   thag_styling::cvprtln_with_embeds!(Role::Debug, Verbosity::Debug, \"Debug: {{}}\", &[debug_embed]);");
+    println!("   thag_styling::svprtln_with_embeds!(Role::Debug, Verbosity::Debug, \"Debug: {{}}\", &[debug_embed]);");
     println!();
 
     println!("   New approach:");
@@ -200,7 +200,7 @@ fn main() {
     println!("   OLD (verbose, manual):");
     println!("   let embed1 = \"error\".embed_with(Role::Error);");
     println!("   let embed2 = \"warning\".embed_with(Role::Warning);");
-    println!("   cprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);");
+    println!("   sprtln_with_embeds!(Role::Info, \"Status: {{}} and {{}}\", &[embed1, embed2]);");
     println!();
 
     println!("   NEW (concise, natural):");
@@ -223,8 +223,8 @@ fn main() {
     println!();
 
     println!("=== Migration Summary ===");
-    println!("✅ Replace cprtln_with_embeds! with format!().role_method().println()");
-    println!("✅ Replace cvprtln_with_embeds! with format!().role_method().vprintln(verbosity)");
+    println!("✅ Replace sprtln_with_embeds! with format!().role_method().println()");
+    println!("✅ Replace svprtln_with_embeds! with format!().role_method().vprintln(verbosity)");
     println!("✅ Replace format_with_embeds with direct format! calls");
     println!("✅ Replace Embedded struct with direct StyledString usage");
     println!("✅ Use semantic role methods (.error(), .warning(), etc.)");

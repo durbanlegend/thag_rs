@@ -4,6 +4,7 @@ use crate::{StylingError, StylingResult, ThemeError};
 type ThagResult<T> = StylingResult<T>;
 
 use serde::Deserialize;
+use std::clone::Clone;
 use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -877,7 +878,7 @@ thread_local! {
 }
 
 thread_local! {
-    /// Thread-local storage for TermAttributes context override
+    /// Thread-local storage for `TermAttributes` context override
     static TERM_ATTRIBUTES_CONTEXT: std::cell::RefCell<Option<TermAttributes>> = const { std::cell::RefCell::new(None) };
 }
 
@@ -901,7 +902,7 @@ impl TermAttributes {
         }
     }
 
-    /// Internal initialization method - use get_or_init() or get_or_init_with_strategy() instead
+    /// Internal initialization method - use `get_or_init()` or `get_or_init_with_strategy()` instead
     ///
     /// This function initializes the terminal attributes singleton with color support
     /// and theme settings according to the specified strategy.
@@ -1130,7 +1131,7 @@ impl TermAttributes {
         INSTANCE.get().unwrap()
     }
 
-    /// Execute a closure with a temporary TermAttributes context
+    /// Execute a closure with a temporary `TermAttributes` context
     /// This allows testing and temporary overrides without affecting the global state
     pub fn with_context<F, R>(&self, f: F) -> R
     where
@@ -1148,13 +1149,13 @@ impl TermAttributes {
     }
 
     /// Gets the current context, falling back to the global instance if no context is set
+    #[must_use]
     pub fn current() -> Self {
         TERM_ATTRIBUTES_CONTEXT.with(|context| {
-            if let Some(ctx) = context.borrow().as_ref() {
-                ctx.clone()
-            } else {
-                Self::get_or_init().clone()
-            }
+            context
+                .borrow()
+                .as_ref()
+                .map_or_else(|| Self::get_or_init().clone(), Clone::clone)
         })
     }
 
@@ -1164,17 +1165,20 @@ impl TermAttributes {
     /// Returns Err if already initialized with an incompatible strategy.
     ///
     /// # Arguments
-    /// * `strategy` - The specific ColorInitStrategy to use
+    /// * `strategy` - The specific `ColorInitStrategy` to use
     ///
     /// # Returns
-    /// * `Ok(&'static Self)` - Reference to the TermAttributes instance
+    /// * `Ok(&'static Self)` - Reference to the `TermAttributes` instance
     /// * `Err(String)` - Error message if incompatible strategy already used
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the instance is already initialized with an incompatible strategy..
     pub fn try_initialize_with_strategy(
-        strategy: ColorInitStrategy,
+        strategy: &ColorInitStrategy,
     ) -> Result<&'static Self, String> {
         if let Some(existing) = INSTANCE.get() {
-            if std::mem::discriminant(&existing.init_strategy) != std::mem::discriminant(&strategy)
-            {
+            if std::mem::discriminant(&existing.init_strategy) != std::mem::discriminant(strategy) {
                 return Err(format!(
                     "TermAttributes already initialized with strategy {:?}, cannot reinitialize with {:?}",
                     existing.init_strategy, strategy
@@ -1182,33 +1186,33 @@ impl TermAttributes {
             }
             return Ok(existing);
         }
-        Ok(Self::initialize(&strategy))
+        Ok(Self::initialize(strategy))
     }
 
-    /// Gets or initializes TermAttributes with the specified strategy
+    /// Gets or initializes `TermAttributes` with the specified strategy
     ///
-    /// This method initializes TermAttributes with the given strategy if not already initialized,
+    /// This method initializes `TermAttributes` with the given strategy if not already initialized,
     /// or returns the existing instance if already initialized (regardless of the original strategy).
     ///
     /// This is the recommended method when you need a specific initialization strategy.
     ///
     /// # Arguments
-    /// * `strategy` - The ColorInitStrategy to use for initialization
+    /// * `strategy` - The `ColorInitStrategy` to use for initialization
     ///
     /// # Returns
-    /// Reference to the TermAttributes instance
+    /// Reference to the `TermAttributes` instance
     ///
     /// # Panics
     /// Panics if theme initialization fails
     pub fn get_or_init_with_strategy(strategy: &ColorInitStrategy) -> &'static Self {
-        if !Self::is_initialized() {
-            Self::initialize(strategy)
-        } else {
+        if Self::is_initialized() {
             INSTANCE.get().unwrap()
+        } else {
+            Self::initialize(strategy)
         }
     }
 
-    /// Check if TermAttributes can be initialized with a given strategy.
+    /// Check if `TermAttributes` can be initialized with a given strategy.
     /// This is useful for testing to verify strategy compatibility.
     #[cfg(test)]
     pub fn can_initialize_with_strategy(strategy: &ColorInitStrategy) -> bool {
@@ -1219,7 +1223,8 @@ impl TermAttributes {
         }
     }
 
-    /// Creates a new TermAttributes instance for testing purposes
+    /// Creates a new `TermAttributes` instance for testing purposes
+    #[must_use]
     pub fn for_testing(
         color_support: ColorSupport,
         term_bg_rgb: Option<(u8, u8, u8)>,
@@ -1844,7 +1849,7 @@ impl Theme {
     ) -> StylingResult<Self> {
         let mut theme = Self::get_theme_runtime_or_builtin(theme_name)?;
         if color_support != ColorSupport::TrueColor {
-            // Note: vprtln! call disabled to prevent deadlock during TermAttributes initialization
+            // Note: vprtln! call disabled to prevent deadlock during `TermAttributes` initialization
             // vprtln!(V::VV, "Converting to {color_support:?}");
             theme.convert_to_color_support(color_support);
         }
@@ -2476,7 +2481,7 @@ impl Theme {
     ///
     /// # Example
     /// ```rust
-    /// use thag_styling::{Theme, Styleable, StyledStringExt};
+    /// use thag_styling::{Theme, Styleable, StyledPrint};
     ///
     /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let guest_theme = Theme::get_builtin("Basic Light")?;
@@ -2723,7 +2728,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
 ///
 /// # Examples
 /// ```
-/// use thag_styling::cvprtln;
+/// use thag_styling::svprtln;
 /// use thag_styling::Verbosity;
 /// use thag_styling::Role;
 /// let details = "todos los detalles";
@@ -2739,7 +2744,7 @@ macro_rules! cvprtln {
     }};
 }
 
-/// Styled verbosity-gated print line macro (alias for `cvprtln!`)
+/// Styled verbosity-gated print line macro (replacement for `cvprtln!`)
 /// Conditionally logs a message with verbosity control and styling.
 #[macro_export]
 macro_rules! svprtln {
@@ -3733,18 +3738,6 @@ impl From<StyledString> for String {
 }
 
 /// Extension trait to add convenience methods for `StyledString`
-pub trait StyledStringExt {
-    /// Print the styled string to stdout
-    fn print(self);
-
-    /// Print the styled string to stdout with a newline
-    fn println(self);
-
-    /// Print the styled string with verbosity gating
-    fn vprintln(self, verbosity: thag_common::Verbosity);
-}
-
-/// Alias for StyledStringExt with a more intuitive name
 pub trait StyledPrint {
     /// Print the styled string to stdout
     fn print(self);
@@ -3754,23 +3747,6 @@ pub trait StyledPrint {
 
     /// Print the styled string with verbosity gating
     fn vprintln(self, verbosity: thag_common::Verbosity);
-}
-
-impl StyledStringExt for StyledString {
-    fn print(self) {
-        print!("{}", self);
-    }
-
-    fn println(self) {
-        println!("{}", self);
-    }
-
-    fn vprintln(self, verbosity: thag_common::Verbosity) {
-        let current_verbosity = thag_common::get_verbosity();
-        if verbosity <= current_verbosity {
-            println!("{}", self);
-        }
-    }
 }
 
 impl StyledPrint for StyledString {
@@ -3789,6 +3765,23 @@ impl StyledPrint for StyledString {
         }
     }
 }
+
+// impl StyledPrint for StyledString {
+//     fn print(self) {
+//         print!("{}", self);
+//     }
+
+//     fn println(self) {
+//         println!("{}", self);
+//     }
+
+//     fn vprintln(self, verbosity: thag_common::Verbosity) {
+//         let current_verbosity = thag_common::get_verbosity();
+//         if verbosity <= current_verbosity {
+//             println!("{}", self);
+//         }
+//     }
+// }
 
 /// Extension trait for generating ANSI codes from Style
 trait StyleAnsiExt {
@@ -4042,7 +4035,7 @@ impl Styler for &Role {
     }
 }
 
-/// Verbosity-gated print with embedded styled content
+/// Print line with embedded styled content
 /// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
 /// Also accepts Role: `cprtln!(Role::Code, "Hello {}", "world");`
 #[macro_export]
@@ -4054,7 +4047,7 @@ macro_rules! cprtln {
     }};
 }
 
-/// Styled print line macro (alias for `cprtln!`)
+/// Styled print line macro (replacement for `cprtln!`)
 /// Format: `sprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
 /// Also accepts Role: `sprtln!(Role::Code, "Hello {}", "world");`
 #[macro_export]

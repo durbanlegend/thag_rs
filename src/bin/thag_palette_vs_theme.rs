@@ -22,8 +22,9 @@ use std::time::{Duration, Instant};
 
 use thag_proc_macros::file_navigator;
 use thag_styling::{
-    cprtln, select_builtin_theme, styling::index_to_rgb, themed_inquire_config, ColorInitStrategy,
-    ColorValue, Role, Style, Styleable, StyledStringExt, TermAttributes, TermBgLuma, Theme,
+    display_color_comparison, select_builtin_theme, sprtln, styling::index_to_rgb,
+    themed_inquire_config, ColorInitStrategy, ColorValue, Role, Style, Styleable, StyledPrint,
+    TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -430,7 +431,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )
     .warning()
     .println();
-    cprtln!(Role::Subtle, "{}", "═".repeat(63));
+    sprtln!(Role::Subtle, "{}", "═".repeat(63));
     println!();
 
     // Initialize file navigator
@@ -745,87 +746,6 @@ fn display_theme_colors(theme: &Theme) {
                 print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
             }
             theme.normal(format!(" RGB({}, {}, {})", r, g, b)).println();
-        }
-
-        println!();
-    });
-}
-
-/// Display side-by-side color comparison
-#[allow(clippy::too_many_lines)]
-fn display_color_comparison(theme: &Theme) {
-    theme.with_context(|| {
-        format!("🔄 {} Color Mapping:", "ANSI vs Theme".info())
-            .normal()
-            .println();
-        println!("───────────────────────────────");
-
-        // Corrected mappings that match thag_sync_palette behavior
-        let color_mappings = [
-            (
-                "Black (0)",
-                0,
-                "Background",
-                // get_best_dark_color(theme)
-                &Style::with_rgb(theme.bg_rgbs[0].into()),
-            ),
-            ("Red (1)", 1, "Emphasis", &theme.palette.emphasis),
-            ("Green (2)", 2, "Success", &theme.palette.success),
-            ("Yellow (3)", 3, "Commentary", &theme.palette.commentary),
-            ("Blue (4)", 4, "Info", &theme.palette.info),
-            ("Magenta (5)", 5, "Heading1", &theme.palette.heading1),
-            ("Cyan (6)", 6, "Code", &theme.palette.code),
-            ("White (7)", 7, "Normal", &theme.palette.normal),
-            ("Bright Black (8)", 8, "Subtle", &theme.palette.subtle),
-            ("Bright Red (9)", 9, "Error", &theme.palette.error),
-            ("Bright Green (10)", 10, "Debug", &theme.palette.debug),
-            ("Bright Yellow (11)", 11, "Warning", &theme.palette.warning),
-            ("Bright Blue (12)", 12, "Link", &theme.palette.link),
-            (
-                "Bright Magenta (13)",
-                13,
-                "Heading2",
-                &theme.palette.heading2,
-            ),
-            ("Bright Cyan (14)", 14, "Hint", &theme.palette.hint),
-            ("Bright White (15)", 15, "Quote", &theme.palette.quote),
-        ];
-
-        format!(
-            "{:<20} {:<12} {:<26} Semantic Role",
-            "ANSI Color", "Current", "Expected (Theme)"
-        )
-        .heading3()
-        .println();
-        println!("{}", "─".repeat(80));
-
-        for (name, ansi_index, semantic_role, style) in color_mappings {
-            // Current terminal color (visual sample)
-            let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
-
-            // Expected thag color with RGB info
-            let rgb = style
-                .foreground
-                .as_ref()
-                .map(|color_info| match &color_info.value {
-                    ColorValue::TrueColor { rgb } => *rgb,
-                    ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
-                    ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
-                });
-
-            let thag_display = if let Some([r, g, b]) = rgb {
-                style.paint(format!(
-                    "████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
-                    r, g, b, r, g, b
-                ))
-            } else {
-                // Role::Normal.dim().paint("N/A").to_string()
-                "N/A".to_string()
-            };
-
-            // println!("thag_display={thag_display:?}");
-            println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
-            // println!("{terminal_sample:?}\nthag_display={thag_display:?}");
         }
 
         println!();

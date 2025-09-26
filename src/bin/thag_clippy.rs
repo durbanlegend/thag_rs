@@ -18,7 +18,7 @@ use std::{env, error::Error, path::PathBuf, process::Command};
 use thag_proc_macros::file_navigator;
 use thag_rs::{auto_help, help_system::check_help_and_exit};
 use thag_styling::{
-    cprtln, themed_inquire_config, AnsiStyleExt, Color, Role, Style, Styleable, StyledStringExt,
+    sprtln, themed_inquire_config, AnsiStyleExt, Color, Role, Style, Styleable, StyledPrint,
 };
 
 file_navigator! {}
@@ -198,7 +198,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let script_path = match get_script_mode() {
         ScriptMode::Stdin => {
-            cprtln!(Role::Error, "This tool cannot be run with stdin input. Please provide a file path or run interactively.");
+            sprtln!(Role::Error, "This tool cannot be run with stdin input. Please provide a file path or run interactively.");
             std::process::exit(1);
         }
         ScriptMode::File => {
@@ -212,7 +212,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    cprtln!(Role::Heading1, "\nSelect lint groups to apply:");
+    sprtln!(Role::Heading1, "\nSelect lint groups to apply:");
     match select_lint_groups() {
         Ok(selected_groups) => {
             if selected_groups.is_empty() {
@@ -273,8 +273,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     script_path.display(),
                     warn_flags.join(" ")
                 );
-                cprtln!(Role::Heading3, "\n{}", "Command to run:".style().bold());
-                cprtln!(Role::Code, "{command}");
+                sprtln!(Role::Heading3, "\n{}", "Command to run:".style().bold());
+                sprtln!(Role::Code, "{command}");
 
                 let script_path = script_path.display().to_string();
                 // Execute the command
@@ -284,13 +284,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let status = Command::new("thag").args(&thag_args).status()?;
 
                 if !status.success() {
-                    cprtln!(Role::Error, "Clippy check failed");
+                    sprtln!(Role::Error, "Clippy check failed");
                     return Err("Clippy check failed".into());
                 }
             }
         }
         Err(e) => {
-            cprtln!(Role::Error, "Error selecting lint groups: {e}");
+            sprtln!(Role::Error, "Error selecting lint groups: {e}");
             return Err(e);
         }
     }

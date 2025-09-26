@@ -5,7 +5,7 @@ thag_styling = { version = "0.2", features = ["color_detect", "image_themes"] }
 
 use std::{env, error::Error, fs, path::Path};
 use thag_styling::{
-    cprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, TermBgLuma,
+    sprtln, theme_to_toml, ImageThemeConfig, ImageThemeGenerator, Role, TermBgLuma,
 };
 
 /// Generate terminal color themes from images. Functional duplicate of `thag_image_to_theme`.
@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     theme_name = Some(args[i + 1].clone());
                     i += 1;
                 } else {
-                    cprtln!(Role::Error, "Missing theme name after --name");
+                    sprtln!(Role::Error, "Missing theme name after --name");
                     return Ok(());
                 }
             }
@@ -74,12 +74,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     if let Ok(count) = args[i + 1].parse::<usize>() {
                         config.color_count = count.clamp(8, 64); // Reasonable bounds
                     } else {
-                        cprtln!(Role::Error, "Invalid color count: {}", args[i + 1]);
+                        sprtln!(Role::Error, "Invalid color count: {}", args[i + 1]);
                         return Ok(());
                     }
                     i += 1;
                 } else {
-                    cprtln!(Role::Error, "Missing color count after --colors");
+                    sprtln!(Role::Error, "Missing color count after --colors");
                     return Ok(());
                 }
             }
@@ -88,12 +88,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     output_file = Some(args[i + 1].clone());
                     i += 1;
                 } else {
-                    cprtln!(Role::Error, "Missing output file after --output");
+                    sprtln!(Role::Error, "Missing output file after --output");
                     return Ok(());
                 }
             }
             _ => {
-                cprtln!(Role::Warning, "Unknown option: {}", args[i]);
+                sprtln!(Role::Warning, "Unknown option: {}", args[i]);
             }
         }
         i += 1;
@@ -101,11 +101,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Check if image file exists
     if !Path::new(image_path).exists() {
-        cprtln!(Role::Error, "Image file not found: {}", image_path);
+        sprtln!(Role::Error, "Image file not found: {}", image_path);
         return Ok(());
     }
 
-    cprtln!(Role::Info, "🎨 Analyzing image: {}", image_path);
+    sprtln!(Role::Info, "🎨 Analyzing image: {}", image_path);
 
     // Generate theme name if not provided
     let final_theme_name = theme_name.unwrap_or_else(|| {
@@ -132,20 +132,20 @@ fn main() -> Result<(), Box<dyn Error>> {
             theme
         }
         Err(e) => {
-            cprtln!(Role::Error, "Failed to generate theme: {}", e);
+            sprtln!(Role::Error, "Failed to generate theme: {}", e);
             return Ok(());
         }
     };
 
     // Display theme information
-    cprtln!(Role::Success, "✅ Generated theme: {}", theme.name);
-    cprtln!(Role::Normal, "Description: {}", theme.description);
-    cprtln!(Role::Normal, "Theme type: {:?}", theme.term_bg_luma);
-    cprtln!(Role::Normal, "Color support: {:?}", theme.min_color_support);
-    cprtln!(Role::Normal, "Background colors: {:?}", theme.backgrounds);
+    sprtln!(Role::Success, "✅ Generated theme: {}", theme.name);
+    sprtln!(Role::Normal, "Description: {}", theme.description);
+    sprtln!(Role::Normal, "Theme type: {:?}", theme.term_bg_luma);
+    sprtln!(Role::Normal, "Color support: {:?}", theme.min_color_support);
+    sprtln!(Role::Normal, "Background colors: {:?}", theme.backgrounds);
 
     println!();
-    cprtln!(Role::Heading2, "Color palette:");
+    sprtln!(Role::Heading2, "Color palette:");
     display_palette(&theme);
 
     // Generate TOML content
@@ -156,15 +156,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(output_path) = output_file {
         match fs::write(&output_path, &toml_content) {
             Ok(()) => {
-                cprtln!(Role::Success, "💾 Theme saved to: {}", output_path);
+                sprtln!(Role::Success, "💾 Theme saved to: {}", output_path);
             }
             Err(e) => {
-                cprtln!(Role::Error, "Failed to write theme file: {}", e);
+                sprtln!(Role::Error, "Failed to write theme file: {}", e);
             }
         }
     } else {
         println!();
-        cprtln!(Role::Heading2, "TOML representation:");
+        sprtln!(Role::Heading2, "TOML representation:");
         println!("{}", toml_content);
     }
 

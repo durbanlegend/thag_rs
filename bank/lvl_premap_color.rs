@@ -13,7 +13,7 @@ use strum::IntoEnumIterator;
 use termbg::terminal;
 use thag_rs::styling::{ColorSupport, TermBgLuma};
 use thag_rs::logging::V;
-use thag_rs::{cvprtln, vprtln, Role};
+use thag_rs::{svprtln, vprtln, Role};
 
 // The colors module was removed, so we'll create a simple style mapping instead
 let hash_map = Role::iter().map(|variant| {

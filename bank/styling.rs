@@ -2437,14 +2437,14 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> ThagResult<()> {
 ///
 /// # Examples
 /// ```
-/// use thag_rs::cvprtln;
+/// use thag_rs::svprtln;
 /// use thag_rs::Verbosity;
 /// use thag_rs::styling::Role;
 /// let details = "todos los detalles";
-/// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
+/// svprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
 /// ```
 #[macro_export]
-macro_rules! cvprtln {
+macro_rules! svprtln {
     ($role:expr, $verbosity:expr, $($arg:tt)*) => {{
         if $verbosity <= thag_rs::shared::get_verbosity() {
             let style = Style::for_role($role);
@@ -2646,7 +2646,7 @@ pub fn main() -> ThagResult<()> {
             // color.paint(format!("{:<col_width$}", "Normal"))
         );
         // let dash_line = "─".repeat(col_width * 4);
-        // cvprtln!(Role::HD2, V::Q, "{dash_line}");
+        // svprtln!(Role::HD2, V::Q, "{dash_line}");
         // XtermColor::iter().for_each(|variant| {
         //     let color_string = variant.to_string();
         //     let pad_color_string = format!("{color_string:<col_width$}");
@@ -2718,7 +2718,7 @@ pub fn main() -> ThagResult<()> {
     let name = "Error";
     println!("{}", styled!(name, bold));
 
-    cvprtln!(
+    svprtln!(
         Role::Heading2,
         V::N,
         "Color support={}, theme={}: {}\nMore text to check if styling disrupted",
@@ -3132,9 +3132,9 @@ impl fmt::Display for Styled<String> {
 
 /// A line print macro that prints a styled and coloured message.
 ///
-/// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+/// Format: `sprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
 #[macro_export]
-macro_rules! cprtln {
+macro_rules! sprtln {
     ($style:expr, $($arg:tt)*) => {{
         let content = format!("{}", format_args!($($arg)*));
         let painted = $style.paint(content);

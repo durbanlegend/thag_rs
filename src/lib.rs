@@ -146,8 +146,8 @@ pub use {
         static_lazy, thousands, vprtln, ColorSupport, TermBgLuma, Verbosity, OUTPUT_MANAGER, V,
     },
     thag_styling::{
-        cprtln, cvprtln, display_theme_details, display_theme_roles, find_closest_color,
-        paint_for_role, Color, Palette, Role, Style, TermAttributes, Theme,
+        display_theme_details, display_theme_roles, find_closest_color, paint_for_role, sprtln,
+        svprtln, Color, Palette, Role, Style, TermAttributes, Theme,
     },
 };
 

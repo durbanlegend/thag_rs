@@ -288,13 +288,7 @@ pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStrea
             // eprintln!("In default, returning true");
             true
         },
-        |fn_args| {
-            if fn_args.none {
-                false
-            } else {
-                true
-            }
-        },
+        |fn_args| !fn_args.none,
     );
 
     // Function profiling type

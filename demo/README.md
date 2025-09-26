@@ -6933,8 +6933,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs
 **Description:**  Comprehensive migration guide from old embedding systems to StyledString
 
  This demo shows side-by-side comparisons of:
- 1. cprtln_with_embeds! → StyledString with println!
- 2. cvprtln_with_embeds! → StyledString with vprintln!
+ 1. sprtln_with_embeds! → StyledString with println!
+ 2. svprtln_with_embeds! → StyledString with vprintln!
  3. format_with_embeds → format! with StyledString
  4. Embedded struct → StyledString directly
 
@@ -7637,9 +7637,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_color_mode_
 
 ---
 
-### Script: test_cprtln.rs
+### Script: test_sprtln.rs
 
-**Description:**  Test script to verify cprtln macro works with both Style and Role
+**Description:**  Test script to verify sprtln macro works with both Style and Role
 
 **Purpose:** Testing
 
@@ -9178,4 +9178,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_p
 ```
 
 ---
-

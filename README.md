@@ -683,8 +683,8 @@ default
         └── termbg
 Core Feature Set (★):
 - Basic logging and error handling
-- Essential macros: cprtln, debug_log, lazy_static_var, vlog, regex
-- Styling system and macros: cvprtln, style_for_role
+- Essential macros: sprtln, debug_log, lazy_static_var, vlog, regex
+- Styling system and macros: svprtln, style_for_role
 - Fundamental types and traits
 Optional features:
 - profiling     # Enables profiling via thag_profiler (for internal use)

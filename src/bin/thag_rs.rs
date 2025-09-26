@@ -14,7 +14,7 @@ use thag_rs::cmd_args::set_verbosity;
 #[cfg(feature = "core")]
 use thag_rs::debug_timings;
 
-use thag_styling::{cprtln, cvprtln, Style};
+use thag_styling::{sprtln, svprtln, Style};
 
 #[cfg(feature = "core")]
 use thag_rs::logging::configure_log;
@@ -34,7 +34,7 @@ pub fn main() {
         let result = handle(&cli);
 
         if let Err(e) = result {
-            cvprtln!(Role::ERR, V::N, "Error running thag: {e}");
+            svprtln!(Role::ERR, V::N, "Error running thag: {e}");
 
             std::process::exit(1);
         }

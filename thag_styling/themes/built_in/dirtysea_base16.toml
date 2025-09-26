@@ -51,9 +51,9 @@ style = ["bold"]
 
 [palette.success]
 rgb = [
-    196,
-    217,
-    196,
+    53,
+    89,
+    53,
 ]
 
 [palette.info]
@@ -88,16 +88,16 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    208,
-    218,
-    208,
+    79,
+    114,
+    79,
 ]
 
 [palette.hint]
 rgb = [
-    112,
-    112,
-    112,
+    97,
+    97,
+    97,
 ]
 style = ["italic"]
 
@@ -119,15 +119,15 @@ style = ["underline"]
 
 [palette.quote]
 rgb = [
-    248,
-    248,
-    248,
+    109,
+    109,
+    109,
 ]
 style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    208,
-    208,
-    208,
+    97,
+    97,
+    97,
 ]

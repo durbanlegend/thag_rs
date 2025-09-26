@@ -19,9 +19,9 @@ style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    177,
-    138,
-    61,
+    202,
+    160,
+    79,
 ]
 style = ["bold"]
 
@@ -88,16 +88,16 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    36,
-    36,
-    34,
+    145,
+    145,
+    135,
 ]
 
 [palette.hint]
 rgb = [
-    108,
-    108,
-    102,
+    145,
+    145,
+    135,
 ]
 style = ["italic"]
 
@@ -127,7 +127,7 @@ style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    72,
-    72,
-    68,
+    145,
+    145,
+    135,
 ]

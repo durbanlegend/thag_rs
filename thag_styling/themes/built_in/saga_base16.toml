@@ -88,24 +88,24 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    10,
-    16,
-    20,
+    94,
+    158,
+    201,
 ]
 
 [palette.hint]
 rgb = [
-    20,
-    31,
-    39,
+    96,
+    156,
+    200,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
-    25,
-    38,
-    48,
+    97,
+    154,
+    198,
 ]
 style = ["dim"]
 
@@ -127,7 +127,7 @@ style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    15,
-    24,
-    30,
+    94,
+    158,
+    201,
 ]

@@ -35,9 +35,9 @@ style = ["bold"]
 
 [palette.error]
 rgb = [
-    140,
-    67,
-    81,
+    141,
+    57,
+    73,
 ]
 style = ["bold"]
 
@@ -88,16 +88,16 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    246,
-    246,
-    248,
+    101,
+    101,
+    148,
 ]
 
 [palette.hint]
 rgb = [
-    150,
-    153,
-    163,
+    112,
+    118,
+    137,
 ]
 style = ["italic"]
 
@@ -127,7 +127,7 @@ style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    237,
-    239,
-    246,
+    62,
+    90,
+    187,
 ]

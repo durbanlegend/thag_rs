@@ -16,8 +16,31 @@
 
 `thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (errors, warnings, code, headings) and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
-![thag-raphael-school-of-athens-dark](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
-<!--(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)]-->
+## Examples of built-in themes
+
+### Built-in popular dark theme: Catpuccin Mocha
+
+[![catpuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catpuccin-mocha.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catpuccin-mocha.png)
+*Built-in theme <code>catpuccin-mocha</code>, converted from base24.*
+
+### Built-in original dark theme: Raphael's School of Athens
+
+[![thag-raphael-school-of-athens-dark](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
+*Built-in theme <code>thag-raphael-school-of-athens-dark</code>, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
+
+### Built-in popular light theme: Gruvbox Light Hard
+
+[![gruvbox-light-hard_base16](/Users/donf/projects/thag_rs/docs/thag_styling/assets/gruvbox-light-hard_base16.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/gruvbox-light-hard_base16.png)
+*Built-in theme <code>gruvbox-light-hard_base16</code>, converted from base16.*
+
+### Built-in original light theme: Morning Coffee Light
+
+[![thag-morning-coffee-light](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-morning-coffee-light.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-morning-coffee-light.png)
+*Built-in theme <code>thag-morning-coffee-light</code>, generated with `thag_image_to_theme` from a PNG of a complementary blue-brown color palette created with the Figma color wheel.*
 
 ## Features
 

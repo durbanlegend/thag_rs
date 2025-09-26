@@ -35,17 +35,17 @@ style = ["bold"]
 
 [palette.error]
 rgb = [
-    196,
-    26,
-    21,
+    194,
+    15,
+    10,
 ]
 style = ["bold"]
 
 [palette.warning]
 rgb = [
-    235,
-    133,
-    0,
+    218,
+    128,
+    11,
 ]
 style = ["bold"]
 
@@ -58,9 +58,9 @@ rgb = [
 
 [palette.info]
 rgb = [
-    0,
-    0,
-    255,
+    11,
+    11,
+    218,
 ]
 
 [palette.emphasis]
@@ -88,9 +88,9 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    192,
-    192,
-    192,
+    128,
+    128,
+    128,
 ]
 
 [palette.hint]
@@ -127,7 +127,7 @@ style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    192,
-    192,
-    192,
+    128,
+    128,
+    128,
 ]

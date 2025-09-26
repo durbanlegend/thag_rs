@@ -19,9 +19,9 @@ style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    177,
-    95,
-    74,
+    205,
+    140,
+    123,
 ]
 style = ["bold"]
 
@@ -35,17 +35,17 @@ style = ["bold"]
 
 [palette.error]
 rgb = [
-    253,
-    136,
-    107,
+    248,
+    154,
+    131,
 ]
 style = ["bold"]
 
 [palette.warning]
 rgb = [
-    252,
-    71,
-    105,
+    247,
+    107,
+    133,
 ]
 style = ["bold"]
 
@@ -58,9 +58,9 @@ rgb = [
 
 [palette.info]
 rgb = [
-    32,
-    188,
-    252,
+    107,
+    206,
+    247,
 ]
 
 [palette.emphasis]
@@ -88,16 +88,16 @@ rgb = [
 
 [palette.subtle]
 rgb = [
-    21,
-    21,
-    21,
+    164,
+    164,
+    164,
 ]
 
 [palette.hint]
 rgb = [
-    116,
-    116,
-    116,
+    164,
+    164,
+    164,
 ]
 style = ["italic"]
 
@@ -111,9 +111,9 @@ style = ["dim"]
 
 [palette.link]
 rgb = [
-    50,
-    204,
-    220,
+    94,
+    222,
+    235,
 ]
 style = ["underline"]
 
@@ -127,7 +127,7 @@ style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    70,
-    70,
-    70,
+    164,
+    164,
+    164,
 ]

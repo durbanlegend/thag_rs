@@ -146,7 +146,7 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
 
     let selection_options = vec![
         "Select individual theme files",
-        "Select all themes from directory",
+        "Select all themes from a directory",
         "Select built-in theme by name",
         "Browse built-in themes interactively",
     ];

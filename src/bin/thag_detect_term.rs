@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-log = "0.4.27"
+log = "0.4"
 thag_common = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog", "tools"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "simplelog", "tools"] }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal

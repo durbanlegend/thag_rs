@@ -1,19 +1,55 @@
 /*[toml]
 [dependencies]
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["simplelog", "tools"] }
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
 */
-/// Terminal palette synchronization using OSC sequences
+/// Terminal palette synchronization using OSC sequences,
 ///
 /// This binary provides command-line access to `thag_styling`'s palette synchronization
-/// functionality, allowing you to apply theme colors directly to your terminal's palette.
-//# Purpose: Configure custom terminal themes.
+/// functionality, allowing you to apply theme colors directly to your terminal's palette for convenience.
+///
+/// Note that it does not support `KDE Konsole` or `Mintty` terminal types because they do not support
+/// the required OSC 4 ANSI escape sequences.
+//# Purpose: Try out custom terminal themes or apply them dynamically, including for a session if incorporated in a terminal profile file.
 //# Categories: ansi, color, customization, interactive, styling, terminal, theming, tools, windows, xterm
 use std::env;
 use std::process;
-use thag_styling::{get_verbosity, ColorInitStrategy, PaletteSync, TermAttributes, Theme, V};
+use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_styling::{
+    get_verbosity, is_konsole, is_mintty, set_global_verbosity, vprtln, ColorInitStrategy,
+    PaletteSync, TermAttributes, Theme, V,
+};
 
 fn main() {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!("thag_sync_palette");
+    check_help_and_exit(&help);
+
+    if is_konsole() {
+        eprintln!(
+            r#"KDE Konsole terminal type detected. Konsole does not support the OSC 4 ANSI escape sequence that this tool uses.
+            Instead you can use `thag_gen_terminal_themes` to generate a Konsole theme."#
+        );
+    }
+
+    if is_mintty() {
+        eprintln!(
+            r#"Mintty terminal type detected. Mintty does not support the OSC 4 ANSI escape sequence that this tool uses.
+            Instead you can use `thag_gen_terminal_themes` to generate a Mintty theme."#
+        );
+    }
+
     let args: Vec<String> = env::args().collect();
+
+    let verbosity = match env::var("THAG_VERBOSITY").ok().as_deref() {
+        Some("0" | "qq") => V::Quieter,
+        Some("1" | "q") => V::Quiet,
+        Some("3" | "v") => V::Verbose,
+        Some("4" | "vv") => V::Debug,
+        _ => V::Normal,
+    };
+
+    set_global_verbosity(verbosity);
 
     // Initialize thag_styling system
     TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Default);
@@ -58,25 +94,22 @@ fn main() {
 }
 
 fn apply_theme(theme_name: &str) {
-    if get_verbosity() >= V::Normal {
-        println!("🎨 Loading theme: {}", theme_name);
-    }
+    vprtln!(V::N, "🎨 Loading theme: {}", theme_name);
 
     let theme = match Theme::get_builtin(theme_name) {
         Ok(theme) => theme,
         Err(e) => {
             eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
-            if get_verbosity() >= V::Normal {
-                println!("💡 Try running 'thag_sync_palette list' to see available themes");
-            }
+            vprtln!(
+                V::N,
+                "💡 Try running 'thag_sync_palette list' to see available themes"
+            );
             process::exit(1);
         }
     };
 
-    if get_verbosity() >= V::Normal {
-        println!("📝 Description: {}", theme.description);
-        println!("🌈 Applying palette...");
-    }
+    vprtln!(V::N, "📝 Description: {}", theme.description);
+    vprtln!(V::N, "🌈 Applying palette...");
 
     if let Err(e) = PaletteSync::apply_theme(&theme) {
         eprintln!("❌ Failed to apply theme: {}", e);
@@ -95,17 +128,16 @@ fn apply_theme(theme_name: &str) {
 }
 
 fn preview_theme(theme_name: &str) {
-    if get_verbosity() >= V::Normal {
-        println!("🎨 Previewing theme: {}", theme_name);
-    }
+    vprtln!(V::N, "🎨 Previewing theme: {}", theme_name);
 
     let theme = match Theme::get_builtin(theme_name) {
         Ok(theme) => theme,
         Err(e) => {
             eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
-            if get_verbosity() >= V::Normal {
-                println!("💡 Try running 'thag_sync_palette list' to see available themes");
-            }
+            vprtln!(
+                V::N,
+                "💡 Try running 'thag_sync_palette list' to see available themes"
+            );
             process::exit(1);
         }
     };
@@ -134,18 +166,14 @@ fn preview_theme(theme_name: &str) {
 }
 
 fn reset_palette() {
-    if get_verbosity() >= V::Normal {
-        println!("🔄 Resetting terminal palette to defaults...");
-    }
+    vprtln!(V::N, "🔄 Resetting terminal palette to defaults...");
 
     if let Err(e) = PaletteSync::reset_palette() {
         eprintln!("❌ Failed to reset palette: {}", e);
         process::exit(1);
     }
 
-    if get_verbosity() >= V::Normal {
-        println!("✅ Terminal palette reset successfully!");
-    }
+    vprtln!(V::N, "✅ Terminal palette reset successfully!");
 }
 
 fn demo_palette() {
@@ -183,7 +211,7 @@ fn print_usage() {
     println!("  thag_sync_palette help             Show this help message");
     println!();
     println!("Examples:");
-    println!("  thag_sync_palette apply thag-botticelli-birth-of-venus");
+    println!("  thag_sync_palette apply thag-botticelli-birth-of-venus-dark");
     println!("  thag_sync_palette preview thag-dark");
     println!("  thag_sync_palette reset");
     println!();

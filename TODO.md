@@ -22,8 +22,9 @@
 - [ ]  DONE: Resolve StyledStringExt to StyledPrint.
 - [ ]  DONE: Styling Readme: PNG examples of styles.
 - [ ]  DONE: Styling Readme: use with_context of TermAttributes and Themes to nest guest attributes and themes.
-- [ ]  KDE Konsole doesn't accept OSC.
+- [ ]  KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
 - [ ]  DONE: thag_styling README.md: Document 256-color themes not needed because thag_styling does conversion from TrueColor automatically.
+- [ ]  Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
 
     println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
     println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));

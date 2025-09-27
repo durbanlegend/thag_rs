@@ -6,6 +6,7 @@ use crate::{
     lazy_static_var, vprtln, ColorSupport, TermBgLuma, ThagCommonError, ThagCommonResult, V,
 };
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
+use std::env;
 use std::io::{stdin, stdout, Read, Write};
 use std::sync::mpsc;
 use std::thread;
@@ -100,7 +101,7 @@ impl Drop for TerminalStateGuard {
 /// ```
 #[must_use]
 pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u8)) {
-    if std::env::var("TEST_ENV").is_ok() {
+    if env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding color detection for testing");
         return (&ColorSupport::Basic, &(0, 0, 0));
@@ -403,18 +404,26 @@ fn detect_color_support_osc() -> ColorSupport {
 }
 
 /// Check if running in konsole (always supports `TrueColor`)
-fn is_konsole() -> bool {
-    std::env::var("KONSOLE_VERSION").is_ok()
+pub fn is_konsole() -> bool {
+    lazy_static_var!(bool, deref, env::var("KONSOLE_VERSION").is_ok())
 }
 
 /// Check if running in mintty (always supports `TrueColor`)
-fn is_mintty() -> bool {
-    std::env::var("TERM_PROGRAM").is_ok_and(|term| term == "mintty")
+pub fn is_mintty() -> bool {
+    lazy_static_var!(
+        bool,
+        deref,
+        env::var("TERM_PROGRAM").is_ok_and(|term| term == "mintty")
+    )
 }
 
 /// Check if running in Apple Terminal (which has RGB rendering issues)
 fn is_apple_terminal() -> bool {
-    std::env::var("TERM_PROGRAM").is_ok_and(|term| term == "Apple_Terminal")
+    lazy_static_var!(
+        bool,
+        deref,
+        env::var("TERM_PROGRAM").is_ok_and(|term| term == "Apple_Terminal")
+    )
 }
 
 /// Query background color using OSC 11 with robust timeout handling
@@ -590,12 +599,12 @@ fn parse_hex_component_bg(hex_str: &str) -> Result<u8, std::num::ParseIntError> 
 /// Check environment variables for color support hints
 fn check_env_color_support() -> Option<ColorSupport> {
     // Check for NO_COLOR (takes precedence)
-    if std::env::var("NO_COLOR").is_ok() {
+    if env::var("NO_COLOR").is_ok() {
         return Some(ColorSupport::None);
     }
 
     // Check for COLORTERM (thag-specific override)
-    if let Ok(colorterm) = std::env::var("COLORTERM") {
+    if let Ok(colorterm) = env::var("COLORTERM") {
         match colorterm.to_lowercase().as_str() {
             "truecolor" | "24bit" | "rgb" => return Some(ColorSupport::TrueColor),
             _ => {}
@@ -603,7 +612,7 @@ fn check_env_color_support() -> Option<ColorSupport> {
     }
 
     // Check for THAG_COLOR_MODE (thag-specific override)
-    if let Ok(thag_color_mode) = std::env::var("THAG_COLOR_MODE") {
+    if let Ok(thag_color_mode) = env::var("THAG_COLOR_MODE") {
         match thag_color_mode.to_lowercase().as_str() {
             "none" | "off" | "0" => return Some(ColorSupport::None),
             "basic" | "16" | "1" => return Some(ColorSupport::Basic),
@@ -614,7 +623,7 @@ fn check_env_color_support() -> Option<ColorSupport> {
     }
 
     // Check for FORCE_COLOR
-    if let Ok(force_color) = std::env::var("FORCE_COLOR") {
+    if let Ok(force_color) = env::var("FORCE_COLOR") {
         match force_color.as_str() {
             "0" => return Some(ColorSupport::None),
             "1" => return Some(ColorSupport::Basic),
@@ -625,7 +634,7 @@ fn check_env_color_support() -> Option<ColorSupport> {
     }
 
     // Check CLICOLOR_FORCE
-    if std::env::var("CLICOLOR_FORCE").is_ok() {
+    if env::var("CLICOLOR_FORCE").is_ok() {
         return Some(ColorSupport::Basic);
     }
 
@@ -807,7 +816,7 @@ fn parse_osc10_response(response: &str) -> Option<(u8, u8, u8)> {
 
 /// Check if terminal supports 256 colors based on TERM variable
 fn supports_256_color() -> bool {
-    std::env::var("TERM").is_ok_and(|term| term.ends_with("256color") || term.ends_with("256"))
+    env::var("TERM").is_ok_and(|term| term.ends_with("256color") || term.ends_with("256"))
 }
 
 /// Restore the raw or cooked terminal status as saved in the boolean argument.

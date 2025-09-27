@@ -25,6 +25,9 @@ use strum::{Display, EnumIter, EnumString, IntoStaticStr};
 #[cfg(feature = "config")]
 pub use crate::config::{ConfigError, ConfigResult};
 
+#[cfg(feature = "color_detect")]
+pub use crate::terminal::{is_konsole, is_mintty};
+
 /// Result type alias for `thag_common` operations
 pub type ThagCommonResult<T> = Result<T, ThagCommonError>;
 

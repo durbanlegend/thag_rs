@@ -339,7 +339,10 @@ Alternatively, you can merge the JSON content directly into your settings.json f
 To use this theme with Konsole:
 
 1. Copy the theme file to your Konsole color schemes directory:
-   - Linux: `~/.local/share/konsole/` or `/usr/share/konsole/`
+   - Linux: `~/.local/share/konsole/` or `/usr/share/konsole/`,
+     or for a Flatpak installation: `~/.var/app/org.kde.konsole/data/konsole/`.
+     If in doubt, create a new profile from the Konsole settings menu,
+     and use `find` with `-name "*.profile"` to find the directory.
    - The file should have a `.colorscheme` extension
 
 2. Option A - Using Konsole Settings:

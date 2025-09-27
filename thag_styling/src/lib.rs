@@ -27,8 +27,9 @@ pub mod exporters;
 
 // Re-export common types
 pub use thag_common::{
-    debug_log, get_verbosity, init_verbosity, prtln, re, set_global_verbosity, set_verbosity,
-    vprtln, ColorSupport, TermBgLuma, ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
+    debug_log, get_verbosity, init_verbosity, is_konsole, is_mintty, prtln, re,
+    set_global_verbosity, set_verbosity, vprtln, ColorSupport, TermBgLuma, ThagCommonResult,
+    Verbosity, OUTPUT_MANAGER, V,
 };
 
 pub use styling::{

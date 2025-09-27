@@ -356,6 +356,12 @@ fn detect_color_support_osc() -> ColorSupport {
         return ColorSupport::TrueColor;
     }
 
+    // Check for KDE Konsole - supports TrueColor since mists of time
+    if is_konsole() {
+        vprtln!(V::V, "Konsole detected - TrueColor supported");
+        return ColorSupport::TrueColor;
+    }
+
     // Check environment variables for override/hints - these take precedence over terminal detection
     if let Some(support) = check_env_color_support() {
         vprtln!(V::V, "Environment variable override: {:?}", support);
@@ -394,6 +400,11 @@ fn detect_color_support_osc() -> ColorSupport {
             ColorSupport::Basic
         }
     })
+}
+
+/// Check if running in konsole (always supports `TrueColor`)
+fn is_konsole() -> bool {
+    std::env::var("KONSOLE_VERSION").is_ok()
 }
 
 /// Check if running in mintty (always supports `TrueColor`)
@@ -581,6 +592,14 @@ fn check_env_color_support() -> Option<ColorSupport> {
     // Check for NO_COLOR (takes precedence)
     if std::env::var("NO_COLOR").is_ok() {
         return Some(ColorSupport::None);
+    }
+
+    // Check for COLORTERM (thag-specific override)
+    if let Ok(colorterm) = std::env::var("COLORTERM") {
+        match colorterm.to_lowercase().as_str() {
+            "truecolor" | "24bit" | "rgb" => return Some(ColorSupport::TrueColor),
+            _ => {}
+        }
     }
 
     // Check for THAG_COLOR_MODE (thag-specific override)

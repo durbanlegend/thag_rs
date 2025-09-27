@@ -399,12 +399,12 @@ fn process_theme_file(
         // Always organize by format in subdirectories
         let format_dir = match format {
             ExportFormat::Alacritty => export_base_dir.join("alacritty"),
-            ExportFormat::WezTerm => export_base_dir.join("wezterm"),
             ExportFormat::ITerm2 => export_base_dir.join("iterm2"),
             ExportFormat::Kitty => export_base_dir.join("kitty"),
-            ExportFormat::Mintty => export_base_dir.join("mintty"),
-            ExportFormat::WindowsTerminal => export_base_dir.join("windows"),
             ExportFormat::Konsole => export_base_dir.join("konsole"),
+            ExportFormat::Mintty => export_base_dir.join("mintty"),
+            ExportFormat::WezTerm => export_base_dir.join("wezterm"),
+            ExportFormat::WindowsTerminal => export_base_dir.join("windows"),
         };
 
         fs::create_dir_all(&format_dir)?;
@@ -447,10 +447,11 @@ fn show_installation_instructions(formats: &[ExportFormat]) {
 fn get_all_export_formats() -> Vec<ExportFormat> {
     vec![
         ExportFormat::Alacritty,
-        ExportFormat::WezTerm,
         ExportFormat::ITerm2,
         ExportFormat::Kitty,
+        ExportFormat::Konsole,
         ExportFormat::Mintty,
+        ExportFormat::WezTerm,
         ExportFormat::WindowsTerminal,
     ]
 }

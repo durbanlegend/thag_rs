@@ -10,6 +10,8 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 /// Supports selecting individual themes or entire directories of themes.
 //# Purpose: Install thag themes for Mintty (Git Bash)
 //# Categories: color, styling, terminal, theming, tools, windows
+#[cfg(target_os = "windows")]
+use inquire::set_global_render_config;
 
 #[cfg(target_os = "windows")]
 use std::{
@@ -20,17 +22,27 @@ use std::{
 #[cfg(target_os = "windows")]
 use thag_styling::{file_navigator, themed_inquire_config, Styleable};
 
+use thag_styling::{auto_help, help_system::check_help_and_exit};
+
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
 #[cfg(not(target_os = "windows"))]
 fn main() {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!();
+    check_help_and_exit(&help);
+
     println!("❌ This tool is only available on Windows systems.");
     println!("   Mintty (Git Bash) is primarily used on Windows.");
 }
 
 #[cfg(target_os = "windows")]
 fn main() -> Result<(), Box<dyn Error>> {
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!();
+    check_help_and_exit(&help);
+
     set_global_render_config(themed_inquire_config());
 
     println!(
@@ -49,11 +61,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("📁 Mintty configuration:");
     println!(
         "   Themes directory: {}",
-        mintty_config.themes_dir.display().to_string().code()
+        mintty_config.themes_dir.display().to_string().hint()
     );
     println!(
         "   Config file: {}",
-        mintty_config.config_file.display().to_string().code()
+        mintty_config
+            .config_file
+            .display()
+            .to_string()
+            .hint()
     );
 
     // Check if themes directory exists

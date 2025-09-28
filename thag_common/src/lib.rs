@@ -10,6 +10,9 @@
 #[cfg(feature = "config")]
 pub mod config;
 
+/// Lightweight help system for tools, or any `thag` script using `///` and/or special (`//#`) comments.
+pub mod help_system;
+
 /// Terminal detection and capabilities module
 #[cfg(feature = "color_detect")]
 pub mod terminal;

@@ -1,10 +1,6 @@
 /*[toml]
 [dependencies]
-#atty = "0.2.14"
-#colored = "2.1.0"
-#inquire = "0.7.5"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 /// `thag` prompted front-end command to run `clippy` on scripts.
 ///
@@ -15,10 +11,9 @@ thag_styling = { version = "0.2, thag-auto" }
 //# Usage: thag_clippy [script_path] or thag_clippy (interactive mode)
 use inquire::{set_global_render_config, Confirm, MultiSelect};
 use std::{env, error::Error, path::PathBuf, process::Command};
-use thag_proc_macros::file_navigator;
-use thag_rs::{auto_help, help_system::check_help_and_exit};
 use thag_styling::{
-    sprtln, themed_inquire_config, AnsiStyleExt, Color, Role, Style, Styleable, StyledPrint,
+    auto_help, file_navigator, help_system::check_help_and_exit, sprtln, themed_inquire_config,
+    AnsiStyleExt, Color, Role, Style, Styleable, StyledPrint,
 };
 
 file_navigator! {}
@@ -191,7 +186,7 @@ enum ScriptMode {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_clippy");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());

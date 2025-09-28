@@ -1,13 +1,17 @@
 /*[toml]
 [dependencies]
-heck = "0.5.0"
-inquire = "0.7.5"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+# heck = "0.5.0"
+# inquire = "0.7.5"
+# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
 */
 
 /// Quick and easy prompted generator for new custom error types and new variants required
-/// by existing custom error types. Prompts for the new or existing custom error type, the
+/// by existing custom error types.
+///
+/// Prompts for the new or existing custom error type, the
 /// new variants, any types wrapped by the new variants, and any special display messages.
+///
 /// The output can be saved to a new error module in the case of a new custom error type,
 /// or simply copied and pasted in sections from the output into an existing error module
 /// in the case of an existing custom error type.
@@ -19,7 +23,7 @@ use heck::ToSnakeCase;
 use inquire::{set_global_render_config, Confirm, MultiSelect, Select, Text};
 use std::fmt::Write as _; // import without risk of name clashing
 use std::{error::Error, fs, path::PathBuf};
-use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
+use thag_styling::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 
 #[derive(Debug)]
 struct ErrorVariant {
@@ -368,7 +372,7 @@ fn generate_tests(module: &ErrorModule) -> String {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_gen_errors");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());

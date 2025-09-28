@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 use inquire::{self, set_global_render_config};
@@ -10,9 +9,10 @@ use std::fs;
 use std::io::Write as _;
 use std::path::PathBuf;
 use std::process::Command;
-use thag_proc_macros::file_navigator;
-use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
-use thag_styling::styling::Styleable;
+use thag_styling::{
+    auto_help, file_navigator, help_system::check_help_and_exit, styling::Styleable,
+    themed_inquire_config,
+};
 
 file_navigator! {}
 
@@ -28,7 +28,7 @@ impl Drop for TempCleanupGuard {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_get_demo_dir");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());

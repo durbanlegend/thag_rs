@@ -2,7 +2,7 @@
 [dependencies]
 atty = "0.2.14"
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_common = { version = "0.2, thag-auto" }
 */
 
 /// `thag` prompted front-end command to run Cargo commands on scripts.
@@ -11,9 +11,10 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 /// script's generated project, and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, thag_front_ends, tools
+use inquire;
 use std::{error::Error, path::PathBuf, process::Command};
+use thag_common::{auto_help, help_system::check_help_and_exit};
 use thag_proc_macros::{file_navigator, tool_errors};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
 
 tool_errors! {}
 file_navigator! {}
@@ -163,7 +164,7 @@ enum ScriptMode {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_cargo");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let script_path = match get_script_mode() {

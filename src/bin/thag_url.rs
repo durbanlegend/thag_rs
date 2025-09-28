@@ -225,7 +225,7 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_url");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let args: Vec<String> = std::env::args().collect();

@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 #![allow(clippy::uninlined_format_args)]
 /// Terminal palette comparison tool with theme selection
@@ -20,9 +19,8 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use thag_proc_macros::file_navigator;
 use thag_styling::{
-    display_color_comparison, select_builtin_theme, sprtln, styling::index_to_rgb,
+    display_color_comparison, file_navigator, select_builtin_theme, sprtln, styling::index_to_rgb,
     themed_inquire_config, ColorInitStrategy, ColorValue, Role, Style, Styleable, StyledPrint,
     TermAttributes, TermBgLuma, Theme,
 };

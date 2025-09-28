@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "simplelog"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
@@ -37,9 +37,10 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use thag_common::{ColorSupport, TermBgLuma};
-use thag_rs::auto_help;
-use thag_styling::{find_closest_color, hsl_to_rgb, ColorValue, Palette, Style, Theme};
+use thag_styling::{
+    auto_help, find_closest_color, hsl_to_rgb, ColorSupport, ColorValue, Palette, Style,
+    TermBgLuma, Theme,
+};
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
@@ -721,7 +722,7 @@ fn detect_background_luma(hex: &str) -> Result<TermBgLuma, Box<dyn std::error::E
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_convert_themes");
+    let help = auto_help!();
 
     let _ = help.check_help();
 

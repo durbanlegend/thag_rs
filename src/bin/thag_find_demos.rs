@@ -1,7 +1,9 @@
 /*[toml]
 [dependencies]
+regex = "1.11"
+strum = { version = "0.27", features = ["derive", "phf"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog", "tools"] }
 */
 use inquire::set_global_render_config;
 /// Select demo scripts and generate and serve HTML report.
@@ -18,9 +20,9 @@ use std::{
     process::Command,
 };
 use thag_proc_macros::{category_enum, file_navigator};
-use thag_rs::code_utils::to_ast;
-use thag_rs::help_system::check_help_and_exit;
-use thag_rs::{ast, auto_help, re, themed_inquire_config};
+use thag_rs::{
+    ast, auto_help, code_utils::to_ast, help_system::check_help_and_exit, re, themed_inquire_config,
+};
 use warp::Filter;
 
 category_enum! {} // This will generate the Category enum
@@ -330,7 +332,7 @@ fn apply_filters(
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_find_demos");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());

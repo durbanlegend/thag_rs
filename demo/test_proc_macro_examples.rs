@@ -125,7 +125,7 @@ fn run_test_case(test_case: &TestCase, thag_dev_path: &str) -> Result<bool, Stri
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
-    let help = auto_help!("test_proc_macro_examples");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     // Get the current directory as THAG_DEV_PATH

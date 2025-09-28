@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquire_theming"] }
 */
 
@@ -15,10 +14,9 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquir
 use inquire::set_global_render_config; // For optional theming of `inquire`
 use std::error::Error;
 use std::fs;
-use thag_proc_macros::file_navigator;
 use thag_styling::{
-    sprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig, ImageThemeGenerator, Role,
-    Styleable, StylingError, StylingResult, TermBgLuma, Theme,
+    file_navigator, sprtln, theme_to_toml, themed_inquire_config, ImageThemeConfig,
+    ImageThemeGenerator, Role, Styleable, StylingError, StylingResult, TermBgLuma, Theme,
 };
 
 file_navigator! {}

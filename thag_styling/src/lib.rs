@@ -27,10 +27,13 @@ pub mod exporters;
 
 // Re-export common types
 pub use thag_common::{
-    debug_log, get_verbosity, init_verbosity, is_konsole, is_mintty, prtln, re,
+    auto_help, debug_log, get_verbosity, help_system, init_verbosity, prtln, re,
     set_global_verbosity, set_verbosity, vprtln, ColorSupport, TermBgLuma, ThagCommonResult,
     Verbosity, OUTPUT_MANAGER, V,
 };
+
+#[cfg(feature = "color_detect")]
+pub use thag_common::{is_konsole, is_mintty, terminal};
 
 pub use styling::{
     display_terminal_attributes, display_theme_details, display_theme_roles, find_closest_color,
@@ -57,7 +60,7 @@ pub use integrations::crossterm_integration::{CrosstermStyleExt, ThemedStylize};
 #[cfg(feature = "inquire_theming")]
 pub use inquire_theming::themed_inquire_config;
 
-pub use thag_proc_macros::styled;
+pub use thag_proc_macros::{file_navigator, styled};
 
 // Re-export image theme generation types
 #[cfg(feature = "image_themes")]

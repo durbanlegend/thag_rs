@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["build", "simplelog"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
@@ -11,6 +11,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["b
 //# Purpose: Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 //# Categories: diagnosis, technique, thag_front_ends, tools
 use anyhow::{anyhow, Context, Result};
+use crossterm::terminal;
 use inquire::set_global_render_config;
 use side_by_side_diff::create_side_by_side_diff;
 use std::{
@@ -21,9 +22,9 @@ use std::{
     process::{Command, Stdio},
 };
 use tempfile::tempdir;
-use thag_proc_macros::{file_navigator, tool_errors};
-use thag_rs::{
-    auto_help, crossterm::terminal, help_system::check_help_and_exit, themed_inquire_config,
+use thag_proc_macros::tool_errors;
+use thag_styling::{
+    auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
 };
 
 tool_errors! {}
@@ -73,7 +74,7 @@ fn get_script_mode() -> ScriptMode {
 
 fn main() -> Result<()> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_expand");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());

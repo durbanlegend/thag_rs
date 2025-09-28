@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_common = { version = "0.2, thag-auto" }
 */
 
 /// Tries to convert input to a `syn` abstract syntax tree (`syn::File` or `syn::Expr`).
@@ -9,7 +9,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Categories: AST, crates, technique, tools
 use quote::quote;
 use std::io::{self, Read};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
@@ -19,7 +19,7 @@ fn read_stdin() -> Result<String, io::Error> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_ast");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let content = read_stdin().expect("Problem reading input");

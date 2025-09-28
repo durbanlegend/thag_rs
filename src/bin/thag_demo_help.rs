@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_common = { version = "0.2, thag-auto" }
 */
 
 /// Demo tool to showcase the lightweight help system.
@@ -11,11 +11,11 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 //# Categories: demo, tools
 //# Usage: thag_demo_help [--help|-h]
 use std::env;
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit};
 
 fn main() {
     // Initialize help system from source comments automatically
-    let help = auto_help!("thag_demo_help");
+    let help = auto_help!();
 
     // Check if help was requested and exit if so
     check_help_and_exit(&help);

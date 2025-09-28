@@ -1,9 +1,7 @@
 /*[toml]
 [dependencies]
-regex = "1.11"
-strum = { version = "0.27", features = ["derive", "phf"] }
 thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["simplelog", "tools", "tui"] }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog", "tools"] }
 */
 
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
@@ -14,6 +12,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["s
 //# Categories: technique, tools
 use heck::ToSnakeCase;
 use inquire::set_global_render_config;
+use regex;
 use std::{
     collections::HashMap,
     env,
@@ -21,6 +20,7 @@ use std::{
     io::Write as OtherWrite,
     path::{Path, PathBuf},
 };
+use strum;
 use thag_proc_macros::{category_enum, file_navigator};
 use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
@@ -319,7 +319,7 @@ fn determine_boilerplate_path(scripts_dir: &Path) -> PathBuf {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_gen_readme");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let args: Vec<String> = env::args().collect();

@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["simplelog", "tools"] }
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
 */
 /// Terminal palette synchronization using OSC sequences,
@@ -14,15 +13,14 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_
 //# Categories: ansi, color, customization, interactive, styling, terminal, theming, tools, windows, xterm
 use std::env;
 use std::process;
-use thag_rs::{auto_help, help_system::check_help_and_exit};
 use thag_styling::{
-    get_verbosity, is_konsole, is_mintty, set_global_verbosity, vprtln, ColorInitStrategy,
-    PaletteSync, TermAttributes, Theme, V,
+    auto_help, get_verbosity, help_system::check_help_and_exit, is_konsole, is_mintty,
+    set_global_verbosity, vprtln, ColorInitStrategy, PaletteSync, TermAttributes, Theme, V,
 };
 
 fn main() {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_sync_palette");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     if is_konsole() {

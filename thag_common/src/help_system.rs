@@ -5,7 +5,6 @@
 
 use std::env;
 use std::fmt;
-use std::path::Path;
 
 /// A lightweight help system that extracts information from source comments
 pub struct HelpSystem {
@@ -26,18 +25,9 @@ pub struct HelpSystem {
 impl HelpSystem {
     /// Create a new help system with the tool name
     pub fn new() -> Self {
-        // Get args[0] (may be absolute, relative, or just the name)
-        let arg0 = env::args().next().unwrap_or_else(|| String::from(""));
-
-        // Wrap it in a Path and extract just the file name
-        let tool_name = Path::new(&arg0)
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or(&arg0)
-            .to_string();
+        let tool_name = program_name();
 
         Self {
-            // tool_name: tool_name.into(),
             tool_name,
             purpose: None,
             description: None,
@@ -223,6 +213,23 @@ macro_rules! help_system {
     }};
 }
 
+/// Convenience function to check for help and exit if found
+pub fn check_help_and_exit(help: &HelpSystem) {
+    if help.check_help() {
+        std::process::exit(0);
+    }
+}
+
+/// Returns the stem (filename without extension) of the currently running executable.
+/// Falls back to `"unknown"` if the path can't be resolved or isn't valid UTF-8.
+pub fn program_name() -> String {
+    env::current_exe()
+        .ok()
+        .and_then(|p| p.file_stem().map(|s| s.to_os_string()))
+        .and_then(|os| os.into_string().ok())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
 /// Macro to automatically extract help from current source file
 #[macro_export]
 macro_rules! auto_help {
@@ -230,13 +237,6 @@ macro_rules! auto_help {
         $crate::help_system::HelpSystem::from_current_source(file!())
             .with_version(env!("CARGO_PKG_VERSION"))
     }};
-}
-
-/// Convenience function to check for help and exit if found
-pub fn check_help_and_exit(help: &HelpSystem) {
-    if help.check_help() {
-        std::process::exit(0);
-    }
 }
 
 #[cfg(test)]

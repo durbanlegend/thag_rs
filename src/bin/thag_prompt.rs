@@ -233,7 +233,7 @@ fn is_interactive() -> bool {
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_prompt");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());
@@ -923,7 +923,7 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
                 .arg("--toml")
                 .arg(
                     r#"[dependencies]
-regex = "1.0""#,
+regex = "1.11""#,
                 );
         }
         "debug_groups" => {

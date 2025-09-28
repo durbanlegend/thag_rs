@@ -1,7 +1,5 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
@@ -20,9 +18,7 @@ use std::{
     path::{Path, PathBuf},
 };
 #[cfg(target_os = "windows")]
-use thag_proc_macros::file_navigator;
-#[cfg(target_os = "windows")]
-use thag_styling::{themed_inquire_config, Styleable};
+use thag_styling::{file_navigator, themed_inquire_config, Styleable};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
@@ -57,11 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
     println!(
         "   Config file: {}",
-        mintty_config
-            .config_file
-            .display()
-            .to_string()
-            .code()
+        mintty_config.config_file.display().to_string().code()
     );
 
     // Check if themes directory exists

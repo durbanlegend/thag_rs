@@ -25,6 +25,8 @@
 - [ ]  KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
 - [ ]  DONE: thag_styling README.md: Document 256-color themes not needed because thag_styling does conversion from TrueColor automatically.
 - [ ]  Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
+- [ ]  Make thag_common, thag_styling and thag_rs re-export thag_proc_macros items such as file_dialog and remove redundant direct thag_proc_macros dependencies from thag tools.
+- [ ]  DONE: help_system to use env::current_exe instead of env::args[0].
 
     println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
     println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));

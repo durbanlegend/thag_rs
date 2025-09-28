@@ -28,7 +28,7 @@ fn safe_println(line: &str) -> Result<(), io::Error> {
 
 fn main() -> Result<(), io::Error> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_to_rust_script");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let content = read_stdin().expect("Problem reading input");

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Tool to help migrate existing tools from tools/ to src/bin/ with auto-help integration.
@@ -17,11 +17,11 @@ use inquire::{set_global_render_config, Confirm, Select};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use thag_rs::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
+use thag_styling::{auto_help, help_system::check_help_and_exit, themed_inquire_config};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
-    let help = auto_help!("thag_migrate_tool");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     set_global_render_config(themed_inquire_config());
@@ -247,10 +247,7 @@ fn transform_tool_content(content: &str, tool_name: &str) -> String {
                     "    // Check for help first - automatically extracts from source comments"
                         .to_string(),
                 );
-                transformed.push(format!(
-                    r#"    let help = auto_help!("{}");"#,
-                    tool_name_without_ext
-                ));
+                transformed.push("    let help = auto_help!();".to_string());
                 transformed.push("    check_help_and_exit(&help);".to_string());
                 transformed.push(String::new()); // Empty line for spacing
             }

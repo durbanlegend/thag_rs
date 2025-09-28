@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["image_themes", "inquire_theming"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Export `thag_styling` themes to multiple terminal emulator formats
@@ -17,10 +16,9 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use thag_proc_macros::file_navigator;
 use thag_styling::{
-    export_theme_to_file, generate_installation_instructions, themed_inquire_config, ExportFormat,
-    Styleable, TermAttributes, Theme,
+    export_theme_to_file, file_navigator, generate_installation_instructions,
+    themed_inquire_config, ExportFormat, Styleable, TermAttributes, Theme,
 };
 
 file_navigator! {}

@@ -78,13 +78,6 @@ pub mod errors;
 pub mod logging;
 
 //-----------------------------------------------------------------------------
-// Tool support:
-//-----------------------------------------------------------------------------
-/// Tools: Lightweight help system for tools
-#[cfg(feature = "tools")]
-pub mod help_system;
-
-//-----------------------------------------------------------------------------
 // AST Analysis:
 //-----------------------------------------------------------------------------
 #[cfg(any(feature = "ast", feature = "build"))]
@@ -154,7 +147,9 @@ pub use {
 #[cfg(feature = "tools")]
 pub use thag_styling::themed_inquire_config;
 
-pub use thag_proc_macros::repeat_dash;
+pub use thag_common::{auto_help, help_system};
+
+pub use thag_proc_macros::{file_navigator, repeat_dash, tool_errors};
 
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {

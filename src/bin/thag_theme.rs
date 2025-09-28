@@ -22,7 +22,7 @@ use thag_styling::{
 
 fn main() {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_theme");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let term_attrs = TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);

@@ -1,3 +1,9 @@
+/*[toml]
+[dependencies]
+thag_styling = { version = "0.2, thag-auto", default-features = false }
+*/
+
+use quote;
 /// This script generates documentation for proc macros defined in `demo/proc_macros/lib.rs`
 /// and creates a comprehensive README.md file for the proc macros directory.
 ///
@@ -13,7 +19,7 @@ use std::{
     path::Path,
 };
 use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
-use thag_rs::{auto_help, help_system::check_help_and_exit, svprtln, Role, V};
+use thag_styling::{auto_help, help_system::check_help_and_exit, svprtln, Role, V};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -408,7 +414,7 @@ fn write_macro_section(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
-    let help = auto_help!("thag_gen_proc_macro_readme");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     let current_dir = env::current_dir()?;

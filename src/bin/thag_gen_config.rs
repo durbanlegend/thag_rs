@@ -1,16 +1,7 @@
 /*[toml]
 [dependencies]
-colored = "2.1.0"
-convert_case = "0.6.0"
-dirs = "5.0"
-documented = "0.9.1"
-inquire = "0.7.5"
-semver = "1.0.23"
-serde = { version = "1.0.219", features = ["derive"] }
-syn = { version = "2", features = ["full"] }
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "simplelog"] }
-toml = "0.8"
+thag_common = { version = "0.2, thag-auto", features = ["config"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Prompted config file builder for `thag`.
@@ -37,15 +28,16 @@ use std::{
 };
 use strum::IntoEnumIterator;
 use syn::{parse_file, Attribute, Item, ItemUse, Meta, /*Path as SynPath,*/ UseTree};
-use thag_proc_macros::file_navigator;
-use thag_rs::{
+use thag_common::{
     auto_help,
-    config::{DependencyInference, RealContext},
+    config::{
+        maybe_config, Config, Context, Dependencies, DependencyInference, FeatureOverride, Logging,
+        Misc, ProcMacros, RealContext, Styling,
+    },
     help_system::check_help_and_exit,
-    maybe_config, themed_inquire_config, ColorSupport, Config, Context, Dependencies,
-    FeatureOverride, Logging, Misc, ProcMacros, Styling, TermBgLuma, Verbosity,
+    ColorSupport, TermBgLuma, Verbosity,
 };
-use thag_styling::Styleable;
+use thag_styling::{file_navigator, themed_inquire_config, Styleable};
 
 type Error = CustomUserError;
 
@@ -1014,7 +1006,7 @@ fn prompt_config() -> Result<Config, Box<dyn std::error::Error>> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_gen_config");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     println!("{}", "Welcome to thag config builder!".normal().bold());

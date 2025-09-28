@@ -295,7 +295,7 @@ fn detect_environment() -> TerminalEnv {
 
 fn main() -> ThagResult<()> {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_show_themes");
+    let help = auto_help!();
     let _ = &help.check_help();
 
     set_global_render_config(themed_inquire_config());

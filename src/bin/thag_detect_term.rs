@@ -1,8 +1,7 @@
 /*[toml]
 [dependencies]
 log = "0.4"
-thag_common = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "simplelog", "tools"] }
+thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal
@@ -16,12 +15,11 @@ use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 use std::fs::File;
-use thag_common::terminal;
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit, terminal, ColorSupport};
 
 fn main() {
     // Check for help first - automatically extracts from source comments
-    let help = auto_help!("thag_detect_term");
+    let help = auto_help!();
     check_help_and_exit(&help);
 
     CombinedLogger::init(vec![
@@ -116,10 +114,10 @@ fn main() {
 
     let color_support = terminal::get_fresh_color_support();
     match color_support {
-        thag_rs::ColorSupport::Undetermined => println!("Color support could not be determined"),
-        thag_rs::ColorSupport::None => println!("No color support"),
-        thag_rs::ColorSupport::Basic => println!("Only basic ANSI colors are supported."),
-        thag_rs::ColorSupport::Color256 => println!("256 colors are supported."),
-        thag_rs::ColorSupport::TrueColor => println!("16 million (RGB) colors are supported"),
+        ColorSupport::Undetermined => println!("Color support could not be determined"),
+        ColorSupport::None => println!("No color support"),
+        ColorSupport::Basic => println!("Only basic ANSI colors are supported."),
+        ColorSupport::Color256 => println!("256 colors are supported."),
+        ColorSupport::TrueColor => println!("16 million (RGB) colors are supported"),
     }
 }

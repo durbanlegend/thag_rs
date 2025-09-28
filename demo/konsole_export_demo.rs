@@ -3,10 +3,9 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//! Demo script showing Konsole colorscheme export functionality
+/// Demo script showing Konsole colorscheme export functionality
 //# Purpose: Demonstrate exporting thag themes to KDE Konsole .colorscheme format
 //# Categories: terminal, themes, export
-
 use std::path::Path;
 use thag_styling::{
     exporters::{export_theme_to_file, generate_installation_instructions, ExportFormat},

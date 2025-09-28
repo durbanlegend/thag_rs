@@ -7,14 +7,10 @@
 //! ```bash
 //! cargo run --example role_color_diagnostic --features "color_detect,ratatui_support"
 //! ```
-
-#[cfg(feature = "ratatui_support")]
-use ratatui::style::Style as RataStyle;
-#[cfg(feature = "ratatui_support")]
-use thag_styling::ThemedStyle;
-
 #[cfg(feature = "ratatui_support")]
 fn main() {
+    use thag_styling::{paint_for_role, Role, Style, TermAttributes};
+
     println!("🎨 Role Color Mapping Diagnostic\n");
 
     // Get current theme info
@@ -52,7 +48,7 @@ fn main() {
         let thag_style = Style::from(role);
 
         // Get the ratatui Style
-        let rata_style = RataStyle::themed(role);
+        // let rata_style = RataStyle::themed(role);
 
         // Print role info
         print!("{:<20} │ ", name);
@@ -89,8 +85,8 @@ fn main() {
                 thag_styling::ColorValue::Color256 { color256 } => {
                     print!("Color256({:3})      Medium     │ ", color256);
                 }
-                thag_styling::ColorValue::Basic { ansi, index } => {
-                    print!("Basic(ANSI: {ansi:?}) - Index: {index}",);
+                thag_styling::ColorValue::Basic { index } => {
+                    print!("Basic( Index: {index}",);
                 }
             }
         } else {
@@ -149,9 +145,10 @@ fn main() {
 
     // Check if there's a pattern mixup
     println!("\n🔄 Checking for Role Mixup Pattern:");
-    let heading_rgb = if let Some(color_info) = &Style::from(Role::Heading1).foreground {
+    let color_info = &Style::from(Role::Heading1).foreground;
+    let heading_rgb = if let Some(color_info) = color_info {
         if let thag_styling::ColorValue::TrueColor { rgb } = &color_info.value {
-            Some(*rgb)
+            Some(rgb)
         } else {
             None
         }
@@ -159,9 +156,10 @@ fn main() {
         None
     };
 
-    let code_rgb = if let Some(color_info) = &Style::from(Role::Code).foreground {
+    let color_info = &Style::from(Role::Code).foreground;
+    let code_rgb = if let Some(color_info) = color_info {
         if let thag_styling::ColorValue::TrueColor { rgb } = &color_info.value {
-            Some(*rgb)
+            Some(rgb)
         } else {
             None
         }

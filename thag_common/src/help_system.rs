@@ -4,6 +4,7 @@
 //! It extracts help information from source code comments and provides formatted output.
 
 use std::env;
+use std::ffi::OsStr;
 use std::fmt;
 
 /// A lightweight help system that extracts information from source comments
@@ -22,8 +23,15 @@ pub struct HelpSystem {
     pub version: Option<String>,
 }
 
+impl Default for HelpSystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HelpSystem {
     /// Create a new help system with the tool name
+    #[must_use]
     pub fn new() -> Self {
         let tool_name = program_name();
 
@@ -38,6 +46,7 @@ impl HelpSystem {
     }
 
     /// Create help system from current source file (for use with `auto_help!` macro)
+    #[must_use]
     pub fn from_current_source(file_path: &str) -> Self {
         // Try to read the source file from the most likely locations
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
@@ -45,12 +54,8 @@ impl HelpSystem {
         // The file path from file!() macro is relative to the crate root
         let full_path = std::path::Path::new(&manifest_dir).join(file_path);
 
-        if let Ok(source) = std::fs::read_to_string(&full_path) {
-            Self::from_source(&source)
-        } else {
-            // Fallback to basic help if we can't read the file
-            Self::new()
-        }
+        std::fs::read_to_string(&full_path)
+            .map_or_else(|_| Self::new(), |source| Self::from_source(&source))
     }
 
     /// Set the purpose
@@ -104,6 +109,7 @@ impl HelpSystem {
     }
 
     /// Parse help information from source code
+    #[must_use]
     pub fn from_source(source: &str) -> Self {
         let mut help = Self::new();
 
@@ -222,10 +228,11 @@ pub fn check_help_and_exit(help: &HelpSystem) {
 
 /// Returns the stem (filename without extension) of the currently running executable.
 /// Falls back to `"unknown"` if the path can't be resolved or isn't valid UTF-8.
+#[must_use]
 pub fn program_name() -> String {
     env::current_exe()
         .ok()
-        .and_then(|p| p.file_stem().map(|s| s.to_os_string()))
+        .and_then(|p| p.file_stem().map(OsStr::to_os_string))
         .and_then(|os| os.into_string().ok())
         .unwrap_or_else(|| "unknown".to_string())
 }
@@ -268,7 +275,7 @@ fn main() {
 
     #[test]
     fn test_help_display() {
-        let help = HelpSystem::new("test_tool")
+        let help = HelpSystem::new()
             .with_purpose("A test tool")
             .with_description("Does testing things")
             .with_version("1.0.0");

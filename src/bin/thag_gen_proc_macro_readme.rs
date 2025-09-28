@@ -3,7 +3,6 @@
 thag_styling = { version = "0.2, thag-auto", default-features = false }
 */
 
-use quote;
 /// This script generates documentation for proc macros defined in `demo/proc_macros/lib.rs`
 /// and creates a comprehensive README.md file for the proc macros directory.
 ///

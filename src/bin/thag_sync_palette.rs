@@ -25,15 +25,15 @@ fn main() {
 
     if is_konsole() {
         eprintln!(
-            r#"KDE Konsole terminal type detected. Konsole does not support the OSC 4 ANSI escape sequence that this tool uses.
-            Instead you can use `thag_gen_terminal_themes` to generate a Konsole theme."#
+            r"KDE Konsole terminal type detected. Konsole does not support the OSC 4 ANSI escape sequence that this tool uses.
+            Instead you can use `thag_gen_terminal_themes` to generate a Konsole theme."
         );
     }
 
     if is_mintty() {
         eprintln!(
-            r#"Mintty terminal type detected. Mintty does not support the OSC 4 ANSI escape sequence that this tool uses.
-            Instead you can use `thag_gen_terminal_themes` to generate a Mintty theme."#
+            r"Mintty terminal type detected. Mintty does not support the OSC 4 ANSI escape sequence that this tool uses.
+            Instead you can use `thag_gen_terminal_themes` to generate a Mintty theme."
         );
     }
 

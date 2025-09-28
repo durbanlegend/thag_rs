@@ -3,7 +3,7 @@
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog", "tools"] }
 */
-
+#![allow(clippy::single_component_path_imports)]
 /// This is the script used to collect script metadata for the `demo` and `tools` directories and generate
 /// local `README.md` files documenting those directories.
 ///

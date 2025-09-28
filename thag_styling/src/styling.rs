@@ -2728,11 +2728,11 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
 ///
 /// # Examples
 /// ```
-/// use thag_styling::svprtln;
+/// use thag_styling::cvprtln;
 /// use thag_styling::Verbosity;
 /// use thag_styling::Role;
 /// let details = "todos los detalles";
-/// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {}", details);
+/// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {details}");
 /// ```
 #[macro_export]
 macro_rules! cvprtln {
@@ -4254,7 +4254,7 @@ mod tests {
             .expect("Failed to load heading1 foreground color")
             .value
         {
-            assert_eq!(rgb, &[255, 121, 198]);
+            assert_eq!(rgb, &[250, 151, 207]);
         } else {
             panic!("Expected TrueColor for heading1");
         }

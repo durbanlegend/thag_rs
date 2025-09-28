@@ -145,7 +145,6 @@ mod tests {
         // Test ColorInfo to RataColor conversion
         let color_info = ColorInfo {
             value: ColorValue::TrueColor { rgb: [255, 0, 0] },
-            ansi: "31",
             index: 1,
         };
         let rata_color = RataColor::from(&color_info);

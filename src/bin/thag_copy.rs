@@ -2,7 +2,6 @@
 [dependencies]
 thag_common = { version = "0.2, thag-auto" }
 */
-
 /// Copies text input from `stdin` to the system clipboard.
 ///
 /// A cross-platform equivalent to macOS's `pbcopy`. See also `src/bin/thag_paste.rs`.

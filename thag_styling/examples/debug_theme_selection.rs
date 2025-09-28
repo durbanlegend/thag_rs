@@ -13,7 +13,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// cargo run --example debug_theme_selection --features "color_detect"
 /// cargo run --example debug_theme_selection --features "basic"
 /// ```
-use thag_styling::{paint_for_role, Role, Style, TermAttributes};
+use thag_styling::{paint_for_role, Role, Style, TermAttributes, ThemedStyle};
 
 #[cfg(feature = "color_detect")]
 use thag_styling::ColorInitStrategy;

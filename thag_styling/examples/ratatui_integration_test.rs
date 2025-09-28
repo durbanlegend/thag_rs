@@ -42,8 +42,8 @@ fn main() {
                 thag_styling::ColorValue::Color256 { color256 } => {
                     println!("   Color256({color256}) - Index: {}", color_info.index);
                 }
-                thag_styling::ColorValue::Basic { ansi, index } => {
-                    println!("   Basic(ANSI: {ansi:?}) - Index: {index}",);
+                thag_styling::ColorValue::Basic { index } => {
+                    println!("   Basic(Index: {index}",);
                 }
             }
         } else {

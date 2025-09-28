@@ -20,9 +20,9 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use thag_styling::{
-    display_color_comparison, file_navigator, select_builtin_theme, sprtln, styling::index_to_rgb,
-    themed_inquire_config, ColorInitStrategy, ColorValue, Role, Style, Styleable, StyledPrint,
-    TermAttributes, TermBgLuma, Theme,
+    auto_help, display_color_comparison, file_navigator, help_system::check_help_and_exit,
+    select_builtin_theme, sprtln, styling::index_to_rgb, themed_inquire_config, ColorInitStrategy,
+    ColorValue, Role, Style, Styleable, StyledPrint, TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -418,6 +418,10 @@ impl PaletteDetector {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Check for help first
+    let help = auto_help!();
+    check_help_and_exit(&help);
+
     set_global_render_config(themed_inquire_config());
 
     // Initialize styling system

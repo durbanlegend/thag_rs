@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let is_git_repo = check_git_repo();
 
     // Perform the migration
-    migrate_tool(&source_path, &dest_path, &selected, is_git_repo)?;
+    migrate_tool(&source_path, &dest_path, is_git_repo)?;
 
     // Update Cargo.toml
     let cargo_updated = update_cargo_toml(&selected)?;
@@ -137,7 +137,6 @@ fn find_rust_files(dir: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
 fn migrate_tool(
     source: &Path,
     dest: &Path,
-    tool_name: &str,
     use_git: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🔄 Starting migration...");
@@ -165,7 +164,7 @@ fn migrate_tool(
 
         // Now read and transform the content at the new location
         let content = fs::read_to_string(dest)?;
-        let transformed = transform_tool_content(&content, tool_name);
+        let transformed = transform_tool_content(&content);
         fs::write(dest, transformed)?;
 
         println!("✅ File transformed with auto-help integration");
@@ -188,7 +187,7 @@ fn migrate_tool(
         let content = fs::read_to_string(source)?;
 
         // Transform the content
-        let transformed = transform_tool_content(&content, tool_name);
+        let transformed = transform_tool_content(&content);
 
         // Ensure destination directory exists
         if let Some(parent) = dest.parent() {
@@ -204,12 +203,11 @@ fn migrate_tool(
     Ok(())
 }
 
-fn transform_tool_content(content: &str, tool_name: &str) -> String {
+fn transform_tool_content(content: &str) -> String {
     let lines: Vec<&str> = content.lines().collect();
     let mut transformed = Vec::new();
     // let mut in_main = false;
     let mut help_added = false;
-    let tool_name_without_ext = tool_name.trim_end_matches(".rs");
 
     for (i, &line) in lines.iter().enumerate() {
         // Add the line as-is first

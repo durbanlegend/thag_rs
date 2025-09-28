@@ -1,3 +1,7 @@
+/*[toml]
+[dependencies]
+thag_common = { version = "0.2, thag-auto" }
+*/
 /// Writes text from the system clipboard to `stdout`.
 ///
 /// A cross-platform equivalent to macOS's `pbpaste`. See also `src/bin/thag_copy.rs`.
@@ -5,21 +9,15 @@
 /// app to be open when pasting from the system clipboard. See `arboard` Readme.
 //# Purpose: Utility
 //# Categories: tools
-#[cfg(feature = "clipboard")]
 use arboard::Clipboard;
-
-#[cfg(feature = "clipboard")]
 use std::io::{self, Write};
+use thag_common::{auto_help, help_system::check_help_and_exit};
 
-#[cfg(not(feature = "clipboard"))]
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    eprintln!("Error: thag_paste requires the 'clipboard' feature to be enabled");
-    eprintln!("Please run with: cargo run --bin thag_paste --features clipboard");
-    Err("Missing clipboard feature".into())
-}
-
-#[cfg(feature = "clipboard")]
 fn main() {
+    // Check for help first
+    let help = auto_help!();
+    check_help_and_exit(&help);
+
     let mut clipboard = match Clipboard::new() {
         Ok(cb) => cb,
         Err(e) => {
@@ -31,8 +29,14 @@ fn main() {
     match clipboard.get_text() {
         Ok(text) => {
             if let Err(e) = io::stdout().write_all(text.as_bytes()) {
-                eprintln!("Failed to write to stdout: {}", e);
+                eprintln!("Failed to write to stdout: {e}");
                 std::process::exit(1);
+            }
+            if !text.ends_with('\n') {
+                if let Err(e) = io::stdout().write(b"\n") {
+                    eprintln!("Failed to write line feed to stdout: {e}");
+                    std::process::exit(1);
+                }
             }
         }
         Err(e) => {

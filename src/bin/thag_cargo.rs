@@ -11,6 +11,7 @@ thag_common = { version = "0.2, thag-auto" }
 /// script's generated project, and invokes `thag` with the --cargo option to run it.
 //# Purpose: A user-friendly interface to the `thag` `--cargo` option.
 //# Categories: technique, thag_front_ends, tools
+#[allow(clippy::single_component_path_imports)]
 use inquire;
 use std::{error::Error, path::PathBuf, process::Command};
 use thag_common::{auto_help, help_system::check_help_and_exit};

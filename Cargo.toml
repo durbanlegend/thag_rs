@@ -166,6 +166,11 @@ path = "src/bin/thag_convert_themes.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_copy"
+path = "src/bin/thag_copy.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_detect_term"
 path = "src/bin/thag_detect_term.rs"
 required-features = ["tools"]
@@ -218,6 +223,11 @@ required-features = ["tools"]
 [[bin]]
 name = "thag_markdown"
 path = "src/bin/thag_markdown.rs"
+required-features = ["tools"]
+
+[[bin]]
+name = "thag_paste"
+path = "src/bin/thag_paste.rs"
 required-features = ["tools"]
 
 [[bin]]

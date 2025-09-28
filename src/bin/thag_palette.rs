@@ -13,9 +13,16 @@ thag_styling = { version = "0.2, thag-auto" }
 /// - Current thag theme colors for comparison
 //# Purpose: Show terminal palette colors
 //# Categories: color, styling, terminal, theming
-use thag_styling::{display_color_comparison, hsl_to_rgb, ColorValue, Style, TermAttributes};
+use thag_styling::{
+    auto_help, display_color_comparison, help_system::check_help_and_exit, hsl_to_rgb, ColorValue,
+    Style, TermAttributes,
+};
 
 fn main() {
+    // Check for help first
+    let help = auto_help!();
+    check_help_and_exit(&help);
+
     println!("🎨 Terminal Palette Display Tool");
     println!("================================\n");
 

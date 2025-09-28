@@ -1,23 +1,24 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tools"] }
+clap = "4.5"
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["build", "simplelog", "tools"] }
+thag_styling = { version = "0.2, thag-auto" }
 */
 
 /// Basic prompted front-end to build and run a `thag` command.
 //# Purpose: Simplify running `thag`.
 //# Categories: cli, interactive, thag_front_ends, tools
-#[cfg(feature = "clipboard")]
 use arboard::Clipboard;
-use clap::CommandFactory;
+use clap::{self, CommandFactory};
 use inquire::{set_global_render_config, MultiSelect};
 use std::collections::HashMap;
 use std::fmt::Write as _; // import without risk of name clashing
 use std::process::Command;
 use std::string::ToString;
-use thag_proc_macros::file_navigator;
-use thag_rs::{auto_help, help_system::check_help_and_exit};
-use thag_styling::{sprtln, themed_inquire_config, Role, Style, Styleable, StyledPrint};
+use thag_styling::{
+    auto_help, file_navigator, help_system::check_help_and_exit, sprtln, themed_inquire_config,
+    Role, Style, Styleable, StyledPrint,
+};
 
 // Import the Cli struct from the main crate
 use thag_rs::cmd_args::Cli;
@@ -299,20 +300,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("dynamic_group={dynamic_group:#?}");
 
         if !dynamic_group.options.is_empty() {
-            let dynamic_choices: Vec<String> = dynamic_group
+            let dynamic_choices: Vec<&OptionInfo> = dynamic_group
                 .options
                 .iter()
                 .filter(|v| v.name != "script")
+                .collect();
+
+            let dynamic_choice_names: Vec<String> = dynamic_choices
+                .iter()
+                .copied()
                 .map(format_option_display)
                 .collect();
 
-            if let Ok(choice) = Select::new("Select dynamic option:", dynamic_choices.clone())
+            if let Ok(choice) = Select::new("Select dynamic option:", dynamic_choice_names.clone())
                 .with_help_message("Choose what type of dynamic execution you want")
                 .prompt()
             {
-                let idx = dynamic_choices.iter().position(|c| c == &choice).unwrap();
-                let selected_option = &dynamic_group.options[idx];
-                dbg!(selected_option.name.clone());
+                let idx = dynamic_choice_names
+                    .iter()
+                    .position(|c| c == &choice)
+                    .unwrap();
+                let selected_option = &dynamic_choices[idx];
+                dbg!(&selected_option.name);
                 selected_options.push(selected_option.name.clone());
 
                 // Handle options that take values
@@ -1040,36 +1049,9 @@ regex = "1.11""#,
 
 /// Copy text to clipboard using arboard (cross-platform)
 fn copy_to_clipboard(text: &str) -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(feature = "clipboard")]
-    {
-        let mut clipboard = Clipboard::new()?;
-        clipboard.set_text(text)?;
-        Ok(())
-    }
-
-    #[cfg(not(feature = "clipboard"))]
-    {
-        // Fallback to thag_copy if clipboard feature not available
-        let mut child = std::process::Command::new("thag_copy")
-            .stdin(std::process::Stdio::piped())
-            .spawn()?;
-
-        {
-            let stdin = child.stdin.as_mut().ok_or("Failed to get stdin")?;
-            use std::io::Write;
-            stdin.write_all(text.as_bytes())?;
-        }
-
-        let status = child.wait()?;
-        if !status.success() {
-            return Err(format!(
-                "thag_copy failed with exit code: {}",
-                status.code().unwrap_or(-1)
-            )
-            .into());
-        }
-        Ok(())
-    }
+    let mut clipboard = Clipboard::new()?;
+    clipboard.set_text(text)?;
+    Ok(())
 }
 
 /// Expand environment variables in a string (e.g., $PWD, ${HOME})

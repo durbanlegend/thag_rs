@@ -15,10 +15,10 @@ use inquire::set_global_render_config;
 
 #[cfg(target_os = "windows")]
 use std::{
-    error::Error,
     fs,
     path::{Path, PathBuf},
 };
+
 #[cfg(target_os = "windows")]
 use thag_styling::{file_navigator, themed_inquire_config, Styleable};
 
@@ -27,141 +27,136 @@ use thag_styling::{auto_help, help_system::check_help_and_exit};
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
-#[cfg(not(target_os = "windows"))]
+#[allow(clippy::too_many_lines)]
 fn main() {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     check_help_and_exit(&help);
 
-    println!("❌ This tool is only available on Windows systems.");
-    println!("   Mintty (Git Bash) is primarily used on Windows.");
-}
-
-#[cfg(target_os = "windows")]
-fn main() -> Result<(), Box<dyn Error>> {
-    // Check for help first - automatically extracts from source comments
-    let help = auto_help!();
-    check_help_and_exit(&help);
-
-    set_global_render_config(themed_inquire_config());
-
-    println!(
-        "🐙 {} - Mintty Theme Installer for Git Bash",
-        "thag_mintty_add_theme".info()
-    );
-    println!("{}", "═".repeat(70));
-    println!();
-
-    // Initialize file navigator
-    let mut navigator = FileNavigator::new();
-
-    // Get Mintty configuration paths
-    let mintty_config = get_mintty_config_info()?;
-
-    println!("📁 Mintty configuration:");
-    println!(
-        "   Themes directory: {}",
-        mintty_config.themes_dir.display().to_string().hint()
-    );
-    println!(
-        "   Config file: {}",
-        mintty_config
-            .config_file
-            .display()
-            .to_string()
-            .hint()
-    );
-
-    // Check if themes directory exists
-    if !mintty_config.themes_dir.exists() {
-        println!("❌ Mintty themes directory not found.");
-        println!("   Expected: {}", mintty_config.themes_dir.display());
-        println!("   Please ensure Git for Windows is installed.");
-        return Ok(());
+    #[cfg(not(target_os = "windows"))]
+    {
+        println!("❌ This tool is only available on Windows systems.");
+        println!("   Mintty (Git Bash) is primarily used on Windows.");
     }
 
-    println!("   Themes directory: {}", "Found".success());
+    #[cfg(target_os = "windows")]
+    {
+        set_global_render_config(themed_inquire_config());
 
-    // Check write permissions upfront
-    match check_directory_write_permission(&mintty_config.themes_dir) {
-        Ok(true) => {
-            println!("   Write permission: {}", "OK".success());
-        }
-        Ok(false) => {
-            println!("❌ No write permission to themes directory.");
-            println!("   Directory: {}", mintty_config.themes_dir.display());
-            println!("   Please run this tool as Administrator or change directory permissions.");
+        println!(
+            "🐙 {} - Mintty Theme Installer for Git Bash",
+            "thag_mintty_add_theme".info()
+        );
+        println!("{}", "═".repeat(70));
+        println!();
+
+        // Initialize file navigator
+        let mut navigator = FileNavigator::new();
+
+        // Get Mintty configuration paths
+        let mintty_config = get_mintty_config_info()?;
+
+        println!("📁 Mintty configuration:");
+        println!(
+            "   Themes directory: {}",
+            mintty_config.themes_dir.display().to_string().hint()
+        );
+        println!(
+            "   Config file: {}",
+            mintty_config.config_file.display().to_string().hint()
+        );
+
+        // Check if themes directory exists
+        if !mintty_config.themes_dir.exists() {
+            println!("❌ Mintty themes directory not found.");
+            println!("   Expected: {}", mintty_config.themes_dir.display());
+            println!("   Please ensure Git for Windows is installed.");
             return Ok(());
         }
-        Err(e) => {
-            println!("⚠️  Could not check write permission: {}", e);
-            println!("   Proceeding anyway - you may encounter permission errors.");
-        }
-    }
 
-    // Check config file
-    let config_exists = mintty_config.config_file.exists();
-    println!(
-        "   Config file: {}",
-        if config_exists {
-            "Found".success()
-        } else {
-            "Will be created".warning()
-        }
-    );
-    println!();
+        println!("   Themes directory: {}", "Found".success());
 
-    // Select themes to install
-    let theme_files = select_themes(&mut navigator)?;
-
-    if theme_files.is_empty() {
-        println!("❌ No theme files selected for installation.");
-        return Ok(());
-    }
-
-    // Process and install each theme
-    let mut installed_themes = Vec::new();
-    for theme_file in theme_files {
-        match process_theme_file(&theme_file, &mintty_config.themes_dir) {
-            Ok((theme_name, mintty_filename)) => {
+        // Check write permissions upfront
+        match check_directory_write_permission(&mintty_config.themes_dir) {
+            Ok(true) => {
+                println!("   Write permission: {}", "OK".success());
+            }
+            Ok(false) => {
+                println!("❌ No write permission to themes directory.");
+                println!("   Directory: {}", mintty_config.themes_dir.display());
                 println!(
-                    "✅ Installed: {} → {}",
-                    theme_name.success(),
-                    mintty_filename.info()
+                    "   Please run this tool as Administrator or change directory permissions."
                 );
-                installed_themes.push((theme_name, mintty_filename));
+                return Ok(());
             }
             Err(e) => {
-                println!(
-                    "❌ Failed to install {}: {}",
-                    theme_file.display().to_string().error(),
-                    e
-                );
+                println!("⚠️  Could not check write permission: {}", e);
+                println!("   Proceeding anyway - you may encounter permission errors.");
             }
         }
-    }
 
-    if !installed_themes.is_empty() {
-        // Ask about updating config file
-        let should_update_config = ask_update_config(&installed_themes)?;
+        // Check config file
+        let config_exists = mintty_config.config_file.exists();
+        println!(
+            "   Config file: {}",
+            if config_exists {
+                "Found".success()
+            } else {
+                "Will be created".warning()
+            }
+        );
+        println!();
 
-        if should_update_config {
-            match update_mintty_config(&mintty_config.config_file, &installed_themes) {
-                Ok(theme_name) => {
-                    println!("✅ Updated ~/.minttyrc with theme: {}", theme_name.info());
+        // Select themes to install
+        let theme_files = select_themes(&mut navigator)?;
+
+        if theme_files.is_empty() {
+            println!("❌ No theme files selected for installation.");
+            return Ok(());
+        }
+
+        // Process and install each theme
+        let mut installed_themes = Vec::new();
+        for theme_file in theme_files {
+            match process_theme_file(&theme_file, &mintty_config.themes_dir) {
+                Ok((theme_name, mintty_filename)) => {
+                    println!(
+                        "✅ Installed: {} → {}",
+                        theme_name.success(),
+                        mintty_filename.info()
+                    );
+                    installed_themes.push((theme_name, mintty_filename));
                 }
                 Err(e) => {
-                    println!("⚠️  Failed to update ~/.minttyrc: {}", e);
-                    println!("   You can manually add themes to your config.");
+                    println!(
+                        "❌ Failed to install {}: {}",
+                        theme_file.display().to_string().error(),
+                        e
+                    );
                 }
             }
         }
 
-        show_installation_summary(&installed_themes);
-        show_usage_instructions();
-    }
+        if !installed_themes.is_empty() {
+            // Ask about updating config file
+            let should_update_config = ask_update_config(&installed_themes)?;
 
-    Ok(())
+            if should_update_config {
+                match update_mintty_config(&mintty_config.config_file, &installed_themes) {
+                    Ok(theme_name) => {
+                        println!("✅ Updated ~/.minttyrc with theme: {}", theme_name.info());
+                    }
+                    Err(e) => {
+                        println!("⚠️  Failed to update ~/.minttyrc: {}", e);
+                        println!("   You can manually add themes to your config.");
+                    }
+                }
+            }
+
+            show_installation_summary(&installed_themes);
+            show_usage_instructions();
+        }
+    }
 }
 
 /// Check if we have write permission to a directory

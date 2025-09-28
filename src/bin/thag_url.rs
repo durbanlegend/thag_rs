@@ -1,8 +1,15 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_common = { version = "0.2, thag-auto" }
 */
-/// `thag` front-end command to run scripts from URLs.
+/// `thag` front-end command to run Rust scripts from URLs provided that `thag` can figure out the dependencies.
+///
+/// It supports raw files as well as GitHub, GitLab, Bitbucket and the Rust Playground.
+///
+/// This relies on `thag`'s dependency inference to resolve dependencies and even features (since default
+/// features for a given crate can be configured via `thag -C`). Failing that, you can of course paste the raw
+/// source into the thag playground (`thag -d`) and edit / run / save it there, or directly into a `.rs` file
+/// and run it with `thag /path/to/file`.
 ///
 /// Usage:
 ///
@@ -16,11 +23,11 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 /// thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
 /// ```
 ///
-//# Purpose: A front-end to allow `thag` to run scripts from URLs while offloading network dependencies from `thag` itself.
+//# Purpose: A front-end to allow `thag` to run scripts from URLs while keeping `thag` itself free of network dependencies.
 //# Categories: technique, thag_front_ends, tools
 use std::{error::Error, process::Command, string::ToString};
 use syn::{parse_file, Expr};
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit};
 use url::Url;
 
 enum SourceType {

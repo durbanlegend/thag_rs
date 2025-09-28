@@ -1,15 +1,13 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog", "tools"] }
-thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 use inquire::{set_global_render_config, Select};
-use std::{env, io};
-use thag_rs::{auto_help, ThagResult};
+use std::{env, error::Error, io};
 use thag_styling::{
-    display_theme_details, display_theme_roles, sprtln, styling, themed_inquire_config, Role,
-    TermAttributes, Theme,
+    auto_help, display_theme_details, display_theme_roles, sprtln, styling, themed_inquire_config,
+    Role, TermAttributes, Theme,
 };
 
 /// Display built-in themes and their styling with terminal setup instructions
@@ -27,7 +25,7 @@ fn print_usage() {
     println!("  thag_show_themes help           Show this help message");
 }
 
-fn list_themes() -> ThagResult<()> {
+fn list_themes() -> Result<(), Box<dyn Error>> {
     let mut themes = Theme::list_builtin();
     themes.sort();
 
@@ -293,7 +291,7 @@ fn detect_environment() -> TerminalEnv {
     TerminalEnv::Generic
 }
 
-fn main() -> ThagResult<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     let _ = &help.check_help();

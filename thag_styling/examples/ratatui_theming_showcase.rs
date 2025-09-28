@@ -1,19 +1,20 @@
-//! Comprehensive Ratatui Theming Showcase
-//!
-//! This example demonstrates how to build a themed TUI application using ratatui
-//! and thag_styling. It showcases various UI components styled with semantic roles
-//! and demonstrates both the ThemedStyle trait and extension methods.
-
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["ratatui_support"] }
 ratatui = "0.29"
 crossterm = "0.28"
 */
-
+/// Comprehensive Ratatui Theming Showcase
+///
+/// This example demonstrates how to build a themed TUI application using ratatui
+/// and thag_styling. It showcases various UI components styled with semantic roles
+/// and demonstrates both the ThemedStyle trait and extension methods.
+///
+/// ```Rust
+/// cargo run -p thag_styling --example ratatui_theming_showcase --features ratatui_support
+/// ```
 //# Purpose: Comprehensive showcase of ratatui integration with thag_styling themes
 //# Categories: gui, demo, theming
-
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,

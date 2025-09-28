@@ -1,7 +1,5 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
 thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
@@ -18,104 +16,111 @@ use colored::Colorize;
 use inquire::set_global_render_config;
 #[cfg(target_os = "windows")]
 use std::{
-    error::Error,
     fs,
     path::{Path, PathBuf},
 };
+
 #[cfg(target_os = "windows")]
-use thag_proc_macros::file_navigator;
-#[cfg(target_os = "windows")]
-use thag_styling::{themed_inquire_config, Styleable, Theme};
+use thag_styling::{file_navigator, themed_inquire_config, Styleable, Theme};
+
+use thag_styling::{auto_help, help_system::check_help_and_exit};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
-#[cfg(not(target_os = "windows"))]
 fn main() {
-    println!("❌ This tool is only available on Windows systems.");
-    println!("   Windows Terminal is not available on other platforms.");
-}
+    // Check for help first - automatically extracts from source comments
+    let help = auto_help!();
+    check_help_and_exit(&help);
 
-#[cfg(target_os = "windows")]
-fn main() -> Result<(), Box<dyn Error>> {
-    set_global_render_config(themed_inquire_config());
-
-    println!(
-        "🖥️  {} - Windows Terminal Theme Installer",
-        "thag_winterm_add_theme".info()
-    );
-    println!("{}", "=".repeat(70));
-    println!();
-
-    // Initialize file navigator
-    let mut navigator = FileNavigator::new();
-
-    // Get Windows Terminal settings path
-    let settings_path = get_windows_terminal_settings_path()?;
-
-    println!("📁 Windows Terminal configuration:");
-    println!(
-        "   Settings file: {}",
-        settings_path.display().to_string().hint()
-    );
-
-    // Check if settings file exists
-    if !settings_path.exists() {
-        println!("❌ Windows Terminal settings.json not found.");
-        println!("   Please ensure Windows Terminal is installed and has been run at least once.");
-        return Ok(());
+    #[cfg(not(target_os = "windows"))]
+    {
+        println!("❌ This tool is only available on Windows systems.");
+        println!("   Windows Terminal is not available on other platforms.");
     }
 
-    println!("   Status: {}", "Found".debug());
-    println!();
+    #[cfg(target_os = "windows")]
+    {
+        set_global_render_config(themed_inquire_config());
 
-    // Select themes to install
-    let themes = select_themes_for_installation(&mut navigator)?;
+        println!(
+            "🖥️  {} - Windows Terminal Theme Installer",
+            "thag_winterm_add_theme".info()
+        );
+        println!("{}", "=".repeat(70));
+        println!();
 
-    if themes.is_empty() {
-        println!("❌ No themes selected for installation.");
-        return Ok(());
-    }
+        // Initialize file navigator
+        let mut navigator = FileNavigator::new();
 
-    println!("🎨 Installing {} theme(s)...", themes.len());
-    println!();
+        // Get Windows Terminal settings path
+        let settings_path = get_windows_terminal_settings_path()?;
 
-    // Load current settings
-    let mut settings = load_windows_terminal_settings(&settings_path)?;
+        println!("📁 Windows Terminal configuration:");
+        println!(
+            "   Settings file: {}",
+            settings_path.display().to_string().hint()
+        );
 
-    // Backup settings file
-    backup_settings_file(&settings_path)?;
+        // Check if settings file exists
+        if !settings_path.exists() {
+            println!("❌ Windows Terminal settings.json not found.");
+            println!(
+                "   Please ensure Windows Terminal is installed and has been run at least once."
+            );
+            return Ok(());
+        }
 
-    let mut added_schemes = Vec::new();
-    let mut installation_errors = Vec::new();
+        println!("   Status: {}", "Found".debug());
+        println!();
 
-    // Add each theme as a color scheme
-    for theme in &themes {
-        match add_theme_to_settings(theme, &mut settings) {
-            Ok(scheme_name) => {
-                added_schemes.push((theme.name.clone(), scheme_name));
-                println!("   ✅ {}", theme.name.debug());
-            }
-            Err(e) => {
-                let e_str = &(e).to_string();
-                installation_errors.push((theme.name.clone(), e));
-                println!("   ❌ {}: {}", theme.name.error(), e_str.emphasis());
+        // Select themes to install
+        let themes = select_themes_for_installation(&mut navigator)?;
+
+        if themes.is_empty() {
+            println!("❌ No themes selected for installation.");
+            return Ok(());
+        }
+
+        println!("🎨 Installing {} theme(s)...", themes.len());
+        println!();
+
+        // Load current settings
+        let mut settings = load_windows_terminal_settings(&settings_path)?;
+
+        // Backup settings file
+        backup_settings_file(&settings_path)?;
+
+        let mut added_schemes = Vec::new();
+        let mut installation_errors = Vec::new();
+
+        // Add each theme as a color scheme
+        for theme in &themes {
+            match add_theme_to_settings(theme, &mut settings) {
+                Ok(scheme_name) => {
+                    added_schemes.push((theme.name.clone(), scheme_name));
+                    println!("   ✅ {}", theme.name.debug());
+                }
+                Err(e) => {
+                    let e_str = &(e).to_string();
+                    installation_errors.push((theme.name.clone(), e));
+                    println!("   ❌ {}: {}", theme.name.error(), e_str.emphasis());
+                }
             }
         }
+
+        // Save updated settings
+        if !added_schemes.is_empty() {
+            save_windows_terminal_settings(&settings_path, &settings)?;
+            println!("\n✅ Windows Terminal settings updated successfully");
+        }
+
+        // Show summary and instructions
+        show_installation_summary(&added_schemes, &installation_errors);
+        show_usage_instructions(&added_schemes);
+
+        println!("\n🎉 Theme installation completed!");
     }
-
-    // Save updated settings
-    if !added_schemes.is_empty() {
-        save_windows_terminal_settings(&settings_path, &settings)?;
-        println!("\n✅ Windows Terminal settings updated successfully");
-    }
-
-    // Show summary and instructions
-    show_installation_summary(&added_schemes, &installation_errors);
-    show_usage_instructions(&added_schemes);
-
-    println!("\n🎉 Theme installation completed!");
-    Ok(())
 }
 
 #[cfg(target_os = "windows")]
@@ -149,8 +154,12 @@ fn select_themes_for_installation(
         Select::new("How would you like to select themes?", selection_options).prompt()?;
 
     match selection_method {
-        "Select individual `thag_styling` theme files (.toml)" => select_individual_toml_themes(navigator),
-        "Select `thag_styling` theme files from directory" => select_themes_from_directory(navigator),
+        "Select individual `thag_styling` theme files (.toml)" => {
+            select_individual_toml_themes(navigator)
+        }
+        "Select `thag_styling` theme files from directory" => {
+            select_themes_from_directory(navigator)
+        }
         "Select exported Windows Terminal themes (.json)" => select_exported_json_themes(navigator),
         "Install `thag_styling` built-in theme by name" => select_builtin_theme_by_name(),
         "Select from multiple `thag_styling` built-in themes" => select_multiple_builtin_themes(),

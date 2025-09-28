@@ -5,6 +5,7 @@
 
 use std::env;
 use std::fmt;
+use std::path::Path;
 
 /// A lightweight help system that extracts information from source comments
 pub struct HelpSystem {
@@ -24,9 +25,20 @@ pub struct HelpSystem {
 
 impl HelpSystem {
     /// Create a new help system with the tool name
-    pub fn new(tool_name: impl Into<String>) -> Self {
+    pub fn new() -> Self {
+        // Get args[0] (may be absolute, relative, or just the name)
+        let arg0 = env::args().next().unwrap_or_else(|| String::from(""));
+
+        // Wrap it in a Path and extract just the file name
+        let tool_name = Path::new(&arg0)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&arg0)
+            .to_string();
+
         Self {
-            tool_name: tool_name.into(),
+            // tool_name: tool_name.into(),
+            tool_name,
             purpose: None,
             description: None,
             usage: None,
@@ -36,7 +48,7 @@ impl HelpSystem {
     }
 
     /// Create help system from current source file (for use with `auto_help!` macro)
-    pub fn from_current_source(tool_name: impl Into<String>, file_path: &str) -> Self {
+    pub fn from_current_source(file_path: &str) -> Self {
         // Try to read the source file from the most likely locations
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
 
@@ -44,10 +56,10 @@ impl HelpSystem {
         let full_path = std::path::Path::new(&manifest_dir).join(file_path);
 
         if let Ok(source) = std::fs::read_to_string(&full_path) {
-            Self::from_source(tool_name, &source)
+            Self::from_source(&source)
         } else {
             // Fallback to basic help if we can't read the file
-            Self::new(tool_name)
+            Self::new()
         }
     }
 
@@ -102,8 +114,8 @@ impl HelpSystem {
     }
 
     /// Parse help information from source code
-    pub fn from_source(tool_name: impl Into<String>, source: &str) -> Self {
-        let mut help = Self::new(tool_name);
+    pub fn from_source(source: &str) -> Self {
+        let mut help = Self::new();
 
         let mut doc_lines = Vec::new();
         let mut in_doc_comment = false;
@@ -156,12 +168,9 @@ impl HelpSystem {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered trying to read the file.
-    pub fn from_file(
-        tool_name: impl Into<String>,
-        file_path: &str,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_file(file_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let source = std::fs::read_to_string(file_path)?;
-        Ok(Self::from_source(tool_name, &source))
+        Ok(Self::from_source(&source))
     }
 }
 
@@ -203,22 +212,22 @@ impl fmt::Display for HelpSystem {
 /// Macro to create a help system - manually specify the source
 #[macro_export]
 macro_rules! help_system {
-    ($tool_name:expr, $source:expr) => {{
-        $crate::help_system::HelpSystem::from_source($tool_name, $source)
+    ($source:expr) => {{
+        $crate::help_system::HelpSystem::from_source($source)
             .with_version(env!("CARGO_PKG_VERSION"))
     }};
 
     // Simplified version - just create with tool name
     ($tool_name:expr) => {{
-        $crate::help_system::HelpSystem::new($tool_name).with_version(env!("CARGO_PKG_VERSION"))
+        $crate::help_system::HelpSystem::new().with_version(env!("CARGO_PKG_VERSION"))
     }};
 }
 
 /// Macro to automatically extract help from current source file
 #[macro_export]
 macro_rules! auto_help {
-    ($tool_name:expr) => {{
-        $crate::help_system::HelpSystem::from_current_source($tool_name, file!())
+    () => {{
+        $crate::help_system::HelpSystem::from_current_source(file!())
             .with_version(env!("CARGO_PKG_VERSION"))
     }};
 }
@@ -248,7 +257,7 @@ fn main() {
 }
 "#;
 
-        let help = HelpSystem::from_source("test_tool", source);
+        let help = HelpSystem::from_source(source);
         assert_eq!(help.purpose, Some("Testing the help system".to_string()));
         assert_eq!(help.categories, vec!["test", "utility"]);
         assert_eq!(

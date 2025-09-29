@@ -5,7 +5,7 @@
 ## On the go
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
-- [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
+- [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc. Add an install for Cygwin.
 - [ ]  thag_styling README.
 - [ ]  Get rid of terminal::get_fresh_color_support.
 - [ ]  DONE: Add owo-colors integration.
@@ -14,6 +14,8 @@
 - [ ]  Guest Themes and TermAttributes with context.
 - [ ]  DONE: KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
 - [ ]  DONE: Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
+
+cp -p exported_themes/mintty/thag-botticelli-birth-of-venus-dark C:/cygwin64/usr/share/mintty/themes/
 
 $PROFILE (C:\Users\donforbes\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1):
 ```

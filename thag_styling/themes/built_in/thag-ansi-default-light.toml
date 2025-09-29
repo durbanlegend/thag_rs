@@ -1,0 +1,65 @@
+name = "thag-ansi-default-light"
+description = "Light theme using standard 16-color ANSI terminal palette for reference and maximum compatibility"
+term_bg_luma = "light"
+min_color_support = "basic"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[255, 255, 255]]
+
+[palette.heading1]
+rgb = [128, 128, 0]  # ANSI 3 - Olive/Dark Yellow
+style = ["bold"]
+
+[palette.heading2]
+rgb = [0, 128, 128]  # ANSI 6 - Teal/Dark Cyan
+style = ["bold"]
+
+[palette.heading3]
+rgb = [128, 0, 128]  # ANSI 5 - Purple/Dark Magenta
+style = ["bold"]
+
+[palette.error]
+rgb = [128, 0, 0]  # ANSI 1 - Maroon/Dark Red
+style = ["bold"]
+
+[palette.warning]
+rgb = [128, 128, 0]  # ANSI 3 - Olive/Dark Yellow
+style = ["bold"]
+
+[palette.success]
+rgb = [0, 128, 0]  # ANSI 2 - Green (dark)
+
+[palette.info]
+rgb = [0, 0, 128]  # ANSI 4 - Navy/Dark Blue
+
+[palette.emphasis]
+rgb = [0, 0, 0]  # ANSI 0 - Black
+style = ["bold"]
+
+[palette.code]
+rgb = [0, 128, 128]  # ANSI 6 - Teal/Dark Cyan
+style = ["italic"]
+
+[palette.normal]
+rgb = [0, 0, 0]  # ANSI 0 - Black
+
+[palette.subtle]
+rgb = [128, 128, 128]  # ANSI 8 - Gray/Dark Gray
+
+[palette.hint]
+rgb = [128, 128, 128]  # ANSI 8 - Gray/Dark Gray
+style = ["italic"]
+
+[palette.debug]
+rgb = [128, 128, 128]  # ANSI 8 - Gray/Dark Gray
+style = ["dim"]
+
+[palette.link]
+rgb = [0, 0, 128]  # ANSI 4 - Navy/Dark Blue
+style = ["underline"]
+
+[palette.quote]
+rgb = [0, 128, 128]  # ANSI 6 - Teal/Dark Cyan
+style = ["italic"]
+
+[palette.commentary]
+rgb = [128, 128, 128]  # ANSI 8 - Gray/Dark Gray

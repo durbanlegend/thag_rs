@@ -11,17 +11,17 @@ bg_rgbs = [[
 
 [palette.heading1]
 rgb = [
-    210,
-    125,
-    159,
+    205,
+    110,
+    148,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    205,
-    110,
-    148,
+    210,
+    125,
+    159,
 ]
 style = ["bold"]
 
@@ -128,4 +128,3 @@ rgb = [
     195,
 ]
 style = ["italic"]
-

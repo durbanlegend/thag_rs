@@ -66,9 +66,10 @@ pub mod crossterm_integration;
 #[cfg(feature = "console_support")]
 pub mod console_integration;
 
+#[cfg(feature = "owo_colors_support")]
+pub mod owo_colors_integration;
+
 // Future integrations (commented out to avoid warnings)
-// #[cfg(feature = "owo_colors_support")]
-// pub mod owo_colors_integration;
 
 // #[cfg(feature = "indicatif_support")]
 // pub mod indicatif_integration;
@@ -86,9 +87,10 @@ pub use crossterm_integration::*;
 #[cfg(feature = "console_support")]
 pub use console_integration::*;
 
+#[cfg(feature = "owo_colors_support")]
+pub use owo_colors_integration::*;
+
 // Future integrations (commented out to avoid warnings)
-// #[cfg(feature = "owo_colors_support")]
-// pub use owo_colors_integration::*;
 
 // #[cfg(feature = "indicatif_support")]
 // pub use indicatif_integration::*;

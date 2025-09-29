@@ -15,33 +15,6 @@ impl ThemedStyle<Self> for NuStyle {
     }
 
     fn from_thag_style(style: &Style) -> Self {
-        Self::from(style)
-    }
-}
-
-impl ThemedStyle<Self> for NuColor {
-    fn themed(role: Role) -> Self {
-        Self::from(&role)
-    }
-
-    fn from_thag_style(style: &Style) -> Self {
-        style.foreground.as_ref().map_or(Self::Fixed(7), Self::from) // Default to white
-    }
-}
-
-// From implementations for nu-ansi-term types
-impl From<&ColorInfo> for NuColor {
-    fn from(color_info: &ColorInfo) -> Self {
-        match &color_info.value {
-            ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
-            ColorValue::Color256 { color256 } => Self::Fixed(*color256),
-            ColorValue::Basic { .. } => Self::Fixed(color_info.index),
-        }
-    }
-}
-
-impl From<&Style> for NuStyle {
-    fn from(style: &Style) -> Self {
         Self {
             foreground: style.foreground.as_ref().map(NuColor::from),
             background: None, // Background color not supported in current Style struct
@@ -58,20 +31,62 @@ impl From<&Style> for NuStyle {
     }
 }
 
+impl ThemedStyle<Self> for NuColor {
+    fn themed(role: Role) -> Self {
+        let style = Style::from(role);
+        Self::from_thag_style(&style)
+    }
+
+    fn from_thag_style(style: &Style) -> Self {
+        style
+            .foreground
+            .as_ref()
+            .map_or(Self::Fixed(7), |color_info| match &color_info.value {
+                ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+                ColorValue::Color256 { color256 } => Self::Fixed(*color256),
+                ColorValue::Basic { .. } => Self::Fixed(color_info.index),
+            }) // Default to white
+    }
+}
+
+// From implementations for nu-ansi-term types
+impl From<&ColorInfo> for NuColor {
+    fn from(color_info: &ColorInfo) -> Self {
+        match &color_info.value {
+            ColorValue::TrueColor { rgb } => Self::Rgb(rgb[0], rgb[1], rgb[2]),
+            ColorValue::Color256 { color256 } => Self::Fixed(*color256),
+            ColorValue::Basic { .. } => Self::Fixed(color_info.index),
+        }
+    }
+}
+
+impl From<&Style> for NuStyle {
+    fn from(style: &Style) -> Self {
+        Self::from_thag_style(style)
+    }
+}
+
 impl From<&Role> for NuStyle {
     fn from(role: &Role) -> Self {
-        let style = Style::from(*role);
-        Self::from(&style)
+        Self::themed(*role)
+    }
+}
+
+impl From<Role> for NuStyle {
+    fn from(role: Role) -> Self {
+        Self::themed(role)
     }
 }
 
 impl From<&Role> for NuColor {
     fn from(role: &Role) -> Self {
-        let style = Style::from(*role);
-        style
-            .foreground
-            .as_ref()
-            .map_or_else(|| Self::Fixed(u8::from(role)), Self::from)
+        Self::themed(*role)
+    }
+}
+
+impl From<Role> for NuColor {
+    fn from(role: Role) -> Self {
+        Self::themed(role)
     }
 }
 
@@ -213,7 +228,6 @@ mod tests {
         // Test ColorInfo to NuColor conversion
         let color_info = ColorInfo {
             value: ColorValue::TrueColor { rgb: [255, 0, 0] },
-            ansi: "31",
             index: 1,
         };
         let nu_color = NuColor::from(&color_info);

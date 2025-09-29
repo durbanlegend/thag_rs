@@ -4,40 +4,16 @@
 
 ## On the go
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
-- [ ]  DONE: Tools auto_help to accept file!() rather than name as string literal?
-- [ ]  DONE: Convert all inquire interfaces to use theming.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
 - [ ]  thag_styling README.
-- [ ]  DROP since fixed conversion: Theme conversion or loading - consider improving contrast on palette colours where necessary.
 - [ ]  Get rid of terminal::get_fresh_color_support.
-- [ ]  DONE: Check if owo-colors uses indexed terminal palette colours or basic 15 fg colours. - Looks like indexed 0-15, the rest from the 256-colour palette.
-- [ ]  Add owo-colors integration.
+- [ ]  DONE: Add owo-colors integration.
 - [ ]  Make thag -d and repl edit use ratatui integration.
-- [ ]  DONE: Consider styled! with actual colours
-- [ ]  Add a theme with the basic colours.
-- [ ]  DONE: Rename all cprtln! and cvprtln! invocations to sprtln! and svprtln! - and in README.md.
+- [ ]  DONE: Add a light and a dark theme with the basic colours.
 - [ ]  Guest Themes and TermAttributes with context.
-- [ ]  DONE: Replace paint_for_role examples with "xxx".println()
-- [ ]  DONE: Consider Styleable impl for Path/PathBuf instead of just std::path::Display
-- [ ]  DONE: Resolve StyledStringExt to StyledPrint.
-- [ ]  DONE: Styling Readme: PNG examples of styles.
-- [ ]  DONE: Styling Readme: use with_context of TermAttributes and Themes to nest guest attributes and themes.
-- [ ]  KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
-- [ ]  DONE: thag_styling README.md: Document 256-color themes not needed because thag_styling does conversion from TrueColor automatically.
-- [ ]  Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
-- [ ]  DONE: Make thag_common, thag_styling and thag_rs re-export thag_proc_macros items such as file_dialog and remove redundant direct thag_proc_macros dependencies from thag tools.
-- [ ]  DONE: help_system to use env::current_exe instead of env::args[0].
-
-    println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
-    println!("{}", paint_for_role(Role::Error, "❌ Connection failed"));
-    println!("{}", paint_for_role(Role::Warning, "⚠️  High memory usage detected"));
-    println!("{}", paint_for_role(Role::Code, "cargo run --release"));
-
-    "✅ Operation completed successfully".success().println();
-    "❌ Connection failed".error().println();
-    "⚠️  High memory usage detected".warning().println();
-    "cargo run --release".code().println();
+- [ ]  DONE: KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
+- [ ]  DONE: Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
 
 $PROFILE (C:\Users\donforbes\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1):
 ```

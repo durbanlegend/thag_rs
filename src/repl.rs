@@ -12,15 +12,15 @@ use crate::{
     KeyDisplayLine, ProcFlags, ThagError, ThagResult,
 };
 use clap::{CommandFactory, Parser};
+// use crossterm::style::types::color::Color as ReedlineColor;
 use edit::edit_file;
-use nu_ansi_term::Color as NuColor;
+use nu_ansi_term::{Color as NuColor, Style as NuStyle};
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
-use ratatui::style::Color;
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
-    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
-    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    default_emacs_keybindings, Color as ReedLineColor, ColumnarMenu, DefaultCompleter,
+    DefaultHinter, DefaultValidator, EditCommand, Emacs, ExampleHighlighter, FileBackedHistory,
+    HistoryItem, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
 use std::{
@@ -37,9 +37,8 @@ use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
 use thag_common::{get_verbosity, re, vprtln, V};
 use thag_profiler::profiled;
 use thag_styling::{
-    display_terminal_attributes, display_theme_details, display_theme_roles, svprtln,
-    Role::{self, Success},
-    Style, TermAttributes,
+    display_terminal_attributes, display_theme_details, display_theme_roles, svprtln, Role, Style,
+    TermAttributes, ThemedStyle,
 };
 use tui_textarea::{Input, TextArea};
 
@@ -297,12 +296,7 @@ impl Prompt for ReplPrompt {
 
     #[profiled]
     fn get_prompt_color(&self) -> reedline::Color {
-        if let Some(color_info) = Style::for_role(Success).foreground {
-            Color::Indexed(color_info.index).into()
-        } else {
-            vprtln!(V::VV, "defaulting to Green");
-            Color::Green.into()
-        }
+        lazy_static_var!(ReedLineColor, deref, ReedLineColor::themed(Role::Success))
     }
 }
 
@@ -404,33 +398,17 @@ pub fn run_repl(
         line_editor_builder = line_editor_builder.with_hinter(Box::new(DefaultHinter::default()));
     } else {
         let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
-        let nu_match = {
-            Style::for_role(Role::Code)
-                .foreground
-                .as_ref()
-                .map_or(NuColor::Green, NuColor::from)
-        };
-        let nu_notmatch = {
-            Style::for_role(Role::Info)
-                .foreground
-                .as_ref()
-                .map_or(NuColor::Red, NuColor::from)
-        };
-        let nu_neutral = {
-            Style::for_role(Role::Emphasis)
-                .foreground
-                .as_ref()
-                .map_or(NuColor::DarkGray, NuColor::from)
-        };
+        let nu_match = NuColor::themed(Role::Code);
+        let nu_notmatch = NuColor::themed(Role::Info);
+        let nu_neutral = NuColor::themed(Role::Emphasis);
         highlighter.change_colors(nu_match, nu_notmatch, nu_neutral);
 
         // Add highlighter to builder
         line_editor_builder = line_editor_builder.with_highlighter(highlighter);
 
         // Add styled hinter
-        let nu_hint = nu_ansi_term::Style::from(&Role::Hint);
         line_editor_builder = line_editor_builder.with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_hint.italic()),
+            DefaultHinter::default().with_style(NuStyle::themed(Role::Hint).italic()),
         ));
     }
 
@@ -645,10 +623,9 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let style = Style::for_role(Role::HD2);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&style),
+        title_style: RataStyle::themed(Role::HD2),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -756,10 +733,9 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
-    let style = Style::for_role(Role::HD2);
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&style),
+        title_style: RataStyle::themed(Role::HD2),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };

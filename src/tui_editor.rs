@@ -39,7 +39,7 @@ use std::{
     time::Duration,
 };
 use thag_common::{debug_log, re};
-use thag_styling::Role;
+use thag_styling::{Role, ThemedStyle};
 // import without risk of name clashing
 use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, TextArea};
@@ -684,7 +684,7 @@ where
             .title_style(display.title_style),
     );
 
-    textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
+    textarea.set_line_number_style(RataStyle::themed(Role::Hint));
     textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
     textarea.move_cursor(CursorMove::End);
@@ -748,12 +748,12 @@ where
                             let status_block = Block::default()
                                 .borders(Borders::ALL)
                                 .title("Status")
-                                .style(RataStyle::default().fg(Color::White))
+                                .style(RataStyle::themed(Role::Success))
                                 .title_style(display.title_style);
 
                             let status_text = Paragraph::new::<&str>(status_message.as_ref())
                                 .block(status_block)
-                                .style(RataStyle::default().fg(Color::White));
+                                .style(RataStyle::themed(Role::Info));
 
                             f.render_widget(status_text, chunks[1]);
 
@@ -900,7 +900,7 @@ where
                 key!(f10) => {
                     // eprintln!("key_combination={key_combination:?}");
                     ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
-                    textarea.set_line_number_style(RataStyle::default().fg(Color::DarkGray));
+                    textarea.set_line_number_style(RataStyle::themed(Role::Hint));
                     textarea.set_block(
                         Block::default()
                             .borders(Borders::ALL)
@@ -971,6 +971,7 @@ where
                         Role::Error => Role::Warning,
                         Role::Warning => Role::Heading1,
                         Role::Heading1 => Role::Heading2,
+                        Role::Heading2 => Role::Heading3,
                         _ => Role::Emphasis,
                     };
                     if var("TEST_ENV").is_err() {
@@ -1026,19 +1027,15 @@ where
 /// Highlight the selected text in the `TextArea` with the specified color role.
 ///
 /// This function applies styling to the selected text in the `TextArea`, setting
-/// the foreground color based on the provided Role and making it bold.
+/// the foreground color based on the provided `Role` and making it bold.
 ///
 /// # Arguments
 ///
 /// * `textarea` - A mutable reference to the `TextArea` to apply highlighting to
-/// * `tui_highlight_fg` - The Role that determines the foreground color for highlighting
+/// * `tui_highlight_fg` - The `Role` that determines the foreground color for highlighting
 #[profiled]
 pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
-    textarea.set_selection_style(
-        RataStyle::default()
-            .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
-            .bold(),
-    );
+    textarea.set_selection_style(RataStyle::themed(tui_highlight_fg).bold());
 }
 
 /// Key handler function to be passed into `tui_edit` for editing REPL history.
@@ -1330,7 +1327,7 @@ pub fn display_popup(
         .title_top(Line::from(title_top).centered())
         .title_bottom(Line::from(title_bottom).centered())
         .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&Role::HD1)));
+        .fg(Color::themed(Role::HD1));
     #[allow(clippy::cast_possible_truncation)]
     let area = centered_rect(
         max_key_len + max_desc_len + 5,
@@ -1365,9 +1362,9 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&Role::EMPH)));
+                .fg(Color::themed(Role::EMPH));
         } else {
-            widget = widget.fg(Color::Indexed(u8::from(&Role::HD2))).not_bold();
+            widget = widget.fg(Color::themed(Role::HD2)).not_bold();
         }
         f.render_widget(widget, cells[0]);
         let mut widget = Paragraph::new(mappings[i].desc);
@@ -1375,13 +1372,11 @@ pub fn display_popup(
         if i == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&Role::EMPH)));
+                .fg(Color::themed(Role::EMPH));
         } else {
-            widget = widget.remove_modifier(Modifier::BOLD).set_style(
-                RataStyle::default()
-                    .fg(Color::Indexed(u8::from(&Role::NORM)))
-                    .not_bold(),
-            );
+            widget = widget
+                .remove_modifier(Modifier::BOLD)
+                .set_style(RataStyle::themed(Role::INFO).not_bold());
         }
         f.render_widget(widget, cells[1]);
     }

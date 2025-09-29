@@ -15,13 +15,15 @@ use std::env;
 use std::process;
 use thag_styling::{
     auto_help, get_verbosity, help_system::check_help_and_exit, is_konsole, is_mintty,
-    set_global_verbosity, vprtln, ColorInitStrategy, PaletteSync, TermAttributes, Theme, V,
+    set_verbosity_from_env, vprtln, ColorInitStrategy, PaletteSync, TermAttributes, Theme, V,
 };
 
 fn main() {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     check_help_and_exit(&help);
+
+    set_verbosity_from_env();
 
     if is_konsole() {
         eprintln!(
@@ -38,16 +40,6 @@ fn main() {
     }
 
     let args: Vec<String> = env::args().collect();
-
-    let verbosity = match env::var("THAG_VERBOSITY").ok().as_deref() {
-        Some("0" | "qq") => V::Quieter,
-        Some("1" | "q") => V::Quiet,
-        Some("3" | "v") => V::Verbose,
-        Some("4" | "vv") => V::Debug,
-        _ => V::Normal,
-    };
-
-    set_global_verbosity(verbosity);
 
     // Initialize thag_styling system
     TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Default);

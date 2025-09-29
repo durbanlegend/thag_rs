@@ -63,6 +63,8 @@ impl PaletteSync {
         // Map thag_styling roles to standard ANSI color indices
         let color_map = Self::build_ansi_color_map(theme);
 
+        eprintln!("color_map={color_map:#?}");
+
         // Apply ANSI colors 0-15
         for (ansi_index, rgb) in color_map.iter().enumerate() {
             let osc = format!(

@@ -18,7 +18,9 @@ use std::{
     path::Path,
 };
 use syn::{parse_file, Attribute, Item, ItemFn, Lit, Meta, MetaNameValue};
-use thag_styling::{auto_help, help_system::check_help_and_exit, svprtln, Role, V};
+use thag_styling::{
+    auto_help, help_system::check_help_and_exit, set_verbosity_from_env, svprtln, Role, V,
+};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -415,6 +417,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for help first
     let help = auto_help!();
     check_help_and_exit(&help);
+
+    set_verbosity_from_env();
 
     let current_dir = env::current_dir()?;
 

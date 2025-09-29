@@ -4,7 +4,7 @@
 
 ## On the go
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
-- [ ]  Tools auto_help to accept file!() rather than name as string literal?
+- [ ]  DONE: Tools auto_help to accept file!() rather than name as string literal?
 - [ ]  DONE: Convert all inquire interfaces to use theming.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc.
@@ -14,7 +14,8 @@
 - [ ]  DONE: Check if owo-colors uses indexed terminal palette colours or basic 15 fg colours. - Looks like indexed 0-15, the rest from the 256-colour palette.
 - [ ]  Add owo-colors integration.
 - [ ]  Make thag -d and repl edit use ratatui integration.
-- [ ]  Consider styled! with actual colours - or don't bother, use a regular colour package instead. Or add a theme with the basic colours.
+- [ ]  DONE: Consider styled! with actual colours
+- [ ]  Add a theme with the basic colours.
 - [ ]  DONE: Rename all cprtln! and cvprtln! invocations to sprtln! and svprtln! - and in README.md.
 - [ ]  Guest Themes and TermAttributes with context.
 - [ ]  DONE: Replace paint_for_role examples with "xxx".println()
@@ -25,7 +26,7 @@
 - [ ]  KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
 - [ ]  DONE: thag_styling README.md: Document 256-color themes not needed because thag_styling does conversion from TrueColor automatically.
 - [ ]  Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
-- [ ]  Make thag_common, thag_styling and thag_rs re-export thag_proc_macros items such as file_dialog and remove redundant direct thag_proc_macros dependencies from thag tools.
+- [ ]  DONE: Make thag_common, thag_styling and thag_rs re-export thag_proc_macros items such as file_dialog and remove redundant direct thag_proc_macros dependencies from thag tools.
 - [ ]  DONE: help_system to use env::current_exe instead of env::args[0].
 
     println!("{}", paint_for_role(Role::Success, "✅ Operation completed successfully"));
@@ -46,7 +47,6 @@ $env:THAG_COLOR_MODE = "truecolor"
 $env:THAG_THEME = "thag-morning-coffee-light"
 thag_sync_palette apply $THAG_THEME
 ```
-
 
 Option 1 makes sense, but the implementation step `2. Add a method to get current `ColorSupport`` raises an issue. I think we need to review how we are doing that. Assuming the `color_detect` feature is active, and that we call styling::TermAttributes::initialize(ColorInitStrategy::Match), this function gets the ColorSupport variant by calling detect_term_capabilities on thag_common/src/terminal.rs and stores it in the color_support field of the static TermAttributes struct instance being constructed. We have also recently added fn terminal::get_fresh_color_support to support dynamic querying. I'm not sure we actually have a good use case for this, and it gives a second version of the truth, which is not great. So I'm reminded to get the applicable ColorSupport variant thus: `TermAttributes::get_or_init().color_support`, and have accordingly commented out and replaced line 438 of src/bin/thag_palette_vs_theme.rs by lines 439f since your response.
 

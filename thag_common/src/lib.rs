@@ -469,6 +469,40 @@ pub fn init_verbosity(verbosity: Verbosity) -> ThagCommonResult<()> {
     Ok(())
 }
 
+/// Set global verbosity from the `THAG_VERBOSITY` environment variable.
+///
+/// This function reads the `THAG_VERBOSITY` environment variable and sets the global
+/// verbosity level accordingly. It uses the same mapping as used throughout the thag_rs
+/// ecosystem:
+///
+/// - `"0"` or `"qq"` → `Verbosity::Quieter`
+/// - `"1"` or `"q"` → `Verbosity::Quiet`
+/// - `"3"` or `"v"` → `Verbosity::Verbose`
+/// - `"4"` or `"vv"` → `Verbosity::Debug`
+/// - Any other value or missing variable → `Verbosity::Normal`
+///
+/// # Examples
+///
+/// ```rust
+/// use thag_common::set_verbosity_from_env;
+///
+/// // Set verbosity based on THAG_VERBOSITY environment variable
+/// set_verbosity_from_env();
+/// ```
+pub fn set_verbosity_from_env() {
+    use std::env;
+
+    let verbosity = match env::var("THAG_VERBOSITY").ok().as_deref() {
+        Some("0" | "qq") => V::Quieter,
+        Some("1" | "q") => V::Quiet,
+        Some("3" | "v") => V::Verbose,
+        Some("4" | "vv") => V::Debug,
+        _ => V::Normal,
+    };
+
+    set_global_verbosity(verbosity);
+}
+
 /// Reassemble an Iterator of lines from the disentangle function to a string of text.
 #[inline]
 pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {

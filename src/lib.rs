@@ -136,7 +136,8 @@ pub use {
     thag_common::{
         debug_log, debug_timings, escape_path_for_windows, get_home_dir, get_home_dir_string,
         get_verbosity, init_verbosity, lazy_static_var, re, set_global_verbosity, set_verbosity,
-        static_lazy, thousands, vprtln, ColorSupport, TermBgLuma, Verbosity, OUTPUT_MANAGER, V,
+        set_verbosity_from_env, static_lazy, thousands, vprtln, ColorSupport, TermBgLuma,
+        Verbosity, OUTPUT_MANAGER, V,
     },
     thag_styling::{
         display_theme_details, display_theme_roles, find_closest_color, paint_for_role, sprtln,

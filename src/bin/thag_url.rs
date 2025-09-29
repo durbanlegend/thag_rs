@@ -27,7 +27,7 @@ thag_common = { version = "0.2, thag-auto" }
 //# Categories: technique, thag_front_ends, tools
 use std::{error::Error, process::Command, string::ToString};
 use syn::{parse_file, Expr};
-use thag_common::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit, set_verbosity_from_env};
 use url::Url;
 
 enum SourceType {
@@ -234,6 +234,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     check_help_and_exit(&help);
+
+    set_verbosity_from_env();
 
     let args: Vec<String> = std::env::args().collect();
 

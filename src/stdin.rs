@@ -13,7 +13,7 @@ use std::{
     path::PathBuf,
 };
 use thag_profiler::{enable_profiling, profiled};
-use thag_styling::integrations::ThemedStyle;
+use thag_styling::ThemedStyle;
 
 #[allow(dead_code)]
 #[enable_profiling]

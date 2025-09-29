@@ -177,8 +177,11 @@ fn select_themes(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box<dyn 
     // Make an attempt to find the most likely path
     let _ = navigator.navigate_to_path("exported_themes/alacritty");
 
-    let selection_method =
-        Select::new("How would you like to select themes?", selection_options).prompt()?;
+    let selection_method = Select::new(
+        "How would you like to select an `alacritty` theme or themes?",
+        selection_options,
+    )
+    .prompt()?;
 
     match selection_method {
         "Select theme files (.toml) individually" => {
@@ -283,7 +286,7 @@ fn update_alacritty_config(
         // Check if import statements already exist
         if existing_config.contains("import = [") {
             println!("⚠️  Configuration already contains import statements.");
-            let update_anyway = Confirm::new("Update configuration anyway?")
+            let update_anyway = Confirm::new("Add import statement to configuration?")
                 .with_default(false)
                 .prompt()?;
 

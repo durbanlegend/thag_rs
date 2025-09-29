@@ -472,7 +472,7 @@ pub fn init_verbosity(verbosity: Verbosity) -> ThagCommonResult<()> {
 /// Set global verbosity from the `THAG_VERBOSITY` environment variable.
 ///
 /// This function reads the `THAG_VERBOSITY` environment variable and sets the global
-/// verbosity level accordingly. It uses the same mapping as used throughout the thag_rs
+/// verbosity level accordingly. It uses the same mapping as used throughout the `thag_rs`
 /// ecosystem:
 ///
 /// - `"0"` or `"qq"` → `Verbosity::Quieter`

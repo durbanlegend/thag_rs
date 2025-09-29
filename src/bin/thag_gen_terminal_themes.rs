@@ -5,10 +5,11 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 
 /// Export `thag_styling` themes to multiple terminal emulator formats
 ///
-/// This tool exports `thag_styling` theme files to various terminal emulator formats
-/// including `Alacritty`, `WezTerm`, `iTerm2`, `Kitty`, `Mintty`, and `Windows Terminal`.
-/// Themes are exported to organized subdirectories in ./`exported_themes`/
-//# Purpose: Export thag themes to multiple terminal emulator formats
+/// This tool exports `thag_styling` theme files to the following terminal emulator formats:
+/// `Alacritty`, `iTerm2`, `Kitty`, `Konsole`, `Mintty`, `WezTerm` and `Windows Terminal`.
+/// Themes are exported to organized subdirectories in ./`exported_themes`/. It also
+/// optionally displays instructions for installing them into the respective emulators.
+//# Purpose: Export thag themes to multiple terminal emulator formats and display further instructions.
 //# Categories: color, styling, terminal, theming, tools
 use inquire::set_global_render_config;
 use std::{
@@ -149,6 +150,9 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
         "Browse built-in themes interactively",
     ];
 
+    // Make an attempt to find the most likely path
+    let _ = navigator.navigate_to_path("thag_styling/themes/built_in");
+
     let selection_method =
         Select::new("How would you like to select themes?", selection_options).prompt()?;
 
@@ -158,7 +162,7 @@ fn select_theme_files(navigator: &mut FileNavigator) -> Result<Vec<PathBuf>, Box
             let mut selected_files = Vec::new();
 
             loop {
-                println!("\n📁 Select a theme file (.toml format):");
+                println!("\n📁 Select a `thag_styling` theme file (.toml format):");
                 if let Ok(file) = select_file(navigator, Some("toml"), false) {
                     selected_files.push(file);
                     let add_more = Confirm::new("Add another theme file?")

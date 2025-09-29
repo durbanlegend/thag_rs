@@ -4,7 +4,7 @@
 //! and owo-colors's styling types.
 
 #[cfg(feature = "owo_colors_support")]
-use crate::integrations::ThemedStyle;
+use crate::ThemedStyle;
 #[cfg(feature = "owo_colors_support")]
 use crate::{ColorInfo, ColorValue, Role, Style};
 #[cfg(feature = "owo_colors_support")]

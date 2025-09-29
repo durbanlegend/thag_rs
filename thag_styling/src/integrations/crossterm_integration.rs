@@ -4,7 +4,7 @@
 //! and crossterm's styling types, enabling crossterm-based applications
 //! to use theme-aware colors automatically.
 
-use crate::integrations::ThemedStyle;
+use crate::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use crossterm::style::{Attribute, Color as CrossColor, ContentStyle, SetAttribute};
 

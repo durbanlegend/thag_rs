@@ -4,7 +4,7 @@
 //! and nu-ansi-term's styling types, enabling reedline and Nu shell applications
 //! to use theme-aware colors automatically.
 
-use crate::integrations::ThemedStyle;
+use crate::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use nu_ansi_term::{Color as NuColor, Style as NuStyle};
 

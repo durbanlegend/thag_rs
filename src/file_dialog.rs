@@ -28,7 +28,7 @@ use std::{
 };
 use thag_common::{debug_log, lazy_static_var};
 use thag_profiler::profiled;
-use thag_styling::{integrations::ThemedStyle, Role};
+use thag_styling::{Role, ThemedStyle};
 use tui_textarea::{Input, TextArea};
 
 /// File dialog mode to distinguish between Open and Save dialogs

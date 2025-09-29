@@ -218,16 +218,26 @@ pub fn generate_installation_instructions(format: ExportFormat, theme_filename: 
 
 To use this theme with Alacritty:
 
-1. Copy the theme file to your Alacritty config directory:
-   - Linux/macOS: `~/.config/alacritty/themes/.`
-   - Windows: `%APPDATA%\alacritty\themes\.`
+Programmatic installation: Run `thag_alacritty_add_theme` to select and install the theme.
 
-2. Add this to your alacritty.yml or alacritty.toml:
-   ```toml
-   general.import = ["themes/{theme_filename}"]
-   ```
+Manual installation:
 
-3. Restart Alacritty to apply the theme.
+    1. Copy the generated terminal theme file to your Alacritty config directory:
+    - Linux/macOS: `~/.config/alacritty/themes/.`
+    - Windows: `%APPDATA%\alacritty\themes\.`
+
+    2. Add this to your alacritty.yml or alacritty.toml:
+    ```yaml
+    general:
+        import:
+        - 'themes/{theme_filename}'
+
+    ```
+    ```toml
+    general.import = ["themes/{theme_filename}"]
+    ```
+
+Restart Alacritty to apply the theme.
 "#
             )
         }
@@ -254,21 +264,26 @@ To use this theme with Kitty:
             format!(
                 r#"# Mintty (Git Bash) Theme Installation
 
-To use this theme with Mintty (Git Bash):
+To use this theme with Mintty (Windows: Git Bash or Cygwin):
 
-1. Copy the theme file to the Mintty themes directory:
-   - Windows: `C:\Program Files\Git\usr\share\mintty\themes\`
+Programmatic installation: Run `thag_mintty_add_theme` to select and install the theme.
+
+Manual installation:
+
+    1. Copy the generated terminal theme file to your Mintty themes directory:
+   - Git Bash: `C:\Program Files\Git\usr\share\mintty\themes\`
+   - Cygwin: `C:\Program Files\Git\usr\share\mintty\themes\`
    - Note: You may need administrator privileges
 
-2. Option A - Using the theme chooser:
-   - Open Git Bash
-   - Right-click on the title bar and select "Options..."
-   - Go to "Looks" tab
-   - Select your theme from the "Theme" dropdown
+    2. Option A - Using the theme chooser:
+    - Open Git Bash
+    - Right-click on the title bar and select "Options..."
+    - Go to "Looks" tab
+    - Select your theme from the "Theme" dropdown
 
-3. Option B - Manual configuration:
-   - Edit ~/.minttyrc and add: `ThemeFile={theme_filename}`
-   - Restart Git Bash
+    3. Option B - Manual configuration:
+    - Edit ~/.minttyrc and add: `ThemeFile={theme_filename}`
+    - Restart Git Bash
 
 The theme will be applied to all new Mintty windows.
 "#

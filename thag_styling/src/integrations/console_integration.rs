@@ -4,7 +4,7 @@
 //! and the console library's styling types, enabling console-based applications
 //! to use theme-aware colors automatically.
 
-use crate::integrations::ThemedStyle;
+use crate::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use console::{Color as ConsoleColor, Style as ConsoleStyle, Term};
 

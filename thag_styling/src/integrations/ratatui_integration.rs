@@ -4,7 +4,7 @@
 //! and ratatui's styling types, allowing ratatui applications to use
 //! theme-aware colors automatically.
 
-use crate::integrations::ThemedStyle;
+use crate::ThemedStyle;
 use crate::{ColorInfo, ColorValue, Role, Style};
 use ratatui::style::{Color as RataColor, Modifier, Style as RataStyle};
 

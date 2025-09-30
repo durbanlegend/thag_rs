@@ -4,37 +4,57 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-**A semantic terminal styling system for Rust applications across platforms.**
+An innovative terminal styling system for Rust applications across platforms.
 
-**Uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.**
+  - Automatically selects the right color and style for each message type - headings, errors, code, normal etc. - based on a popular or original theme.
 
-**Extend and enhance existing terminal themes with automatic color detection and extensive tool integration.**
+  - Legible, elegant coloring and styling adapt automatically to fit any background color and match any terminal theme.
 
-**Works with the most popular terminal emulators.**
+  - Matches the current terminal theme using a THAG_THEME environment variable that you can configure in the terminal profile. The fallback is to select from your configured preferred themes by finding a best fit with the detected background color.
 
-**Generate gorgeous `thag_styling` and terminal themes automatically from your favourite artwork.**
+  - Built-in support for over 290 popular terminal themes.
+
+  - Minimal overhead due to compile-time resolution of built-in themes.
+
+  - Built-in integrations make it easy to apply the current terminal theme to `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`.
+
+  - Supports TrueColor, 256-color or 16-colour emulators with auto-detection.
+
+  - Works with the most popular terminal emulators on Mac, Windows and Linux. Tested on Alacritty, Apple Terminal, Gnome Terminal, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), VS Code, WezTerm, Windows Terminal (PowerShell, WSL Ubuntu and Command Prompt) and Zed. Should work with any emulator that supports the OSC ANSI escape sequences for color setting.
+
+  - A collection of tools lets you:
+
+    - Convert base16 or base24 terminal themes to `thag_styling` themes and save them in a directory of your choice for run-time loading, or as built-ins if you build the project yourself.
+
+    - Export and deploy `thag_styling` themes as new terminal themes for all supported terminal emulators.
+
+    - Effectively apply `thag_styling` themes as terminal themes on the fly or in the terminal profile, for any terminal emulator that supports the OSC 4 and OSC 10 ANSI escape sequences.
+
+    - Generate gorgeous `thag_styling` and terminal themes automatically from your favourite images, and tweak them if you wish.
 
 `thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (e.g. warnings, code, headings), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Examples of built-in themes
 
-### Built-in popular dark theme: Catpuccin Mocha
+Here is a small sample of the 300+ built-in `thag_styling` themes, with descriptive captions. The `thag` conversion and image extraction tools automatically ensure that each message style has sufficient contrast with the background to be clearly legible.
 
-[![catpuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catpuccin-mocha.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catpuccin-mocha.png)
-*Built-in theme <code>catpuccin-mocha</code>, converted from base24.*
+### Built-in popular dark theme: Catppucin Mocha
 
-### Built-in original dark theme: Raphael's School of Athens
-
-[![thag-raphael-school-of-athens-dark](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
-*Built-in theme <code>thag-raphael-school-of-athens-dark</code>, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
+[![catppucin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catppucin-mocha.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catppucin-mocha.png)
+*Built-in theme <code>catppucin-mocha</code>, converted from base24.*
 
 ### Built-in popular light theme: Gruvbox Light Hard
 
 [![gruvbox-light-hard_base16](/Users/donf/projects/thag_rs/docs/thag_styling/assets/gruvbox-light-hard_base16.png)]
 (https://durbanlegend.github.io/thag_rs/thag_styling/assets/gruvbox-light-hard_base16.png)
 *Built-in theme <code>gruvbox-light-hard_base16</code>, converted from base16.*
+
+### Built-in original dark theme: Raphael's School of Athens
+
+[![thag-raphael-school-of-athens-dark](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
+*Built-in theme <code>thag-raphael-school-of-athens-dark</code>, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
 
 ### Built-in original light theme: Morning Coffee Light
 
@@ -61,12 +81,14 @@
 - **Ratatui** — Complete TUI theming with `Style::themed(Role::Error)`
 - **Crossterm** — Terminal manipulation with themed helpers
 - **Console** — Popular styling library integration
+- **Inquire** — Theming for terminal prompts
 - **Nu-ANSI-Term** — Shell and REPL theming support
+- **Owo-Colors** — Popular colorizing and styling crate.
 
 ### Theme Ecosystem
-- **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, and many more
+- **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, Cattpucin and many more
 - **Theme Generation** — From images using advanced color extraction
-- **Multi-Format Export** — Alacritty, iTerm2, Kitty, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. These and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, e.g. Apple terminal, GNOME Terminal, VS Code and Zed.
+- **Multi-Format Export** — Alacritty, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. Except for Konsole and Mintty, these and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, e.g. Apple Terminal, GNOME Terminal, VS Code and Zed.
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 

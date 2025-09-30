@@ -7,13 +7,8 @@
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc. Add an install for Cygwin.
 - [ ]  thag_styling README.
-- [ ]  No: Used by src/bin/thag_detect_term.rs: Get rid of terminal::get_fresh_color_support.
-- [ ]  DONE: Add owo-colors integration.
-- [ ]  DONE: Make thag -d and repl edit use ratatui integration.
-- [ ]  DONE: Add a light and a dark theme with the basic colours.
 - [ ]  Guest Themes and TermAttributes with context.
-- [ ]  DONE: KDE Konsole doesn't accept OSC - test Konsole exporter on Linux.
-- [ ]  DONE: Make thag tools respect verbosity - THAG_VERBOSITY=qq/q/(n)/v/vv. Document in thag_rs/src/bin/README.md and maybe thag_rs README.md.
+- [ ]  Get Claude to do a release plan.
 
 cp -p exported_themes/mintty/thag-botticelli-birth-of-venus-dark C:/cygwin64/usr/share/mintty/themes/
 

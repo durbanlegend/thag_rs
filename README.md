@@ -10,7 +10,7 @@
 
 `thag(_rs)` is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
 
-v0.2 brings a ton of new features and a sleek look with themes to match your terminal preferences.
+v0.2 brings many new features and a sleek look with themes to match your terminal preferences.
 
 `thag` includes:
 
@@ -20,19 +20,28 @@ v0.2 brings a ton of new features and a sleek look with themes to match your ter
 
 - a REPL that also lets you save your code as a script
 
-- an edit-submit TUI that accepts any crate
+- playground functionality without limitations on dependencies.
 
 - an option to build fast commands from your scripts
 
-- as of v0.2, a command `thag_url` to intelligently run example scripts directly from popular repo, playground or other URLs
+- a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo script for each proc macro.
 
-- tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
+New in `thag` v0.2:
 
-- a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo scripts for each proc macros. As of v0.2, this goes from being a rough sketchpad to a select set of useful and educational examples with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+  - 2 new independent subcrates:
 
-- concurrently with version 0.2, `thag_profiler`, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library. Check it out here: [thag_profiler](thag_profiler/README.md).
+    - `thag_styling` is a terminal styling system for Rust applications across platforms. It supports the most popular terminal emulators from `alacritty` to `zed`, and over 290 popular themes from `atelier` to `zenburn`.
 
-- as of v0.2, `thag` goes gorgeous with a wide range of themes - atelier, brogrammer, catppuccin etc. - to match your preferred dark or light terminal theme, and the possibility to use theme colours with `inquire` as well as in your own message displays. With TrueColor and 256-colour support keyed to your terminal's theme, `thag`'s subtle styling is easy to implement while going far beyond the typical fixed 16-colour offering.
+    It uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.
+
+
+    - `thag_profiler`, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library. Check it out here: [thag_profiler](thag_profiler/README.md).
+
+  - a command `thag_url` to intelligently run example scripts directly from popular repo, playground or other URLs
+
+  - tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
+
+  As of v0.2, the proc macro starter kit goes from being a rough sketchpad to a select set of useful and educational examples with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 The core purpose of `thag` is straightforward: to make it easy and fun to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
@@ -94,7 +103,13 @@ ___
 
 - Beyond shebangs: build instant commands from your snippets and programs.
 
-- Paste-and-run with built-in TUI editor or your preferred editor.
+- Playground features with no limit on dependencies:
+
+  - REPL edit / run commands using your favourite editor.
+
+  - REPL tui command using built-in TUI editor with Ctrl-D submit.
+
+  - TUI edit-submit from command line with `thag -d`, which also accepts piped input.
 
 - An evolution path for your code from REPL to edit-submit loop to saved scripts.
 

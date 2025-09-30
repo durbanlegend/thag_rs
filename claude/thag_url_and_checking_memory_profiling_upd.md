@@ -754,10 +754,10 @@ pub fn read() -> Result<String, std::io::Error> {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 }
 
@@ -786,20 +786,20 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::os::unix::io::AsRawFd;
-    
+
     // Try to open the controlling terminal
     if let Ok(tty) = File::open("/dev/tty") {
         let tty_fd = tty.as_raw_fd();
         let stdin_fd = std::io::stdin().as_raw_fd();
-        
+
         // Duplicate the tty file descriptor to stdin
         unsafe {
             if libc::dup2(tty_fd, stdin_fd) == -1 {
@@ -810,7 +810,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("Could not open /dev/tty, stdin remains as is");
     }
-    
+
     Ok(())
 }
 
@@ -1111,10 +1111,10 @@ pub fn read() -> Result<String, std::io::Error> {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 }
 </new_text>
@@ -1141,20 +1141,20 @@ pub fn edit_history() -> ThagResult<Option<String>> {
 <new_text>
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::os::unix::io::AsRawFd;
-    
+
     // Try to open the controlling terminal
     if let Ok(tty) = File::open("/dev/tty") {
         let tty_fd = tty.as_raw_fd();
         let stdin_fd = std::io::stdin().as_raw_fd();
-        
+
         // Duplicate the tty file descriptor to stdin
         unsafe {
             if libc::dup2(tty_fd, stdin_fd) == -1 {
@@ -1165,7 +1165,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("Could not open /dev/tty, stdin remains as is");
     }
-    
+
     Ok(())
 }
 
@@ -1807,10 +1807,10 @@ pub fn read() -> Result<String, std::io::Error> {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 }
 
@@ -1839,15 +1839,15 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::process::Command;
-    
+
     // Try to reopen stdin by redirecting from /dev/tty
     // This approach uses the system to handle the file descriptor manipulation
     if std::path::Path::new("/dev/tty").exists() {
@@ -1858,7 +1858,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("No terminal device available, executed scripts may not be able to read from stdin");
     }
-    
+
     Ok(())
 }
 
@@ -2080,10 +2080,10 @@ pub fn read() -> Result<String, std::io::Error> {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 }
 
@@ -2112,20 +2112,20 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::os::unix::io::AsRawFd;
-    
+
     // Try to open the controlling terminal
     if let Ok(tty) = File::open("/dev/tty") {
         let tty_fd = tty.as_raw_fd();
         let stdin_fd = std::io::stdin().as_raw_fd();
-        
+
         // Duplicate the tty file descriptor to stdin
         unsafe {
             if libc::dup2(tty_fd, stdin_fd) == -1 {
@@ -2136,7 +2136,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("Could not open /dev/tty, stdin remains as is");
     }
-    
+
     Ok(())
 }
 
@@ -2190,38 +2190,38 @@ use std::{
 
 <old_text>
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 </old_text>
 <new_text>
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 </new_text>
 
 <old_text>
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::os::unix::io::AsRawFd;
-    
+
     // Try to open the controlling terminal
     if let Ok(tty) = File::open("/dev/tty") {
         let tty_fd = tty.as_raw_fd();
         let stdin_fd = std::io::stdin().as_raw_fd();
-        
+
         // Duplicate the tty file descriptor to stdin
         unsafe {
             if libc::dup2(tty_fd, stdin_fd) == -1 {
@@ -2232,7 +2232,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("Could not open /dev/tty, stdin remains as is");
     }
-    
+
     Ok(())
 }
 
@@ -2247,15 +2247,15 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
 <new_text>
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::process::Command;
-    
+
     // Try to reopen stdin by redirecting from /dev/tty
     // This approach uses the system to handle the file descriptor manipulation
     if std::path::Path::new("/dev/tty").exists() {
@@ -2266,7 +2266,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("No terminal device available, executed scripts may not be able to read from stdin");
     }
-    
+
     Ok(())
 }
 
@@ -14978,10 +14978,10 @@ pub fn read() -> Result<String, std::io::Error> {
         vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 }
 
@@ -15010,15 +15010,15 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::process::Command;
-    
+
     // Try to reopen stdin by redirecting from /dev/tty
     // This approach uses the system to handle the file descriptor manipulation
     if std::path::Path::new("/dev/tty").exists() {
@@ -15029,7 +15029,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("No terminal device available, executed scripts may not be able to read from stdin");
     }
-    
+
     Ok(())
 }
 
@@ -15090,10 +15090,10 @@ use std::{
 
 <old_text>
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
-    
+
     // Reset stdin to terminal so executed scripts can read from it
     reset_stdin_to_terminal()?;
-    
+
     Ok(buffer)
 </old_text>
 <new_text>
@@ -15127,15 +15127,15 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 
 /// Reset stdin to point to the controlling terminal.
 /// This allows executed scripts to read from stdin after the initial script was read from stdin.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if unable to open /dev/tty or reassign stdin.
 #[cfg(unix)]
 #[profiled]
 fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     use std::process::Command;
-    
+
     // Try to reopen stdin by redirecting from /dev/tty
     // This approach uses the system to handle the file descriptor manipulation
     if std::path::Path::new("/dev/tty").exists() {
@@ -15146,7 +15146,7 @@ fn reset_stdin_to_terminal() -> Result<(), std::io::Error> {
     } else {
         debug_log!("No terminal device available, executed scripts may not be able to read from stdin");
     }
-    
+
     Ok(())
 }
 
@@ -18231,10 +18231,10 @@ Debug Output:
 fn main() {
     println!("This script will now try to read from stdin.");
     println!("Please enter some text:");
-    
+
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
-    
+
     match lines.next() {
         Some(Ok(line)) => {
             println!("You entered: {}", line);
@@ -18247,7 +18247,7 @@ fn main() {
             println!("No input received");
         }
     }
-    
+
     println!("Script completed successfully!");
 }",
   "old_text": "",
@@ -18257,10 +18257,10 @@ fn main() {
 fn main() {
     println!("This script will now try to read from stdin.");
     println!("Please enter some text:");
-    
+
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
-    
+
     match lines.next() {
         Some(Ok(line)) => {
             println!("You entered: {}", line);
@@ -18273,7 +18273,7 @@ fn main() {
             println!("No input received");
         }
     }
-    
+
     println!("Script completed successfully!");
 }",
     "parser_metrics": {
@@ -20620,7 +20620,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
             if let Ok(tty_in) = std::fs::File::open("/dev/tty") {
                 run_command.stdin(tty_in);
                 debug_log!("Configured child process stdin to use /dev/tty");
-                
+
                 // Also redirect stdout and stderr to the terminal for full terminal access
                 if let Ok(tty_out) = std::fs::OpenOptions::new().write(true).open("/dev/tty") {
                     run_command.stdout(tty_out);
@@ -20640,7 +20640,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
             if let Ok(console_in) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
                 run_command.stdin(console_in);
                 debug_log!("Configured child process stdin to use CONIN$");
-                
+
                 if let Ok(console_out) = std::fs::OpenOptions::new().write(true).open("CONOUT$") {
                     run_command.stdout(console_out);
                     debug_log!("Configured child process stdout to use CONOUT$");
@@ -22168,7 +22168,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
             if let Ok(tty_in) = std::fs::File::open("/dev/tty") {
                 run_command.stdin(tty_in);
                 debug_log!("Configured child process stdin to use /dev/tty");
-                
+
                 // Also redirect stdout and stderr to the terminal for full terminal access
                 if let Ok(tty_out) = std::fs::OpenOptions::new().write(true).open("/dev/tty") {
                     run_command.stdout(tty_out);
@@ -22188,7 +22188,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
             if let Ok(console_in) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
                 run_command.stdin(console_in);
                 debug_log!("Configured child process stdin to use CONIN$");
-                
+
                 if let Ok(console_out) = std::fs::OpenOptions::new().write(true).open("CONOUT$") {
                     run_command.stdout(console_out);
                     debug_log!("Configured child process stdout to use CONOUT$");
@@ -22289,10 +22289,10 @@ Debug Output:
 fn main() {
     println!("This script will try to read a line from stdin.");
     println!("Please enter some text and press Enter:");
-    
+
     let stdin = io::stdin();
     let mut line = String::new();
-    
+
     match stdin.read_line(&mut line) {
         Ok(_) => {
             println!("You entered: {}", line.trim());
@@ -22302,7 +22302,7 @@ fn main() {
             std::process::exit(1);
         }
     }
-    
+
     println!("Script completed successfully!");
 }",
   "old_text": "",
@@ -22312,10 +22312,10 @@ fn main() {
 fn main() {
     println!("This script will try to read a line from stdin.");
     println!("Please enter some text and press Enter:");
-    
+
     let stdin = io::stdin();
     let mut line = String::new();
-    
+
     match stdin.read_line(&mut line) {
         Ok(_) => {
             println!("You entered: {}", line.trim());
@@ -22325,7 +22325,7 @@ fn main() {
             std::process::exit(1);
         }
     }
-    
+
     println!("Script completed successfully!");
 }",
     "parser_metrics": {
@@ -25309,7 +25309,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
             if let Ok(tty_in) = std::fs::File::open("/dev/tty") {
                 run_command.stdin(tty_in);
                 debug_log!("Configured child process stdin to use /dev/tty");
-                
+
                 // Also redirect stdout and stderr to the terminal for full terminal access
                 if let Ok(tty_out) = std::fs::OpenOptions::new().write(true).open("/dev/tty") {
                     run_command.stdout(tty_out);
@@ -25329,7 +25329,7 @@ pub fn run(proc_flags: &ProcFlags, args: &[String], build_state: &BuildState) ->
             if let Ok(console_in) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
                 run_command.stdin(console_in);
                 debug_log!("Configured child process stdin to use CONIN$");
-                
+
                 if let Ok(console_out) = std::fs::OpenOptions::new().write(true).open("CONOUT$") {
                     run_command.stdout(console_out);
                     debug_log!("Configured child process stdout to use CONOUT$");
@@ -25398,7 +25398,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
             if let Ok(tty_in) = std::fs::File::open("/dev/tty") {
                 run_command.stdin(tty_in);
                 debug_log!("Configured child process stdin to use /dev/tty");
-                
+
                 // Also redirect stdout and stderr to the terminal for full terminal access
                 if let Ok(tty_out) = std::fs::OpenOptions::new().write(true).open("/dev/tty") {
                     run_command.stdout(tty_out);
@@ -25418,7 +25418,7 @@ pub fn display_timings(start: &Instant, process: &str, proc_flags: &ProcFlags) {
             if let Ok(console_in) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
                 run_command.stdin(console_in);
                 debug_log!("Configured child process stdin to use CONIN$");
-                
+
                 if let Ok(console_out) = std::fs::OpenOptions::new().write(true).open("CONOUT$") {
                     run_command.stdout(console_out);
                     debug_log!("Configured child process stdout to use CONOUT$");
@@ -31530,11 +31530,11 @@ pub fn display_timings(start_time: &Instant, operation: &str, proc_flags: &ProcF
 /// Check if the script contains imports or dependencies that require terminal control
 fn script_needs_terminal_control(build_state: &BuildState) -> ThagResult<bool> {
     let source_path = &build_state.source_path;
-    
+
     // Read the generated source file to check for terminal-requiring crates
     let source_content = std::fs::read_to_string(source_path)
         .map_err(|e| ThagError::Io(format!("Failed to read source file: {}", e)))?;
-    
+
     // Check for crates that typically require terminal control
     let terminal_crates = [
         "reedline::",
@@ -31548,21 +31548,21 @@ fn script_needs_terminal_control(build_state: &BuildState) -> ThagResult<bool> {
         "tui::",
         "cursive::",
     ];
-    
+
     for crate_name in &terminal_crates {
         if source_content.contains(crate_name) {
             debug_log!("Found terminal-requiring crate: {}", crate_name);
             return Ok(true);
         }
     }
-    
+
     // Also check the Cargo.toml for these dependencies
     let cargo_toml_content = std::fs::read_to_string(&build_state.cargo_toml_path)
         .map_err(|e| ThagError::Io(format!("Failed to read Cargo.toml: {}", e)))?;
-    
+
     let terminal_deps = [
         "reedline",
-        "crossterm", 
+        "crossterm",
         "termion",
         "console",
         "dialoguer",
@@ -31572,15 +31572,15 @@ fn script_needs_terminal_control(build_state: &BuildState) -> ThagResult<bool> {
         "tui",
         "cursive",
     ];
-    
+
     for dep_name in &terminal_deps {
-        if cargo_toml_content.contains(&format!("{} =", dep_name)) || 
+        if cargo_toml_content.contains(&format!("{} =", dep_name)) ||
            cargo_toml_content.contains(&format!("\\"{}\\"", dep_name)) {
             debug_log!("Found terminal-requiring dependency in Cargo.toml: {}", dep_name);
             return Ok(true);
         }
     }
-    
+
     Ok(false)
 }
 
@@ -31592,24 +31592,24 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Using terminal control execution method");
-    
+
     // Get the path to the current thag executable
     let thag_executable = std::env::current_exe()
         .map_err(|e| ThagError::Io(format!("Failed to get current executable path: {}", e)))?;
-    
+
     // Create a command to run thag with the source file directly (not from stdin)
     let mut thag_command = Command::new(&thag_executable);
-    
+
     // Add the source file as an argument instead of using stdin
     thag_command.arg(&build_state.source_path);
-    
+
     // Add any user arguments
     thag_command.args(args);
-    
+
     // Add other flags that might be relevant but exclude STDIN
     let mut new_flags = *proc_flags;
     new_flags.remove(ProcFlags::STDIN);
-    
+
     if new_flags.contains(ProcFlags::FORCE) {
         thag_command.arg("--force");
     }
@@ -31628,20 +31628,20 @@ fn run_with_terminal_control(
     if new_flags.contains(ProcFlags::QUIETER) {
         thag_command.arg("--quieter");
     }
-    
+
     debug_log!("Terminal control command: {thag_command:?}");
-    
+
     // Sandwich command between two lines of dashes in the terminal
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Execute the command with full terminal inheritance
     let _exit_status = thag_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 
@@ -33393,49 +33393,49 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control");
-    
+
     // Create a temporary script file
     let temp_script_path = build_state.source_dir_path.join("terminal_script.rs");
-    
+
     // Read the original source
     let source_content = std::fs::read_to_string(&build_state.source_path)?;
-    
+
     // Write it to a temporary file
     std::fs::write(&temp_script_path, &source_content)?;
-    
+
     debug_log!("Created temporary script at: {:?}", temp_script_path);
-    
+
     // Create a new command to run thag on the temporary file
     let current_exe = std::env::current_exe()?;
     let mut run_command = Command::new(&current_exe);
-    
+
     // Add all args except -s/--stdin
     for arg in args {
         if arg != "-s" && arg != "--stdin" {
             run_command.arg(arg);
         }
     }
-    
+
     // Add the temporary script path
     run_command.arg(&temp_script_path);
-    
+
     debug_log!("Terminal control command: {:?}", run_command);
-    
+
     // Run the command
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Clean up the temporary file
     if let Err(e) = std::fs::remove_file(&temp_script_path) {
         debug_log!("Warning: Could not remove temporary script file: {}", e);
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -34936,49 +34936,49 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control");
-    
+
     // Create a temporary script file
     let temp_script_path = build_state.source_dir_path.join("terminal_script.rs");
-    
+
     // Read the original source
     let source_content = std::fs::read_to_string(&build_state.source_path)?;
-    
+
     // Write it to a temporary file
     std::fs::write(&temp_script_path, &source_content)?;
-    
+
     debug_log!("Created temporary script at: {:?}", temp_script_path);
-    
+
     // Create a new command to run thag on the temporary file
     let current_exe = std::env::current_exe()?;
     let mut run_command = Command::new(&current_exe);
-    
+
     // Add all args except -s/--stdin
     for arg in args {
         if arg != "-s" && arg != "--stdin" {
             run_command.arg(arg);
         }
     }
-    
+
     // Add the temporary script path
     run_command.arg(&temp_script_path);
-    
+
     debug_log!("Terminal control command: {:?}", run_command);
-    
+
     // Run the command
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Clean up the temporary file
     if let Err(e) = std::fs::remove_file(&temp_script_path) {
         debug_log!("Warning: Could not remove temporary script file: {}", e);
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </new_text>
@@ -36643,17 +36643,17 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using setsid()");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     #[cfg(unix)]
     {
         use std::process::Stdio;
-        
+
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -36662,29 +36662,29 @@ fn run_with_terminal_control(
                 Ok(())
             });
         }
-        
+
         // Connect to the terminal
         if let Ok(tty) = std::fs::OpenOptions::new().read(true).write(true).open("/dev/tty") {
             run_command.stdin(tty);
             debug_log!("Connected child process to /dev/tty with setsid()");
         }
-        
+
         debug_log!("Terminal control command: {:?}", run_command);
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     #[cfg(not(unix))]
     {
         // Fallback for non-Unix systems - just run normally with terminal stdin
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         #[cfg(windows)]
         {
             if let Ok(console) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
@@ -36692,17 +36692,17 @@ fn run_with_terminal_control(
                 debug_log!("Connected child process to CONIN$");
             }
         }
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -38184,49 +38184,49 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control");
-    
+
     // Create a temporary script file
     let temp_script_path = build_state.source_dir_path.join("terminal_script.rs");
-    
+
     // Read the original source
     let source_content = std::fs::read_to_string(&build_state.source_path)?;
-    
+
     // Write it to a temporary file
     std::fs::write(&temp_script_path, &source_content)?;
-    
+
     debug_log!("Created temporary script at: {:?}", temp_script_path);
-    
+
     // Create a new command to run thag on the temporary file
     let current_exe = std::env::current_exe()?;
     let mut run_command = Command::new(&current_exe);
-    
+
     // Add all args except -s/--stdin
     for arg in args {
         if arg != "-s" && arg != "--stdin" {
             run_command.arg(arg);
         }
     }
-    
+
     // Add the temporary script path
     run_command.arg(&temp_script_path);
-    
+
     debug_log!("Terminal control command: {:?}", run_command);
-    
+
     // Run the command
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Clean up the temporary file
     if let Err(e) = std::fs::remove_file(&temp_script_path) {
         debug_log!("Warning: Could not remove temporary script file: {}", e);
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -38244,49 +38244,49 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control");
-    
+
     // Create a temporary script file
     let temp_script_path = build_state.source_dir_path.join("terminal_script.rs");
-    
+
     // Read the original source
     let source_content = std::fs::read_to_string(&build_state.source_path)?;
-    
+
     // Write it to a temporary file
     std::fs::write(&temp_script_path, &source_content)?;
-    
+
     debug_log!("Created temporary script at: {:?}", temp_script_path);
-    
+
     // Create a new command to run thag on the temporary file
     let current_exe = std::env::current_exe()?;
     let mut run_command = Command::new(&current_exe);
-    
+
     // Add all args except -s/--stdin
     for arg in args {
         if arg != "-s" && arg != "--stdin" {
             run_command.arg(arg);
         }
     }
-    
+
     // Add the temporary script path
     run_command.arg(&temp_script_path);
-    
+
     debug_log!("Terminal control command: {:?}", run_command);
-    
+
     // Run the command
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Clean up the temporary file
     if let Err(e) = std::fs::remove_file(&temp_script_path) {
         debug_log!("Warning: Could not remove temporary script file: {}", e);
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </old_text>
@@ -38300,17 +38300,17 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using setsid()");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     #[cfg(unix)]
     {
         use std::process::Stdio;
-        
+
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -38319,29 +38319,29 @@ fn run_with_terminal_control(
                 Ok(())
             });
         }
-        
+
         // Connect to the terminal
         if let Ok(tty) = std::fs::OpenOptions::new().read(true).write(true).open("/dev/tty") {
             run_command.stdin(tty);
             debug_log!("Connected child process to /dev/tty with setsid()");
         }
-        
+
         debug_log!("Terminal control command: {:?}", run_command);
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     #[cfg(not(unix))]
     {
         // Fallback for non-Unix systems - just run normally with terminal stdin
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         #[cfg(windows)]
         {
             if let Ok(console) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
@@ -38349,17 +38349,17 @@ fn run_with_terminal_control(
                 debug_log!("Connected child process to CONIN$");
             }
         }
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </new_text>
@@ -41395,15 +41395,15 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using setsid()");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     #[cfg(unix)]
     {
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -41412,29 +41412,29 @@ fn run_with_terminal_control(
                 Ok(())
             });
         }
-        
+
         // Connect to the terminal
         if let Ok(tty) = std::fs::OpenOptions::new().read(true).write(true).open("/dev/tty") {
             run_command.stdin(tty);
             debug_log!("Connected child process to /dev/tty with setsid()");
         }
-        
+
         debug_log!("Terminal control command: {:?}", run_command);
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     #[cfg(not(unix))]
     {
         // Fallback for non-Unix systems - just run normally with terminal stdin
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         #[cfg(windows)]
         {
             if let Ok(console) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
@@ -41442,17 +41442,17 @@ fn run_with_terminal_control(
                 debug_log!("Connected child process to CONIN$");
             }
         }
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -42933,17 +42933,17 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using setsid()");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     #[cfg(unix)]
     {
         use std::process::Stdio;
-        
+
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -42952,29 +42952,29 @@ fn run_with_terminal_control(
                 Ok(())
             });
         }
-        
+
         // Connect to the terminal
         if let Ok(tty) = std::fs::OpenOptions::new().read(true).write(true).open("/dev/tty") {
             run_command.stdin(tty);
             debug_log!("Connected child process to /dev/tty with setsid()");
         }
-        
+
         debug_log!("Terminal control command: {:?}", run_command);
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     #[cfg(not(unix))]
     {
         // Fallback for non-Unix systems - just run normally with terminal stdin
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         #[cfg(windows)]
         {
             if let Ok(console) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
@@ -42982,17 +42982,17 @@ fn run_with_terminal_control(
                 debug_log!("Connected child process to CONIN$");
             }
         }
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -43029,11 +43029,11 @@ use std::os::unix::process::CommandExt;
     #[cfg(unix)]
     {
         use std::process::Stdio;
-        
+
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -43049,7 +43049,7 @@ use std::os::unix::process::CommandExt;
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -44731,9 +44731,9 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using shell execution");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     // Build the command to execute
     let mut cmd_parts = vec![format!("{}", target_path.display())];
     cmd_parts.extend(args.iter().map(|s| {
@@ -44741,34 +44741,34 @@ fn run_with_terminal_control(
         format!("'{}'", s.replace('\\'', "'\\"'\\"'"))
     }));
     let full_command = cmd_parts.join(" ");
-    
+
     debug_log!("Running command with shell: {}", full_command);
-    
+
     #[cfg(unix)]
     let mut run_command = {
         let mut cmd = Command::new("/bin/sh");
         cmd.arg("-c").arg(&full_command);
         cmd
     };
-    
+
     #[cfg(windows)]
     let mut run_command = {
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg(&full_command);
         cmd
     };
-    
+
     debug_log!("Shell command: {:?}", run_command);
-    
+
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -46252,15 +46252,15 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using setsid()");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     #[cfg(unix)]
     {
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -46269,29 +46269,29 @@ fn run_with_terminal_control(
                 Ok(())
             });
         }
-        
+
         // Connect to the terminal
         if let Ok(tty) = std::fs::OpenOptions::new().read(true).write(true).open("/dev/tty") {
             run_command.stdin(tty);
             debug_log!("Connected child process to /dev/tty with setsid()");
         }
-        
+
         debug_log!("Terminal control command: {:?}", run_command);
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     #[cfg(not(unix))]
     {
         // Fallback for non-Unix systems - just run normally with terminal stdin
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         #[cfg(windows)]
         {
             if let Ok(console) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
@@ -46299,17 +46299,17 @@ fn run_with_terminal_control(
                 debug_log!("Connected child process to CONIN$");
             }
         }
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -46326,15 +46326,15 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using setsid()");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     #[cfg(unix)]
     {
         // On Unix, use setsid to create a new session with terminal control
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         // Use setsid to create a new session and give the process terminal control
         unsafe {
             run_command.pre_exec(|| {
@@ -46343,29 +46343,29 @@ fn run_with_terminal_control(
                 Ok(())
             });
         }
-        
+
         // Connect to the terminal
         if let Ok(tty) = std::fs::OpenOptions::new().read(true).write(true).open("/dev/tty") {
             run_command.stdin(tty);
             debug_log!("Connected child process to /dev/tty with setsid()");
         }
-        
+
         debug_log!("Terminal control command: {:?}", run_command);
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     #[cfg(not(unix))]
     {
         // Fallback for non-Unix systems - just run normally with terminal stdin
         let mut run_command = Command::new(format!("{}", target_path.display()));
         run_command.args(args);
-        
+
         #[cfg(windows)]
         {
             if let Ok(console) = std::fs::OpenOptions::new().read(true).open("CONIN$") {
@@ -46373,17 +46373,17 @@ fn run_with_terminal_control(
                 debug_log!("Connected child process to CONIN$");
             }
         }
-        
+
         let dash_line = "─".repeat(FLOWER_BOX_LEN);
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-        
+
         let _exit_status = run_command.spawn()?.wait()?;
-        
+
         cvprtln!(Role::EMPH, V::Q, "{dash_line}");
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </old_text>
@@ -46397,9 +46397,9 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using shell execution");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     // Build the command to execute
     let mut cmd_parts = vec![format!("{}", target_path.display())];
     cmd_parts.extend(args.iter().map(|s| {
@@ -46407,34 +46407,34 @@ fn run_with_terminal_control(
         format!("'{}'", s.replace('\\'', "'\\"'\\"'"))
     }));
     let full_command = cmd_parts.join(" ");
-    
+
     debug_log!("Running command with shell: {}", full_command);
-    
+
     #[cfg(unix)]
     let mut run_command = {
         let mut cmd = Command::new("/bin/sh");
         cmd.arg("-c").arg(&full_command);
         cmd
     };
-    
+
     #[cfg(windows)]
     let mut run_command = {
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg(&full_command);
         cmd
     };
-    
+
     debug_log!("Shell command: {:?}", run_command);
-    
+
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </new_text>
@@ -48106,70 +48106,70 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using separate thag process");
-    
+
     // Create a temporary script file in the system temp directory
     let temp_dir = std::env::temp_dir();
-    let temp_script_path = temp_dir.join(format!("thag_terminal_script_{}.rs", 
+    let temp_script_path = temp_dir.join(format!("thag_terminal_script_{}.rs",
         std::process::id()));
-    
+
     // Read the original source
     let source_content = std::fs::read_to_string(&build_state.source_path)?;
-    
+
     // Write it to the temporary file
     std::fs::write(&temp_script_path, &source_content)?;
-    
+
     debug_log!("Created temporary script at: {:?}", temp_script_path);
-    
+
     // Get the current thag executable path
     let current_exe = std::env::current_exe()?;
-    
+
     // Build command args, excluding -s/--stdin
     let mut new_args = Vec::new();
     let mut skip_next = false;
-    
+
     for arg in args {
         if skip_next {
             skip_next = false;
             continue;
         }
-        
+
         match arg.as_str() {
             "-s" | "--stdin" => continue,
             _ => new_args.push(arg.clone()),
         }
     }
-    
+
     // Add the temporary script path
     new_args.push(temp_script_path.to_string_lossy().to_string());
-    
+
     debug_log!("Running separate thag process with args: {:?}", new_args);
-    
+
     // Create the command
     let mut run_command = Command::new(&current_exe);
     run_command.args(&new_args);
-    
+
     // Don't redirect stdin/stdout/stderr - let it inherit from the terminal
     debug_log!("Terminal control command: {:?}", run_command);
-    
+
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Clean up the temporary file
     if let Err(e) = std::fs::remove_file(&temp_script_path) {
         debug_log!("Warning: Could not remove temporary script file: {}", e);
     }
-    
+
     // Propagate exit status
     if !exit_status.success() {
         return Err(ThagError::FromStr("Script execution failed".into()));
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -49653,9 +49653,9 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using shell execution");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     // Build the command to execute
     let mut cmd_parts = vec![format!("{}", target_path.display())];
     cmd_parts.extend(args.iter().map(|s| {
@@ -49663,34 +49663,34 @@ fn run_with_terminal_control(
         format!("'{}'", s.replace('\\'', "'\\"'\\"'"))
     }));
     let full_command = cmd_parts.join(" ");
-    
+
     debug_log!("Running command with shell: {}", full_command);
-    
+
     #[cfg(unix)]
     let mut run_command = {
         let mut cmd = Command::new("/bin/sh");
         cmd.arg("-c").arg(&full_command);
         cmd
     };
-    
+
     #[cfg(windows)]
     let mut run_command = {
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg(&full_command);
         cmd
     };
-    
+
     debug_log!("Shell command: {:?}", run_command);
-    
+
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 ",
@@ -49707,9 +49707,9 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using shell execution");
-    
+
     let target_path: &Path = build_state.target_path.as_ref();
-    
+
     // Build the command to execute
     let mut cmd_parts = vec![format!("{}", target_path.display())];
     cmd_parts.extend(args.iter().map(|s| {
@@ -49717,34 +49717,34 @@ fn run_with_terminal_control(
         format!("'{}'", s.replace('\\'', "'\\"'\\"'"))
     }));
     let full_command = cmd_parts.join(" ");
-    
+
     debug_log!("Running command with shell: {}", full_command);
-    
+
     #[cfg(unix)]
     let mut run_command = {
         let mut cmd = Command::new("/bin/sh");
         cmd.arg("-c").arg(&full_command);
         cmd
     };
-    
+
     #[cfg(windows)]
     let mut run_command = {
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg(&full_command);
         cmd
     };
-    
+
     debug_log!("Shell command: {:?}", run_command);
-    
+
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let _exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </old_text>
@@ -49758,70 +49758,70 @@ fn run_with_terminal_control(
     start_run: Instant,
 ) -> ThagResult<()> {
     debug_log!("Attempting to run script with terminal control using separate thag process");
-    
+
     // Create a temporary script file in the system temp directory
     let temp_dir = std::env::temp_dir();
-    let temp_script_path = temp_dir.join(format!("thag_terminal_script_{}.rs", 
+    let temp_script_path = temp_dir.join(format!("thag_terminal_script_{}.rs",
         std::process::id()));
-    
+
     // Read the original source
     let source_content = std::fs::read_to_string(&build_state.source_path)?;
-    
+
     // Write it to the temporary file
     std::fs::write(&temp_script_path, &source_content)?;
-    
+
     debug_log!("Created temporary script at: {:?}", temp_script_path);
-    
+
     // Get the current thag executable path
     let current_exe = std::env::current_exe()?;
-    
+
     // Build command args, excluding -s/--stdin
     let mut new_args = Vec::new();
     let mut skip_next = false;
-    
+
     for arg in args {
         if skip_next {
             skip_next = false;
             continue;
         }
-        
+
         match arg.as_str() {
             "-s" | "--stdin" => continue,
             _ => new_args.push(arg.clone()),
         }
     }
-    
+
     // Add the temporary script path
     new_args.push(temp_script_path.to_string_lossy().to_string());
-    
+
     debug_log!("Running separate thag process with args: {:?}", new_args);
-    
+
     // Create the command
     let mut run_command = Command::new(&current_exe);
     run_command.args(&new_args);
-    
+
     // Don't redirect stdin/stdout/stderr - let it inherit from the terminal
     debug_log!("Terminal control command: {:?}", run_command);
-    
+
     let dash_line = "─".repeat(FLOWER_BOX_LEN);
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     let exit_status = run_command.spawn()?.wait()?;
-    
+
     cvprtln!(Role::EMPH, V::Q, "{dash_line}");
-    
+
     // Clean up the temporary file
     if let Err(e) = std::fs::remove_file(&temp_script_path) {
         debug_log!("Warning: Could not remove temporary script file: {}", e);
     }
-    
+
     // Propagate exit status
     if !exit_status.success() {
         return Err(ThagError::FromStr("Script execution failed".into()));
     }
-    
+
     display_timings(&start_run, "Completed run with terminal control", proc_flags);
-    
+
     Ok(())
 }
 </new_text>
@@ -50657,10 +50657,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Create a temporary file to save the script
             let temp_dir = std::env::temp_dir();
             let temp_file_path = temp_dir.join(format!("web_script_{}.rs", std::process::id()));
-            
+
             // Write content to temporary file
             std::fs::write(&temp_file_path, &content)?;
-            
+
             eprintln!("Created temporary script at: {:?}", temp_file_path);
             eprintln!("additional_args={additional_args:#?}");
 
@@ -51318,10 +51318,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Create a temporary file to save the script
             let temp_dir = std::env::temp_dir();
             let temp_file_path = temp_dir.join(format!("web_script_{}.rs", std::process::id()));
-            
+
             // Write content to temporary file
             std::fs::write(&temp_file_path, &content)?;
-            
+
             eprintln!("Created temporary script at: {:?}", temp_file_path);
             eprintln!("additional_args={additional_args:#?}");
 
@@ -51900,7 +51900,7 @@ required-features = ["instrument-tool"]
 </files>
 </context>
 
-They are the ones in lines 63 to 76 of the attached thag_profiler/Cargo.toml. Again, I think it might be better to rename the source files to be consistent with the compiled binary name, e.g. thag_analyze.rs instead of analyze.rs. What do you think? I'm also open to better naming that makes their profiling role clearer, e.g. neither thag_analyze nor thag_remove does intuitively suggests profiling to the user. Then again, I don't want the user to have to type in long cmmand names for them. Bit of a tough one?
+They are the ones in lines 63 to 76 of the attached thag_profiler/Cargo.toml. Again, I think it might be better to rename the source files to be consistent with the compiled binary name, e.g. thag_analyze.rs instead of analyze.rs. What do you think? I'm also open to better naming that makes their profiling role clearer, e.g. neither thag_analyze nor thag_remove does intuitively suggests profiling to the user. Then again, I don't want the user to have to type in long command names for them. Bit of a tough one?
 
 ## Agent
 
@@ -54741,7 +54741,7 @@ pub fn reassemble<'a>(map: impl Iterator<Item = &'a str>) -> String {
     })
 }
 
-/// Unescape 
+/// Unescape
  markers to convert a string of raw text to readable lines.
 #[inline]
 #[must_use]
@@ -58760,8 +58760,8 @@ fn main() {
 
     println!("Test 4: Nested data structures");
     let nested = nested_allocations();
-    println!("Nested structure created: {}x{}x{} elements", 
-             nested.len(), 
+    println!("Nested structure created: {}x{}x{} elements",
+             nested.len(),
              nested.get(0).map_or(0, |v| v.len()),
              nested.get(0).and_then(|v| v.get(0)).map_or(0, |v| v.len()));
     drop(nested);
@@ -58769,10 +58769,10 @@ fn main() {
 ");
 
     println!("=== Profiling Results ===");
-    
+
     // Drop the guard to finalize thag_profiler measurements
     drop(_guard);
-    
+
     println!("\
 thag_profiler results should be displayed above.");
     println!("dhat results will be in dhat-heap.json (if dhat feature enabled)");
@@ -58784,7 +58784,7 @@ To compare:");
     println!("\
 Expected approximate allocations:");
     println!("- Test 1: ~1MB (1000 * 1024 bytes)");
-    println!("- Test 2: ~400KB (500 * 800 bytes)"); 
+    println!("- Test 2: ~400KB (500 * 800 bytes)");
     println!("- Test 3: Variable (temporary allocations)");
     println!("- Test 4: Variable (nested strings and vectors)");
 }",
@@ -58892,8 +58892,8 @@ fn main() {
 
     println!("Test 4: Nested data structures");
     let nested = nested_allocations();
-    println!("Nested structure created: {}x{}x{} elements", 
-             nested.len(), 
+    println!("Nested structure created: {}x{}x{} elements",
+             nested.len(),
              nested.get(0).map_or(0, |v| v.len()),
              nested.get(0).and_then(|v| v.get(0)).map_or(0, |v| v.len()));
     drop(nested);
@@ -58901,10 +58901,10 @@ fn main() {
 ");
 
     println!("=== Profiling Results ===");
-    
+
     // Drop the guard to finalize thag_profiler measurements
     drop(_guard);
-    
+
     println!("\
 thag_profiler results should be displayed above.");
     println!("dhat results will be in dhat-heap.json (if dhat feature enabled)");
@@ -58916,7 +58916,7 @@ To compare:");
     println!("\
 Expected approximate allocations:");
     println!("- Test 1: ~1MB (1000 * 1024 bytes)");
-    println!("- Test 2: ~400KB (500 * 800 bytes)"); 
+    println!("- Test 2: ~400KB (500 * 800 bytes)");
     println!("- Test 3: Variable (temporary allocations)");
     println!("- Test 4: Variable (nested strings and vectors)");
 }",
@@ -63071,4 +63071,3 @@ These are minimal, targeted additions that:
 4. Fit naturally into sections where users would expect this information
 
 The key is framing it as "comprehensive" and "complete picture" rather than defensive language. Your validation work proves this is accurate!
-

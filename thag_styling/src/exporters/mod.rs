@@ -325,8 +325,12 @@ To use this theme with iTerm2:
 4. Select "Import..."
 5. Choose the {theme_filename} file
 6. Select the imported theme from the dropdown
+7. For clear selected text, select contrasting colors for the Selection:Background and Foreground from
+   their respective color wells and color pickers. Thag suggests using colours from the theme's palette
+   for aesthetic reasons.
 
 The theme will be applied to your current profile.
+
 "#
             )
         }
@@ -396,11 +400,23 @@ fn dim_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
 /// Adjust color brightness by a factor
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
-    (
-        (f32::from(r) * factor).clamp(0.0, 255.0) as u8,
-        (f32::from(g) * factor).clamp(0.0, 255.0) as u8,
-        (f32::from(b) * factor).clamp(0.0, 255.0) as u8,
-    )
+    // For very dark colors, use additive brightening to ensure visibility
+    if r < 50 && g < 50 && b < 50 && factor > 1.0 {
+        // Add a minimum brightness boost for very dark backgrounds
+        let min_boost = 80.0;
+        (
+            (f32::from(r) * factor + min_boost).clamp(0.0, 255.0) as u8,
+            (f32::from(g) * factor + min_boost).clamp(0.0, 255.0) as u8,
+            (f32::from(b) * factor + min_boost).clamp(0.0, 255.0) as u8,
+        )
+    } else {
+        // Use multiplicative for normal colors
+        (
+            (f32::from(r) * factor).clamp(0.0, 255.0) as u8,
+            (f32::from(g) * factor).clamp(0.0, 255.0) as u8,
+            (f32::from(b) * factor).clamp(0.0, 255.0) as u8,
+        )
+    }
 }
 
 // /// Get the best dark color from the theme for black mapping

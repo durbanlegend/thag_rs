@@ -797,7 +797,7 @@ pub fn open(context: &dyn Context) -> ConfigResult<Option<String>> {
         fs::write(&config_path, DEFAULT_CONFIG)?;
     }
 
-    eprintln!("About to edit {}", config_path.display());
+    eprintln!("Editing {}...", config_path.display());
     if context.is_real() {
         edit_file(&config_path)?;
     }

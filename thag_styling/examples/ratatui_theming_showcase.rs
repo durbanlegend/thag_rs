@@ -606,7 +606,7 @@ fn render_about_tab(f: &mut Frame, area: Rect) {
         )]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "Built with ❤️  using:",
+            "Built with 🤖 using:",
             Style::themed(Role::Emphasis),
         )]),
         Line::from(vec![

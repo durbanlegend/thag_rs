@@ -3,131 +3,133 @@ description = "Converted from Atelier Seaside Light theme"
 term_bg_luma = "light"
 min_color_support = "true_color"
 backgrounds = ["#f4fbf4"]
-bg_rgbs = [[
+bg_rgbs = [
+  [
     244,
     251,
     244,
-]]
+  ],
+]
 
 [palette.heading1]
 rgb = [
-    139,
-    11,
-    204,
+  123,
+  9,
+  180,
 ]
 style = ["bold"]
 
 [palette.heading2]
 rgb = [
-    226,
-    14,
-    190,
+  178,
+  11,
+  150,
 ]
 style = ["bold"]
 
 [palette.heading3]
 rgb = [
-    25,
-    153,
-    179,
+  16,
+  146,
+  173,
 ]
 style = ["bold"]
 
 [palette.error]
 rgb = [
-    180,
-    9,
-    38,
+  180,
+  9,
+  38,
 ]
 style = ["bold"]
 
 [palette.warning]
 rgb = [
-    135,
-    113,
-    29,
+  135,
+  113,
+  29,
 ]
 style = ["bold"]
 
 [palette.success]
 rgb = [
-    19,
-    21,
-    19,
+  19,
+  21,
+  19,
 ]
 
 [palette.info]
 rgb = [
-    11,
-    50,
-    204,
+  11,
+  50,
+  204,
 ]
 
 [palette.emphasis]
 rgb = [
-    152,
-    152,
-    27,
+  152,
+  152,
+  27,
 ]
 style = ["bold"]
 
 [palette.code]
 rgb = [
-    25,
-    153,
-    179,
+  25,
+  153,
+  179,
 ]
 style = ["italic"]
 
 [palette.normal]
 rgb = [
-    86,
-    103,
-    86,
+  86,
+  103,
+  86,
 ]
 
 [palette.subtle]
 rgb = [
-    57,
-    183,
-    57,
+  45,
+  144,
+  45,
 ]
 
 [palette.hint]
 rgb = [
-    100,
-    140,
-    100,
+  100,
+  140,
+  100,
 ]
 style = ["italic"]
 
 [palette.debug]
 rgb = [
-    104,
-    125,
-    104,
+  104,
+  125,
+  104,
 ]
 style = ["dim"]
 
 [palette.link]
 rgb = [
-    41,
-    163,
-    41,
+  41,
+  163,
+  41,
 ]
 style = ["underline"]
 
 [palette.quote]
 rgb = [
-    36,
-    41,
-    36,
+  36,
+  41,
+  36,
 ]
 style = ["italic"]
 
 [palette.commentary]
 rgb = [
-    97,
-    143,
-    97,
+  76,
+  113,
+  76,
 ]

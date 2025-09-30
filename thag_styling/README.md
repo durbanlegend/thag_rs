@@ -168,6 +168,11 @@ let success_gauge = Gauge::default()
 
 // Cargo.toml: features = ["ratatui_support"]
 ```
+### Example: Ratatui Theming Showcase with `dracula-base16` theme
+
+[![catppucin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
+*Using thag_url with `THAG_THEME=dracula_base16` to run the Ratatui Theming Showcase straight from the repo: `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs`.*
 
 ### Multiple API Styles
 

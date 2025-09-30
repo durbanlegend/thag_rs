@@ -49,7 +49,8 @@ impl ThemeExporter for KittyExporter {
 
         // Selection colors
         output.push_str("# Selection colors\n");
-        let selection_bg = adjust_color_brightness(bg_color, 1.4);
+        let selection_bg = get_rgb_from_style(&theme.palette.commentary)
+            .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.4));
         let _ = writeln!(
             output,
             "selection_background #{:02x}{:02x}{:02x}",

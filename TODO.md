@@ -9,6 +9,7 @@
 - [ ]  thag_styling README.
 - [ ]  Guest Themes and TermAttributes with context.
 - [ ]  Get Claude to do a release plan.
+- [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
 
 cp -p exported_themes/mintty/thag-botticelli-birth-of-venus-dark C:/cygwin64/usr/share/mintty/themes/
 

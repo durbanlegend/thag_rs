@@ -133,11 +133,12 @@ impl ThemeExporter for ITerm2Exporter {
         )?;
         write_color_entry(&mut output, "Cursor Text Color", Some(bg_color))?;
 
-        // Selection colors
+        // Selection colors - use commentary color for better visibility
         write_color_entry(
             &mut output,
             "Selection Color",
-            Some(adjust_color_brightness(bg_color, 1.4)),
+            get_rgb_from_style(&theme.palette.commentary)
+                .or_else(|| Some(adjust_color_brightness(bg_color, 1.4))),
         )?;
         write_color_entry(
             &mut output,

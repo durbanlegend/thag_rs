@@ -738,7 +738,8 @@ impl ImageThemeGenerator {
         // used_colors.push(hint_color);
 
         // Select heading colors with good contrast and uniqueness
-        let heading_colors = Self::select_unique_heading_colors(&enhanced_colors, &used_colors);
+        let heading_colors =
+            Self::select_unique_heading_colors(&enhanced_colors, &used_colors, is_light_theme);
         let (hd1, hd2, hd3) = heading_colors;
         vprtln!(
             V::V,
@@ -1574,6 +1575,7 @@ impl ImageThemeGenerator {
     fn select_unique_heading_colors<'a>(
         colors: &'a [ColorAnalysis],
         used_colors: &[&'a ColorAnalysis],
+        is_light_theme: bool,
     ) -> (&'a ColorAnalysis, &'a ColorAnalysis, &'a ColorAnalysis) {
         let mut available: Vec<_> = colors
             .iter()
@@ -1598,9 +1600,12 @@ impl ImageThemeGenerator {
             .copied()
             .collect::<Vec<&ColorAnalysis>>();
 
+        // Sort by prominence: most striking first (H1), least striking last (H3)
         headings.sort_by(|a, b| {
-            a.lightness
-                .partial_cmp(&b.lightness)
+            let prominence_a = Self::calculate_prominence(a, is_light_theme);
+            let prominence_b = Self::calculate_prominence(b, is_light_theme);
+            prominence_b
+                .partial_cmp(&prominence_a)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -1632,6 +1637,24 @@ impl ImageThemeGenerator {
         });
 
         (h1, h2, h3)
+    }
+
+    /// Calculate prominence score for a color based on saturation and contrast against background
+    fn calculate_prominence(color: &ColorAnalysis, is_light_theme: bool) -> f32 {
+        const SATURATION_WEIGHT: f32 = 0.6;
+        const LIGHTNESS_WEIGHT: f32 = 0.4;
+
+        let saturation_score = color.saturation;
+
+        // For light themes, darker colors are more prominent
+        // For dark themes, lighter colors are more prominent
+        let lightness_score = if is_light_theme {
+            1.0 - color.lightness // Darker = higher score
+        } else {
+            color.lightness // Lighter = higher score
+        };
+
+        SATURATION_WEIGHT * saturation_score + LIGHTNESS_WEIGHT * lightness_score
     }
 
     /// Improved hue-based color finding with better fallbacks

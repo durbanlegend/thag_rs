@@ -213,11 +213,12 @@ impl ThemeExporter for AlacrittyExporter {
         // Selection colors
         output.push_str("[colors.selection]\n");
 
-        // Use a slightly modified background color for selection
-        let selection_bg = adjust_color_brightness(bg_color, 1.3);
+        // Use commentary color for better selection visibility
+        let selection_bg = get_rgb_from_style(&theme.palette.commentary)
+            .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.3));
         let _ = writeln!(
             output,
-            r##"background = "#{:02x}{:02x}{:02x}""##,
+            "    background: \"#{:02x}{:02x}{:02x}\"",
             selection_bg.0, selection_bg.1, selection_bg.2
         );
 

@@ -140,6 +140,17 @@ impl CargoSubcommand {
                     ("--", "Arguments for test binary"),
                 ],
             },
+            Self {
+                name: "clean".to_string(),
+                description: "Cargo clean for script",
+                common_args: vec![
+                    ("-i", "Invert dependencies"),
+                    ("--target", "Filter dependencies by target"),
+                    ("--no-default-features", "Exclude default features"),
+                    ("--all-features", "Include all features"),
+                    ("-p", "Package to inspect"),
+                ],
+            },
         ]
     }
 }

@@ -229,9 +229,10 @@ fn convert_xml_plist_to_binary<P: AsRef<Path>>(path: P) -> StylingResult<()> {
 
     if !output.status.success() {
         let error_msg = String::from_utf8_lossy(&output.stderr);
-        return Err(StylingError::FromStr(
-            format!("plutil conversion failed: {}", error_msg).into(),
-        ));
+        return Err(StylingError::FromStr(format!(
+            "plutil conversion failed: {}",
+            error_msg
+        )));
     }
 
     Ok(())

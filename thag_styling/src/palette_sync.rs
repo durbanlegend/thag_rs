@@ -115,22 +115,20 @@ impl PaletteSync {
         );
         stdout.write_all(osc.as_bytes())?;
 
-        // Set selection background color (OSC 17) - use commentary role for good contrast
+        // Set selection background color (OSC 17) - use adjusted terminal background
+        // Brighten for dark themes, darken for light themes for good visibility
         // Supported by: Gnome Terminal, WezTerm, iTerm2, Kitty, Apple Terminal, WSL Ubuntu
-        let commentary_rgb = theme
-            .style_for(Role::Commentary)
-            .foreground
-            .as_ref()
-            .map_or([128, 128, 128], |color_info| match &color_info.value {
-                crate::ColorValue::TrueColor { rgb } => *rgb,
-                crate::ColorValue::Color256 { color256: _ } | crate::ColorValue::Basic { .. } => {
-                    [color_info.index, color_info.index, color_info.index]
-                }
-            });
+        let selection_bg_rgb = if let Some(bg_rgb) = theme.bg_rgbs.first() {
+            let bg_array = [bg_rgb.0, bg_rgb.1, bg_rgb.2];
+            let is_light_theme = matches!(theme.term_bg_luma, crate::TermBgLuma::Light);
+            Self::adjust_bg_for_selection(bg_array, is_light_theme)
+        } else {
+            [128, 128, 128] // Fallback gray if no background defined
+        };
 
         let osc = format!(
             "\x1b]17;rgb:{:02x}/{:02x}/{:02x}\x07",
-            commentary_rgb[0], commentary_rgb[1], commentary_rgb[2]
+            selection_bg_rgb[0], selection_bg_rgb[1], selection_bg_rgb[2]
         );
         stdout.write_all(osc.as_bytes())?;
 
@@ -498,16 +496,21 @@ impl PaletteSync {
             _ => "Unknown",
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{styling::TermAttributes, ColorInitStrategy};
+    /// Adjust terminal background color for selection visibility
+    /// Brightens for dark themes, darkens for light themes
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn adjust_bg_for_selection(bg_rgb: [u8; 3], is_light_theme: bool) -> [u8; 3] {
+        if is_light_theme {
+            Self::darken_color(bg_rgb, 0.85)
+        } else {
+            Self::brighten_color(bg_rgb, 1.35)
+        }
+    }
 
-    /// Brighten a color by increasing its lightness
-    fn brighten_color(rgb: [u8; 3]) -> [u8; 3] {
-        let factor = 1.3;
+    /// Brighten a color by multiplying each component by a factor
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn brighten_color(rgb: [u8; 3], factor: f32) -> [u8; 3] {
         [
             ((f32::from(rgb[0]) * factor).min(255.0)) as u8,
             ((f32::from(rgb[1]) * factor).min(255.0)) as u8,
@@ -515,8 +518,25 @@ mod tests {
         ]
     }
 
+    /// Darken a color by multiplying each component by a factor
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn darken_color(rgb: [u8; 3], factor: f32) -> [u8; 3] {
+        [
+            ((f32::from(rgb[0]) * factor).max(0.0)) as u8,
+            ((f32::from(rgb[1]) * factor).max(0.0)) as u8,
+            ((f32::from(rgb[2]) * factor).max(0.0)) as u8,
+        ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
     #[test]
     fn test_ansi_color_mapping() {
+        use crate::{styling::TermAttributes, ColorInitStrategy};
+
         // Initialize with a basic theme for testing
         TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Configure(
             crate::ColorSupport::TrueColor,
@@ -539,13 +559,41 @@ mod tests {
     #[test]
     fn test_brighten_color() {
         let dark_red = [100, 0, 0];
-        let bright_red = brighten_color(dark_red);
+        let bright_red = PaletteSync::brighten_color(dark_red, 1.3);
 
         // Should be brighter
         assert!(bright_red[0] > dark_red[0]);
 
         // Should not exceed 255
         let white = [255, 255, 255];
-        let _ = brighten_color(white);
+        let _ = PaletteSync::brighten_color(white, 1.3);
+    }
+
+    #[test]
+    fn test_darken_color() {
+        let bright_red = [200, 0, 0];
+        let dark_red = PaletteSync::darken_color(bright_red, 0.5);
+
+        // Should be darker
+        assert!(dark_red[0] < bright_red[0]);
+        assert_eq!(dark_red[0], 100);
+
+        // Should not go below 0
+        let black = [0, 0, 0];
+        let darker = PaletteSync::darken_color(black, 0.5);
+        assert_eq!(darker, [0, 0, 0]);
+    }
+
+    #[test]
+    fn test_adjust_bg_for_selection() {
+        // Test dark theme - should brighten
+        let dark_bg = [30, 30, 30];
+        let selection_dark = PaletteSync::adjust_bg_for_selection(dark_bg, false);
+        assert!(selection_dark[0] > dark_bg[0]);
+
+        // Test light theme - should darken
+        let light_bg = [240, 240, 240];
+        let selection_light = PaletteSync::adjust_bg_for_selection(light_bg, true);
+        assert!(selection_light[0] < light_bg[0]);
     }
 }

@@ -241,75 +241,40 @@ impl BaseTheme {
         // Enhance non-heading colors for contrast
         palette = Self::enhance_palette_contrast_except_headings(palette, bg_rgb, is_light_theme);
 
-        // Now handle heading colors: collect, enhance, then sort by prominence
-        let mut heading_candidates = vec![
-            (&self.palette.base0_e, "base0E"),
-            (&self.palette.base0_f, "base0F"),
-        ];
+        // Now handle heading colors: use same fixed assignment as base16
+        // base0E -> Heading1 (magenta - keywords/primary)
+        // base0F -> Heading2 (brown - deprecated/secondary)
+        // base0C -> Heading3 (cyan - support/regex)
 
-        // Add Base24 specific colors if available
-        if let Some(ref color) = self.palette.base12 {
-            heading_candidates.push((color, "base12"));
-        }
-        if let Some(ref color) = self.palette.base15 {
-            heading_candidates.push((color, "base15"));
-        }
-        if let Some(ref color) = self.palette.base16 {
-            heading_candidates.push((color, "base16"));
-        }
+        // Enhance heading1 (base0E)
+        let heading1_style = Style::from_fg_hex(&self.palette.base0_e)?.bold();
+        palette.heading1 = Self::enhance_single_color_contrast(
+            heading1_style,
+            bg_rgb,
+            0.60, // heading contrast threshold
+            is_light_theme,
+            "heading1",
+        );
 
-        // If we still need more candidates, add base0C as fallback
-        if heading_candidates.len() < 3 {
-            heading_candidates.push((&self.palette.base0_c, "base0C"));
-        }
+        // Enhance heading2 (base0F)
+        let heading2_style = Style::from_fg_hex(&self.palette.base0_f)?.bold();
+        palette.heading2 = Self::enhance_single_color_contrast(
+            heading2_style,
+            bg_rgb,
+            0.60, // heading contrast threshold
+            is_light_theme,
+            "heading2",
+        );
 
-        // Create and enhance heading styles
-        let mut enhanced_heading_candidates: Vec<(Style, String, f32)> = heading_candidates
-            .into_iter()
-            .map(|(hex, name)| {
-                let style = Style::from_fg_hex(hex).unwrap_or_default().bold();
-                let enhanced_style = Self::enhance_single_color_contrast(
-                    style,
-                    bg_rgb,
-                    0.60, // heading contrast threshold
-                    is_light_theme,
-                    "heading",
-                );
-
-                // Calculate prominence from enhanced color
-                let rgb = enhanced_style
-                    .foreground
-                    .as_ref()
-                    .and_then(|color_info| match &color_info.value {
-                        thag_styling::ColorValue::TrueColor { rgb } => Some(*rgb),
-                        _ => None,
-                    })
-                    .unwrap_or([0, 0, 0]);
-                let enhanced_hex = format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
-                let prominence =
-                    Self::calculate_prominence(&enhanced_hex, is_light_theme).unwrap_or(0.0);
-
-                (enhanced_style, name.to_string(), prominence)
-            })
-            .collect();
-
-        // Sort by prominence (most prominent first)
-        enhanced_heading_candidates
-            .sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
-
-        // Assign headings by prominence
-        palette.heading1 = enhanced_heading_candidates
-            .get(0)
-            .map(|x| x.0.clone())
-            .unwrap_or(palette.heading1);
-        palette.heading2 = enhanced_heading_candidates
-            .get(1)
-            .map(|x| x.0.clone())
-            .unwrap_or(palette.heading2);
-        palette.heading3 = enhanced_heading_candidates
-            .get(2)
-            .map(|x| x.0.clone())
-            .unwrap_or(palette.heading3);
+        // Enhance heading3 (base0C)
+        let heading3_style = Style::from_fg_hex(&self.palette.base0_c)?.bold();
+        palette.heading3 = Self::enhance_single_color_contrast(
+            heading3_style,
+            bg_rgb,
+            0.60, // heading contrast threshold
+            is_light_theme,
+            "heading3",
+        );
 
         Ok(palette)
     }

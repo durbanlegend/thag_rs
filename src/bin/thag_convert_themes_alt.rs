@@ -5,6 +5,8 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 
 /// Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
 ///
+/// Alternative version with headings assigned according to prominence.
+///
 /// ## Usage examples:
 ///
 /// ### Convert a single theme
@@ -98,13 +100,72 @@ impl BaseTheme {
         self.palette.base10.is_some()
     }
 
-    fn convert_to_thag(&self) -> Result<Theme, Box<dyn std::error::Error>> {
-        let palette = if self.is_base24() {
-            self.create_base24_palette()?
+    /// Calculate prominence score for a color based on saturation and contrast against background
+    fn calculate_prominence(
+        hex: &str,
+        is_light_theme: bool,
+    ) -> Result<f32, Box<dyn std::error::Error>> {
+        const SATURATION_WEIGHT: f32 = 0.6;
+        const LIGHTNESS_WEIGHT: f32 = 0.4;
+
+        let (r, g, b) = hex_to_rgb(hex)?;
+        let (h, s, l) = Self::rgb_to_hsl([r, g, b]);
+        let saturation_score = s;
+
+        // For light themes, darker colors are more prominent
+        // For dark themes, lighter colors are more prominent
+        let lightness_score = if is_light_theme {
+            1.0 - l // Darker = higher score
         } else {
-            self.create_base16_palette()?
+            l // Lighter = higher score
         };
 
+        let base_prominence =
+            SATURATION_WEIGHT * saturation_score + LIGHTNESS_WEIGHT * lightness_score;
+
+        // Apply theme-aware hue-specific adjustments based on user testing data
+        let hue_multiplier = if is_light_theme {
+            // Light theme adjustments: darker colors are more prominent
+            match h {
+                // Red/Orange: Moderate boost for darker reds
+                h if h < 30.0 || h >= 330.0 => 1.08,
+                // Yellow: Small reduction (bright yellows less prominent on light backgrounds)
+                h if h >= 45.0 && h < 75.0 => 0.98,
+                // Cyan: Small boost (dark cyans still somewhat prominent)
+                h if h >= 165.0 && h < 210.0 => 1.05,
+                // Blue: Small boost for darker blues
+                h if h >= 210.0 && h < 270.0 => 1.05,
+                // Purple: Boost for dark purples (prominent against light backgrounds)
+                h if h >= 270.0 && h < 300.0 => 1.10,
+                // Magenta/Pink: Moderate boost for darker magentas
+                h if h >= 300.0 && h < 330.0 => 1.08,
+                // Other hues: Maintain current scoring
+                _ => 1.0,
+            }
+        } else {
+            // Dark theme adjustments: brighter colors are more prominent
+            match h {
+                // Red/Orange: Boost significantly (user consistently ranked these higher)
+                h if h < 30.0 || h >= 330.0 => 1.15,
+                // Yellow/Gold: Small boost for pure yellows
+                h if h >= 45.0 && h < 75.0 => 1.02,
+                // Cyan/Light Blue: Boost strongly (user ranked these highest on dark themes)
+                h if h >= 165.0 && h < 210.0 => 1.25,
+                // Blue: Boost (user found these more prominent than algorithm calculated)
+                h if h >= 210.0 && h < 270.0 => 1.10,
+                // Magenta/Pink: Boost moderately for dark themes
+                h if h >= 300.0 && h < 330.0 => 1.15,
+                // Purple: Small reduction (user ranked lower than algorithm)
+                h if h >= 270.0 && h < 300.0 => 0.95,
+                // Other hues: Maintain current scoring
+                _ => 1.0,
+            }
+        };
+
+        Ok(base_prominence * hue_multiplier)
+    }
+
+    fn convert_to_thag(&self) -> Result<Theme, Box<dyn std::error::Error>> {
         let bg = self.palette.base00.trim_start_matches('#').to_lowercase();
         let backgrounds = vec![format!("#{bg}")];
         let bg_rgbs = vec![hex_to_rgb(&bg)?];
@@ -114,7 +175,12 @@ impl BaseTheme {
             TermBgLuma::Light
         );
         let bg_rgb = bg_rgbs[0];
-        let enhanced_palette = Self::enhance_palette_contrast(palette, bg_rgb, is_light_theme);
+
+        let palette = if self.is_base24() {
+            self.create_base24_palette(bg_rgb, is_light_theme)?
+        } else {
+            self.create_base16_palette(bg_rgb, is_light_theme)?
+        };
 
         Ok(Theme {
             name: self.scheme.clone(),
@@ -124,7 +190,7 @@ impl BaseTheme {
                 .unwrap_or_else(|| format!("Converted from {} theme", self.scheme)),
             term_bg_luma: detect_background_luma(&self.palette.base00)?,
             min_color_support: ColorSupport::TrueColor,
-            palette: enhanced_palette,
+            palette,
             backgrounds,
             bg_rgbs,
             is_builtin: false,
@@ -132,9 +198,13 @@ impl BaseTheme {
         })
     }
 
-    fn create_base24_palette(&self) -> Result<Palette, Box<dyn std::error::Error>> {
-        // Perfect 1:1 mapping: Base16 colors (base00-base0F) to thag roles
-        Ok(Palette {
+    fn create_base24_palette(
+        &self,
+        bg_rgb: (u8, u8, u8),
+        is_light_theme: bool,
+    ) -> Result<Palette, Box<dyn std::error::Error>> {
+        // Create base palette without headings
+        let mut palette = Palette {
             // base00 -> Background (not a role, handled separately)
             // base01 -> Subtle (darker background/line highlighting)
             subtle: Style::from_fg_hex(&self.palette.base01)?,
@@ -162,26 +232,95 @@ impl BaseTheme {
             code: Style::from_fg_hex(&self.palette.base0_c)?.italic(),
             // base0D -> Info (blue - functions/info)
             info: Style::from_fg_hex(&self.palette.base0_d)?,
-            // base0E -> Heading1 (magenta - keywords/primary)
+            // Temporary placeholders for headings - will be replaced after enhancement
             heading1: Style::from_fg_hex(&self.palette.base0_e)?.bold(),
-            // base0F -> Heading2 (brown - deprecated/secondary)
             heading2: Style::from_fg_hex(&self.palette.base0_f)?.bold(),
-            // For Base24, choose a better color for heading3 (avoid base10 which is often dark)
-            heading3: Style::from_fg_hex(
-                self.palette
-                    .base12 // Often a bright accent color
+            heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(),
+        };
+
+        // Enhance non-heading colors for contrast
+        palette = Self::enhance_palette_contrast_except_headings(palette, bg_rgb, is_light_theme);
+
+        // Now handle heading colors: collect, enhance, then sort by prominence
+        let mut heading_candidates = vec![
+            (&self.palette.base0_e, "base0E"),
+            (&self.palette.base0_f, "base0F"),
+        ];
+
+        // Add Base24 specific colors if available
+        if let Some(ref color) = self.palette.base12 {
+            heading_candidates.push((color, "base12"));
+        }
+        if let Some(ref color) = self.palette.base15 {
+            heading_candidates.push((color, "base15"));
+        }
+        if let Some(ref color) = self.palette.base16 {
+            heading_candidates.push((color, "base16"));
+        }
+
+        // If we still need more candidates, add base0C as fallback
+        if heading_candidates.len() < 3 {
+            heading_candidates.push((&self.palette.base0_c, "base0C"));
+        }
+
+        // Create and enhance heading styles
+        let mut enhanced_heading_candidates: Vec<(Style, String, f32)> = heading_candidates
+            .into_iter()
+            .map(|(hex, name)| {
+                let style = Style::from_fg_hex(hex).unwrap_or_default().bold();
+                let enhanced_style = Self::enhance_single_color_contrast(
+                    style,
+                    bg_rgb,
+                    0.60, // heading contrast threshold
+                    is_light_theme,
+                    "heading",
+                );
+
+                // Calculate prominence from enhanced color
+                let rgb = enhanced_style
+                    .foreground
                     .as_ref()
-                    .or(self.palette.base15.as_ref()) // Fallback to another bright color
-                    .or(self.palette.base16.as_ref()) // Another fallback
-                    .unwrap_or(&self.palette.base0_c), // Final fallback to base16 color
-            )?
-            .bold(),
-        })
+                    .and_then(|color_info| match &color_info.value {
+                        thag_styling::ColorValue::TrueColor { rgb } => Some(*rgb),
+                        _ => None,
+                    })
+                    .unwrap_or([0, 0, 0]);
+                let enhanced_hex = format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+                let prominence =
+                    Self::calculate_prominence(&enhanced_hex, is_light_theme).unwrap_or(0.0);
+
+                (enhanced_style, name.to_string(), prominence)
+            })
+            .collect();
+
+        // Sort by prominence (most prominent first)
+        enhanced_heading_candidates
+            .sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Assign headings by prominence
+        palette.heading1 = enhanced_heading_candidates
+            .get(0)
+            .map(|x| x.0.clone())
+            .unwrap_or(palette.heading1);
+        palette.heading2 = enhanced_heading_candidates
+            .get(1)
+            .map(|x| x.0.clone())
+            .unwrap_or(palette.heading2);
+        palette.heading3 = enhanced_heading_candidates
+            .get(2)
+            .map(|x| x.0.clone())
+            .unwrap_or(palette.heading3);
+
+        Ok(palette)
     }
 
-    fn create_base16_palette(&self) -> Result<Palette, Box<dyn std::error::Error>> {
-        // Perfect 1:1 mapping: Base16 colors (base00-base0F) to thag roles
-        Ok(Palette {
+    fn create_base16_palette(
+        &self,
+        bg_rgb: (u8, u8, u8),
+        is_light_theme: bool,
+    ) -> Result<Palette, Box<dyn std::error::Error>> {
+        // Create base palette without headings
+        let mut palette = Palette {
             // base00 -> Background (not a role, handled separately)
             // base01 -> Subtle (darker background/line highlighting)
             subtle: Style::from_fg_hex(&self.palette.base01)?,
@@ -209,13 +348,62 @@ impl BaseTheme {
             code: Style::from_fg_hex(&self.palette.base0_c)?.italic(),
             // base0D -> Info (blue - functions/info)
             info: Style::from_fg_hex(&self.palette.base0_d)?,
-            // base0E -> Heading1 (magenta - keywords/primary)
+            // Temporary placeholders for headings - will be replaced after enhancement
             heading1: Style::from_fg_hex(&self.palette.base0_e)?.bold(),
-            // base0F -> Heading2 (brown - deprecated/secondary)
             heading2: Style::from_fg_hex(&self.palette.base0_f)?.bold(),
-            // For Base16, we must reuse a color for heading3 since we only have 16 colors for 16 roles
-            heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(), // Reuse cyan but with bold
-        })
+            heading3: Style::from_fg_hex(&self.palette.base0_c)?.bold(),
+        };
+
+        // Enhance non-heading colors for contrast
+        palette = Self::enhance_palette_contrast_except_headings(palette, bg_rgb, is_light_theme);
+
+        // Now handle heading colors: collect, enhance, then sort by prominence
+        let heading_candidates = vec![
+            (&self.palette.base0_e, "base0E"),
+            (&self.palette.base0_f, "base0F"),
+            (&self.palette.base0_c, "base0C"), // Must reuse for Base16
+        ];
+
+        // Create and enhance heading styles
+        let mut enhanced_heading_candidates: Vec<(Style, String, f32)> = heading_candidates
+            .into_iter()
+            .map(|(hex, name)| {
+                let style = Style::from_fg_hex(hex).unwrap_or_default().bold();
+                let enhanced_style = Self::enhance_single_color_contrast(
+                    style,
+                    bg_rgb,
+                    0.60, // heading contrast threshold
+                    is_light_theme,
+                    "heading",
+                );
+
+                // Calculate prominence from enhanced color
+                let rgb = enhanced_style
+                    .foreground
+                    .as_ref()
+                    .and_then(|color_info| match &color_info.value {
+                        thag_styling::ColorValue::TrueColor { rgb } => Some(*rgb),
+                        _ => None,
+                    })
+                    .unwrap_or([0, 0, 0]);
+                let enhanced_hex = format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+                let prominence =
+                    Self::calculate_prominence(&enhanced_hex, is_light_theme).unwrap_or(0.0);
+
+                (enhanced_style, name.to_string(), prominence)
+            })
+            .collect();
+
+        // Sort by prominence (most prominent first)
+        enhanced_heading_candidates
+            .sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Assign headings by prominence
+        palette.heading1 = enhanced_heading_candidates[0].0.clone();
+        palette.heading2 = enhanced_heading_candidates[1].0.clone();
+        palette.heading3 = enhanced_heading_candidates[2].0.clone();
+
+        Ok(palette)
     }
 
     /// Convert RGB to HSL color space
@@ -258,9 +446,9 @@ impl BaseTheme {
         (h, s, l)
     }
 
-    /// Enhance palette contrast for all colors with role-specific thresholds
+    /// Enhance palette contrast for all colors except headings (handled separately)
     #[allow(clippy::too_many_lines)]
-    fn enhance_palette_contrast(
+    fn enhance_palette_contrast_except_headings(
         mut palette: Palette,
         background_rgb: (u8, u8, u8),
         is_light_theme: bool,
@@ -297,8 +485,16 @@ impl BaseTheme {
                         0.55
                     }
                 }
-                // Supporting colors - formerly problematic ones
-                "subtle" | "hint" | "debug" | "commentary" => {
+                // Supporting colors - formerly problematic ones (increased contrast for selection visibility)
+                "subtle" | "commentary" => {
+                    if is_light_theme {
+                        0.60
+                    } else {
+                        0.70
+                    }
+                }
+                // Other supporting colors
+                "hint" | "debug" => {
                     if is_light_theme {
                         0.50
                     } else {
@@ -367,27 +563,7 @@ impl BaseTheme {
             is_light_theme,
             "commentary",
         );
-        palette.heading1 = Self::adjust_color_contrast(
-            &palette.heading1,
-            bg_l,
-            get_contrast_threshold("heading1"),
-            is_light_theme,
-            "heading1",
-        );
-        palette.heading2 = Self::adjust_color_contrast(
-            &palette.heading2,
-            bg_l,
-            get_contrast_threshold("heading2"),
-            is_light_theme,
-            "heading2",
-        );
-        palette.heading3 = Self::adjust_color_contrast(
-            &palette.heading3,
-            bg_l,
-            get_contrast_threshold("heading3"),
-            is_light_theme,
-            "heading3",
-        );
+        // Headings are handled separately in the create_*_palette functions
         palette.error = Self::adjust_color_contrast(
             &palette.error,
             bg_l,
@@ -446,6 +622,20 @@ impl BaseTheme {
         );
 
         palette
+    }
+
+    /// Enhance a single color for contrast with role-specific handling
+    fn enhance_single_color_contrast(
+        style: Style,
+        background_rgb: (u8, u8, u8),
+        contrast_threshold: f32,
+        is_light_theme: bool,
+        role_name: &str,
+    ) -> Style {
+        let bg_array = [background_rgb.0, background_rgb.1, background_rgb.2];
+        let (_bg_h, _bg_s, bg_l) = Self::rgb_to_hsl(bg_array);
+
+        Self::adjust_color_contrast(&style, bg_l, contrast_threshold, is_light_theme, role_name)
     }
 
     /// Adjust a single color's contrast against the background
@@ -769,7 +959,7 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
         .ok_or("Invalid input filename")?;
 
     // Convert to thag theme
-    let thag_theme = base_theme.convert_to_thag()?;
+    let theme = base_theme.convert_to_thag()?;
 
     let is_base24 = base_theme.is_base24();
 
@@ -782,7 +972,7 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
     if !cli.force && true_color_path.exists() {
         eprintln!("Skipping existing file: {}", true_color_path.display());
     } else {
-        let theme_toml = toml::to_string_pretty(&thag_theme.to_output(false, is_base24))?; // Changed from theme to thag_theme
+        let theme_toml = toml::to_string_pretty(&theme.to_output(false, is_base24))?;
         fs::write(&true_color_path, theme_toml)?;
         if cli.verbose {
             println!("Created {}", true_color_path.display());
@@ -803,7 +993,7 @@ fn convert_file(input: &Path, cli: &Cli) -> Result<(), Box<dyn std::error::Error
         if !cli.force && color256_path.exists() {
             eprintln!("Skipping existing file: {}", color256_path.display());
         } else {
-            let theme_256_toml = toml::to_string_pretty(&thag_theme.to_output(true, is_base24))?; // Changed from theme to thag_theme
+            let theme_256_toml = toml::to_string_pretty(&theme.to_output(true, is_base24))?;
             fs::write(&color256_path, theme_256_toml)?;
             if cli.verbose {
                 println!("Created {}", color256_path.display());

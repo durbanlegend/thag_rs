@@ -1654,7 +1654,7 @@ impl ImageThemeGenerator {
             color.lightness // Lighter = higher score
         };
 
-        SATURATION_WEIGHT * saturation_score + LIGHTNESS_WEIGHT * lightness_score
+        SATURATION_WEIGHT.mul_add(saturation_score, LIGHTNESS_WEIGHT * lightness_score)
     }
 
     /// Improved hue-based color finding with better fallbacks

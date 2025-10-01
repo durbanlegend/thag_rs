@@ -65,3 +65,4 @@ thag_styling/src/image_themes/mod copy.rs
 thag_styling/themes/built_in/thag-munch-the-scream-new-light.toml
 thag_styling/README copy.md
 src/cli.rs
+catppuccin-mocha.toml

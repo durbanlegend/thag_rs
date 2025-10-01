@@ -98,6 +98,50 @@ impl PaletteSync {
         );
         stdout.write_all(osc.as_bytes())?;
 
+        // Set cursor color (OSC 12) - use emphasis role for visibility
+        let emphasis_rgb = theme.style_for(Role::Emphasis).foreground.as_ref().map_or(
+            [255, 255, 0],
+            |color_info| match &color_info.value {
+                crate::ColorValue::TrueColor { rgb } => *rgb,
+                crate::ColorValue::Color256 { color256: _ } | crate::ColorValue::Basic { .. } => {
+                    [color_info.index, color_info.index, color_info.index]
+                }
+            },
+        );
+
+        let osc = format!(
+            "\x1b]12;rgb:{:02x}/{:02x}/{:02x}\x07",
+            emphasis_rgb[0], emphasis_rgb[1], emphasis_rgb[2]
+        );
+        stdout.write_all(osc.as_bytes())?;
+
+        // Set selection background color (OSC 17) - use commentary role for good contrast
+        // Supported by: Gnome Terminal, WezTerm, iTerm2, Kitty, Apple Terminal, WSL Ubuntu
+        let commentary_rgb = theme
+            .style_for(Role::Commentary)
+            .foreground
+            .as_ref()
+            .map_or([128, 128, 128], |color_info| match &color_info.value {
+                crate::ColorValue::TrueColor { rgb } => *rgb,
+                crate::ColorValue::Color256 { color256: _ } | crate::ColorValue::Basic { .. } => {
+                    [color_info.index, color_info.index, color_info.index]
+                }
+            });
+
+        let osc = format!(
+            "\x1b]17;rgb:{:02x}/{:02x}/{:02x}\x07",
+            commentary_rgb[0], commentary_rgb[1], commentary_rgb[2]
+        );
+        stdout.write_all(osc.as_bytes())?;
+
+        // Set selection foreground color (OSC 19) - use normal role for readability
+        // Supported by: Gnome Terminal, WezTerm, iTerm2, Kitty
+        let osc = format!(
+            "\x1b]19;rgb:{:02x}/{:02x}/{:02x}\x07",
+            normal_rgb[0], normal_rgb[1], normal_rgb[2]
+        );
+        stdout.write_all(osc.as_bytes())?;
+
         stdout.flush()?;
         Ok(())
     }
@@ -121,6 +165,15 @@ impl PaletteSync {
 
         // Reset default background (OSC 111)
         stdout.write_all(b"\x1b]111\x07")?;
+
+        // Reset cursor color (OSC 112)
+        stdout.write_all(b"\x1b]112\x07")?;
+
+        // Reset selection background (OSC 117)
+        stdout.write_all(b"\x1b]117\x07")?;
+
+        // Reset selection foreground (OSC 119)
+        stdout.write_all(b"\x1b]119\x07")?;
 
         stdout.flush()?;
         Ok(())

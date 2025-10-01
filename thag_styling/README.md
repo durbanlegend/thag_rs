@@ -38,11 +38,11 @@ An innovative terminal styling system for Rust applications across platforms.
 
 Here is a small sample of the 300+ built-in `thag_styling` themes, with descriptive captions. The `thag` conversion and image extraction tools automatically ensure that each message style has sufficient contrast with the background to be clearly legible.
 
-### Built-in popular dark theme: Catppucin Mocha
+### Built-in popular dark theme: Catppuccin Mocha
 
-[![catppucin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catppucin-mocha.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catppucin-mocha.png)
-*Built-in theme <code>catppucin-mocha</code>, converted from base24.*
+[![catppuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catppuccin-mocha.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catppuccin-mocha.png)
+*Built-in theme <code>catppuccin-mocha</code>, converted from base24.*
 
 ### Built-in popular light theme: Gruvbox Light Hard
 
@@ -111,7 +111,7 @@ fn main() {
     "✅ Operation completed successfully".success().println();
     "❌ Connection failed".error().println();
     "⚠️  High memory usage detected".warning().println();
-    "cargo run --release".code().println();
+    "thag --release".code().println();
 
     // Works with any Display type
     42.success().println();              // Numbers
@@ -170,7 +170,7 @@ let success_gauge = Gauge::default()
 ```
 ### Example: Ratatui Theming Showcase with `dracula-base16` theme
 
-[![catppucin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)]
+[![catppuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)]
 (https://durbanlegend.github.io/thag_rs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
 *Using thag_url with `THAG_THEME=dracula_base16` to run the Ratatui Theming Showcase straight from the repo: `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs`.*
 
@@ -220,6 +220,69 @@ println!("{}", styled!("Hex", fg = "#ff6347", underline));            // Hex tom
 - **256-color terminals** — Carefully mapped colors maintaining theme integrity. Themes are stored as TrueColor and automatically mapped to the closest color in the 256-color palette.
 - **Basic terminals** (16 colors) — Graceful fallback to standard ANSI colors
 - **Monochrome terminals** — Uses styling attributes (bold, italic, underline)
+
+### Selection Colors Configuration
+
+When exporting themes to terminal formats, `thag_styling` automatically configures selection colors (the background and foreground colors used when you select text in your terminal). However, some terminals may require manual configuration or have specific settings to enable these colors.
+
+#### Automatic Configuration
+
+The following terminals fully support selection color import from exported theme files:
+
+- **WezTerm** — Selection colors import automatically
+- **Windows Terminal** — `selectionBackground` is set in exported themes
+- **Mintty** — `SelectionBackgroundColour` and `SelectionForegroundColour` are exported
+- **Kitty** — Selection colors import from exported config files
+- **Alacritty** — Selection colors import from YAML/TOML config files
+
+#### Manual Configuration Required
+
+**iTerm2** (macOS)
+- Selection colors are exported and will import correctly
+- **Important:** You must enable "Use custom color for selected text" in iTerm2 preferences
+  1. Open iTerm2 → Preferences → Profiles → Colors
+  2. After importing a theme, check ☑ "Use custom color for selected text"
+  3. This enables the selection foreground color for better contrast
+
+**Apple Terminal** (macOS)
+- Does not support importing selection colors from theme files
+- Selection colors can be set via OSC 17 escape sequences (see below)
+- Manual configuration: Terminal → Preferences → Profiles → Text → Selection Color
+
+**KDE Konsole**
+- Selection colors are dynamically calculated from foreground/background colors
+- To improve visibility: Appearance → Miscellaneous → ☑ "Always invert the colors of selected text"
+- This uses reverse video for selections instead of custom colors
+
+#### Dynamic Selection Colors via OSC Sequences
+
+The `thag_sync_palette` tool sets selection colors dynamically using OSC escape sequences:
+- **OSC 17** — Sets selection background color
+- **OSC 19** — Sets selection foreground color
+
+These sequences are supported by:
+- ✅ Gnome Terminal
+- ✅ WezTerm
+- ✅ iTerm2
+- ✅ Kitty
+- ✅ Apple Terminal (OSC 17 only)
+- ✅ WSL Ubuntu Terminal
+- ❌ Alacritty (no OSC selection support)
+
+To apply selection colors dynamically:
+```bash
+thag_sync_palette apply <theme-name>
+```
+
+This updates your terminal's palette including selection colors for the current session.
+
+#### Selection Color Design
+
+All exported themes use the following color strategy for optimal readability:
+- **Selection Background:** Uses the theme's `commentary` color, which is automatically enhanced to provide at least 11:1 contrast ratio against the background
+- **Selection Foreground:** Uses the theme's `normal` text color for consistency
+
+This ensures excellent visibility of selected text across all theme variants.
 
 ## Advanced Features
 
@@ -388,21 +451,21 @@ The library includes comprehensive examples:
 - **Custom Themes** — Creating and loading custom color schemes
 
 Run examples:
-```bash
+```zsh
 # Complete styling system demonstration
-cargo run demo/styling_migration_guide.rs
+thag demo/styling_migration_guide.rs
 
 # Interactive TUI showcase (full-featured application)
-cargo run --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
+thag --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
 
 # Quick integration demo
-cargo run demo/ratatui_integration_demo.rs
+thag demo/ratatui_integration_demo.rs
 
 # Theme generation from images
-cargo run demo/image_theme_generation.rs
+thag demo/image_theme_generation.rs
 
 # Enhanced styled! macro demonstration
-cargo run demo/styled_macro_enhanced.rs
+thag demo/styled_macro_enhanced.rs
 
 # View all examples
 ls thag_styling/examples/ demo/
@@ -477,10 +540,12 @@ thag_legible my-theme.toml
 
 ### Complete TUI Application
 See `examples/ratatui_theming_showcase.rs` for a 4-tab TUI demonstrating:
+
 - Dashboard with metrics and progress bars
+
 - Log viewer with semantic severity colors
-- Settings and configuration display
-- Comprehensive help system
+
+- Settings and configuration display- Comprehensive help system
 
 All styled consistently using semantic roles.
 
@@ -515,13 +580,17 @@ println!("{}", styled!("Info", fg = Blue, reversed));                 // Basic A
 
 ## Contributing
 
-Contributions welcome! Areas needing help:
-- Additional terminal emulator export formats
-- More library integrations (owo-colors, indicatif, etc.)
-- Theme collection expansion
-- Performance optimizations
+Contributions will be considered if they fit the goals of the project.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Rust code should pass clippy::pedantic checks.
+
+The following are of particular interest:
+
+- Additional terminal emulator export formats
+
+- More library integrations (e.g. indicatif)
+
+- Theme collection expansion
 
 ## License
 

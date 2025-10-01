@@ -54,13 +54,31 @@ impl ThemeExporter for MinttyExporter {
             );
         }
 
-        // Selection background (slightly brighter than background)
-        let selection_bg = adjust_color_brightness(bg_color, 1.4);
+        // Selection colors
+        // Use commentary color for better visibility, fallback to brightness adjustment
+        let selection_bg = get_rgb_from_style(&theme.palette.commentary)
+            .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.4));
+        let _ = writeln!(
+            output,
+            "SelectionBackgroundColour={},{},{}",
+            selection_bg.0, selection_bg.1, selection_bg.2
+        );
+
+        // Also set legacy HighlightBackgroundColour for compatibility
         let _ = writeln!(
             output,
             "HighlightBackgroundColour={},{},{}",
             selection_bg.0, selection_bg.1, selection_bg.2
         );
+
+        // Selection foreground (use normal text color)
+        if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
+            let _ = writeln!(
+                output,
+                "SelectionForegroundColour={},{},{}",
+                selection_fg.0, selection_fg.1, selection_fg.2
+            );
+        }
 
         // Bold text color
         if let Some(bold_color) = get_rgb_from_style(&theme.palette.emphasis)

@@ -762,6 +762,6 @@ as you prefer.
 
 ## Contributing
 
-Contributions will be considered if they fit the goals of the project.
+Contributions will be considered (under MIT/Apache 2 license) if they align with the aims of the project.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you will be dual-licensed as above, without any further terms or conditions.
+Rust code should pass clippy::pedantic checks.

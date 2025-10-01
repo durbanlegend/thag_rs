@@ -11,6 +11,53 @@
 - [ ]  Get Claude to do a release plan.
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
 
+
+6422dbc..c3c7383
+
+/// Alternative version with headings assigned according to prominence.
+///
+
+### iTerm2 Selection Colors
+
+iTerm2 may not import selection colors from .itermcolors files. If your selection
+text is hard to read, manually configure selection colors in iTerm2:
+
+1. Open iTerm2 → Preferences → Profiles → Colors
+2. Set "Selection Color" to a color with good contrast against your background
+3. Enable "Use custom color for selected text" checkbox
+4. Set the selected text color appropriately
+
+For the best visibility with dark themes, we recommend:
+- Selection Color: Use the theme's "commentary" color or a medium-light gray
+- Selected Text Color: Use the theme's normal foreground color
+
+	<key>Selected Text Color</key>
+	<dict>
+		<key>Alpha Component</key>
+		<real>1</real>
+		<key>Blue Component</key>
+		<real>0.74546593427658081</real>
+		<key>Color Space</key>
+		<string>P3</string>
+		<key>Green Component</key>
+		<real>0.80540060997009277</real>
+		<key>Red Component</key>
+		<real>0.75135678052902222</real>
+	</dict>
+	<key>Selection Color</key>
+	<dict>
+		<key>Alpha Component</key>
+		<real>1</real>
+		<key>Blue Component</key>
+		<real>0.80071884393692017</real>
+		<key>Color Space</key>
+		<string>P3</string>
+		<key>Green Component</key>
+		<real>0.83718901872634888</real>
+		<key>Red Component</key>
+		<real>0.80423331260681152</real>
+	</dict>
+
 cp -p exported_themes/mintty/thag-botticelli-birth-of-venus-dark C:/cygwin64/usr/share/mintty/themes/
 
 $PROFILE (C:\Users\donforbes\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1):

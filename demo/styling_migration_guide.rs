@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
-thag_common = { version = "0.2, thag-auto" }
 */
 
 /// Comprehensive migration guide from old embedding systems to StyledString
@@ -25,8 +24,7 @@ thag_common = { version = "0.2, thag-auto" }
 /// - Cleaner, more maintainable code
 //# Purpose: Migration guide from old embedding systems to StyledString
 //# Categories: documentation, examples, migration, styling
-use thag_common::Verbosity;
-use thag_styling::{ColorInitStrategy, Styleable, StyledPrint, TermAttributes};
+use thag_styling::{ColorInitStrategy, Styleable, StyledPrint, TermAttributes, Verbosity};
 
 fn main() {
     // Initialize styling system

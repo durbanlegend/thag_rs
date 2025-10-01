@@ -203,7 +203,37 @@ pub fn export_theme_to_file<P: AsRef<Path>>(
     output_path: P,
 ) -> StylingResult<()> {
     let content = format.export_theme(theme)?;
-    std::fs::write(output_path, content).map_err(StylingError::Io)?;
+    let path = output_path.as_ref();
+    std::fs::write(path, content).map_err(StylingError::Io)?;
+
+    // Convert iTerm2 XML plists to binary format for compatibility
+    #[cfg(target_os = "macos")]
+    if matches!(format, ExportFormat::ITerm2) {
+        convert_xml_plist_to_binary(path)?;
+    }
+
+    Ok(())
+}
+
+/// Convert an XML plist file to binary format using macOS plutil
+#[cfg(target_os = "macos")]
+fn convert_xml_plist_to_binary<P: AsRef<Path>>(path: P) -> StylingResult<()> {
+    use std::process::Command;
+
+    let output = Command::new("plutil")
+        .arg("-convert")
+        .arg("binary1")
+        .arg(path.as_ref())
+        .output()
+        .map_err(StylingError::Io)?;
+
+    if !output.status.success() {
+        let error_msg = String::from_utf8_lossy(&output.stderr);
+        return Err(StylingError::FromStr(
+            format!("plutil conversion failed: {}", error_msg).into(),
+        ));
+    }
+
     Ok(())
 }
 
@@ -405,9 +435,9 @@ fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8)
         // Add a minimum brightness boost for very dark backgrounds
         let min_boost = 80.0;
         (
-            (f32::from(r) * factor + min_boost).clamp(0.0, 255.0) as u8,
-            (f32::from(g) * factor + min_boost).clamp(0.0, 255.0) as u8,
-            (f32::from(b) * factor + min_boost).clamp(0.0, 255.0) as u8,
+            f32::from(r).mul_add(factor, min_boost).clamp(0.0, 255.0) as u8,
+            f32::from(g).mul_add(factor, min_boost).clamp(0.0, 255.0) as u8,
+            f32::from(b).mul_add(factor, min_boost).clamp(0.0, 255.0) as u8,
         )
     } else {
         // Use multiplicative for normal colors

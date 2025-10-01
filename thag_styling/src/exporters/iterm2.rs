@@ -133,7 +133,9 @@ impl ThemeExporter for ITerm2Exporter {
         )?;
         write_color_entry(&mut output, "Cursor Text Color", Some(bg_color))?;
 
-        // Selection colors - use commentary color for better visibility
+        // Selection colors for highlighted text
+        // "Selection Color" = background color of selected text (using commentary for good contrast)
+        // "Selected Text Color" = foreground color of selected text (using normal for readability)
         write_color_entry(
             &mut output,
             "Selection Color",
@@ -162,7 +164,7 @@ impl ThemeExporter for ITerm2Exporter {
     }
 }
 
-/// Write a color entry to the XML output
+/// Write a color entry to the XML output in iTerm2's native format
 fn write_color_entry(
     output: &mut String,
     key: &str,
@@ -177,8 +179,12 @@ fn write_color_entry(
 
     writeln!(output, "\t<key>{}</key>", key)?;
     writeln!(output, "\t<dict>")?;
+    writeln!(output, "\t\t<key>Alpha Component</key>")?;
+    writeln!(output, "\t\t<real>1</real>")?;
     writeln!(output, "\t\t<key>Blue Component</key>")?;
     writeln!(output, "\t\t<real>{}</real>", blue)?;
+    writeln!(output, "\t\t<key>Color Space</key>")?;
+    writeln!(output, "\t\t<string>P3</string>")?;
     writeln!(output, "\t\t<key>Green Component</key>")?;
     writeln!(output, "\t\t<real>{}</real>", green)?;
     writeln!(output, "\t\t<key>Red Component</key>")?;

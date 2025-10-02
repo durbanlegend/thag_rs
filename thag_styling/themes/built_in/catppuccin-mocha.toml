@@ -1,13 +1,4 @@
-name = "Catppuccin Mocha"
-description = "Converted from Catppuccin Mocha theme"
-term_bg_luma = "dark"
-min_color_support = "true_color"
 backgrounds = ["#1e1e2e"]
-bg_rgbs = [[
-    30,
-    30,
-    46,
-]]
 base_colors = [
     [
     30,
@@ -130,12 +121,60 @@ base_colors = [
     231,
 ],
 ]
+bg_rgbs = [[
+    30,
+    30,
+    46,
+]]
+description = "Converted from Catppuccin Mocha theme"
+min_color_support = "true_color"
+name = "Catppuccin Mocha"
+term_bg_luma = "dark"
+
+[palette.code]
+rgb = [
+    148,
+    226,
+    213,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    207,
+    208,
+    226,
+]
+
+[palette.debug]
+rgb = [
+    116,
+    199,
+    236,
+]
+style = ["dim"]
+
+[palette.emphasis]
+rgb = [
+    249,
+    226,
+    175,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    158,
+    183,
+]
+style = ["bold"]
 
 [palette.heading1]
 rgb = [
     203,
-    166,
-    247,
+    161,
+    252,
 ]
 style = ["bold"]
 
@@ -155,28 +194,13 @@ rgb = [
 ]
 style = ["bold"]
 
-[palette.error]
+[palette.hint]
 rgb = [
-    250,
-    158,
-    183,
+    235,
+    160,
+    172,
 ]
-style = ["bold"]
-
-[palette.warning]
-rgb = [
-    250,
-    179,
-    135,
-]
-style = ["bold"]
-
-[palette.success]
-rgb = [
-    180,
-    190,
-    254,
-]
+style = ["italic"]
 
 [palette.info]
 rgb = [
@@ -184,52 +208,6 @@ rgb = [
     180,
     250,
 ]
-
-[palette.emphasis]
-rgb = [
-    249,
-    226,
-    175,
-]
-style = ["bold"]
-
-[palette.code]
-rgb = [
-    148,
-    226,
-    213,
-]
-style = ["italic"]
-
-[palette.normal]
-rgb = [
-    205,
-    214,
-    244,
-]
-
-[palette.subtle]
-rgb = [
-    204,
-    204,
-    229,
-]
-
-[palette.hint]
-rgb = [
-    163,
-    166,
-    193,
-]
-style = ["italic"]
-
-[palette.debug]
-rgb = [
-    164,
-    168,
-    192,
-]
-style = ["dim"]
 
 [palette.link]
 rgb = [
@@ -239,6 +217,13 @@ rgb = [
 ]
 style = ["underline"]
 
+[palette.normal]
+rgb = [
+    205,
+    214,
+    244,
+]
+
 [palette.quote]
 rgb = [
     245,
@@ -247,9 +232,24 @@ rgb = [
 ]
 style = ["italic"]
 
-[palette.commentary]
+[palette.subtle]
 rgb = [
-    207,
-    208,
-    226,
+    245,
+    194,
+    231,
 ]
+
+[palette.success]
+rgb = [
+    180,
+    190,
+    254,
+]
+
+[palette.warning]
+rgb = [
+    250,
+    179,
+    135,
+]
+style = ["bold"]

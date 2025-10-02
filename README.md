@@ -1,5 +1,30 @@
 # thag_rs
 
+## Binary Tools
+
+### thag_edit_theme
+
+Interactive theme editor for manual color role adjustments.
+
+```bash
+# Edit a theme interactively
+thag_edit_theme --input themes/my-theme.toml
+
+# Edit and save to different file
+thag_edit_theme --input themes/original.toml --output themes/modified.toml
+```
+
+Features:
+- Edit individual color roles
+- Swap colors between two roles
+- Preview all palette colors with visual feedback
+- Reset changes before saving
+- Automatic backup creation
+
+See `demo/theme_editor_demo.md` for detailed usage examples.
+
+
+
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
 [![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
 [![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)

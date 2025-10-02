@@ -450,7 +450,8 @@ The library includes comprehensive examples:
 - **Library Integrations** — Usage patterns with different terminal libraries
 - **Custom Themes** — Creating and loading custom color schemes
 
-Run examples:
+### Run examples
+
 ```zsh
 # Complete styling system demonstration
 thag demo/styling_migration_guide.rs

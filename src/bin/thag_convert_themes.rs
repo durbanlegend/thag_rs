@@ -98,6 +98,63 @@ impl BaseTheme {
         self.palette.base10.is_some()
     }
 
+    /// Extract base16/24 colors as RGB array for ANSI terminal mapping
+    fn extract_base_colors(&self) -> Result<Vec<[u8; 3]>, Box<dyn std::error::Error>> {
+        let to_array = |hex: &str| -> Result<[u8; 3], Box<dyn std::error::Error>> {
+            let (r, g, b) = hex_to_rgb(hex)?;
+            Ok([r, g, b])
+        };
+
+        let mut colors = vec![
+            to_array(&self.palette.base00)?,
+            to_array(&self.palette.base01)?,
+            to_array(&self.palette.base02)?,
+            to_array(&self.palette.base03)?,
+            to_array(&self.palette.base04)?,
+            to_array(&self.palette.base05)?,
+            to_array(&self.palette.base06)?,
+            to_array(&self.palette.base07)?,
+            to_array(&self.palette.base08)?,
+            to_array(&self.palette.base09)?,
+            to_array(&self.palette.base0_a)?,
+            to_array(&self.palette.base0_b)?,
+            to_array(&self.palette.base0_c)?,
+            to_array(&self.palette.base0_d)?,
+            to_array(&self.palette.base0_e)?,
+            to_array(&self.palette.base0_f)?,
+        ];
+
+        // Add base24-specific colors if present
+        if self.is_base24() {
+            if let Some(ref base10) = self.palette.base10 {
+                colors.push(to_array(base10)?);
+            }
+            if let Some(ref base11) = self.palette.base11 {
+                colors.push(to_array(base11)?);
+            }
+            if let Some(ref base12) = self.palette.base12 {
+                colors.push(to_array(base12)?);
+            }
+            if let Some(ref base13) = self.palette.base13 {
+                colors.push(to_array(base13)?);
+            }
+            if let Some(ref base14) = self.palette.base14 {
+                colors.push(to_array(base14)?);
+            }
+            if let Some(ref base15) = self.palette.base15 {
+                colors.push(to_array(base15)?);
+            }
+            if let Some(ref base16) = self.palette.base16 {
+                colors.push(to_array(base16)?);
+            }
+            if let Some(ref base17) = self.palette.base17 {
+                colors.push(to_array(base17)?);
+            }
+        }
+
+        Ok(colors)
+    }
+
     fn convert_to_thag(&self) -> Result<Theme, Box<dyn std::error::Error>> {
         let palette = if self.is_base24() {
             self.create_base24_palette()?
@@ -129,6 +186,7 @@ impl BaseTheme {
             bg_rgbs,
             is_builtin: false,
             filename: PathBuf::new(), // Will be set by caller
+            base_colors: Some(self.extract_base_colors()?),
         })
     }
 
@@ -536,7 +594,8 @@ struct ThemeOutput {
     term_bg_luma: String,
     min_color_support: String,
     backgrounds: Vec<String>,
-    bg_rgbs: Vec<(u8, u8, u8)>, // Official one first
+    bg_rgbs: Vec<(u8, u8, u8)>,
+    base_colors: Vec<[u8; 3]>,
     palette: PaletteOutput,
 }
 
@@ -602,6 +661,7 @@ impl ToThemeOutput for Theme {
             min_color_support: if use_256 { "color256" } else { "true_color" }.to_string(),
             backgrounds,
             bg_rgbs,
+            base_colors: self.base_colors.clone().unwrap_or_default(),
             palette: PaletteOutput {
                 heading1: style_to_output(&self.palette.heading1, use_256),
                 heading2: style_to_output(&self.palette.heading2, use_256),

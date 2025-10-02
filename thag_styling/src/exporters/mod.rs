@@ -597,6 +597,7 @@ fn create_test_theme() -> Theme {
         backgrounds: vec!["#1e1e2e".to_string()],
         bg_rgbs: vec![(30, 30, 46)],
         description: "A test theme".to_string(),
+        base_colors: None,
     }
 }
 

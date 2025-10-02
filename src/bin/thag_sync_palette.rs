@@ -86,7 +86,7 @@ fn main() {
 fn apply_theme(theme_name: &str) {
     vprtln!(V::N, "🎨 Loading theme: {}", theme_name);
 
-    let theme = match Theme::get_builtin(theme_name) {
+    let mut theme = match Theme::get_builtin(theme_name) {
         Ok(theme) => theme,
         Err(e) => {
             eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
@@ -97,6 +97,12 @@ fn apply_theme(theme_name: &str) {
             process::exit(1);
         }
     };
+
+    // Load base_colors for accurate ANSI terminal mapping
+    if let Err(e) = theme.load_base_colors() {
+        vprtln!(V::V, "⚠️ Could not load base colors: {}", e);
+        vprtln!(V::V, "Falling back to role-based ANSI mapping");
+    }
 
     vprtln!(V::N, "📝 Description: {}", theme.description);
     vprtln!(V::N, "🌈 Applying palette...");
@@ -120,7 +126,7 @@ fn apply_theme(theme_name: &str) {
 fn preview_theme(theme_name: &str) {
     vprtln!(V::N, "🎨 Previewing theme: {}", theme_name);
 
-    let theme = match Theme::get_builtin(theme_name) {
+    let mut theme = match Theme::get_builtin(theme_name) {
         Ok(theme) => theme,
         Err(e) => {
             eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
@@ -131,6 +137,12 @@ fn preview_theme(theme_name: &str) {
             process::exit(1);
         }
     };
+
+    // Load base_colors for accurate ANSI terminal mapping
+    if let Err(e) = theme.load_base_colors() {
+        vprtln!(V::V, "⚠️ Could not load base colors: {}", e);
+        vprtln!(V::V, "Falling back to role-based ANSI mapping");
+    }
 
     if let Err(e) = PaletteSync::preview_theme(&theme) {
         eprintln!("❌ Failed to preview theme: {}", e);

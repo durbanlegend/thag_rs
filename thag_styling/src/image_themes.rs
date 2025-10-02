@@ -251,6 +251,7 @@ impl ImageThemeGenerator {
                 background_color.rgb[2],
             )],
             palette,
+            base_colors: None, // Image themes don't have base16/24 colors
         })
     }
 

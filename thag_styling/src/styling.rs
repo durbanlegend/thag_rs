@@ -1545,6 +1545,11 @@ pub struct Theme {
     pub bg_rgbs: Vec<(u8, u8, u8)>,
     /// A human-readable description of the theme's characteristics and origin
     pub description: String,
+    /// Base16/24 color array for ANSI terminal mapping (optional)
+    /// Skipped during normal theme loading to save memory.
+    /// Load on-demand using `load_base_colors()` when needed (e.g., in `thag_sync_palette`).
+    /// Contains 16 colors for base16 themes or 24 colors for base24 themes.
+    pub base_colors: Option<Vec<[u8; 3]>>,
 }
 
 impl Theme {
@@ -1760,6 +1765,73 @@ impl Theme {
         def.filename = path.to_path_buf();
         def.is_builtin = false;
         Self::from_definition(def)
+    }
+
+    /// Load base16/24 colors on-demand for ANSI terminal mapping.
+    ///
+    /// This method loads the optional `base_colors` array from the theme file.
+    /// The array is skipped during normal theme loading to save memory, but can be
+    /// loaded when needed by tools like `thag_sync_palette` for ANSI terminal color mapping.
+    ///
+    /// # Returns
+    /// Returns `Ok(())` if colors were loaded or were already present.
+    ///
+    /// # Errors
+    /// Returns `StylingError` if:
+    /// - The theme file cannot be read
+    /// - The TOML content is invalid
+    /// - The `base_colors` array has invalid format
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use thag_styling::Theme;
+    /// use std::path::Path;
+    ///
+    /// let mut theme = Theme::load_from_file(Path::new("my-theme.toml"))?;
+    /// theme.load_base_colors()?;
+    ///
+    /// if let Some(colors) = &theme.base_colors {
+    ///     println!("Loaded {} base colors", colors.len());
+    /// }
+    /// # Ok::<(), thag_styling::StylingError>(())
+    /// ```
+    pub fn load_base_colors(&mut self) -> StylingResult<()> {
+        // Already loaded
+        if self.base_colors.is_some() {
+            return Ok(());
+        }
+
+        // Read the theme file
+        let content = fs::read_to_string(&self.filename)?;
+        let value: toml::Value = toml::from_str(&content)?;
+
+        // Extract base_colors array if present
+        if let Some(base_colors_value) = value.get("base_colors") {
+            if let Some(array) = base_colors_value.as_array() {
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let colors: Vec<[u8; 3]> = array
+                    .iter()
+                    .filter_map(|v| {
+                        let arr = v.as_array()?;
+                        if arr.len() == 3 {
+                            Some([
+                                arr[0].as_integer()? as u8,
+                                arr[1].as_integer()? as u8,
+                                arr[2].as_integer()? as u8,
+                            ])
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if !colors.is_empty() {
+                    self.base_colors = Some(colors);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Loads a built-in theme by name.
@@ -2054,6 +2126,7 @@ impl Theme {
             backgrounds: def.backgrounds.clone(),
             bg_rgbs,
             description: def.description,
+            base_colors: None, // Loaded on-demand via load_base_colors()
         })
     }
 
@@ -4175,6 +4248,7 @@ mod tests {
         let true_color_style = style_for_theme_and_role(&true_color.theme, test_role);
         let painted = true_color_style.paint("test");
         vprtln!(V::VV, "painted={painted:?}");
+        dbg!(&painted);
         assert!(painted.contains("\x1b[38;2;"));
         assert!(painted.ends_with("\u{1b}[0m"));
         let output = get_test_output();

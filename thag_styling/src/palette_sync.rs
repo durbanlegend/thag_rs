@@ -217,7 +217,14 @@ impl PaletteSync {
     /// - 13: Bright Magenta (secondary headings)
     /// - 14: Bright Cyan (helpful suggestions)
     /// - 15: Bright White (prominent quotes)
-    fn build_ansi_color_map(theme: &Theme) -> [[u8; 3]; 16] {
+    fn build_ansi_color_map(theme: &Theme) -> Vec<[u8; 3]> {
+        // Prefer base_colors if available - this preserves the original base16/24 ANSI mapping
+        if let Some(base_colors) = &theme.base_colors {
+            // Use first 16 colors for ANSI slots 0-15
+            return base_colors.iter().take(16).copied().collect();
+        }
+
+        // Fallback to role-based mapping for themes without base_colors
         let extract_rgb = |role: Role| -> [u8; 3] {
             theme
                 .style_for(role)
@@ -239,7 +246,7 @@ impl PaletteSync {
         // Get background color for black (0)
         let bg_rgb = theme.bg_rgbs.first().copied().map_or([0, 0, 0], Into::into);
 
-        [
+        vec![
             bg_rgb,                        // 0: Black (use theme background)
             extract_rgb(Role::Emphasis),   // 1: Red (important emphasis)
             extract_rgb(Role::Success),    // 2: Green (positive outcomes)

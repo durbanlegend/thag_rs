@@ -188,7 +188,7 @@ required-features = ["tools"]
 
 [[bin]]
 name = "thag_gen_terminal_themes_alt"
-path = "src/bin/thag_gen_terminal_themes.rs_alt"
+path = "src/bin/thag_gen_terminal_themes_alt.rs"
 required-features = ["tools"]
 
 [[bin]]

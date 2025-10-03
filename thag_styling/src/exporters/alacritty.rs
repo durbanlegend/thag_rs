@@ -4,9 +4,7 @@
 //! Alacritty uses a specific TOML structure that differs from other terminals.
 
 use crate::{
-    exporters::{
-        adjust_color_brightness, dim_color, get_rgb_from_style, is_light_color, ThemeExporter,
-    },
+    exporters::{adjust_color_brightness, dim_color, is_light_color, ThemeExporter},
     StylingResult, Theme,
 };
 use std::fmt::Write as _; // import without risk of name clashing
@@ -45,36 +43,41 @@ impl ThemeExporter for AlacrittyExporter {
         );
 
         // Use normal text color for foreground
-        if let Some(fg_color) = get_rgb_from_style(&theme.palette.normal) {
-            let _ = writeln!(
-                output,
-                r##"foreground = "#{:02x}{:02x}{:02x}""##,
-                fg_color.0, fg_color.1, fg_color.2
-            );
+        if let Some([r, g, b]) = &theme.palette.normal.rgb() {
+            let _ = writeln!(output, r##"foreground = "#{:02x}{:02x}{:02x}""##, r, g, b);
         }
 
         // Bright foreground (use emphasis or fallback to normal)
-        if let Some(bright_fg) = get_rgb_from_style(&theme.palette.emphasis)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal))
+        if let Some([r, g, b]) = &theme
+            .palette
+            .emphasis
+            .rgb()
+            .or_else(|| theme.palette.normal.rgb())
         {
             let _ = writeln!(
                 output,
                 r##"bright_foreground = "#{:02x}{:02x}{:02x}""##,
-                bright_fg.0, bright_fg.1, bright_fg.2
+                r, g, b
             );
         }
 
         // Dim foreground (use subtle or fallback to normal with reduced brightness)
-        if let Some(dim_fg) = get_rgb_from_style(&theme.palette.subtle).or_else(|| {
-            get_rgb_from_style(&theme.palette.normal).map(|(r, g, b)| {
-                // Reduce brightness by 30%
-                (
-                    (f32::from(r) * 0.7) as u8,
-                    (f32::from(g) * 0.7) as u8,
-                    (f32::from(b) * 0.7) as u8,
-                )
+        if let Some(dim_fg) = &theme
+            .palette
+            .subtle
+            .rgb()
+            .map(|[r, g, b]| (r, g, b))
+            .or_else(|| {
+                theme.palette.normal.rgb().map(|[r, g, b]| {
+                    // Reduce brightness by 30%
+                    (
+                        (f32::from(r) * 0.7) as u8,
+                        (f32::from(g) * 0.7) as u8,
+                        (f32::from(b) * 0.7) as u8,
+                    )
+                })
             })
-        }) {
+        {
             let _ = writeln!(
                 output,
                 r##"dim_foreground = "#{:02x}{:02x}{:02x}""##,
@@ -90,13 +93,28 @@ impl ThemeExporter for AlacrittyExporter {
         // Map semantic colors to ANSI colors
         let normal_colors = [
             ("black", Some(theme.bg_rgbs[0])),
-            ("red", get_rgb_from_style(&theme.palette.emphasis)),
-            ("green", get_rgb_from_style(&theme.palette.success)),
-            ("yellow", get_rgb_from_style(&theme.palette.commentary)),
-            ("blue", get_rgb_from_style(&theme.palette.info)),
-            ("magenta", get_rgb_from_style(&theme.palette.heading1)),
-            ("cyan", get_rgb_from_style(&theme.palette.code)),
-            ("white", get_rgb_from_style(&theme.palette.normal)),
+            (
+                "red",
+                theme.palette.emphasis.rgb().map(|[r, g, b]| (r, g, b)),
+            ),
+            (
+                "green",
+                theme.palette.success.rgb().map(|[r, g, b]| (r, g, b)),
+            ),
+            (
+                "yellow",
+                theme.palette.commentary.rgb().map(|[r, g, b]| (r, g, b)),
+            ),
+            ("blue", theme.palette.info.rgb().map(|[r, g, b]| (r, g, b))),
+            (
+                "magenta",
+                theme.palette.heading1.rgb().map(|[r, g, b]| (r, g, b)),
+            ),
+            ("cyan", theme.palette.code.rgb().map(|[r, g, b]| (r, g, b))),
+            (
+                "white",
+                theme.palette.normal.rgb().map(|[r, g, b]| (r, g, b)),
+            ),
         ];
 
         eprintln!("Normal colors:");
@@ -114,19 +132,19 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.bright]\n");
 
         let bright_colors = [
-            ("black", get_rgb_from_style(&theme.palette.subtle)),
-            ("red", get_rgb_from_style(&theme.palette.error)),
-            ("green", get_rgb_from_style(&theme.palette.debug)),
-            ("yellow", get_rgb_from_style(&theme.palette.warning)),
-            ("blue", get_rgb_from_style(&theme.palette.link)),
-            ("magenta", get_rgb_from_style(&theme.palette.heading2)),
-            ("cyan", get_rgb_from_style(&theme.palette.hint)),
-            ("white", get_rgb_from_style(&theme.palette.quote)),
+            ("black", theme.palette.subtle.rgb()),
+            ("red", theme.palette.error.rgb()),
+            ("green", theme.palette.debug.rgb()),
+            ("yellow", theme.palette.warning.rgb()),
+            ("blue", theme.palette.link.rgb()),
+            ("magenta", theme.palette.heading2.rgb()),
+            ("cyan", theme.palette.hint.rgb()),
+            ("white", theme.palette.quote.rgb()),
         ];
 
         eprintln!("Bright colors:");
         for (color_name, rgb_opt) in bright_colors {
-            if let Some((r, g, b)) = rgb_opt {
+            if let Some([r, g, b]) = rgb_opt {
                 let color = &format!(r##"{} = "#{:02x}{:02x}{:02x}""##, color_name, r, g, b);
                 eprintln!("color={color}");
                 output.push_str(color);
@@ -142,34 +160,68 @@ impl ThemeExporter for AlacrittyExporter {
             ("black", Some((16, 16, 16))),
             (
                 "red",
-                get_rgb_from_style(&theme.palette.error).map(dim_color),
+                theme
+                    .palette
+                    .error
+                    .rgb()
+                    .map(|[r, g, b]| (r, g, b))
+                    .map(dim_color),
             ),
             (
                 "green",
-                get_rgb_from_style(&theme.palette.success).map(dim_color),
+                theme
+                    .palette
+                    .success
+                    .rgb()
+                    .map(|[r, g, b]| (r, g, b))
+                    .map(dim_color),
             ),
             (
                 "yellow",
-                get_rgb_from_style(&theme.palette.warning).map(dim_color),
+                theme
+                    .palette
+                    .warning
+                    .rgb()
+                    .map(|[r, g, b]| (r, g, b))
+                    .map(dim_color),
             ),
             (
                 "blue",
-                get_rgb_from_style(&theme.palette.info).map(dim_color),
+                theme
+                    .palette
+                    .info
+                    .rgb()
+                    .map(|[r, g, b]| (r, g, b))
+                    .map(dim_color),
             ),
             (
                 "magenta",
-                get_rgb_from_style(&theme.palette.code).map(dim_color),
+                theme
+                    .palette
+                    .code
+                    .rgb()
+                    .map(|[r, g, b]| (r, g, b))
+                    .map(dim_color),
             ),
             (
                 "cyan",
-                get_rgb_from_style(&theme.palette.info)
+                theme
+                    .palette
+                    .info
+                    .rgb()
+                    .map(|[r, g, b]| (r, g, b))
                     .map(dim_color)
                     .or(Some((32, 96, 96))),
             ),
             (
                 "white",
-                get_rgb_from_style(&theme.palette.subtle)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal).map(dim_color)),
+                theme
+                    .palette
+                    .subtle
+                    .rgb()
+                    .or_else(|| theme.palette.normal.rgb())
+                    .map(|[r, g, b]| (r, g, b))
+                    .map(dim_color),
             ),
         ];
 
@@ -187,16 +239,20 @@ impl ThemeExporter for AlacrittyExporter {
 
         // Cursor colors
         output.push_str("[colors.cursor]\n");
-        if let Some(cursor_color) = get_rgb_from_style(&theme.palette.emphasis)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal))
+        if let Some(cursor_color) = theme
+            .palette
+            .emphasis
+            .rgb()
+            .or_else(|| theme.palette.normal.rgb())
         {
             let _ = writeln!(
                 output,
                 r##"cursor = "#{:02x}{:02x}{:02x}""##,
-                cursor_color.0, cursor_color.1, cursor_color.2
+                cursor_color[0], cursor_color[1], cursor_color[2]
             );
             // Cursor text should contrast with cursor color
-            let text_color = if is_light_color(cursor_color) {
+            let text_color = if is_light_color((cursor_color[0], cursor_color[1], cursor_color[2]))
+            {
                 (0, 0, 0) // Black text on light cursor
             } else {
                 (255, 255, 255) // White text on dark cursor
@@ -214,7 +270,11 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.selection]\n");
 
         // Use commentary color for better selection visibility
-        let selection_bg = get_rgb_from_style(&theme.palette.commentary)
+        let selection_bg: (u8, u8, u8) = theme
+            .palette
+            .commentary
+            .rgb()
+            .map(|[r, g, b]| (r, g, b))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.3));
         let _ = writeln!(
             output,
@@ -222,11 +282,11 @@ impl ThemeExporter for AlacrittyExporter {
             selection_bg.0, selection_bg.1, selection_bg.2
         );
 
-        if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
+        if let Some(selection_fg) = theme.palette.normal.rgb() {
             let _ = writeln!(
                 output,
                 r##"text = "#{:02x}{:02x}{:02x}""##,
-                selection_fg.0, selection_fg.1, selection_fg.2
+                selection_fg[0], selection_fg[1], selection_fg[2]
             );
         }
 
@@ -236,11 +296,11 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.search]\n");
         output.push_str("[colors.search.matches]\n");
 
-        if let Some(search_match) = get_rgb_from_style(&theme.palette.warning) {
+        if let Some(search_match) = theme.palette.warning.rgb() {
             let _ = writeln!(
                 output,
                 r##"background = "#{:02x}{:02x}{:02x}""##,
-                search_match.0, search_match.1, search_match.2
+                search_match[0], search_match[1], search_match[2]
             );
             let _ = writeln!(
                 output,
@@ -250,11 +310,11 @@ impl ThemeExporter for AlacrittyExporter {
         }
 
         output.push_str("\n[colors.search.focused_match]\n");
-        if let Some(focused_match) = get_rgb_from_style(&theme.palette.emphasis) {
+        if let Some(focused_match) = theme.palette.emphasis.rgb() {
             let _ = writeln!(
                 output,
                 r##"background = "#{:02x}{:02x}{:02x}""##,
-                focused_match.0, focused_match.1, focused_match.2
+                focused_match[0], focused_match[1], focused_match[2]
             );
             let _ = writeln!(
                 output,

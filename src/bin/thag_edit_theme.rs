@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
-use thag_styling::{ColorValue, Palette, Role, Style, Theme};
+use thag_styling::{hsl_to_rgb, rgb_to_hsl, ColorValue, Palette, Role, Style, StylingError, Theme};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Interactive theme editor", long_about = None)]
@@ -217,6 +217,9 @@ impl ThemeEditor {
         // Get current color
         let current_style = self.theme.style_for(role);
         let current_rgb = Self::extract_rgb(&current_style)?;
+        let current_rgb = &current_style
+            .rgb()
+            .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
         let current_hex = format!(
             "#{:02x}{:02x}{:02x}",
             current_rgb[0], current_rgb[1], current_rgb[2]
@@ -280,7 +283,7 @@ impl ThemeEditor {
         role: Role,
         current_rgb: [u8; 3],
     ) -> Result<(), Box<dyn Error>> {
-        let (h, s, l) = Self::rgb_to_hsl(current_rgb);
+        let (h, s, l) = rgb_to_hsl(current_rgb);
 
         println!(
             "\nCurrent HSL: H={:.0}° S={:.0}% L={:.0}%",
@@ -313,8 +316,12 @@ impl ThemeEditor {
         let style2 = self.theme.style_for(role2).clone();
 
         // Extract RGB values
-        let rgb1 = Self::extract_rgb(&style1)?;
-        let rgb2 = Self::extract_rgb(&style2)?;
+        let rgb1 = &style1
+            .rgb()
+            .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
+        let rgb2 = &style2
+            .rgb()
+            .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
 
         // Swap them
         self.update_role(role1, rgb2)?;
@@ -516,80 +523,18 @@ impl ThemeEditor {
         candidates
     }
 
-    /// Convert RGB to HSL color space
-    fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
-        let r = f32::from(rgb[0]) / 255.0;
-        let g = f32::from(rgb[1]) / 255.0;
-        let b = f32::from(rgb[2]) / 255.0;
-
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let delta = max - min;
-
-        let l = (max + min) / 2.0;
-
-        if delta == 0.0 {
-            return (0.0, 0.0, l);
-        }
-
-        let s = if l < 0.5 {
-            delta / (max + min)
-        } else {
-            delta / (2.0 - max - min)
-        };
-
-        let h = if max == r {
-            60.0 * (((g - b) / delta) % 6.0)
-        } else if max == g {
-            60.0 * (((b - r) / delta) + 2.0)
-        } else {
-            60.0 * (((r - g) / delta) + 4.0)
-        };
-
-        let h = if h < 0.0 { h + 360.0 } else { h };
-
-        (h, s, l)
-    }
-
-    /// Convert HSL to RGB color space
-    fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
-        let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
-        let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
-        let m = l - c / 2.0;
-
-        let (r, g, b) = if h < 60.0 {
-            (c, x, 0.0)
-        } else if h < 120.0 {
-            (x, c, 0.0)
-        } else if h < 180.0 {
-            (0.0, c, x)
-        } else if h < 240.0 {
-            (0.0, x, c)
-        } else if h < 300.0 {
-            (x, 0.0, c)
-        } else {
-            (c, 0.0, x)
-        };
-
-        [
-            ((r + m) * 255.0).round() as u8,
-            ((g + m) * 255.0).round() as u8,
-            ((b + m) * 255.0).round() as u8,
-        ]
-    }
-
     /// Adjust lightness by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
-    fn adjust_lightness(rgb: [u8; 3], factor: f32) -> [u8; 3] {
-        let (h, s, l) = Self::rgb_to_hsl(rgb);
+    fn adjust_lightness(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
+        let (h, s, l) = rgb_to_hsl(rgb);
         let new_l = (l + factor).clamp(0.1, 0.9); // Keep reasonable bounds
-        Self::hsl_to_rgb(h, s, new_l)
+        hsl_to_rgb(h, s, new_l)
     }
 
     /// Adjust saturation by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
-    fn adjust_saturation(rgb: [u8; 3], factor: f32) -> [u8; 3] {
-        let (h, s, l) = Self::rgb_to_hsl(rgb);
+    fn adjust_saturation(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
+        let (h, s, l) = rgb_to_hsl(rgb);
         let new_s = (s + factor).clamp(0.0, 1.0);
-        Self::hsl_to_rgb(h, new_s, l)
+        hsl_to_rgb(h, new_s, l)
     }
 
     fn update_role(&mut self, role: Role, rgb: [u8; 3]) -> Result<(), Box<dyn Error>> {
@@ -647,19 +592,19 @@ impl ThemeEditor {
             .unwrap_or_else(|| "#000000".to_string())
     }
 
-    fn extract_rgb(style: &Style) -> Result<[u8; 3], Box<dyn Error>> {
-        style
-            .foreground
-            .as_ref()
-            .and_then(|color_info| {
-                if let ColorValue::TrueColor { rgb } = &color_info.value {
-                    Some(*rgb)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| "Could not extract RGB from style".into())
-    }
+    // fn extract_rgb(style: &Style) -> Result<[u8; 3], Box<dyn Error>> {
+    //     style
+    //         .foreground
+    //         .as_ref()
+    //         .and_then(|color_info| {
+    //             if let ColorValue::TrueColor { rgb } = &color_info.value {
+    //                 Some(*rgb)
+    //             } else {
+    //                 None
+    //             }
+    //         })
+    //         .ok_or_else(|| "Could not extract RGB from style".into())
+    // }
 }
 
 fn load_theme(path: &Path) -> Result<Theme, Box<dyn Error>> {

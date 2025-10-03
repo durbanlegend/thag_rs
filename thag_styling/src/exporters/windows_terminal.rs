@@ -4,7 +4,7 @@
 //! Windows Terminal uses JSON configuration files for color schemes.
 
 use crate::{
-    exporters::{adjust_color_brightness, get_rgb_from_style, ThemeExporter},
+    exporters::{adjust_color_brightness, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -22,12 +22,13 @@ impl ThemeExporter for WindowsTerminalExporter {
         let color_scheme = json!({
             "name": theme.name,
             "background": format_color(Some(bg_color)),
-            "foreground": format_color(get_rgb_from_style(&theme.palette.normal)),
+            "foreground": format_color(theme.palette.normal.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
 
             // Cursor colors
             "cursorColor": format_color(
-                get_rgb_from_style(&theme.palette.emphasis)
-                    .or_else(|| get_rgb_from_style(&theme.palette.normal))
+                theme.palette.emphasis.rgb()
+                    .or_else(|| theme.palette.normal.rgb())
+                    .map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
 
             // Selection colors
@@ -35,40 +36,40 @@ impl ThemeExporter for WindowsTerminalExporter {
 
             // ANSI colors (0-7: normal, 8-15: bright)
             "black": format_color(Some(theme.bg_rgbs[0])),
-            "red": format_color(get_rgb_from_style(&theme.palette.emphasis)),
-            "green": format_color(get_rgb_from_style(&theme.palette.success)),
-            "yellow": format_color(get_rgb_from_style(&theme.palette.commentary)),
-            "blue": format_color(get_rgb_from_style(&theme.palette.info)),
-            "purple": format_color(get_rgb_from_style(&theme.palette.heading1)),
+            "red": format_color(theme.palette.emphasis.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
+            "green": format_color(theme.palette.success.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
+            "yellow": format_color(theme.palette.commentary.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
+            "blue": format_color(theme.palette.info.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
+            "purple": format_color(theme.palette.heading1.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
             "cyan": format_color(
-                get_rgb_from_style(&theme.palette.code)
+                theme.palette.code.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
-            "white": format_color(get_rgb_from_style(&theme.palette.normal)),
+            "white": format_color(theme.palette.normal.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
 
             // Bright colors (8-15)
             "brightBlack": format_color(
-                get_rgb_from_style(&theme.palette.subtle)
+                theme.palette.subtle.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightRed": format_color(
-                get_rgb_from_style(&theme.palette.error)
+                theme.palette.error.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightGreen": format_color(
-                get_rgb_from_style(&theme.palette.debug)
+                theme.palette.debug.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightYellow": format_color(
-                get_rgb_from_style(&theme.palette.warning)
+                theme.palette.warning.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightBlue": format_color(
-                get_rgb_from_style(&theme.palette.link)
+                theme.palette.link.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightPurple": format_color(
-                get_rgb_from_style(&theme.palette.heading2)
+                theme.palette.heading2.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightCyan": format_color(
-                get_rgb_from_style(&theme.palette.hint)
+                theme.palette.hint.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
             "brightWhite": format_color(
-                get_rgb_from_style(&theme.palette.quote)
+                theme.palette.quote.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
             )
         });
 

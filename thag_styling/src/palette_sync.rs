@@ -118,14 +118,11 @@ impl PaletteSync {
         // Set selection background color (OSC 17) - use adjusted terminal background
         // Brighten for dark themes, darken for light themes for good visibility
         // Supported by: Gnome Terminal, WezTerm, iTerm2, Kitty, Apple Terminal, WSL Ubuntu
-        let selection_bg_rgb = if let Some(bg_rgb) = theme.bg_rgbs.first() {
+        let selection_bg_rgb = theme.bg_rgbs.first().map_or([128, 128, 128], |bg_rgb| {
             let bg_array = [bg_rgb.0, bg_rgb.1, bg_rgb.2];
             let is_light_theme = matches!(theme.term_bg_luma, crate::TermBgLuma::Light);
             Self::adjust_bg_for_selection(bg_array, is_light_theme)
-        } else {
-            [128, 128, 128] // Fallback gray if no background defined
-        };
-
+        });
         let osc = format!(
             "\x1b]17;rgb:{:02x}/{:02x}/{:02x}\x07",
             selection_bg_rgb[0], selection_bg_rgb[1], selection_bg_rgb[2]

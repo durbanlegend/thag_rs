@@ -4,7 +4,7 @@
 //! Konsole uses an INI-style configuration format with RGB color values.
 
 use crate::{
-    exporters::{adjust_color_brightness, dim_color, get_rgb_from_style, ThemeExporter},
+    exporters::{adjust_color_brightness, dim_color, ThemeExporter},
     StylingResult, Theme,
 };
 use std::fmt::Write as _; // import without risk of name clashing
@@ -51,26 +51,37 @@ impl ThemeExporter for KonsoleExporter {
         output.push('\n');
 
         // Foreground colors
-        let fg_color = get_rgb_from_style(&theme.palette.normal).unwrap_or((255, 255, 255));
+        let fg_color = theme.palette.normal.rgb().unwrap_or([255, 255, 255]);
 
         let _ = writeln!(output, "[Foreground]");
-        let _ = writeln!(output, "Color={},{},{}", fg_color.0, fg_color.1, fg_color.2);
+        let _ = writeln!(
+            output,
+            "Color={},{},{}",
+            fg_color[0], fg_color[1], fg_color[2]
+        );
         output.push('\n');
 
         let _ = writeln!(output, "[ForegroundIntense]");
-        let intense_fg = get_rgb_from_style(&theme.palette.emphasis).unwrap_or(fg_color);
+        let intense_fg = theme.palette.emphasis.rgb().unwrap_or(fg_color);
         let _ = writeln!(output, "Bold=true");
         let _ = writeln!(
             output,
             "Color={},{},{}",
-            intense_fg.0, intense_fg.1, intense_fg.2
+            intense_fg[0], intense_fg[1], intense_fg[2]
         );
         output.push('\n');
 
         let _ = writeln!(output, "[ForegroundFaint]");
-        let faint_fg =
-            get_rgb_from_style(&theme.palette.subtle).unwrap_or_else(|| dim_color(fg_color));
-        let _ = writeln!(output, "Color={},{},{}", faint_fg.0, faint_fg.1, faint_fg.2);
+        let faint_fg = theme
+            .palette
+            .subtle
+            .rgb()
+            .unwrap_or_else(|| dim_color((fg_color[0], fg_color[1], fg_color[2])).into());
+        let _ = writeln!(
+            output,
+            "Color={},{},{}",
+            faint_fg[0], faint_fg[1], faint_fg[2]
+        );
         output.push('\n');
 
         // ANSI Colors 0-7 (normal colors)
@@ -78,25 +89,52 @@ impl ThemeExporter for KonsoleExporter {
             // Color 0 (black) - use background
             bg_color,
             // Color 1 (red) - use error or emphasis
-            get_rgb_from_style(&theme.palette.error)
-                .or_else(|| get_rgb_from_style(&theme.palette.emphasis))
+            theme
+                .palette
+                .error
+                .rgb()
+                .or_else(|| theme.palette.emphasis.rgb())
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((220, 50, 47)),
             // Color 2 (green) - use success
-            get_rgb_from_style(&theme.palette.success).unwrap_or((133, 153, 0)),
+            theme
+                .palette
+                .success
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
+                .unwrap_or((133, 153, 0)),
             // Color 3 (yellow) - use warning or commentary
-            get_rgb_from_style(&theme.palette.warning)
-                .or_else(|| get_rgb_from_style(&theme.palette.commentary))
+            theme
+                .palette
+                .warning
+                .rgb()
+                .or_else(|| theme.palette.commentary.rgb())
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((181, 137, 0)),
             // Color 4 (blue) - use info
-            get_rgb_from_style(&theme.palette.info).unwrap_or((38, 139, 210)),
+            theme
+                .palette
+                .info
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
+                .unwrap_or((38, 139, 210)),
             // Color 5 (magenta) - use heading1
-            get_rgb_from_style(&theme.palette.heading1).unwrap_or((211, 54, 130)),
+            theme
+                .palette
+                .heading1
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
+                .unwrap_or((211, 54, 130)),
             // Color 6 (cyan) - use code or hint
-            get_rgb_from_style(&theme.palette.code)
-                .or_else(|| get_rgb_from_style(&theme.palette.hint))
+            theme
+                .palette
+                .code
+                .rgb()
+                .or_else(|| theme.palette.hint.rgb())
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((42, 161, 152)),
             // Color 7 (white) - use normal foreground
-            fg_color,
+            (fg_color[0], fg_color[1], fg_color[2]),
         ];
 
         for (i, (r, g, b)) in normal_colors.iter().enumerate() {
@@ -108,43 +146,94 @@ impl ThemeExporter for KonsoleExporter {
         // ANSI Colors 0-7 Intense (bright colors 8-15)
         let bright_colors = [
             // Color 0 intense (bright black) - use subtle
-            get_rgb_from_style(&theme.palette.subtle)
+            theme
+                .palette
+                .subtle
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or_else(|| adjust_color_brightness(bg_color, 2.0)),
             // Color 1 intense (bright red) - use brighter error
-            get_rgb_from_style(&theme.palette.error)
+            theme
+                .palette
+                .error
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .map_or((255, 84, 84), |c| adjust_color_brightness(c, 1.3)),
             // Color 2 intense (bright green) - use debug or brighter success
-            get_rgb_from_style(&theme.palette.debug)
+            theme
+                .palette
+                .debug
+                .rgb()
                 .or_else(|| {
-                    get_rgb_from_style(&theme.palette.success)
-                        .map(|c| adjust_color_brightness(c, 1.3))
+                    theme
+                        .palette
+                        .success
+                        .rgb()
+                        .map(|c| adjust_color_brightness((c[0], c[1], c[2]), 1.3).into())
                 })
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((84, 255, 84)),
             // Color 3 intense (bright yellow) - use brighter warning
-            get_rgb_from_style(&theme.palette.warning)
+            theme
+                .palette
+                .warning
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .map_or((255, 255, 84), |c| adjust_color_brightness(c, 1.3)),
             // Color 4 intense (bright blue) - use link or brighter info
-            get_rgb_from_style(&theme.palette.link)
+            theme
+                .palette
+                .link
+                .rgb()
                 .or_else(|| {
-                    get_rgb_from_style(&theme.palette.info).map(|c| adjust_color_brightness(c, 1.3))
+                    theme
+                        .palette
+                        .info
+                        .rgb()
+                        .map(|c| adjust_color_brightness((c[0], c[1], c[2]), 1.3).into())
                 })
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((84, 84, 255)),
             // Color 5 intense (bright magenta) - use heading2 or brighter heading1
-            get_rgb_from_style(&theme.palette.heading2)
+            theme
+                .palette
+                .heading2
+                .rgb()
                 .or_else(|| {
-                    get_rgb_from_style(&theme.palette.heading1)
-                        .map(|c| adjust_color_brightness(c, 1.3))
+                    theme
+                        .palette
+                        .heading1
+                        .rgb()
+                        .map(|c| adjust_color_brightness((c[0], c[1], c[2]), 1.3).into())
                 })
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((255, 84, 255)),
             // Color 6 intense (bright cyan) - use brighter code/hint
-            get_rgb_from_style(&theme.palette.hint)
+            theme
+                .palette
+                .hint
+                .rgb()
                 .or_else(|| {
-                    get_rgb_from_style(&theme.palette.code).map(|c| adjust_color_brightness(c, 1.3))
+                    theme
+                        .palette
+                        .code
+                        .rgb()
+                        .map(|c| adjust_color_brightness((c[0], c[1], c[2]), 1.3).into())
                 })
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .unwrap_or((84, 255, 255)),
             // Color 7 intense (bright white) - use quote or brighter normal
-            get_rgb_from_style(&theme.palette.quote)
-                .or_else(|| Some(adjust_color_brightness(fg_color, 1.3)))
+            theme
+                .palette
+                .quote
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
+                .or_else(|| {
+                    Some(adjust_color_brightness(
+                        (fg_color[0], fg_color[1], fg_color[2]),
+                        1.3,
+                    ))
+                })
                 .unwrap_or((255, 255, 255)),
         ];
 

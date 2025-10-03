@@ -396,7 +396,7 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
         2 => (0.0, c, x),
         3 => (0.0, x, c),
         4 => (x, 0.0, c),
-        _ => (c, 0.0, x),
+        5 | 6_u32..=u32::MAX => (c, 0.0, x),
     };
 
     let m = l - c / 2.0;
@@ -422,33 +422,26 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
     let delta = max - min;
 
     let l = (max + min) / 2.0;
-    let s;
-    let mut h;
 
     if delta == 0.0 {
-        h = 0.0;
-        s = 0.0;
-    } else {
-        s = if l > 0.5 {
-            delta / (2.0 - max - min)
-        } else {
-            delta / (max + min)
-        };
-
-        let error_margin = 0.001;
-        h = if (max - r).abs() < error_margin {
-            ((g - b) / delta) % 6.0
-        } else if (max - g).abs() < error_margin {
-            ((b - r) / delta) + 2.0
-        } else {
-            ((r - g) / delta) + 4.0
-        } * 60.0;
-
-        // Ensure hue is positive
-        if h < 0.0 {
-            h += 360.0;
-        }
+        return (0.0, 0.0, l);
     }
+
+    let s = if l > 0.5 {
+        delta / (2.0 - max - min)
+    } else {
+        delta / (max + min)
+    };
+
+    let h = if max == r {
+        60.0 * (((g - b) / delta) % 6.0)
+    } else if max == g {
+        60.0 * (((b - r) / delta) + 2.0)
+    } else {
+        60.0 * (((r - g) / delta) + 4.0)
+    };
+
+    let h = if h < 0.0 { h + 360.0 } else { h };
 
     (h, s, l)
 }

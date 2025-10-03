@@ -340,7 +340,7 @@ impl Style {
         }
     }
 
-    /// Returns the Style with RGB foreground color
+    /// Returns the foreground RGB value as a wrapped u8 array if it exists.
     #[must_use]
     pub fn rgb(&self) -> Option<[u8; 3]> {
         let Some(fg) = &self.foreground else {

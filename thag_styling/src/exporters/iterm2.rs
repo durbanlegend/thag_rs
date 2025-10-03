@@ -4,7 +4,7 @@
 //! iTerm2 uses .itermcolors files (plist XML) for color presets that can be imported through the UI.
 
 use crate::{
-    exporters::{adjust_color_brightness, get_rgb_from_style, ThemeExporter},
+    exporters::{adjust_color_brightness, ThemeExporter},
     StylingResult, Theme,
 };
 
@@ -35,77 +35,121 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Ansi 1 Color",
-            get_rgb_from_style(&theme.palette.emphasis),
+            theme
+                .palette
+                .emphasis
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 2 Color",
-            get_rgb_from_style(&theme.palette.success),
+            theme
+                .palette
+                .success
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 3 Color",
-            get_rgb_from_style(&theme.palette.commentary),
+            theme
+                .palette
+                .commentary
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 4 Color",
-            get_rgb_from_style(&theme.palette.info),
+            theme.palette.info.rgb().map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 5 Color",
-            get_rgb_from_style(&theme.palette.heading1),
+            theme
+                .palette
+                .heading1
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 6 Color",
-            get_rgb_from_style(&theme.palette.code),
+            theme.palette.code.rgb().map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 7 Color",
-            get_rgb_from_style(&theme.palette.normal),
+            theme
+                .palette
+                .normal
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 8 Color",
-            get_rgb_from_style(&theme.palette.subtle),
+            theme
+                .palette
+                .subtle
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 9 Color",
-            get_rgb_from_style(&theme.palette.error),
+            theme
+                .palette
+                .error
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 10 Color",
-            get_rgb_from_style(&theme.palette.debug),
+            theme
+                .palette
+                .debug
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 11 Color",
-            get_rgb_from_style(&theme.palette.warning),
+            theme
+                .palette
+                .warning
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 12 Color",
-            get_rgb_from_style(&theme.palette.link),
+            theme.palette.link.rgb().map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 13 Color",
-            get_rgb_from_style(&theme.palette.heading2),
+            theme
+                .palette
+                .heading2
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 14 Color",
-            get_rgb_from_style(&theme.palette.hint),
+            theme.palette.hint.rgb().map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 15 Color",
-            get_rgb_from_style(&theme.palette.quote),
+            theme
+                .palette
+                .quote
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Background and foreground
@@ -113,23 +157,35 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Foreground Color",
-            get_rgb_from_style(&theme.palette.normal),
+            theme
+                .palette
+                .normal
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Bold color
         write_color_entry(
             &mut output,
             "Bold Color",
-            get_rgb_from_style(&theme.palette.emphasis)
-                .or_else(|| get_rgb_from_style(&theme.palette.normal)),
+            theme
+                .palette
+                .emphasis
+                .rgb()
+                .or_else(|| theme.palette.normal.rgb())
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Cursor colors
         write_color_entry(
             &mut output,
             "Cursor Color",
-            get_rgb_from_style(&theme.palette.emphasis)
-                .or_else(|| get_rgb_from_style(&theme.palette.normal)),
+            theme
+                .palette
+                .emphasis
+                .rgb()
+                .or_else(|| theme.palette.normal.rgb())
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(&mut output, "Cursor Text Color", Some(bg_color))?;
 
@@ -139,13 +195,21 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Selection Color",
-            get_rgb_from_style(&theme.palette.commentary)
+            theme
+                .palette
+                .commentary
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2]))
                 .or_else(|| Some(adjust_color_brightness(bg_color, 1.4))),
         )?;
         write_color_entry(
             &mut output,
             "Selected Text Color",
-            get_rgb_from_style(&theme.palette.normal),
+            theme
+                .palette
+                .normal
+                .rgb()
+                .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Close the plist

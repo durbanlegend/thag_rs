@@ -4,9 +4,7 @@
 //! Kitty uses a simple key-value configuration format for color schemes.
 
 use crate::{
-    exporters::{
-        adjust_color_brightness, dim_color, get_rgb_from_style, is_light_color, ThemeExporter,
-    },
+    exporters::{adjust_color_brightness, dim_color, is_light_color, ThemeExporter},
     StylingResult, Theme,
 };
 use std::fmt::Write as _; // import without risk of name clashing
@@ -37,11 +35,11 @@ impl ThemeExporter for KittyExporter {
             bg_color.0, bg_color.1, bg_color.2
         );
 
-        if let Some(fg_color) = get_rgb_from_style(&theme.palette.normal) {
+        if let Some(fg_color) = theme.palette.normal.rgb() {
             let _ = writeln!(
                 output,
                 "foreground #{:02x}{:02x}{:02x}",
-                fg_color.0, fg_color.1, fg_color.2
+                fg_color[0], fg_color[1], fg_color[2]
             );
         }
 
@@ -49,7 +47,11 @@ impl ThemeExporter for KittyExporter {
 
         // Selection colors
         output.push_str("# Selection colors\n");
-        let selection_bg = get_rgb_from_style(&theme.palette.commentary)
+        let selection_bg: (u8, u8, u8) = theme
+            .palette
+            .commentary
+            .rgb()
+            .map(|c| (c[0], c[1], c[2]))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.4));
         let _ = writeln!(
             output,
@@ -57,11 +59,11 @@ impl ThemeExporter for KittyExporter {
             selection_bg.0, selection_bg.1, selection_bg.2
         );
 
-        if let Some(selection_fg) = get_rgb_from_style(&theme.palette.normal) {
+        if let Some(selection_fg) = theme.palette.normal.rgb() {
             let _ = writeln!(
                 output,
                 "selection_foreground #{:02x}{:02x}{:02x}",
-                selection_fg.0, selection_fg.1, selection_fg.2
+                selection_fg[0], selection_fg[1], selection_fg[2]
             );
         }
 
@@ -69,20 +71,29 @@ impl ThemeExporter for KittyExporter {
 
         // Cursor colors
         output.push_str("# Cursor colors\n");
-        if let Some(cursor_color) = get_rgb_from_style(&theme.palette.emphasis)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal))
+        if let Some(cursor_color) = theme
+            .palette
+            .emphasis
+            .rgb()
+            .or_else(|| theme.palette.normal.rgb())
         {
             let _ = writeln!(
                 output,
                 "cursor #{:02x}{:02x}{:02x}",
-                cursor_color.0, cursor_color.1, cursor_color.2
+                cursor_color[0], cursor_color[1], cursor_color[2]
             );
 
             // Cursor text should contrast with cursor color
-            let cursor_text = if is_light_color(cursor_color) {
+            let cursor_text = if is_light_color((cursor_color[0], cursor_color[1], cursor_color[2]))
+            {
                 bg_color // Use background color for contrast
             } else {
-                get_rgb_from_style(&theme.palette.normal).unwrap_or((255, 255, 255))
+                theme
+                    .palette
+                    .normal
+                    .rgb()
+                    .map(|c| (c[0], c[1], c[2]))
+                    .unwrap_or((255, 255, 255))
             };
             let _ = writeln!(
                 output,
@@ -95,11 +106,11 @@ impl ThemeExporter for KittyExporter {
 
         // URL colors
         output.push_str("# URL underline color when hovering with mouse\n");
-        if let Some(url_color) = get_rgb_from_style(&theme.palette.info) {
+        if let Some(url_color) = theme.palette.info.rgb() {
             let _ = writeln!(
                 output,
                 "url_color #{:02x}{:02x}{:02x}",
-                url_color.0, url_color.1, url_color.2
+                url_color[0], url_color[1], url_color[2]
             );
         }
 
@@ -107,11 +118,11 @@ impl ThemeExporter for KittyExporter {
 
         // Visual bell
         output.push_str("# Visual bell color\n");
-        if let Some(bell_color) = get_rgb_from_style(&theme.palette.warning) {
+        if let Some(bell_color) = theme.palette.warning.rgb() {
             let _ = writeln!(
                 output,
                 "visual_bell_color #{:02x}{:02x}{:02x}",
-                bell_color.0, bell_color.1, bell_color.2
+                bell_color[0], bell_color[1], bell_color[2]
             );
         }
 
@@ -119,15 +130,19 @@ impl ThemeExporter for KittyExporter {
 
         // Active border color
         output.push_str("# Border colors\n");
-        if let Some(active_border) = get_rgb_from_style(&theme.palette.emphasis) {
+        if let Some(active_border) = theme.palette.emphasis.rgb() {
             let _ = writeln!(
                 output,
                 "active_border_color #{:02x}{:02x}{:02x}",
-                active_border.0, active_border.1, active_border.2
+                active_border[0], active_border[1], active_border[2]
             );
         }
 
-        if let Some(inactive_border) = get_rgb_from_style(&theme.palette.subtle)
+        if let Some(inactive_border) = theme
+            .palette
+            .subtle
+            .rgb()
+            .map(|c| (c[0], c[1], c[2]))
             .or_else(|| Some(adjust_color_brightness(bg_color, 1.3)))
         {
             let _ = writeln!(
@@ -148,8 +163,12 @@ impl ThemeExporter for KittyExporter {
             tab_bg.0, tab_bg.1, tab_bg.2
         );
 
-        if let Some(active_tab_fg) = get_rgb_from_style(&theme.palette.emphasis)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal))
+        if let Some(active_tab_fg) = theme
+            .palette
+            .emphasis
+            .rgb()
+            .or_else(|| theme.palette.normal.rgb())
+            .map(|c| (c[0], c[1], c[2]))
         {
             let _ = writeln!(
                 output,
@@ -164,8 +183,13 @@ impl ThemeExporter for KittyExporter {
             bg_color.0, bg_color.1, bg_color.2
         );
 
-        if let Some(inactive_tab_fg) = get_rgb_from_style(&theme.palette.subtle)
-            .or_else(|| get_rgb_from_style(&theme.palette.normal).map(dim_color))
+        if let Some(inactive_tab_fg) = theme
+            .palette
+            .subtle
+            .rgb()
+            .or_else(|| theme.palette.normal.rgb())
+            .map(|c| (c[0], c[1], c[2]))
+            .map(dim_color)
         {
             let _ = writeln!(
                 output,
@@ -184,11 +208,11 @@ impl ThemeExporter for KittyExporter {
 
         // Mark colors (for marks and text search)
         output.push_str("# Mark colors (for text search highlighting)\n");
-        if let Some(mark1_bg) = get_rgb_from_style(&theme.palette.warning) {
+        if let Some(mark1_bg) = theme.palette.warning.rgb() {
             let _ = writeln!(
                 output,
                 "mark1_background #{:02x}{:02x}{:02x}",
-                mark1_bg.0, mark1_bg.1, mark1_bg.2
+                mark1_bg[0], mark1_bg[1], mark1_bg[2]
             );
             let _ = writeln!(
                 output,
@@ -197,11 +221,11 @@ impl ThemeExporter for KittyExporter {
             );
         }
 
-        if let Some(mark2_bg) = get_rgb_from_style(&theme.palette.info) {
+        if let Some(mark2_bg) = theme.palette.info.rgb() {
             let _ = writeln!(
                 output,
                 "mark2_background #{:02x}{:02x}{:02x}",
-                mark2_bg.0, mark2_bg.1, mark2_bg.2
+                mark2_bg[0], mark2_bg[1], mark2_bg[2]
             );
             let _ = writeln!(
                 output,
@@ -210,11 +234,11 @@ impl ThemeExporter for KittyExporter {
             );
         }
 
-        if let Some(mark3_bg) = get_rgb_from_style(&theme.palette.success) {
+        if let Some(mark3_bg) = theme.palette.success.rgb() {
             let _ = writeln!(
                 output,
                 "mark3_background #{:02x}{:02x}{:02x}",
-                mark3_bg.0, mark3_bg.1, mark3_bg.2
+                mark3_bg[0], mark3_bg[1], mark3_bg[2]
             );
             let _ = writeln!(
                 output,
@@ -232,64 +256,94 @@ impl ThemeExporter for KittyExporter {
         if let Some((r, g, b)) = Some(theme.bg_rgbs[0]) {
             let _ = writeln!(output, "color0 #{:02x}{:02x}{:02x}", r, g, b);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.subtle).or(Some((64, 64, 64))) {
+        if let Some((r, g, b)) = theme
+            .palette
+            .subtle
+            .rgb()
+            .map(|c| (c[0], c[1], c[2]))
+            .or(Some((64, 64, 64)))
+        {
             let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}", r, g, b);
         }
 
         output.push_str("\n# red\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.emphasis) {
-            let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.emphasis.rgb() {
+            let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.error) {
-            let _ = writeln!(output, "color9 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.error.rgb() {
+            let _ = writeln!(output, "color9 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
 
         output.push_str("\n# green\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.success) {
-            let _ = writeln!(output, "color2 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.success.rgb() {
+            let _ = writeln!(output, "color2 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.debug) {
-            let _ = writeln!(output, "color10 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.debug.rgb() {
+            let _ = writeln!(
+                output,
+                "color10 #{:02x}{:02x}{:02x}",
+                rgb[0], rgb[1], rgb[2]
+            );
         }
 
         output.push_str("\n# yellow\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.commentary) {
-            let _ = writeln!(output, "color3 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.commentary.rgb() {
+            let _ = writeln!(output, "color3 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.warning) {
-            let _ = writeln!(output, "color11 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.warning.rgb() {
+            let _ = writeln!(
+                output,
+                "color11 #{:02x}{:02x}{:02x}",
+                rgb[0], rgb[1], rgb[2]
+            );
         }
 
         output.push_str("\n# blue\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.info) {
-            let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.info.rgb() {
+            let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.link) {
-            let _ = writeln!(output, "color12 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.link.rgb() {
+            let _ = writeln!(
+                output,
+                "color12 #{:02x}{:02x}{:02x}",
+                rgb[0], rgb[1], rgb[2]
+            );
         }
 
         output.push_str("\n# magenta\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading1) {
-            let _ = writeln!(output, "color5 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.heading1.rgb() {
+            let _ = writeln!(output, "color5 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.heading2) {
-            let _ = writeln!(output, "color13 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.heading2.rgb() {
+            let _ = writeln!(
+                output,
+                "color13 #{:02x}{:02x}{:02x}",
+                rgb[0], rgb[1], rgb[2]
+            );
         }
 
         output.push_str("\n# cyan\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.code) {
-            let _ = writeln!(output, "color6 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.code.rgb() {
+            let _ = writeln!(output, "color6 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.hint) {
-            let _ = writeln!(output, "color14 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.hint.rgb() {
+            let _ = writeln!(
+                output,
+                "color14 #{:02x}{:02x}{:02x}",
+                rgb[0], rgb[1], rgb[2]
+            );
         }
 
         output.push_str("\n# white\n");
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.normal) {
-            let _ = writeln!(output, "color7 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.normal.rgb() {
+            let _ = writeln!(output, "color7 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         }
-        if let Some((r, g, b)) = get_rgb_from_style(&theme.palette.quote) {
-            let _ = writeln!(output, "color15 #{:02x}{:02x}{:02x}", r, g, b);
+        if let Some(rgb) = theme.palette.quote.rgb() {
+            let _ = writeln!(
+                output,
+                "color15 #{:02x}{:02x}{:02x}",
+                rgb[0], rgb[1], rgb[2]
+            );
         }
 
         output.push('\n');

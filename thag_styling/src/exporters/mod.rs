@@ -3,7 +3,7 @@
 //! Contains exporters for Alacritty, WezTerm, Windows Terminal, and other terminal emulators.
 //! Each exporter converts thag themes to the appropriate configuration format.
 
-use crate::{ColorValue, StylingError, StylingResult, Theme};
+use crate::{StylingError, StylingResult, Theme};
 use std::path::Path;
 
 pub mod alacritty;
@@ -13,6 +13,8 @@ pub mod konsole;
 pub mod mintty;
 pub mod wezterm;
 pub mod windows_terminal;
+
+// pub use crate::Style;
 
 /// Trait for exporting themes to different terminal emulator formats
 pub trait ThemeExporter {
@@ -457,26 +459,26 @@ fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8)
 //         .bg_rgbs
 //         .first()
 //         .copied()
-//         .or_else(|| get_rgb_from_style(&theme.palette.subtle))
+//         .or_else(|| &theme.palette.subtle).rgb()
 //         .or(Some((16, 16, 16)))
 // }
 
-/// Extract RGB values from a Style's foreground color
-fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
-    style.foreground.as_ref().map(|color_info| {
-        match &color_info.value {
-            ColorValue::TrueColor { rgb } => (rgb[0], rgb[1], rgb[2]),
-            ColorValue::Color256 { color256 } => {
-                // Convert 256-color index to approximate RGB
-                color_256_to_rgb(*color256)
-            }
-            ColorValue::Basic { index, .. } => {
-                // Convert basic color index to RGB
-                basic_color_to_rgb(*index)
-            }
-        }
-    })
-}
+// /// Extract RGB values from a Style's foreground color
+// fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
+//     style.foreground.as_ref().map(|color_info| {
+//         match &color_info.value {
+//             ColorValue::TrueColor { rgb } => (rgb[0], rgb[1], rgb[2]),
+//             ColorValue::Color256 { color256 } => {
+//                 // Convert 256-color index to approximate RGB
+//                 color_256_to_rgb(*color256)
+//             }
+//             ColorValue::Basic { index, .. } => {
+//                 // Convert basic color index to RGB
+//                 basic_color_to_rgb(*index)
+//             }
+//         }
+//     })
+// }
 
 /// Convert basic color index to RGB
 #[allow(clippy::match_same_arms)]

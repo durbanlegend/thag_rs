@@ -102,6 +102,11 @@ path = "src/bin/thag_detect_term.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_edit_theme"
+path = "src/bin/thag_edit_theme.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_expand"
 path = "src/bin/thag_expand.rs"
 required-features = ["tools"]

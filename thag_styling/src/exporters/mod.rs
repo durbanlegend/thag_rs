@@ -420,35 +420,35 @@ The theme will be applied immediately to new Konsole sessions.
 
 /// Brighten a color by increasing its components
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    adjust_color_brightness((r, g, b), 1.3)
+fn brighten_color([r, g, b]: [u8; 3]) -> [u8; 3] {
+    adjust_color_brightness([r, g, b], 1.3)
 }
 
 /// Dim a color by reducing its components
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn dim_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
-    adjust_color_brightness((r, g, b), 0.6)
+fn dim_color([r, g, b]: [u8; 3]) -> [u8; 3] {
+    adjust_color_brightness([r, g, b], 0.6)
 }
 
 /// Adjust color brightness by a factor
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8) {
+fn adjust_color_brightness([r, g, b]: [u8; 3], factor: f32) -> [u8; 3] {
     // For very dark colors, use additive brightening to ensure visibility
     if r < 50 && g < 50 && b < 50 && factor > 1.0 {
         // Add a minimum brightness boost for very dark backgrounds
         let min_boost = 80.0;
-        (
+        [
             f32::from(r).mul_add(factor, min_boost).clamp(0.0, 255.0) as u8,
             f32::from(g).mul_add(factor, min_boost).clamp(0.0, 255.0) as u8,
             f32::from(b).mul_add(factor, min_boost).clamp(0.0, 255.0) as u8,
-        )
+        ]
     } else {
         // Use multiplicative for normal colors
-        (
+        [
             (f32::from(r) * factor).clamp(0.0, 255.0) as u8,
             (f32::from(g) * factor).clamp(0.0, 255.0) as u8,
             (f32::from(b) * factor).clamp(0.0, 255.0) as u8,
-        )
+        ]
     }
 }
 
@@ -482,48 +482,48 @@ fn adjust_color_brightness((r, g, b): (u8, u8, u8), factor: f32) -> (u8, u8, u8)
 
 /// Convert basic color index to RGB
 #[allow(clippy::match_same_arms)]
-const fn basic_color_to_rgb(index: u8) -> (u8, u8, u8) {
+const fn basic_color_to_rgb(index: u8) -> [u8; 3] {
     match index {
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Red
-        2 => (0, 128, 0),      // Green
-        3 => (128, 128, 0),    // Yellow
-        4 => (0, 0, 128),      // Blue
-        5 => (128, 0, 128),    // Magenta
-        6 => (0, 128, 128),    // Cyan
-        7 => (192, 192, 192),  // White
-        8 => (128, 128, 128),  // Bright Black
-        9 => (255, 0, 0),      // Bright Red
-        10 => (0, 255, 0),     // Bright Green
-        11 => (255, 255, 0),   // Bright Yellow
-        12 => (0, 0, 255),     // Bright Blue
-        13 => (255, 0, 255),   // Bright Magenta
-        14 => (0, 255, 255),   // Bright Cyan
-        15 => (255, 255, 255), // Bright White
-        _ => (128, 128, 128),  // Default gray
+        0 => [0, 0, 0],        // Black
+        1 => [128, 0, 0],      // Red
+        2 => [0, 128, 0],      // Green
+        3 => [128, 128, 0],    // Yellow
+        4 => [0, 0, 128],      // Blue
+        5 => [128, 0, 128],    // Magenta
+        6 => [0, 128, 128],    // Cyan
+        7 => [192, 192, 192],  // White (Light Gray)
+        8 => [128, 128, 128],  // Bright Black (Gray)
+        9 => [255, 0, 0],      // Bright Red
+        10 => [0, 255, 0],     // Bright Green
+        11 => [255, 255, 0],   // Bright Yellow
+        12 => [0, 0, 255],     // Bright Blue
+        13 => [255, 0, 255],   // Bright Magenta
+        14 => [0, 255, 255],   // Bright Cyan
+        15 => [255, 255, 255], // Bright White
+        _ => [128, 128, 128],  // Default gray
     }
 }
 
 /// Convert 256-color index to RGB
-const fn color_256_to_rgb(index: u8) -> (u8, u8, u8) {
+const fn color_256_to_rgb(index: u8) -> [u8; 3] {
     match index {
         // Standard colors (0-15)
-        0 => (0, 0, 0),        // Black
-        1 => (128, 0, 0),      // Red
-        2 => (0, 128, 0),      // Green
-        3 => (128, 128, 0),    // Yellow
-        4 => (0, 0, 128),      // Blue
-        5 => (128, 0, 128),    // Magenta
-        6 => (0, 128, 128),    // Cyan
-        7 => (192, 192, 192),  // White
-        8 => (128, 128, 128),  // Bright Black
-        9 => (255, 0, 0),      // Bright Red
-        10 => (0, 255, 0),     // Bright Green
-        11 => (255, 255, 0),   // Bright Yellow
-        12 => (0, 0, 255),     // Bright Blue
-        13 => (255, 0, 255),   // Bright Magenta
-        14 => (0, 255, 255),   // Bright Cyan
-        15 => (255, 255, 255), // Bright White
+        0 => [0, 0, 0],        // Black
+        1 => [128, 0, 0],      // Red
+        2 => [0, 128, 0],      // Green
+        3 => [128, 128, 0],    // Yellow
+        4 => [0, 0, 128],      // Blue
+        5 => [128, 0, 128],    // Magenta
+        6 => [0, 128, 128],    // Cyan
+        7 => [192, 192, 192],  // White
+        8 => [128, 128, 128],  // Bright Black
+        9 => [255, 0, 0],      // Bright Red
+        10 => [0, 255, 0],     // Bright Green
+        11 => [255, 255, 0],   // Bright Yellow
+        12 => [0, 0, 255],     // Bright Blue
+        13 => [255, 0, 255],   // Bright Magenta
+        14 => [0, 255, 255],   // Bright Cyan
+        15 => [255, 255, 255], // Bright White
 
         // 216 color cube (16-231)
         16..=231 => {
@@ -531,19 +531,19 @@ const fn color_256_to_rgb(index: u8) -> (u8, u8, u8) {
             let r = (n / 36) * 51;
             let g = ((n % 36) / 6) * 51;
             let b = (n % 6) * 51;
-            (r, g, b)
+            [r, g, b]
         }
 
         // Grayscale (232-255)
         232..=255 => {
             let gray = 8 + (index - 232) * 10;
-            (gray, gray, gray)
+            [gray, gray, gray]
         }
     }
 }
 
 /// Check if a color is considered light
-fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
+fn is_light_color([r, g, b]: [u8; 3]) -> bool {
     // Calculate relative luminance
     let r_linear = if r <= 10 {
         f32::from(r) / 3294.6

@@ -43,7 +43,7 @@ impl StylingConfigProvider for ConfigProvider {
             .unwrap_or_default()
     }
 
-    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
+    fn term_bg_rgb(&self) -> Option<[u8; 3]> {
         maybe_config().and_then(|c| c.styling.term_bg_rgb)
     }
 
@@ -151,19 +151,19 @@ impl ColorInfo {
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self {
             value: ColorValue::TrueColor { rgb: [r, g, b] },
-            index: find_closest_color((r, g, b)),
+            index: find_closest_color([r, g, b]),
         }
     }
 
     /// Creates appropriate `ColorInfo` based on terminal color support level
     ///
     /// # Arguments
-    /// * `rgb` - RGB color values as a tuple (r, g, b)
+    /// * `rgb` - RGB color values as an array [r, g, b]
     /// * `support` - The color support level of the terminal
     #[must_use]
-    pub fn with_support(rgb: (u8, u8, u8), support: ColorSupport) -> Self {
+    pub fn with_support(rgb: [u8; 3], support: ColorSupport) -> Self {
         match support {
-            ColorSupport::TrueColor => Self::rgb(rgb.0, rgb.1, rgb.2),
+            ColorSupport::TrueColor => Self::rgb(rgb[0], rgb[1], rgb[2]),
             ColorSupport::Color256 => Self::color256(find_closest_color(rgb)),
             _ => Self::color256(find_closest_basic_color(rgb)),
         }
@@ -274,9 +274,8 @@ impl Style {
             }
             ColorValue::Color256 { color256 } => Self::fg(ColorInfo::color256(*color256)),
             ColorValue::TrueColor { rgb } => {
-                let rgb_tuple = (rgb[0], rgb[1], rgb[2]);
                 let mut color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
-                color_info.index = find_closest_color(rgb_tuple);
+                color_info.index = find_closest_color(*rgb);
                 Self::fg(color_info)
             }
         };
@@ -310,7 +309,7 @@ impl Style {
                 u8::from_str_radix(&hex[4..6], 16),
             ) {
                 let mut color_info = ColorInfo::rgb(r, g, b);
-                color_info.index = find_closest_color((r, g, b));
+                color_info.index = find_closest_color([r, g, b]);
                 Ok(Self::fg(color_info))
             } else {
                 Err(StylingError::Parse)
@@ -333,7 +332,7 @@ impl Style {
     #[must_use]
     pub fn with_rgb(rgb: [u8; 3]) -> Self {
         let mut color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
-        color_info.index = find_closest_color((rgb[0], rgb[1], rgb[2]));
+        color_info.index = find_closest_color(rgb);
         Self {
             foreground: Some(color_info),
             ..Default::default()
@@ -759,8 +758,8 @@ pub enum ColorInitStrategy {
     /// Parameters:
     /// - `ColorSupport`: The configured color support level
     /// - `TermBgLuma`: The configured background luminance (light/dark)
-    /// - `Option<(u8, u8, u8)>`: Optional RGB values for the background color
-    Configure(ColorSupport, TermBgLuma, Option<(u8, u8, u8)>),
+    /// - `Option<[u8; 3]>`: Optional RGB values for the background color
+    Configure(ColorSupport, TermBgLuma, Option<[u8; 3]>),
     /// Use safe default values without detection or configuration
     ///
     /// Falls back to basic color support with dark background theme
@@ -860,7 +859,7 @@ pub struct TermAttributes {
     /// The terminal background color as a hex string (e.g., "#1e1e1e")
     pub term_bg_hex: Option<String>,
     /// The terminal background color as RGB values (red, green, blue)
-    pub term_bg_rgb: Option<(u8, u8, u8)>,
+    pub term_bg_rgb: Option<[u8; 3]>,
     /// The luminance (light/dark) of the terminal background
     pub term_bg_luma: TermBgLuma,
     /// The theme used for styling text and interface elements
@@ -887,7 +886,7 @@ impl TermAttributes {
     #[allow(dead_code)]
     const fn new(
         color_support: ColorSupport,
-        term_bg: Option<(u8, u8, u8)>,
+        term_bg: Option<[u8; 3]>,
         term_bg_luma: TermBgLuma,
         theme: Theme,
     ) -> Self {
@@ -990,8 +989,8 @@ impl TermAttributes {
                                 });
 
                             // Determine theme's background luma from the theme itself
-                            let term_bg_luma = if let Some((r, g, b)) = theme.bg_rgbs.first() {
-                                if is_light_color((*r, *g, *b)) {
+                            let term_bg_luma = if let Some(&[r, g, b]) = theme.bg_rgbs.first() {
+                                if is_light_color([r, g, b]) {
                                     TermBgLuma::Light
                                 } else {
                                     TermBgLuma::Dark
@@ -1227,7 +1226,7 @@ impl TermAttributes {
     #[must_use]
     pub fn for_testing(
         color_support: ColorSupport,
-        term_bg_rgb: Option<(u8, u8, u8)>,
+        term_bg_rgb: Option<[u8; 3]>,
         term_bg_luma: TermBgLuma,
         theme: Theme,
     ) -> Self {
@@ -1542,7 +1541,7 @@ pub struct Theme {
     /// Background color values as hex strings (e.g., `["#282a36", "#44475a"]`)
     pub backgrounds: Vec<String>,
     /// Background color values as RGB tuples, with the primary/official color first
-    pub bg_rgbs: Vec<(u8, u8, u8)>,
+    pub bg_rgbs: Vec<[u8; 3]>,
     /// A human-readable description of the theme's characteristics and origin
     pub description: String,
     /// Base16/24 color array for ANSI terminal mapping (optional)
@@ -1575,7 +1574,7 @@ impl Theme {
     pub fn auto_detect(
         color_support: ColorSupport,
         term_bg_luma: TermBgLuma,
-        maybe_term_bg: Option<&(u8, u8, u8)>,
+        maybe_term_bg: Option<&[u8; 3]>,
     ) -> StylingResult<Self> {
         // NB: don't call `TermAttributes::get_or_init()` here because it will cause a tight loop
         // since we're called from the TermAttributes::initialize.
@@ -1588,7 +1587,7 @@ impl Theme {
         // vprtln!(V::VV, "signatures={signatures:?}");
         let hex = format!(
             "{:02x}{:02x}{:02x}",
-            term_bg_rgb.0, term_bg_rgb.1, term_bg_rgb.2
+            term_bg_rgb[0], term_bg_rgb[1], term_bg_rgb[2]
         );
         let exact_matches = BG_LOOKUP
             .get(&hex)
@@ -2105,7 +2104,7 @@ impl Theme {
         // vprtln!(V::VV, "color_support={color_support:?})");
 
         // Convert hex strings to RGB tuples
-        let bg_rgbs: Vec<(u8, u8, u8)> = def
+        let bg_rgbs: Vec<[u8; 3]> = def
             .backgrounds
             .iter()
             .filter_map(|hex| hex_to_rgb(hex).ok())
@@ -2314,7 +2313,7 @@ impl Theme {
             self.description,
             rgb_to_hex(&self.bg_rgbs[0]),
             // format!("#{:02x}{:02x}{:02x}", self.bg_rgbs[0].0, self.bg_rgbs[0].1, self.bg_rgbs[0].2),
-            self.bg_rgbs[0].0, self.bg_rgbs[0].1, self.bg_rgbs[0].2,
+            self.bg_rgbs[0][0], self.bg_rgbs[0][1], self.bg_rgbs[0][2],
             self.min_color_support,
             self.term_bg_luma,
         )
@@ -2374,7 +2373,7 @@ impl Theme {
         let mut min_distance = f32::MAX;
 
         for (i, &(cr, cg, cb)) in colors.iter().enumerate() {
-            let distance = color_distance((r, g, b), (cr, cg, cb));
+            let distance = color_distance([r, g, b], [cr, cg, cb]);
             if distance < min_distance {
                 min_distance = distance;
                 closest = i;
@@ -2410,7 +2409,7 @@ impl Theme {
                 ..
             }) = &mut style.foreground
             {
-                let index = find_closest_color((rgb[0], rgb[1], rgb[2]));
+                let index = find_closest_color(*rgb);
                 // Corrected style conversion
                 style.foreground = Some(ColorInfo::color256(index));
             }
@@ -2627,26 +2626,26 @@ impl Theme {
 /// assert_eq!(gray, (128, 128, 128));
 /// ```
 #[must_use]
-pub fn index_to_rgb(index: u8) -> (u8, u8, u8) {
+pub fn index_to_rgb(index: u8) -> [u8; 3] {
     if index < 16 {
         // Standard ANSI colors
         return match index {
-            0 => (0, 0, 0),
-            1 => (128, 0, 0),
-            2 => (0, 128, 0),
-            3 => (128, 128, 0),
-            4 => (0, 0, 128),
-            5 => (128, 0, 128),
-            6 => (0, 128, 128),
-            7 => (192, 192, 192),
-            8 => (128, 128, 128),
-            9 => (255, 0, 0),
-            10 => (0, 255, 0),
-            11 => (255, 255, 0),
-            12 => (0, 0, 255),
-            13 => (255, 0, 255),
-            14 => (0, 255, 255),
-            15 => (255, 255, 255),
+            0 => [0, 0, 0],
+            1 => [128, 0, 0],
+            2 => [0, 128, 0],
+            3 => [128, 128, 0],
+            4 => [0, 0, 128],
+            5 => [128, 0, 128],
+            6 => [0, 128, 128],
+            7 => [192, 192, 192],
+            8 => [128, 128, 128],
+            9 => [255, 0, 0],
+            10 => [0, 255, 0],
+            11 => [255, 255, 0],
+            12 => [0, 0, 255],
+            13 => [255, 0, 255],
+            14 => [0, 255, 255],
+            15 => [255, 255, 255],
             _ => unreachable!(),
         };
     }
@@ -2654,7 +2653,7 @@ pub fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     if index >= 232 {
         // Grayscale
         let gray = (index - 232) * 10 + 8;
-        return (gray, gray, gray);
+        return [gray, gray, gray];
     }
 
     // Color cube
@@ -2662,7 +2661,7 @@ pub fn index_to_rgb(index: u8) -> (u8, u8, u8) {
     let r = (index / 36) * 51;
     let g = ((index % 36) / 6) * 51;
     let b = (index % 6) * 51;
-    (r, g, b)
+    [r, g, b]
 }
 
 fn fallback_theme(term_bg_luma: TermBgLuma) -> StylingResult<Theme> {
@@ -2726,10 +2725,10 @@ fn get_fallback_styling(
 #[allow(clippy::items_after_statements)]
 // #[cfg(feature = "color_detect")]
 #[must_use]
-fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
-    let dr = (f32::from(c1.0) - f32::from(c2.0)).powi(2);
-    let dg = (f32::from(c1.1) - f32::from(c2.1)).powi(2);
-    let db = (f32::from(c1.2) - f32::from(c2.2)).powi(2);
+fn color_distance(c1: [u8; 3], c2: [u8; 3]) -> f32 {
+    let dr = (f32::from(c1[0]) - f32::from(c2[0])).powi(2);
+    let dg = (f32::from(c1[1]) - f32::from(c2[1])).powi(2);
+    let db = (f32::from(c1[2]) - f32::from(c2[2])).powi(2);
     (dr + dg + db).sqrt()
 }
 
@@ -2739,7 +2738,7 @@ fn color_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> f32 {
 ///
 /// This function will return an error if the input string is not a valid hex color.
 // #[cfg(feature = "color_detect")]
-fn hex_to_rgb(hex: &str) -> StylingResult<(u8, u8, u8)> {
+fn hex_to_rgb(hex: &str) -> StylingResult<[u8; 3]> {
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
         if let (Ok(r), Ok(g), Ok(b)) = (
@@ -2747,7 +2746,7 @@ fn hex_to_rgb(hex: &str) -> StylingResult<(u8, u8, u8)> {
             u8::from_str_radix(&hex[2..4], 16),
             u8::from_str_radix(&hex[4..6], 16),
         ) {
-            Ok((r, g, b))
+            Ok([r, g, b])
         } else {
             Err(StylingError::Parse)
         }
@@ -2826,10 +2825,10 @@ macro_rules! svprtln {
     }};
 }
 
-fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
-    let dr = f64::from(i32::from(c1.0) - i32::from(c2.0)) * 0.3;
-    let dg = f64::from(i32::from(c1.1) - i32::from(c2.1)) * 0.59;
-    let db = f64::from(i32::from(c1.2) - i32::from(c2.2)) * 0.11;
+fn base_distance(c1: [u8; 3], c2: [u8; 3]) -> u32 {
+    let dr = f64::from(i32::from(c1[0]) - i32::from(c2[0])) * 0.3;
+    let dg = f64::from(i32::from(c1[1]) - i32::from(c2[1])) * 0.59;
+    let db = f64::from(i32::from(c1[2]) - i32::from(c2[2])) * 0.11;
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let base_distance = db.mul_add(db, dr.mul_add(dr, dg * dg)) as u32;
     base_distance
@@ -2865,12 +2864,12 @@ fn base_distance(c1: (u8, u8, u8), c2: (u8, u8, u8)) -> u32 {
 /// assert!(gray_index >= 232);
 /// ```
 #[must_use]
-pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
+pub fn find_closest_color(rgb: [u8; 3]) -> u8 {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
     // Handle grays first (232-255)
-    let (r, g, b) = rgb;
-    if r == g && g == b {
+    if rgb[0] == rgb[1] && rgb[1] == rgb[2] {
+        let r = rgb[0];
         if r < 4 {
             return 16; // black
         }
@@ -2898,9 +2897,9 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
         .map_or(0, |v| v)
     };
 
-    let r_idx = find_closest(r);
-    let g_idx = find_closest(g);
-    let b_idx = find_closest(b);
+    let r_idx = find_closest(rgb[0]);
+    let g_idx = find_closest(rgb[1]);
+    let b_idx = find_closest(rgb[2]);
 
     // eprintln!(
     //     "Closest color to {rgb:?} is ({}, {}, {}) = {}",
@@ -2912,7 +2911,7 @@ pub fn find_closest_color(rgb: (u8, u8, u8)) -> u8 {
     16 + (36 * r_idx) + (6 * g_idx) + b_idx
 }
 
-fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
+fn find_closest_basic_color(rgb: [u8; 3]) -> u8 {
     // Use weighted Euclidean distance for better perceptual matching
 
     #[allow(clippy::cast_possible_truncation)]
@@ -2957,7 +2956,7 @@ fn find_closest_basic_color(rgb: (u8, u8, u8)) -> u8 {
 /// let gray = get_rgb(244); // Mid-gray
 /// assert_eq!(gray, (128, 128, 128));
 /// ```
-pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
+pub const fn get_rgb(color: u8) -> [u8; 3] {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];
     match color {
         0..=15 => BASIC_COLORS[color as usize],
@@ -2966,11 +2965,11 @@ pub const fn get_rgb(color: u8) -> (u8, u8, u8) {
             let r = STEPS[((color / 36) % 6) as usize];
             let g = STEPS[((color / 6) % 6) as usize];
             let b = STEPS[(color % 6) as usize];
-            (r, g, b)
+            [r, g, b]
         }
         232..=255 => {
             let gray = 8 + (color - 232) * 10;
-            (gray, gray, gray)
+            [gray, gray, gray]
         }
     }
 }
@@ -3083,23 +3082,23 @@ pub fn main() -> StylingResult<()> {
     Ok(())
 }
 
-const BASIC_COLORS: [(u8, u8, u8); 16] = [
-    (0, 0, 0),       // black
-    (128, 0, 0),     // red
-    (0, 128, 0),     // green
-    (128, 128, 0),   // yellow
-    (0, 0, 128),     // blue
-    (128, 0, 128),   // magenta
-    (0, 128, 128),   // cyan
-    (192, 192, 192), // light gray
-    (128, 128, 128), // dark gray
-    (255, 0, 0),     // bright red
-    (0, 255, 0),     // bright green
-    (255, 255, 0),   // bright yellow
-    (0, 0, 255),     // bright blue
-    (255, 0, 255),   // bright magenta
-    (0, 255, 255),   // bright cyan
-    (255, 255, 255), // white
+const BASIC_COLORS: [[u8; 3]; 16] = [
+    [0, 0, 0],       // black
+    [128, 0, 0],     // red
+    [0, 128, 0],     // green
+    [128, 128, 0],   // yellow
+    [0, 0, 128],     // blue
+    [128, 0, 128],   // magenta
+    [0, 128, 128],   // cyan
+    [192, 192, 192], // white
+    [128, 128, 128], // bright black (gray)
+    [255, 0, 0],     // bright red
+    [0, 255, 0],     // bright green
+    [255, 255, 0],   // bright yellow
+    [0, 0, 255],     // bright blue
+    [255, 0, 255],   // bright magenta
+    [0, 255, 255],   // bright cyan
+    [255, 255, 255], // bright white
 ];
 
 /// Displays all available roles and their corresponding styles in the given theme.
@@ -3361,7 +3360,7 @@ pub fn display_terminal_attributes(theme: &Theme) {
     println!("\t{}\n", "─".repeat(flower_box_len));
 }
 
-fn dual_format_rgb((r, g, b): (u8, u8, u8)) -> String {
+fn dual_format_rgb([r, g, b]: [u8; 3]) -> String {
     format!("#{r:02x}{g:02x}{b:02x} = rgb({r}, {g}, {b})")
 }
 
@@ -4140,7 +4139,7 @@ mod tests {
     use std::sync::Mutex;
 
     static MOCK_THEME_DETECTION: AtomicBool = AtomicBool::new(false);
-    static BLACK_BG: &(u8, u8, u8) = &(0, 0, 0);
+    static BLACK_BG: &[u8; 3] = &[0, 0, 0];
 
     impl TermAttributes {
         fn with_mock_theme(color_support: ColorSupport, term_bg_luma: TermBgLuma) -> Self {

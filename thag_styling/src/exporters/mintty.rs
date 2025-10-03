@@ -26,21 +26,14 @@ impl ThemeExporter for MinttyExporter {
         );
 
         // Get primary background color
-        let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
+        let bg_color = theme.bg_rgbs.first().copied().unwrap_or([0, 0, 0]);
+        let [r, g, b] = bg_color;
 
         // Basic terminal colors
-        let _ = writeln!(
-            output,
-            "BackgroundColour={},{},{}",
-            bg_color.0, bg_color.1, bg_color.2
-        );
+        let _ = writeln!(output, "BackgroundColour={r},{g},{b}");
 
-        if let Some(fg_color) = &theme.palette.normal.rgb() {
-            let _ = writeln!(
-                output,
-                "ForegroundColour={},{},{}",
-                fg_color[0], fg_color[1], fg_color[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.normal.rgb() {
+            let _ = writeln!(output, "ForegroundColour={r},{g},{b}",);
         }
 
         // Cursor colors
@@ -50,42 +43,26 @@ impl ThemeExporter for MinttyExporter {
             .rgb()
             .or_else(|| theme.palette.normal.rgb());
 
-        if let Some(cursor_color) = &cursor_color {
-            let _ = writeln!(
-                output,
-                "CursorColour={},{},{}",
-                cursor_color[0], cursor_color[1], cursor_color[2]
-            );
+        if let Some([r, g, b]) = &cursor_color {
+            let _ = writeln!(output, "CursorColour={r},{g},{b}");
         }
 
         // Selection colors
         // Use commentary color for better visibility, fallback to brightness adjustment
-        let selection_bg = theme
+        let [r, g, b] = theme
             .palette
             .commentary
             .rgb()
-            .map(|c| (c[0], c[1], c[2]))
+            // .map(|c| (c[0], c[1], c[2]))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.4));
-        let _ = writeln!(
-            output,
-            "SelectionBackgroundColour={},{},{}",
-            selection_bg.0, selection_bg.1, selection_bg.2
-        );
+        let _ = writeln!(output, "SelectionBackgroundColour={r},{g},{b}");
 
         // Also set legacy HighlightBackgroundColour for compatibility
-        let _ = writeln!(
-            output,
-            "HighlightBackgroundColour={},{},{}",
-            selection_bg.0, selection_bg.1, selection_bg.2
-        );
+        let _ = writeln!(output, "HighlightBackgroundColour={r},{g},{b}");
 
         // Selection foreground (use normal text color)
-        if let Some(selection_fg) = &theme.palette.normal.rgb() {
-            let _ = writeln!(
-                output,
-                "SelectionForegroundColour={},{},{}",
-                selection_fg[0], selection_fg[1], selection_fg[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.normal.rgb() {
+            let _ = writeln!(output, "SelectionForegroundColour={r},{g},{b}");
         }
 
         // Bold text color
@@ -95,130 +72,90 @@ impl ThemeExporter for MinttyExporter {
             .rgb()
             .or_else(|| theme.palette.normal.rgb());
 
-        if let Some(bold_color) = &bold_color {
-            let _ = writeln!(
-                output,
-                "BoldColour={},{},{}",
-                bold_color[0], bold_color[1], bold_color[2]
-            );
+        if let Some([r, g, b]) = &bold_color {
+            let _ = writeln!(output, "BoldColour={r},{g},{b}");
         }
 
         // ANSI colors (0-15)
         // Black
-        if let Some(black) = Some(theme.bg_rgbs[0]) {
-            let _ = writeln!(output, "Black={},{},{}", black.0, black.1, black.2);
+        if let Some([r, g, b]) = Some(theme.bg_rgbs[0]) {
+            let _ = writeln!(output, "Black={r},{g},{b}");
         }
 
         // Dark Red
-        if let Some(red) = &theme.palette.emphasis.rgb() {
-            let _ = writeln!(output, "Red={},{},{}", red[0], red[1], red[2]);
+        if let Some([r, g, b]) = &theme.palette.emphasis.rgb() {
+            let _ = writeln!(output, "Red={r},{g},{b}");
         }
 
         // Dark Green
-        if let Some(green) = &theme.palette.success.rgb() {
-            let _ = writeln!(output, "Green={},{},{}", green[0], green[1], green[2]);
+        if let Some([r, g, b]) = &theme.palette.success.rgb() {
+            let _ = writeln!(output, "Green={r},{g},{b}");
         }
 
         // Dark Yellow
-        if let Some(yellow) = &theme.palette.commentary.rgb() {
-            let _ = writeln!(output, "Yellow={},{},{}", yellow[0], yellow[1], yellow[2]);
+        if let Some([r, g, b]) = &theme.palette.commentary.rgb() {
+            let _ = writeln!(output, "Yellow={r},{g},{b}");
         }
 
         // Dark Blue
-        if let Some(blue) = &theme.palette.info.rgb() {
-            let _ = writeln!(output, "Blue={},{},{}", blue[0], blue[1], blue[2]);
+        if let Some([r, g, b]) = &theme.palette.info.rgb() {
+            let _ = writeln!(output, "Blue={r},{g},{b}");
         }
 
         // Dark Magenta
-        if let Some(magenta) = &theme.palette.heading1.rgb() {
-            let _ = writeln!(
-                output,
-                "Magenta={},{},{}",
-                magenta[0], magenta[1], magenta[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.heading1.rgb() {
+            let _ = writeln!(output, "Magenta={r},{g},{b}");
         }
 
         // Dark Cyan
-        if let Some(cyan) = &theme.palette.code.rgb() {
-            let _ = writeln!(output, "Cyan={},{},{}", cyan[0], cyan[1], cyan[2]);
+        if let Some([r, g, b]) = &theme.palette.code.rgb() {
+            let _ = writeln!(output, "Cyan={r},{g},{b}");
         }
 
         // White
-        if let Some(white) = &theme.palette.normal.rgb() {
-            let _ = writeln!(output, "White={},{},{}", white[0], white[1], white[2]);
+        if let Some([r, g, b]) = &theme.palette.normal.rgb() {
+            let _ = writeln!(output, "White={r},{g},{b}");
         }
 
         // Bright colors (8-15)
         // Bright Black (usually gray)
-        if let Some(bright_black) = &theme.palette.subtle.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldBlack={},{},{}",
-                bright_black[0], bright_black[1], bright_black[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.subtle.rgb() {
+            let _ = writeln!(output, "BoldBlack={r},{g},{b}");
         }
 
         // Bright Red
-        if let Some(bright_red) = &theme.palette.error.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldRed={},{},{}",
-                bright_red[0], bright_red[1], bright_red[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.error.rgb() {
+            let _ = writeln!(output, "BoldRed={r},{g},{b}");
         }
 
         // Bright Green
-        if let Some(bright_green) = &theme.palette.debug.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldGreen={},{},{}",
-                bright_green[0], bright_green[1], bright_green[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.debug.rgb() {
+            let _ = writeln!(output, "BoldGreen={r},{g},{b}");
         }
 
         // Bright Yellow
-        if let Some(bright_yellow) = &theme.palette.warning.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldYellow={},{},{}",
-                bright_yellow[0], bright_yellow[1], bright_yellow[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.warning.rgb() {
+            let _ = writeln!(output, "BoldYellow={r},{g},{b}");
         }
 
         // Bright Blue
-        if let Some(bright_blue) = &theme.palette.link.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldBlue={},{},{}",
-                bright_blue[0], bright_blue[1], bright_blue[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.link.rgb() {
+            let _ = writeln!(output, "BoldBlue={r},{g},{b}");
         }
 
         // Bright Magenta
-        if let Some(bright_magenta) = &theme.palette.heading2.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldMagenta={},{},{}",
-                bright_magenta[0], bright_magenta[1], bright_magenta[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.heading2.rgb() {
+            let _ = writeln!(output, "BoldMagenta={r},{g},{b}");
         }
 
         // Bright Cyan
-        if let Some(bright_cyan) = &theme.palette.hint.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldCyan={},{},{}",
-                bright_cyan[0], bright_cyan[1], bright_cyan[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.hint.rgb() {
+            let _ = writeln!(output, "BoldCyan={r},{g},{b}",);
         }
 
         // Bright White
-        if let Some(bright_white) = &theme.palette.quote.rgb() {
-            let _ = writeln!(
-                output,
-                "BoldWhite={},{},{}",
-                bright_white[0], bright_white[1], bright_white[2]
-            );
+        if let Some([r, g, b]) = &theme.palette.quote.rgb() {
+            let _ = writeln!(output, "BoldWhite={r},{g},{b}");
         }
 
         Ok(output)

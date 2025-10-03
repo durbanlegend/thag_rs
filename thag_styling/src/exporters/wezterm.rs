@@ -18,7 +18,7 @@ impl ThemeExporter for WezTermExporter {
         let mut output = String::new();
 
         // Get primary background color
-        let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
+        let bg_color = theme.bg_rgbs.first().copied().unwrap_or([0, 0, 0]);
 
         // Metadata section
         output.push_str("[metadata]\n");
@@ -35,17 +35,16 @@ impl ThemeExporter for WezTermExporter {
         output.push_str("[colors]\n");
 
         // Background and foreground
+        let [r, g, b] = bg_color;
         let _ = writeln!(
             output,
-            r##"background = "#{:02x}{:02x}{:02x}" # Primary background"##,
-            bg_color.0, bg_color.1, bg_color.2
+            r##"background = "#{r:02x}{g:02x}{b:02x}" # Primary background"##
         );
 
-        if let Some(fg_color) = &theme.palette.normal.rgb() {
+        if let Some([r, g, b]) = &theme.palette.normal.rgb() {
             let _ = writeln!(
                 output,
-                r##"foreground = "#{:02x}{:02x}{:02x}" # Primary foreground"##,
-                fg_color[0], fg_color[1], fg_color[2]
+                r##"foreground = "#{r:02x}{g:02x}{b:02x}" # Primary foreground"##
             );
         }
 
@@ -54,34 +53,19 @@ impl ThemeExporter for WezTermExporter {
         // ANSI colors array (0-7)
         output.push_str("ansi = [\n");
 
-        let normal_colors: [(&str, Option<(u8, u8, u8)>); 8] = [
+        let normal_colors: [(&str, Option<[u8; 3]>); 8] = [
             ("Black", Some(theme.bg_rgbs[0])),
-            (
-                "Red",
-                theme.palette.emphasis.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Green",
-                theme.palette.success.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Yellow",
-                theme.palette.commentary.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            ("Blue", theme.palette.info.rgb().map(|c| (c[0], c[1], c[2]))),
-            (
-                "Magenta",
-                theme.palette.heading1.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            ("Cyan", theme.palette.code.rgb().map(|c| (c[0], c[1], c[2]))),
-            (
-                "White",
-                theme.palette.normal.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
+            ("Red", theme.palette.emphasis.rgb()),
+            ("Green", theme.palette.success.rgb()),
+            ("Yellow", theme.palette.commentary.rgb()),
+            ("Blue", theme.palette.info.rgb()),
+            ("Magenta", theme.palette.heading1.rgb()),
+            ("Cyan", theme.palette.code.rgb()),
+            ("White", theme.palette.normal.rgb()),
         ];
 
         for (name, rgb_opt) in normal_colors {
-            if let Some((r, g, b)) = rgb_opt {
+            if let Some([r, g, b]) = rgb_opt {
                 let _ = writeln!(
                     output,
                     r##"    "#{:02x}{:02x}{:02x}", # {}"##,
@@ -105,43 +89,19 @@ impl ThemeExporter for WezTermExporter {
         // Bright colors (8-15)
         output.push_str("brights = [\n");
 
-        let bright_colors: [(&str, Option<(u8, u8, u8)>); 8] = [
-            (
-                "Bright Black",
-                theme.palette.subtle.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright Red",
-                theme.palette.error.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright Green",
-                theme.palette.debug.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright Yellow",
-                theme.palette.warning.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright Blue",
-                theme.palette.link.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright Magenta",
-                theme.palette.heading2.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright Cyan",
-                theme.palette.hint.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
-            (
-                "Bright White",
-                theme.palette.quote.rgb().map(|c| (c[0], c[1], c[2])),
-            ),
+        let bright_colors: [(&str, Option<[u8; 3]>); 8] = [
+            ("Bright Black", theme.palette.subtle.rgb()),
+            ("Bright Red", theme.palette.error.rgb()),
+            ("Bright Green", theme.palette.debug.rgb()),
+            ("Bright Yellow", theme.palette.warning.rgb()),
+            ("Bright Blue", theme.palette.link.rgb()),
+            ("Bright Magenta", theme.palette.heading2.rgb()),
+            ("Bright Cyan", theme.palette.hint.rgb()),
+            ("Bright White", theme.palette.quote.rgb()),
         ];
 
         for (name, rgb_opt) in bright_colors {
-            if let Some((r, g, b)) = rgb_opt {
+            if let Some([r, g, b]) = rgb_opt {
                 let _ = writeln!(
                     output,
                     r##"    "#{:02x}{:02x}{:02x}", # {}"##,
@@ -170,33 +130,26 @@ impl ThemeExporter for WezTermExporter {
             .or_else(|| theme.palette.normal.rgb());
 
         if let Some(cursor_color) = cursor_color_opt {
+            let [r, g, b] = cursor_color;
             let _ = writeln!(
                 output,
-                r##"cursor_bg = "#{:02x}{:02x}{:02x}" # Cursor background"##,
-                cursor_color[0], cursor_color[1], cursor_color[2]
+                r##"cursor_bg = "#{r:02x}{g:02x}{b:02x}" # Cursor background"##
             );
 
             let _ = writeln!(
                 output,
-                r##"cursor_border = "#{:02x}{:02x}{:02x}" # Cursor border"##,
-                cursor_color[0], cursor_color[1], cursor_color[2]
+                r##"cursor_border = "#{r:02x}{g:02x}{b:02x}" # Cursor border"##
             );
 
             // Cursor text should contrast with cursor color
-            let cursor_fg = if is_light_color((cursor_color[0], cursor_color[1], cursor_color[2])) {
+            let [r, g, b] = if is_light_color(cursor_color) {
                 bg_color // Use background color for contrast
             } else {
-                theme
-                    .palette
-                    .normal
-                    .rgb()
-                    .map(|c| (c[0], c[1], c[2]))
-                    .unwrap_or((255, 255, 255))
+                theme.palette.normal.rgb().unwrap_or([255, 255, 255])
             };
             let _ = writeln!(
                 output,
-                r##"cursor_fg = "#{:02x}{:02x}{:02x}" # Cursor text"##,
-                cursor_fg.0, cursor_fg.1, cursor_fg.2
+                r##"cursor_fg = "#{r:02x}{g:02x}{b:02x}" # Cursor text"##
             );
         }
 
@@ -204,23 +157,20 @@ impl ThemeExporter for WezTermExporter {
 
         // Selection colors
         // Use commentary color for better visibility, fallback to brightness adjustment
-        let selection_bg = theme
+        let [r, g, b] = theme
             .palette
             .commentary
             .rgb()
-            .map(|c| (c[0], c[1], c[2]))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.3));
         let _ = writeln!(
             output,
-            r##"selection_bg = "#{:02x}{:02x}{:02x}" # Selection background"##,
-            selection_bg.0, selection_bg.1, selection_bg.2
+            r##"selection_bg = "#{r:02x}{g:02x}{b:02x}" # Selection background"##,
         );
 
-        if let Some(selection_fg) = &theme.palette.normal.rgb() {
+        if let Some([r, g, b]) = &theme.palette.normal.rgb() {
             let _ = writeln!(
                 output,
-                r##"selection_fg = "#{:02x}{:02x}{:02x}" # Selection foreground"##,
-                selection_fg[0], selection_fg[1], selection_fg[2]
+                r##"selection_fg = "#{r:02x}{g:02x}{b:02x}" # Selection foreground"##
             );
         }
 
@@ -230,20 +180,17 @@ impl ThemeExporter for WezTermExporter {
         output.push_str("[colors.indexed]\n");
 
         // Add some common indexed colors based on the theme
-        let indexed_colors: [(u8, Option<(u8, u8, u8)>); 6] = [
-            (16, theme.palette.warning.rgb().map(|c| (c[0], c[1], c[2]))),
-            (
-                17,
-                Some(theme.bg_rgbs[0]).map(|c| adjust_color_brightness(c, 0.3)),
-            ),
+        let indexed_colors: [(u8, Option<[u8; 3]>); 6] = [
+            (16, theme.palette.warning.rgb()),
+            (17, Some(theme.bg_rgbs[0])),
             (18, Some(adjust_color_brightness(bg_color, 1.1))),
             (19, Some(adjust_color_brightness(bg_color, 1.2))),
-            (20, theme.palette.subtle.rgb().map(|c| (c[0], c[1], c[2]))),
-            (21, theme.palette.emphasis.rgb().map(|c| (c[0], c[1], c[2]))),
+            (20, theme.palette.subtle.rgb()),
+            (21, theme.palette.emphasis.rgb()),
         ];
 
         for (index, rgb_opt) in indexed_colors {
-            if let Some((r, g, b)) = rgb_opt {
+            if let Some([r, g, b]) = rgb_opt {
                 let _ = writeln!(output, r##"{} = "#{:02x}{:02x}{:02x}""##, index, r, g, b);
             }
         }

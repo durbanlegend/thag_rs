@@ -182,7 +182,7 @@ pub trait StylingConfigProvider {
     /// Get terminal background luminance setting
     fn term_bg_luma(&self) -> TermBgLuma;
     /// Get terminal background RGB setting
-    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)>;
+    fn term_bg_rgb(&self) -> Option<[u8; 3]>;
     /// Get background color list
     fn backgrounds(&self) -> Vec<String>;
     /// Get preferred light themes
@@ -203,7 +203,7 @@ impl StylingConfigProvider for NoConfigProvider {
         TermBgLuma::default()
     }
 
-    fn term_bg_rgb(&self) -> Option<(u8, u8, u8)> {
+    fn term_bg_rgb(&self) -> Option<[u8; 3]> {
         None
     }
 
@@ -236,7 +236,7 @@ pub fn display_color_comparison(theme: &Theme) {
                 0,
                 "Background",
                 // get_best_dark_color(theme)
-                &Style::with_rgb(theme.bg_rgbs[0].into()),
+                &Style::with_rgb(theme.bg_rgbs[0]),
             ),
             ("Red (1)", 1, "Emphasis", &theme.palette.emphasis),
             ("Green (2)", 2, "Success", &theme.palette.success),
@@ -278,8 +278,8 @@ pub fn display_color_comparison(theme: &Theme) {
                 .as_ref()
                 .map(|color_info| match &color_info.value {
                     ColorValue::TrueColor { rgb } => *rgb,
-                    ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
-                    ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
+                    ColorValue::Color256 { color256 } => index_to_rgb(*color256),
+                    ColorValue::Basic { index, .. } => index_to_rgb(*index),
                 });
 
             let thag_display = if let Some([r, g, b]) = rgb {
@@ -433,9 +433,9 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
         delta / (max + min)
     };
 
-    let h = if max == r {
+    let h = if (max - r).abs() < 0.1 {
         60.0 * (((g - b) / delta) % 6.0)
-    } else if max == g {
+    } else if (max - g).abs() < 0.1 {
         60.0 * (((b - r) / delta) + 2.0)
     } else {
         60.0 * (((r - g) / delta) + 4.0)

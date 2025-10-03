@@ -557,7 +557,7 @@ pub struct Styling {
     pub color_support: ColorSupport,
     #[serde(default)]
     /// Terminal background RGB override (user should coordinate this with `term_bg_luma`)
-    pub term_bg_rgb: Option<(u8, u8, u8)>,
+    pub term_bg_rgb: Option<[u8; 3]>,
     #[serde(default)]
     /// Light or dark terminal background override (user should coordinate this with `term_bg_rgb`)
     pub term_bg_luma: TermBgLuma,

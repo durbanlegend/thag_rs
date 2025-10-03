@@ -16,19 +16,18 @@ pub struct WindowsTerminalExporter;
 impl ThemeExporter for WindowsTerminalExporter {
     fn export_theme(theme: &Theme) -> StylingResult<String> {
         // Get primary background color
-        let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
+        let bg_color = theme.bg_rgbs.first().copied().unwrap_or([0, 0, 0]);
 
         // Build the Windows Terminal color scheme JSON
         let color_scheme = json!({
             "name": theme.name,
             "background": format_color(Some(bg_color)),
-            "foreground": format_color(theme.palette.normal.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
+            "foreground": format_color(theme.palette.normal.rgb()),
 
             // Cursor colors
             "cursorColor": format_color(
                 theme.palette.emphasis.rgb()
                     .or_else(|| theme.palette.normal.rgb())
-                    .map(|rgb| (rgb[0], rgb[1], rgb[2]))
             ),
 
             // Selection colors
@@ -36,41 +35,23 @@ impl ThemeExporter for WindowsTerminalExporter {
 
             // ANSI colors (0-7: normal, 8-15: bright)
             "black": format_color(Some(theme.bg_rgbs[0])),
-            "red": format_color(theme.palette.emphasis.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
-            "green": format_color(theme.palette.success.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
-            "yellow": format_color(theme.palette.commentary.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
-            "blue": format_color(theme.palette.info.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
-            "purple": format_color(theme.palette.heading1.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
-            "cyan": format_color(
-                theme.palette.code.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "white": format_color(theme.palette.normal.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))),
+            "red": format_color(theme.palette.error.rgb()),
+            "green": format_color(theme.palette.success.rgb()),
+            "yellow": format_color(theme.palette.warning.rgb()),
+            "blue": format_color(theme.palette.info.rgb()),
+            "purple": format_color(theme.palette.heading1.rgb()),
+            "cyan": format_color(theme.palette.code.rgb()),
+            "white": format_color(theme.palette.normal.rgb()),
 
             // Bright colors (8-15)
-            "brightBlack": format_color(
-                theme.palette.subtle.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightRed": format_color(
-                theme.palette.error.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightGreen": format_color(
-                theme.palette.debug.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightYellow": format_color(
-                theme.palette.warning.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightBlue": format_color(
-                theme.palette.link.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightPurple": format_color(
-                theme.palette.heading2.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightCyan": format_color(
-                theme.palette.hint.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            ),
-            "brightWhite": format_color(
-                theme.palette.quote.rgb().map(|rgb| (rgb[0], rgb[1], rgb[2]))
-            )
+            "brightBlack": format_color(theme.palette.subtle.rgb()),
+            "brightRed": format_color(theme.palette.error.rgb()),
+            "brightGreen": format_color(theme.palette.debug.rgb()),
+            "brightYellow": format_color(theme.palette.warning.rgb()),
+            "brightBlue": format_color(theme.palette.link.rgb()),
+            "brightPurple": format_color(theme.palette.heading2.rgb()),
+            "brightCyan": format_color(theme.palette.hint.rgb()),
+            "brightWhite": format_color(theme.palette.quote.rgb())
         });
 
         // Create the complete schemes array structure that can be merged into settings.json
@@ -91,8 +72,8 @@ impl ThemeExporter for WindowsTerminalExporter {
 }
 
 /// Format RGB color as hex string for Windows Terminal
-fn format_color(rgb_opt: Option<(u8, u8, u8)>) -> String {
-    let (r, g, b) = rgb_opt.unwrap_or((128, 128, 128));
+fn format_color(rgb_opt: Option<[u8; 3]>) -> String {
+    let [r, g, b] = rgb_opt.unwrap_or([128, 128, 128]);
     format!("#{:02X}{:02X}{:02X}", r, g, b)
 }
 

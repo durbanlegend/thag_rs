@@ -25,14 +25,14 @@ impl ThemeExporter for KittyExporter {
         );
 
         // Get primary background color
-        let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
+        let bg_color = theme.bg_rgbs.first().copied().unwrap_or([0, 0, 0]);
 
         // Basic colors
         output.push_str("# Basic colors\n");
         let _ = writeln!(
             output,
             "background #{:02x}{:02x}{:02x}",
-            bg_color.0, bg_color.1, bg_color.2
+            bg_color[0], bg_color[1], bg_color[2]
         );
 
         if let Some(fg_color) = theme.palette.normal.rgb() {
@@ -47,16 +47,16 @@ impl ThemeExporter for KittyExporter {
 
         // Selection colors
         output.push_str("# Selection colors\n");
-        let selection_bg: (u8, u8, u8) = theme
+        let selection_bg: [u8; 3] = theme
             .palette
             .commentary
             .rgb()
-            .map(|c| (c[0], c[1], c[2]))
+            // .map(|c| (c[0], c[1], c[2]))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.4));
         let _ = writeln!(
             output,
             "selection_background #{:02x}{:02x}{:02x}",
-            selection_bg.0, selection_bg.1, selection_bg.2
+            selection_bg[0], selection_bg[1], selection_bg[2]
         );
 
         if let Some(selection_fg) = theme.palette.normal.rgb() {
@@ -84,21 +84,20 @@ impl ThemeExporter for KittyExporter {
             );
 
             // Cursor text should contrast with cursor color
-            let cursor_text = if is_light_color((cursor_color[0], cursor_color[1], cursor_color[2]))
-            {
+            let cursor_text = if is_light_color(cursor_color) {
                 bg_color // Use background color for contrast
             } else {
                 theme
                     .palette
                     .normal
                     .rgb()
-                    .map(|c| (c[0], c[1], c[2]))
-                    .unwrap_or((255, 255, 255))
+                    // .map(|c| (c[0], c[1], c[2]))
+                    .unwrap_or([255, 255, 255])
             };
             let _ = writeln!(
                 output,
                 "cursor_text_color #{:02x}{:02x}{:02x}",
-                cursor_text.0, cursor_text.1, cursor_text.2
+                cursor_text[0], cursor_text[1], cursor_text[2]
             );
         }
 
@@ -142,13 +141,13 @@ impl ThemeExporter for KittyExporter {
             .palette
             .subtle
             .rgb()
-            .map(|c| (c[0], c[1], c[2]))
+            // .map(|c| (c[0], c[1], c[2]))
             .or_else(|| Some(adjust_color_brightness(bg_color, 1.3)))
         {
             let _ = writeln!(
                 output,
                 "inactive_border_color #{:02x}{:02x}{:02x}",
-                inactive_border.0, inactive_border.1, inactive_border.2
+                inactive_border[0], inactive_border[1], inactive_border[2]
             );
         }
 
@@ -160,7 +159,7 @@ impl ThemeExporter for KittyExporter {
         let _ = writeln!(
             output,
             "tab_bar_background #{:02x}{:02x}{:02x}",
-            tab_bg.0, tab_bg.1, tab_bg.2
+            tab_bg[0], tab_bg[1], tab_bg[2]
         );
 
         if let Some(active_tab_fg) = theme
@@ -168,19 +167,19 @@ impl ThemeExporter for KittyExporter {
             .emphasis
             .rgb()
             .or_else(|| theme.palette.normal.rgb())
-            .map(|c| (c[0], c[1], c[2]))
+        // .map(|c| (c[0], c[1], c[2]))
         {
             let _ = writeln!(
                 output,
                 "active_tab_foreground #{:02x}{:02x}{:02x}",
-                active_tab_fg.0, active_tab_fg.1, active_tab_fg.2
+                active_tab_fg[0], active_tab_fg[1], active_tab_fg[2]
             );
         }
 
         let _ = writeln!(
             output,
             "active_tab_background #{:02x}{:02x}{:02x}",
-            bg_color.0, bg_color.1, bg_color.2
+            bg_color[0], bg_color[1], bg_color[2]
         );
 
         if let Some(inactive_tab_fg) = theme
@@ -188,20 +187,20 @@ impl ThemeExporter for KittyExporter {
             .subtle
             .rgb()
             .or_else(|| theme.palette.normal.rgb())
-            .map(|c| (c[0], c[1], c[2]))
+            // .map(|c| (c[0], c[1], c[2]))
             .map(dim_color)
         {
             let _ = writeln!(
                 output,
                 "inactive_tab_foreground #{:02x}{:02x}{:02x}",
-                inactive_tab_fg.0, inactive_tab_fg.1, inactive_tab_fg.2
+                inactive_tab_fg[0], inactive_tab_fg[1], inactive_tab_fg[2]
             );
         }
 
         let _ = writeln!(
             output,
             "inactive_tab_background #{:02x}{:02x}{:02x}",
-            tab_bg.0, tab_bg.1, tab_bg.2
+            tab_bg[0], tab_bg[1], tab_bg[2]
         );
 
         output.push('\n');
@@ -217,7 +216,7 @@ impl ThemeExporter for KittyExporter {
             let _ = writeln!(
                 output,
                 "mark1_foreground #{:02x}{:02x}{:02x}",
-                bg_color.0, bg_color.1, bg_color.2
+                bg_color[0], bg_color[1], bg_color[2]
             );
         }
 
@@ -230,7 +229,7 @@ impl ThemeExporter for KittyExporter {
             let _ = writeln!(
                 output,
                 "mark2_foreground #{:02x}{:02x}{:02x}",
-                bg_color.0, bg_color.1, bg_color.2
+                bg_color[0], bg_color[1], bg_color[2]
             );
         }
 
@@ -243,7 +242,7 @@ impl ThemeExporter for KittyExporter {
             let _ = writeln!(
                 output,
                 "mark3_foreground #{:02x}{:02x}{:02x}",
-                bg_color.0, bg_color.1, bg_color.2
+                bg_color[0], bg_color[1], bg_color[2]
             );
         }
 
@@ -253,15 +252,15 @@ impl ThemeExporter for KittyExporter {
         output.push_str("# The color table\n");
         output.push_str("#\n");
         output.push_str("# black\n");
-        if let Some((r, g, b)) = Some(theme.bg_rgbs[0]) {
+        if let Some([r, g, b]) = Some(theme.bg_rgbs[0]) {
             let _ = writeln!(output, "color0 #{:02x}{:02x}{:02x}", r, g, b);
         }
-        if let Some((r, g, b)) = theme
+        if let Some([r, g, b]) = theme
             .palette
             .subtle
             .rgb()
-            .map(|c| (c[0], c[1], c[2]))
-            .or(Some((64, 64, 64)))
+            // .map(|c| (c[0], c[1], c[2]))
+            .or(Some([64, 64, 64]))
         {
             let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}", r, g, b);
         }
@@ -389,18 +388,18 @@ mod tests {
 
     #[test]
     fn test_color_conversions() {
-        assert_eq!(color_256_to_rgb(0), (0, 0, 0));
-        assert_eq!(color_256_to_rgb(15), (255, 255, 255));
-        assert_eq!(basic_color_to_rgb(1), (128, 0, 0));
+        assert_eq!(color_256_to_rgb(0), [0, 0, 0]);
+        assert_eq!(color_256_to_rgb(15), [255, 255, 255]);
+        assert_eq!(basic_color_to_rgb(1), [128, 0, 0]);
 
-        assert_eq!(brighten_color((100, 100, 100)), (130, 130, 130));
-        assert_eq!(dim_color((100, 100, 100)), (60, 60, 60));
+        assert_eq!(brighten_color([100, 100, 100]), [130, 130, 130]);
+        assert_eq!(dim_color([100, 100, 100]), [60, 60, 60]);
     }
 
     #[test]
     fn test_color_brightness_detection() {
-        assert!(is_light_color((255, 255, 255))); // White should be light
-        assert!(!is_light_color((0, 0, 0))); // Black should be dark
-        assert!(!is_light_color((64, 64, 64))); // Dark gray should be dark
+        assert!(is_light_color([255, 255, 255])); // White should be light
+        assert!(!is_light_color([0, 0, 0])); // Black should be dark
+        assert!(!is_light_color([64, 64, 64])); // Dark gray should be dark
     }
 }

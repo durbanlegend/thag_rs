@@ -76,7 +76,7 @@ impl PaletteSync {
         if let Some(bg_rgb) = theme.bg_rgbs.first() {
             let osc = format!(
                 "\x1b]11;rgb:{:02x}/{:02x}/{:02x}\x07",
-                bg_rgb.0, bg_rgb.1, bg_rgb.2
+                bg_rgb[0], bg_rgb[1], bg_rgb[2]
             );
             stdout.write_all(osc.as_bytes())?;
         }
@@ -119,7 +119,7 @@ impl PaletteSync {
         // Brighten for dark themes, darken for light themes for good visibility
         // Supported by: Gnome Terminal, WezTerm, iTerm2, Kitty, Apple Terminal, WSL Ubuntu
         let selection_bg_rgb = theme.bg_rgbs.first().map_or([128, 128, 128], |bg_rgb| {
-            let bg_array = [bg_rgb.0, bg_rgb.1, bg_rgb.2];
+            let bg_array = *bg_rgb;
             let is_light_theme = matches!(theme.term_bg_luma, crate::TermBgLuma::Light);
             Self::adjust_bg_for_selection(bg_array, is_light_theme)
         });
@@ -314,13 +314,16 @@ impl PaletteSync {
         println!();
         println!("🖼️  Background Information:");
         if let Some(bg_rgb) = theme.bg_rgbs.first() {
-            println!("   RGB: ({}, {}, {})", bg_rgb.0, bg_rgb.1, bg_rgb.2);
-            println!("   Hex: #{:02x}{:02x}{:02x}", bg_rgb.0, bg_rgb.1, bg_rgb.2);
+            println!("   RGB: ({}, {}, {})", bg_rgb[0], bg_rgb[1], bg_rgb[2]);
+            println!(
+                "   Hex: #{:02x}{:02x}{:02x}",
+                bg_rgb[0], bg_rgb[1], bg_rgb[2]
+            );
 
             // Show a sample with the background color
             let osc = format!(
                 "\x1b]11;rgb:{:02x}/{:02x}/{:02x}\x07",
-                bg_rgb.0, bg_rgb.1, bg_rgb.2
+                bg_rgb[0], bg_rgb[1], bg_rgb[2]
             );
             print!("{osc}");
             println!("   Sample: \x1b[37m█████\x1b[0m (background should match theme)");

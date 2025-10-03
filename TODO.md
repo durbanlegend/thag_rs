@@ -11,6 +11,22 @@
 - [ ]  Get Claude to do a release plan.
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
 
+\((\d+, \d+, \d+)\)
+
+/// Helper function to convert RGB array to RGB tuple
+#[must_use]
+pub const fn rgb_array_to_tuple([r, g, b]: [u8; 3]) -> (u8, u8, u8) {
+    (r, g, b)
+}
+
+/// Helper function to convert RGB tuple to RGB array
+#[must_use]
+pub const fn rgb_tuple_to_array((r, g, b): (u8, u8, u8)) -> [u8; 3] {
+    [r, g, b]
+}
+
+/// Result type alias for styling operations
+pub type StylingResult<T> = Result<T, StylingError>;
 
 6422dbc..c3c7383
 

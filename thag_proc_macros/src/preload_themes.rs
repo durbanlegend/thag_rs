@@ -13,7 +13,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
     let themes_dir = manifest_dir + "/themes/built_in";
 
     let mut theme_indices = Vec::new();
-    let mut bg_to_names: HashMap<(u8, u8, u8), Vec<String>> = HashMap::new();
+    let mut bg_to_names: HashMap<[u8; 3], Vec<String>> = HashMap::new();
 
     #[allow(clippy::map_unwrap_or, clippy::unnecessary_map_or)]
     for entry in std::fs::read_dir(themes_dir).unwrap() {
@@ -42,8 +42,8 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
                 .filter_map(hex_to_rgb)
                 .collect();
 
-            let bg_rgbs = backgrounds.iter().map(|(r, g, b)| {
-                quote! { (#r, #g, #b) }
+            let bg_rgbs = backgrounds.iter().map(|[r, g, b]| {
+                quote! { [#r, #g, #b] }
             });
 
             let term_bg_luma = to_upper_camel_case(
@@ -76,7 +76,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
 
     // eprintln!("Building index by background...");
 
-    let bg_lookup_entries = bg_to_names.iter().map(|((r, g, b), names)| {
+    let bg_lookup_entries = bg_to_names.iter().map(|([r, g, b], names)| {
         let hex = format!("{r:02x}{g:02x}{b:02x}");
         quote! {
             #hex => &[#(#names),*]
@@ -110,7 +110,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
             /// The name of the theme
             pub name: &'static str,
             /// Array of RGB color values that represent the theme's background colors
-            pub bg_rgbs: &'static [(u8, u8, u8)],
+            pub bg_rgbs: &'static [[u8; 3]],
             /// The background luminance requirement (light or dark) for this theme
             pub term_bg_luma: TermBgLuma,
             /// The minimum color support level required by this theme
@@ -123,11 +123,11 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
             /// Checks if the given background color matches any of this theme's background colors
             ///
             /// # Arguments
-            /// * `bg` - RGB color tuple to check against theme backgrounds
+            /// * `bg` - RGB color array to check against theme backgrounds
             ///
             /// # Returns
             /// `true` if the color matches any theme background, `false` otherwise
-            fn matches_background(&self, bg: (u8, u8, u8)) -> bool {
+            fn matches_background(&self, bg: [u8; 3]) -> bool {
                 // eprintln!("bg={bg:?}, self.bg_rgbs={:?}", self.bg_rgbs);
                 self.bg_rgbs.iter().any(|&theme_bg| {
                     bg == theme_bg
@@ -167,7 +167,7 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         /// Converts RGB color values to a hexadecimal color string with '#' prefix
         ///
         /// # Arguments
-        /// * `(r, g, b)` - A tuple reference containing RGB values (0-255)
+        /// * `[r, g, b]` - An array reference containing RGB values (0-255)
         ///
         /// # Returns
         /// A string in the format "#rrggbb" where each component is represented as two lowercase hexadecimal digits
@@ -175,18 +175,18 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         /// # Examples
         /// ```
         /// use thag_styling::styling::rgb_to_hex;
-        /// let hex = rgb_to_hex(&(255, 128, 0));
+        /// let hex = rgb_to_hex(&[255, 128, 0]);
         /// assert_eq!(hex, "#ff8000");
         /// ```
         #[must_use]
-        pub fn rgb_to_hex(&(r, g, b): &(u8, u8, u8)) -> String {
+        pub fn rgb_to_hex(&[r, g, b]: &[u8; 3]) -> String {
             format!("#{r:02x}{g:02x}{b:02x}")
         }
 
         /// Converts RGB color values to a hexadecimal color string without '#' prefix
         ///
         /// # Arguments
-        /// * `(r, g, b)` - A tuple reference containing RGB values (0-255)
+        /// * `[r, g, b]` - An array reference containing RGB values (0-255)
         ///
         /// # Returns
         /// A string in the format "rrggbb" where each component is represented as two lowercase hexadecimal digits
@@ -194,11 +194,11 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
         /// # Examples
         /// ```
         /// use thag_styling::styling::rgb_to_bare_hex;
-        /// let hex = rgb_to_bare_hex(&(255, 128, 0));
+        /// let hex = rgb_to_bare_hex(&[255, 128, 0]);
         /// assert_eq!(hex, "ff8000");
         /// ```
         #[must_use]
-        pub fn rgb_to_bare_hex(&(r, g, b): &(u8, u8, u8)) -> String {
+        pub fn rgb_to_bare_hex(&[r, g, b]: &[u8; 3]) -> String {
             format!("{r:02x}{g:02x}{b:02x}")
         }
 
@@ -206,13 +206,13 @@ pub fn preload_themes_impl(_input: TokenStream) -> TokenStream {
     .into()
 }
 
-fn hex_to_rgb(hex: &str) -> Option<(u8, u8, u8)> {
+fn hex_to_rgb(hex: &str) -> Option<[u8; 3]> {
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
         let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
         let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
         let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-        Some((r, g, b))
+        Some([r, g, b])
     } else {
         None
     }

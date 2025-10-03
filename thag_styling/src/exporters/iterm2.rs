@@ -28,128 +28,84 @@ impl ThemeExporter for ITerm2Exporter {
         writeln!(output, "<dict>")?;
 
         // Get primary background color
-        let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
+        let bg_color = theme.bg_rgbs.first().copied().unwrap_or([0, 0, 0]);
 
         // ANSI Colors 0-15
         write_color_entry(&mut output, "Ansi 0 Color", Some(theme.bg_rgbs[0]))?;
         write_color_entry(
             &mut output,
             "Ansi 1 Color",
-            theme
-                .palette
-                .emphasis
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.emphasis.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 2 Color",
-            theme
-                .palette
-                .success
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.success.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 3 Color",
-            theme
-                .palette
-                .commentary
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.commentary.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 4 Color",
-            theme.palette.info.rgb().map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.info.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 5 Color",
-            theme
-                .palette
-                .heading1
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.heading1.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 6 Color",
-            theme.palette.code.rgb().map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.code.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 7 Color",
-            theme
-                .palette
-                .normal
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.normal.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 8 Color",
-            theme
-                .palette
-                .subtle
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.subtle.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 9 Color",
-            theme
-                .palette
-                .error
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.error.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 10 Color",
-            theme
-                .palette
-                .debug
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.debug.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 11 Color",
-            theme
-                .palette
-                .warning
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.warning.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 12 Color",
-            theme.palette.link.rgb().map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.link.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 13 Color",
-            theme
-                .palette
-                .heading2
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.heading2.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 14 Color",
-            theme.palette.hint.rgb().map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.hint.rgb(), //.map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(
             &mut output,
             "Ansi 15 Color",
-            theme
-                .palette
-                .quote
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.quote.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Background and foreground
@@ -157,11 +113,7 @@ impl ThemeExporter for ITerm2Exporter {
         write_color_entry(
             &mut output,
             "Foreground Color",
-            theme
-                .palette
-                .normal
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.normal.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Bold color
@@ -172,8 +124,7 @@ impl ThemeExporter for ITerm2Exporter {
                 .palette
                 .emphasis
                 .rgb()
-                .or_else(|| theme.palette.normal.rgb())
-                .map(|arr| (arr[0], arr[1], arr[2])),
+                .or_else(|| theme.palette.normal.rgb()), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Cursor colors
@@ -184,8 +135,7 @@ impl ThemeExporter for ITerm2Exporter {
                 .palette
                 .emphasis
                 .rgb()
-                .or_else(|| theme.palette.normal.rgb())
-                .map(|arr| (arr[0], arr[1], arr[2])),
+                .or_else(|| theme.palette.normal.rgb()), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
         write_color_entry(&mut output, "Cursor Text Color", Some(bg_color))?;
 
@@ -199,17 +149,13 @@ impl ThemeExporter for ITerm2Exporter {
                 .palette
                 .commentary
                 .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2]))
+                // .map(|arr| (arr[0], arr[1], arr[2]))
                 .or_else(|| Some(adjust_color_brightness(bg_color, 1.4))),
         )?;
         write_color_entry(
             &mut output,
             "Selected Text Color",
-            theme
-                .palette
-                .normal
-                .rgb()
-                .map(|arr| (arr[0], arr[1], arr[2])),
+            theme.palette.normal.rgb(), // .map(|arr| (arr[0], arr[1], arr[2])),
         )?;
 
         // Close the plist
@@ -232,9 +178,9 @@ impl ThemeExporter for ITerm2Exporter {
 fn write_color_entry(
     output: &mut String,
     key: &str,
-    rgb_opt: Option<(u8, u8, u8)>,
+    rgb_opt: Option<[u8; 3]>,
 ) -> Result<(), std::fmt::Error> {
-    let (r, g, b) = rgb_opt.unwrap_or((128, 128, 128));
+    let [r, g, b] = rgb_opt.unwrap_or([128, 128, 128]);
 
     // Convert to normalized float values (0.0 - 1.0)
     let red = f64::from(r) / 255.0;
@@ -297,7 +243,7 @@ mod tests {
     #[test]
     fn test_write_color_entry() {
         let mut output = String::new();
-        let result = write_color_entry(&mut output, "Test Color", Some((255, 128, 64)));
+        let result = write_color_entry(&mut output, "Test Color", Some([255, 128, 64]));
 
         assert!(result.is_ok());
         assert!(output.contains("<key>Test Color</key>"));
@@ -307,8 +253,8 @@ mod tests {
 
     #[test]
     fn test_color_conversions() {
-        assert_eq!(color_256_to_rgb(0), (0, 0, 0));
-        assert_eq!(color_256_to_rgb(15), (255, 255, 255));
-        assert_eq!(basic_color_to_rgb(1), (128, 0, 0));
+        assert_eq!(color_256_to_rgb(0), [0, 0, 0]);
+        assert_eq!(color_256_to_rgb(15), [255, 255, 255]);
+        assert_eq!(basic_color_to_rgb(1), [128, 0, 0]);
     }
 }

@@ -100,11 +100,11 @@ impl Drop for TerminalStateGuard {
 /// println!("Terminal color support: {:?}", support);
 /// ```
 #[must_use]
-pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u8)) {
+pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static [u8; 3]) {
     if env::var("TEST_ENV").is_ok() {
         #[cfg(debug_assertions)]
         debug_log!("Avoiding color detection for testing");
-        return (&ColorSupport::Basic, &(0, 0, 0));
+        return (&ColorSupport::Basic, &[0, 0, 0]);
     }
 
     let maybe_raw_mode = is_raw_mode_enabled();
@@ -114,7 +114,7 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
         Err(e) => {
             #[cfg(debug_assertions)]
             debug_log!("Failed to check raw mode status: {:?}", e);
-            return (&ColorSupport::Basic, &(0, 0, 0));
+            return (&ColorSupport::Basic, &[0, 0, 0]);
         }
     };
 
@@ -127,9 +127,9 @@ pub fn detect_term_capabilities() -> (&'static ColorSupport, &'static (u8, u8, u
         detect_color_support_osc()
     });
 
-    let term_bg_rgb = lazy_static_var!((u8, u8, u8), {
+    let term_bg_rgb = lazy_static_var!([u8; 3], {
         let maybe_term_bg = get_term_bg_rgb_unguarded();
-        *maybe_term_bg.unwrap_or(&(0, 0, 0))
+        *maybe_term_bg.unwrap_or(&[0, 0, 0])
     });
 
     (color_support, term_bg_rgb)
@@ -195,10 +195,10 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
 /// ```
 /// use thag_rs::terminal::is_light_color;
 ///
-/// assert!(is_light_color((255, 255, 255))); // white is light
-/// assert!(!is_light_color((0, 0, 0)));      // black is dark
+/// assert!(is_light_color([255, 255, 255])); // white is light
+/// assert!(!is_light_color([0, 0, 0]));      // black is dark
 /// ```
-pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
+pub fn is_light_color([r, g, b]: [u8; 3]) -> bool {
     // Using perceived brightness formula
     let brightness =
         f32::from(b).mul_add(0.114, f32::from(r).mul_add(0.299, f32::from(g) * 0.587)) / 255.0;
@@ -228,7 +228,7 @@ pub fn is_light_color((r, g, b): (u8, u8, u8)) -> bool {
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");
 /// ```
-pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
+pub fn get_term_bg_rgb() -> ThagCommonResult<&'static [u8; 3]> {
     struct RawModeGuard(bool);
     impl Drop for RawModeGuard {
         fn drop(&mut self) {
@@ -240,7 +240,7 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
     }
 
     lazy_static_var!(
-        Result < (u8, u8, u8),
+        Result < [u8; 3],
         ThagCommonError >, {
             // Save initial state
             let raw_before = is_raw_mode_enabled()
@@ -267,11 +267,11 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
             match termbg::rgb(timeout) {
                 Ok(bg_rgb) => {
                     // Convert 16-bit RGB to 8-bit RGB
-                    let rgb = (
+                    let rgb = [
                         (bg_rgb.r >> 8) as u8,
                         (bg_rgb.g >> 8) as u8,
                         (bg_rgb.b >> 8) as u8,
-                    );
+                    ];
                     vprtln!(V::V, "termbg successful: {rgb:?}");
                     Ok(rgb)
                 }
@@ -313,10 +313,10 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static (u8, u8, u8)> {
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");
 /// ```
-pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
+pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static [u8; 3]> {
     // Now do theme detection
     lazy_static_var!(
-    Result < (u8, u8, u8),
+    Result < [u8; 3],
     ThagCommonError >, {
         // Try custom OSC 11 implementation first (more reliable timeout)
         vprtln!(V::V, "Checking terminal background with OSC 11 (unguarded)");
@@ -331,11 +331,11 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static (u8, u8, u8)> {
         match termbg::rgb(timeout) {
             Ok(bg_rgb) => {
                 // Convert 16-bit RGB to 8-bit RGB
-                let rgb = (
+                let rgb = [
                     (bg_rgb.r >> 8) as u8,
                     (bg_rgb.g >> 8) as u8,
                     (bg_rgb.b >> 8) as u8,
-                );
+                ];
                 vprtln!(V::V, "termbg successful: {rgb:?}");
                 Ok(rgb)
             }
@@ -427,14 +427,14 @@ fn is_apple_terminal() -> bool {
 }
 
 /// Query background color using OSC 11 with robust timeout handling
-fn query_background_osc11_with_timeout(timeout: Duration) -> Option<(u8, u8, u8)> {
+fn query_background_osc11_with_timeout(timeout: Duration) -> Option<[u8; 3]> {
     use std::sync::mpsc;
     use std::thread;
 
     let (tx, rx) = mpsc::channel();
 
     let handle = thread::spawn(move || {
-        let result = (|| -> Option<(u8, u8, u8)> {
+        let result = (|| -> Option<[u8; 3]> {
             if enable_raw_mode().is_err() {
                 return None;
             }
@@ -526,7 +526,7 @@ fn read_terminal_response_with_timeout(
 }
 
 /// Parse OSC 11 background color response
-fn parse_osc11_background_response(response: &str) -> Option<(u8, u8, u8)> {
+fn parse_osc11_background_response(response: &str) -> Option<[u8; 3]> {
     // OSC 11 response format: ESC]11;rgb:RRRR/GGGG/BBBB BEL
     if let Some(start_pos) = response.find("\x1b]11;") {
         let response_part = &response[start_pos..];
@@ -549,7 +549,7 @@ fn parse_osc11_background_response(response: &str) -> Option<(u8, u8, u8)> {
                         parse_hex_component_bg(parts[1]),
                         parse_hex_component_bg(parts[2]),
                     ) {
-                        return Some((r, g, b));
+                        return Some([r, g, b]);
                     }
                 }
             }
@@ -566,7 +566,7 @@ fn parse_osc11_background_response(response: &str) -> Option<(u8, u8, u8)> {
                         u8::from_str_radix(&hex_str[2..4], 16),
                         u8::from_str_radix(&hex_str[4..6], 16),
                     ) {
-                        return Some((r, g, b));
+                        return Some([r, g, b]);
                     }
                 }
             }
@@ -676,10 +676,15 @@ fn test_truecolor_support() -> bool {
             };
 
             // Set test color
-            let test_color = (123u8, 234u8, 45u8);
+            let test_color = [123u8, 234u8, 45u8];
             let set_cmd = format!(
                 "\x1b]10;rgb:{:02x}{:02x}/{:02x}{:02x}/{:02x}{:02x}\x07",
-                test_color.0, test_color.0, test_color.1, test_color.1, test_color.2, test_color.2
+                test_color[0],
+                test_color[0],
+                test_color[1],
+                test_color[1],
+                test_color[2],
+                test_color[2]
             );
             if stdout.write_all(set_cmd.as_bytes()).is_err() {
                 return false;
@@ -705,12 +710,12 @@ fn test_truecolor_support() -> bool {
             // Restore original color
             let restore_cmd = format!(
                 "\x1b]10;rgb:{:02x}{:02x}/{:02x}{:02x}/{:02x}{:02x}\x07",
-                original_color.0,
-                original_color.0,
-                original_color.1,
-                original_color.1,
-                original_color.2,
-                original_color.2
+                original_color[0],
+                original_color[0],
+                original_color[1],
+                original_color[1],
+                original_color[2],
+                original_color[2]
             );
             if stdout.write_all(restore_cmd.as_bytes()).is_err() {
                 return false;
@@ -720,9 +725,9 @@ fn test_truecolor_support() -> bool {
             }
 
             // Check if colors match (within tolerance)
-            let distance = ((i16::from(test_color.0) - i16::from(queried_color.0)).abs()
-                + (i16::from(test_color.1) - i16::from(queried_color.1)).abs()
-                + (i16::from(test_color.2) - i16::from(queried_color.2)).abs())
+            let distance = ((i16::from(test_color[0]) - i16::from(queried_color[0])).abs()
+                + (i16::from(test_color[1]) - i16::from(queried_color[1])).abs()
+                + (i16::from(test_color[2]) - i16::from(queried_color[2])).abs())
                 as u16;
 
             distance <= 50
@@ -740,7 +745,7 @@ fn test_truecolor_support() -> bool {
 }
 
 /// Read OSC 10 response from stdin
-fn read_osc10_response(stdin: &mut std::io::Stdin, timeout: Duration) -> Option<(u8, u8, u8)> {
+fn read_osc10_response(stdin: &mut std::io::Stdin, timeout: Duration) -> Option<[u8; 3]> {
     let mut buffer = Vec::new();
     let mut temp_buffer = [0u8; 1];
     let start = Instant::now();
@@ -775,7 +780,7 @@ fn read_osc10_response(stdin: &mut std::io::Stdin, timeout: Duration) -> Option<
 }
 
 /// Parse OSC 10 response to extract RGB values
-fn parse_osc10_response(response: &str) -> Option<(u8, u8, u8)> {
+fn parse_osc10_response(response: &str) -> Option<[u8; 3]> {
     if let Some(start_pos) = response.find("\x1b]10;") {
         let response_part = &response[start_pos..];
 
@@ -804,7 +809,7 @@ fn parse_osc10_response(response: &str) -> Option<(u8, u8, u8)> {
                         u16::from_str_radix(parts[1], 16).map(|v| (v >> 8) as u8),
                         u16::from_str_radix(parts[2], 16).map(|v| (v >> 8) as u8),
                     ) {
-                        return Some((r, g, b));
+                        return Some([r, g, b]);
                     }
                 }
             }

@@ -245,11 +245,11 @@ impl ImageThemeGenerator {
                 "#{:02x}{:02x}{:02x}",
                 background_color.rgb[0], background_color.rgb[1], background_color.rgb[2]
             )],
-            bg_rgbs: vec![(
+            bg_rgbs: vec![[
                 background_color.rgb[0],
                 background_color.rgb[1],
                 background_color.rgb[2],
-            )],
+            ]],
             palette,
             base_colors: None, // Image themes don't have base16/24 colors
         })
@@ -352,7 +352,7 @@ impl ImageThemeGenerator {
         let mut idx = 0;
         while colors.len() < min_colors && idx < colors.len() {
             let base_rgb = colors[idx].0;
-            let (h, s, l) = rgb_to_hsl(base_rgb);
+            let [h, s, l] = rgb_to_hsl(base_rgb);
 
             // lighter
             let lighter_l = (l + 0.15).min(1.0);
@@ -509,7 +509,7 @@ impl ImageThemeGenerator {
         //     color_name,
         //     Style::new().with_rgb(rgb).paint(format!(
         //         "min_lightness_diff={min_lightness_diff:.3}, lightness_diff={final_lightness_diff:.3}, rgb={}=({r},{g},{b})",
-        //         rgb_to_hex(&rgb.into())
+        //         rgb_to_hex(&rgb)
         //     )
         // ));
 
@@ -560,7 +560,7 @@ impl ImageThemeGenerator {
             Style::with_rgb(rgb).paint(format!(
                 "lightness_diff={:.3}, rgb={}",
                 lightness_diff,
-                rgb_to_hex(&rgb.into())
+                rgb_to_hex(&rgb)
             ))
         );
 
@@ -627,7 +627,7 @@ impl ImageThemeGenerator {
             "{}",
             Style::with_rgb(color_analysis.rgb).paint(format!(
                 "{color_name}, rgb={}=({r},{g},{b})",
-                rgb_to_hex(&color_analysis.rgb.into())
+                rgb_to_hex(&color_analysis.rgb)
             ))
         );
         color_analysis
@@ -698,7 +698,7 @@ impl ImageThemeGenerator {
                 "{}",
                 Style::with_rgb(color.rgb).paint(format!(
                     "{} {:?} = hue: {:.0}",
-                    rgb_to_hex(&color.rgb.into()),
+                    rgb_to_hex(&color.rgb),
                     color.rgb,
                     color.hue
                 ))
@@ -747,7 +747,7 @@ impl ImageThemeGenerator {
             "Heading1={}",
             Style::with_rgb(hd1.rgb).bold().paint(format!(
                 "{}, hue: {}, saturation: {}, lightness: {}",
-                rgb_to_hex(&hd1.rgb.into()),
+                rgb_to_hex(&hd1.rgb),
                 hd1.hue,
                 hd1.saturation,
                 hd1.lightness
@@ -758,7 +758,7 @@ impl ImageThemeGenerator {
             "Heading2={}",
             Style::with_rgb(hd2.rgb).bold().paint(format!(
                 "{}, hue: {}, saturation: {}, lightness: {}",
-                rgb_to_hex(&hd2.rgb.into()),
+                rgb_to_hex(&hd2.rgb),
                 hd2.hue,
                 hd2.saturation,
                 hd2.lightness
@@ -769,7 +769,7 @@ impl ImageThemeGenerator {
             "Heading3={}",
             Style::with_rgb(hd3.rgb).bold().paint(format!(
                 "{}, hue: {}, saturation: {}, lightness: {}",
-                rgb_to_hex(&hd3.rgb.into()),
+                rgb_to_hex(&hd3.rgb),
                 hd3.hue,
                 hd3.saturation,
                 hd3.lightness
@@ -808,7 +808,7 @@ impl ImageThemeGenerator {
             "subtle_color={}",
             Style::with_rgb(subtle_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&subtle_color.rgb.into()),
+                rgb_to_hex(&subtle_color.rgb),
                 subtle_color.hue
             ))
         );
@@ -838,7 +838,7 @@ impl ImageThemeGenerator {
             "hint_color={}",
             Style::with_rgb(hint_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&hint_color.rgb.into()),
+                rgb_to_hex(&hint_color.rgb),
                 hint_color.hue
             ))
         );
@@ -869,7 +869,7 @@ impl ImageThemeGenerator {
             "debug_color={}",
             Style::with_rgb(debug_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&debug_color.rgb.into()),
+                rgb_to_hex(&debug_color.rgb),
                 debug_color.hue
             ))
         );
@@ -1037,7 +1037,7 @@ impl ImageThemeGenerator {
             "link_color={}",
             Style::with_rgb(link_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&link_color.rgb.into()),
+                rgb_to_hex(&link_color.rgb),
                 link_color.hue
             ))
         );
@@ -1046,7 +1046,7 @@ impl ImageThemeGenerator {
             "quote_color={}",
             Style::with_rgb(quote_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&quote_color.rgb.into()),
+                rgb_to_hex(&quote_color.rgb),
                 quote_color.hue
             ))
         );
@@ -1055,7 +1055,7 @@ impl ImageThemeGenerator {
             "commentary_color={}",
             Style::with_rgb(commentary_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&commentary_color.rgb.into()),
+                rgb_to_hex(&commentary_color.rgb),
                 commentary_color.hue
             ))
         );
@@ -1399,7 +1399,7 @@ impl ImageThemeGenerator {
             "error_color={}",
             Style::with_rgb(error_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&error_color.rgb.into()),
+                rgb_to_hex(&error_color.rgb),
                 error_color.hue
             ))
         );
@@ -1421,7 +1421,7 @@ impl ImageThemeGenerator {
             "warning_color={}",
             Style::with_rgb(warning_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&warning_color.rgb.into()),
+                rgb_to_hex(&warning_color.rgb),
                 warning_color.hue
             ))
         );
@@ -1442,7 +1442,7 @@ impl ImageThemeGenerator {
             "success_color={}",
             Style::with_rgb(success_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&success_color.rgb.into()),
+                rgb_to_hex(&success_color.rgb),
                 success_color.hue
             ))
         );
@@ -1464,7 +1464,7 @@ impl ImageThemeGenerator {
             "info_color={}",
             Style::with_rgb(info_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&info_color.rgb.into()),
+                rgb_to_hex(&info_color.rgb),
                 info_color.hue
             ))
         );
@@ -1487,7 +1487,7 @@ impl ImageThemeGenerator {
             "code_color={}",
             Style::with_rgb(code_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&code_color.rgb.into()),
+                rgb_to_hex(&code_color.rgb),
                 code_color.hue
             ))
         );
@@ -1511,7 +1511,7 @@ impl ImageThemeGenerator {
             "emphasis_color={}",
             Style::with_rgb(emphasis_color.rgb).paint(format!(
                 "{}, hue={}",
-                rgb_to_hex(&emphasis_color.rgb.into()),
+                rgb_to_hex(&emphasis_color.rgb),
                 emphasis_color.hue
             ))
         );
@@ -1548,8 +1548,8 @@ impl ImageThemeGenerator {
                     let lightness_diff = (c.lightness - background.lightness).abs();
                     // vprtln!(V::V,
                     //     "c={}, used={}, distance={}, lightness_diff={lightness_diff}",
-                    //     styling::rgb_to_hex(&c.rgb.into()),
-                    //     styling::rgb_to_hex(&used.rgb.into()),
+                    //     styling::rgb_to_hex(&c.rgb),
+                    //     styling::rgb_to_hex(&used.rgb),
                     //     used.distance_to(c)
                     // );
                     used == *c /* || used.distance_to(c) < 20.0 */
@@ -1725,7 +1725,7 @@ impl ImageThemeGenerator {
                 "  [{}] hue={:.0} rgb={} {}",
                 i,
                 color.hue,
-                rgb_to_hex(&color.rgb.into()),
+                rgb_to_hex(&color.rgb),
                 Style::with_rgb(color.rgb).paint("■")
             );
         }
@@ -1741,19 +1741,15 @@ impl ImageThemeGenerator {
                         vprtln!(
                             V::V,
                             "c={}, used={}, distance_to={distance_to}, eligible: {}",
-                            Style::with_rgb(c.rgb).paint(rgb_to_hex(&c.rgb.into())),
-                            Style::with_rgb(used.rgb).paint(rgb_to_hex(&used.rgb.into())),
+                            Style::with_rgb(c.rgb).paint(rgb_to_hex(&c.rgb)),
+                            Style::with_rgb(used.rgb).paint(rgb_to_hex(&used.rgb)),
                             distance_to >= 15.0
                         );
                         used == *c || distance_to < 15.0
                     })
             })
             .inspect(|c| {
-                vprtln!(
-                    V::V,
-                    "{} made the cut on 1st try",
-                    rgb_to_hex(&c.rgb.into())
-                );
+                vprtln!(V::V, "{} made the cut on 1st try", rgb_to_hex(&c.rgb));
             })
             .max_by(|a, b| {
                 a.frequency
@@ -1761,7 +1757,7 @@ impl ImageThemeGenerator {
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {
-            vprtln!(V::V, "1. Returning {}", rgb_to_hex(&color.rgb.into()));
+            vprtln!(V::V, "1. Returning {}", rgb_to_hex(&color.rgb));
             return color;
         }
 
@@ -1777,19 +1773,15 @@ impl ImageThemeGenerator {
                     vprtln!(
                         V::V,
                         "c={}, used={}, distance_to={distance_to}, eligible: {}",
-                        rgb_to_hex(&c.rgb.into()),
-                        rgb_to_hex(&used.rgb.into()),
+                        rgb_to_hex(&c.rgb),
+                        rgb_to_hex(&used.rgb),
                         distance_to >= min_distance
                     );
                     distance_to < min_distance
                 })
             })
             .inspect(|c| {
-                vprtln!(
-                    V::V,
-                    "{} made the cut on 2nd try",
-                    rgb_to_hex(&c.rgb.into())
-                );
+                vprtln!(V::V, "{} made the cut on 2nd try", rgb_to_hex(&c.rgb));
             })
             .min_by(|a, b| {
                 // Prefer colors closer to the target hue range
@@ -1821,7 +1813,7 @@ impl ImageThemeGenerator {
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
         {
-            vprtln!(V::V, "2. Returning {}", rgb_to_hex(&color.rgb.into()));
+            vprtln!(V::V, "2. Returning {}", rgb_to_hex(&color.rgb));
             return color;
         }
 
@@ -1829,7 +1821,7 @@ impl ImageThemeGenerator {
         vprtln!(
             V::V,
             "3. Final fallback: Returning {}",
-            rgb_to_hex(&colors.first().unwrap_or(&fallback).rgb.into())
+            rgb_to_hex(&colors.first().unwrap_or(&fallback).rgb)
         );
         colors.first().copied().unwrap_or(fallback)
     }
@@ -2006,10 +1998,10 @@ pub fn theme_to_toml(theme: &Theme) -> StylingResult<String> {
     // Format bg_rgbs to match existing theme format
     // toml.push_str("bg_rgbs = [[\n");
     let _ = writeln!(toml, "bg_rgbs = [[");
-    for rgb in &theme.bg_rgbs {
-        let _ = writeln!(toml, "    {},", rgb.0);
-        let _ = writeln!(toml, "    {},", rgb.1);
-        let _ = writeln!(toml, "    {},", rgb.2);
+    for [r, g, b] in &theme.bg_rgbs {
+        let _ = writeln!(toml, "    {r},");
+        let _ = writeln!(toml, "    {g},");
+        let _ = writeln!(toml, "    {b},");
     }
     // toml.push_str("]]\n\n");
     let _ = writeln!(toml, "]]\n");

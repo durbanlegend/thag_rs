@@ -412,7 +412,7 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
 /// Helper: RGB -> HSL
 #[allow(clippy::many_single_char_names)]
 #[must_use]
-pub fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
+pub fn rgb_to_hsl(rgb: [u8; 3]) -> [f32; 3] {
     let r = f32::from(rgb[0]) / 255.0;
     let g = f32::from(rgb[1]) / 255.0;
     let b = f32::from(rgb[2]) / 255.0;
@@ -424,7 +424,7 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
     let l = (max + min) / 2.0;
 
     if delta == 0.0 {
-        return (0.0, 0.0, l);
+        return [0.0, 0.0, l];
     }
 
     let s = if l > 0.5 {
@@ -443,7 +443,7 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
 
     let h = if h < 0.0 { h + 360.0 } else { h };
 
-    (h, s, l)
+    [h, s, l]
 }
 
 /// Helper functions for inquire UI theming integration
@@ -507,35 +507,35 @@ pub mod inquire_theming {
 
         // Helper function to extract RGB values from a role for color distance calculation
         #[allow(clippy::cast_possible_truncation)]
-        let get_rgb = |role: Role| -> Option<(u8, u8, u8)> {
+        let get_rgb = |role: Role| -> Option<[u8; 3]> {
             let style = theme.style_for(role);
             style
                 .foreground
                 .as_ref()
                 .and_then(|color_info| match &color_info.value {
-                    ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+                    ColorValue::TrueColor { rgb } => Some(*rgb),
                     ColorValue::Color256 { color256 } => {
                         // Convert 256-color to RGB for distance calculation
                         let index = *color256 as usize;
                         if index < 16 {
                             // Standard colors
                             let colors = [
-                                (0, 0, 0),       // Black
-                                (128, 0, 0),     // Red
-                                (0, 128, 0),     // Green
-                                (128, 128, 0),   // Yellow
-                                (0, 0, 128),     // Blue
-                                (128, 0, 128),   // Magenta
-                                (0, 128, 128),   // Cyan
-                                (192, 192, 192), // White
-                                (128, 128, 128), // Bright Black
-                                (255, 0, 0),     // Bright Red
-                                (0, 255, 0),     // Bright Green
-                                (255, 255, 0),   // Bright Yellow
-                                (0, 0, 255),     // Bright Blue
-                                (255, 0, 255),   // Bright Magenta
-                                (0, 255, 255),   // Bright Cyan
-                                (255, 255, 255), // Bright White
+                                [0, 0, 0],       // Black
+                                [128, 0, 0],     // Red
+                                [0, 128, 0],     // Green
+                                [128, 128, 0],   // Yellow
+                                [0, 0, 128],     // Blue
+                                [128, 0, 128],   // Magenta
+                                [0, 128, 128],   // Cyan
+                                [192, 192, 192], // White
+                                [128, 128, 128], // Bright Black
+                                [255, 0, 0],     // Bright Red
+                                [0, 255, 0],     // Bright Green
+                                [255, 255, 0],   // Bright Yellow
+                                [0, 0, 255],     // Bright Blue
+                                [255, 0, 255],   // Bright Magenta
+                                [0, 255, 255],   // Bright Cyan
+                                [255, 255, 255], // Bright White
                             ];
                             colors.get(index).copied()
                         } else if index < 232 {
@@ -544,11 +544,11 @@ pub mod inquire_theming {
                             let r = (n / 36) * 51;
                             let g = ((n % 36) / 6) * 51;
                             let b = (n % 6) * 51;
-                            Some((r as u8, g as u8, b as u8))
+                            Some([r as u8, g as u8, b as u8])
                         } else {
                             // Grayscale
                             let gray = 8 + (index - 232) * 10;
-                            Some((gray as u8, gray as u8, gray as u8))
+                            Some([gray as u8, gray as u8, gray as u8])
                         }
                     }
                     ColorValue::Basic { .. } => {

@@ -141,8 +141,8 @@ impl ThemeEditor {
         println!("📋 Theme: {}", self.theme.name);
         println!("🌓 Type: {:?}", self.theme.term_bg_luma);
         println!("🎨 Color Support: {:?}", self.theme.min_color_support);
-        if let Some(bg) = self.theme.bg_rgbs.first() {
-            println!("🖼️  Background: #{:02x}{:02x}{:02x}", bg.0, bg.1, bg.2);
+        if let Some([r,g,b]) = self.theme.bg_rgbs.first() {
+            println!("🖼️  Background: #{r:02x}{g:02x}{b:02x}");
         }
         println!();
     }
@@ -216,13 +216,12 @@ impl ThemeEditor {
 
         // Get current color
         let current_style = self.theme.style_for(role);
-        let current_rgb = Self::extract_rgb(&current_style)?;
         let current_rgb = &current_style
             .rgb()
             .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
+        ler [r,g,b] = current_rgb;
         let current_hex = format!(
-            "#{:02x}{:02x}{:02x}",
-            current_rgb[0], current_rgb[1], current_rgb[2]
+            "#{r:02x}{g:02x}{b:02x}"
         );
 
         println!(
@@ -249,7 +248,7 @@ impl ThemeEditor {
             "Increase saturation (+10%)" => Self::adjust_saturation(current_rgb, 0.10),
             "Decrease saturation (-10%)" => Self::adjust_saturation(current_rgb, -0.10),
             "Custom adjustment" => {
-                return self.custom_color_adjustment(role, current_rgb);
+                return self.custom_color_adjustment(role, *current_rgb);
             }
             "Cancel" => return Ok(()),
             _ => unreachable!(),
@@ -280,7 +279,7 @@ impl ThemeEditor {
 
     fn custom_color_adjustment(
         &mut self,
-        role: Role,
+        _role: Role,
         current_rgb: [u8; 3],
     ) -> Result<(), Box<dyn Error>> {
         let (h, s, l) = rgb_to_hsl(current_rgb);
@@ -324,8 +323,8 @@ impl ThemeEditor {
             .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
 
         // Swap them
-        self.update_role(role1, rgb2)?;
-        self.update_role(role2, rgb1)?;
+        self.update_role(role1, *rgb2)?;
+        self.update_role(role2, *rgb1)?;
         self.modified = true;
 
         println!("✅ Swapped {:?} ↔ {:?}", role1, role2);
@@ -525,7 +524,7 @@ impl ThemeEditor {
 
     /// Adjust lightness by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
     fn adjust_lightness(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
-        let (h, s, l) = rgb_to_hsl(rgb);
+        let (h, s, l) = rgb_to_hsl(*rgb);
         let new_l = (l + factor).clamp(0.1, 0.9); // Keep reasonable bounds
         hsl_to_rgb(h, s, new_l)
     }

@@ -38,8 +38,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use thag_styling::{
-    auto_help, find_closest_color, hsl_to_rgb, ColorSupport, ColorValue, Palette, Style,
-    TermBgLuma, Theme,
+    auto_help, find_closest_color, hsl_to_rgb, rgb_to_hsl, ColorSupport, ColorValue, Palette,
+    Style, TermBgLuma, Theme,
 };
 
 #[derive(Debug, Deserialize)]
@@ -101,8 +101,8 @@ impl BaseTheme {
     /// Extract base16/24 colors as RGB array for ANSI terminal mapping
     fn extract_base_colors(&self) -> Result<Vec<[u8; 3]>, Box<dyn std::error::Error>> {
         let to_array = |hex: &str| -> Result<[u8; 3], Box<dyn std::error::Error>> {
-            let (r, g, b) = hex_to_rgb(hex)?;
-            Ok([r, g, b])
+            let rgb = hex_to_rgb(hex)?;
+            Ok(rgb)
         };
 
         let mut colors = vec![
@@ -276,56 +276,16 @@ impl BaseTheme {
         })
     }
 
-    /// Convert RGB to HSL color space
-    #[allow(clippy::many_single_char_names)]
-    fn rgb_to_hsl(rgb: [u8; 3]) -> (f32, f32, f32) {
-        let r = f32::from(rgb[0]) / 255.0;
-        let g = f32::from(rgb[1]) / 255.0;
-        let b = f32::from(rgb[2]) / 255.0;
-
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let delta = max - min;
-
-        let l = (max + min) / 2.0;
-        let (s, mut h) = if delta == 0.0 {
-            (0.0, 0.0)
-        } else {
-            let s = if l > 0.5 {
-                delta / (2.0 - max - min)
-            } else {
-                delta / (max + min)
-            };
-
-            let h = if (max - r).abs() < f32::EPSILON {
-                ((g - b) / delta) % 6.0
-            } else if (max - g).abs() < f32::EPSILON {
-                ((b - r) / delta) + 2.0
-            } else {
-                ((r - g) / delta) + 4.0
-            } * 60.0;
-
-            (s, h)
-        };
-
-        // Ensure hue is positive
-        if h < 0.0 {
-            h += 360.0;
-        }
-
-        (h, s, l)
-    }
-
     /// Enhance palette contrast for all colors with role-specific thresholds
     #[allow(clippy::too_many_lines)]
     fn enhance_palette_contrast(
         mut palette: Palette,
-        background_rgb: (u8, u8, u8),
+        background_rgb: [u8; 3],
         is_light_theme: bool,
     ) -> Palette {
         // Convert background to array for HSL conversion
         let bg_array = [background_rgb.0, background_rgb.1, background_rgb.2];
-        let (_bg_h, _bg_s, bg_l) = Self::rgb_to_hsl(bg_array);
+        let [_bg_h, _bg_s, bg_l] = rgb_to_hsl(bg_array);
 
         // Define role-specific contrast requirements
         let get_contrast_threshold = |role: &str| -> f32 {
@@ -518,7 +478,7 @@ impl BaseTheme {
         if let Some(color_info) = &style.foreground {
             match &color_info.value {
                 ColorValue::TrueColor { rgb } => {
-                    let (h, s, l) = Self::rgb_to_hsl(*rgb);
+                    let (h, s, l) = rgb_to_hsl(*rgb);
                     let lightness_diff = (l - bg_lightness).abs();
 
                     // If contrast is sufficient, return as-is
@@ -648,7 +608,7 @@ impl ToThemeOutput for Theme {
         let bg_rgbs = backgrounds
             .iter()
             .map(|hex| hex_to_rgb(hex).unwrap())
-            .collect::<Vec<(u8, u8, u8)>>();
+            .collect::<Vec<[u8; 3]>>();
         ThemeOutput {
             name: format!(
                 "{}{}{}",
@@ -711,7 +671,7 @@ fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
             ColorValue::TrueColor { rgb } => {
                 if use_256 {
                     ColorOutput::Color256 {
-                        color256: find_closest_color((rgb[0], rgb[1], rgb[2])),
+                        color256: find_closest_color(*rgb),
                     }
                 } else {
                     ColorOutput::TrueColor { rgb: *rgb }
@@ -757,20 +717,20 @@ struct Cli {
     verbose: bool,
 }
 
-fn hex_to_rgb(hex: &str) -> Result<(u8, u8, u8), Box<dyn std::error::Error>> {
+fn hex_to_rgb(hex: &str) -> Result<[u8; 3], Box<dyn std::error::Error>> {
     let hex = hex.trim_start_matches('#');
     if hex.len() != 6 {
         return Err("Invalid hex color length".into());
     }
-    Ok((
+    Ok([
         u8::from_str_radix(&hex[0..2], 16)?,
         u8::from_str_radix(&hex[2..4], 16)?,
         u8::from_str_radix(&hex[4..6], 16)?,
-    ))
+    ])
 }
 
 fn detect_background_luma(hex: &str) -> Result<TermBgLuma, Box<dyn std::error::Error>> {
-    let (r, g, b) = hex_to_rgb(hex)?;
+    let [r, g, b] = hex_to_rgb(hex)?;
     let luma =
         f32::from(b).mul_add(0.114, f32::from(r).mul_add(0.299, f32::from(g) * 0.587)) / 255.0;
     Ok(if luma > 0.5 {

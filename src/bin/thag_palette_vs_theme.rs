@@ -740,14 +740,14 @@ fn display_theme_colors(theme: &Theme) {
         }
 
         // Show background color preview if available
-        if let Some((r, g, b)) = theme.bg_rgbs.first() {
+        if let Some([r, g, b]) = theme.bg_rgbs.first() {
             println!();
             println!("Background Preview:");
             print!("   ");
             for _ in 0..20 {
-                print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
+                print!("\x1b[48;2;{r};{g};{b}m \x1b[0m");
             }
-            theme.normal(format!(" RGB({}, {}, {})", r, g, b)).println();
+            theme.normal(format!(" RGB({r}, {g}, {b})")).println();
         }
 
         println!();
@@ -863,12 +863,12 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
 }
 
 /// Calculate contrast ratio between two RGB colors
-fn calculate_contrast_ratio(color1: (u8, u8, u8), color2: (u8, u8, u8)) -> f64 {
-    fn luminance(rgb: (u8, u8, u8)) -> f64 {
+fn calculate_contrast_ratio(color1: [u8; 3], color2: [u8; 3]) -> f64 {
+    fn luminance([r, g, b]: [u8; 3]) -> f64 {
         let (r, g, b) = (
-            f64::from(rgb.0) / 255.0,
-            f64::from(rgb.1) / 255.0,
-            f64::from(rgb.2) / 255.0,
+            f64::from(r) / 255.0,
+            f64::from(g) / 255.0,
+            f64::from(b) / 255.0,
         );
 
         let to_linear = |c: f64| {
@@ -898,10 +898,8 @@ fn extract_rgb_info(style: &Style) -> String {
         || "No color".to_string(),
         |color_info| match &color_info.value {
             thag_styling::ColorValue::TrueColor { rgb } => {
-                format!(
-                    "#{:02x}{:02x}{:02x} RGB({}, {}, {})",
-                    rgb[0], rgb[1], rgb[2], rgb[0], rgb[1], rgb[2]
-                )
+                let [r, g, b] = rgb;
+                format!("#{r:02x}{g:02x}{b:02x} RGB({r}, {g}, {b})")
             }
             thag_styling::ColorValue::Color256 { color256 } => {
                 format!("256-Color({})", color256)
@@ -913,37 +911,15 @@ fn extract_rgb_info(style: &Style) -> String {
     )
 }
 
-/// Extract RGB tuple from a style
-fn extract_rgb(style: &Style) -> Option<(u8, u8, u8)> {
-    style
-        .foreground
-        .as_ref()
-        .and_then(|color_info| match &color_info.value {
-            thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-            ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
-            ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
-        })
-}
-
-// /// Get the best dark color from the theme for black mapping
-// fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-//     theme
-//         .bg_rgbs
-//         .first()
-//         .copied()
-//         .or_else(|| extract_rgb(&theme.palette.subtle))
-//         .or(Some((16, 16, 16)))
-// }
-
 /// Brighten a color by increasing its components
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]
-fn brighten_color((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
+fn brighten_color([r, g, b]: [u8; 3]) -> [u8; 3] {
     let factor = 1.3;
-    (
+    [
         ((f32::from(r) * factor).min(255.0)) as u8,
         ((f32::from(g) * factor).min(255.0)) as u8,
         ((f32::from(b) * factor).min(255.0)) as u8,
-    )
+    ]
 }
 
 #[cfg(test)]
@@ -965,8 +941,9 @@ mod tests {
             min_color_support: ColorSupport::TrueColor,
             palette,
             backgrounds: vec!["#2a2a2a".to_string()],
-            bg_rgbs: vec![(42, 42, 42)],
+            bg_rgbs: vec![[42, 42, 42]],
             description: "Test theme for palette comparison".to_string(),
+            base_colors: None,
         }
     }
 
@@ -982,12 +959,12 @@ mod tests {
     fn test_extract_rgb() {
         let style = Style::fg(ColorInfo::rgb(255, 128, 64));
         let rgb = extract_rgb(&style);
-        assert_eq!(rgb, Some((255, 128, 64)));
+        assert_eq!(rgb, Some([255, 128, 64]));
     }
 
     #[test]
     fn test_brighten_color() {
-        let original = (100, 150, 200);
+        let original = [100, 150, 200];
         let brightened = brighten_color(original);
 
         assert!(brightened.0 >= original.0);

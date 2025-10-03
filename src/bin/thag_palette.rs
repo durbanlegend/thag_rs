@@ -243,7 +243,7 @@ fn display_thag_theme_colors() {
     for (name, style) in semantic_colors {
         let colored_text = style.paint(format!("{:>12}", name));
         let rgb_info = extract_rgb_info(style);
-        println!("   {} - {}", colored_text, rgb_info);
+        println!("   {colored_text} - {rgb_info}");
     }
 
     println!();

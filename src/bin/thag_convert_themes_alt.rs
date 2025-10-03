@@ -866,7 +866,7 @@ fn style_to_output(style: &Style, use_256: bool) -> StyleOutput {
             ColorValue::TrueColor { rgb } => {
                 if use_256 {
                     ColorOutput::Color256 {
-                        color256: find_closest_color((rgb[0], rgb[1], rgb[2])),
+                        color256: find_closest_color(rgb),
                     }
                 } else {
                     ColorOutput::TrueColor { rgb: *rgb }

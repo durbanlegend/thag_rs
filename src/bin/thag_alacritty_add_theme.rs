@@ -452,13 +452,6 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_rgb() {
-        let style = Style::fg(ColorInfo::rgb(255, 128, 64));
-        let rgb = extract_rgb(&style);
-        assert_eq!(rgb, Some((255, 128, 64)));
-    }
-
-    #[test]
     fn test_adjust_brightness() {
         let original = (100, 150, 200);
         let brightened = adjust_brightness(original, 1.5);

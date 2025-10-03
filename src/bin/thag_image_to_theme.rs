@@ -241,14 +241,14 @@ fn display_color_palette(theme: &Theme) {
     }
 
     // Show background colors
-    if let Some((r, g, b)) = theme.bg_rgbs.first() {
+    if let Some([r, g, b]) = theme.bg_rgbs.first() {
         println!();
         print!("   Background: ");
         // Create background color preview
         for _ in 0..12 {
-            print!("\x1b[48;2;{};{};{}m \x1b[0m", r, g, b);
+            print!("\x1b[48;2;{r};{g};{b}m \x1b[0m");
         }
-        println!(" RGB({}, {}, {})", r, g, b);
+        println!(" RGB({r}, {g}, {b})");
     }
     println!();
 }

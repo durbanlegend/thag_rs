@@ -115,17 +115,17 @@ mod tests {
 
     #[test]
     fn test_color_formatting() {
-        assert_eq!(format_color(Some((255, 128, 64))), "#FF8040");
-        assert_eq!(format_color(Some((0, 0, 0))), "#000000");
+        assert_eq!(format_color(Some([255, 128, 64])), "#FF8040");
+        assert_eq!(format_color(Some([0, 0, 0])), "#000000");
         assert_eq!(format_color(None), "#808080");
     }
 
     #[test]
     fn test_color_conversions() {
-        assert_eq!(color_256_to_rgb(0), (0, 0, 0));
-        assert_eq!(color_256_to_rgb(15), (255, 255, 255));
-        assert_eq!(basic_color_to_rgb(1), (128, 0, 0));
+        assert_eq!(color_256_to_rgb(0), [0, 0, 0]);
+        assert_eq!(color_256_to_rgb(15), [255, 255, 255]);
+        assert_eq!(basic_color_to_rgb(1), [128, 0, 0]);
 
-        assert_eq!(brighten_color((100, 100, 100)), (130, 130, 130));
+        assert_eq!(brighten_color([100, 100, 100]), [130, 130, 130]);
     }
 }

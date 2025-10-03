@@ -236,17 +236,17 @@ mod tests {
 
     #[test]
     fn test_color_conversions() {
-        assert_eq!(color_256_to_rgb(0), (0, 0, 0));
-        assert_eq!(color_256_to_rgb(15), (255, 255, 255));
-        assert_eq!(basic_color_to_rgb(1), (128, 0, 0));
+        assert_eq!(color_256_to_rgb(0), [0, 0, 0]);
+        assert_eq!(color_256_to_rgb(15), [255, 255, 255]);
+        assert_eq!(basic_color_to_rgb(1), [128, 0, 0]);
 
-        assert_eq!(brighten_color((100, 100, 100)), (130, 130, 130));
+        assert_eq!(brighten_color([100, 100, 100]), [130, 130, 130]);
     }
 
     #[test]
     fn test_color_brightness_detection() {
-        assert!(is_light_color((255, 255, 255))); // White should be light
-        assert!(!is_light_color((0, 0, 0))); // Black should be dark
-        assert!(!is_light_color((64, 64, 64))); // Dark gray should be dark
+        assert!(is_light_color([255, 255, 255])); // White should be light
+        assert!(!is_light_color([0, 0, 0])); // Black should be dark
+        assert!(!is_light_color([64, 64, 64])); // Dark gray should be dark
     }
 }

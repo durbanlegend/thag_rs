@@ -133,7 +133,7 @@ fn print_raw_color_detection() {
 
     let hex = format!(
         "{:02x}{:02x}{:02x}",
-        term_bg_rgb.0, term_bg_rgb.1, term_bg_rgb.2
+        term_bg_rgb[0], term_bg_rgb[1], term_bg_rgb[2]
     );
     println!("   Background Hex: #{}", hex);
 
@@ -155,7 +155,7 @@ fn print_theme_analysis() {
     );
 
     if let Some(rgb) = term_attrs.term_bg_rgb {
-        println!("   Term BG RGB: RGB({}, {}, {})", rgb.0, rgb.1, rgb.2);
+        println!("   Term BG RGB: RGB({}, {}, {})", rgb[0], rgb[1], rgb[2]);
     } else {
         println!("   Term BG RGB: None");
     }
@@ -341,7 +341,7 @@ fn test_strategy_comparison() {
     println!("     - fresh_bg_rgb: {:?}", fresh_bg_rgb);
     let fresh_hex = format!(
         "{:02x}{:02x}{:02x}",
-        fresh_bg_rgb.0, fresh_bg_rgb.1, fresh_bg_rgb.2
+        fresh_bg_rgb[0], fresh_bg_rgb[1], fresh_bg_rgb[2]
     );
     println!("     - fresh_hex: #{}", fresh_hex);
     let fresh_is_light = thag_common::terminal::is_light_color(*fresh_bg_rgb);
@@ -361,8 +361,11 @@ fn test_strategy_comparison() {
     println!("     - color_support: {:?}", match_attrs.color_support);
     println!("     - theme.name: {}", match_attrs.theme.name);
     if let Some(rgb) = match_attrs.term_bg_rgb {
-        println!("     - term_bg_rgb: RGB({}, {}, {})", rgb.0, rgb.1, rgb.2);
-        let hex = format!("{:02x}{:02x}{:02x}", rgb.0, rgb.1, rgb.2);
+        println!(
+            "     - term_bg_rgb: RGB({}, {}, {})",
+            rgb[0], rgb[1], rgb[2]
+        );
+        let hex = format!("{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         println!("     - background_hex: #{}", hex);
     } else {
         println!("     - term_bg_rgb: None");
@@ -378,8 +381,11 @@ fn test_strategy_comparison() {
     println!("     - color_support: {:?}", current_attrs.color_support);
     println!("     - theme.name: {}", current_attrs.theme.name);
     if let Some(rgb) = current_attrs.term_bg_rgb {
-        println!("     - term_bg_rgb: RGB({}, {}, {})", rgb.0, rgb.1, rgb.2);
-        let hex = format!("{:02x}{:02x}{:02x}", rgb.0, rgb.1, rgb.2);
+        println!(
+            "     - term_bg_rgb: RGB({}, {}, {})",
+            rgb[0], rgb[1], rgb[2]
+        );
+        let hex = format!("{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
         println!("     - background_hex: #{}", hex);
     } else {
         println!("     - term_bg_rgb: None");
@@ -391,7 +397,7 @@ fn test_strategy_comparison() {
         println!("   ⚠️  MISMATCH: Fresh detection differs from TermAttributes!");
         println!(
             "      Fresh detection: RGB({}, {}, {})",
-            fresh_bg_rgb.0, fresh_bg_rgb.1, fresh_bg_rgb.2
+            fresh_bg_rgb[0], fresh_bg_rgb[1], fresh_bg_rgb[2]
         );
         println!("      TermAttributes: {:?}", current_attrs.term_bg_rgb);
         println!("      This suggests TermAttributes caching stale data.");

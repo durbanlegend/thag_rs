@@ -481,7 +481,7 @@ fn adjust_color_brightness([r, g, b]: [u8; 3], factor: f32) -> [u8; 3] {
 // }
 
 /// Convert basic color index to RGB
-#[allow(clippy::match_same_arms)]
+#[allow(clippy::match_same_arms, dead_code)]
 const fn basic_color_to_rgb(index: u8) -> [u8; 3] {
     match index {
         0 => [0, 0, 0],        // Black
@@ -505,6 +505,7 @@ const fn basic_color_to_rgb(index: u8) -> [u8; 3] {
 }
 
 /// Convert 256-color index to RGB
+#[allow(dead_code)]
 const fn color_256_to_rgb(index: u8) -> [u8; 3] {
     match index {
         // Standard colors (0-15)
@@ -597,7 +598,7 @@ fn create_test_theme() -> Theme {
         min_color_support: ColorSupport::TrueColor,
         palette,
         backgrounds: vec!["#1e1e2e".to_string()],
-        bg_rgbs: vec![(30, 30, 46)],
+        bg_rgbs: vec![[30, 30, 46]],
         description: "A test theme".to_string(),
         base_colors: None,
     }

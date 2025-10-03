@@ -554,24 +554,24 @@ pub mod inquire_theming {
                     ColorValue::Basic { .. } => {
                         // Convert basic role to approximate RGB for distance calculation
                         match role {
-                            Role::Error => Some((255, 0, 0)),
-                            Role::Success => Some((0, 255, 0)),
-                            Role::Warning => Some((255, 255, 0)),
-                            Role::Info => Some((0, 255, 255)),
-                            Role::Code => Some((255, 0, 255)),
-                            Role::Emphasis => Some((255, 128, 0)),
-                            Role::Heading3 => Some((128, 255, 128)),
-                            _ => Some((192, 192, 192)),
+                            Role::Error => Some([255, 0, 0]),
+                            Role::Success => Some([0, 255, 0]),
+                            Role::Warning => Some([255, 255, 0]),
+                            Role::Info => Some([0, 255, 255]),
+                            Role::Code => Some([255, 0, 255]),
+                            Role::Emphasis => Some([255, 128, 0]),
+                            Role::Heading3 => Some([128, 255, 128]),
+                            _ => Some([192, 192, 192]),
                         }
                     }
                 })
         };
 
         // Color distance function (same as in styling.rs)
-        let color_distance = |c1: (u8, u8, u8), c2: (u8, u8, u8)| -> f32 {
-            let dr = (f32::from(c1.0) - f32::from(c2.0)).powi(2);
-            let dg = (f32::from(c1.1) - f32::from(c2.1)).powi(2);
-            let db = (f32::from(c1.2) - f32::from(c2.2)).powi(2);
+        let color_distance = |c1: [u8; 3], c2: [u8; 3]| -> f32 {
+            let dr = (f32::from(c1[0]) - f32::from(c2[0])).powi(2);
+            let dg = (f32::from(c1[1]) - f32::from(c2[1])).powi(2);
+            let db = (f32::from(c1[2]) - f32::from(c2[2])).powi(2);
             (dr + dg + db).sqrt()
         };
 
@@ -627,14 +627,14 @@ mod tests {
     fn test_hsl_to_rgb() {
         // Test pure red (hue = 0)
         let [r, g, b] = hsl_to_rgb(0.0, 1.0, 0.5);
-        assert_eq!((r, g, b), (255, 0, 0));
+        assert_eq!([r, g, b], [255, 0, 0]);
 
         // Test pure green (hue = 120)
         let [r, g, b] = hsl_to_rgb(120.0, 1.0, 0.5);
-        assert_eq!((r, g, b), (0, 255, 0));
+        assert_eq!([r, g, b], [0, 255, 0]);
 
         // Test pure blue (hue = 240)
         let [r, g, b] = hsl_to_rgb(240.0, 1.0, 0.5);
-        assert_eq!((r, g, b), (0, 0, 255));
+        assert_eq!([r, g, b], [0, 0, 255]);
     }
 }

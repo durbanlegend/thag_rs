@@ -36,11 +36,8 @@ impl ThemeExporter for AlacrittyExporter {
 
         // Primary colors section
         output.push_str("[colors.primary]\n");
-        let _ = writeln!(
-            output,
-            r##"background = "#{:02x}{:02x}{:02x}""##,
-            bg_color[0], bg_color[1], bg_color[2]
-        );
+        let [r, g, b] = bg_color;
+        let _ = writeln!(output, r##"background = "#{r:02x}{g:02x}{b:02x}""##);
 
         // Use normal text color for foreground
         if let Some([r, g, b]) = &theme.palette.normal.rgb() {
@@ -62,7 +59,7 @@ impl ThemeExporter for AlacrittyExporter {
         }
 
         // Dim foreground (use subtle or fallback to normal with reduced brightness)
-        if let Some(dim_fg) = &theme.palette.subtle.rgb().or_else(|| {
+        if let Some([r, g, b]) = &theme.palette.subtle.rgb().or_else(|| {
             theme.palette.normal.rgb().map(|[r, g, b]| {
                 // Reduce brightness by 30%
                 [
@@ -72,11 +69,7 @@ impl ThemeExporter for AlacrittyExporter {
                 ]
             })
         }) {
-            let _ = writeln!(
-                output,
-                r##"dim_foreground = "#{:02x}{:02x}{:02x}""##,
-                dim_fg[0], dim_fg[1], dim_fg[2]
-            );
+            let _ = writeln!(output, r##"dim_foreground = "#{r:02x}{g:02x}{b:02x}""##);
         }
 
         output.push('\n');
@@ -99,7 +92,7 @@ impl ThemeExporter for AlacrittyExporter {
         eprintln!("Normal colors:");
         for (color_name, rgb_opt) in normal_colors {
             if let Some([r, g, b]) = rgb_opt {
-                let color = &format!(r##"{} = "#{:02x}{:02x}{:02x}""##, color_name, r, g, b);
+                let color = &format!(r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
                 eprintln!("color={color}");
                 output.push_str(color);
             }
@@ -124,7 +117,7 @@ impl ThemeExporter for AlacrittyExporter {
         eprintln!("Bright colors:");
         for (color_name, rgb_opt) in bright_colors {
             if let Some([r, g, b]) = rgb_opt {
-                let color = &format!(r##"{} = "#{:02x}{:02x}{:02x}""##, color_name, r, g, b);
+                let color = &format!(r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
                 eprintln!("color={color}");
                 output.push_str(color);
             }
@@ -157,11 +150,7 @@ impl ThemeExporter for AlacrittyExporter {
 
         for (color_name, rgb_opt) in dim_colors {
             if let Some([r, g, b]) = rgb_opt {
-                let _ = writeln!(
-                    output,
-                    r##"{} = "#{:02x}{:02x}{:02x}""##,
-                    color_name, r, g, b
-                );
+                let _ = writeln!(output, r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
             }
         }
 
@@ -211,12 +200,8 @@ impl ThemeExporter for AlacrittyExporter {
             selection_bg[0], selection_bg[1], selection_bg[2]
         );
 
-        if let Some(selection_fg) = theme.palette.normal.rgb() {
-            let _ = writeln!(
-                output,
-                r##"text = "#{:02x}{:02x}{:02x}""##,
-                selection_fg[0], selection_fg[1], selection_fg[2]
-            );
+        if let Some([r, g, b]) = theme.palette.normal.rgb() {
+            let _ = writeln!(output, r##"text = "#{r:02x}{g:02x}{b:02x}""##);
         }
 
         output.push('\n');
@@ -225,31 +210,17 @@ impl ThemeExporter for AlacrittyExporter {
         output.push_str("[colors.search]\n");
         output.push_str("[colors.search.matches]\n");
 
-        if let Some(search_match) = theme.palette.warning.rgb() {
-            let _ = writeln!(
-                output,
-                r##"background = "#{:02x}{:02x}{:02x}""##,
-                search_match[0], search_match[1], search_match[2]
-            );
-            let _ = writeln!(
-                output,
-                r##"foreground = "#{:02x}{:02x}{:02x}""##,
-                bg_color[0], bg_color[1], bg_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.warning.rgb() {
+            let _ = writeln!(output, r##"background = "#{r:02x}{g:02x}{b:02x}""##);
+            let [fr, fg, fb] = bg_color;
+            let _ = writeln!(output, r##"foreground = "#{fr:02x}{fg:02x}{fb:02x}""##);
         }
 
         output.push_str("\n[colors.search.focused_match]\n");
-        if let Some(focused_match) = theme.palette.emphasis.rgb() {
-            let _ = writeln!(
-                output,
-                r##"background = "#{:02x}{:02x}{:02x}""##,
-                focused_match[0], focused_match[1], focused_match[2]
-            );
-            let _ = writeln!(
-                output,
-                r##"foreground = "#{:02x}{:02x}{:02x}""##,
-                bg_color[0], bg_color[1], bg_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.emphasis.rgb() {
+            let _ = writeln!(output, r##"background = "#{r:02x}{g:02x}{b:02x}""##);
+            let [fr, fg, fb] = bg_color;
+            let _ = writeln!(output, r##"foreground = "#{fr:02x}{fg:02x}{fb:02x}""##);
         }
 
         Ok(output)

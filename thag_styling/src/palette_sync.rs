@@ -64,20 +64,14 @@ impl PaletteSync {
         let color_map = Self::build_ansi_color_map(theme);
 
         // Apply ANSI colors 0-15
-        for (ansi_index, rgb) in color_map.iter().enumerate() {
-            let osc = format!(
-                "\x1b]4;{};rgb:{:02x}/{:02x}/{:02x}\x07",
-                ansi_index, rgb[0], rgb[1], rgb[2]
-            );
+        for (ansi_index, [r, g, b]) in color_map.iter().enumerate() {
+            let osc = format!("\x1b]4;{ansi_index};rgb:{r:02x}/{g:02x}/{b:02x}\x07");
             stdout.write_all(osc.as_bytes())?;
         }
 
         // Set default background color (OSC 11)
-        if let Some(bg_rgb) = theme.bg_rgbs.first() {
-            let osc = format!(
-                "\x1b]11;rgb:{:02x}/{:02x}/{:02x}\x07",
-                bg_rgb[0], bg_rgb[1], bg_rgb[2]
-            );
+        if let Some([r, g, b]) = theme.bg_rgbs.first() {
+            let osc = format!("\x1b]11;rgb:{r:02x}/{g:02x}/{b:02x}\x07");
             stdout.write_all(osc.as_bytes())?;
         }
 
@@ -92,14 +86,12 @@ impl PaletteSync {
             },
         ); // Default light gray
 
-        let osc = format!(
-            "\x1b]10;rgb:{:02x}/{:02x}/{:02x}\x07",
-            normal_rgb[0], normal_rgb[1], normal_rgb[2]
-        );
+        let [r, g, b] = normal_rgb;
+        let osc = format!("\x1b]10;rgb:{r:02x}/{g:02x}/{b:02x}\x07");
         stdout.write_all(osc.as_bytes())?;
 
         // Set cursor color (OSC 12) - use emphasis role for visibility
-        let emphasis_rgb = theme.style_for(Role::Emphasis).foreground.as_ref().map_or(
+        let [r, g, b] = theme.style_for(Role::Emphasis).foreground.as_ref().map_or(
             [255, 255, 0],
             |color_info| match &color_info.value {
                 crate::ColorValue::TrueColor { rgb } => *rgb,
@@ -109,10 +101,7 @@ impl PaletteSync {
             },
         );
 
-        let osc = format!(
-            "\x1b]12;rgb:{:02x}/{:02x}/{:02x}\x07",
-            emphasis_rgb[0], emphasis_rgb[1], emphasis_rgb[2]
-        );
+        let osc = format!("\x1b]12;rgb:{r:02x}/{g:02x}/{b:02x}\x07");
         stdout.write_all(osc.as_bytes())?;
 
         // Set selection background color (OSC 17) - use adjusted terminal background
@@ -123,18 +112,14 @@ impl PaletteSync {
             let is_light_theme = matches!(theme.term_bg_luma, crate::TermBgLuma::Light);
             Self::adjust_bg_for_selection(bg_array, is_light_theme)
         });
-        let osc = format!(
-            "\x1b]17;rgb:{:02x}/{:02x}/{:02x}\x07",
-            selection_bg_rgb[0], selection_bg_rgb[1], selection_bg_rgb[2]
-        );
+        let [r, g, b] = selection_bg_rgb;
+        let osc = format!("\x1b]17;rgb:{r:02x}/{g:02x}/{b:02x}\x07");
         stdout.write_all(osc.as_bytes())?;
 
         // Set selection foreground color (OSC 19) - use normal role for readability
         // Supported by: Gnome Terminal, WezTerm, iTerm2, Kitty
-        let osc = format!(
-            "\x1b]19;rgb:{:02x}/{:02x}/{:02x}\x07",
-            normal_rgb[0], normal_rgb[1], normal_rgb[2]
-        );
+        let [r, g, b] = normal_rgb;
+        let osc = format!("\x1b]19;rgb:{r:02x}/{g:02x}/{b:02x}\x07");
         stdout.write_all(osc.as_bytes())?;
 
         stdout.flush()?;
@@ -231,11 +216,11 @@ impl PaletteSync {
                     crate::ColorValue::TrueColor { rgb } => *rgb,
                     crate::ColorValue::Color256 { .. } => {
                         // Convert color256 index to approximate RGB
-                        styling::get_rgb(color_info.index).into()
+                        styling::get_rgb(color_info.index)
                     }
                     crate::ColorValue::Basic { .. } => {
                         // Use basic color mapping
-                        styling::get_rgb(color_info.index).into()
+                        styling::get_rgb(color_info.index)
                     }
                 })
         };
@@ -313,18 +298,12 @@ impl PaletteSync {
     pub fn show_background_info(theme: &Theme) {
         println!();
         println!("🖼️  Background Information:");
-        if let Some(bg_rgb) = theme.bg_rgbs.first() {
-            println!("   RGB: ({}, {}, {})", bg_rgb[0], bg_rgb[1], bg_rgb[2]);
-            println!(
-                "   Hex: #{:02x}{:02x}{:02x}",
-                bg_rgb[0], bg_rgb[1], bg_rgb[2]
-            );
+        if let Some([r, g, b]) = theme.bg_rgbs.first() {
+            println!("   RGB: ({r}, {g}, {b})");
+            println!("   Hex: #{r:02x}{g:02x}{b:02x}");
 
             // Show a sample with the background color
-            let osc = format!(
-                "\x1b]11;rgb:{:02x}/{:02x}/{:02x}\x07",
-                bg_rgb[0], bg_rgb[1], bg_rgb[2]
-            );
+            let osc = format!("\x1b]11;rgb:{r:02x}/{g:02x}/{b:02x}\x07");
             print!("{osc}");
             println!("   Sample: \x1b[37m█████\x1b[0m (background should match theme)");
         }
@@ -548,7 +527,7 @@ mod tests {
         TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Configure(
             crate::ColorSupport::TrueColor,
             crate::TermBgLuma::Dark,
-            Some((0, 0, 0)),
+            Some([0, 0, 0]),
         ));
 
         let theme = crate::Theme::get_builtin("thag-dark_base16").unwrap();

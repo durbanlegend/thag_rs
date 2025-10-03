@@ -350,9 +350,9 @@ impl Style {
                 // Return nominal value unless we interrogate terminal
                 let index_to_rgb = index_to_rgb(*index);
                 // index_to_rgb.map(|(r, g, b)| [r, g, b])
-                Some(index_to_rgb.into())
+                Some(index_to_rgb)
             }
-            ColorValue::Color256 { color256 } => Some(index_to_rgb(*color256).into()), // .map(|(r, g, b)| [r, g, b]),
+            ColorValue::Color256 { color256 } => Some(index_to_rgb(*color256)), // .map(|(r, g, b)| [r, g, b]),
             ColorValue::TrueColor { rgb } => Some(*rgb),
         }
     }
@@ -2338,41 +2338,41 @@ impl Theme {
     #[must_use]
     pub fn convert_rgb_to_ansi(r: u8, g: u8, b: u8) -> u8 {
         // Basic ANSI colors:
-        // 0: Black   (0,0,0)
-        // 1: Red     (170,0,0)
-        // 2: Green   (0,170,0)
-        // 3: Yellow  (170,85,0)
-        // 4: Blue    (0,0,170)
-        // 5: Magenta (170,0,170)
-        // 6: Cyan    (0,170,170)
-        // 7: White   (170,170,170)
+        // 0: Black   [0,0,0]
+        // 1: Red     [170,0,0]
+        // 2: Green   [0,170,0]
+        // 3: Yellow  [170,85,0]
+        // 4: Blue    [0,0,170]
+        // 5: Magenta [170,0,170]
+        // 6: Cyan    [0,170,170]
+        // 7: White   [170,170,170]
         // 8-15: Bright versions
 
         let colors = [
-            (0, 0, 0),       // Black
-            (170, 0, 0),     // Red
-            (0, 170, 0),     // Green
-            (170, 85, 0),    // Yellow
-            (0, 0, 170),     // Blue
-            (170, 0, 170),   // Magenta
-            (0, 170, 170),   // Cyan
-            (170, 170, 170), // White
+            [0, 0, 0],       // Black
+            [170, 0, 0],     // Red
+            [0, 170, 0],     // Green
+            [170, 85, 0],    // Yellow
+            [0, 0, 170],     // Blue
+            [170, 0, 170],   // Magenta
+            [0, 170, 170],   // Cyan
+            [170, 170, 170], // White
             // Bright versions
-            (85, 85, 85),    // Bright Black
-            (255, 85, 85),   // Bright Red
-            (85, 255, 85),   // Bright Green
-            (255, 255, 85),  // Bright Yellow
-            (85, 85, 255),   // Bright Blue
-            (255, 85, 255),  // Bright Magenta
-            (85, 255, 255),  // Bright Cyan
-            (255, 255, 255), // Bright White
+            [85, 85, 85],    // Bright Black
+            [255, 85, 85],   // Bright Red
+            [85, 255, 85],   // Bright Green
+            [255, 255, 85],  // Bright Yellow
+            [85, 85, 255],   // Bright Blue
+            [255, 85, 255],  // Bright Magenta
+            [85, 255, 255],  // Bright Cyan
+            [255, 255, 255], // Bright White
         ];
 
         // Find closest ANSI color using color distance
         let mut closest = 0;
         let mut min_distance = f32::MAX;
 
-        for (i, &(cr, cg, cb)) in colors.iter().enumerate() {
+        for (i, &[cr, cg, cb]) in colors.iter().enumerate() {
             let distance = color_distance([r, g, b], [cr, cg, cb]);
             if distance < min_distance {
                 min_distance = distance;
@@ -3189,13 +3189,13 @@ pub fn display_theme_roles(theme: &Theme) {
             .as_ref()
             .map(|color_info| match &color_info.value {
                 ColorValue::TrueColor { rgb } => *rgb,
-                ColorValue::Color256 { color256 } => index_to_rgb(*color256).into(),
-                ColorValue::Basic { index, .. } => index_to_rgb(*index).into(),
+                ColorValue::Color256 { color256 } => index_to_rgb(*color256),
+                ColorValue::Basic { index, .. } => index_to_rgb(*index),
             });
 
         // let styled_rgb = style.paint(format!("{:?}", style.foreground.and_then(|v| v.value)));
         let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
-        let hex = rgb.map_or("N/A".to_string(), |rgb| rgb_to_hex(&rgb.into()));
+        let hex = rgb.map_or("N/A".to_string(), |rgb| rgb_to_hex(&rgb));
         let styled_hex = style.paint(hex);
 
         print!("\t{styled_hex} {styled_name} {padding}");
@@ -4317,7 +4317,7 @@ mod tests {
         // Check theme metadata
         assert_eq!(theme.term_bg_luma, TermBgLuma::Dark);
         assert_eq!(theme.min_color_support, ColorSupport::TrueColor);
-        assert_eq!(theme.bg_rgbs, vec![(40, 42, 54)]);
+        assert_eq!(theme.bg_rgbs, vec![[40, 42, 54]]);
 
         // Check a few key styles
         if let ColorValue::TrueColor { rgb } = &theme

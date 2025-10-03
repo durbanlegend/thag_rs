@@ -29,18 +29,11 @@ impl ThemeExporter for KittyExporter {
 
         // Basic colors
         output.push_str("# Basic colors\n");
-        let _ = writeln!(
-            output,
-            "background #{:02x}{:02x}{:02x}",
-            bg_color[0], bg_color[1], bg_color[2]
-        );
+        let [r, g, b] = bg_color;
+        let _ = writeln!(output, "background #{r:02x}{g:02x}{b:02x}");
 
-        if let Some(fg_color) = theme.palette.normal.rgb() {
-            let _ = writeln!(
-                output,
-                "foreground #{:02x}{:02x}{:02x}",
-                fg_color[0], fg_color[1], fg_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.normal.rgb() {
+            let _ = writeln!(output, "foreground #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push('\n');
@@ -53,38 +46,27 @@ impl ThemeExporter for KittyExporter {
             .rgb()
             // .map(|c| (c[0], c[1], c[2]))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.4));
-        let _ = writeln!(
-            output,
-            "selection_background #{:02x}{:02x}{:02x}",
-            selection_bg[0], selection_bg[1], selection_bg[2]
-        );
+        let [r, g, b] = selection_bg;
+        let _ = writeln!(output, "selection_background #{r:02x}{g:02x}{b:02x}");
 
-        if let Some(selection_fg) = theme.palette.normal.rgb() {
-            let _ = writeln!(
-                output,
-                "selection_foreground #{:02x}{:02x}{:02x}",
-                selection_fg[0], selection_fg[1], selection_fg[2]
-            );
+        if let Some([r, g, b]) = theme.palette.normal.rgb() {
+            let _ = writeln!(output, "selection_foreground #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push('\n');
 
         // Cursor colors
         output.push_str("# Cursor colors\n");
-        if let Some(cursor_color) = theme
+        if let Some([r, g, b]) = theme
             .palette
             .emphasis
             .rgb()
             .or_else(|| theme.palette.normal.rgb())
         {
-            let _ = writeln!(
-                output,
-                "cursor #{:02x}{:02x}{:02x}",
-                cursor_color[0], cursor_color[1], cursor_color[2]
-            );
+            let _ = writeln!(output, "cursor #{r:02x}{g:02x}{b:02x}");
 
             // Cursor text should contrast with cursor color
-            let cursor_text = if is_light_color(cursor_color) {
+            let cursor_text = if is_light_color([r, g, b]) {
                 bg_color // Use background color for contrast
             } else {
                 theme
@@ -94,61 +76,42 @@ impl ThemeExporter for KittyExporter {
                     // .map(|c| (c[0], c[1], c[2]))
                     .unwrap_or([255, 255, 255])
             };
-            let _ = writeln!(
-                output,
-                "cursor_text_color #{:02x}{:02x}{:02x}",
-                cursor_text[0], cursor_text[1], cursor_text[2]
-            );
+            let [tr, tg, tb] = cursor_text;
+            let _ = writeln!(output, "cursor_text_color #{tr:02x}{tg:02x}{tb:02x}");
         }
 
         output.push('\n');
 
         // URL colors
         output.push_str("# URL underline color when hovering with mouse\n");
-        if let Some(url_color) = theme.palette.info.rgb() {
-            let _ = writeln!(
-                output,
-                "url_color #{:02x}{:02x}{:02x}",
-                url_color[0], url_color[1], url_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.info.rgb() {
+            let _ = writeln!(output, "url_color #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push('\n');
 
         // Visual bell
         output.push_str("# Visual bell color\n");
-        if let Some(bell_color) = theme.palette.warning.rgb() {
-            let _ = writeln!(
-                output,
-                "visual_bell_color #{:02x}{:02x}{:02x}",
-                bell_color[0], bell_color[1], bell_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.warning.rgb() {
+            let _ = writeln!(output, "visual_bell_color #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push('\n');
 
         // Active border color
         output.push_str("# Border colors\n");
-        if let Some(active_border) = theme.palette.emphasis.rgb() {
-            let _ = writeln!(
-                output,
-                "active_border_color #{:02x}{:02x}{:02x}",
-                active_border[0], active_border[1], active_border[2]
-            );
+        if let Some([r, g, b]) = theme.palette.emphasis.rgb() {
+            let _ = writeln!(output, "active_border_color #{r:02x}{g:02x}{b:02x}");
         }
 
-        if let Some(inactive_border) = theme
+        if let Some([r, g, b]) = theme
             .palette
             .subtle
             .rgb()
             // .map(|c| (c[0], c[1], c[2]))
             .or_else(|| Some(adjust_color_brightness(bg_color, 1.3)))
         {
-            let _ = writeln!(
-                output,
-                "inactive_border_color #{:02x}{:02x}{:02x}",
-                inactive_border[0], inactive_border[1], inactive_border[2]
-            );
+            let _ = writeln!(output, "inactive_border_color #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push('\n');
@@ -156,94 +119,55 @@ impl ThemeExporter for KittyExporter {
         // Tab colors
         output.push_str("# Tab bar colors\n");
         let tab_bg = adjust_color_brightness(bg_color, 0.9);
-        let _ = writeln!(
-            output,
-            "tab_bar_background #{:02x}{:02x}{:02x}",
-            tab_bg[0], tab_bg[1], tab_bg[2]
-        );
+        let [r, g, b] = tab_bg;
+        let _ = writeln!(output, "tab_bar_background #{r:02x}{g:02x}{b:02x}");
 
-        if let Some(active_tab_fg) = theme
+        if let Some([r, g, b]) = theme
             .palette
             .emphasis
             .rgb()
+            // .map(|c| (c[0], c[1], c[2]))
             .or_else(|| theme.palette.normal.rgb())
-        // .map(|c| (c[0], c[1], c[2]))
         {
-            let _ = writeln!(
-                output,
-                "active_tab_foreground #{:02x}{:02x}{:02x}",
-                active_tab_fg[0], active_tab_fg[1], active_tab_fg[2]
-            );
+            let _ = writeln!(output, "active_tab_foreground #{r:02x}{g:02x}{b:02x}");
         }
 
-        let _ = writeln!(
-            output,
-            "active_tab_background #{:02x}{:02x}{:02x}",
-            bg_color[0], bg_color[1], bg_color[2]
-        );
+        let [r, g, b] = bg_color;
+        let _ = writeln!(output, "active_tab_background #{r:02x}{g:02x}{b:02x}");
 
-        if let Some(inactive_tab_fg) = theme
+        if let Some([r, g, b]) = theme
             .palette
             .subtle
             .rgb()
-            .or_else(|| theme.palette.normal.rgb())
             // .map(|c| (c[0], c[1], c[2]))
             .map(dim_color)
         {
-            let _ = writeln!(
-                output,
-                "inactive_tab_foreground #{:02x}{:02x}{:02x}",
-                inactive_tab_fg[0], inactive_tab_fg[1], inactive_tab_fg[2]
-            );
+            let _ = writeln!(output, "inactive_tab_foreground #{r:02x}{g:02x}{b:02x}");
         }
 
-        let _ = writeln!(
-            output,
-            "inactive_tab_background #{:02x}{:02x}{:02x}",
-            tab_bg[0], tab_bg[1], tab_bg[2]
-        );
+        let [r, g, b] = tab_bg;
+        let _ = writeln!(output, "inactive_tab_background #{r:02x}{g:02x}{b:02x}");
 
         output.push('\n');
 
         // Mark colors (for marks and text search)
         output.push_str("# Mark colors (for text search highlighting)\n");
-        if let Some(mark1_bg) = theme.palette.warning.rgb() {
-            let _ = writeln!(
-                output,
-                "mark1_background #{:02x}{:02x}{:02x}",
-                mark1_bg[0], mark1_bg[1], mark1_bg[2]
-            );
-            let _ = writeln!(
-                output,
-                "mark1_foreground #{:02x}{:02x}{:02x}",
-                bg_color[0], bg_color[1], bg_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.warning.rgb() {
+            let _ = writeln!(output, "mark1_background #{r:02x}{g:02x}{b:02x}");
+            let [fr, fg, fb] = bg_color;
+            let _ = writeln!(output, "mark1_foreground #{fr:02x}{fg:02x}{fb:02x}");
         }
 
-        if let Some(mark2_bg) = theme.palette.info.rgb() {
-            let _ = writeln!(
-                output,
-                "mark2_background #{:02x}{:02x}{:02x}",
-                mark2_bg[0], mark2_bg[1], mark2_bg[2]
-            );
-            let _ = writeln!(
-                output,
-                "mark2_foreground #{:02x}{:02x}{:02x}",
-                bg_color[0], bg_color[1], bg_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.info.rgb() {
+            let _ = writeln!(output, "mark2_background #{r:02x}{g:02x}{b:02x}");
+            let [fr, fg, fb] = bg_color;
+            let _ = writeln!(output, "mark2_foreground #{fr:02x}{fg:02x}{fb:02x}");
         }
 
-        if let Some(mark3_bg) = theme.palette.success.rgb() {
-            let _ = writeln!(
-                output,
-                "mark3_background #{:02x}{:02x}{:02x}",
-                mark3_bg[0], mark3_bg[1], mark3_bg[2]
-            );
-            let _ = writeln!(
-                output,
-                "mark3_foreground #{:02x}{:02x}{:02x}",
-                bg_color[0], bg_color[1], bg_color[2]
-            );
+        if let Some([r, g, b]) = theme.palette.success.rgb() {
+            let _ = writeln!(output, "mark3_background #{r:02x}{g:02x}{b:02x}");
+            let [fr, fg, fb] = bg_color;
+            let _ = writeln!(output, "mark3_foreground #{fr:02x}{fg:02x}{fb:02x}");
         }
 
         output.push('\n');
@@ -266,83 +190,54 @@ impl ThemeExporter for KittyExporter {
         }
 
         output.push_str("\n# red\n");
-        if let Some(rgb) = theme.palette.emphasis.rgb() {
-            let _ = writeln!(output, "color1 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+        // ANSI color codes
+        if let Some([r, g, b]) = theme.palette.error.rgb() {
+            let _ = writeln!(output, "color1 #{r:02x}{g:02x}{b:02x}");
         }
-        if let Some(rgb) = theme.palette.error.rgb() {
-            let _ = writeln!(output, "color9 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
-        }
-
-        output.push_str("\n# green\n");
-        if let Some(rgb) = theme.palette.success.rgb() {
-            let _ = writeln!(output, "color2 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
-        }
-        if let Some(rgb) = theme.palette.debug.rgb() {
-            let _ = writeln!(
-                output,
-                "color10 #{:02x}{:02x}{:02x}",
-                rgb[0], rgb[1], rgb[2]
-            );
+        if let Some([r, g, b]) = theme.palette.error.rgb() {
+            let _ = writeln!(output, "color9 #{r:02x}{g:02x}{b:02x}");
         }
 
-        output.push_str("\n# yellow\n");
-        if let Some(rgb) = theme.palette.commentary.rgb() {
-            let _ = writeln!(output, "color3 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+        if let Some([r, g, b]) = theme.palette.success.rgb() {
+            let _ = writeln!(output, "color2 #{r:02x}{g:02x}{b:02x}");
         }
-        if let Some(rgb) = theme.palette.warning.rgb() {
-            let _ = writeln!(
-                output,
-                "color11 #{:02x}{:02x}{:02x}",
-                rgb[0], rgb[1], rgb[2]
-            );
+        if let Some([r, g, b]) = theme.palette.debug.rgb() {
+            let _ = writeln!(output, "color10 #{r:02x}{g:02x}{b:02x}");
         }
 
-        output.push_str("\n# blue\n");
-        if let Some(rgb) = theme.palette.info.rgb() {
-            let _ = writeln!(output, "color4 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+        if let Some([r, g, b]) = theme.palette.warning.rgb() {
+            let _ = writeln!(output, "color3 #{r:02x}{g:02x}{b:02x}");
         }
-        if let Some(rgb) = theme.palette.link.rgb() {
-            let _ = writeln!(
-                output,
-                "color12 #{:02x}{:02x}{:02x}",
-                rgb[0], rgb[1], rgb[2]
-            );
+        if let Some([r, g, b]) = theme.palette.warning.rgb() {
+            let _ = writeln!(output, "color11 #{r:02x}{g:02x}{b:02x}");
         }
 
-        output.push_str("\n# magenta\n");
-        if let Some(rgb) = theme.palette.heading1.rgb() {
-            let _ = writeln!(output, "color5 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+        if let Some([r, g, b]) = theme.palette.info.rgb() {
+            let _ = writeln!(output, "color4 #{r:02x}{g:02x}{b:02x}");
         }
-        if let Some(rgb) = theme.palette.heading2.rgb() {
-            let _ = writeln!(
-                output,
-                "color13 #{:02x}{:02x}{:02x}",
-                rgb[0], rgb[1], rgb[2]
-            );
+        if let Some([r, g, b]) = theme.palette.link.rgb() {
+            let _ = writeln!(output, "color12 #{r:02x}{g:02x}{b:02x}");
         }
 
-        output.push_str("\n# cyan\n");
-        if let Some(rgb) = theme.palette.code.rgb() {
-            let _ = writeln!(output, "color6 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+        if let Some([r, g, b]) = theme.palette.code.rgb() {
+            let _ = writeln!(output, "color5 #{r:02x}{g:02x}{b:02x}");
         }
-        if let Some(rgb) = theme.palette.hint.rgb() {
-            let _ = writeln!(
-                output,
-                "color14 #{:02x}{:02x}{:02x}",
-                rgb[0], rgb[1], rgb[2]
-            );
+        if let Some([r, g, b]) = theme.palette.heading2.rgb() {
+            let _ = writeln!(output, "color13 #{r:02x}{g:02x}{b:02x}");
         }
 
-        output.push_str("\n# white\n");
-        if let Some(rgb) = theme.palette.normal.rgb() {
-            let _ = writeln!(output, "color7 #{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+        if let Some([r, g, b]) = theme.palette.code.rgb() {
+            let _ = writeln!(output, "color6 #{r:02x}{g:02x}{b:02x}");
         }
-        if let Some(rgb) = theme.palette.quote.rgb() {
-            let _ = writeln!(
-                output,
-                "color15 #{:02x}{:02x}{:02x}",
-                rgb[0], rgb[1], rgb[2]
-            );
+        if let Some([r, g, b]) = theme.palette.hint.rgb() {
+            let _ = writeln!(output, "color14 #{r:02x}{g:02x}{b:02x}");
+        }
+
+        if let Some([r, g, b]) = theme.palette.normal.rgb() {
+            let _ = writeln!(output, "color7 #{r:02x}{g:02x}{b:02x}");
+        }
+        if let Some([r, g, b]) = theme.palette.quote.rgb() {
+            let _ = writeln!(output, "color15 #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push('\n');

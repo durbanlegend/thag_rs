@@ -1,4 +1,3 @@
-//!
 //! This module handles detection of terminal capabilities while preserving terminal state.
 //! In particular, it manages raw mode status which can be affected by some detection operations.
 

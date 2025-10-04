@@ -10,6 +10,10 @@
 - [ ]  Guest Themes and TermAttributes with context.
 - [ ]  Get Claude to do a release plan.
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
+- [ ]  Two sets of comments are being smooshed together from lib and mod.
+
+Now for a big task. I would like your help in a. preparing a co-ordinated release plan for thag_rs and all its subcrates (thag_common, thag_demo, thag_proc_macros, thag_profiler, thag_styling), and b. reviewing the various README.md docs and other markdown files that may merit inclusion. E.g. the main thag_rs README.md mentions the thag_profiler subcrate with a link to its README.md. I want b. to include reviewing the READMEs for completeness. I do not want actual edits to them without my explicit approval. I want the tone to be descriptive and collegial rather than marketing, but to describe the advantages (and costs or drawbacks). This is a passion project and I want the reader to share my vision of it as a helpful tool. I do want to preserve and even expand the number of illustrations, so as to show and not just tell. E.g. with REPL, thag_styling. I have worked very hard on the main and thag_profiler READMEs in particular, as AI has previously not managed to strike the tone I want.
+Wrt to the release plan, please consider the Release checklist in TODO.md lines 405-452 as a starting point or guide - not as gospel.
 
 \((\d+, \d+, \d+)\)
 
@@ -403,8 +407,8 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] NB NB. Remember to update Cargo.toml version to the required release before tagging.
 - [ ] Do a trial release build locally to check for anomalies: cargo build --release --workspace
 - [ ] Don't upgrade thag versions in demo scripts to new release, because you get a catch-22 until it's on crates.io. If you absolutely need to, wait until you've released to crates.io a first time, then release all over again.
-- [ ] cargo doc --features document-features --no-deps (thag_rs)
-- [ ] cargo doc --features document-features,full_profiling,debug_logging --no-deps
+- [ ] Check local docs with e.g. cargo doc -p thag_common --features document-features --no-deps (thag_rs)
+- [ ] For whole workspace with all features enabled: `cargo doc-all`
  (thag_profiler public)
  [Internal API: cargo doc --features document-features,full_profiling,debug_logging,internal_docs --no-deps
 ]
@@ -414,16 +418,13 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] Make sure Readme images are up to date.
 - [ ] Run clippy_feature_tests.sh
 - [ ] Run cargo tests
-- [ ] Run `gen_readme`
+- [ ] Run `gen_readme` for demo, src/bin.
 - [ ] Run `typos` command.
 - [ ] Run `vale README.md --no-wrap` and `vale demo/README.md --no-wrap`.
 - [ ] Run `cargo msrv set/verify`, and update the MSRV in README.md.
 - [ ] Check on https://deps.rs/repo/github/durbanlegend/thag_rs that all dependencies are up to date
       (can link from badge at top of README.md).
-- [ ] Once you're happy that you've tested all your script changes successfully with CI.yml,
-      update all bank and demo scripts using thag to use latest release instead of develop branch if appropriate.
-- [ ] NB NB: If there have been any changes to thag_proc_macros or thag_profiler since their last published releases, bump their version numbers
-      in their respective Cargo.tomls and also in their dependency entries in the main Cargo.toml. as these will be used in the crates.io version
+- [ ] NB NB: If there have been any changes to thag_proc_macros or thag_profiler since their last published releases, bump their version numbers in their respective Cargo.tomls and also in their dependency entries in the main Cargo.toml. as these will be used in the crates.io version
 - [ ] Use 'git changelog v0.1.<n-1>..HEAD' to generate raw release notes.
 - [ ] Leave it to cargo-dist to make the release.
 - [ ] To trigger cargo-dist:

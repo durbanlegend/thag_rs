@@ -3,26 +3,25 @@
 //! This crate provides a comprehensive styling system for terminal applications, including:
 //! - Color detection and terminal capability assessment
 //! - Theme-based styling with semantic roles
-//! - Inquire UI integration for consistent theming
+//! - `inquire` UI integration for consistent theming
 //! - ANSI color conversion and optimization
 //! - Built-in theme collection
-
+#![cfg_attr(
+    feature = "document-features",
+    cfg_attr(doc, doc = ::document_features::document_features!())
+)]
 #![warn(clippy::pedantic, missing_docs)]
 
 /// Message styling
 pub mod styling;
 
-/// Third-party crate integrations
 pub mod integrations;
 
-/// Runtime terminal palette synchronization using OSC sequences
 pub mod palette_sync;
 
-/// Image-based theme generation
 #[cfg(feature = "image_themes")]
 pub mod image_themes;
 
-/// Multi-format theme exporters for various terminal emulators
 pub mod exporters;
 
 // Re-export common types

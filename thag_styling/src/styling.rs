@@ -2786,6 +2786,7 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
 }
 
 // Convenience macros
+
 /// Conditionally logs a message with verbosity control and styling.
 ///
 /// This macro checks if logging is enabled and the verbosity level meets the threshold,
@@ -2807,21 +2808,41 @@ fn validate_style(style: &Style, min_support: ColorSupport) -> StylingResult<()>
 /// cvprtln!(Role::Info, Verbosity::VV, "Detailed info: {details}");
 /// ```
 #[macro_export]
+#[deprecated(note = "This macro is deprecated; use `svprtln!` instead.")]
 macro_rules! cvprtln {
     ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
-        let verbosity = $crate::get_verbosity();
-        if $verbosity <= verbosity {
-            $crate::cprtln!($style, $($arg)*)
-        }
+        $crate::svprtln!($style, $verbosity, $($arg)*)
     }};
 }
 
 /// Styled verbosity-gated print line macro (replacement for `cvprtln!`)
 /// Conditionally logs a message with verbosity control and styling.
+///
+/// This macro checks if logging is enabled and the verbosity level meets the threshold,
+/// then applies appropriate styling based on the role and logs the message.
+///
+/// The naming is a shorthand reminder of the parameter order: Color (role), Verbosity, println!-style arguments.
+///
+/// # Arguments
+/// * `$role` - The role that determines the styling to apply
+/// * `$verbosity` - The verbosity level required for this message
+/// * `$($arg:tt)*` - Format string and arguments, same as `println!` macro
+///
+/// # Examples
+/// ```
+/// use thag_styling::svprtln;
+/// use thag_styling::Verbosity;
+/// use thag_styling::Role;
+/// let details = "todos los detalles";
+/// svprtln!(Role::Info, Verbosity::VV, "Detailed info: {details}");
+/// ```
 #[macro_export]
 macro_rules! svprtln {
     ($style:expr, $verbosity:expr, $($arg:tt)*) => {{
-        $crate::cvprtln!($style, $verbosity, $($arg)*)
+        let verbosity = $crate::get_verbosity();
+        if $verbosity <= verbosity {
+            $crate::sprtln!($style, $($arg)*)
+        }
     }};
 }
 
@@ -3069,7 +3090,7 @@ pub fn main() -> StylingResult<()> {
     let name = "Error";
     println!("{name}"); // styled!(name), bold);
 
-    cvprtln!(
+    svprtln!(
         Role::Heading2,
         V::N,
         "Color support={}, theme={}: {}\nMore text to check if styling disrupted",
@@ -4108,14 +4129,15 @@ impl Styler for &Role {
 }
 
 /// Print line with embedded styled content
+///
 /// Format: `cprtln!(style: Style, "Lorem ipsum dolor {} amet", content: &str);`
+///
 /// Also accepts Role: `cprtln!(Role::Code, "Hello {}", "world");`
 #[macro_export]
+#[deprecated(note = "This macro is deprecated; use `sprtln!` instead.")]
 macro_rules! cprtln {
     ($style:expr, $($arg:tt)*) => {{
-        let content = format!("{}", format_args!($($arg)*));
-        let painted = $crate::styling::Styler::to_style(&$style).paint(content);
-        println!("{painted}");
+        $crate::sprtln!($style, $($arg)*)
     }};
 }
 
@@ -4125,7 +4147,9 @@ macro_rules! cprtln {
 #[macro_export]
 macro_rules! sprtln {
     ($style:expr, $($arg:tt)*) => {{
-        $crate::cprtln!($style, $($arg)*)
+        let content = format!("{}", format_args!($($arg)*));
+        let painted = $crate::styling::Styler::to_style(&$style).paint(content);
+        println!("{painted}");
     }};
 }
 

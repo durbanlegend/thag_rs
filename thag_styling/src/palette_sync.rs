@@ -2,13 +2,13 @@
 //!
 //! This module provides functionality to update a terminal emulator's color palette
 //! in real-time using OSC (Operating System Command) escape sequences. This allows
-//! thag_styling themes to be applied directly to the terminal's base palette for
+//! `thag_styling` themes to be applied directly to the terminal's base palette for
 //! the current session, improving visual consistency with thag-styled output.
 //!
 //! # Supported Terminals
 //!
 //! Most modern terminal emulators support OSC sequences for palette updates:
-//! - WezTerm, Alacritty, iTerm2, Kitty, Gnome Terminal, Windows Terminal, etc.
+//! - `WezTerm`, `Alacritty`, `iTerm2`, `Kitty`, `Gnome Terminal`, `Windows Terminal`, etc.
 //!
 //! # Example
 //!

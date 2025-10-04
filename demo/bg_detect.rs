@@ -95,8 +95,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let (color_support, term_bg_rgb) = thag_common::terminal::detect_term_capabilities();
         println!("   Color Support: {:?}", color_support);
-        if *term_bg_rgb != (0, 0, 0) {
-            let bg_rgb = Rgb::new(term_bg_rgb.0, term_bg_rgb.1, term_bg_rgb.2);
+        let [r, g, b] = *term_bg_rgb;
+        if [r, g, b] != [0, 0, 0] {
+            let bg_rgb = Rgb::new(r, g, b);
             println!(
                 "   Background: {} {} (luminance: {:.2})",
                 bg_rgb.to_hex(),

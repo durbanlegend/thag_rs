@@ -5,7 +5,7 @@ thag_styling = { version = "0.2, thag-auto" }
 
 /// Demo script to test all export formats including the new Konsole exporter
 //# Purpose: Test all available theme export formats to verify Konsole integration
-//# Categories: terminal, themes, export, testing
+//# Categories: styling, terminal, testing, theming
 use std::path::Path;
 use thag_styling::{
     exporters::{export_theme_to_file, ExportFormat},

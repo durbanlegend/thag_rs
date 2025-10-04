@@ -59,13 +59,47 @@ Many of these tools integrate with the main `thag` command and can be used as pa
 ***
 ## Detailed script listing
 
+### Script: thag_alacritty_add_theme.rs
+
+**Description:**  Install generated themes for Alacritty terminal emulator
+
+ This tool installs Alacritty themes into Alacritty's configuration directory
+ and updates the Alacritty configuration file with appropriate import statements.
+ The themes will typically have been created by `thag_gen_terminal_themes.rs`.
+ Get Alacritty configuration directories and files
+ Select themes to install using file navigator
+ Find theme files in a directory
+ Update Alacritty configuration with theme imports
+ Update configuration file with specific theme
+ Show manual configuration instructions
+ Show installation summary
+ Show verification steps
+
+**Purpose:** Install and configure thag themes for Alacritty terminal
+
+**Crates:** `dirs`, `inquire`, `thag_proc_macros`, `thag_styling`, `toml_edit`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [thag_alacritty_add_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_alacritty_add_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_alacritty_add_theme.rs
+```
+
+---
+
 ### Script: thag_ast.rs
 
 **Description:**  Tries to convert input to a `syn` abstract syntax tree (`syn::File` or `syn::Expr`).
 
 **Purpose:** Debugging
 
-**Crates:** `quote`, `syn`, `thag_rs`
+**Crates:** `quote`, `syn`, `thag_common`
 
 **Type:** Program
 
@@ -90,7 +124,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_ast.rs
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option.
 
-**Crates:** `atty`, `thag_proc_macros`, `thag_rs`
+**Crates:** `atty`, `inquire`, `thag_common`, `thag_proc_macros`
 
 **Type:** Program
 
@@ -115,7 +149,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_cargo.rs
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
 
-**Crates:** `atty`, `colored`, `inquire`, `thag_proc_macros`, `thag_rs`
+**Crates:** `atty`, `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -164,7 +198,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_clippy.r
 
 **Purpose:** Theme generation.
 
-**Crates:** `clap`, `serde`, `serde_yaml_ok`, `thag_common`, `thag_rs`, `thag_styling`, `toml`
+**Crates:** `clap`, `serde`, `serde_yaml_ok`, `thag_styling`, `toml`
 
 **Type:** Program
 
@@ -180,6 +214,57 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_convert_
 
 ---
 
+### Script: thag_convert_themes_alt.rs
+
+**Description:**  Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
+
+ Alternative version with headings assigned according to prominence.
+
+ ## Usage examples:
+
+ ### Convert a single theme
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm/atelier_seaside_light.yaml -o themes/converted
+ ```
+
+ ### Convert a directory of themes (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -v
+ ```
+
+ ### Convert and also generate 256-color versions (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -c -v
+ ```
+
+ ### Force overwrite existing themes
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -f
+ ```
+
+
+**Purpose:** Theme generation.
+
+**Crates:** `clap`, `serde`, `serde_yaml_ok`, `thag_styling`, `toml`
+
+**Type:** Program
+
+**Categories:** tools
+
+**Link:** [thag_convert_themes_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_convert_themes_alt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_convert_themes_alt.rs
+```
+
+---
+
 ### Script: thag_copy.rs
 
 **Description:**  Copies text input from `stdin` to the system clipboard.
@@ -190,7 +275,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_convert_
 
 **Purpose:** Utility
 
-**Crates:** `arboard`
+**Crates:** `arboard`, `thag_common`
 
 **Type:** Program
 
@@ -215,7 +300,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_copy.rs
 
 **Purpose:** Demonstrate the lightweight help system for thag tools
 
-**Crates:** `thag_rs`
+**Crates:** `thag_common`
 
 **Type:** Program
 
@@ -240,7 +325,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_hel
 
 **Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
 
-**Crates:** `log`, `simplelog`, `supports_color`, `termbg`, `terminal_light`, `thag_rs`
+**Crates:** `log`, `simplelog`, `termbg`, `terminal_light`, `thag_common`
 
 **Type:** Program
 
@@ -250,6 +335,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_hel
 
 **Not suitable to be run from a URL.**
 
+
+---
+
+### Script: thag_edit_theme.rs
+
+**Description:** / Interactive theme editor for manual color role adjustments
+
+ This tool allows you to interactively edit theme color assignments,
+ particularly useful when automatic conversion doesn't quite match your preferences.
+
+ A color candidate with provenance information
+ Main theme editor state
+
+**Purpose:** Edit and customize theme color role assignments interactively
+
+**Crates:** `clap`, `inquire`, `thag_styling`, `toml`
+
+**Type:** Program
+
+**Categories:** color, interactive, styling, theming, tools
+
+**Link:** [thag_edit_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_edit_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_edit_theme.rs
+```
 
 ---
 
@@ -266,7 +379,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_hel
 
 **Purpose:** Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 
-**Crates:** `anyhow`, `atty`, `inquire`, `side_by_side_diff`, `tempfile`, `thag_proc_macros`, `thag_rs`
+**Crates:** `anyhow`, `atty`, `crossterm`, `inquire`, `side_by_side_diff`, `tempfile`, `thag_proc_macros`, `thag_styling`
 
 **Type:** Program
 
@@ -342,7 +455,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_from_rus
 
 **Purpose:** Handy configuration file builder.
 
-**Crates:** `colored`, `convert_case`, `dirs`, `documented`, `inquire`, `strum`, `syn`, `thag_proc_macros`, `thag_rs`, `toml`
+**Crates:** `convert_case`, `dirs`, `documented`, `inquire`, `strum`, `syn`, `thag_common`, `thag_styling`, `toml`
 
 **Type:** Program
 
@@ -361,8 +474,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_conf
 ### Script: thag_gen_errors.rs
 
 **Description:**  Quick and easy prompted generator for new custom error types and new variants required
- by existing custom error types. Prompts for the new or existing custom error type, the
+ by existing custom error types.
+
+ Prompts for the new or existing custom error type, the
  new variants, any types wrapped by the new variants, and any special display messages.
+
  The output can be saved to a new error module in the case of a new custom error type,
  or simply copied and pasted in sections from the output into an existing error module
  in the case of an existing custom error type.
@@ -371,7 +487,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_conf
 
 **Purpose:** Facilitate generation and enhancement of custom error modules.
 
-**Crates:** `heck`, `inquire`, `thag_rs`
+**Crates:** `heck`, `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -397,11 +513,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_erro
 
 **Purpose:** Generate README.md documentation for proc macros with examples and usage
 
-**Crates:** `syn`, `thag_rs`
+**Crates:** `syn`, `thag_styling`
 
 **Type:** Program
 
-**Categories:** technique, tools, proc_macros
+**Categories:** proc_macros, technique, tools
 
 **Link:** [thag_gen_proc_macro_readme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_proc_macro_readme.rs)
 
@@ -422,7 +538,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_proc
 
 **Purpose:** Document demo scripts in a demo/README.md as a guide for the user, and the same for tools/ scripts.
 
-**Crates:** `heck`, `inquire`, `pathdiff`, `thag_proc_macros`, `thag_rs`
+**Crates:** `heck`, `inquire`, `pathdiff`, `regex`, `strum`, `thag_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -442,9 +558,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_read
 
 **Description:**  Export `thag_styling` themes to multiple terminal emulator formats
 
- This tool exports `thag_styling` theme files to various terminal emulator formats
- including `Alacritty`, `WezTerm`, `iTerm2`, `Kitty`, and `Windows Terminal`.
- Themes are exported to organized subdirectories in ./`exported_themes`/
+ This tool exports `thag_styling` theme files to the following terminal emulator formats:
+ `Alacritty`, `iTerm2`, `Kitty`, `Konsole`, `Mintty`, `WezTerm` and `Windows Terminal`.
+ Themes are exported to organized subdirectories in ./`exported_themes`/. It also
+ optionally displays instructions for installing them into the respective emulators.
  Select theme files using file navigator
  Find all theme files in a directory
  Interactive theme browser similar to `thag_show_themes`
@@ -452,9 +569,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_read
  Process a single theme file
  Show installation instructions for selected formats with actual theme names
 
-**Purpose:** Export thag themes to multiple terminal emulator formats
+**Purpose:** Export thag themes to multiple terminal emulator formats and display further instructions.
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`, `thag_styling`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -470,44 +587,20 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_term
 
 ---
 
-### Script: thag_gen_theme.rs
-
-**Description:**  Generate terminal color themes from images
-
- This tool analyzes images and extracts dominant colors to create terminal color themes.
- The generated themes can be saved as TOML files compatible with thag's theming system.
-
-**Purpose:** Generate custom color themes from images using color analysis
-
-**Crates:** `thag_rs`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** theming, color, tools, customization
-
-**Link:** [thag_gen_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_theme.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_theme.rs
-```
-
----
-
 ### Script: thag_get_demo_dir.rs
 
-**Description:**  Demo directory downloader. Very fast replacement for `thag_get_demo` with subdirectory
- support so as to include the `demo/proc_macros` directory. Git `sparse-checkout`
- approach suggested and written by `ChatGPT`, local directory handling assisted by Claude.
+**Description:**  Fast download of `thag_rs` demo directory (starter kit) with subdirectories.
+ Git `sparse-checkout` approach suggested and written by ChatGPT, local directory handling assisted by Claude.
+
+ `thag_styling` included
 
 **Purpose:** Prototype for `thag_get_demo_dir`.
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`, `thag_rs`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, prototype, technique
+**Categories:** crates, prototype, technique, tools
 
 **Link:** [thag_get_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_get_demo_dir.rs)
 
@@ -534,7 +627,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_get_demo
 
 **Purpose:** Generate custom `thag_styling` themes from images
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`, `thag_styling`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -546,40 +639,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_get_demo
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_image_to_theme.rs
-```
-
----
-
-### Script: thag_install_alacritty_theme.rs
-
-**Description:**  Install generated themes for Alacritty terminal emulator
-
- This tool installs Alacritty themes into Alacritty's configuration directory
- and updates the Alacritty configuration file with appropriate import statements.
- The themes will typically have been created by `thag_gen_terminal_themes.rs`.
- Get Alacritty configuration directories and files
- Select themes to install using file navigator
- Find theme files in a directory
- Update Alacritty configuration with theme imports
- Update configuration file with specific theme
- Show manual configuration instructions
- Show installation summary
- Show verification steps
-
-**Purpose:** Install and configure thag themes for Alacritty terminal
-
-**Crates:** `colored`, `dirs`, `inquire`, `thag_proc_macros`, `thag_styling`, `toml_edit`
-
-**Type:** Program
-
-**Categories:** color, styling, terminal, theming, tools
-
-**Link:** [thag_install_alacritty_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_install_alacritty_theme.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_install_alacritty_theme.rs
 ```
 
 ---
@@ -597,7 +656,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_install_
 
 **Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 
-**Crates:** `thag_rs`
+**Crates:** `thag_common`
 
 **Type:** Program
 
@@ -635,7 +694,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_legible.
 
 **Purpose:** Useful tool and demo.
 
-**Crates:** `reqwest`, `serde_json`, `thag_rs`, `tokio`, `warp`
+**Crates:** `reqwest`, `serde_json`, `thag_common`, `tokio`, `warp`
 
 **Type:** Program
 
@@ -663,7 +722,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_markdown
 
 **Purpose:** Migrate tools from tools/ directory to src/bin/ with auto-help integration
 
-**Crates:** `inquire`, `thag_rs`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -679,6 +738,73 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_migrate_
 
 ---
 
+### Script: thag_mintty_add_theme.rs
+
+**Description:**  Mintty theme installer for Git Bash on Windows
+
+ This Windows-only tool installs thag themes into Mintty by copying theme files
+ to the Mintty themes directory and optionally updating the ~/.minttyrc configuration.
+ Supports selecting individual themes or entire directories of themes.
+ Check if we have write permission to a directory
+ Select themes to install using file navigator
+ Find mintty theme files in a directory (files with no extension)
+ Check if a file appears to be a mintty theme file
+ Copy a mintty theme file to the themes directory
+
+**Purpose:** Install thag themes for Mintty (Git Bash)
+
+**Crates:** `dirs`, `inquire`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools, windows
+
+**Link:** [thag_mintty_add_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_mintty_add_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_mintty_add_theme.rs
+```
+
+---
+
+### Script: thag_palette.rs
+
+**Description:**  Terminal Palette Display Tool
+
+ This tool displays the current terminal's color palette, including:
+ - All 16 ANSI colors (0-15)
+ - Extended 256-color palette samples
+ - True color capability test
+ - Terminal background detection
+ - Current thag theme colors for comparison
+ Display basic terminal information
+ Display the 16 basic ANSI colors
+ Display a row of colors with their indices and names
+ Display samples from the 256-color palette
+ Test true color capability with a gradient
+ Display current thag theme colors
+ Extract RGB information from a style for display
+
+**Purpose:** Show terminal palette colors
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [thag_palette.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_palette.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_palette.rs
+```
+
+---
+
 ### Script: thag_palette_vs_theme.rs
 
 **Description:**  Terminal palette comparison tool with theme selection
@@ -686,24 +812,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_migrate_
  This tool displays the current terminal's color palette alongside
  a selected thag theme for direct comparison. Helps identify color
  mapping issues and verify theme installation.
+ RGB color representation
+ Error types for palette querying
+ Cached palette query results
+ Production-ready palette color query using crossterm threading
+
+ # Errors
+
+ Will bubble up any terminal errors encountered.
+ Parse OSC 4 response from accumulated buffer
+ Parse hex component (2 or 4 digits)
+ Get terminal identifier for caching
+ Production-ready palette detection with caching
  Select a theme using file navigator or built-in themes
  Display basic terminal information
  Attempt to detect terminal emulator
  Display the 16 basic ANSI colors
  Display a row of colors with their indices and names
  Display theme colors with visual preview
- Display side-by-side color comparison
  Display recommendations based on comparison
  Detect potential issues with theme/terminal compatibility
  Calculate contrast ratio between two RGB colors
  Extract RGB information from a style for display
- Extract RGB tuple from a style
- Get the best dark color from the theme for black mapping
  Brighten a color by increasing its components
 
 **Purpose:** Compare terminal palette with thag theme colors
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`, `thag_styling`
+**Crates:** `char`, `crossterm`, `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -729,7 +864,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_palette_
 
 **Purpose:** Utility
 
-**Crates:** `arboard`
+**Crates:** `arboard`, `thag_common`
 
 **Type:** Program
 
@@ -753,7 +888,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_paste.rs
 
 **Purpose:** Simplify running `thag`.
 
-**Crates:** `arboard`, `clap`, `colored`, `inquire`, `regex`, `thag_proc_macros`, `thag_rs`
+**Crates:** `arboard`, `clap`, `inquire`, `regex`, `thag_rs`, `thag_styling`
 
 **Type:** Program
 
@@ -799,7 +934,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_rs.rs
 
 **Purpose:** Help get best use out of styling with built-in themes.
 
-**Crates:** `inquire`, `thag_rs`, `thag_styling`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -817,14 +952,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_show_the
 
 ### Script: thag_sync_palette.rs
 
-**Description:**  Terminal palette synchronization using OSC sequences
+**Description:**  Terminal palette synchronization using OSC sequences,
 
  This binary provides command-line access to `thag_styling`'s palette synchronization
- functionality, allowing you to apply theme colors directly to your terminal's palette.
+ functionality, allowing you to apply theme colors directly to your terminal's palette for convenience.
 
-**Purpose:** Configure custom terminal themes.
+ Note that it does not support `KDE Konsole` or `Mintty` terminal types because they do not support
+ the required OSC 4 ANSI escape sequences.
 
-**Crates:** `thag_common`, `thag_styling`
+**Purpose:** Try out custom terminal themes or apply them dynamically, including for a session if incorporated in a terminal profile file.
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
@@ -836,6 +974,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_show_the
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_sync_palette.rs
+```
+
+---
+
+### Script: thag_theme.rs
+
+**Description:**  Displays the current theme palette and attributes.
+
+ E.g. `thag_theme` or `thag src/bin/thag_theme.rs`
+
+**Purpose:** Show current theme.
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, color, styling, terminal, theming, tools, xterm
+
+**Link:** [thag_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_theme.rs
 ```
 
 ---
@@ -864,7 +1026,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_to_rust_
 
 ### Script: thag_url.rs
 
-**Description:**  `thag` front-end command to run scripts from URLs.
+**Description:**  `thag` front-end command to run Rust scripts from URLs provided that `thag` can figure out the dependencies.
+
+ It supports raw files as well as GitHub, GitLab, Bitbucket and the Rust Playground.
+
+ This relies on `thag`'s dependency inference to resolve dependencies and even features (since default
+ features for a given crate can be configured via `thag -C`). Failing that, you can of course paste the raw
+ source into the thag playground (`thag -d`) and edit / run / save it there, or directly into a `.rs` file
+ and run it with `thag /path/to/file`.
 
  Usage:
 
@@ -884,9 +1053,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_to_rust_
 
  This function will bubble up any `syn` parse errors encountered.
 
-**Purpose:** A front-end to allow `thag` to run scripts from URLs while offloading network dependencies from `thag` itself.
+**Purpose:** A front-end to allow `thag` to run scripts from URLs while keeping `thag` itself free of network dependencies.
 
-**Crates:** `syn`, `tempfile`, `thag_rs`, `tinyget`, `url`
+**Crates:** `syn`, `tempfile`, `thag_common`, `tinyget`, `url`
 
 **Type:** Program
 
@@ -912,7 +1081,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_url.rs
 
 **Purpose:** Install thag themes for Windows Terminal
 
-**Crates:** `dirs`, `inquire`, `serde_json`, `thag_proc_macros`, `thag_styling`
+**Crates:** `colored`, `dirs`, `inquire`, `serde_json`, `thag_styling`
 
 **Type:** Program
 

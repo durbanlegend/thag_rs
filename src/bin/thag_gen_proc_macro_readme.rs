@@ -9,7 +9,7 @@ thag_styling = { version = "0.2, thag-auto", default-features = false }
 /// It extracts proc macro definitions, their documentation, and links them to their
 /// corresponding example files in the demo/ directory.
 //# Purpose: Generate README.md documentation for proc macros with examples and usage
-//# Categories: technique, tools, proc_macros
+//# Categories: proc_macros, technique, tools
 // Simple case conversion without external dependencies
 use std::{
     env,

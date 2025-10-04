@@ -31,7 +31,7 @@ fn main() {
     let custom_theme = Theme::get_builtin("basic_dark").unwrap();
     let custom_attrs = TermAttributes::for_testing(
         ColorSupport::Basic,
-        Some((64, 64, 64)),
+        Some([64, 64, 64]),
         TermBgLuma::Dark,
         custom_theme,
     );
@@ -65,7 +65,7 @@ fn main() {
         let nested_theme = Theme::get_builtin("solarized-dark").unwrap();
         let nested_attrs = TermAttributes::for_testing(
             ColorSupport::TrueColor,
-            Some((248, 248, 248)),
+            Some([248, 248, 248]),
             TermBgLuma::Light,
             nested_theme,
         );

@@ -4091,6 +4091,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/just_a_test_expr
 
 ---
 
+### Script: konsole_export_demo.rs
+
+**Description:**  Demo script showing Konsole colorscheme export functionality
+
+**Purpose:** Demonstrate exporting thag themes to KDE Konsole .colorscheme format
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, terminal, theming, tools
+
+**Link:** [konsole_export_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/konsole_export_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/konsole_export_demo.rs
+```
+
+---
+
 ### Script: list_files.rs
 
 **Description:**  Demo listing files on disk. If you want a sorted list, you will need to amend the
@@ -4523,35 +4545,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_format_the
 
 ---
 
-### Script: multi_level_nesting_test.rs
-
-**Description:**  Test multi-level nesting behavior with different reset handling approaches
-
- This demonstrates the difference between:
- 1. Insert approach (like colored): Inserts outer codes after each reset
- 2. Replace approach: Replaces inner codes with outer codes
- 3. Manual construction to show what should happen
- Version 1: Insert approach (mimics colored)
- Version 2: Replace approach (your suggested improvement)
-
-**Purpose:** Test multi-level nesting reset handling strategies
-
-**Crates:** `thag_styling`
-
-**Type:** Program
-
-**Categories:** prototype, styling
-
-**Link:** [multi_level_nesting_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_level_nesting_test.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_level_nesting_test.rs
-```
-
----
-
 ### Script: multiline_err.rs
 
 **Description:**  LLM-provided formatting for error messages
@@ -4591,6 +4584,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs
+```
+
+---
+
+### Script: owo_colors_integration_demo.rs
+
+**Description:**  Demo and test script for owo-colors integration with `thag_styling`.
+
+
+**Purpose:** Demonstrate and test the owo-colors integration with `thag`'s theming system.
+
+**Crates:** `owo_colors`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, demo, styling, terminal, testing
+
+**Link:** [owo_colors_integration_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_colors_integration_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_colors_integration_demo.rs
 ```
 
 ---
@@ -6952,7 +6968,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs
 
 **Purpose:** Migration guide from old embedding systems to StyledString
 
-**Crates:** `thag_common`, `thag_styling`
+**Crates:** `thag_styling`
 
 **Type:** Program
 
@@ -7467,43 +7483,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_s
 
 ---
 
-### Script: terminal_palette_display.rs
-
-**Description:**  Terminal Palette Display Tool
-
- This tool displays the current terminal's color palette, including:
- - All 16 ANSI colors (0-15)
- - Extended 256-color palette samples
- - True color capability test
- - Terminal background detection
- - Current thag theme colors for comparison
- Display basic terminal information
- Display the 16 basic ANSI colors
- Display a row of colors with their indices and names
- Display samples from the 256-color palette
- Test true color capability with a gradient
- Display current thag theme colors
- Extract RGB information from a style for display
- Convert HSL to RGB (simple implementation)
-
-**Purpose:** Show terminal palette colors
-
-**Crates:** `thag_styling`
-
-**Type:** Program
-
-**Categories:** color, styling, terminal, theming
-
-**Link:** [terminal_palette_display.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_palette_display.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_palette_display.rs
-```
-
----
-
 ### Script: terminal_reset_test.rs
 
 **Description:**  Demo script to test terminal reset functionality for OSC sequence corruption
@@ -7530,6 +7509,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_t
 
 ---
 
+### Script: test_all_formats_with_konsole.rs
+
+**Description:**  Demo script to test all export formats including the new Konsole exporter
+
+**Purpose:** Test all available theme export formats to verify Konsole integration
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, terminal, testing, theming
+
+**Link:** [test_all_formats_with_konsole.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_all_formats_with_konsole.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_all_formats_with_konsole.rs
+```
+
+---
+
 ### Script: test_ansi_parsing_logic.rs
 
 **Description:**  Simple test for ANSI parsing logic
@@ -7551,6 +7552,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_t
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsing_logic.rs
+```
+
+---
+
+### Script: test_auto_help.rs
+
+**Description:**  Demo / test of `thag_common`'s `auto_help` system. This is the first doc comment line.
+ This is the second doc comment line.
+
+**Purpose:** Demo Hello World as a program. This is the `//# Purpose: ` line.
+
+**Crates:** `thag_common`
+
+**Type:** Program
+
+**Categories:** demo, testing
+
+**Link:** [test_auto_help.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_auto_help.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_auto_help.rs
 ```
 
 ---
@@ -7633,28 +7657,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_coffee_them
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_color_mode_override.rs
-```
-
----
-
-### Script: test_sprtln.rs
-
-**Description:**  Test script to verify sprtln macro works with both Style and Role
-
-**Purpose:** Testing
-
-**Crates:** `thag_styling`
-
-**Type:** Program
-
-**Categories:** macros, styling, technique, testing
-
-**Link:** [test_cprtln.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_cprtln.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_cprtln.rs
 ```
 
 ---
@@ -7777,6 +7779,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_fine_tuning
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_image_theme_contrast.rs
+```
+
+---
+
+### Script: test_konsole_export.rs
+
+**Description:**  Test script for Konsole theme export functionality
+
+**Purpose:** Test the Konsole colorscheme exporter with Catppuccin Mocha theme
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** terminal, testing, theming
+
+**Link:** [test_konsole_export.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_konsole_export.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_konsole_export.rs
 ```
 
 ---
@@ -8106,6 +8130,28 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_
 
 ---
 
+### Script: test_sprtln.rs
+
+**Description:**  Test script to verify sprtln macro works with both Style and Role
+
+**Purpose:** Testing
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** macros, styling, technique, testing
+
+**Link:** [test_sprtln.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_sprtln.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_sprtln.rs
+```
+
+---
+
 ### Script: test_styled_simple.rs
 
 **Description:**  Simple test for enhanced styled! macro
@@ -8240,6 +8286,55 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_bench
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_auto_example.rs
+```
+
+---
+
+### Script: thag_convert_themes_6422dbc.rs
+
+**Description:**  Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
+
+ ## Usage examples:
+
+ ### Convert a single theme
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm/atelier_seaside_light.yaml -o themes/converted
+ ```
+
+ ### Convert a directory of themes (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -v
+ ```
+
+ ### Convert and also generate 256-color versions (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -c -v
+ ```
+
+ ### Force overwrite existing themes
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -f
+ ```
+
+
+**Purpose:** Theme generation.
+
+**Crates:** `clap`, `serde`, `serde_yaml_ok`, `thag_styling`, `toml`
+
+**Type:** Program
+
+**Categories:** tools
+
+**Link:** [thag_convert_themes_6422dbc.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_convert_themes_6422dbc.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_convert_themes_6422dbc.rs
 ```
 
 ---
@@ -9178,3 +9273,4 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_p
 ```
 
 ---
+

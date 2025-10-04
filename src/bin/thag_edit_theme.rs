@@ -1,12 +1,10 @@
-//! Interactive theme editor for manual color role adjustments
-//!
-//! This tool allows you to interactively edit theme color assignments,
-//! particularly useful when automatic conversion doesn't quite match your preferences.
-//!
-//! # Purpose:
-//! Edit and customize theme color role assignments interactively
-//!
-//! # Categories: theme, color, styling, interactive
+//// Interactive theme editor for manual color role adjustments
+///
+/// This tool allows you to interactively edit theme color assignments,
+/// particularly useful when automatic conversion doesn't quite match your preferences.
+///
+//# Purpose: Edit and customize theme color role assignments interactively
+//# Categories: color, interactive, styling, theming, tools
 
 /*[toml]
 [dependencies]
@@ -16,7 +14,6 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
 clap = { version = "4.5", features = ["derive"] }
 */
-
 use clap::Parser;
 use inquire::{Confirm, Select};
 use std::collections::HashMap;
@@ -141,7 +138,7 @@ impl ThemeEditor {
         println!("📋 Theme: {}", self.theme.name);
         println!("🌓 Type: {:?}", self.theme.term_bg_luma);
         println!("🎨 Color Support: {:?}", self.theme.min_color_support);
-        if let Some([r,g,b]) = self.theme.bg_rgbs.first() {
+        if let Some([r, g, b]) = self.theme.bg_rgbs.first() {
             println!("🖼️  Background: #{r:02x}{g:02x}{b:02x}");
         }
         println!();
@@ -219,10 +216,8 @@ impl ThemeEditor {
         let current_rgb = &current_style
             .rgb()
             .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
-        ler [r,g,b] = current_rgb;
-        let current_hex = format!(
-            "#{r:02x}{g:02x}{b:02x}"
-        );
+        let [r, g, b] = current_rgb;
+        let current_hex = format!("#{r:02x}{g:02x}{b:02x}");
 
         println!(
             "\nCurrent color for {:?}: {}",
@@ -302,7 +297,7 @@ impl ThemeEditor {
     fn swap_roles(&mut self) -> Result<(), Box<dyn Error>> {
         println!("\n🔄 Swap two role colors");
 
-        let role1 = self.select_role("Select first role:")?;
+        let role1 = self.select_role("Select first role: ")?;
         let role2 = self.select_role("Select second role:")?;
 
         if role1 == role2 {

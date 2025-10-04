@@ -1,6 +1,6 @@
 //! Format-specific theme export implementations.
 //!
-//! Contains exporters for Alacritty, WezTerm, Windows Terminal, and other terminal emulators.
+//! Contains exporters for `Alacritty`, `WezTerm`, `Windows Terminal`, and other terminal emulators.
 //! Each exporter converts thag themes to the appropriate configuration format.
 
 use crate::{StylingError, StylingResult, Theme};

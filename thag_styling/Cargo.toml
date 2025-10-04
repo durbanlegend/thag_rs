@@ -11,6 +11,7 @@ keywords = ["styling", "terminal", "themes", "colors", "ansi"]
 rust-version = "1.82"
 
 [dependencies]
+document-features = { version = "0.2", optional = true }
 log = "0.4"
 nu-ansi-term = { version = "0.50", optional = true }
 owo-colors = { version = "4.1", optional = true }
@@ -45,12 +46,16 @@ thag_proc_macros = { path = "../thag_proc_macros", version = "0.2" }
 toml = "0.9"
 
 [features]
+#! <br><br>
+#! The following features are supported:
+
+## Default features: terminal color detection
 default = ["color_detect"]
 
-# Core styling without external dependencies
+## Core styling without external dependencies
 basic = []
 
-# Terminal color detection and background detection
+## Terminal color detection and background detection
 color_detect = [
     "config",
     "thag_common/color_detect",
@@ -58,37 +63,40 @@ color_detect = [
     "scopeguard",
 ]
 
-# Configuration support (uses thag_common config module)
+## Configuration support (uses thag_common config module)
 config = ["thag_common/config"]
 
-# Tools integration
+## Tools integration
 tools = []
 
-# Debug logging support
+## Debug logging support
 debug_logging = ["thag_common/debug_logging"]
 
-# Inquire integration for themed UI
+## Documentation features
+document-features = ["dep:document-features"]
+
+## `inquire` integration for themed UI
 inquire_theming = ["color_detect", "inquire"]
 
-# Full ratatui integration
+## Full ratatui integration
 ratatui_support = ["ratatui", "scopeguard"]
 
-# Support for thag REPL
+## Support for `thag` REPL
 nu_ansi_term_support = ["nu-ansi-term"]
 
-# owo-colors integration for colorful terminal output
+## Integration for terminal theming with `owo-colors`
 owo_colors_support = ["owo-colors"]
 
-# Crossterm integration for cross-platform terminal manipulation
+## Integration for terminal theming with `crossterm`
 crossterm_support = ["crossterm"]
 
-# Console integration for popular styling library
+## Integration for terminal theming with `console`
 console_support = ["console"]
 
-# Image theme generation
+## Image theme generation
 image_themes = ["image", "kmeans_colors", "auto-palette", "palette"]
 
-# All advanced features
+## All advanced features
 full = [
     "color_detect",
     "console_support",

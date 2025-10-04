@@ -81,7 +81,6 @@ pub mod logging;
 // AST Analysis:
 //-----------------------------------------------------------------------------
 #[cfg(any(feature = "ast", feature = "build"))]
-/// Abstract Syntax Tree parsing and dependency inference
 pub mod ast;
 /// Operations on code
 #[cfg(any(feature = "ast", feature = "build"))]
@@ -90,7 +89,6 @@ pub mod code_utils;
 //-----------------------------------------------------------------------------
 // Build System
 //-----------------------------------------------------------------------------
-/// Script building and execution
 #[cfg(feature = "build")]
 pub mod builder;
 /// Command-line argument and processing flags handling

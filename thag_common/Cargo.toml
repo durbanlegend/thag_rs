@@ -12,6 +12,7 @@ rust-version = "1.82"
 
 [dependencies]
 dirs = "6.0"
+document-features = { version = "0.2", optional = true }
 documented = "0.9"
 log = "0.4"
 parking_lot = "0.12"
@@ -33,14 +34,22 @@ supports-color = { version = "3.0", optional = true }
 termbg = { version = "0.6", optional = true }
 
 [features]
+#! <br><br>
+#! The following features are supported:
+
+## Default features: none
 default = []
-# Enable debug logging at compile time
+
+## Enable debug logging at compile time
 debug_logging = []
 
-# Configuration management
+## Documentation features
+document-features = ["dep:document-features"]
+
+## Configuration management
 config = ["edit", "mockall", "toml_edit", "toml"]
 
-# Terminal color detection and background detection
+## Terminal color support detection and background color detection
 color_detect = ["config", "ratatui", "scopeguard", "supports-color", "termbg"]
 
 [lib]

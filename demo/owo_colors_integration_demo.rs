@@ -7,7 +7,7 @@ owo-colors = "4.1"
 /// Demo and test script for owo-colors integration with `thag_styling`.
 ///
 //# Purpose: Demonstrate and test the owo-colors integration with `thag`'s theming system.
-//# Categories: styling, colors, terminal, integration, demo
+//# Categories: color, demo, styling, terminal, testing
 use owo_colors::{DynColors, OwoColorize, Style as OwoStyle};
 use thag_styling::{
     integrations::{

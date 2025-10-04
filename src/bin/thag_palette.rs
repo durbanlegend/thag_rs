@@ -12,7 +12,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// - Terminal background detection
 /// - Current thag theme colors for comparison
 //# Purpose: Show terminal palette colors
-//# Categories: color, styling, terminal, theming
+//# Categories: color, styling, terminal, theming, tools
 use thag_styling::{
     auto_help, display_color_comparison, help_system::check_help_and_exit, hsl_to_rgb, ColorValue,
     Style, TermAttributes,

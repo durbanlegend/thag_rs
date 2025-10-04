@@ -327,16 +327,21 @@ win32console = "0.1"
 winapi = "0.3"
 
 [features]
-# #Default Configuration
+#! <br><br>
+#! The following features are supported:
+
+## Default features: full and `simplelog`
 default = ["full", "simplelog"]  # Full features with simplelog
-# #AST and Parsing
+
+## AST and Parsing
 ast = [
   "core",  # Explicit dependency on core for logging
   "profiling",  # As long as we have instrumentation at this level
   "quote",
   "syn",
 ]
-# #Build and Analysis
+
+## Build and Analysis
 build = [
   "ast",  # For syntax parsing
   "bitflags",
@@ -349,9 +354,11 @@ build = [
   "serde_merge",
   "side-by-side-diff",
 ]
-# #Clipboard support
+
+## Clipboard support
 clipboard = ["dep:arboard"]
-# #Terminal color support
+
+## Terminal color support
 color_detect = [
   "config",
   "ratatui",
@@ -359,20 +366,30 @@ color_detect = [
   "termbg",
   "thag_styling/color_detect",
 ]
-# #Configuration
+
+## Configuration
 config = ["core", "edit", "mockall", "thag_styling/config", "toml_edit"]
-# #Core and Logging Features
+
+## Core and Logging Features
 core = [
   "error_handling",
   "log_impl",
   "thag_styling",
 ]  # Foundation for all features
-# #Optional/Debug Features
+
+## Optional/Debug Features
 debug_logging = []
-# #`env_logger` crate (alternative to `simplelog`)
+
+## Documentation features
+document-features = ["dep:document-features"]
+
+## `env_logger` crate (alternative to `simplelog`)
 env_logger = ["dep:env_logger", "log_impl"]
+
+## Error handling
 error_handling = []
-# #All features
+
+## All features
 full = ["color_detect", "repl"]  # Simplified as repl includes everything
 log_impl = []  # Requires either simplelog or env_logger
 nightly = []
@@ -380,7 +397,8 @@ no_format_snippet = []
 # dhat-heap = ["dep:dhat"]
 pathdiff = ["dep:pathdiff"]
 profiling = ["thag_proc_macros/full_profiling", "thag_profiler/full_profiling"]
-# #REPL capability
+
+## REPL capability
 repl = [
   "nu-ansi-term",
   "reedline",
@@ -388,10 +406,12 @@ repl = [
   "thag_styling/nu_ansi_term_support",
   "tui",  # Includes all TUI features
 ]
-# #`simplelog` crate
+
+## `simplelog` crate
 simplelog = ["dep:simplelog", "log_impl"]
 terminal-light = ["dep:terminal-light"]
-# #Tools feature - includes all dependencies needed by tools
+
+## Tools feature - includes all dependencies needed by tools
 tools = [
   "clipboard",
   "dep:anyhow",
@@ -412,7 +432,8 @@ tools = [
   "dep:warp",
   "thag_styling/full",
 ]
-# #TUI editing
+
+## TUI editing
 tui = [
   "build",  # Full build capabilities
   "scopeguard",

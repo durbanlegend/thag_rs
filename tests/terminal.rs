@@ -81,14 +81,14 @@ mod tests {
     #[test]
     fn test_is_light_color() {
         // Test known light colors
-        assert!(is_light_color((255, 255, 255))); // White
-        assert!(is_light_color((200, 200, 200))); // Light gray
-        assert!(is_light_color((255, 255, 200))); // Light yellow
+        assert!(is_light_color([255, 255, 255])); // White
+        assert!(is_light_color([200, 200, 200])); // Light gray
+        assert!(is_light_color([255, 255, 200])); // Light yellow
 
         // Test known dark colors
-        assert!(!is_light_color((0, 0, 0))); // Black
-        assert!(!is_light_color((50, 50, 50))); // Dark gray
-        assert!(!is_light_color((128, 0, 0))); // Dark red
+        assert!(!is_light_color([0, 0, 0])); // Black
+        assert!(!is_light_color([50, 50, 50])); // Dark gray
+        assert!(!is_light_color([128, 0, 0])); // Dark red
     }
 
     #[test]

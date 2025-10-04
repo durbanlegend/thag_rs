@@ -4288,6 +4288,7 @@ name = "thag_common"
 version = "0.2.0"
 dependencies = [
  "dirs",
+ "document-features",
  "documented",
  "edit",
  "log",
@@ -4456,6 +4457,7 @@ dependencies = [
  "auto-palette",
  "console",
  "crossterm 0.28.1",
+ "document-features",
  "image",
  "inquire",
  "kmeans_colors",

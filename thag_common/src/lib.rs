@@ -3,17 +3,18 @@
 //! This crate provides the foundational components that multiple `thag_rs` subcrates depend on,
 //! including verbosity control, color support detection, terminal background luminance,
 //! utility macros, and common error handling patterns.
-
+#![cfg_attr(
+    feature = "document-features",
+    cfg_attr(doc, doc = ::document_features::document_features!())
+)]
 #![warn(clippy::pedantic, missing_docs)]
 
 /// Configuration management module
 #[cfg(feature = "config")]
 pub mod config;
 
-/// Lightweight help system for tools, or any `thag` script using `///` and/or special (`//#`) comments.
 pub mod help_system;
 
-/// Terminal detection and capabilities module
 #[cfg(feature = "color_detect")]
 pub mod terminal;
 

@@ -10,7 +10,30 @@
 - [ ]  Guest Themes and TermAttributes with context.
 - [ ]  Get Claude to do a release plan.
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
-- [ ]  Two sets of comments are being smooshed together from lib and mod.
+- [ ]  DONE: Two sets of comments are being smooshed together from lib and mod.
+- [ ]  thag_rs README section on temp dir space management. thag -r and -d are cheap, others not necessarily.
+
+use thag_common::{set_verbosity_from_env, vprtln, V};
+
+fn main() {
+    // Set verbosity level from environment variable `THAG_VERBOSITY`.
+    // Possible values are: qq, q, n (default), v or vv, OR 0 to 4
+    set_verbosity_from_env();
+
+    // Messages respect the verbosity setting
+    vprtln!(V::Debug, "Debug message - only shown at debug level (vv/4)");
+    vprtln!(V::Normal, "Normal message - shown at normal (n/2) and above");
+    vprtln!(V::Quieter, "Essential message - shown even at at quietest level (qq/0)");
+}
+
+use thag_common::terminal::detect_term_capabilities;
+
+fn main() {
+    // Detect terminal capabilities
+    let (color_support, [r, g, b]) = detect_term_capabilities();
+    println!("Terminal color support level is {color_support}. Background RGB detected is [{r}, {g}, {b}]");
+}
+
 
 Now for a big task. I would like your help in a. preparing a co-ordinated release plan for thag_rs and all its subcrates (thag_common, thag_demo, thag_proc_macros, thag_profiler, thag_styling), and b. reviewing the various README.md docs and other markdown files that may merit inclusion. E.g. the main thag_rs README.md mentions the thag_profiler subcrate with a link to its README.md. I want b. to include reviewing the READMEs for completeness. I do not want actual edits to them without my explicit approval. I want the tone to be descriptive and collegial rather than marketing, but to describe the advantages (and costs or drawbacks). This is a passion project and I want the reader to share my vision of it as a helpful tool. I do want to preserve and even expand the number of illustrations, so as to show and not just tell. E.g. with REPL, thag_styling. I have worked very hard on the main and thag_profiler READMEs in particular, as AI has previously not managed to strike the tone I want.
 Wrt to the release plan, please consider the Release checklist in TODO.md lines 405-452 as a starting point or guide - not as gospel.

@@ -80,3 +80,8 @@ vprtln!(V::D, "Debug mode");
 
 ## Timeouts
 You can run `function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }` which will allow you to use the `timeout` command in scripts. This statement is now at the end of /Users/donf/.zshrc and /Users/donf/.bashrc on my Mac so that I always have the timeout command available when running in zsh or bash.
+
+## Markdown files
+Each bullet point line (`- Lorem ipsum ...`) should be preceded by a blank line, other MacDown (for one) runs them together into one line. This is not necessary if the lines are bolded, e.g. `- **Lorem ipsum ...**`.
+Similarly, line consisting of ``` to mark the start of an example must also be preceded by a blank line.
+Always verify that functions exist before including them in examples.

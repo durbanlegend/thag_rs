@@ -24,12 +24,12 @@ fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> Styli
     match generator.generate_from_file(image_path) {
         Ok(theme) => {
             // Show the palette colours
-            let (r, g, b) = theme.bg_rgbs[0];
+            let [r, g, b] = theme.bg_rgbs[0];
             println!(
                 "{}",
-                Style::with_rgb([r, g, b]).paint(format!(
+                Style::with_rgb(theme.bg_rgbs[0]).paint(format!(
                     "Background:  ■■■■■ {} = ({r:>3},{g:>3},{b:>3})",
-                    rgb_to_hex(&(r, g, b))
+                    rgb_to_hex(&theme.bg_rgbs[0])
                 ))
             );
             let color_support = TermAttributes::get_or_init().color_support;
@@ -39,7 +39,7 @@ fn test_config(name: &str, image_path: &Path, config: ImageThemeConfig) -> Styli
                         "{}",
                         style.paint(format!(
                             "{style_name:<12} ■■■■■ {} = ({r:>3},{g:>3},{b:>3}, color_support={color_support}, ansi={})",
-                            rgb_to_hex(&(r, g, b)),
+                            rgb_to_hex(&theme.bg_rgbs[0]),
 
                             &style
                                 .foreground

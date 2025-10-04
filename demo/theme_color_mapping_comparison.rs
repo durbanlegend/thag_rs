@@ -9,7 +9,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// map to the exported Alacritty format, helping debug color differences.
 //# Purpose: Test color mapping.
 //# Categories: color, testing, theming
-use thag_styling::{ExportFormat, Theme, ThemeExporter};
+use thag_styling::{ExportFormat, Theme};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎨 Theme Color Mapping Comparison");
@@ -20,13 +20,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("📋 Source Theme: {}", theme.name);
     println!("📝 Description: {}", theme.description);
-    println!(
-        "🖼️  Background: {:?} = #{:02x}{:02x}{:02x}\n",
-        theme.bg_rgbs.first(),
-        theme.bg_rgbs.first().unwrap_or(&(0, 0, 0)).0,
-        theme.bg_rgbs.first().unwrap_or(&(0, 0, 0)).1,
-        theme.bg_rgbs.first().unwrap_or(&(0, 0, 0)).2
-    );
+    let first_bg_rgb = theme.bg_rgbs.first().unwrap_or(&[0, 0, 0]);
+    let [r, g, b] = first_bg_rgb;
+    println!("🖼️  Background: {first_bg_rgb:?} = #{r:02x}{g:02x}{b:02x}\n");
 
     // Show source semantic colors
     println!("🎯 Source thag-vibrant-dark Semantic Colors:");
@@ -146,7 +142,7 @@ fn display_mapping_logic(theme: &Theme) {
     ];
 
     for (ansi_slot, semantic_role, rgb_opt) in mappings {
-        if let Some((r, g, b)) = rgb_opt {
+        if let Some([r, g, b]) = rgb_opt {
             let color_sample = format!("\x1b[38;2;{};{};{}m██████\x1b[0m", r, g, b);
             println!(
                 "   {:20} ← {:12} {} #{:02x}{:02x}{:02x}",
@@ -157,14 +153,15 @@ fn display_mapping_logic(theme: &Theme) {
 }
 
 /// Extract RGB values from a style
-fn extract_rgb(style: &thag_styling::Style) -> Option<(u8, u8, u8)> {
+fn extract_rgb(style: &thag_styling::Style) -> Option<[u8; 3]> {
     style
         .foreground
         .as_ref()
         .and_then(|color_info| match &color_info.value {
-            thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+            thag_styling::ColorValue::TrueColor { rgb } => Some(rgb),
             _ => None,
         })
+        .copied()
 }
 
 /// Extract RGB information from a style for display

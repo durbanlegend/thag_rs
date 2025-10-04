@@ -284,8 +284,7 @@ impl BaseTheme {
         is_light_theme: bool,
     ) -> Palette {
         // Convert background to array for HSL conversion
-        let bg_array = [background_rgb.0, background_rgb.1, background_rgb.2];
-        let [_bg_h, _bg_s, bg_l] = rgb_to_hsl(bg_array);
+        let [_bg_h, _bg_s, bg_l] = rgb_to_hsl(background_rgb);
 
         // Define role-specific contrast requirements
         let get_contrast_threshold = |role: &str| -> f32 {
@@ -478,7 +477,7 @@ impl BaseTheme {
         if let Some(color_info) = &style.foreground {
             match &color_info.value {
                 ColorValue::TrueColor { rgb } => {
-                    let (h, s, l) = rgb_to_hsl(*rgb);
+                    let [h, s, l] = rgb_to_hsl(*rgb);
                     let lightness_diff = (l - bg_lightness).abs();
 
                     // If contrast is sufficient, return as-is
@@ -554,7 +553,7 @@ struct ThemeOutput {
     term_bg_luma: String,
     min_color_support: String,
     backgrounds: Vec<String>,
-    bg_rgbs: Vec<(u8, u8, u8)>,
+    bg_rgbs: Vec<[u8; 3]>,
     base_colors: Vec<[u8; 3]>,
     palette: PaletteOutput,
 }

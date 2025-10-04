@@ -15,9 +15,9 @@ thag_common = { version = "0.2, thag-auto" }
 use inquire;
 use std::{error::Error, path::PathBuf, process::Command};
 use thag_common::{auto_help, help_system::check_help_and_exit};
-use thag_proc_macros::{file_navigator, tool_errors};
+use thag_proc_macros::file_navigator;
+use thag_rs::tool_errors::ToolError;
 
-tool_errors! {}
 file_navigator! {}
 
 #[derive(Clone, Debug)]

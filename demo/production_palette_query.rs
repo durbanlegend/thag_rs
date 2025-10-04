@@ -507,7 +507,8 @@ pub fn compare_with_theme(colors: &[Option<Rgb>]) -> Vec<(u8, String, Option<u16
         if let (Some(Some(queried_rgb)), Some(theme_rgb)) = (colors.get(ansi_index), theme_rgb_opt)
         {
             eprintln!("queried_rgb={queried_rgb:?}, theme_rgb={theme_rgb:?}");
-            let theme_rgb_struct = Rgb::new(theme_rgb.0, theme_rgb.1, theme_rgb.2);
+            let [th_r, th_g, th_b] = theme_rgb;
+            let theme_rgb_struct = Rgb::new(th_r, th_g, th_b);
             let distance = queried_rgb.distance_to(&theme_rgb_struct);
 
             comparisons.push((ansi_index as u8, role_name.to_string(), Some(distance)));
@@ -520,14 +521,15 @@ pub fn compare_with_theme(colors: &[Option<Rgb>]) -> Vec<(u8, String, Option<u16
 }
 
 /// Extract RGB from a thag Style
-fn extract_rgb_from_style(style: &Style) -> Option<(u8, u8, u8)> {
+fn extract_rgb_from_style(style: &Style) -> Option<[u8; 3]> {
     style
         .foreground
         .as_ref()
         .and_then(|color_info| match &color_info.value {
-            ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+            ColorValue::TrueColor { rgb } => Some(rgb),
             _ => None,
         })
+        .copied()
 }
 
 /// Display palette colors in a formatted table

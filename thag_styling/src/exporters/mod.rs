@@ -14,7 +14,7 @@ pub mod mintty;
 pub mod wezterm;
 pub mod windows_terminal;
 
-// pub use crate::Style;
+pub use crate::is_light_color;
 
 /// Trait for exporting themes to different terminal emulator formats
 pub trait ThemeExporter {
@@ -541,29 +541,6 @@ const fn color_256_to_rgb(index: u8) -> [u8; 3] {
             [gray, gray, gray]
         }
     }
-}
-
-/// Check if a color is considered light
-fn is_light_color([r, g, b]: [u8; 3]) -> bool {
-    // Calculate relative luminance
-    let r_linear = if r <= 10 {
-        f32::from(r) / 3294.6
-    } else {
-        ((f32::from(r) + 14.025) / 269.025).powf(2.4)
-    };
-    let g_linear = if g <= 10 {
-        f32::from(g) / 3294.6
-    } else {
-        ((f32::from(g) + 14.025) / 269.025).powf(2.4)
-    };
-    let b_linear = if b <= 10 {
-        f32::from(b) / 3294.6
-    } else {
-        ((f32::from(b) + 14.025) / 269.025).powf(2.4)
-    };
-
-    let luminance = 0.0722f32.mul_add(b_linear, 0.2126f32.mul_add(r_linear, 0.7152 * g_linear));
-    luminance > 0.5
 }
 
 #[cfg(test)]

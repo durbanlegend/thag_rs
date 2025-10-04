@@ -300,6 +300,29 @@ pub fn display_color_comparison(theme: &Theme) {
     });
 }
 
+/// Check if a color is considered light
+pub fn is_light_color([r, g, b]: [u8; 3]) -> bool {
+    // Calculate relative luminance
+    let r_linear = if r <= 10 {
+        f32::from(r) / 3294.6
+    } else {
+        ((f32::from(r) + 14.025) / 269.025).powf(2.4)
+    };
+    let g_linear = if g <= 10 {
+        f32::from(g) / 3294.6
+    } else {
+        ((f32::from(g) + 14.025) / 269.025).powf(2.4)
+    };
+    let b_linear = if b <= 10 {
+        f32::from(b) / 3294.6
+    } else {
+        ((f32::from(b) + 14.025) / 269.025).powf(2.4)
+    };
+
+    let luminance = 0.0722f32.mul_add(b_linear, 0.2126f32.mul_add(r_linear, 0.7152 * g_linear));
+    luminance > 0.5
+}
+
 /// Select a built-in theme using `inquire`.
 ///
 /// # Panics

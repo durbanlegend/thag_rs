@@ -18,7 +18,6 @@ mod ansi_styling_support;
 mod category_enum;
 mod file_navigator;
 mod fn_name;
-mod generate_theme_types;
 mod internal_doc;
 mod palette_methods;
 mod preload_themes;
@@ -26,7 +25,6 @@ mod repeat_dash;
 mod safe_print;
 mod styled;
 mod timing;
-mod tool_errors;
 
 #[cfg(feature = "full_profiling")]
 mod safe_alloc_private;
@@ -52,7 +50,6 @@ use crate::ansi_styling_support::ansi_styling_support_impl;
 use crate::category_enum::category_enum_impl;
 use crate::file_navigator::file_navigator_impl;
 use crate::fn_name::fn_name_impl;
-use crate::generate_theme_types::generate_theme_types_impl;
 use crate::internal_doc::internal_doc_impl;
 use crate::palette_methods::palette_methods_impl;
 use crate::preload_themes::preload_themes_impl;
@@ -62,7 +59,6 @@ use crate::safe_print::{
 };
 use crate::styled::styled_impl;
 use crate::timing::timing_impl;
-use crate::tool_errors::tool_errors_impl;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
@@ -365,17 +361,6 @@ pub fn ansi_styling_support(input: TokenStream) -> TokenStream {
     )
 }
 
-#[doc(hidden)]
-#[proc_macro]
-pub fn generate_theme_types(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(
-        true,
-        "generate_theme_types",
-        &input,
-        generate_theme_types_impl,
-    )
-}
-
 /// Preload visual themes into memory at compile time.
 ///
 /// Syntax:
@@ -397,10 +382,6 @@ pub fn preload_themes(input: TokenStream) -> TokenStream {
 ///     tool_errors! {}
 /// ```
 ///
-#[proc_macro]
-pub fn tool_errors(input: TokenStream) -> TokenStream {
-    maybe_expand_proc_macro(false, "tool_errors", &input, tool_errors_impl)
-}
 
 /// Attribute macro to give a function access to its own name by inserting the statement `let fn_name = <function name>;`.
 ///

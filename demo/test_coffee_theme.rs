@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 */
 
@@ -46,7 +45,7 @@ fn main() -> StylingResult<()> {
             println!();
 
             println!("🎨 Generated Colors:");
-            if let Some((r, g, b)) = theme.bg_rgbs.first() {
+            if let Some([r, g, b]) = theme.bg_rgbs.first() {
                 println!("Background: RGB({}, {}, {})", r, g, b);
             }
             println!();

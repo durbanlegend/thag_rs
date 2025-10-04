@@ -127,6 +127,13 @@ pub mod tui_editor;
 #[cfg(feature = "repl")]
 pub mod repl;
 
+//-----------------------------------------------------------------------------
+// Tools
+//-----------------------------------------------------------------------------
+/// Error types for command-line tools
+#[cfg(feature = "tools")]
+pub mod tool_errors;
+
 #[cfg(feature = "core")]
 pub use {
     errors::{ThagError, ThagResult},
@@ -148,7 +155,7 @@ pub use thag_styling::themed_inquire_config;
 
 pub use thag_common::{auto_help, help_system};
 
-pub use thag_proc_macros::{file_navigator, repeat_dash, tool_errors};
+pub use thag_proc_macros::{file_navigator, repeat_dash};
 
 #[cfg(any(feature = "ast", feature = "build"))]
 pub use {

@@ -397,8 +397,9 @@ fn analyze_background_detection() {
     println!("\nComparing with thag_common detection:");
     let (color_support, term_bg_rgb) = thag_common::terminal::detect_term_capabilities();
     println!("   thag_common color support: {:?}", color_support);
-    if *term_bg_rgb != (0, 0, 0) {
-        let bg_rgb = Rgb::new(term_bg_rgb.0, term_bg_rgb.1, term_bg_rgb.2);
+    let [r, g, b] = *term_bg_rgb;
+    if [r, g, b] != [0, 0, 0] {
+        let bg_rgb = Rgb::new(r, g, b);
         println!(
             "   thag_common background: {} {} (luminance: {:.2})",
             bg_rgb.to_hex(),

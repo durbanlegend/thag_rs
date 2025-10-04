@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_rs = { version = "0.2, thag-auto", features = ["tools"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
@@ -22,12 +21,11 @@ use std::{
     process::{Command, Stdio},
 };
 use tempfile::tempdir;
-use thag_proc_macros::tool_errors;
-use thag_styling::{
+use thag_rs::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
+    tool_errors::ToolError,
 };
 
-tool_errors! {}
 file_navigator! {}
 
 /// Available viewing options for expanded code

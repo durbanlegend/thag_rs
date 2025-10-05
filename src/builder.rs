@@ -1325,8 +1325,8 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
 
     if proc_flags.contains(ProcFlags::EXECUTABLE) {
         deploy_executable(build_state)?;
-    } else {
-        // For regular builds, cache the executable
+    } else if !proc_flags.contains(ProcFlags::CHECK) {
+        // For regular builds (not check), cache the executable
         cache_executable(build_state)?;
     }
     Ok(())

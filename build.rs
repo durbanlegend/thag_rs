@@ -173,7 +173,7 @@ fn check_{subdir_name}_{test_name}() {{
             .env("TEST_ENV", "1")
             .arg("run")
             .arg("--")
-            .arg("-cf{more_options}")
+            .arg("-c{more_options}")
             .arg({source_path:?})
             .output()
             .expect("Failed to execute command");

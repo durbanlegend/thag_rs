@@ -12,6 +12,7 @@
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
 - [ ]  DONE: Two sets of comments are being smooshed together from lib and mod.
 - [ ]  thag_rs README section on temp dir space management. thag -r and -d are cheap, others not necessarily.
+- [ ]  Add a comment command to REPL.
 
 use thag_common::{set_verbosity_from_env, vprtln, V};
 
@@ -657,4 +658,10 @@ nums.iter().sum::<i32>()
 
 printf '\e[8;30;100t'
 
- BTW I haven't seen any speed-ups, let alone 97%, as I think I must have already being getting caching. But I'll report back on that when we've figured this one out.
+# I'll use the `tui` command to show you what I just changed in the external editor
+
+{
+println!("The `edit command` took me to my preferred editor, Zed.");
+println!("There I replaced the algo with `(1..=10).product::<u32>()`);
+(1..=10).product::<u32>()
+}

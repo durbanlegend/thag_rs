@@ -210,6 +210,10 @@ pub const BUILT_IN_CRATES: [&str; 7] = [
 ];
 /// Subdirectory name for dynamic/temporary Rust files
 pub const DYNAMIC_SUBDIR: &str = "rs_dyn";
+/// Subdirectory name for shared build target (all scripts share dependencies)
+pub const SHARED_TARGET_SUBDIR: &str = "thag_rs_shared_target";
+/// Subdirectory name for executable cache (stores built script executables)
+pub const EXECUTABLE_CACHE_SUBDIR: &str = "thag_rs_bins";
 /// Length of decorative flower box borders for output formatting
 pub const FLOWER_BOX_LEN: usize = 70;
 /// Package name from Cargo.toml

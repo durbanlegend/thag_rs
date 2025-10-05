@@ -15,7 +15,7 @@ use thag_profiler::{end, profile, profiled};
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
-                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config"]),
+                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config", "clean"]),
    ))]
 #[command(group(
             ArgGroup::new("verbosity")
@@ -143,6 +143,15 @@ pub struct Cli {
     /// wrapping or modifying the source code.
     #[arg(short = 'T', long, requires = "script", help_heading = Some("No-run Options"))]
     pub test_only: bool,
+    /// Clean cached build artifacts. Options: 'bins' (executables only), 'target' (shared build cache), 'all' (both). Default: 'all'
+    #[arg(
+        long,
+        help_heading = Some("Maintenance Options"),
+        value_name = "WHAT",
+        default_missing_value = "all",
+        num_args = 0..=1,
+    )]
+    pub clean: Option<String>,
 }
 
 /// Getter for clap command-line arguments
@@ -167,6 +176,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
         && !proc_flags.contains(ProcFlags::EDIT)
         && !proc_flags.contains(ProcFlags::LOOP)
         && !proc_flags.contains(ProcFlags::CONFIG)
+        && !proc_flags.contains(ProcFlags::CLEAN)
     {
         return Err("Missing script name".into());
     }
@@ -189,6 +199,9 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
         V::Quieter
     } else if args.normal_verbosity {
         V::Normal
+    } else if args.repl {
+        // Default to quiet mode for REPL
+        V::Quiet
     } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
     } else {
@@ -259,6 +272,8 @@ bitflags! {
         const TOOLS         = 33_554_432;
         /// Features flag
         const FEATURES      = 67_108_864;
+        /// Clean flag
+        const CLEAN         = 134_217_728;
     }
 }
 
@@ -308,7 +323,12 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::BUILD, args.build);
         proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
-        proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
+        proc_flags.set(
+            ProcFlags::QUIET,
+            // Default for REPL is quiet
+            args.quiet == 1
+                || (args.repl && !args.normal_verbosity && args.quiet == 0 && args.verbose == 0),
+        );
         proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose == 1);
@@ -341,6 +361,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
             ProcFlags::TOOLS,
             args.script.as_ref().is_some_and(|script| script == "tools"),
         );
+        proc_flags.set(ProcFlags::CLEAN, args.clean.is_some());
         end!(init_config_loop_assert);
 
         profile!(config_loop_assert, time);

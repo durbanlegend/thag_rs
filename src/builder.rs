@@ -52,8 +52,9 @@ use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::{
     get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config, modified_since_compiled,
     repeat_dash, validate_args, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
-    ThagResult, DYNAMIC_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME, REPL_SCRIPT_NAME, REPL_SUBDIR,
-    RS_SUFFIX, TEMP_DIR_NAME, TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
+    ThagResult, DYNAMIC_SUBDIR, EXECUTABLE_CACHE_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
+    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, SHARED_TARGET_SUBDIR, TEMP_DIR_NAME,
+    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -337,8 +338,8 @@ impl BuildState {
             TMPDIR.join(PACKAGE_NAME).join(source_stem)
         };
 
-        // Target path setup
-        let mut target_path = target_dir_path.join("target").join("debug");
+        // Target path setup - point to cached executable location
+        let mut target_path = TMPDIR.join(EXECUTABLE_CACHE_SUBDIR);
         #[cfg(target_os = "windows")]
         {
             target_path = target_path.join(format!("{source_stem}.exe"));
@@ -526,6 +527,73 @@ impl ScriptState {
     }
 }
 
+/// Clean cached build artifacts based on the specified option.
+///
+/// # Arguments
+/// * `what` - What to clean: "bins" (executables only), "target" (shared build cache), or "all" (both)
+///
+/// # Errors
+/// Returns `ThagError` if cleanup fails
+#[profiled]
+fn clean_cache(what: &str) -> ThagResult<()> {
+    let bins_dir = TMPDIR.join(EXECUTABLE_CACHE_SUBDIR);
+    let target_dir = TMPDIR.join(SHARED_TARGET_SUBDIR);
+
+    match what {
+        "bins" => {
+            if bins_dir.exists() {
+                vprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
+                fs::remove_dir_all(&bins_dir)?;
+                vprtln!(V::N, "✓ Executable cache cleaned");
+            } else {
+                vprtln!(V::N, "Executable cache does not exist");
+            }
+        }
+        "target" => {
+            if target_dir.exists() {
+                vprtln!(
+                    V::N,
+                    "Cleaning shared build cache: {}",
+                    target_dir.display()
+                );
+                fs::remove_dir_all(&target_dir)?;
+                vprtln!(V::N, "✓ Shared build cache cleaned");
+            } else {
+                vprtln!(V::N, "Shared build cache does not exist");
+            }
+        }
+        "all" => {
+            let mut cleaned = false;
+            if bins_dir.exists() {
+                vprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
+                fs::remove_dir_all(&bins_dir)?;
+                cleaned = true;
+            }
+            if target_dir.exists() {
+                vprtln!(
+                    V::N,
+                    "Cleaning shared build cache: {}",
+                    target_dir.display()
+                );
+                fs::remove_dir_all(&target_dir)?;
+                cleaned = true;
+            }
+            if cleaned {
+                vprtln!(V::N, "✓ All caches cleaned");
+            } else {
+                vprtln!(V::N, "No caches to clean");
+            }
+        }
+        _ => {
+            return Err(
+                format!("Invalid clean option: '{what}'. Use 'bins', 'target', or 'all'").into(),
+            );
+        }
+    }
+
+    Ok(())
+}
+
 /// Execute the script runner.
 /// # Errors
 ///
@@ -549,6 +617,10 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
     if args.config {
         config::open(&RealContext::new())?;
         return Ok(());
+    }
+
+    if let Some(ref what) = args.clean {
+        return clean_cache(what);
     }
 
     let is_repl = args.repl;
@@ -595,7 +667,7 @@ As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`.
 }
 
 #[inline]
-#[profiled]
+
 fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,
@@ -761,7 +833,7 @@ pub fn process_expr(
     // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, start);
-    vprtln!(V::N, "{result:?}");
+    vprtln!(V::N, "result{result:?}");
     Ok(())
 }
 
@@ -1129,6 +1201,10 @@ fn create_cargo_command(proc_flags: &ProcFlags, build_state: &BuildState) -> Tha
     let cargo_toml_path_str = code_utils::path_to_str(&build_state.cargo_toml_path)?;
     let mut cargo_command = Command::new("cargo");
 
+    // Set shared target directory for all builds
+    let shared_target_dir = TMPDIR.join(SHARED_TARGET_SUBDIR);
+    cargo_command.env("CARGO_TARGET_DIR", &shared_target_dir);
+
     let args = build_command_args(proc_flags, build_state, &cargo_toml_path_str);
     cargo_command.args(&args);
 
@@ -1249,7 +1325,54 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
 
     if proc_flags.contains(ProcFlags::EXECUTABLE) {
         deploy_executable(build_state)?;
+    } else {
+        // For regular builds, cache the executable
+        cache_executable(build_state)?;
     }
+    Ok(())
+}
+
+/// Copy the built executable from the shared target directory to the executable cache.
+///
+/// # Errors
+/// Returns `ThagError` if the copy operation fails
+#[profiled]
+fn cache_executable(build_state: &BuildState) -> ThagResult<()> {
+    let shared_target_dir = TMPDIR.join(SHARED_TARGET_SUBDIR);
+    let cache_dir = TMPDIR.join(EXECUTABLE_CACHE_SUBDIR);
+
+    // Create cache directory if it doesn't exist
+    fs::create_dir_all(&cache_dir)?;
+
+    // Determine executable name with platform-specific extension
+    #[cfg(target_os = "windows")]
+    let exe_name = format!("{}.exe", build_state.source_stem);
+    #[cfg(not(target_os = "windows"))]
+    let exe_name = build_state.source_stem.clone();
+
+    // Source: shared target debug directory
+    let source_exe = shared_target_dir.join("debug").join(&exe_name);
+
+    // Destination: executable cache
+    let dest_exe = cache_dir.join(&exe_name);
+
+    // Copy executable to cache
+    if source_exe.exists() {
+        fs::copy(&source_exe, &dest_exe)?;
+        svprtln!(
+            Role::INFO,
+            V::VV,
+            "Cached executable: {}",
+            dest_exe.display()
+        );
+    } else {
+        return Err(format!(
+            "Built executable not found at expected location: {}",
+            source_exe.display()
+        )
+        .into());
+    }
+
     Ok(())
 }
 
@@ -1330,7 +1453,8 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
         build_state.source_stem.to_string()
     };
 
-    let release_path = &build_state.target_dir_path.join("target/release");
+    let shared_target_dir = TMPDIR.join(SHARED_TARGET_SUBDIR);
+    let release_path = shared_target_dir.join("release");
     let output_path = cargo_bin_path.join(&build_state.source_stem);
 
     #[cfg(not(target_os = "windows"))]

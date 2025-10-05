@@ -15,24 +15,44 @@
 
 use thag_common::{set_verbosity_from_env, vprtln, V};
 
-fn main() {
-    // Set verbosity level from environment variable `THAG_VERBOSITY`.
-    // Possible values are: qq, q, n (default), v or vv, OR 0 to 4
-    set_verbosity_from_env();
+```rust
+use std::env;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
-    // Messages respect the verbosity setting
-    vprtln!(V::Debug, "Debug message - only shown at debug level (vv/4)");
-    vprtln!(V::Normal, "Normal message - shown at normal (n/2) and above");
-    vprtln!(V::Quieter, "Essential message - shown even at at quietest level (qq/0)");
+fn build_and_extract(script_dir: &Path, bin_name: &str, out_dir: &Path) -> std::io::Result<PathBuf> {
+    // Force Cargo to use a shared target dir, e.g. ~/.cache/thag_target
+    let cache_target = dirs::cache_dir()
+        .unwrap_or(env::temp_dir())
+        .join("thag_target");
+
+    let status = Command::new("cargo")
+        .arg("build")
+        .arg("--bin")
+        .arg(bin_name)
+        .current_dir(script_dir)
+        .env("CARGO_TARGET_DIR", &cache_target)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .expect("failed to run cargo build");
+
+    if !status.success() {
+        panic!("cargo build failed");
+    }
+
+    // The binary will be in <cache_target>/debug/<bin_name>
+    let exe_path = cache_target.join("debug").join(bin_name);
+
+    // Copy the executable out to the runner's output directory
+    let out_path = out_dir.join(bin_name);
+    fs::create_dir_all(out_dir)?;
+    fs::copy(&exe_path, &out_path)?;
+
+    Ok(out_path)
 }
-
-use thag_common::terminal::detect_term_capabilities;
-
-fn main() {
-    // Detect terminal capabilities
-    let (color_support, [r, g, b]) = detect_term_capabilities();
-    println!("Terminal color support level is {color_support}. Background RGB detected is [{r}, {g}, {b}]");
-}
+```
 
 
 Now for a big task. I would like your help in a. preparing a co-ordinated release plan for thag_rs and all its subcrates (thag_common, thag_demo, thag_proc_macros, thag_profiler, thag_styling), and b. reviewing the various README.md docs and other markdown files that may merit inclusion. E.g. the main thag_rs README.md mentions the thag_profiler subcrate with a link to its README.md. I want b. to include reviewing the READMEs for completeness. I do not want actual edits to them without my explicit approval. I want the tone to be descriptive and collegial rather than marketing, but to describe the advantages (and costs or drawbacks). This is a passion project and I want the reader to share my vision of it as a helpful tool. I do want to preserve and even expand the number of illustrations, so as to show and not just tell. E.g. with REPL, thag_styling. I have worked very hard on the main and thag_profiler READMEs in particular, as AI has previously not managed to strike the tone I want.
@@ -627,3 +647,10 @@ Would you like me to:
 1. Detail any specific part of these suggestions?
 2. Show example implementations?
 3. Discuss potential challenges?
+
+{
+let nums = vec![1, 2, 3, 4];
+nums.iter().sum::<i32>()
+}
+
+printf '\e[8;30;100t'

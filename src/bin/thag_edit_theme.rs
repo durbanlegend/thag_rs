@@ -215,7 +215,7 @@ impl ThemeEditor {
         let current_style = self.theme.style_for(role);
         let current_rgb = &current_style
             .rgb()
-            .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
+            .ok_or_else(|| StylingError::FromStr("No RGB value for Style".to_string()))?;
         let [r, g, b] = current_rgb;
         let current_hex = format!("#{r:02x}{g:02x}{b:02x}");
 
@@ -277,7 +277,7 @@ impl ThemeEditor {
         _role: Role,
         current_rgb: [u8; 3],
     ) -> Result<(), Box<dyn Error>> {
-        let (h, s, l) = rgb_to_hsl(current_rgb);
+        let [h, s, l] = rgb_to_hsl(current_rgb);
 
         println!(
             "\nCurrent HSL: H={:.0}° S={:.0}% L={:.0}%",
@@ -312,10 +312,10 @@ impl ThemeEditor {
         // Extract RGB values
         let rgb1 = &style1
             .rgb()
-            .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
+            .ok_or_else(|| StylingError::FromStr("No RGB value for Style".to_string()))?;
         let rgb2 = &style2
             .rgb()
-            .ok_or_else(|| Err(StylingError::FromStr("No RGB value for Style".to_string())))?;
+            .ok_or_else(|| StylingError::FromStr("No RGB value for Style".to_string()))?;
 
         // Swap them
         self.update_role(role1, *rgb2)?;
@@ -519,14 +519,14 @@ impl ThemeEditor {
 
     /// Adjust lightness by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
     fn adjust_lightness(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
-        let (h, s, l) = rgb_to_hsl(*rgb);
+        let [h, s, l] = rgb_to_hsl(*rgb);
         let new_l = (l + factor).clamp(0.1, 0.9); // Keep reasonable bounds
         hsl_to_rgb(h, s, new_l)
     }
 
     /// Adjust saturation by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
     fn adjust_saturation(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
-        let (h, s, l) = rgb_to_hsl(rgb);
+        let [h, s, l] = rgb_to_hsl(*rgb);
         let new_s = (s + factor).clamp(0.0, 1.0);
         hsl_to_rgb(h, new_s, l)
     }

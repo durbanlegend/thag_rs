@@ -55,18 +55,19 @@ New in `thag` v0.2:
 
   - 2 new independent subcrates:
 
-    - `thag_styling` is a terminal styling system for Rust applications across platforms. It supports the most popular terminal emulators from `alacritty` to `zed`, and over 290 popular themes from `atelier` to `zenburn`.
+    - `thag_styling` is a terminal styling system for Rust applications across platforms. It supports the most popular terminal emulators from `alacritty` to `zed`, and over 290 popular themes from `atelier` to `zenburn`. Check it out here: [thag_profiler](thag_styling/README.md).
 
     It uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.
 
-
     - `thag_profiler`, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library. Check it out here: [thag_profiler](thag_profiler/README.md).
 
-  - a command `thag_url` to intelligently run example scripts directly from popular repo, playground or other URLs
+  - a command `thag_url` to intelligently run example scripts directly from popular repo, playground or other URLs.
 
-  - tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them
+  - tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them.
 
-  As of v0.2, the proc macro starter kit goes from being a rough sketchpad to a select set of useful and educational examples with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+  - A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces disk usage by **97%** (from 6GB+ to ~225MB for ~340 scripts) and provides **10-15x faster builds** for scripts with shared dependencies, as dependencies are compiled once and reused across all scripts. See [SHARED_TARGET_IMPLEMENTATION.md](SHARED_TARGET_IMPLEMENTATION.md) for details.
+
+  - the proc macro starter kit goes from being a rough sketchpad to a select set of useful and educational examples with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 The core purpose of `thag` is straightforward: to make it easy and fun to test ideas, explore functionality, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 

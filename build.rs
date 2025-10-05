@@ -10,10 +10,16 @@ use thag_proc_macros::{safe_eprintln, safe_println};
 /// 2. Create a separate test for each individual script in demo/ and src/bin/, to ensure that it builds
 ///    successfully. We don't try to run them for logistical reasons, but at least we
 ///    identify undocumented and abandoned scripts. Given that there are so many of these scripts,
-///    avoid Cargo's default behaviour of running all tests in parallel. --test-threads=3 to 5 seems
-///    to work best on my MacBook Air M1.
-///    Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=3
-///    You may want to adjust the test-threads value further depending on your hardware.
+///    avoid Cargo's default behaviour of running all tests in parallel.
+///
+///    NOTE: Each test runs `cargo run` which can cause cargo lock contention on the project's
+///    target directory. With the shared target implementation for script builds, this contention
+///    can be more pronounced. Use `--test-threads=1` for most reliable results, or experiment
+///    with `--test-threads=3` to 5 for faster completion if your system handles it.
+///
+///    Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=1`
+///    You may want to adjust the test-threads value depending on your hardware and tolerance for
+///    occasional lock-related failures.
 fn main() {
     // 1. Theme loading
     // NB: Tell cargo to rerun if any theme file changes
@@ -154,7 +160,7 @@ fn main() {
 #[test]
 fn check_{subdir_name}_{test_name}() {{
     {{
-        use thag_proc_macros::{{safe_eprintln, safe_osc}};
+        use thag_proc_macros::{{/*safe_eprintln,*/ safe_osc}};
         // Reset terminal state at start
         safe_osc!("\x1B[0m\x1B[?1049l"); // Reset all attributes and exit alternate screen
 
@@ -167,7 +173,7 @@ fn check_{subdir_name}_{test_name}() {{
             .env("TEST_ENV", "1")
             .arg("run")
             .arg("--")
-            .arg("-c{more_options}")
+            .arg("-cf{more_options}")
             .arg({source_path:?})
             .output()
             .expect("Failed to execute command");
@@ -193,14 +199,9 @@ fn check_{subdir_name}_{test_name}() {{
         dest_dir.push("thag_rs");
         dest_dir.push(file_stem);
 
-        // Cargo clean seems to work but is desperately slow - see rev d65b1aed47527f267fcc88f111bec6164b31c8a0
-        // for (commented) code.
-        // Seems OK
-        let target_dir = &dest_dir.join("target/debug");
-        // Delete the destination directory after building the file
-        if let Err(e) = fs::remove_dir_all(&target_dir) {{
-            safe_eprintln!("Failed to remove directory {test_name}: {{}}, {{e:?}}", target_dir.display());
-        }}
+        // Note: With shared target implementation, per-script target directories no longer exist.
+        // Build artifacts are in $TMPDIR/thag_rs_shared_target/ and executables in $TMPDIR/thag_rs_bins/.
+        // The old cleanup code that removed $TMPDIR/thag_rs/<script>/target/debug is no longer needed.
 
         // Reset terminal state after
         safe_osc!("\x1B[0m\x1B[?1049l");

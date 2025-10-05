@@ -552,25 +552,25 @@ fn add_theme_to_settings(
 fn generate_windows_terminal_scheme(theme: &Theme) -> Result<serde_json::Value, Box<dyn Error>> {
     use serde_json::json;
 
-    let bg_color = theme.bg_rgbs.first().copied().unwrap_or((0, 0, 0));
-    let bg_hex = format!("#{:02X}{:02X}{:02X}", bg_color.0, bg_color.1, bg_color.2);
+    let [b_r, b_g, b_b] = theme.bg_rgbs.first().copied().unwrap_or([0, 0, 0]);
+    let bg_hex = format!("#{b_r:02X}{b_g:02X}{b_b:02X}");
 
     // Extract colors with fallbacks
-    let emphasis_color = extract_rgb(&theme.palette.emphasis).unwrap_or((192, 0, 0));
-    let success_color = extract_rgb(&theme.palette.success).unwrap_or((0, 192, 0));
-    let commentary_color = extract_rgb(&theme.palette.commentary).unwrap_or((192, 192, 0));
-    let info_color = extract_rgb(&theme.palette.info).unwrap_or((0, 0, 192));
-    let heading1_color = extract_rgb(&theme.palette.heading1).unwrap_or((192, 0, 192));
-    let code_color = extract_rgb(&theme.palette.code).unwrap_or((0, 192, 192));
-    let normal_color = extract_rgb(&theme.palette.normal).unwrap_or((192, 192, 192));
-    let subtle_color = extract_rgb(&theme.palette.subtle).unwrap_or((64, 64, 64));
-    let error_color = extract_rgb(&theme.palette.error).unwrap_or((255, 64, 64));
-    let debug_color = extract_rgb(&theme.palette.debug).unwrap_or((64, 255, 64));
-    let warning_color = extract_rgb(&theme.palette.warning).unwrap_or((255, 255, 64));
-    let link_color = extract_rgb(&theme.palette.link).unwrap_or((96, 96, 255));
-    let heading2_color = extract_rgb(&theme.palette.heading2).unwrap_or((255, 64, 255));
-    let hint_color = extract_rgb(&theme.palette.hint).unwrap_or((64, 255, 255));
-    let quote_color = extract_rgb(&theme.palette.quote).unwrap_or((255, 255, 255));
+    let emphasis_color = &theme.palette.emphasis.rgb().unwrap_or([192, 0, 0]);
+    let success_color = &theme.palette.success.rgb().unwrap_or([0, 192, 0]);
+    let commentary_color = &theme.palette.commentary.rgb().unwrap_or([192, 192, 0]);
+    let info_color = &theme.palette.info.rgb().unwrap_or([0, 0, 192]);
+    let heading1_color = &theme.palette.heading1.rgb().unwrap_or([192, 0, 192]);
+    let code_color = &theme.palette.code.rgb().unwrap_or([0, 192, 192]);
+    let normal_color = &theme.palette.normal.rgb().unwrap_or([192, 192, 192]);
+    let subtle_color = &theme.palette.subtle.rgb().unwrap_or([64, 64, 64]);
+    let error_color = &theme.palette.error.rgb().unwrap_or([255, 64, 64]);
+    let debug_color = &theme.palette.debug.rgb().unwrap_or([64, 255, 64]);
+    let warning_color = &theme.palette.warning.rgb().unwrap_or([255, 255, 64]);
+    let link_color = &theme.palette.link.rgb().unwrap_or([96, 96, 255]);
+    let heading2_color = &theme.palette.heading2.rgb().unwrap_or([255, 64, 255]);
+    let hint_color = &theme.palette.hint.rgb().unwrap_or([64, 255, 255]);
+    let quote_color = &theme.palette.quote.rgb().unwrap_or([255, 255, 255]);
 
     let scheme = json!({
         "name": theme.name,
@@ -665,16 +665,16 @@ fn show_usage_instructions(added_schemes: &[(String, String)]) {
     );
 }
 
-#[cfg(target_os = "windows")]
-fn extract_rgb(style: &thag_styling::Style) -> Option<(u8, u8, u8)> {
-    style
-        .foreground
-        .as_ref()
-        .and_then(|color_info| match &color_info.value {
-            thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
-            _ => None,
-        })
-}
+// #[cfg(target_os = "windows")]
+// fn extract_rgb(style: &thag_styling::Style) -> Option<[u8; 3]> {
+//     style
+//         .foreground
+//         .as_ref()
+//         .and_then(|color_info| match &color_info.value {
+//             thag_styling::ColorValue::TrueColor { rgb } => Some((rgb[0], rgb[1], rgb[2])),
+//             _ => None,
+//         })
+// }
 
 #[cfg(test)]
 mod tests {
@@ -704,12 +704,12 @@ mod tests {
             }
         }
 
-        #[test]
-        fn test_extract_rgb() {
-            let style = Style::fg(ColorInfo::rgb(255, 128, 64));
-            let rgb = extract_rgb(&style);
-            assert_eq!(rgb, Some((255, 128, 64)));
-        }
+        // #[test]
+        // fn test_extract_rgb() {
+        //     let style = Style::fg(ColorInfo::rgb(255, 128, 64));
+        //     let rgb = extract_rgb(&style);
+        //     assert_eq!(rgb, Some((255, 128, 64)));
+        // }
 
         #[test]
         fn test_generate_windows_terminal_scheme() {

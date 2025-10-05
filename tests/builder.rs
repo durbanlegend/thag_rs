@@ -17,7 +17,7 @@ use thag_rs::code_utils::{self};
 use thag_rs::config::DependencyInference;
 #[cfg(debug_assertions)]
 use thag_rs::debug_timings;
-use thag_rs::{escape_path_for_windows, execute, ProcFlags, TMPDIR};
+use thag_rs::{escape_path_for_windows, execute, ProcFlags, EXECUTABLE_CACHE_SUBDIR, TMPDIR};
 
 // Set environment variables before running tests
 fn set_up() {
@@ -52,10 +52,14 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
     let cargo_home = PathBuf::from(cargo_home_string);
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
     fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
-    let target_path = target_dir_path
-        .clone()
-        .join("target/debug")
-        .join(source_stem);
+    // Target path points to executable cache with the new shared target implementation
+    let target_path = if cfg!(windows) {
+        TMPDIR
+            .join(EXECUTABLE_CACHE_SUBDIR)
+            .join(format!("{}.exe", source_stem))
+    } else {
+        TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
+    };
     let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
     let source_dir_path = current_dir.clone().join("tests/assets");
     let source_path = current_dir.clone().join("tests/assets").join(source_name);
@@ -216,10 +220,14 @@ name = "bitflags_t"
         source_dir_path: current_dir.join("tests/assets"),
         source_path,
         cargo_home,
-        target_path: target_dir_path
-            .clone()
-            .join("target/debug")
-            .join(source_stem),
+        // With shared target implementation, target_path points to executable cache
+        target_path: if cfg!(windows) {
+            TMPDIR
+                .join(EXECUTABLE_CACHE_SUBDIR)
+                .join(format!("{}.exe", source_stem))
+        } else {
+            TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
+        },
         cargo_toml_path,
         target_dir_path,
         rs_manifest: None,
@@ -248,14 +256,13 @@ fn test_builder_run_script() {
     let source_stem: &str = source_name
         .strip_suffix(thag_rs::RS_SUFFIX)
         .expect("Problem stripping Rust suffix");
-    let target_dir_path = TMPDIR
-        .join("thag_rs")
-        .join(source_stem)
-        .join("target/debug");
+    // With shared target implementation, executables are cached in EXECUTABLE_CACHE_SUBDIR
     let target_path = if cfg!(windows) {
-        target_dir_path.join(source_stem.to_string() + ".exe")
+        TMPDIR
+            .join(EXECUTABLE_CACHE_SUBDIR)
+            .join(format!("{}.exe", source_stem))
     } else {
-        target_dir_path.join(source_stem)
+        TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
     };
 
     // Remove executable if it exists, and check

@@ -21,8 +21,8 @@ use std::time::{Duration, Instant};
 
 use thag_styling::{
     auto_help, display_color_comparison, file_navigator, help_system::check_help_and_exit,
-    select_builtin_theme, sprtln, styling::index_to_rgb, themed_inquire_config, ColorInitStrategy,
-    ColorValue, Role, Style, Styleable, StyledPrint, TermAttributes, TermBgLuma, Theme,
+    select_builtin_theme, sprtln, themed_inquire_config, ColorInitStrategy, Role, Style, Styleable,
+    StyledPrint, TermAttributes, TermBgLuma, Theme,
 };
 
 file_navigator! {}
@@ -833,8 +833,8 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
 
         // Check if theme colors are too similar to background
         if let Some(bg_rgb) = theme.bg_rgbs.first() {
-            if let Some(normal_rgb) = extract_rgb(&theme.palette.normal) {
-                let contrast = calculate_contrast_ratio(*bg_rgb, normal_rgb);
+            if let Some(normal_rgb) = &theme.palette.normal.rgb() {
+                let contrast = calculate_contrast_ratio(*bg_rgb, *normal_rgb);
                 if contrast < 4.5 {
                     issues.push(format!(
                     "Low contrast between background and normal text ({}:1, recommended 4.5:1+)",
@@ -853,7 +853,7 @@ fn detect_potential_issues(theme: &Theme) -> Vec<String> {
         ];
 
         for (name, style) in essential_colors {
-            if extract_rgb(style).is_none() {
+            if style.rgb().is_none() {
                 issues.push(format!("{} color has no RGB information", name));
             }
         }
@@ -956,12 +956,11 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_rgb() {
-        let style = Style::fg(ColorInfo::rgb(255, 128, 64));
-        let rgb = extract_rgb(&style);
-        assert_eq!(rgb, Some([255, 128, 64]));
-    }
-
+    // fn test_extract_rgb() {
+    //     let style = Style::fg(ColorInfo::rgb(255, 128, 64));
+    //     let rgb = extract_rgb(&style);
+    //     assert_eq!(rgb, Some([255, 128, 64]));
+    // }
     #[test]
     fn test_brighten_color() {
         let original = [100, 150, 200];

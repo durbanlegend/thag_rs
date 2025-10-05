@@ -249,7 +249,7 @@ fn display_thag_theme_colors() {
     println!();
 
     // Show background color if available
-    if let Some((r, g, b)) = theme.bg_rgbs.first() {
+    if let Some([r, g, b]) = theme.bg_rgbs.first() {
         println!("Background Color Preview:");
         print!("   ");
         for _ in 0..20 {
@@ -279,7 +279,7 @@ fn extract_rgb_info(style: &Style) -> String {
 
 // /// Convert HSL to RGB (simple implementation)
 // #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-// fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
+// fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8;3] {
 //     let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
 //     let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
 //     let m = l - c / 2.0;

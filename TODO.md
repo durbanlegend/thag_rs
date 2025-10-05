@@ -648,9 +648,13 @@ Would you like me to:
 2. Show example implementations?
 3. Discuss potential challenges?
 
+asciinema rec demo.cast
+
 {
 let nums = vec![1, 2, 3, 4];
 nums.iter().sum::<i32>()
 }
 
 printf '\e[8;30;100t'
+
+ BTW I haven't seen any speed-ups, let alone 97%, as I think I must have already being getting caching. But I'll report back on that when we've figured this one out.

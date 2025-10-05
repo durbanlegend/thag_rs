@@ -614,7 +614,7 @@ fn prompt_colors_config(current: &Styling) -> Result<Option<Styling>, Box<dyn st
     //             .collect();
     //         if v.len() != 3 {
     //             return Err(Box::new(ThagError::FromStr(
-    //                 "Could not parse {bg} into (u8, u8, u8)".into(),
+    //                 "Could not parse {bg} into [u8;3]".into(),
     //             )));
     //         }
     //         Some((v[0], v[1], v[2]))

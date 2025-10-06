@@ -117,6 +117,7 @@ fn get_args() -> Cli {
                 infer: None,
                 cargo: false,
                 test_only: false,
+                clean: None,
             }
         }
     }

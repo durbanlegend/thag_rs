@@ -11,7 +11,7 @@
 - [ ]  Get Claude to do a release plan.
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
 - [ ]  DONE: Two sets of comments are being smooshed together from lib and mod.
-- [ ]  thag_rs README section on temp dir space management. thag -r and -d are cheap, others not necessarily.
+- [ ]  DONE: thag_rs README section on temp dir space management. FIXED: thag -r and -d are cheap, others not necessarily.
 - [ ]  Add a comment command to REPL.
 
 use thag_common::{set_verbosity_from_env, vprtln, V};

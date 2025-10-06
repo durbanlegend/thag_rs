@@ -184,6 +184,8 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 ///
 /// Expressions between matching braces, brackets, parens or quotes may span multiple lines.
 ///
+/// Expressions starting with "// ", "/// ", or  "[Cc]omment " will be ignored as comments.
+///
 /// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
 ///
 /// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
@@ -354,7 +356,7 @@ pub fn run_repl(
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
     let hist_backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
-    let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
+    let history = Box::new(FileBackedHistory::with_file(40, history_path.clone())?);
 
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)
@@ -458,6 +460,15 @@ pub fn run_repl(
         }
 
         let (first_word, rest) = parse_line(rs_source);
+
+        if first_word == "#"
+            || first_word == "//"
+            || first_word == "///"
+            || first_word.to_lowercase() == "comment"
+        {
+            // sprtln!(Role::HD3, "{rs_source}");
+            continue;
+        }
         // vprtln!(V::VV, "first_word={first_word}, rest={rest:#?}");
         let maybe_cmd = if rest.is_empty() {
             let mut matches = 0;

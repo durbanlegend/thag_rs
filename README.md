@@ -270,10 +270,14 @@ Instead, you can simply compile it to a fast Rust command with the --executable 
 ### * As a REPL (Read-Evaluate-Print Loop):
 
 ```bash
-thag --repl                                                     # Short form: -l
+thag --repl                                                     # Short form: -r
 ```
-![Repl](assets/replt.png)
 
+[![asciicast](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT.svg)](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT)
+
+*Click to watch: Interactive REPL session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
+
+(The orange flashes on the command line as I paste in input are caused by the `reedline` hinter helpfully matching the pasted input against history to offer completion hints.)
 The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter will depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
 ### * With standard input:

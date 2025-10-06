@@ -605,6 +605,13 @@ pub struct KeyDisplay<'a> {
     pub add_keys: &'a [KeyDisplayLine],
 }
 
+/// Tracks the scroll state of the popup help display
+#[derive(Debug, Default)]
+pub struct PopupScrollState {
+    /// Current scroll offset (number of rows scrolled down)
+    pub scroll_offset: usize,
+}
+
 /// Represents the different actions that can be taken in response to user input in the TUI editor.
 ///
 /// This enum is used to communicate between key handlers and the main editor loop,
@@ -697,6 +704,9 @@ where
 
     let remove = display.remove_keys;
     let add = display.add_keys;
+    // Track popup scroll state
+    let mut popup_scroll = PopupScrollState::default();
+
     // Can't make these OnceLock values, since their configuration depends on the `remove`
     // and `add` values passed in by the caller.
     let mut adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
@@ -749,7 +759,8 @@ where
                                 .borders(Borders::ALL)
                                 .title("Status")
                                 .style(RataStyle::themed(Role::Success))
-                                .title_style(display.title_style);
+                                .title_style(display.title_style)
+                                .padding(ratatui::widgets::Padding::horizontal(1));
 
                             let status_text = Paragraph::new::<&str>(status_message.as_ref())
                                 .block(status_block)
@@ -764,6 +775,7 @@ where
                                     TITLE_BOTTOM,
                                     max_key_len,
                                     max_desc_len,
+                                    &mut popup_scroll,
                                     f,
                                 );
                             }
@@ -784,6 +796,22 @@ where
 
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
+        } else if let Event::Mouse(mouse_event) = event {
+            // Handle mouse scrolling in popup
+            if popup {
+                use ratatui::crossterm::event::MouseEventKind;
+                match mouse_event.kind {
+                    MouseEventKind::ScrollDown => {
+                        if popup_scroll.scroll_offset + 1 < adjusted_mappings.len() {
+                            popup_scroll.scroll_offset += 1;
+                        }
+                    }
+                    MouseEventKind::ScrollUp => {
+                        popup_scroll.scroll_offset = popup_scroll.scroll_offset.saturating_sub(1);
+                    }
+                    _ => {}
+                }
+            }
         } else if let Event::Key(key_event) = event {
             // Ignore key release, which creates an unwanted second event in Windows
             if !matches!(key_event.kind, KeyEventKind::Press) {
@@ -792,6 +820,25 @@ where
             //
             // log::debug_log!("key_event={key_event:#?}");
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
+
+            // Handle scrolling in popup before normal editor keys
+            if popup {
+                let max_scroll = adjusted_mappings.len().saturating_sub(10);
+
+                match key_combination {
+                    key!(up) => {
+                        popup_scroll.scroll_offset = popup_scroll.scroll_offset.saturating_sub(1);
+                        continue;
+                    }
+                    key!(down) => {
+                        if popup_scroll.scroll_offset < max_scroll {
+                            popup_scroll.scroll_offset += 1;
+                        }
+                        continue;
+                    }
+                    _ => {} // Let other keys fall through to toggle popup
+                }
+            }
 
             // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
             #[allow(clippy::unnested_or_patterns)]
@@ -1008,10 +1055,13 @@ where
                             };
                             break Ok((key_action, maybe_text));
                         }
-                        KeyAction::Continue
-                        | KeyAction::Save
-                        | KeyAction::ToggleHighlight
-                        | KeyAction::TogglePopup => (),
+                        KeyAction::Continue | KeyAction::Save | KeyAction::ToggleHighlight => (),
+                        KeyAction::TogglePopup => {
+                            // Reset scroll position when popup is opened
+                            if popup {
+                                popup_scroll.scroll_offset = 0;
+                            }
+                        }
                         KeyAction::ShowHelp => todo!(),
                     }
                 }
@@ -1199,7 +1249,7 @@ fn save_as(
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
     if let Some(term) = maybe_term {
-        let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
+        let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 20, DialogMode::Save)?;
         save_dialog.open();
         let mut status = Status::Incomplete;
         while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
@@ -1319,38 +1369,55 @@ pub fn display_popup(
     title_bottom: &str,
     max_key_len: u16,
     max_desc_len: u16,
+    scroll_state: &mut PopupScrollState,
     f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    let num_filtered_rows = mappings.len();
+    let total_rows = mappings.len();
+
+    // Calculate available height for content
+    let max_height = f.area().height.saturating_sub(6); // Reserve space for borders and titles
+    let content_height = max_height.min(total_rows as u16);
+
     let block = Block::default()
         .borders(Borders::ALL)
         .title_top(Line::from(title_top).centered())
-        .title_bottom(Line::from(title_bottom).centered())
+        .title_bottom(Line::from(format!("{title_bottom} (scroll with mouse wheel)")).centered())
         .add_modifier(Modifier::BOLD)
         .fg(Color::themed(Role::HD1));
+
     #[allow(clippy::cast_possible_truncation)]
-    let area = centered_rect(
-        max_key_len + max_desc_len + 5,
-        num_filtered_rows as u16 + 5,
-        f.area(),
-    );
+    let area = centered_rect(max_key_len + max_desc_len + 5, content_height + 5, f.area());
+
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
-    // this is supposed to clear out the background
+
+    // Clear background and render block
     f.render_widget(Clear, area);
     f.render_widget(block, area);
+
+    // Calculate visible range based on scroll offset
+    let visible_rows = inner.height as usize;
+    let max_scroll = total_rows.saturating_sub(visible_rows);
+    scroll_state.scroll_offset = scroll_state.scroll_offset.min(max_scroll);
+
+    let start_idx = scroll_state.scroll_offset;
+    let end_idx = (start_idx + visible_rows).min(total_rows);
+    let visible_mappings = &mappings[start_idx..end_idx];
+
+    // Create layout for visible rows
     #[allow(clippy::cast_possible_truncation)]
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(std::iter::repeat_n(
-            Constraint::Ratio(1, num_filtered_rows as u32),
-            num_filtered_rows,
+            Constraint::Length(1),
+            visible_mappings.len(),
         ));
     let rows = row_layout.split(inner);
 
     for (i, row) in rows.iter().enumerate() {
+        let actual_idx = start_idx + i;
         let col_layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints::<&[Constraint]>(&[
@@ -1358,8 +1425,9 @@ pub fn display_popup(
                 Constraint::Length(max_desc_len),
             ]);
         let cells = col_layout.split(*row);
-        let mut widget = Paragraph::new(mappings[i].keys);
-        if i == 0 {
+
+        let mut widget = Paragraph::new(visible_mappings[i].keys);
+        if actual_idx == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::themed(Role::EMPH));
@@ -1367,9 +1435,9 @@ pub fn display_popup(
             widget = widget.fg(Color::themed(Role::HD2)).not_bold();
         }
         f.render_widget(widget, cells[0]);
-        let mut widget = Paragraph::new(mappings[i].desc);
 
-        if i == 0 {
+        let mut widget = Paragraph::new(visible_mappings[i].desc);
+        if actual_idx == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
                 .fg(Color::themed(Role::EMPH));

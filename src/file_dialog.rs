@@ -3,7 +3,7 @@
 /// Licence: MIT
 use crate::{
     key, key_mappings,
-    tui_editor::{self, centered_rect, display_popup, KeyDisplayLine},
+    tui_editor::{self, centered_rect, display_popup, KeyDisplayLine, PopupScrollState},
     KeyCombination,
 };
 use ratatui::crossterm::{
@@ -85,6 +85,7 @@ pub struct FileDialog<'a> {
     open: bool,
     current_dir: PathBuf,
     show_hidden: bool,
+    popup_scroll: PopupScrollState,
 
     list_state: ListState,
     items: Vec<String>,
@@ -127,6 +128,7 @@ impl FileDialog<'_> {
             open: false,
             current_dir: PathBuf::from(".").canonicalize()?,
             show_hidden: false,
+            popup_scroll: PopupScrollState::default(),
             list_state: ListState::default(),
             items: vec![],
             mode,
@@ -217,12 +219,10 @@ impl FileDialog<'_> {
             // Split the area into two parts: one for the file list and one for the input field.
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints::<&[Constraint]>(
-                    &[
-                        Constraint::Length(3),            // Input field area
-                        Constraint::Min(self.height - 3), // File list area
-                    ], // .as_ref(),
-                )
+                .constraints::<&[Constraint]>(&[
+                    Constraint::Length(3), // Input field area
+                    Constraint::Min(5),    // File list area (fills remaining space)
+                ])
                 .split(area);
 
             // Determine if the file list has focus
@@ -302,6 +302,7 @@ impl FileDialog<'_> {
                     title_bottom,
                     max_key_len,
                     max_desc_len,
+                    &mut self.popup_scroll,
                     f,
                 );
             }

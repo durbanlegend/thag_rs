@@ -665,3 +665,77 @@ println!("The `edit command` took me to my preferred editor, Zed.");
 println!("There I replaced the algo with `(1..=10).product::<u32>()`);
 (1..=10).product::<u32>()
 }
+
+Should you update them?
+
+**Yes, definitely!** Here's why:
+- ✅ Consistency with v0.2 branding - themed look is a major feature
+- ✅ Shows off the new styling system visually
+- ✅ More appealing/professional appearance
+- ✅ Demonstrates the theming in action
+
+## Should you rename them?
+
+**No, keep the current names.** Here's why:
+- ✅ Already embedded in the README in multiple places
+- ✅ Generic names (`edit1t.png`, `edit2t.png`) are clear and simple
+- ✅ No need to update references if you keep the same filenames
+- ✅ The "t" suffix probably means "themed" or "terminal" - still appropriate
+
+## What to capture:
+
+**edit1t.png** (The editor itself):
+- Show the TUI editor with some code
+- Demonstrate syntax highlighting with your theme
+- Make sure the UI elements are visible (status bar, key hints)
+
+**edit2t.png** (The output):
+- Show the result after running (Ctrl-R)
+- Demonstrate successful compilation and output
+- Keep it simple but impressive
+
+## Recommendations:
+
+1. **Keep filenames** - Just overwrite the existing files
+2. **Use the same theme** as the asciinema demo for consistency
+3. **Keep them simple** - Don't need to show everything, just enough to be impressive
+4. **Consider adding better captions** to the README to explain what each shows
+
+Would you like me to improve the captions in the README once you've updated the screenshots? Something like:
+
+```markdown
+![TUI Editor](assets/edit1t.png)
+*Built-in TUI editor with syntax highlighting and themed interface*
+
+![TUI Output](assets/edit2t.png)
+*Running code directly from the editor with Ctrl-R*
+
+Here's my video suggestion:
+1. Copy a script into the editor using `thag -d < demo/fizz_buzz_gpt.rs`
+2. Show some edits, viz strip off the comment lines and change 1..=100 to 1..=16 to show the most concise complete fizz-buzz result.
+3. Ctrl-l to show the kep mappings and find the Save key combo.
+4. Ctrl-s to bring up the Save file dialog. Scroll down to demo dir, tab to filename box, type in fizz_buzz_demo.rs and enter.
+5. This takes us back to the main TUI editor with a message in the status line to say where the file has been saved to.
+6. Before hitting Ctrl-d to submit, I could even show F9 to remove the line numbers and set TUI mouse capture off, so as to do normal mouse selection and Cmd-c to copy (for no particular purpose admittedly), and the F10 feature to restore it.
+7. After submitting, let it visibly compile and display the result before ending the capture at that point.
+
+[0:00-0:04] Load existing script into TUI editor
+Command: thag -d < demo/fizz_buzz_gpt.rs
+
+[0:04-0:18] Edit the script
+- Remove doc comment lines
+- Change range from 1..=100 to 1..=16
+
+[0:18-0:26] View available key bindings
+Press: Ctrl-L
+
+[0:26-0:50] Save to new file
+Press: Ctrl-S
+Navigate to: demo/
+Filename: fizz_buzz_demo.rs
+
+[0:50-0:53] Submit and run
+Press: Ctrl-D
+
+[0:53-0:56] Watch compilation and execution
+Result: FizzBuzz output for 1-16

@@ -303,9 +303,11 @@ thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
 ```bash
 thag --edit                                                     # Short form: -d
 ```
-![Edit](assets/edit1t.png)
+![TUI Editor](assets/edit1t.png)
+*Built-in TUI editor with syntax highlighting and themed interface*
 
-![Edit run](assets/edit2t.png)
+![TUI Output](assets/edit2t.png)
+*Running code directly from the editor with Ctrl-R*
 
 ### * With standard input into the TUI editor:
 

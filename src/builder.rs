@@ -833,7 +833,7 @@ pub fn process_expr(
     // let syntax_tree = Some(Ast::Expr(expr_ast));
     write_source(&build_state.source_path, rs_source)?;
     let result = gen_build_run(args, proc_flags, build_state, start);
-    vprtln!(V::N, "result{result:?}");
+    vprtln!(V::V, "{result:?}");
     Ok(())
 }
 

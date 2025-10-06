@@ -6,7 +6,7 @@ use crate::{
 };
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use std::env;
-use std::io::{stdin, stdout, Read, Write};
+use std::io::{stdin, stdout, IsTerminal, Read, Write};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -261,6 +261,17 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static [u8; 3]> {
             }
 
             // Fallback to termbg with shorter timeout
+            // Skip if stdin or stdout is piped to prevent contamination
+            if !std::io::stdin().is_terminal() {
+                vprtln!(V::V, "Skipping termbg - stdin is not a terminal (piped input detected)");
+                return Err(ThagCommonError::Generic("Cannot detect background with piped stdin".to_string()));
+            }
+
+            if !std::io::stdout().is_terminal() {
+                vprtln!(V::V, "Skipping termbg - stdout is not a terminal (redirected output detected)");
+                return Err(ThagCommonError::Generic("Cannot detect background with redirected stdout".to_string()));
+            }
+
             vprtln!(V::V, "OSC 11 failed, trying termbg");
             let timeout = std::time::Duration::from_millis(200);
             match termbg::rgb(timeout) {
@@ -325,6 +336,17 @@ pub fn get_term_bg_rgb_unguarded() -> ThagCommonResult<&'static [u8; 3]> {
         }
 
         // Fallback to termbg with shorter timeout
+        // Skip if stdin or stdout is piped to prevent contamination
+        if !std::io::stdin().is_terminal() {
+            vprtln!(V::V, "Skipping termbg - stdin is not a terminal (piped input detected)");
+            return Err(ThagCommonError::Generic("Cannot detect background with piped stdin".to_string()));
+        }
+
+        if !std::io::stdout().is_terminal() {
+            vprtln!(V::V, "Skipping termbg - stdout is not a terminal (redirected output detected)");
+            return Err(ThagCommonError::Generic("Cannot detect background with redirected stdout".to_string()));
+        }
+
         vprtln!(V::V, "OSC 11 failed, trying termbg (unguarded)");
         let timeout = std::time::Duration::from_millis(200);
         match termbg::rgb(timeout) {
@@ -430,6 +452,23 @@ fn query_background_osc11_with_timeout(timeout: Duration) -> Option<[u8; 3]> {
     use std::sync::mpsc;
     use std::thread;
 
+    // Skip background detection if stdin or stdout is piped to prevent OSC contamination
+    if !std::io::stdin().is_terminal() {
+        vprtln!(
+            V::V,
+            "Skipping OSC 11 query - stdin is not a terminal (piped input detected)"
+        );
+        return None;
+    }
+
+    if !std::io::stdout().is_terminal() {
+        vprtln!(
+            V::V,
+            "Skipping OSC 11 query - stdout is not a terminal (redirected output detected)"
+        );
+        return None;
+    }
+
     let (tx, rx) = mpsc::channel();
 
     let handle = thread::spawn(move || {
@@ -440,6 +479,8 @@ fn query_background_osc11_with_timeout(timeout: Duration) -> Option<[u8; 3]> {
 
             let mut stdout = std::io::stdout();
             let mut stdin = std::io::stdin();
+
+            dbg!();
 
             // Send OSC 11 query (background color)
             let query = "\x1b]11;?\x07";

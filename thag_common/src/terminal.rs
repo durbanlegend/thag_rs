@@ -480,8 +480,6 @@ fn query_background_osc11_with_timeout(timeout: Duration) -> Option<[u8; 3]> {
             let mut stdout = std::io::stdout();
             let mut stdin = std::io::stdin();
 
-            dbg!();
-
             // Send OSC 11 query (background color)
             let query = "\x1b]11;?\x07";
             stdout.write_all(query.as_bytes()).ok()?;

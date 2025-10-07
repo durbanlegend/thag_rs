@@ -75,3 +75,5 @@ thag_tui_demo.cast
 thag_tui_demo.gif
 x.txt
 y.txt
+demo/palette_vs_theme.rs
+demo/palette_vs_theme_demo.rs

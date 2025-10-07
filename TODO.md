@@ -739,3 +739,10 @@ Press: Ctrl-D
 
 [0:53-0:56] Watch compilation and execution
 Result: FizzBuzz output for 1-16
+
+head -51 src/bin/thag_palette.rs | tail -4 | thag_copy
+
+/*[toml]
+[dependencies]
+thag_styling = { version = "0.2, thag-auto" }
+*/

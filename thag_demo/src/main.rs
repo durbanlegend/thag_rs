@@ -5,15 +5,16 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use colored::Colorize;
+// use colored::Colorize;
 
 use inquire::{set_global_render_config, Confirm, Select, Text};
+use std::env::{current_dir, set_current_dir};
 use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
 use thag_rs::{
-    builder::execute, configure_log, get_verbosity, set_global_verbosity, svprtln,
-    themed_inquire_config, Cli, Role, V,
+    builder::execute, configure_log, get_verbosity, set_global_verbosity, sprtln, svprtln,
+    themed_inquire_config, Cli, Role, Styleable, StyledPrint, ThagError, V,
 };
 
 pub mod visualization;
@@ -156,10 +157,9 @@ fn find_or_setup_demo_dir() -> Result<PathBuf> {
         return Ok(dir);
     }
 
-    println!(
-        "{}",
-        "Demo directory not found in any standard location.".yellow()
-    );
+    "Demo directory not found in any standard location."
+        .warning()
+        .println();
     println!("Checked locations:");
     println!("  • Sibling to thag_demo");
     println!("  • ~/.thag/demo");
@@ -214,7 +214,7 @@ fn download_demo_dir() -> Result<PathBuf> {
         fs::create_dir_all(&location)?;
     }
 
-    println!("{}", "Downloading demo directory...".green());
+    "Downloading demo directory...".info().println();
 
     // Call thag_get_demo_dir subprocess
     let output = std::process::Command::new("thag")
@@ -237,7 +237,9 @@ fn download_demo_dir() -> Result<PathBuf> {
             }
         }
         Err(e) => {
-            eprintln!("{}", "Failed to run thag_get_demo_dir. Make sure thag_rs is installed with tools feature.".red());
+            "Failed to run thag_get_demo_dir. Make sure thag_rs is installed with tools feature."
+                .error()
+                .println();
             Err(anyhow::anyhow!("Command execution failed: {}", e))
         }
     }
@@ -359,9 +361,15 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
     let demo_files = scan_demo_files(&demo_dir)?;
 
     if demo_files.is_empty() {
-        println!("{}", "No demo files found in directory.".yellow());
+        "No demo files found in directory.".warning().println();
         return Ok(());
     }
+
+    set_current_dir(
+        demo_dir
+            .parent()
+            .ok_or_else(|| ThagError::FromStr("Can't get parent of demo dir".into()))?,
+    );
 
     // Create demo options with descriptions
     let demo_options: Vec<String> = demo_files
@@ -391,6 +399,11 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
         println!("{}", "═".repeat(80));
         println!("📚 {} demo scripts available", demo_files.len());
         println!("💡 Start typing to filter demos by name • 📝 = accepts arguments");
+        sprtln!(
+            Role::EMPH,
+            "⚠️ Current working directory is {} for relative pathnames",
+            current_dir()?.display().heading3()
+        );
         println!("{}", "═".repeat(80));
 
         let selection: InquireResult<ListOption<String>> =
@@ -415,18 +428,15 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
                 // Clear screen for better presentation
                 print!("\x1b[2J\x1b[H");
 
-                println!(
-                    "{}",
-                    format!("Running demo script: {}", demo_name).bold().green()
-                );
+                format!("Running demo script: {demo_name}").info().println();
 
                 // Show additional info if available
                 if let Some(demo_file) = demo_files.iter().find(|d| d.name == demo_name) {
                     if let Some(ref usage) = demo_file.usage_example {
-                        println!("💡 Usage: {}", usage.dimmed());
+                        println!("💡 Usage: {}", usage.subtle());
                     }
                     if let Some(ref args) = demo_file.sample_arguments {
-                        println!("📝 Sample args: {}", args.dimmed());
+                        println!("📝 Sample args: {}", args.subtle());
                     }
                 }
                 println!();
@@ -511,7 +521,7 @@ fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<
 
 /// List all available demos (built-in and scripts)
 fn list_all_demos() -> Result<()> {
-    println!("{}", "Built-in demos:".bold().green());
+    "Built-in demos:".info().println();
     println!();
 
     let demos = vec![
@@ -535,17 +545,17 @@ fn list_all_demos() -> Result<()> {
     ];
 
     for (name, description) in demos {
-        println!("  {} - {}", name.bold().green(), description.dimmed());
+        sprtln!(Role::Subtle, "  {} - {}", name.info(), description.subtle());
     }
 
     println!();
 
     if let Ok(demo_dir) = find_demo_dir_quietly() {
-        println!("{}", "Script demos:".bold().green());
+        "Script demos:".info().println();
         let demo_files = scan_demo_files(&demo_dir)?;
 
         if demo_files.is_empty() {
-            println!("  {}", "No script demos found".dimmed());
+            "No script demos found".subtle().println();
         } else {
             for demo in &demo_files {
                 let args_hint = if demo.sample_arguments.is_some() || demo.usage_example.is_some() {
@@ -555,21 +565,21 @@ fn list_all_demos() -> Result<()> {
                 };
                 println!(
                     "  {} - {}{}",
-                    demo.name.bold().green(),
-                    demo.description.dimmed(),
+                    demo.name.info(),
+                    demo.description.subtle(),
                     args_hint
                 );
                 if !demo.categories.is_empty() {
-                    println!("    Categories: {}", demo.categories.join(", ").dimmed());
+                    println!("    Categories: {}", demo.categories.join(", ").subtle());
                 }
                 if let Some(ref args) = demo.sample_arguments {
-                    println!("    Sample args: {}", args.dimmed());
+                    println!("    Sample args: {}", args.subtle());
                 }
             }
         }
         println!("\nTotal script demos: {}", demo_files.len());
     } else {
-        println!("{}", "Script demos: Not available".yellow());
+        "Script demos: Not available".warning().println();
         println!("  Use 'thag_demo manage' to download demo directory");
     }
 
@@ -578,15 +588,12 @@ fn list_all_demos() -> Result<()> {
 
 /// Manage demo directory (download, update, set location)
 fn manage_demo_directory() -> Result<()> {
-    println!("{}", "Demo Directory Management".bold().green());
+    "Demo Directory Management".info().println();
     println!("{}", "═".repeat(30));
 
     // Check current status
     if let Some(path) = discover_demo_dir() {
-        println!(
-            "✅ Demo directory found at: {}",
-            path.display().to_string().green()
-        );
+        println!("✅ Demo directory found at: {}", path.display().info());
 
         let demo_files = scan_demo_files(&path)?;
         println!("📁 Contains {} demo scripts", demo_files.len());
@@ -692,10 +699,9 @@ fn main() -> Result<()> {
     }
 
     let Some(demo) = args.demo else {
-        println!(
-            "{}",
-            "No demo specified. Use --list to see available demos or --help for usage.".yellow()
-        );
+        "No demo specified. Use --list to see available demos or --help for usage."
+            .warning()
+            .println();
         list_demos();
         return Ok(());
     };
@@ -712,7 +718,6 @@ fn main() -> Result<()> {
 }
 
 fn list_demos() {
-    // println!("{}", "Available demos:".bold().green());
     svprtln!(Role::Heading2, V::QQ, "Available demos:");
     println!();
 
@@ -737,8 +742,7 @@ fn list_demos() {
     ];
 
     for (name, description) in demos {
-        // println!("  {} - {}", name.bold().green(), description.dimmed());
-        svprtln!(Role::Heading3, V::QQ, "  {name} - {}", description.dimmed());
+        svprtln!(Role::Heading3, V::QQ, "  {name} - {}", description.subtle());
     }
 
     println!();
@@ -748,23 +752,22 @@ fn list_demos() {
         Role::Heading3,
         V::QQ,
         "  browse - {}",
-        "Interactive demo script browser".dimmed()
+        "Interactive demo script browser".subtle()
     );
     svprtln!(
         Role::Heading3,
         V::QQ,
         "  manage - {}",
-        "Manage demo directory (download/update)".dimmed()
+        "Manage demo directory (download/update)".subtle()
     );
     svprtln!(
         Role::Heading3,
         V::QQ,
         "  list-scripts - {}",
-        "List all available demo scripts".dimmed()
+        "List all available demo scripts".subtle()
     );
 
     println!();
-    // println!("{}", "Usage:".bold());
     svprtln!(Role::Emphasis, V::QQ, "Usage:");
     svprtln!(Role::Heading3, V::QQ, "  thag_demo <demo_name>");
     svprtln!(Role::Heading3, V::QQ, "  thag_demo script <script_name>");
@@ -807,7 +810,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         }
     };
 
-    println!("{}", format!("Running {demo_name} demo...").bold().green());
+    format!("Running {demo_name} demo...").success().println();
     // println!();
 
     // Create a temporary file for the demo script
@@ -833,11 +836,11 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     match execute(&mut cli) {
         Ok(()) => {
             println!();
-            println!("{}", "✅ Demo completed successfully!".bold().green());
+            "✅ Demo completed successfully!".success().println();
             print_demo_info(demo_name);
         }
         Err(e) => {
-            eprintln!("{}", format!("❌ Demo failed: {e}").bold().red());
+            format!("❌ Demo failed: {e}").error().println();
             process::exit(1);
         }
     }
@@ -853,29 +856,23 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
     if !demo_path.exists() {
         eprintln!(
             "{}",
-            format!("❌ Demo script '{script_name}' not found")
-                .bold()
-                .red()
+            format!("❌ Demo script '{script_name}' not found").error()
         );
         eprintln!(
             "{}",
-            "Use 'thag_demo list-scripts' to see available scripts".dimmed()
+            "Use 'thag_demo list-scripts' to see available scripts".subtle()
         );
         process::exit(1);
     }
 
-    println!(
-        "{}",
-        format!("Running script demo: {script_name}").bold().green()
-    );
+    format!("Running script demo: {script_name}")
+        .info()
+        .println();
 
     run_selected_demo(&demo_dir, script_name, verbose)?;
 
     println!();
-    println!(
-        "{}",
-        "✅ Script demo completed successfully!".bold().green()
-    );
+    "✅ Script demo completed successfully!".success().println();
 
     Ok(())
 }
@@ -913,6 +910,7 @@ fn create_demo_cli_with_args(script_path: &Path, verbose: bool, args: Vec<String
         infer: None,
         cargo: false,
         test_only: false,
+        clean: None,
     }
 }
 
@@ -985,7 +983,7 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Vec<String> {
 
 fn print_demo_info(demo_name: &str) {
     println!();
-    println!("{}", "📚 Learn more:".bold().blue());
+    "📚 Learn more:".info().println();
 
     match demo_name {
         "basic_profiling" => {
@@ -1025,7 +1023,7 @@ fn print_demo_info(demo_name: &str) {
     }
 
     println!();
-    println!("{}", "🔗 Resources:".bold().blue());
+    "🔗 Resources:".info().println();
     println!("  • thag_profiler documentation: https://docs.rs/thag_profiler");
     println!("  • thag_rs repository: https://github.com/durbanlegend/thag_rs");
     println!("  • More examples: thag_demo --list");

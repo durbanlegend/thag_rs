@@ -11,8 +11,6 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 //# Purpose: Install thag themes for Windows Terminal
 //# Categories: color, styling, terminal, theming, tools, windows
 #[cfg(target_os = "windows")]
-use colored::Colorize;
-#[cfg(target_os = "windows")]
 use inquire::set_global_render_config;
 #[cfg(target_os = "windows")]
 use std::{

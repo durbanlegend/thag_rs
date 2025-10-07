@@ -563,21 +563,21 @@ fn clean_cache(what: &str) -> ThagResult<()> {
             }
         }
         "all" => {
-            let mut cleaned = false;
-            if bins_dir.exists() {
+            let cleaned = if bins_dir.exists() {
                 vprtln!(V::N, "Cleaning executable cache: {}", bins_dir.display());
                 fs::remove_dir_all(&bins_dir)?;
-                cleaned = true;
-            }
-            if target_dir.exists() {
+                true
+            } else if target_dir.exists() {
                 vprtln!(
                     V::N,
                     "Cleaning shared build cache: {}",
                     target_dir.display()
                 );
                 fs::remove_dir_all(&target_dir)?;
-                cleaned = true;
-            }
+                true
+            } else {
+                false
+            };
             if cleaned {
                 vprtln!(V::N, "✓ All caches cleaned");
             } else {
@@ -667,7 +667,6 @@ As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`.
 }
 
 #[inline]
-
 fn resolve_script_dir_path(
     is_repl: bool,
     args: &Cli,

@@ -3,7 +3,6 @@
 thag_proc_macros = { version = "0.1, thag-auto" }
 */
 
-use colored::Colorize;
 /// Early prototype of a front-end prompt for `thag`.
 //# Purpose: Ultimately, to provide a prompt-driven front-end to the `thag` command.
 //# Categories: prototype, thag_front_ends, tools

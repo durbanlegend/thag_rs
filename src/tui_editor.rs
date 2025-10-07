@@ -1363,6 +1363,7 @@ pub fn maybe_enable_raw_mode() -> ThagResult<()> {
 /// * `max_desc_len` - The maximum length of description strings for column width calculation
 /// * `f` - A mutable reference to the ratatui Frame for rendering
 #[profiled]
+#[allow(clippy::cast_possible_truncation)]
 pub fn display_popup(
     mappings: &[KeyDisplayLine],
     title_top: &str,

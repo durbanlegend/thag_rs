@@ -382,7 +382,6 @@ pub fn preload_themes(input: TokenStream) -> TokenStream {
 ///     tool_errors! {}
 /// ```
 ///
-
 /// Attribute macro to give a function access to its own name by inserting the statement `let fn_name = <function name>;`.
 ///
 /// Syntax:

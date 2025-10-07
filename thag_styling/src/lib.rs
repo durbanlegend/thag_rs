@@ -301,6 +301,7 @@ pub fn display_color_comparison(theme: &Theme) {
 }
 
 /// Check if a color is considered light
+#[must_use]
 pub fn is_light_color([r, g, b]: [u8; 3]) -> bool {
     // Calculate relative luminance
     let r_linear = if r <= 10 {

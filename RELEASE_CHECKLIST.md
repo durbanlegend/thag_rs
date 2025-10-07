@@ -7,14 +7,14 @@
 ## Pre-Release Day
 
 ### Documentation (Est. 10 hours)
-- [ ] Create `thag_common/README.md` (brief, infrastructure crate)
-- [ ] Create `thag_proc_macros/README.md` (brief, proc macro crate)
-- [ ] Capture REPL session GIF/video
-- [ ] Capture TUI editor screenshot
+- [x] Create `thag_common/README.md` (brief, infrastructure crate)
+- [x] Create `thag_proc_macros/README.md` (brief, proc macro crate)
+- [x] Capture REPL session GIF/video
+- [x] Capture TUI editor screenshot
 - [ ] Capture thag_demo browse interface screenshot
-- [ ] Add images to main README.md
-- [ ] Add cross-reference links between READMEs
-- [ ] Update CHANGELOG.md with all v0.2.0 changes
+- [x] Add images to main README.md
+- [x] Add cross-reference links between READMEs
+- [x] Update CHANGELOG.md with all v0.2.0 changes
 - [ ] Run: `cargo run --bin thag_gen_readme`
 - [ ] Verify demo/README.md looks correct
 

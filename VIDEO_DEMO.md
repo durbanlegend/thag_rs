@@ -1,37 +1,43 @@
 # Video Demo Guide for thag_rs v0.2.0
 
+> **Note**: This is internal planning documentation for recording demo videos.
+> The completed demos are embedded in [README.md](README.md).
+
 This document describes the recommended demo workflow for showcasing thag's TUI editor capabilities in the v0.2.0 release.
 
 ## Demo Overview
 
 **Two-Session Structure**: Progressive demonstration of thag's TUI capabilities
 
-### Session 1: Edit & Run Workflow
-**Goal**: Demonstrate the complete workflow of editing and running a Rust script in thag's TUI editor.
+**Recorded Demos**:
+- Session 1: https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY
+- Session 2: https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG
+- REPL Demo: (existing recording)
 
-**Duration**: ~45-60 seconds
+### Session 1: Edit & Run Workflow
+**Goal**: Use thag TUI editor to intercept, edit and run Rust code from stdin.
+
+**Duration**: 30 seconds
 
 **Key Features Demonstrated**:
 - Loading existing scripts into the editor via stdin
 - Making quick edits
 - Discovering key bindings (Ctrl-L)
-- Saving files with the file dialog
-- Running and compiling code
+- Submitting and running code (Ctrl-D)
 
 ### Session 2: Data Composition & Management
-**Goal**: Show advanced data handling - combining sources, buffer operations, clipboard integration
+**Goal**: Copy a range of lines from an existing script with thag_copy tool, compose with history in TUI editor, and run.
 
-**Duration**: ~60-90 seconds
+**Duration**: 1 minute 14 seconds
 
 **Key Features Demonstrated**:
-- Copying data to clipboard with `thag_copy`
-- Opening TUI editor empty
-- Retrieving scripts from edit history
-- Pasting clipboard contents
-- Internal TextArea buffer operations (Ctrl-X yank, Ctrl-Y paste)
-- System clipboard integration (F9 copy, F10 restore)
-- Saving without execution
-- Verifying clipboard contents with `thag_copy`
+- Copying lines from a script with `thag_copy`
+- Verifying clipboard contents with `thag_paste`
+- Opening TUI editor and retrieving skeleton from history
+- Pasting clipboard contents (Cmd-V/Ctrl-V)
+- Internal TextArea buffer operations (Ctrl-X yank, Ctrl-Y paste) to rearrange code
+- Submitting with Ctrl-D
+- Compilation and execution
 
 ## Session 1: Step-by-Step Demo Script
 
@@ -52,32 +58,19 @@ This document describes the recommended demo workflow for showcasing thag's TUI 
 
 **Result**: Clean, minimal fizz-buzz that will display nicely
 
-### 3. Show Key Mappings (0:18-0:26)
-**Action**: Press `Ctrl-l`
+### 4. Show Key Mappings (0:18-0:23)
+**Action**: Press `Ctrl-L`
 
 **What happens**: Scrollable help panel appears showing all available key bindings
 
-**Pause**: Hold for 2-3 seconds so viewers can see the bindings
+**Pause**: Brief pause to show the bindings
 
-### 4. Save File (0:26-0:50)
-**Action**: Press `Ctrl-s or F12`
-
-**What happens**: File save dialog appears
-
-**Steps**:
-- Navigate down to `demo/` directory
-- Tab to filename field
-- Type: `fizz_buzz_demo.rs`
-- Press Enter
-
-**Result**: Returns to editor with status message showing save location
-
-### 5. Submit and Run (0:50-0:53)
+### 5. Submit and Run (0:23-0:27)
 **Action**: Press `Ctrl-d`
 
 **What happens**: Editor submits the code for compilation
 
-### 6. Watch Result (0:53-0:56)
+### 6. Watch Result (0:27-0:30)
 **What happens**:
 - Compilation progress
 - Execution output showing:
@@ -106,102 +99,77 @@ This document describes the recommended demo workflow for showcasing thag's TUI 
 
 ## Session 2: Step-by-Step Demo Script
 
-### 1. Copy Data to Clipboard (0:00-0:05)
-**Command**: `echo "Some data to process" | thag_copy`
+### 1. Copy Lines from Script (0:00-0:08)
+**Command**: Extract lines from an existing script and copy to clipboard
 
-**What happens**: Text is copied to system clipboard
+**Example**: `sed -n '10,20p' demo/some_script.rs | thag_copy`
 
-**Alternative**: Copy any text from another source (browser, file, etc.)
+**What happens**: Lines are copied to system clipboard
 
-### 2. Open Empty TUI Editor (0:05-0:08)
+### 2. Verify Clipboard (0:08-0:12)
+**Command**: `thag_paste`
+
+**What happens**: Displays the copied content to verify it's correct
+
+### 3. Open TUI Editor (0:12-0:15)
+</parameter>
 **Command**: `thag -d`
 
 **What happens**: TUI editor opens with empty buffer
 
-### 3. Retrieve Script from History (0:08-0:15)
-**Action**: Navigate edit history (Up/Down arrows or history keys)
+### 4. Retrieve Script Skeleton from History (0:15-0:25)
+**Action**: Navigate edit history to retrieve a previously saved skeleton
 
-**What happens**: Previous script appears in edit buffer (e.g., a data processing template)
+**What happens**: A script template appears in edit buffer
 
-**Example script that might be in history**:
-```rust
-use std::io::{self, BufRead};
-
-fn main() {
-    let stdin = io::stdin();
-    for line in stdin.lock().lines() {
-        let line = line.unwrap();
-        // Process data here
-        println!("{}", line);
-    }
-}
-```
-
-### 4. Paste Clipboard Contents (0:15-0:20)
-**Action**: Position cursor and paste with `Cmd-V` (or `Ctrl-Shift-V`)
+### 5. Paste Clipboard Contents (0:25-0:30)
+**Action**: Position cursor and paste with `Cmd-V` (or `Ctrl-V`)
 
 **What happens**: Clipboard text appears in editor
 
-### 5. Move Text with TextArea Buffer (0:20-0:35)
+### 6. Move Import Line with TextArea Buffer (0:30-0:50)
 **Actions**:
-- Select text to move (or position cursor on line)
-- Press `Ctrl-X` to yank (cut) text into TextArea buffer
-- Move cursor to new location
+- Position cursor on import line that needs to move
+- Press `Ctrl-X` to yank (cut) the line into TextArea buffer
+- Move cursor to the top of the file
 - Press `Ctrl-Y` to paste from TextArea buffer
 
-**What happens**: Text moves within the document using thag's internal buffer
+**What happens**: Import line moves to the top using thag's internal buffer
 
-**Note**: This is separate from system clipboard - useful for quick rearrangements
+**Note**: This is separate from system clipboard - useful for quick code rearrangements
 
-### 6. Copy to System Clipboard (0:35-0:40)
-**Actions**:
-- Select or position on text you want to copy
-- Press `F9` to copy current line/selection to system clipboard
-- *Visual feedback in status bar*
+### 7. Submit and Run (0:50-0:58)
+**Action**: Press `Ctrl-D`
 
-### 7. Toggle Line Numbers (0:40-0:42)
-**Action**: Press `F10` to restore normal view
+**What happens**: Code is submitted for compilation and execution
 
-**What happens**: Shows the F9/F10 toggle capability
-
-**Note**: F9 also disables mouse capture for native terminal selection
-
-### 8. Save Without Running (0:42-0:55)
-**Action**: Press `Ctrl-S`
-
-**Steps**:
-- Navigate to desired directory
-- Enter filename: `data_processor.rs`
-- Press Enter
-
-**What happens**: File saved, returns to editor
-
-### 9. Exit Editor (0:55-0:58)
-**Action**: Press `Ctrl-C` or `Ctrl-Q`
-
-**What happens**: Exit without submitting for execution
-
-### 10. Verify Clipboard Contents (0:58-1:05)
-**Command**: `thag_copy`
-
-**What happens**: Displays the text we copied with F9, confirming clipboard integration worked
-
-**Result**: Shows the line/text we copied in step 6
+### 8. Watch Compilation and Results (0:58-1:14)
+**What happens**:
+- Compilation progress displayed
+- Program executes
+- Output shown in terminal
 
 ---
 
 ## Combined Narrative
 
-**Session 1** demonstrates the basic edit-compile-run cycle - the "hello world" of thag's TUI. It's quick, clean, and shows the complete workflow from input to output.
+**Session 1** (30 seconds) demonstrates the essential edit-and-run workflow. Load code from stdin, make quick edits, check available key bindings, and submit for execution. It's the "hello world" of thag's TUI - fast and straightforward.
 
-**Session 2** shows real-world data composition - combining history, clipboard data, and internal buffer operations. This demonstrates how thag can be part of a larger workflow, integrating with other tools and your clipboard to compose solutions from multiple sources. The save-without-run feature shows thag as a script editor, not just a runner.
+**Session 2** (1:14) shows real-world code composition. Copy lines from an existing script with `thag_copy`, verify with `thag_paste`, retrieve a skeleton from edit history, paste the clipboard contents, and use the internal TextArea buffer (Ctrl-X/Ctrl-Y) to rearrange code before submitting. This demonstrates how thag integrates with your clipboard and command-line workflow to compose solutions from multiple sources.
 
-Together, they present thag as both a rapid execution environment AND a capable development tool.
+Together, they present thag as both a rapid execution environment (Session 1) and a flexible composition tool (Session 2).
 
 ## Video Caption Text
 
-For use as overlays or subtitles in the final video:
+### Session 1 Captions
 
+**Title**: Thag TUI demo 1
+
+**Description**: Use thag TUI editor to intercept, edit and run Rust code from stdin.
+
+**URL**: https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY
+
+**Markers**: None needed (simple 30-second flow)
 ```
 [0:00-0:04]
 Load existing script into TUI editor
@@ -212,70 +180,62 @@ Edit the script
 • Remove doc comment lines
 • Change range: 1..=100 → 1..=16
 
-[0:18-0:26]
+[0:18-0:23]
 View available key bindings
-→ Ctrl-l
+→ Ctrl-L
 
-[0:26-0:50]
-Save to new file
-→ Ctrl-s or F12
-→ Navigate to demo/
-→ Filename: fizz_buzz_demo.rs
-
-[0:50-0:53]
+[0:23-0:27]
 Submit and run
-→ Ctrl-d
+→ Ctrl-D
 
-[0:53-0:56]
+[0:27-0:30]
 Compilation and execution
 ✓ FizzBuzz output for 1-16
 ```
 
 ### Session 2 Captions
 
-```
-[0:00-0:05]
-Copy data to clipboard
-→ echo "Some data" | thag_copy
+**Title**: Thag TUI demo 2
 
-[0:05-0:08]
-Open empty TUI editor
+**Description**: Copy a range of lines from an existing script with thag_copy tool. Verify with thag_paste tool. Open thag TUI editor and retrieve skeleton saved to history. Paste in lines from system clipboard (Ctrl-v or Cmd-v for Mac). Use editor buffer yank (Ctrl-x) and paste (Ctrl-y ) to move import up to the top. Use Ctrl-d to submit. Watch it compile and see results.
+
+**URL**: https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG
+
+**Markers**: None needed (straightforward workflow)
+
+```
+[0:00-0:08]
+Copy lines from existing script
+→ Extract and pipe to thag_copy
+
+[0:08-0:12]
+Verify clipboard contents
+→ thag_paste
+
+[0:12-0:15]
+Open TUI editor
 → thag -d
 
-[0:08-0:15]
-Retrieve previous script from history
-→ Navigate with arrow keys
+[0:15-0:25]
+Retrieve script skeleton from history
+→ Navigate edit history
 
-[0:15-0:20]
+[0:25-0:30]
 Paste clipboard contents
-→ Cmd-V
+→ Cmd-V (Mac) or Ctrl-V
 
-[0:20-0:35]
-Move text with TextArea buffer
+[0:30-0:50]
+Move import with TextArea buffer
 → Ctrl-X to yank (cut)
-→ Ctrl-Y to paste
+→ Ctrl-Y to paste at top
 
-[0:35-0:40]
-Copy to system clipboard
-→ F9 (copies current line)
+[0:50-0:58]
+Submit for execution
+→ Ctrl-D
 
-[0:40-0:42]
-Toggle display mode
-→ F10
-
-[0:42-0:55]
-Save file without running
-→ Ctrl-S
-→ Filename: data_processor.rs
-
-[0:55-0:58]
-Exit editor
-→ Ctrl-C
-
-[0:58-1:05]
-Verify clipboard contents
-→ thag_copy
-✓ Shows copied text
+[0:58-1:14]
+Compilation and results
+✓ Code compiles and runs
 ```
 
 ## Recording Options
@@ -312,9 +272,9 @@ Verify clipboard contents
 
 **TUI Editor Demo (2 Sessions)**:
 
-**Session 1**: Watch as we load an existing script, make quick edits, and run it—all from within thag's built-in terminal editor. The demo shows key discovery (Ctrl-L), the file save dialog, and the complete edit-compile-run cycle in under a minute.
+**Session 1** (30s): Watch as we load an existing script, make quick edits, and run it—all from within thag's built-in terminal editor. The demo shows key discovery (Ctrl-L) and the complete edit-compile-run cycle. https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY
 
-**Session 2**: See advanced data composition in action - combining clipboard contents with scripts from history, using internal buffer operations to rearrange code, and integrating with the system clipboard. This session showcases thag's flexibility as a script composition tool.
+**Session 2** (1:14): See advanced data composition in action - copying lines from an existing script with `thag_copy`, verifying with `thag_paste`, retrieving a skeleton from history, pasting clipboard contents, and using internal buffer operations (Ctrl-X/Ctrl-Y) to rearrange code before submitting. https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG
 
 ### Long Version (for Release Notes / Blog)
 
@@ -322,31 +282,31 @@ Verify clipboard contents
 
 thag v0.2.0 includes a powerful TUI (Terminal User Interface) editor that provides a complete development environment right in your terminal. This two-session demo showcases both basic and advanced workflows:
 
-#### Session 1: Edit & Run - The Foundation
+#### Session 1: Edit & Run - The Foundation (30 seconds)
 
 Starting with an existing FizzBuzz script (`demo/fizz_buzz_gpt.rs`), we load it directly into the editor using stdin redirection. The code is immediately ready to edit—no project setup, no file creation, just start typing.
 
 After making quick modifications (removing doc comments and adjusting the range for compact output), we demonstrate the discoverable key bindings system with Ctrl-L. This shows users how to find help without leaving the editor—a thoughtful UX detail that makes the tool approachable.
 
-The file save dialog displays thag's integrated file browser, allowing navigation through directories and saving with a custom filename. The status bar confirms the save location, maintaining clear feedback throughout the workflow.
+Pressing Ctrl-D submits the code for compilation and execution. thag handles all the build machinery behind the scenes—dependency inference, compilation with cargo, and execution—presenting just the output that matters: a clean FizzBuzz sequence from 1 to 16.
 
-Finally, pressing Ctrl-D submits the code for compilation and execution. thag handles all the build machinery behind the scenes—dependency inference, compilation with cargo, and execution—presenting just the output that matters: a clean FizzBuzz sequence from 1 to 16.
+This complete cycle—from loading a script to seeing results—takes just 30 seconds and demonstrates how thag removes friction from the Rust development experience while maintaining the power and safety of the full compiler toolchain.
 
-This complete cycle—from loading a script to seeing results—takes less than a minute and demonstrates how thag removes friction from the Rust development experience while maintaining the power and safety of the full compiler toolchain.
+**Watch**: https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY
 
-#### Session 2: Data Composition - The Power User's Toolkit
+#### Session 2: Data Composition - The Power User's Toolkit (1:14)
 
-The second session elevates thag from a simple script runner to a sophisticated composition tool. We start by copying data to the clipboard using `thag_copy`, then open an empty editor with `thag -d`.
+The second session elevates thag from a simple script runner to a sophisticated composition tool. We start by copying a range of lines from an existing script using command-line tools piped to `thag_copy`. We verify the clipboard contents with `thag_paste` before opening the editor.
 
-Instead of starting from scratch, we retrieve a previous script from thag's edit history—perhaps a data processing template we've used before. This history feature makes thag feel less like a one-shot executor and more like a development environment that remembers your context.
+Opening the TUI editor with `thag -d`, we retrieve a previously saved skeleton from thag's edit history. This history feature makes thag feel less like a one-shot executor and more like a development environment that remembers your context.
 
-We paste our clipboard contents directly into the editor, demonstrating integration with the system clipboard. But thag also has its own internal TextArea buffer, accessed via Ctrl-X (yank) and Ctrl-Y (paste). This dual-clipboard model—one for system integration, one for fast internal operations—gives users flexibility without complexity.
+We paste our clipboard contents directly into the editor with Cmd-V (or Ctrl-V), demonstrating integration with the system clipboard. But thag also has its own internal TextArea buffer, accessed via Ctrl-X (yank) and Ctrl-Y (paste). We use this to move an import statement to the top of the file—a common code organization task.
 
-The F9 key captures the current line to the system clipboard, perfect for extracting snippets or sharing code. F10 toggles line numbers and mouse capture, showing thoughtful attention to different use cases (editing vs. selecting text for external copy).
-
-Rather than running the code, we save it with Ctrl-S and exit with Ctrl-C, demonstrating that thag can serve as a script editor, not just a runner. Finally, we verify the clipboard operation with `thag_copy`, confirming the round-trip workflow.
+This dual-clipboard model—one for system integration, one for fast internal operations—gives users flexibility without complexity. After rearranging the code, we submit with Ctrl-D and watch it compile and execute.
 
 This session showcases thag as part of a larger ecosystem—a tool that plays well with your clipboard, your history, and your existing workflow. It's not trying to replace your editor; it's augmenting your terminal toolkit with Rust superpowers.
+
+**Watch**: https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG
 
 **Together**, these sessions present thag's TUI as both approachable for beginners (Session 1) and powerful for experienced users (Session 2)—a rare combination that makes Rust experimentation faster and more enjoyable for everyone.
 

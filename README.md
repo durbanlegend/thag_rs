@@ -309,6 +309,20 @@ thag --edit                                                     # Short form: -d
 ![TUI Output](assets/edit2t.png)
 *Running code directly from the editor with Ctrl-R*
 
+#### TUI Editor Demos
+
+**Demo 1: Edit & Run Workflow (30 seconds)**
+
+[![asciicast](https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY.svg)](https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY)
+
+*Click to watch: Load code from stdin, make quick edits, discover key bindings (Ctrl-L), and submit for execution*
+
+**Demo 2: Data Composition (1:14)**
+
+[![asciicast](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG.svg)](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG)
+
+*Click to watch: Copy lines with `thag_copy`, retrieve skeleton from history, paste clipboard contents, rearrange code with TextArea buffer (Ctrl-X/Ctrl-Y), and run*
+
 ### * With standard input into the TUI editor:
 
 ```bash

@@ -8,13 +8,13 @@ use clap::{Parser, Subcommand};
 // use colored::Colorize;
 
 use inquire::{set_global_render_config, Confirm, Select, Text};
-use std::env::{current_dir, set_current_dir};
+
 use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
 use thag_rs::{
     builder::execute, configure_log, get_verbosity, set_global_verbosity, sprtln, svprtln,
-    themed_inquire_config, Cli, Role, Styleable, StyledPrint, ThagError, V,
+    themed_inquire_config, Cli, Role, Styleable, StyledPrint, V,
 };
 
 pub mod visualization;
@@ -87,6 +87,27 @@ enum DemoCommand {
     Script {
         /// Name of the demo script to run
         name: String,
+        /// Force rebuild even if script unchanged
+        #[arg(short, long)]
+        force: bool,
+        /// Display timings
+        #[arg(short, long)]
+        timings: bool,
+        /// Features to enable (comma separated)
+        #[arg(long)]
+        features: Option<String>,
+        /// Just generate, don't run
+        #[arg(short, long)]
+        generate: bool,
+        /// Just build, don't run
+        #[arg(short, long)]
+        build: bool,
+        /// Just check, don't run
+        #[arg(short, long)]
+        check: bool,
+        /// Arguments to pass to the script (use -- to separate from thag_demo options)
+        #[arg(last = true)]
+        args: Vec<String>,
     },
 
     /// Interactive browser for demo scripts
@@ -97,6 +118,44 @@ enum DemoCommand {
 
     /// List all available demo scripts
     ListScripts,
+}
+
+/// Find the thag_rs root directory reliably
+/// Looks for the root Cargo.toml with workspace or thag_rs package
+fn find_thag_rs_root() -> Result<PathBuf> {
+    // Start from current directory or manifest directory
+    let mut current =
+        env::current_dir().unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+
+    // Walk up the directory tree looking for thag_rs root
+    for _ in 0..10 {
+        // Look for Cargo.toml
+        let cargo_toml = current.join("Cargo.toml");
+        if cargo_toml.exists() {
+            // Read and check if it's the thag_rs workspace or package
+            if let Ok(contents) = fs::read_to_string(&cargo_toml) {
+                // Check for workspace with thag_rs members or package named thag_rs
+                if contents.contains("members") && contents.contains("thag_rs")
+                    || contents.contains(r#"name = "thag_rs""#)
+                {
+                    return Ok(current);
+                }
+            }
+        }
+
+        // Go up one directory
+        if let Some(parent) = current.parent() {
+            current = parent.to_path_buf();
+        } else {
+            break;
+        }
+    }
+
+    // Fallback: use manifest dir's parent (works when running from thag_demo)
+    Ok(PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Cannot find thag_rs root"))?
+        .to_path_buf())
 }
 
 /// Discover demo directory in various locations
@@ -365,11 +424,8 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
         return Ok(());
     }
 
-    set_current_dir(
-        demo_dir
-            .parent()
-            .ok_or_else(|| ThagError::FromStr("Can't get parent of demo dir".into()))?,
-    );
+    // Keep current directory as-is for relative paths
+    // Users can reference demo scripts and their own files from CWD
 
     // Create demo options with descriptions
     let demo_options: Vec<String> = demo_files
@@ -401,8 +457,8 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
         println!("💡 Start typing to filter demos by name • 📝 = accepts arguments");
         sprtln!(
             Role::EMPH,
-            "⚠️ Current working directory is {} for relative pathnames",
-            current_dir()?.display().heading3()
+            "⚠️ Demo directory is {} - use relative paths from your current location",
+            demo_dir.display().heading3()
         );
         println!("{}", "═".repeat(80));
 
@@ -441,7 +497,13 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
                 }
                 println!();
 
-                match run_selected_demo(&demo_dir, demo_name, verbose) {
+                match run_selected_demo(
+                    &demo_dir,
+                    demo_name,
+                    verbose,
+                    None,
+                    Some(collect_demo_options(demo_name)),
+                ) {
                     Ok(()) => {
                         println!("\n{}", "═".repeat(80));
                         println!("🔙 Press Enter to return to demo browser, or Ctrl+C to exit...");
@@ -474,8 +536,24 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
     Ok(())
 }
 
+/// Options for running a demo
+struct DemoOptions {
+    force: bool,
+    timings: bool,
+    features: Option<String>,
+    generate: bool,
+    build: bool,
+    check: bool,
+}
+
 /// Run a selected demo from the browser
-fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<()> {
+fn run_selected_demo(
+    demo_dir: &Path,
+    demo_name: &str,
+    verbose: bool,
+    cli_args: Option<Vec<String>>,
+    options: Option<DemoOptions>,
+) -> Result<()> {
     let demo_path = demo_dir.join(format!("{}.rs", demo_name));
 
     if !demo_path.exists() {
@@ -501,15 +579,19 @@ fn run_selected_demo(demo_dir: &Path, demo_name: &str, verbose: bool) -> Result<
         println!("   Without this, the demo runs but no profiling data is collected.");
     }
 
-    // Collect arguments if needed
-    let args = collect_demo_arguments(&demo_file);
+    // Use CLI args if provided, otherwise collect interactively if needed
+    let args = if let Some(provided_args) = cli_args {
+        provided_args
+    } else {
+        collect_demo_arguments(&demo_file)
+    };
 
     // Set THAG_DEV_PATH for local development - point to thag_rs root
-    let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let thag_rs_root = current_dir.parent().unwrap_or(&current_dir);
-    env::set_var("THAG_DEV_PATH", thag_rs_root);
+    let thag_rs_root = find_thag_rs_root()
+        .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    env::set_var("THAG_DEV_PATH", &thag_rs_root);
 
-    let mut cli = create_demo_cli_with_args(&demo_path, verbose, args);
+    let mut cli = create_demo_cli_with_args(&demo_path, verbose, args, options);
 
     set_global_verbosity(if verbose { V::D } else { V::N });
 
@@ -787,8 +869,27 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::Flamegraph => include_str!("../demos/flamegraph.rs"),
         DemoCommand::Benchmark => include_str!("../demos/benchmark.rs"),
         DemoCommand::InteractiveProfiling => include_str!("../demos/interactive_profiling.rs"),
-        DemoCommand::Script { name } => {
-            return run_script_demo(&name, verbose);
+        DemoCommand::Script {
+            name,
+            force,
+            timings,
+            features,
+            generate,
+            build,
+            check,
+            args,
+        } => {
+            return run_script_demo(
+                &name,
+                verbose,
+                force,
+                timings,
+                features,
+                generate,
+                build,
+                check,
+                Some(args),
+            );
         }
         DemoCommand::Browse | DemoCommand::Manage | DemoCommand::ListScripts => {
             unreachable!("These commands are handled earlier in main")
@@ -820,9 +921,9 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     std::fs::write(&script_path, demo_script)?;
 
     // Set THAG_DEV_PATH for local development - point to thag_rs root
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let thag_rs_root = current_dir.parent().unwrap_or(&current_dir);
-    std::env::set_var("THAG_DEV_PATH", thag_rs_root);
+    let thag_rs_root = find_thag_rs_root()
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    std::env::set_var("THAG_DEV_PATH", &thag_rs_root);
 
     // Configure CLI args for thag_rs
     let mut cli = create_demo_cli(&script_path, verbose);
@@ -849,7 +950,17 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
+fn run_script_demo(
+    script_name: &str,
+    verbose: bool,
+    force: bool,
+    timings: bool,
+    features: Option<String>,
+    generate: bool,
+    build: bool,
+    check: bool,
+    args: Option<Vec<String>>,
+) -> Result<()> {
     let demo_dir = find_or_setup_demo_dir()?;
     let demo_path = demo_dir.join(format!("{script_name}.rs"));
 
@@ -869,7 +980,24 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
         .info()
         .println();
 
-    run_selected_demo(&demo_dir, script_name, verbose)?;
+    if let Some(ref arg_list) = args {
+        if !arg_list.is_empty() {
+            format!("With arguments: {}", arg_list.join(" "))
+                .subtle()
+                .println();
+        }
+    }
+
+    let options = DemoOptions {
+        force,
+        timings,
+        features,
+        generate,
+        build,
+        check,
+    };
+
+    run_selected_demo(&demo_dir, script_name, verbose, args, Some(options))?;
 
     println!();
     "✅ Script demo completed successfully!".success().println();
@@ -878,15 +1006,29 @@ fn run_script_demo(script_name: &str, verbose: bool) -> Result<()> {
 }
 
 fn create_demo_cli(script_path: &Path, verbose: bool) -> Cli {
-    create_demo_cli_with_args(script_path, verbose, Vec::new())
+    create_demo_cli_with_args(script_path, verbose, Vec::new(), None)
 }
 
-fn create_demo_cli_with_args(script_path: &Path, verbose: bool, args: Vec<String>) -> Cli {
+fn create_demo_cli_with_args(
+    script_path: &Path,
+    verbose: bool,
+    args: Vec<String>,
+    options: Option<DemoOptions>,
+) -> Cli {
+    let opts = options.unwrap_or(DemoOptions {
+        force: false,
+        timings: false,
+        features: None,
+        generate: false,
+        build: false,
+        check: false,
+    });
+
     Cli {
         script: Some(script_path.to_string_lossy().to_string()),
-        features: None,
+        features: opts.features,
         args,
-        force: false,
+        force: opts.force,
         expression: None,
         repl: false,
         stdin: false,
@@ -896,14 +1038,14 @@ fn create_demo_cli_with_args(script_path: &Path, verbose: bool, args: Vec<String
         begin: None,
         end: None,
         multimain: false,
-        timings: false,
+        timings: opts.timings,
         verbose: if verbose { 2 } else { 0 },
         normal_verbosity: false,
         quiet: 0,
-        generate: false,
-        build: false,
+        generate: opts.generate,
+        build: opts.build,
         executable: false,
-        check: false,
+        check: opts.check,
         expand: false,
         unquote: None,
         config: false,
@@ -911,6 +1053,62 @@ fn create_demo_cli_with_args(script_path: &Path, verbose: bool, args: Vec<String
         cargo: false,
         test_only: false,
         clean: None,
+    }
+}
+
+/// Collect thag options for a demo interactively
+fn collect_demo_options(_demo_name: &str) -> DemoOptions {
+    println!("\n⚙️  Thag options (press Enter to skip):");
+
+    let force = Confirm::new("Force rebuild?")
+        .with_default(false)
+        .with_help_message("Rebuild even if script unchanged (like -f flag)")
+        .prompt()
+        .unwrap_or(false);
+
+    let timings = Confirm::new("Display timings?")
+        .with_default(false)
+        .with_help_message("Show execution timings (like -t flag)")
+        .prompt()
+        .unwrap_or(false);
+
+    let features = Text::new("Features to enable (comma-separated):")
+        .with_default("")
+        .with_help_message("Optional features to enable when building")
+        .prompt()
+        .ok()
+        .filter(|s| !s.trim().is_empty());
+
+    let generate = Confirm::new("Just generate, don't run?")
+        .with_default(false)
+        .prompt()
+        .unwrap_or(false);
+
+    let build = if !generate {
+        Confirm::new("Just build, don't run?")
+            .with_default(false)
+            .prompt()
+            .unwrap_or(false)
+    } else {
+        false
+    };
+
+    let check = if !generate && !build {
+        Confirm::new("Just check, don't run?")
+            .with_default(false)
+            .prompt()
+            .unwrap_or(false)
+    } else {
+        false
+    };
+
+    DemoOptions {
+        force,
+        timings,
+        features,
+        generate,
+        build,
+        check,
     }
 }
 

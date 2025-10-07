@@ -77,3 +77,4 @@ x.txt
 y.txt
 demo/palette_vs_theme.rs
 demo/palette_vs_theme_demo.rs
+demo/current_dir.rs

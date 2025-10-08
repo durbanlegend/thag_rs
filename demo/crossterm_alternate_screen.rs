@@ -4,7 +4,7 @@
 ///
 /// Url: https://docs.rs/crossterm/latest/crossterm/
 //# Purpose: Demo `crossterm` command API.
-//# Categories: crates, technique
+//# Categories: crates, technique, tui
 //# Sample arguments: `-- true`
 use std::{
     env,

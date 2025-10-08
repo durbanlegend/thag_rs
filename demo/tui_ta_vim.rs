@@ -3,7 +3,7 @@
 //# Purpose: Demo TUI `vim` editor and featured crates, including `crossterm`.
 ///
 /// Not suitable for running from a URL.
-//# Categories: crates
+//# Categories: crates, tui
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::terminal::{

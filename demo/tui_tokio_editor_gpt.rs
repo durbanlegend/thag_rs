@@ -3,7 +3,7 @@
 /// screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
 /// prints the captured data.
 //# Purpose: Exploring options for editing input. e.g. for a REPL.
-//# Categories: async, crates, learning, exploration, technique
+//# Categories: async, crates, learning, exploration, technique, tui
 ///
 /// Not suitable for running from a URL.
 use ratatui::crossterm::{

@@ -14,7 +14,7 @@ crossterm = "0.28"
 /// E.g. `thag demo/ratatui_theming_showcase`
 /// ```
 //# Purpose: Comprehensive showcase of ratatui integration with thag_styling themes
-//# Categories: gui, demo, theming
+//# Categories: demo, theming, tui
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -353,7 +353,7 @@ fn render_dashboard_tab(f: &mut Frame, area: Rect, app: &App) {
         ]),
         Line::from(vec![
             Span::styled("Last Update: ", Style::themed(Role::Subtle)),
-            Span::styled("2024-01-15 09:42:13", Style::themed(Role::Code)),
+            Span::styled("2025-09-15 09:42:13", Style::themed(Role::Code)),
         ]),
         Line::from(""),
         Line::from(vec![
@@ -394,7 +394,7 @@ fn render_logs_tab(f: &mut Frame, area: Rect, app: &App) {
             };
 
             let timestamp = format!(
-                "2024-01-15 {:02}:{:02}:{:02}",
+                "2025-09-15 {:02}:{:02}:{:02}",
                 9 + i / 10,
                 (i * 7) % 60,
                 (i * 13) % 60

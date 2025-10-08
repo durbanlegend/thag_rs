@@ -1188,14 +1188,14 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Vec<String> {
         // Strip the -- prefix from sample args for interactive display
         let cleaned_sample = sample_args.trim_matches('`').trim();
         let display_args = cleaned_sample.strip_prefix("-- ").unwrap_or(cleaned_sample);
-        println!("💡 Sample arguments: {}", display_args.subtle());
+        println!("💡 Sample arguments: {}", display_args.emphasis());
         "   (don't type '--' in interactive mode)"
             .warning()
             .println();
     }
 
     if let Some(ref usage) = demo_file.usage_example {
-        println!("💡 Usage example: {}", usage.subtle());
+        println!("💡 Usage example: {}", usage.commentary());
     }
 
     // Show environment variable suggestions if any

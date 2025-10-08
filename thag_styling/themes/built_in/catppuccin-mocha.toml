@@ -219,9 +219,9 @@ style = ["underline"]
 
 [palette.normal]
 rgb = [
-    205,
-    214,
-    244,
+    213,
+    221,
+    246,
 ]
 
 [palette.quote]

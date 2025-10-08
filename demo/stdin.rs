@@ -4,7 +4,7 @@ use anyhow::{anyhow, Context, Result};
 ///
 /// E.g. `thag demo/stdin.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
-//# Categories: crates, prototype, technique
+//# Categories: crates, prototype, technique, tui
 use lazy_static::lazy_static;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{

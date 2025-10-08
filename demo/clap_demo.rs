@@ -15,7 +15,7 @@
 /// Simple program to greet a person
 //# Purpose: Demo building a repl using `clap` directly.
 //# Categories: REPL, technique
-//
+//# Sample arguments: `-- --name "is this the Krusty Krab?"`
 use clap::Parser;
 
 /// Simple program to greet a person

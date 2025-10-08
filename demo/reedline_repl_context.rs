@@ -12,7 +12,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: Evaluation of featured crate and of using clap to structure command input.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 // Original `reedline-repl-rs` crate comments:
 // Example using Repl with Context
 use reedline_repl_rs::clap::{Arg, ArgMatches, Command};

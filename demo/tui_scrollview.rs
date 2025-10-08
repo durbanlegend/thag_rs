@@ -2,7 +2,7 @@
 ///
 /// Not suitable for running from a URL.
 //# Purpose: Explore TUI editing
-//# Categories: crates, exploration, technique
+//# Categories: crates, exploration, technique, tui
 use std::io::{self, stdout};
 
 use color_eyre::{config::HookBuilder, Result};

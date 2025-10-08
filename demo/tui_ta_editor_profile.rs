@@ -8,7 +8,7 @@ thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
 ///
 /// Not suitable for running from a URL.
 //# Purpose: Demo `thag_profiler`.
-//# Categories: crates, profiling, technique
+//# Categories: crates, profiling, technique, tui
 //# Sample arguments: `-- demo/hello.rs demo/hello_minimal.rs`
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;

@@ -22,7 +22,7 @@ simplelog = ["thag_rs/simplelog"]
 /// as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
 /// plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
 //# Purpose: Demonstrate building a `thag`-style REPL.
-//# Categories: demo, REPL, technique
+//# Categories: demo, repl, technique, tui
 use clap::{CommandFactory, Parser};
 use edit::edit_file;
 use nu_ansi_term::Color as NuColor;

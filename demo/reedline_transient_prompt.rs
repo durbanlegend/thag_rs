@@ -8,7 +8,7 @@ sqlite-dynlib = ["reedline/sqlite-dynlib"]
 /// Published demo from `reedline` crate. Shows use of toml block to specify `reedline`
 /// features referenced in the example.
 //# Purpose: Demo the use of a transient minimal prompt `! ` for returned history.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 // Create a reedline object with a transient prompt.
 // cargo run --example transient_prompt
 //

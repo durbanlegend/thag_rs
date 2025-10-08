@@ -1,6 +1,6 @@
 /// Experiment with matching REPL commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::error::Signal;

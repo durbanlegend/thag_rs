@@ -6,7 +6,7 @@
 ///
 /// Not suitable for running from a URL.
 //# Purpose: Demo and explore TUI editor and featured crates, including `crossterm`.
-//# Categories: crates, exploration, technique
+//# Categories: crates, exploration, technique, tui
 //# Sample arguments: `-- demo/hello.rs demo/hello_minimal.rs`
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;

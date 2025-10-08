@@ -1,6 +1,6 @@
 /// Early proof of concept of using a different line editor for repl.rs.
 //# Purpose: Exploration
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use clap::{CommandFactory, Parser};
 use lazy_static::lazy_static;
 use regex::Regex;

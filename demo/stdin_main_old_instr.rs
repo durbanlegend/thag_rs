@@ -30,7 +30,7 @@ and why memory profiling can be slow in some cases.
 E.g. `THAG_PROFILER=both,,announce,true thag demo/stdin_main_instr.rs`
 */
 //# Purpose: Debugging.
-//# Categories: testing
+//# Categories: testing, tui
 use ratatui::crossterm::{
     event::{
         DisableMouseCapture,

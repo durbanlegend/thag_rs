@@ -10,7 +10,7 @@ A demo version of src/stdin.rs.
 E.g. `thag demo/stdin_main.rs < demo/hello.rs`
 */
 //# Purpose: Debugging and demonstration.
-//# Categories: demo, testing
+//# Categories: demo, testing, tui
 use edit::edit_file;
 use ratatui::style::{Color, Modifier, Style};
 use std::{

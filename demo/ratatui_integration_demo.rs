@@ -15,7 +15,7 @@ crossterm = "0.28"
 /// thag demo/ratatui_integration_demo.rs
 /// ```
 //# Purpose: Basic demonstration of ratatui integration with thag_styling
-//# Categories: demo, gui, theming
+//# Categories: demo, gui, theming, tui
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,

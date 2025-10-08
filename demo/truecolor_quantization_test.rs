@@ -60,6 +60,7 @@ impl Rgb {
 
 /// Test result for a single color
 #[derive(Debug)]
+#[allow(dead_code)]
 struct ColorTest {
     input: Rgb,
     output: Option<Rgb>,

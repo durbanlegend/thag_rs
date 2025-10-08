@@ -7,7 +7,7 @@ thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 /// with `thag_profiler`.
 ///
 //# Purpose: Demo the featured crate.
-//# Categories: crates, profiling
+//# Categories: crates, profiling, tui
 use std::{error::Error, io};
 
 use ratatui::crossterm::{

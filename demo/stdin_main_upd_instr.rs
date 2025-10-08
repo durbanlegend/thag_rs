@@ -18,7 +18,7 @@ and why memory profiling can be slow in some cases.
 E.g. `THAG_PROFILER=both,,none,true thag demo/stdin_main_instr.rs`
 */
 //# Purpose: Debugging.
-//# Categories: profiling, testing
+//# Categories: profiling, testing, tui
 use edit::edit_file;
 use ratatui::style::{Color, Modifier, Style};
 use std::{

@@ -11,7 +11,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: Demo the featured crate.
-//# Categories: crates
+//# Categories: crates, tui
 //
 // Original `ratatui` crate comments:
 // # [Ratatui] User Input example

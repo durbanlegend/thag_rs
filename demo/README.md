@@ -483,7 +483,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/borrow_wrapped.r
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_asm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_asm.rs -- -h
 ```
 
 ---
@@ -507,7 +507,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.rs -- eat Fastfood drink --coffee sleep --time=5
 ```
 
 ---
@@ -531,7 +531,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.r
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_derive.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_derive.rs -- --flag cmd --flag --arg=6
 ```
 
 ---
@@ -687,7 +687,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.rs -- variant-num2
 ```
 
 ---
@@ -711,7 +711,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs -- 45
 ```
 
 ---
@@ -792,7 +792,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder_01_quick.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l
 ```
 
 ---
@@ -1048,7 +1048,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
 
 ### Script: config_with_tests.rs
 
-**Description:**  Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
+**Description:**  Demo of unit testing a non-snippet source file such as a library module using `thag --test-only` `(thag -T)`.
 
  In this case this demo file is the one we're testing.
 
@@ -1111,7 +1111,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_tests.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_tests.rs TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output
 ```
 
 ---
@@ -1459,7 +1459,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs
 
 **Type:** Program
 
-**Categories:** crates, technique
+**Categories:** crates, technique, tui
 
 **Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_alternate_screen.rs)
 
@@ -3865,7 +3865,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs)
 
@@ -3896,41 +3896,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorization.rs
-```
-
----
-
-### Script: install_alacritty_theme.rs
-
-**Description:**  Alacritty Theme Installation Script
-
- This script properly installs the thag-vibrant-dark theme for Alacritty:
- 1. Creates the correct theme file with fixed color mappings
- 2. Installs it in the right location
- 3. Updates or creates the Alacritty config with proper import syntax
- 4. Provides verification steps
- Generate corrected Alacritty theme with proper color mappings
- Update or create Alacritty config file
- Show expected color mapping
- Extract RGB from style
- Brighten a color
- Adjust brightness
- Check if color is light
-
-**Purpose:** Install and configure thag themes for Alacritty terminal
-
-**Crates:** `dirs`, `thag_styling`
-
-**Type:** Program
-
-**Categories:** color, styling, terminal, theming, tools
-
-**Link:** [install_alacritty_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/install_alacritty_theme.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/install_alacritty_theme.rs
 ```
 
 ---
@@ -5219,7 +5184,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.
 
  Unlike the experimental version, this focuses on the reliable crossterm
  approach and includes proper error handling, caching, and integration
- patterns suitable for use in the thag_styling subcrate.
+ patterns suitable for use in the `thag_styling` subcrate.
  RGB color representation
  Error types for palette querying
  Cached palette query results
@@ -5433,7 +5398,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tre
 
 **Type:** Program
 
-**Categories:** demo, gui, theming
+**Categories:** demo, gui, theming, tui
 
 **Link:** [ratatui_integration_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integration_demo.rs)
 
@@ -5441,6 +5406,36 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tre
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integration_demo.rs
+```
+
+---
+
+### Script: ratatui_theming_showcase.rs
+
+**Description:**  Comprehensive Ratatui Theming Showcase
+
+ This example demonstrates how to build a themed TUI application using ratatui
+ and thag_styling. It showcases various UI components styled with semantic roles
+ and demonstrates both the ThemedStyle trait and extension methods.
+
+ ```Rust
+ E.g. `thag demo/ratatui_theming_showcase`
+ ```
+
+**Purpose:** Comprehensive showcase of ratatui integration with thag_styling themes
+
+**Crates:** `crossterm`, `ratatui`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, theming, tui
+
+**Link:** [ratatui_theming_showcase.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_theming_showcase.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_theming_showcase.rs
 ```
 
 ---
@@ -5466,7 +5461,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integrat
 
 **Type:** Program
 
-**Categories:** crates
+**Categories:** crates, tui
 
 **Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input.rs)
 
@@ -5490,7 +5485,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_inp
 
 **Type:** Program
 
-**Categories:** crates, profiling
+**Categories:** crates, profiling, tui
 
 **Link:** [ratatui_user_input_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs)
 
@@ -5560,7 +5555,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crosste
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_keybindings.rs)
 
@@ -5593,7 +5588,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_k
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_completions.rs)
 
@@ -5626,7 +5621,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_complet
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_listener.rs)
 
@@ -5661,7 +5656,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_l
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlighter.rs)
 
@@ -5694,7 +5689,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlig
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.rs)
 
@@ -5727,7 +5722,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history.rs)
 
@@ -5763,7 +5758,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_completions.rs)
 
@@ -5797,7 +5792,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_com
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bindings.rs)
 
@@ -5831,7 +5826,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bi
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multiline.rs)
 
@@ -5853,7 +5848,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multili
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_stdin.rs)
 
@@ -5899,7 +5894,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_st
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs)
 
@@ -5933,7 +5928,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_context.rs)
 
@@ -5960,7 +5955,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_co
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bindings.rs)
 
@@ -5982,7 +5977,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bi
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.rs)
 
@@ -6005,7 +6000,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.r
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_transient_prompt.rs)
 
@@ -6052,7 +6047,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_to
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs)
 
@@ -6074,7 +6069,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs)
 
@@ -6098,7 +6093,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_mat
 
 **Type:** Program
 
-**Categories:** demo, REPL, technique
+**Categories:** demo, repl, technique, tui
 
 **Link:** [repl_ryo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs)
 
@@ -6220,7 +6215,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustlings_smart_
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.rs)
 
@@ -6244,7 +6239,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
 **Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs)
 
@@ -6642,7 +6637,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_std.rs
 
 **Type:** Program
 
-**Categories:** crates, prototype, technique
+**Categories:** crates, prototype, technique, tui
 
 **Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs)
 
@@ -6666,7 +6661,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs
 
 **Type:** Program
 
-**Categories:** demo, testing
+**Categories:** demo, testing, tui
 
 **Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs)
 
@@ -6689,7 +6684,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs
 
 **Type:** Program
 
-**Categories:** testing
+**Categories:** testing, tui
 
 **Link:** [stdin_main_old_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_instr.rs)
 
@@ -6770,7 +6765,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_i
 
 **Type:** Program
 
-**Categories:** profiling, testing
+**Categories:** profiling, testing, tui
 
 **Link:** [stdin_main_upd_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_upd_instr.rs)
 
@@ -7558,10 +7553,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsin
 
 ### Script: test_auto_help.rs
 
-**Description:**  Demo / test of `thag_common`'s `auto_help` system. This is the first doc comment line.
- This is the second doc comment line.
+**Description:**  This program exists to demonstrate the `thag_common` `auto_help` functionality.
+ Invoking it with the argument `--help/-h` will display the doc comments as help.
+ An optional `//# Purpose: ` line may be included to form the top-level help summary.
+ An optional `//# Categories:` line may be used to list comma-separated categories
+ to be shown at the bottom of the help screen.
 
-**Purpose:** Demo Hello World as a program. This is the `//# Purpose: ` line.
+**Purpose:** This is the optional `//# Purpose: ` line that becomes the help summary.
 
 **Crates:** `thag_common`
 
@@ -8130,6 +8128,37 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_
 
 ---
 
+### Script: test_shared_cache.rs
+
+**Description:**  A simple demo script to test the new shared target directory and executable cache.
+
+ This script uses `serde_json` as a dependency to verify that:
+ 1. Dependencies are compiled once and shared across all scripts
+ 2. The executable is cached in the executable cache directory
+ 3. Subsequent runs are fast due to warm cache
+
+ Run with: `thag demo/test_shared_cache.rs`
+ Then run again to see the speed improvement from caching.
+ Clean cache with: `thag --clean` or `thag --clean bins`
+
+**Purpose:** Test shared target directory and executable cache functionality
+
+**Crates:** `serde_json`
+
+**Type:** Program
+
+**Categories:** testing, demo
+
+**Link:** [test_shared_cache.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_shared_cache.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_shared_cache.rs
+```
+
+---
+
 ### Script: test_sprtln.rs
 
 **Description:**  Test script to verify sprtln macro works with both Style and Role
@@ -8368,7 +8397,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_ben
 
 **Purpose:** Ultimately, to provide a prompt-driven front-end to the `thag` command.
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`
+**Crates:** `inquire`, `thag_proc_macros`
 
 **Type:** Program
 
@@ -8729,7 +8758,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, exploration, technique, tui
 
 **Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_scrollview.rs)
 
@@ -8754,7 +8783,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, exploration, technique, tui
 
 **Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_editor.rs)
 
@@ -8776,7 +8805,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Type:** Program
 
-**Categories:** crates, profiling, technique
+**Categories:** crates, profiling, technique, tui
 
 **Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_editor_profile.rs)
 
@@ -8797,7 +8826,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, exploration, technique, tui
 
 **Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_minimal.rs)
 
@@ -8819,7 +8848,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Type:** Program
 
-**Categories:** crates
+**Categories:** crates, tui
 
 **Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_vim.rs)
 
@@ -8843,7 +8872,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Type:** Program
 
-**Categories:** async, crates, learning, exploration, technique
+**Categories:** async, crates, learning, exploration, technique, tui
 
 **Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_tokio_editor_gpt.rs)
 
@@ -9273,3 +9302,4 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_p
 ```
 
 ---
+

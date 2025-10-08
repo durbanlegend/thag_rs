@@ -2,6 +2,26 @@
 
 This document describes the improvements made to `thag_demo` to address usability issues with the `script` and `browse` commands.
 
+## Summary
+
+All reported issues have been fixed:
+
+✅ **Current working directory** - No longer changes directories; paths are relative to your shell's PWD  
+✅ **Options support** - Full support for `-f`, `-t`, `--features`, `-g`, `-b`, `-c`  
+✅ **Environment variables** - New `-E/--env` flag for command-line, interactive prompts for browse mode  
+✅ **Consistent argument handling** - Optional `--` separator in CLI, auto-stripped in interactive mode  
+✅ **Reliable root detection** - New `find_thag_rs_root()` function finds workspace root correctly  
+✅ **Clear messaging** - Shows current directory, explains path resolution, warns about `--` usage
+
+**Quick Examples:**
+```bash
+# Command-line with all options
+cargo run -p thag_demo -- script syn_dump_syntax -f -t -E THAG_PROFILER=both demo/hello.rs
+
+# Interactive with prompts
+cargo run -p thag_demo -- browse
+```
+
 ## Problems Fixed
 
 ### 1. Current Working Directory Issues
@@ -16,6 +36,7 @@ This document describes the improvements made to `thag_demo` to address usabilit
 - `-f, --force` - Force rebuild even if script unchanged
 - `-t, --timings` - Display execution timings
 - `--features <FEATURES>` - Enable specific features (comma-separated)
+- `-E, --env <ENV_VARS>` - Set environment variables (can be repeated)
 - `-g, --generate` - Just generate, don't run
 - `-b, --build` - Just build, don't run
 - `-c, --check` - Just check, don't run
@@ -78,6 +99,15 @@ cargo run -p thag_demo -- script syn_dump_syntax -f -t -- demo/hello.rs
 # Same thing without -- (works since argument doesn't start with -)
 cargo run -p thag_demo -- script syn_dump_syntax -f -t demo/hello.rs
 
+# Set environment variables for profiling demos
+cargo run -p thag_demo -- script basic_profiling -E THAG_PROFILER=both
+
+# Multiple environment variables (repeat -E flag)
+cargo run -p thag_demo -- script my_script -E THAG_PROFILER=time -E RUST_LOG=debug
+
+# Combine options, environment variables, and arguments
+cargo run -p thag_demo -- script profiling_demo -f -E THAG_PROFILER=both --features full_profiling -- input.txt
+
 # Just check without running
 cargo run -p thag_demo -- script my_script -c
 
@@ -120,7 +150,11 @@ When you select a demo that accepts arguments:
    - The prompt will show your current directory for reference
    - **DON'T type `--` in interactive mode** - just enter the arguments directly
    - Example: Type `demo/hello.rs` NOT `-- demo/hello.rs`
-3. The demo runs with your specified options and arguments
+3. You'll be prompted for environment variables
+   - For profiling demos, suggestions are shown (e.g., `THAG_PROFILER=both`)
+   - Format: `KEY=value` or multiple separated by spaces: `KEY1=value1 KEY2=value2`
+   - Press Enter to skip if not needed
+4. The demo runs with your specified options, arguments, and environment variables
 
 **Why no `--` in interactive mode?**
 The `--` separator is a command-line shell convention to separate options from arguments. In interactive prompts, you're only entering arguments, so the separator isn't needed. The system handles this automatically.
@@ -129,6 +163,11 @@ The `--` separator is a command-line shell convention to separate options from a
 
 **✅ Command-Line Mode (script command):**
 ```bash
+# With environment variable
+cargo run -p thag_demo -- script profiling_demo -E THAG_PROFILER=both -f -- input.txt
+#                                                ^^ env var option
+
+# Without environment variable
 cargo run -p thag_demo -- script syn_dump_syntax -f -t -- demo/hello.rs
 #                                                      ^^ separator needed here
 ```
@@ -235,10 +274,70 @@ cargo run -p thag_demo -- browse
 1. **Predictable behavior**: Working directory stays where you expect it (your shell's PWD)
 2. **Clear path resolution**: Prompts and messages show exactly where paths are resolved from
 3. **Full control**: Access to all thag options for debugging and optimization
-4. **Consistency**: Same argument syntax as thag itself (with optional `--` in CLI mode)
-5. **Flexibility**: Works correctly from any directory in the project
-6. **Discoverability**: Help text shows all available options
-7. **User-friendly**: Interactive mode auto-strips `--` if accidentally typed, and prompts explain the correct format
+4. **Environment variable support**: Set variables like `THAG_PROFILER` for both CLI and interactive modes
+5. **Consistency**: Same argument syntax as thag itself (with optional `--` in CLI mode)
+6. **Flexibility**: Works correctly from any directory in the project
+7. **Discoverability**: Help text shows all available options
+8. **User-friendly**: Interactive mode auto-strips `--` if accidentally typed, and prompts explain the correct format
+
+## Complete Syntax Reference
+
+### Script Command (Command-Line)
+
+**Basic syntax:**
+```bash
+cargo run -p thag_demo -- script [OPTIONS] <NAME> [-- <ARGS>...]
+```
+
+**Options:**
+- `-f, --force` - Force rebuild
+- `-t, --timings` - Display timings  
+- `--features <FEATURES>` - Enable features (comma-separated)
+- `-E, --env <ENV_VARS>` - Set environment variable (can be repeated)
+- `-g, --generate` - Just generate, don't run
+- `-b, --build` - Just build, don't run
+- `-c, --check` - Just check, don't run
+- `-v, --verbose` - Verbose output (on main thag_demo command)
+
+**Examples:**
+```bash
+# Simple run
+cargo run -p thag_demo -- script syn_dump_syntax demo/hello.rs
+
+# Force rebuild with timings
+cargo run -p thag_demo -- script syn_dump_syntax -f -t demo/hello.rs
+
+# Set environment variable for profiling
+cargo run -p thag_demo -- script basic_profiling -E THAG_PROFILER=both
+
+# Multiple environment variables
+cargo run -p thag_demo -- script my_script -E VAR1=value1 -E VAR2=value2
+
+# All options combined
+cargo run -p thag_demo -- script profiling_demo -f -t -E THAG_PROFILER=both --features full_profiling -- input.txt
+
+# Verbose mode (on thag_demo itself)
+cargo run -p thag_demo -- -v script my_script demo/file.rs
+```
+
+### Browse Command (Interactive)
+
+**Syntax:**
+```bash
+cargo run -p thag_demo -- browse
+```
+
+**Interactive flow:**
+1. Select demo from list
+2. Prompted for thag options (force, timings, features, generate, build, check)
+3. Prompted for script arguments (if demo accepts them)
+4. Prompted for environment variables (with suggestions for profiling demos)
+5. Demo runs with your selections
+
+**Key points for interactive mode:**
+- DON'T type `--` before arguments
+- File paths relative to your shell's current directory
+- Environment variables in format: `KEY=value` or `KEY1=val1 KEY2=val2`
 
 ## See Also
 

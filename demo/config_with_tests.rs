@@ -3,7 +3,7 @@
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
 */
 
-/// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only (-T)`.
+/// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only` `(thag -T)`.
 ///
 /// In this case this demo file is the one we're testing.
 ///
@@ -42,8 +42,8 @@ use std::{
 };
 use strum::{Display, EnumString};
 use thag_rs::{
-    lazy_static_var, logging, sprtln, svprtln, Color, ColorSupport, Role, Style, TermBgLuma,
-    ThagError, ThagResult, Verbosity, V,
+    lazy_static_var, logging, sprtln, svprtln, ColorSupport, Role, TermBgLuma, ThagError,
+    ThagResult, Verbosity, V,
 };
 use toml_edit::DocumentMut;
 
@@ -694,7 +694,7 @@ pub fn open(context: &dyn Context) -> ThagResult<Option<String>> {
         fs::create_dir_all(dir_path)?;
 
         sprtln!(
-            &Color::yellow().bold(), // using our Color type
+            Role::WARN, // using our Color type
             "No configuration file found at {}. Creating one using system defaults...",
             config_path.display()
         );

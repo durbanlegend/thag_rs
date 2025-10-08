@@ -21,6 +21,7 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 ///
 //# Purpose: Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
 //# Categories: technique, testing
+//# Sample arguments: `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use edit::edit_file;
 use log::debug;

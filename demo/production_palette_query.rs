@@ -12,7 +12,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 ///
 /// Unlike the experimental version, this focuses on the reliable crossterm
 /// approach and includes proper error handling, caching, and integration
-/// patterns suitable for use in the thag_styling subcrate.
+/// patterns suitable for use in the `thag_styling` subcrate.
 //# Purpose: Production-ready palette querying with crossterm
 //# Categories: color, styling, terminal
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};

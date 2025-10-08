@@ -8,6 +8,7 @@ default = ["bpaf/derive", "bpaf/autocomplete"]
 /// E.g. `thag demo/bpaf_cargo_show_asm.rs -- -h`
 //# Purpose: Demo CLI alternative to clap crate
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- -h`
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};
 

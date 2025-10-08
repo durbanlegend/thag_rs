@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-// use colored::Colorize;
+use regex;
 
 use inquire::{set_global_render_config, Confirm, Select, Text};
 
@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 use std::{env, fs, io};
 use thag_rs::{
-    builder::execute, configure_log, get_verbosity, set_global_verbosity, sprtln, svprtln,
+    builder::execute, configure_log, get_verbosity, re, set_global_verbosity, sprtln, svprtln,
     themed_inquire_config, Cli, Role, Styleable, StyledPrint, V,
 };
 
@@ -344,9 +344,16 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
             if !comment_text.is_empty() && description.is_none() {
                 description = Some(comment_text.to_string());
             }
+
             // Look for usage examples in doc comments
-            if comment_text.starts_with("E.g.") || comment_text.contains("thag") {
-                usage_example = Some(comment_text.to_string());
+            if usage_example.is_none() {
+                let next = extract_thag_commands(comment_text).iter().next().cloned();
+                if let Some(ref cmd) = next {
+                    if cmd.contains(' ') {
+                        usage_example = cmd;
+                        // eprintln!("Found command: {cmd}");
+                    }
+                }
             }
         } else if in_block_doc_comment {
             if !trimmed.starts_with("/**") {
@@ -355,8 +362,14 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
                     description = Some(comment_text.to_string());
                 }
                 // Look for usage examples in doc comments
-                if comment_text.starts_with("E.g.") || comment_text.contains("thag") {
-                    usage_example = Some(comment_text.to_string());
+                if usage_example.is_none() {
+                    let next = extract_thag_commands(comment_text).iter().next().cloned();
+                    if let Some(ref cmd) = next {
+                        if cmd.contains(' ') {
+                            usage_example = cmd;
+                            // eprintln!("Found command: {cmd}");
+                        }
+                    }
                 }
             }
         }
@@ -1254,12 +1267,24 @@ fn print_demo_info(demo_name: &str) {
     println!();
 }
 
-// Theme-aware inquire configuration is now handled by thag_rs::styling::themed_inquire_config()
-// This respects the configured theme (Black Metal, Base16, etc.) by mapping:
-// - selected_option → Role::Emphasis (your theme's emphasis color)
-// - help_message → Role::Info (your theme's info color)
-// - error_message → Role::Error (your theme's error color)
-// - And so on...
-//
-// The complex color distance calculation and hardcoded fallbacks have been moved
-// to thag_rs/src/styling.rs for better maintainability and to avoid duplication.
+/// Extract full bash-style invocations involving thag or thag_*
+///
+/// Examples matched:
+/// - `thag demo/hello.rs`
+/// - `FOO=bar BAR=baz thag -x`
+/// - `cat demo.rs | thag_url --debug`
+/// - `MULTI=1 thag -f arg1 arg2`
+pub fn extract_thag_commands(text: &str) -> Vec<String> {
+    let re = re!(r#"(?mx)
+        (?P<cmd>                                  # capture the entire invocation
+            (?:\b\w+=\S+\s+)*                     # optional env vars
+            (?:[^\s|]+?\s*\|\s*)?                 # optional piped input
+            thag(?:_[a-z0-9]+)?                   # thag or thag_something
+            (?:\s+[^\s`";)\]]+)*                  # args and options
+        )
+        "#,);
+
+    re.captures_iter(text)
+        .map(|c| c["cmd"].trim().to_string())
+        .collect()
+}

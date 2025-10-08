@@ -38,6 +38,7 @@ enum Opt {
 /// E.g. `thag demo/clap_enum_strum.rs -- variant-num2`
 //# Purpose: Simple demo of featured crates, contrasting how they expose variants.
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- variant-num2`
 fn main() {
     let cli = Cli::parse();
 

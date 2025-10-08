@@ -9,6 +9,7 @@ bpaf_derive = "0.5.10"
 /// E.g. `thag demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
 //# Purpose: Demo CLI alternative to clap crate
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- --flag cmd --flag --arg=6`
 use bpaf_derive::Bpaf;
 
 #[derive(Debug, Clone, Bpaf)]

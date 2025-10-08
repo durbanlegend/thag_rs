@@ -263,7 +263,7 @@ If a demo doesn't behave as expected, check that:
 
 ### Benchmark Demos
 - `benchmark`
-- `flamegraph`
+- `time-profiling`
 
 **Recommended:**
 ```bash

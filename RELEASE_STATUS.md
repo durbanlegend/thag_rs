@@ -21,6 +21,12 @@
 - [x] Updated CHANGELOG.md with all v0.2.0 changes
 - [x] Major README reviews and improvements across all subcrates
 - [x] Theme screenshots in README (Catppuccin Mocha, Gruvbox)
+- [x] Created thag_demo time-profiling video (https://asciinema.org/a/S5C6KoJPzEihNyYUsdADhN2O6)
+- [x] Created thag_demo browse video (https://asciinema.org/a/3TgTf3w3O57Zr7G6GYUuwlq4y)
+- [x] Embedded thag_demo videos in README with flamegraph PNG/SVG assets
+- [x] Renamed flamegraph demo to time-profiling for clarity
+- [x] Reordered thag_demo demos for logical progression
+- [x] Fixed thag_demo to use thag_styling instead of Colorize
 
 ### Code Improvements
 - [x] Refactored tool_errors from proc macro to regular module
@@ -35,12 +41,7 @@
 
 ### Immediate Tasks (< 1 hour)
 
-1. **Capture thag_demo browse interface screenshot**
-   - Run `thag_demo` and capture screenshot
-   - Save to `assets/` directory
-   - Reference in README if appropriate
-
-2. **Generate demo README**
+1. **Generate demo README**
    - Run: `cargo run --bin thag_gen_readme`
    - Verify: `demo/README.md` looks correct
    - Commit if changes made
@@ -150,14 +151,14 @@ See RELEASE_CHECKLIST.md for detailed publishing sequence.
 
 ## 📊 Progress Summary
 
-**Documentation**: ~95% complete (1 screenshot remaining)
+**Documentation**: ~98% complete (thag_demo videos added)
 **Code Quality**: 0% complete (all checks pending)
 **Version Verification**: 0% complete
 **Package Testing**: 0% complete
 **Final Prep**: 0% complete
 **Publishing**: 0% complete
 
-**Overall Readiness**: ~20% complete
+**Overall Readiness**: ~25% complete
 
 **Estimated Time to Release-Ready**: 4-8 hours of focused work
 
@@ -166,9 +167,8 @@ See RELEASE_CHECKLIST.md for detailed publishing sequence.
 ## 🎯 Recommended Workflow
 
 ### Today's Session
-1. Capture thag_demo screenshot (5 min)
-2. Run thag_gen_readme (2 min)
-3. Run all cargo quality checks (30-60 min)
+1. Run thag_gen_readme (2 min)
+2. Run all cargo quality checks (30-60 min)
 4. Fix any issues found (variable)
 5. Version verification (15 min)
 

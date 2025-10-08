@@ -74,8 +74,8 @@ enum DemoCommand {
     /// Differential comparison demo with before/after analysis
     DifferentialComparison,
 
-    /// Interactive flamegraph demo
-    Flamegraph,
+    /// Execution time profiling of nested functions
+    TimeProfiling,
 
     /// Full benchmark profiling demo
     Benchmark,
@@ -648,12 +648,15 @@ fn list_all_demos() -> Result<()> {
     let demos = vec![
         ("basic-profiling", "Basic function timing and profiling"),
         (
+            "time-profiling",
+            "Execution time profiling of nested functions",
+        ),
+        (
             "memory-profiling",
             "Memory allocation tracking and analysis",
         ),
         ("async-profiling", "Profiling async functions and futures"),
         ("comparison", "Before/after performance comparison"),
-        ("flamegraph", "Interactive flamegraph generation"),
         ("benchmark", "Full benchmark profiling with detailed output"),
         (
             "interactive-profiling",
@@ -845,12 +848,15 @@ fn list_demos() {
     let demos = vec![
         ("basic-profiling", "Basic function timing and profiling"),
         (
+            "time-profiling",
+            "Execution time profiling of nested functions",
+        ),
+        (
             "memory-profiling",
             "Memory allocation tracking and analysis",
         ),
         ("async-profiling", "Profiling async functions and futures"),
         ("comparison", "Before/after performance comparison"),
-        ("flamegraph", "Interactive flamegraph generation"),
         ("benchmark", "Full benchmark profiling with detailed output"),
         (
             "interactive-profiling",
@@ -905,7 +911,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::AsyncProfiling => include_str!("../demos/async_profiling.rs"),
         DemoCommand::Comparison => include_str!("../demos/comparison.rs"),
         DemoCommand::DifferentialComparison => include_str!("../demos/differential_comparison.rs"),
-        DemoCommand::Flamegraph => include_str!("../demos/flamegraph.rs"),
+        DemoCommand::TimeProfiling => include_str!("../demos/time_profiling.rs"),
         DemoCommand::Benchmark => include_str!("../demos/benchmark.rs"),
         DemoCommand::InteractiveProfiling => include_str!("../demos/interactive_profiling.rs"),
         DemoCommand::Script {
@@ -943,7 +949,7 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
         DemoCommand::AsyncProfiling => "async_profiling",
         DemoCommand::Comparison => "comparison",
         DemoCommand::DifferentialComparison => "differential_comparison",
-        DemoCommand::Flamegraph => "flamegraph",
+        DemoCommand::TimeProfiling => "time_profiling",
         DemoCommand::Benchmark => "benchmark",
         DemoCommand::InteractiveProfiling => "interactive_profiling",
         DemoCommand::Script { .. } => unreachable!(),
@@ -1321,9 +1327,9 @@ fn print_demo_info(demo_name: &str) {
             println!("  • Automated execution of inefficient vs efficient versions");
             println!("  • Interactive differential flamegraph generation");
         }
-        "flamegraph" => {
-            println!("  • Interactive flamegraph generation");
-            println!("  • Visual performance analysis");
+        "time_profiling" => {
+            println!("  • Execution time profiling of nested functions");
+            println!("  • Automatic flamegraph generation and browser visualization");
         }
         "benchmark" => {
             println!("  • Comprehensive benchmark profiling");

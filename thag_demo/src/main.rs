@@ -105,7 +105,7 @@ enum DemoCommand {
         /// Just check, don't run
         #[arg(short, long)]
         check: bool,
-        /// Arguments to pass to the script (use -- to separate from thag_demo options)
+        /// Arguments to pass to the script (optionally use -- to separate from options)
         #[arg(last = true)]
         args: Vec<String>,
     },
@@ -457,9 +457,11 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
         println!("💡 Start typing to filter demos by name • 📝 = accepts arguments");
         sprtln!(
             Role::EMPH,
-            "⚠️ Demo directory is {} - use relative paths from your current location",
-            demo_dir.display().heading3()
+            "📂 Current shell directory: {}",
+            env::current_dir()?.display().heading3()
         );
+        println!("   💡 All file paths are relative to your current shell directory");
+        println!("   📁 Demo scripts are in: {}", demo_dir.display().subtle());
         println!("{}", "═".repeat(80));
 
         let selection: InquireResult<ListOption<String>> =
@@ -492,7 +494,11 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
                         println!("💡 Usage: {}", usage.subtle());
                     }
                     if let Some(ref args) = demo_file.sample_arguments {
-                        println!("📝 Sample args: {}", args.subtle());
+                        let cleaned_sample = args.trim_matches('`').trim();
+                        let display_args =
+                            cleaned_sample.strip_prefix("-- ").unwrap_or(cleaned_sample);
+                        println!("💡 Sample arguments: {}", display_args.subtle());
+                        println!("   (don't type '--' in interactive mode)");
                     }
                 }
                 println!();
@@ -985,6 +991,12 @@ fn run_script_demo(
             format!("With arguments: {}", arg_list.join(" "))
                 .subtle()
                 .println();
+            let cwd = env::current_dir()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|_| ".".to_string());
+            format!("   (paths relative to: {})", cwd)
+                .subtle()
+                .println();
         }
     }
 
@@ -1130,26 +1142,40 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Vec<String> {
     println!("\n📝 This demo accepts command-line arguments.");
 
     if let Some(ref sample_args) = demo_file.sample_arguments {
-        println!("💡 Sample arguments: {}", sample_args);
+        // Strip the -- prefix from sample args for interactive display
+        let cleaned_sample = sample_args.trim_matches('`').trim();
+        let display_args = cleaned_sample.strip_prefix("-- ").unwrap_or(cleaned_sample);
+        println!("💡 Sample arguments: {}", display_args);
+        println!("   (don't type '--' in interactive mode)");
     }
 
     if let Some(ref usage) = demo_file.usage_example {
         println!("💡 Usage example: {}", usage);
     }
 
-    match Text::new("Enter arguments (or press Enter for no arguments):")
+    let cwd = env::current_dir()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| ".".to_string());
+
+    match Text::new(&format!(
+        "Enter arguments (paths relative to {}):",
+        cwd
+    ))
         .with_default("")
-        .with_help_message("Space-separated arguments that will be passed to the demo")
+        .with_help_message("Arguments for the demo script. File paths are relative to your shell's current directory")
         .prompt()
     {
         Ok(input) => {
             if input.trim().is_empty() {
                 Vec::new()
             } else {
+                // Strip leading -- if user typed it (they shouldn't in interactive mode)
+                let cleaned_input = input.trim().strip_prefix("-- ").unwrap_or(input.trim());
+
                 // Simple argument parsing - split by spaces but preserve quoted strings
-                shell_words::split(&input).unwrap_or_else(|_| {
+                shell_words::split(cleaned_input).unwrap_or_else(|_| {
                     // Fallback to simple split if shell_words fails
-                    input.split_whitespace().map(String::from).collect()
+                    cleaned_input.split_whitespace().map(String::from).collect()
                 })
             }
         }

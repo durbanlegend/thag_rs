@@ -289,13 +289,13 @@ echo '(1..=10).product::<u32>()' | thag --stdin                 # Short form: -s
 Place any arguments for the script after `--` to separate them from `thag` arguments:
 
 ```bash
-echo 'println!("Hello {}", std::env::args().nth(1).unwrap());' | thag -s -- Ferris
+echo 'println!("Hello {}", std::env::args().nth(1).ok_or_else(|| "No name supplied")?);' | thag -s -- Ferris
 ```
 
 This is equivalent to:
 
 ```bash
-thag -e 'println!("Hello {}", std::env::args().nth(1).unwrap());' -- Ferris
+thag -e 'println!("Hello {}", std::env::args().nth(1).ok_or_else(|| "No name supplied")?);' -- Ferris
 ```
 
 ### * With the built-in TUI (Terminal User Interface) editor
@@ -564,6 +564,7 @@ at the start of the script, as you will see done in some of the demos. To help w
     }
 
 ## Usage
+
 Once installed, you can use the `thag` command from the command line. `thag` uses `clap` to process command-line arguments including `--help`.
 
 See the `Quick start` section for a comprehensive introduction. Here are some further examples:
@@ -575,6 +576,25 @@ See the `Quick start` section for a comprehensive introduction. Here are some fu
 thag -e '(1..=34).product::<u128>()'
 ```
 This panics beyond 34! due to using Rust primitives, but see `demo/factorial_dashu_product.rs` for arbitrarily big numbers:
+
+#### Make a command from an expression
+
+Three `thag` features that make expressions powerful are:
+
+1. The ability to compile them with `-x` (caution: `-ex` ❌, `-xe` ✅ to make a release build.
+
+2. Dependency inference means no need to provide a Cargo.toml or other form of dependency metadata.
+
+3. You may use the shorthand `?` to unwrap results in your expression. See the `Ferris` example earlier.
+
+Here's how to make a useful command `myip` to retrieve your external IP address. Be sure that `~/.cargo/bin` is in your path, or move the command to a directory that is:
+
+```bash
+thag -u true -xe 'ureq::get("https://api.ipify.org").call()?.into_body().read_to_string()?' && mv ~/.cargo/bin/temp ~/.cargo/bin/myip && echo Success
+
+$ myip
+***.***.***.*** [redacted]
+```
 
 #### Shoehorn a script into an expression, just because!
 ```bash
@@ -663,7 +683,7 @@ If you want to ensure that a dependency in a TOML block is up to date, you can g
 This crate is designed to be cross-platform and supports MacOS, Linux and Windows.
 
 ### Currently tested on:
-* MacOS (M1) Sonoma and Sequoia
+* MacOS (M1) Sonoma, Sequoia, Tahoe.
 * Linux: Zorin and (WSL2) Ubuntu
 * Windows 11:
   - PowerShell 5 and 7

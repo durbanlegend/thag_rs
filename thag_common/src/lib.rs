@@ -275,6 +275,11 @@ macro_rules! vprtln {
             $crate::OUTPUT_MANAGER.lock().vprtln($verbosity, &format!($($arg)*));
         }
     };
+    ($verbosity:expr) => {
+        {
+            $crate::OUTPUT_MANAGER.lock().vprtln($verbosity, "");
+        }
+    };
 }
 
 /// Debugging logger.

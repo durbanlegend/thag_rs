@@ -17,7 +17,7 @@ use crate::debug_log;
 
 fn reset_terminal_state() {
     // eprintln!("Resetting terminal state...");
-    print!("\r\n");
+    // Don't print anything - just flush to ensure any pending output is written
     let _ = stdout().flush();
 }
 
@@ -485,8 +485,18 @@ fn query_background_osc11_with_timeout(timeout: Duration) -> Option<[u8; 3]> {
             stdout.write_all(query.as_bytes()).ok()?;
             stdout.flush().ok()?;
 
-            // Read response with timeout
-            let response = read_terminal_response_with_timeout(&mut stdin, timeout)?;
+            // Read response directly in raw mode to prevent character leakage
+            // Using a fixed buffer size and direct blocking read is more reliable
+            // than byte-by-byte reading with timeouts
+            let mut buffer = [0u8; 256];
+            let bytes_read = stdin.read(&mut buffer).ok()?;
+
+            if bytes_read == 0 {
+                return None;
+            }
+
+            // Convert to string for parsing
+            let response = String::from_utf8_lossy(&buffer[..bytes_read]).to_string();
 
             // Parse OSC 11 response
             parse_osc11_background_response(&response)
@@ -508,59 +518,6 @@ fn query_background_osc11_with_timeout(timeout: Duration) -> Option<[u8; 3]> {
                 result
             },
         )
-}
-
-/// Read terminal response with proper timeout handling
-fn read_terminal_response_with_timeout(
-    stdin: &mut std::io::Stdin,
-    timeout: Duration,
-) -> Option<String> {
-    use std::io::Read;
-
-    let mut buffer = Vec::new();
-    let mut temp_buffer = [0u8; 1];
-    let start = Instant::now();
-
-    while start.elapsed() < timeout {
-        match stdin.read(&mut temp_buffer) {
-            Ok(1) => {
-                buffer.push(temp_buffer[0]);
-
-                // Check for response terminators
-                if temp_buffer[0] == 0x07 || // BEL
-                   (buffer.len() >= 2 && buffer[buffer.len()-2] == 0x1b && buffer[buffer.len()-1] == b'\\')
-                {
-                    break;
-                }
-
-                // Safety limit to prevent infinite buffering
-                if buffer.len() > 1024 {
-                    vprtln!(V::V, "OSC response buffer limit exceeded");
-                    break;
-                }
-            }
-            Ok(0) => {
-                thread::sleep(Duration::from_millis(1));
-            }
-            Ok(_) => {
-                // Handle case where more than 1 byte is read
-                thread::sleep(Duration::from_millis(1));
-            }
-            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(1));
-            }
-            Err(_) => {
-                vprtln!(V::V, "Error reading terminal response");
-                break;
-            }
-        }
-    }
-
-    if buffer.is_empty() {
-        None
-    } else {
-        Some(String::from_utf8_lossy(&buffer).to_string())
-    }
 }
 
 /// Parse OSC 11 background color response

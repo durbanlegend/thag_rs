@@ -124,7 +124,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_ast.rs
 
 **Purpose:** A user-friendly interface to the `thag` `--cargo` option.
 
-**Crates:** `atty`, `inquire`, `thag_common`, `thag_proc_macros`
+**Crates:** `atty`, `inquire`, `thag_common`, `thag_proc_macros`, `thag_rs`
 
 **Type:** Program
 
@@ -379,7 +379,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_edit_the
 
 **Purpose:** Display the expanded code of a user script on its own or side-by-side with the original script using a choice of diff tools.
 
-**Crates:** `anyhow`, `atty`, `crossterm`, `inquire`, `side_by_side_diff`, `tempfile`, `thag_proc_macros`, `thag_styling`
+**Crates:** `anyhow`, `atty`, `crossterm`, `inquire`, `side_by_side_diff`, `tempfile`, `thag_rs`
 
 **Type:** Program
 
@@ -1081,7 +1081,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_url.rs
 
 **Purpose:** Install thag themes for Windows Terminal
 
-**Crates:** `colored`, `dirs`, `inquire`, `serde_json`, `thag_styling`
+**Crates:** `dirs`, `inquire`, `serde_json`, `thag_styling`
 
 **Type:** Program
 

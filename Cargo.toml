@@ -14,7 +14,6 @@ include = [
   "demo/**",
   "src/**",
   "tests/**",
-  "tools/**",
 ]
 default-run = "thag"
 readme = "README.md"

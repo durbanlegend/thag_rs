@@ -17,7 +17,9 @@ opt-level = 2
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 //# Categories: crates, technique, tools
 use std::io::{self, Read};
-use thag_common::{auto_help, help_system::check_help_and_exit};
+use thag_common::{
+    auto_help, get_verbosity, help_system::check_help_and_exit, set_verbosity_from_env, vprtln, V,
+};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
@@ -43,7 +45,12 @@ fn main() {
     let help = auto_help!();
     check_help_and_exit(&help);
 
-    println!("Type text wall at the prompt and hit Ctrl-D on a new line when done");
+    set_verbosity_from_env();
+
+    vprtln!(
+        V::N,
+        "Type text wall at the prompt and hit Ctrl-D on a new line when done"
+    );
 
     // Remove backslash escapes from double quotes.
     let esc_dq = r#"\""#;
@@ -53,5 +60,7 @@ fn main() {
         .expect("Problem reading input")
         .replace("\\n", "\n") // Have to replace because raw data strings are treated differently from hard-coded strings
         .replace(esc_dq, dq);
-    println!("\n\nDethagomized:\n\n{}", dethagomize(&content));
+    vprtln!(V::N, "\nDethagomized:");
+    println!("{}", dethagomize(&content));
+    // vprtln!(V::N);
 }

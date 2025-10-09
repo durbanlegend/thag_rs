@@ -313,7 +313,7 @@ fn determine_boilerplate_path(scripts_dir: &Path) -> PathBuf {
         PathBuf::from("assets/bin_boilerplate.md")
     } else {
         // Default to the original boilerplate for demo and other directories
-        PathBuf::from("assets/boilerplate.md")
+        PathBuf::from("assets/demo_boilerplate.md")
     }
 }
 

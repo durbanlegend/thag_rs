@@ -146,7 +146,7 @@ pub use {
     },
     thag_styling::{
         display_theme_details, display_theme_roles, find_closest_color, paint_for_role, sprtln,
-        svprtln, AnsiStyleExt, ColorInfo, ColorInitStrategy, ColorValue, HowInitialized,
+        svprtln, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy, ColorValue, HowInitialized,
         PaletteConfig, Role, Style, Styleable, Styled, StyledPrint, StyledString, Styler, Theme,
     },
 };

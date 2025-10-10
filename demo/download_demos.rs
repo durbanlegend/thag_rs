@@ -1,15 +1,6 @@
 /*[toml]
 [dependencies]
-# The `thag` command uses the `thag-auto` keyword here to resolve dependencies automatically based on your environment:
-# - Default: Uses crates.io (no environment variables needed)
-# - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
-# - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
-# E.g. from `thag_rs` project dir: `THAG_DEV_PATH=$PWD thag demo/download_demos.rs`
-thag_proc_macros = { version = "0.2, thag-auto" }
 thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
-
-# [features]
-# default = ["thag_styling/inquire_theming"] # For optional theming of `inquire`
 */
 
 /// Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`
@@ -26,8 +17,8 @@ use std::fs;
 use std::io::Write as _;
 use std::path::PathBuf;
 use std::process::Command;
-use thag_proc_macros::file_navigator;
-use thag_styling::themed_inquire_config; // For optional theming of `inquire`
+use thag_styling::{file_navigator, themed_inquire_config};
+// For optional theming of `inquire`
 
 file_navigator! {}
 

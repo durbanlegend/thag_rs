@@ -1,21 +1,24 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.1, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
 /// Early prototype of a front-end prompt for `thag`.
 //# Purpose: Ultimately, to provide a prompt-driven front-end to the `thag` command.
 //# Categories: prototype, thag_front_ends, tools
-use inquire::MultiSelect;
-use std::path::PathBuf;
+use inquire::{set_global_render_config, MultiSelect};
+// For optional theming of `inquire`
 use std::process::Command;
-use thag_proc_macros::file_navigator;
+use thag_styling::{file_navigator, themed_inquire_config, Styleable};
 
 file_navigator! {}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🗂️  Prompted Thag");
     println!("================================\n");
+
+    // For optional theming of `inquire`
+    set_global_render_config(themed_inquire_config());
 
     let mut navigator = FileNavigator::new();
 
@@ -60,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd_str = format!("{cmd:?}");
     cmd_str.retain(|c| c != '"');
-    println!("Running: {}", cmd_str.bright_cyan());
+    println!("Running: {}", cmd_str.info());
     cmd.status()?;
 
     Ok(())

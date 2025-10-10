@@ -18,12 +18,45 @@
 - [ ] Run: `cargo run --bin thag_gen_readme`
 - [ ] Verify demo/README.md looks correct
 
-### Code Quality (Est. 4-6 hours)
-- [ ] `cargo test --workspace --all-features`
+### Code Quality (Est. 2-3 hours)
+**Note**: Integration tests now use precompiled binary (much faster than before)
+
+#### Workspace Tests
+- [ ] `cargo test --workspace` (default features with simplelog)
+- [ ] `cargo test --workspace --no-default-features --features env_logger,full`
+- [ ] `cargo test --workspace --features tools`
+- [ ] `cargo test --workspace --features profiling`
+- [ ] Optional: `cargo test --test integration_test -- --test-threads=1` (use 1 thread - script builds can still interfere)
+
+#### Subcrate Tests and Clippy
+**thag_common** (quick - minimal features)
+- [ ] `cd thag_common && cargo test`
+- [ ] `cd thag_common && cargo clippy -- -W clippy::pedantic`
+
+**thag_proc_macros** (quick - no features)
+- [ ] `cd thag_proc_macros && cargo test`
+- [ ] `cd thag_proc_macros && cargo clippy -- -W clippy::pedantic`
+
+**thag_styling** (test key feature combinations)
+- [ ] `cd thag_styling && cargo test --features basic`
+- [ ] `cd thag_styling && cargo test --features full`
+- [ ] `cd thag_styling && cargo clippy --features full -- -W clippy::pedantic`
+
+**thag_profiler** (test profiling modes)
+- [ ] `cd thag_profiler && cargo test`
+- [ ] `cd thag_profiler && cargo test --features full_profiling`
+- [ ] `cd thag_profiler && cargo clippy --features full_profiling -- -W clippy::pedantic`
+
+**thag_demo**
+- [ ] `cd thag_demo && cargo test`
+- [ ] `cd thag_demo && cargo clippy -- -W clippy::pedantic`
+
+#### Main Workspace Quality Checks
 - [ ] `cargo build --release --workspace`
-- [ ] `cargo clippy --all-targets --all-features --workspace`
+- [ ] `cargo clippy --all-targets --workspace`
+- [ ] `cargo clippy --workspace --no-default-features --features env_logger,core`
 - [ ] `cargo fmt --all -- --check`
-- [ ] `cargo doc --workspace --all-features --no-deps`
+- [ ] `cargo doc --workspace --no-deps`
 - [ ] `typos`
 - [ ] `vale README.md --no-wrap`
 - [ ] `vale thag_profiler/README.md --no-wrap`
@@ -224,7 +257,7 @@ See CHANGELOG.md for full details."
 **Rollback**: Procedures documented above
 **Questions**: See RELEASE_PLAN.md for details
 
-**Status**: 
+**Status**:
 - [ ] Pre-Release Complete
 - [ ] Published to crates.io
 - [ ] GitHub Release Created

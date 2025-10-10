@@ -460,7 +460,7 @@ fn adjust_color_brightness([r, g, b]: [u8; 3], factor: f32) -> [u8; 3] {
 //         .first()
 //         .copied()
 //         .or_else(|| &theme.palette.subtle).rgb()
-//         .or(Some((16, 16, 16)))
+//         .or(Some([16, 16, 16]))
 // }
 
 // /// Extract RGB values from a Style's foreground color

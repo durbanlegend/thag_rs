@@ -5,7 +5,6 @@
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
-thag_common = { version = "0.2, thag-auto" }
 */
 //!
 //! Run with different features to see different integrations:
@@ -23,7 +22,7 @@ thag_common = { version = "0.2, thag-auto" }
 //! cargo run --example themed_style_demo --features "crossterm_support"
 //! ```
 
-use thag_styling::Role;
+use thag_styling::{Role, ThemedStyle};
 
 fn main() {
     println!("🎨 Thag Styling ThemedStyle Trait Demo\n");

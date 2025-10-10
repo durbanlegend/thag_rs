@@ -267,6 +267,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crossterm::style::Stylize;
 
     #[test]
     fn test_themed_content_style_creation() {
@@ -288,7 +289,7 @@ mod tests {
         let themed_style = base_style.with_role(Role::Warning);
 
         // Should preserve the bold attribute
-        assert!(themed_style.attributes.contains(&Attribute::Bold));
+        assert!(themed_style.attributes.has(Attribute::Bold));
     }
 
     #[test]
@@ -296,8 +297,6 @@ mod tests {
         let color_info = ColorInfo {
             index: 42,
             value: ColorValue::Color256 { color256: 42 },
-            hex: "#ff0000".to_string(),
-            name: "test".to_string(),
         };
 
         let cross_color = CrossColor::from(&color_info);

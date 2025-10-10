@@ -81,7 +81,6 @@ pub fn generate_both_visualizations(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
 
     #[test]
     fn test_generate_flamegraph_svg_empty() {

@@ -3006,7 +3006,7 @@ pub fn dump_profiled_functions() -> Vec<(String, String)> {
         .collect()
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 static TEST_MODE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Test utilities module
@@ -3024,9 +3024,10 @@ pub fn is_test_mode_active() -> bool {
     TEST_MODE_ACTIVE.load(Ordering::SeqCst)
 }
 
-#[cfg(all(test, feature = "time_profiling"))]
+// #[cfg(all(test, feature = "time_profiling"))]
+#[cfg(feature = "time_profiling")]
 /// Force sets the profiling state for testing purposes
-/// This is only available in test mode with the profiling feature enabled
+/// This is only available with the profiling feature enabled
 pub fn force_set_profiling_state(enabled: bool) {
     // This function is only used in tests to directly manipulate the profiling state
     PROFILING_STATE.store(enabled, Ordering::SeqCst);
@@ -3061,7 +3062,8 @@ pub fn force_enable_profiling_time_for_tests() {
 /// Force enables memory profiling for tests without using attribute macros
 ///
 /// This is a simplified helper for test code that can't easily use attribute macros
-#[cfg(all(test, feature = "full_profiling"))]
+// #[cfg(all(test, feature = "full_profiling"))]
+#[cfg(feature = "full_profiling")]
 pub fn force_enable_profiling_memory_for_tests() {
     use std::sync::atomic::Ordering;
 

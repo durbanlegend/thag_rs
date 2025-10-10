@@ -82,9 +82,10 @@ fn main() {
     #[cfg(feature = "color_detect")]
     {
         let (color_support, bg_rgb) = thag_common::terminal::detect_term_capabilities();
+        let [r, g, b] = bg_rgb;
         println!("   Color support: {:?}", color_support);
         println!("   Background RGB: {:?}", bg_rgb);
-        let hex = format!("{:02x}{:02x}{:02x}", bg_rgb.0, bg_rgb.1, bg_rgb.2);
+        let hex = format!("{r:02x}{g:02x}{b:02x}");
         println!("   Background hex: #{}", hex);
     }
 

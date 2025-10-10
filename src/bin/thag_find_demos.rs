@@ -797,15 +797,20 @@ fn collect_all_metadata(scripts_dir: &Path) -> Vec<ScriptMetadata> {
 mod tests {
     use crate::generate_default_filename;
     use crate::FilterLogic;
+    use crate::FilterPreferences;
 
     #[test]
     fn test_filename_generation() {
         // Test setup would depend on your Category enum implementation
         let categories = vec![/* your category values */];
         let crates = vec!["tokio".to_string(), "serde".to_string()];
-        let logic = FilterLogic::And;
+        let filter_prefs = FilterPreferences {
+            category: FilterLogic::And,
+            crate_logic: FilterLogic::And,
+            combination: FilterLogic::And,
+        };
 
-        let filename = generate_default_filename(&categories, &crates, &logic);
+        let filename = generate_default_filename(&categories, &crates, &filter_prefs);
         // Assert based on expected output
         assert!(filename.starts_with("demo_"));
         assert!(filename.ends_with(".md"));

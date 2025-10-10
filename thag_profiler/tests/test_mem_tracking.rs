@@ -42,6 +42,13 @@ static TEST_MEMORY: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(
 /// Test safe_alloc!
 #[cfg(feature = "full_profiling")]
 fn test_with_sys_alloc() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    eprintln!(
+        "thag_profiler::is_profiling_enabled()={}",
+        thag_profiler::is_profiling_enabled()
+    );
+    thag_profiler::mem_tracking::set_using_system(false);
+
     // Start with the default Tracking allocator
     assert_eq!(
         thag_profiler::mem_tracking::current_allocator(),

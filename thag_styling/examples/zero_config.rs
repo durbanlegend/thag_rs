@@ -98,8 +98,8 @@ fn show_automatic_detection() {
     println!("    Background:    {:?}", term_attrs.term_bg_luma);
     println!("    Theme:         {}", term_attrs.theme.name);
 
-    if let Some(rgb) = term_attrs.term_bg_rgb {
-        println!("    BG Color:      RGB({}, {}, {})", rgb.0, rgb.1, rgb.2);
+    if let Some([r, g, b]) = term_attrs.term_bg_rgb {
+        println!("    BG Color:      RGB({r}, {g}, {b})");
     }
 
     println!("    How Set:       {:?}", term_attrs.how_initialized);

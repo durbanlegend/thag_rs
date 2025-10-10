@@ -461,22 +461,6 @@ fn get_all_export_formats() -> Vec<ExportFormat> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
-    use thag_styling::{ColorSupport, Palette, TermBgLuma};
-
-    fn create_test_theme() -> Theme {
-        Theme {
-            name: "Test Export Theme".to_string(),
-            filename: PathBuf::from("test_export_theme.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette: Palette::default(),
-            backgrounds: vec!["#2a2a2a".to_string()],
-            bg_rgbs: vec![(42, 42, 42)],
-            description: "Test theme for export functionality".to_string(),
-        }
-    }
 
     #[test]
     fn test_theme_file_discovery() {

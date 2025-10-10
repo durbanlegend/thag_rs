@@ -392,7 +392,7 @@ fn test_strategy_comparison() {
     }
 
     // Check for discrepancies
-    let fresh_matches_attrs = *fresh_bg_rgb == current_attrs.term_bg_rgb.unwrap_or((0, 0, 0));
+    let fresh_matches_attrs = *fresh_bg_rgb == current_attrs.term_bg_rgb.unwrap_or([0, 0, 0]);
     if !fresh_matches_attrs {
         println!("   ⚠️  MISMATCH: Fresh detection differs from TermAttributes!");
         println!(

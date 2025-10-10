@@ -2614,16 +2614,16 @@ impl Theme {
 /// use thag_styling::styling::index_to_rgb;
 ///
 /// // Basic colors
-/// assert_eq!(index_to_rgb(0), (0, 0, 0));     // Black
-/// assert_eq!(index_to_rgb(15), (255, 255, 255)); // White
+/// assert_eq!(index_to_rgb(0), [0, 0, 0]);     // Black
+/// assert_eq!(index_to_rgb(15), [255, 255, 255]); // White
 ///
 /// // Color cube
 /// let rgb = index_to_rgb(196); // Bright red in 256-color palette
-/// assert_eq!(rgb, (255, 0, 0));
+/// assert_eq!(rgb, [255, 0, 0]);
 ///
 /// // Grayscale
 /// let gray = index_to_rgb(244); // Mid-gray
-/// assert_eq!(gray, (128, 128, 128));
+/// assert_eq!(gray, [128, 128, 128]);
 /// ```
 #[must_use]
 pub fn index_to_rgb(index: u8) -> [u8; 3] {
@@ -2877,11 +2877,11 @@ fn base_distance(c1: [u8; 3], c2: [u8; 3]) -> u32 {
 /// use thag_styling::find_closest_color;
 ///
 /// // Pure red should map to a red in the color cube
-/// let red_index = find_closest_color((255, 0, 0));
+/// let red_index = find_closest_color([255, 0, 0]);
 /// assert!(red_index >= 16); // Not a basic ANSI color
 ///
 /// // Gray should map to the grayscale range
-/// let gray_index = find_closest_color((128, 128, 128));
+/// let gray_index = find_closest_color([128, 128, 128]);
 /// assert!(gray_index >= 232);
 /// ```
 #[must_use]
@@ -2966,16 +2966,16 @@ fn find_closest_basic_color(rgb: [u8; 3]) -> u8 {
 /// use thag_styling::get_rgb;
 ///
 /// // Basic colors
-/// assert_eq!(get_rgb(0), (0, 0, 0));     // Black
-/// assert_eq!(get_rgb(15), (255, 255, 255)); // White
+/// assert_eq!(get_rgb(0), [0, 0, 0]);     // Black
+/// assert_eq!(get_rgb(15), [255, 255, 255]); // White
 ///
 /// // Color cube
 /// let rgb = get_rgb(196); // Bright red in 256-color palette
-/// assert_eq!(rgb, (255, 0, 0));
+/// assert_eq!(rgb, [255, 0, 0]);
 ///
 /// // Grayscale
 /// let gray = get_rgb(244); // Mid-gray
-/// assert_eq!(gray, (128, 128, 128));
+/// assert_eq!(gray, [128, 128, 128]);
 /// ```
 pub const fn get_rgb(color: u8) -> [u8; 3] {
     const STEPS: [u8; 6] = [0, 95, 135, 175, 215, 255];

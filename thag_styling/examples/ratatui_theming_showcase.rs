@@ -14,7 +14,7 @@ crossterm = "0.28"
 /// cargo run -p thag_styling --example ratatui_theming_showcase --features ratatui_support
 /// ```
 //# Purpose: Comprehensive showcase of ratatui integration with thag_styling themes
-//# Categories: gui, demo, theming
+//# Categories: demo, theming, tui
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,

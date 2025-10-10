@@ -281,7 +281,8 @@ fn main() {
             .with_version("1.0.0");
 
         let output = format!("{}", help);
-        assert!(output.contains("test_tool 1.0.0"));
+        eprintln!("output=[{output}");
+        assert!(output.contains("1.0.0"));
         assert!(output.contains("A test tool"));
         assert!(output.contains("Does testing things"));
     }

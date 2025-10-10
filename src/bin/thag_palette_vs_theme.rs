@@ -956,29 +956,23 @@ mod tests {
     }
 
     #[test]
-    // fn test_extract_rgb() {
-    //     let style = Style::fg(ColorInfo::rgb(255, 128, 64));
-    //     let rgb = extract_rgb(&style);
-    //     assert_eq!(rgb, Some([255, 128, 64]));
-    // }
-    #[test]
     fn test_brighten_color() {
         let original = [100, 150, 200];
         let brightened = brighten_color(original);
 
-        assert!(brightened.0 >= original.0);
-        assert!(brightened.1 >= original.1);
-        assert!(brightened.2 >= original.2);
+        assert!(brightened[0] >= original[0]);
+        assert!(brightened[1] >= original[1]);
+        assert!(brightened[2] >= original[2]);
     }
 
     #[test]
     fn test_contrast_ratio_calculation() {
         // Test with black and white (maximum contrast)
-        let contrast = calculate_contrast_ratio((0, 0, 0), (255, 255, 255));
+        let contrast = calculate_contrast_ratio([0, 0, 0], [255, 255, 255]);
         assert!((contrast - 21.0).abs() < 0.1);
 
         // Test with identical colors (minimum contrast)
-        let contrast = calculate_contrast_ratio((128, 128, 128), (128, 128, 128));
+        let contrast = calculate_contrast_ratio([128, 128, 128], [128, 128, 128]);
         assert!((contrast - 1.0).abs() < 0.1);
     }
 
@@ -988,6 +982,6 @@ mod tests {
         let issues = detect_potential_issues(&theme);
 
         // Should detect some issues with the test theme
-        assert!(issues.len() >= 0);
+        assert!(issues.len() > 0);
     }
 }

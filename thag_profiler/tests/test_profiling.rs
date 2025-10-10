@@ -499,14 +499,13 @@ fn test_profile_stats() {
 
 /// Test backtrace and stack extraction
 #[cfg(feature = "full_profiling")]
+#[profiled(mem_summary)]
 fn test_stack_extraction() {
     use thag_profiler::profiling::extract_profile_callstack;
 
     safe_alloc! {
         // Extract the call stack
-        let callstack = extract_profile_callstack(
-            "thag_profiler::profiling::extract_profile_callstack", // Starting function
-        );
+        let callstack = extract_profile_callstack();
 
         // eprintln!("callstack={callstack:#?}");
 
@@ -601,6 +600,7 @@ fn test_profiling_full_sequence() {
 
     #[cfg(feature = "full_profiling")]
     {
+        thag_profiler::profiling::force_enable_profiling_memory_for_tests();
         println!("Testing stack extraction (full_profiling only)...");
         test_stack_extraction();
     }

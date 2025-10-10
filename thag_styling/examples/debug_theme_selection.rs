@@ -56,8 +56,8 @@ fn main() {
     println!("   - theme.name: {}", term_attrs.theme.name);
     println!("   - theme.is_builtin: {}", term_attrs.theme.is_builtin);
 
-    if let Some(rgb) = term_attrs.term_bg_rgb {
-        println!("   - term_bg_rgb: RGB({}, {}, {})", rgb.0, rgb.1, rgb.2);
+    if let Some([r, g, b]) = term_attrs.term_bg_rgb {
+        println!("   - term_bg_rgb: RGB({r}, {g}, {b})");
     } else {
         println!("   - term_bg_rgb: None");
     }
@@ -139,11 +139,8 @@ fn main() {
         println!("   - color_support: {:?}", match_attrs.color_support);
         println!("   - theme.name: {}", match_attrs.theme.name);
 
-        if let Some(rgb) = match_attrs.term_bg_rgb {
-            println!(
-                "   - Match term_bg_rgb: RGB({}, {}, {})",
-                rgb.0, rgb.1, rgb.2
-            );
+        if let Some([r, g, b]) = match_attrs.term_bg_rgb {
+            println!("   - Match term_bg_rgb: RGB({r}, {g}, {b})");
         } else {
             println!("   - Match term_bg_rgb: None");
         }

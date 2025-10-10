@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         auto_detect_theme_type: false,
         force_theme_type: Some(TermBgLuma::Light),
         theme_name_prefix: Some("custom".to_string()),
+        ..Default::default()
     };
 
     let generator2 = ImageThemeGenerator::with_config(light_config);

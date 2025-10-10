@@ -17,9 +17,7 @@ opt-level = 2
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
 //# Categories: crates, technique, tools
 use std::io::{self, Read};
-use thag_common::{
-    auto_help, get_verbosity, help_system::check_help_and_exit, set_verbosity_from_env, vprtln, V,
-};
+use thag_common::{auto_help, help_system::check_help_and_exit, set_verbosity_from_env, vprtln, V};
 
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();

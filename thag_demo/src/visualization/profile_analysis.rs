@@ -298,8 +298,10 @@ fn clean_function_name(name: &str) -> String {
                 "fibonacci_cached"
             } else if s.contains("iter") {
                 "fibonacci_iter"
+            } else if s.contains("recursive") {
+                "fibonacciå_recursive"
             } else {
-                "fibonacci_recursive"
+                "fibonacci"
             }
         }
         .to_string(),

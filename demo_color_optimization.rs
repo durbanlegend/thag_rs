@@ -248,14 +248,14 @@ fn get_rgb_from_role(role: Role, theme: &thag_styling::Theme) -> Option<(u8, u8,
             ColorValue::Basic { .. } => {
                 // Approximate RGB values for basic color roles
                 match role {
-                    Role::Error => Some((255, 0, 0)),
-                    Role::Success => Some((0, 255, 0)),
-                    Role::Warning => Some((255, 255, 0)),
-                    Role::Info => Some((0, 255, 255)),
-                    Role::Code => Some((255, 0, 255)),
-                    Role::Emphasis => Some((255, 128, 0)),
-                    Role::Heading3 => Some((128, 255, 128)),
-                    _ => Some((192, 192, 192)),
+                    Role::Error => Some([255, 0, 0]),
+                    Role::Success => Some([0, 255, 0]),
+                    Role::Warning => Some([255, 255, 0]),
+                    Role::Info => Some([0, 255, 255]),
+                    Role::Code => Some([255, 0, 255]),
+                    Role::Emphasis => Some([255, 128, 0]),
+                    Role::Heading3 => Some([128, 255, 128]),
+                    _ => Some([192, 192, 192]),
                 }
             }
         }

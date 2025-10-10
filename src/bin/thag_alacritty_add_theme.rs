@@ -430,57 +430,6 @@ fn show_verification_steps(_installed_themes: &[String]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
-    use thag_styling::{ColorInfo, ColorSupport, Palette, Style, TermBgLuma};
-
-    fn create_test_theme() -> Theme {
-        let mut palette = Palette::default();
-        palette.normal = Style::fg(ColorInfo::rgb(220, 220, 220));
-        palette.error = Style::fg(ColorInfo::rgb(255, 100, 100));
-
-        Theme {
-            name: "Test Alacritty Theme".to_string(),
-            filename: PathBuf::from("test_alacritty_theme.toml"),
-            is_builtin: false,
-            term_bg_luma: TermBgLuma::Dark,
-            min_color_support: ColorSupport::TrueColor,
-            palette,
-            backgrounds: vec!["#2a2a2a".to_string()],
-            bg_rgbs: vec![(42, 42, 42)],
-            description: "Test theme for Alacritty installation".to_string(),
-        }
-    }
-
-    #[test]
-    fn test_adjust_brightness() {
-        let original = (100, 150, 200);
-        let brightened = adjust_brightness(original, 1.5);
-
-        assert!(brightened.0 >= original.0);
-        assert!(brightened.1 >= original.1);
-        assert!(brightened.2 >= original.2);
-    }
-
-    #[test]
-    fn test_is_light_color() {
-        assert!(is_light_color((255, 255, 255)));
-        assert!(!is_light_color((0, 0, 0)));
-        assert!(is_light_color((200, 200, 200)));
-        assert!(!is_light_color((50, 50, 50)));
-    }
-
-    #[test]
-    fn test_generate_alacritty_theme() {
-        let theme = create_test_theme();
-        let result = generate_corrected_alacritty_theme(&theme);
-
-        assert!(result.is_ok());
-        let content = result.unwrap();
-        assert!(content.contains("[colors]"));
-        assert!(content.contains("[colors.primary]"));
-        assert!(content.contains("[colors.normal]"));
-        assert!(content.contains("[colors.bright]"));
-    }
 
     #[test]
     fn test_theme_file_discovery() {

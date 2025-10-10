@@ -34,6 +34,7 @@
 - [x] Added scrollable key mappings to TUI editor
 - [x] Improved TUI file dialog sizing
 - [x] Enhanced status area padding
+- [x] Optimized integration tests to use precompiled binary instead of cargo run (much faster)
 
 ---
 

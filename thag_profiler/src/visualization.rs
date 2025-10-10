@@ -191,7 +191,7 @@ pub fn analyze_profile(
                 let functions: Vec<&str> = stack.split(';').collect();
 
                 // Skip root function if profiled
-                let n = if functions.len() > 1 { 1 } else { 0 };
+                let n = usize::from(functions.len() > 1);
                 for &func_name in &functions[n..] {
                     let clean_name = clean_function_name(func_name);
                     // eprintln!("clean_name={clean_name}, value={value}");

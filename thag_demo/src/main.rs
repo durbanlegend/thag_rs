@@ -5,7 +5,6 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use regex;
 
 use inquire::{set_global_render_config, Confirm, Select, Text};
 
@@ -123,8 +122,8 @@ enum DemoCommand {
     ListScripts,
 }
 
-/// Find the thag_rs root directory reliably
-/// Looks for the root Cargo.toml with workspace or thag_rs package
+/// Find the `thag_rs` root directory reliably
+/// Looks for the root Cargo.toml with workspace or `thag_rs` package
 fn find_thag_rs_root() -> Result<PathBuf> {
     // Start from current directory or manifest directory
     let mut current =
@@ -350,7 +349,7 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
 
             // Look for usage examples in doc comments
             if usage_example.is_none() {
-                let first = extract_thag_commands(comment_text).iter().next().cloned();
+                let first = extract_thag_commands(comment_text).first().cloned();
                 if let Some(ref cmd) = first {
                     if cmd.contains(' ') {
                         usage_example = first;
@@ -366,7 +365,7 @@ fn extract_demo_metadata(path: &Path) -> Result<Option<DemoFile>> {
                 }
                 // Look for usage examples in doc comments
                 if usage_example.is_none() {
-                    let first = extract_thag_commands(comment_text).iter().next().cloned();
+                    let first = extract_thag_commands(comment_text).first().cloned();
                     if let Some(ref cmd) = first {
                         if cmd.contains(' ') {
                             usage_example = first;
@@ -553,6 +552,7 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
 }
 
 /// Options for running a demo
+#[allow(clippy::struct_excessive_bools)]
 struct DemoOptions {
     force: bool,
     timings: bool,
@@ -597,19 +597,21 @@ fn run_selected_demo(
     }
 
     // Collect options and arguments interactively if not provided via CLI
-    let (options, args) = if let Some(opts) = cli_options {
-        // CLI mode - use provided options and args
-        let args = cli_args.unwrap_or_default();
-        (opts, args)
-    } else {
-        // Interactive mode - collect in order: options, arguments, then env vars
-        let mut opts = collect_demo_options(demo_name);
-        let args = collect_demo_arguments(&demo_file);
-        let env_vars = collect_env_vars(&demo_file);
-        opts.env_vars = env_vars;
-        (opts, args)
-    };
-
+    let (options, args) = cli_options.map_or_else(
+        || {
+            // Interactive mode - collect in order: options, arguments, then env vars
+            let mut opts = collect_demo_options(demo_name);
+            let args = collect_demo_arguments(&demo_file);
+            let env_vars = collect_env_vars(&demo_file);
+            opts.env_vars = env_vars;
+            (opts, args)
+        },
+        |opts| {
+            // CLI mode - use provided options and args
+            let args = cli_args.unwrap_or_default();
+            (opts, args)
+        },
+    );
     // Set THAG_DEV_PATH for local development - point to thag_rs root
     let thag_rs_root = find_thag_rs_root()
         .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
@@ -996,7 +998,11 @@ fn run_demo(demo: DemoCommand, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-#[allow(clippy::unnecessary_wraps)]
+#[allow(
+    clippy::fn_params_excessive_bools,
+    clippy::too_many_arguments,
+    clippy::unnecessary_wraps
+)]
 fn run_script_demo(
     script_name: &str,
     verbose: bool,
@@ -1033,9 +1039,8 @@ fn run_script_demo(
             format!("With arguments: {}", arg_list.join(" "))
                 .subtle()
                 .println();
-            let cwd = env::current_dir()
-                .map(|p| p.display().to_string())
-                .unwrap_or_else(|_| ".".to_string());
+            let cwd =
+                env::current_dir().map_or_else(|_| ".".to_string(), |p| p.display().to_string());
             format!("   (paths relative to: {})", cwd)
                 .subtle()
                 .println();
@@ -1142,13 +1147,13 @@ fn collect_demo_options(_demo_name: &str) -> DemoOptions {
         .prompt()
         .unwrap_or(false);
 
-    let build = if !generate {
+    let build = if generate {
+        false
+    } else {
         Confirm::new("Just build, don't run?")
             .with_default(false)
             .prompt()
             .unwrap_or(false)
-    } else {
-        false
     };
 
     let check = if !generate && !build {
@@ -1213,9 +1218,7 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Vec<String> {
         println!("   THAG_PROFILER=memory  (memory profiling only)");
     }
 
-    let cwd = env::current_dir()
-        .map(|p| p.display().to_string())
-        .unwrap_or_else(|_| ".".to_string());
+    let cwd = env::current_dir().map_or_else(|_| ".".to_string(), |p| p.display().to_string());
 
     match Text::new(&format!(
         "Enter arguments (paths relative to {}):",
@@ -1232,7 +1235,10 @@ fn collect_demo_arguments(demo_file: &DemoFile) -> Vec<String> {
                 Vec::new()
             } else {
                 // Strip leading -- if user typed it (they shouldn't in interactive mode)
-                let cleaned_input = input.trim().strip_prefix("-- ").unwrap_or(input.trim());
+                let cleaned_input = input
+                    .trim()
+                    .strip_prefix("-- ")
+                    .unwrap_or_else(|| input.trim());
 
                 // Simple argument parsing - split by spaces but preserve quoted strings
                 shell_words::split(cleaned_input).unwrap_or_else(|_| {
@@ -1278,27 +1284,25 @@ fn collect_env_vars(demo_file: &DemoFile) -> Vec<String> {
         println!("\n🌍 Environment Variables (optional, press Enter to skip):");
     }
 
-    match Text::new(
-        "Enter environment variables (format: KEY=value, separate multiple with spaces):",
-    )
-    .with_default("")
-    .with_help_message("Example: THAG_PROFILER=both RUST_LOG=debug")
-    .prompt()
-    {
-        Ok(input) => {
-            if input.trim().is_empty() {
-                Vec::new()
-            } else {
-                // Split by spaces, preserving quoted strings if needed
-                shell_words::split(&input)
-                    .unwrap_or_else(|_| input.split_whitespace().map(String::from).collect())
-                    .into_iter()
-                    .filter(|s| s.contains('='))
-                    .collect()
-            }
-        }
-        Err(_) => Vec::new(),
-    }
+    Text::new("Enter environment variables (format: KEY=value, separate multiple with spaces):")
+        .with_default("")
+        .with_help_message("Example: THAG_PROFILER=both RUST_LOG=debug")
+        .prompt()
+        .map_or_else(
+            |_| Vec::new(),
+            |input| {
+                if input.trim().is_empty() {
+                    Vec::new()
+                } else {
+                    // Split by spaces, preserving quoted strings if needed
+                    shell_words::split(&input)
+                        .unwrap_or_else(|_| input.split_whitespace().map(String::from).collect())
+                        .into_iter()
+                        .filter(|s| s.contains('='))
+                        .collect()
+                }
+            },
+        )
 }
 
 fn print_demo_info(demo_name: &str) {

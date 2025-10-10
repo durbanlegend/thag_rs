@@ -101,7 +101,7 @@ fn main() {
         println!("Direct color conversion for HD1: {:?}", direct_conversion);
 
         let legacy_conversion = Color::Indexed(color_info.index);
-        let (r, g, b) = index_to_rgb(color_info.index);
+        let [r, g, b] = index_to_rgb(color_info.index);
         println!("Legacy conversion for HD1: {legacy_conversion:?}, maps to RGB=({r},{g},{b})",);
 
         if format!("{:?}", direct_conversion) != format!("{:?}", legacy_conversion) {

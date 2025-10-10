@@ -517,7 +517,6 @@ Bright White (15)    Normal (brighter)
 
 export feature_sets=()
 
-
 # thag_common
 export feature_sets=(
     "",
@@ -545,7 +544,7 @@ export feature_sets=(
     "tools",
 )
 
-## thag_profiling
+## thag_profiler
 export feature_sets=(
     "demo,"
     "demo,debug_logging"

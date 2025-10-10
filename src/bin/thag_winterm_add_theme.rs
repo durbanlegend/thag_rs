@@ -676,7 +676,6 @@ fn show_usage_instructions(added_schemes: &[(String, String)]) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[cfg(target_os = "windows")]
     mod windows_tests {
@@ -697,7 +696,7 @@ mod tests {
                 min_color_support: ColorSupport::TrueColor,
                 palette,
                 backgrounds: vec!["#2a2a2a".to_string()],
-                bg_rgbs: vec![(42, 42, 42)],
+                bg_rgbs: vec![[42, 42, 42]],
                 description: "Test theme for Windows Terminal".to_string(),
             }
         }
@@ -706,7 +705,7 @@ mod tests {
         // fn test_extract_rgb() {
         //     let style = Style::fg(ColorInfo::rgb(255, 128, 64));
         //     let rgb = extract_rgb(&style);
-        //     assert_eq!(rgb, Some((255, 128, 64)));
+        //     assert_eq!(rgb, Some([255, 128, 64]));
         // }
 
         #[test]

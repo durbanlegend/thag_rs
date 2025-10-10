@@ -12,14 +12,12 @@ use thag_proc_macros::{safe_eprintln, safe_println};
 ///    identify undocumented and abandoned scripts. Given that there are so many of these scripts,
 ///    avoid Cargo's default behaviour of running all tests in parallel.
 ///
-///    NOTE: Each test runs `cargo run` which can cause cargo lock contention on the project's
-///    target directory. With the shared target implementation for script builds, this contention
-///    can be more pronounced. Use `--test-threads=1` for most reliable results, or experiment
-///    with `--test-threads=3` to 5 for faster completion if your system handles it.
+///    NOTE: Tests now use the precompiled `thag` binary (via CARGO_BIN_EXE_thag) instead of
+///    `cargo run`, which is much faster and avoids cargo lock contention. You can use
+///    `--test-threads=1` for most reliable results, or higher values for faster completion.
 ///
 ///    Suggested command: `cargo test --features=simplelog -- --nocapture --test-threads=1`
-///    You may want to adjust the test-threads value depending on your hardware and tolerance for
-///    occasional lock-related failures.
+///    You may want to increase test-threads for faster execution now that lock contention is eliminated.
 fn main() {
     // 1. Theme loading
     // NB: Tell cargo to rerun if any theme file changes
@@ -167,12 +165,23 @@ fn check_{subdir_name}_{test_name}() {{
         set_up();
 
         use std::process::Command;
-        let output = Command::new("cargo")
+
+        // Use precompiled binary instead of cargo run for much faster tests
+        // Construct path to built binary
+        let target_dir = std::env::var("CARGO_TARGET_DIR")
+            .unwrap_or_else(|_| "target".to_string());
+        let profile = std::env::var("PROFILE")
+            .unwrap_or_else(|_| "debug".to_string());
+
+        #[cfg(windows)]
+        let thag_bin = format!("{{}}/{{}}/thag.exe", target_dir, profile);
+        #[cfg(not(windows))]
+        let thag_bin = format!("{{}}/{{}}/thag", target_dir, profile);
+
+        let output = Command::new(&thag_bin)
             // Suppress invoking termbg and supports_color on shared terminal.
             // This should already be passed by default after call to set_up(), but just making sure.
             .env("TEST_ENV", "1")
-            .arg("run")
-            .arg("--")
             .arg("-c{more_options}")
             .arg({source_path:?})
             .output()
@@ -223,65 +232,3 @@ fn check_{subdir_name}_{test_name}() {{
         }
     }
 }
-
-// fn generate_theme_data() -> BuildResult<()> {
-//     println!("cargo:rerun-if-changed=themes/built_in");
-
-//     let out_dir = env::var("OUT_DIR")?;
-//     let dest_path = Path::new(&out_dir).join("theme_data.rs");
-//     let mut theme_data = String::new();
-
-//     // Start the generated file
-//     theme_data.push_str(
-//         "
-//         /// Maps theme names to their TOML definitions
-//         pub const BUILT_IN_THEMES: phf::Map<&'static str, &'static str> = phf::phf_map! {
-//     ",
-//     );
-
-//     let theme_dir = Path::new("themes/built_in");
-//     let entries = fs::read_dir(theme_dir)?;
-
-//     for entry in entries {
-//         let entry = entry?;
-//         let path = entry.path();
-
-//         // Check if it's a .toml file
-//         if path.extension().and_then(|s| s.to_str()) != Some("toml") {
-//             continue;
-//         }
-
-//         // Validate theme before including it
-//         validate_theme_file(&path)?;
-
-//         // Get theme name from filename
-//         let theme_name = path
-//             .file_stem()
-//             .and_then(|s| s.to_str())
-//             .ok_or_else(|| BuildError::InvalidFileName { path: path.clone() })?;
-
-//         // Read theme content
-//         let theme_content = fs::read_to_string(&path)?;
-
-//         // Normalize line endings and escape quotes
-//         let escaped_content = theme_content
-//             .replace('\\', "\\\\")
-//             .replace('\"', "\\\"")
-//             .replace("\r\n", "\\n")
-//             .replace('\n', "\\n");
-
-//         // Add to map
-//         theme_data.push_str(&format!(
-//             r#""{theme_name}" => "{escaped_content}",
-// "#
-//         ));
-//     }
-
-//     // Close the map
-//     theme_data.push_str("};");
-
-//     // Write the generated file
-//     fs::write(dest_path, theme_data)?;
-
-//     Ok(())
-// }

@@ -370,7 +370,7 @@ mod tests {
     fn test_code_utils_tuple_expr() {
         set_up();
         let expr: Expr = parse_quote! {
-            (1, 2, 3)
+            [1, 2, 3]
         };
         let function_map = set_up_function_map();
         assert!(!is_last_stmt_unit_type(&expr, &function_map));

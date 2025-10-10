@@ -378,8 +378,9 @@ mod tests {
             min_color_support: ColorSupport::TrueColor,
             palette: Palette::default(),
             backgrounds: vec!["#2a2a2a".to_string()],
-            bg_rgbs: vec![(42, 42, 42)],
+            bg_rgbs: vec![[42, 42, 42]],
             description: "Test theme for unit tests".to_string(),
+            base_colors: None,
         }
     }
 

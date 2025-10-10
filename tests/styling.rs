@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use thag_rs::{Color, ColorSupport, Style, TermBgLuma};
-    use thag_styling::{TermAttributes, Theme};
+    use thag_styling::{Color, ColorSupport, Style, TermAttributes, TermBgLuma, Theme};
 
     // Helper function to make ANSI sequences visible in test output
     fn debug_ansi(s: &str) -> String {

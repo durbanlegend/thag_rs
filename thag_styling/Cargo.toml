@@ -121,3 +121,32 @@ supports-color = "3.0"
 
 [lints.clippy]
 uninlined_format_args = "allow"
+
+# Feature-gated examples
+[[example]]
+name = "debug_theme_selection"
+required-features = ["ratatui_support"]
+
+[[example]]
+name = "diagnostic"
+required-features = ["ratatui_support"]
+
+[[example]]
+name = "ratatui_integration_test"
+required-features = ["ratatui_support"]
+
+[[example]]
+name = "ratatui_theming_showcase"
+required-features = ["ratatui_support"]
+
+[[example]]
+name = "themed_style_demo"
+required-features = ["ratatui_support"]
+
+[[example]]
+name = "zero_config"
+required-features = ["ratatui_support"]
+
+[[example]]
+name = "image_theme_generation"
+required-features = ["image_themes"]

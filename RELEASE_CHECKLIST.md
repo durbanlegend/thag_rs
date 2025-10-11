@@ -30,26 +30,26 @@
 
 #### Subcrate Tests and Clippy
 **thag_common** (quick - minimal features)
-- [ ] `cd thag_common && cargo test`
-- [ ] `cd thag_common && cargo clippy -- -W clippy::pedantic`
+- [x] `cd thag_common && cargo test`
+- [x] `cd thag_common && cargo clippy -- -W clippy::pedantic -W clippy::nursery`
 
 **thag_proc_macros** (quick - no features)
-- [ ] `cd thag_proc_macros && cargo test`
-- [ ] `cd thag_proc_macros && cargo clippy -- -W clippy::pedantic`
+- [x] `cd thag_proc_macros && cargo test`
+- [x] `cd thag_proc_macros && cargo clippy -- -W clippy::pedantic -W clippy::nursery`
 
 **thag_styling** (test key feature combinations)
-- [ ] `cd thag_styling && cargo test --features basic`
-- [ ] `cd thag_styling && cargo test --features full`
-- [ ] `cd thag_styling && cargo clippy --features full -- -W clippy::pedantic`
+- [x] `cd thag_styling && cargo test --no-fail-fast --features basic -- --test-threads=2`
+- [x] `cd thag_styling && cargo test --no-fail-fast --features full -- --test-threads=2`
+- [x] `cd thag_styling && cargo clippy --features full -- -W clippy::pedantic -W clippy::nursery`
 
 **thag_profiler** (test profiling modes)
-- [ ] `cd thag_profiler && cargo test`
-- [ ] `cd thag_profiler && cargo test --features full_profiling`
-- [ ] `cd thag_profiler && cargo clippy --features full_profiling -- -W clippy::pedantic`
+- [x] `cd thag_profiler && cargo test`
+- [x] `cd thag_profiler && cargo test --features full_profiling`
+- [x] `cd thag_profiler && cargo clippy --features full_profiling -- -W clippy::pedantic -W clippy::nursery`
 
 **thag_demo**
-- [ ] `cd thag_demo && cargo test`
-- [ ] `cd thag_demo && cargo clippy -- -W clippy::pedantic`
+- [x] `cd thag_demo && cargo test`
+- [x] `cd thag_demo && cargo clippy -- -W clippy::pedantic -W clippy::nursery`
 
 #### Main Workspace Quality Checks
 - [ ] `cargo build --release --workspace`

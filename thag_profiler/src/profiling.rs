@@ -3006,7 +3006,7 @@ pub fn dump_profiled_functions() -> Vec<(String, String)> {
         .collect()
 }
 
-// #[cfg(test)]
+#[allow(dead_code)]
 static TEST_MODE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Test utilities module

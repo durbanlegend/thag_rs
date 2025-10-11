@@ -23,7 +23,7 @@
 ```bash
 cd thag_common
 cargo test --no-fail-fast -- --nocapture
-cargo clippy -- -W clippy::pedantic
+cargo clippy -- -W clippy::pedantic -W clippy::nursery
 cd ..
 ```
 
@@ -32,7 +32,7 @@ cd ..
 ```bash
 cd thag_proc_macros
 cargo test --no-fail-fast -- --nocapture
-cargo clippy -- -W clippy::pedantic
+cargo clippy -- -W clippy::pedantic -W clippy::nursery
 cd ..
 ```
 
@@ -42,7 +42,7 @@ cd ..
 cd thag_styling
 cargo test --features basic --no-fail-fast -- --nocapture
 cargo test --features full --no-fail-fast -- --test-threads=1 --nocapture
-cargo clippy --features full -- -W clippy::pedantic
+cargo clippy --features full -- -W clippy::pedantic -W clippy::nursery
 cd ..
 ```
 
@@ -54,7 +54,7 @@ cd ..
 cd thag_profiler
 cargo test --no-fail-fast -- --test-threads=1 --nocapture
 cargo test --features full_profiling --no-fail-fast -- --test-threads=1 --nocapture
-cargo clippy --features full_profiling -- -W clippy::pedantic
+cargo clippy --features full_profiling -- -W clippy::pedantic -W clippy::nursery
 cd ..
 ```
 
@@ -65,7 +65,7 @@ cd ..
 ```bash
 cd thag_demo
 cargo test --no-fail-fast -- --nocapture
-cargo clippy -- -W clippy::pedantic
+cargo clippy -- -W clippy::pedantic -W clippy::nursery
 cd ..
 ```
 

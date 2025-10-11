@@ -745,3 +745,6 @@ head -51 src/bin/thag_palette.rs | tail -4 | thag_copy
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
 */
+
+## Successful thag_profiler test:
+cargo test --no-fail-fast --features full_profiling -- --test-threads=1 --nocapture

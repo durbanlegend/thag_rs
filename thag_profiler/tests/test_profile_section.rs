@@ -277,6 +277,8 @@ fn get_section_profile_name(section_name: &str) -> String {
 #[test]
 #[cfg(feature = "time_profiling")]
 fn test_profile_section_behavior() {
+    use thag_profiler::{enable_profiling, profiling::set_global_profile_type, ProfileType};
+
     // Enable profiling with appropriate type based on feature flags
     #[cfg(feature = "full_profiling")]
     enable_memory_profiling_for_test();
@@ -286,16 +288,16 @@ fn test_profile_section_behavior() {
 
     // Helper functions to enable profiling using the attribute macro
     #[cfg(feature = "full_profiling")]
-    #[thag_profiler::enable_profiling(memory)]
-    fn enable_memory_profiling_for_test() {}
+    #[enable_profiling(memory)]
+    fn enable_memory_profiling_for_test() {
+        eprintln!("In test_profile_section_behavior::enable_memory_profiling_for_test")
+    }
 
-    #[thag_profiler::enable_profiling(time)]
+    #[enable_profiling(time)]
     fn enable_time_profiling_for_test() {}
 
     // Run all the test functions
     test_time_section();
-
-    use thag_profiler::{profiling::set_global_profile_type, ProfileType};
 
     set_global_profile_type(ProfileType::None);
     test_global_profile_section();

@@ -10,7 +10,6 @@
 //! This module provides a memory allocator that tracks allocations by logical tasks
 //! rather than threads, making it suitable for async code profiling. It also contains
 //! the custom memory allocator implementation that enables memory profiling.
-
 use crate::{
     debug_log, file_stem_from_path, find_profile, flush_debug_log, fn_name,
     get_global_profile_type, get_root_module, internal_doc, is_detailed_memory,
@@ -481,7 +480,7 @@ fn record_alloc(address: usize, size: usize) {
 type FrameSummary = (String, u32, String, String, ProfileRef);
 
 #[fn_name]
-fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<FrameSummary>> {
+pub fn extract_callstack_with_recursion_check(file_names: &[String]) -> Option<Vec<FrameSummary>> {
     safe_alloc! {
         // Pre-allocate with fixed capacity to avoid reallocations
         let capacity = 100;

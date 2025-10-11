@@ -18,6 +18,9 @@ use thag_profiler::reset_allocator_state;
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_unified_allocator_basic() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     reset_allocator_state();
 
     // Initially should be in Tracking mode
@@ -36,6 +39,9 @@ fn test_unified_allocator_basic() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_unified_allocator_nesting() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     reset_allocator_state();
 
     // Test nested behavior - inner call should not interfere
@@ -61,6 +67,9 @@ fn test_unified_allocator_nesting() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_unified_allocator_threading() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     reset_allocator_state();
 
     let barrier = Arc::new(Barrier::new(3));
@@ -117,6 +126,9 @@ fn test_unified_allocator_threading() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_unified_approach_selection() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     reset_allocator_state();
 
     // This test demonstrates the thread-local allocator approach
@@ -140,6 +152,9 @@ fn test_unified_approach_selection() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_performance_characteristics() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     reset_allocator_state();
 
     use std::time::Instant;

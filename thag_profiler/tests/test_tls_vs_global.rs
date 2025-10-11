@@ -18,6 +18,9 @@ use thag_profiler::{current_allocator, Allocator};
 fn test_global_vs_tls_allocator_switching() {
     // Test that global and TLS versions work independently
 
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     // Initially both should be in Tracking mode
     assert_eq!(current_allocator(), Allocator::Tracking);
 
@@ -65,6 +68,9 @@ fn test_macro_versions() {
 #[test]
 #[cfg(feature = "full_profiling")]
 fn test_thread_isolation() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     // Test that TLS version provides thread isolation
     let barrier = Arc::new(Barrier::new(3));
     let mut handles = vec![];
@@ -145,6 +151,9 @@ fn test_performance_comparison() {
     use std::time::Instant;
 
     const ITERATIONS: usize = 1000;
+
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
 
     // Time global atomic version
     let start = Instant::now();

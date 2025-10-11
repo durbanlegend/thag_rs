@@ -32,16 +32,14 @@ use std::{str::FromStr, time::Duration};
 
 #[cfg(feature = "time_profiling")]
 use thag_profiler::{
-    clear_profile_config_cache, debug_log, disable_profiling, profiled,
+    clear_profile_config_cache, debug_log, disable_profiling, fn_name, profiled,
     profiling::{
-        build_stack, clean_function_name, extract_path, get_reg_desc_name, is_profiled_function,
-        register_profiled_function, DebugLevel, Profile, ProfileCapability, ProfileConfiguration,
-        ProfilePaths, ProfileStats, ProfileType,
+        build_stack, clean_function_name, extract_path, get_profile_config, get_reg_desc_name,
+        get_time_path, is_profiled_function, register_profiled_function, set_profile_config,
+        DebugLevel, ProfileCapability, ProfileConfiguration, ProfilePaths, ProfileStats,
+        ProfileType,
     },
 };
-
-#[cfg(feature = "time_profiling")]
-use thag_profiler::profiling::{get_profile_config, get_time_path, set_profile_config};
 
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{
@@ -405,10 +403,11 @@ fn test_string_cleaning() {
 }
 
 /// Test Profile creation and operations
-#[cfg(feature = "time_profiling")]
-#[thag_profiler::enable_profiling(time)]
+#[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
+#[enable_profiling(time)]
 fn test_profile_creation() {
     // Create a profile for testing
+
     let profile = Profile::new(
         Some("test_section"),
         Some("test_function"),
@@ -499,23 +498,24 @@ fn test_profile_stats() {
 
 /// Test backtrace and stack extraction
 #[cfg(feature = "full_profiling")]
+// #[thag_profiler::enable_profiling(runtime, function(mem_summary))]
 #[profiled(mem_summary)]
+#[fn_name]
 fn test_stack_extraction() {
-    use thag_profiler::profiling::extract_profile_callstack;
-
     safe_alloc! {
         // Extract the call stack
-        let callstack = extract_profile_callstack();
+        let callstack = thag_profiler::mem_tracking::extract_callstack_with_recursion_check(&["test_profiling".to_string()]).expect("Probable recursion detected.");
 
-        // eprintln!("callstack={callstack:#?}");
+        let callstack: Vec<&String> = callstack.iter().map(|(_, _, name, _, _)| name)
+            .collect();
 
         // Verify that the callstack was extracted
         assert!(!callstack.is_empty(), "Callstack should not be empty");
 
         // The first frame should be from this test function
         assert!(
-            callstack[0].contains("test_stack_extraction"),
-            "First frame should be the current function"
+            callstack[0].contains(fn_name),
+            "First frame should be the current function name"
         );
     };
 }
@@ -592,17 +592,30 @@ fn test_profiling_full_sequence() {
     println!("Testing string cleaning...");
     test_string_cleaning();
 
-    println!("Testing profile creation...");
-    test_profile_creation();
+    #[cfg(not(feature = "full_profiling"))]
+    {
+        println!("Testing profile creation...");
+        test_profile_creation();
+    }
 
     println!("Testing profile stats...");
     test_profile_stats();
 
     #[cfg(feature = "full_profiling")]
     {
-        thag_profiler::profiling::force_enable_profiling_memory_for_tests();
-        println!("Testing stack extraction (full_profiling only)...");
-        test_stack_extraction();
+        // Ensure we start with a clean profiling state
+        // thag_profiler::profiling::disable_profiling();
+        enable_memory_profiling_for_test();
+
+        // Helper function to enable memory profiling using the attribute macro
+        #[thag_profiler::enable_profiling(memory, function(mem_summary))]
+        fn enable_memory_profiling_for_test() {
+            eprintln!("In test_profiling_full_sequence::enable_memory_profiling_for_test");
+            // thag_profiler::profiling::force_enable_profiling_memory_for_tests();
+            // let _ = vec![1, 2, 3, 4, 5];
+            println!("Testing stack extraction (full_profiling only)...");
+            test_stack_extraction();
+        }
     }
 
     println!("Testing profiled function attribute...");

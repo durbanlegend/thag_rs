@@ -26,6 +26,8 @@ fn reset_allocator_states() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_nested_global_behavior() {
+    thag_profiler::profiling::force_set_profiling_state(true);
+
     reset_allocator_states();
     // Test that nested global calls work correctly - inner call should not touch flag
     assert_eq!(current_allocator(), Allocator::Tracking);
@@ -56,7 +58,11 @@ fn test_thread_isolation() {
         thread,
     };
 
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
     reset_allocator_states();
+
     // Test that TLS version provides thread isolation
     let barrier = Arc::new(Barrier::new(3));
     let mut handles = vec![];
@@ -114,6 +120,7 @@ fn test_thread_isolation() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_performance_comparison() {
+    thag_profiler::profiling::force_set_profiling_state(true);
     reset_allocator_states();
     use std::time::Instant;
 

@@ -2170,7 +2170,7 @@ pub fn filter_scaffolding(name: &str) -> bool {
     !name.starts_with("tokio::") && !SCAFFOLDING_PATTERNS.iter().any(|s| name.contains(s))
 }
 
-/// Extracts the callstack for a `Profile`.
+/// Extracts the callstack for a newly instantiated `Profile`.
 #[internal_doc]
 #[allow(clippy::too_many_lines)]
 #[cfg(feature = "time_profiling")]

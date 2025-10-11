@@ -188,12 +188,16 @@ fn test_persistent_allocations() {
 #[cfg(feature = "full_profiling")]
 fn test_mem_tracking_full_sequence() {
     // Ensure we start with a clean profiling state
+
+    use thag_profiler::enable_profiling;
     thag_profiler::profiling::disable_profiling();
     enable_memory_profiling_for_test();
 
     // Helper function to enable memory profiling using the attribute macro
-    #[thag_profiler::enable_profiling(memory)]
-    fn enable_memory_profiling_for_test() {}
+    #[enable_profiling(memory)]
+    fn enable_memory_profiling_for_test() {
+        eprintln!("In test_mem_tracking_full_sequence::enable_memory_profiling_for_test")
+    }
 
     eprintln!("Starting memory tracking tests");
 

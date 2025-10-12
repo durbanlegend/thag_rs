@@ -1215,11 +1215,11 @@ impl TermAttributes {
     /// This is useful for testing to verify strategy compatibility.
     #[cfg(test)]
     pub fn can_initialize_with_strategy(strategy: &ColorInitStrategy) -> bool {
-        if let Some(existing) = INSTANCE.get() {
-            std::mem::discriminant(&existing.init_strategy) == std::mem::discriminant(strategy)
-        } else {
-            true
-        }
+        use std::mem::discriminant;
+
+        INSTANCE
+            .get()
+            .is_none_or(|existing| discriminant(&existing.init_strategy) == discriminant(strategy))
     }
 
     /// Creates a new `TermAttributes` instance for testing purposes
@@ -4186,7 +4186,9 @@ mod tests {
             };
             let theme =
                 Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, color_support)
-                    .expect("Failed to load or resolve builtin theme {theme_name}");
+                    .unwrap_or_else(|_| {
+                        panic!("Failed to load or resolve builtin theme {theme_name}")
+                    });
             Self::new(color_support, Some(BLACK_BG).copied(), term_bg_luma, theme)
         }
     }
@@ -4206,10 +4208,9 @@ mod tests {
 
     // #[profiled]
     fn get_test_output() -> Vec<String> {
-        match TEST_OUTPUT.lock() {
-            Ok(guard) => guard.clone(),
-            Err(_) => Vec::new(),
-        }
+        TEST_OUTPUT
+            .lock()
+            .map_or_else(|_| Vec::new(), |guard| guard.clone())
     }
 
     // #[profiled]

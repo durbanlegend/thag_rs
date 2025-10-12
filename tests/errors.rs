@@ -22,7 +22,7 @@ fn set_up() {
 #[test]
 fn test_errors_io_error() {
     set_up();
-    let io_err = io::Error::new(io::ErrorKind::Other, "I/O error occurred");
+    let io_err = io::Error::other("I/O error occurred");
     let build_run_err: ThagError = io_err.into();
     match build_run_err {
         ThagError::Io(_) => (),
@@ -114,7 +114,7 @@ fn test_errors_display() {
 #[test]
 fn test_errors_source() {
     set_up();
-    let io_err = io::Error::new(io::ErrorKind::Other, "I/O error occurred");
+    let io_err = io::Error::other("I/O error occurred");
     let build_run_err: ThagError = io_err.into();
     assert!(build_run_err.source().is_some());
 }

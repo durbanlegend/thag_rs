@@ -60,9 +60,9 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
     } else {
         TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
     };
-    let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
-    let source_dir_path = current_dir.clone().join("tests/assets");
-    let source_path = current_dir.clone().join("tests/assets").join(source_name);
+    let cargo_toml_path = target_dir_path.join("Cargo.toml");
+    let source_dir_path = current_dir.join("tests/assets");
+    let source_path = current_dir.join("tests/assets").join(source_name);
     BuildState {
         working_dir_path,
         source_stem: source_stem.into(),
@@ -164,7 +164,7 @@ fn test_builder_build_cargo_project() {
     let cargo_home = PathBuf::from(cargo_home_str);
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
     fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
-    let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
+    let cargo_toml_path = target_dir_path.join("Cargo.toml");
     let cargo_toml = format!(
         r#"[package]
 name = "bitflags_t"
@@ -205,7 +205,7 @@ name = "bitflags_t"
         .write_all(cargo_toml.as_bytes())
         .expect("error writing Cargo.toml");
 
-    let target_rs_path = target_dir_path.clone().join(source_name);
+    let target_rs_path = target_dir_path.join(source_name);
 
     let rs_source =
         code_utils::read_file_contents(&source_path).expect("Error reading script contents");
@@ -370,10 +370,11 @@ fn test_builder_script_state_getters() {
 
 #[test]
 fn test_builder_ast_to_tokens() {
-    set_up();
     use proc_macro2::TokenStream;
     use quote::quote;
     use syn::parse_quote;
+
+    set_up();
 
     let file: syn::File = parse_quote! {
         fn main() {

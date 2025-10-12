@@ -656,8 +656,7 @@ mod config_tests {
     #[cfg(feature = "time_profiling")]
     fn test_profile_config_picks_up_env_changes() {
         // Wait for exclusive use
-        let lock = PROFILING_MUTEX.lock();
-        let _guard = lock;
+        let _guard = PROFILING_MUTEX.lock();
 
         // Save original env var if it exists
         let original = env::var("THAG_PROFILER").ok();
@@ -802,9 +801,9 @@ mod lib_tests {
         assert_eq!(thousands(42), "42");
         assert_eq!(thousands(1000), "1,000");
         assert_eq!(thousands(1234), "1,234");
-        assert_eq!(thousands(1234567), "1,234,567");
-        assert_eq!(thousands(1234567890u32), "1,234,567,890");
-        assert_eq!(thousands(123456789012345u64), "123,456,789,012,345");
+        assert_eq!(thousands(1_234_567), "1,234,567");
+        assert_eq!(thousands(1_234_567_890u32), "1,234,567,890");
+        assert_eq!(thousands(123_456_789_012_345u64), "123,456,789,012,345");
 
         // Test with small numbers
         assert_eq!(thousands(1), "1");
@@ -917,22 +916,19 @@ mod lib_tests {
     #[cfg(feature = "time_profiling")]
     #[test]
     fn test_profiling_feature_constants() {
-        // Test the constant for feature flag detection
-        assert!(PROFILING_FEATURE_ENABLED);
-
         // This should be true regardless of runtime state
-        let _runtime_state = is_profiling_enabled();
+        let runtime_state = is_profiling_enabled();
         // We can't make strong assertions about runtime state in tests
         // as it depends on how tests are run and configured
 
         // But we can verify the constant is usable in conditionals
         if PROFILING_FEATURE_ENABLED {
             // Feature is enabled
-            assert!(true); // This branch should be taken
+            assert!(runtime_state); // This branch should be taken
         } else {
             // Feature is disabled
             assert!(
-                false,
+                !runtime_state,
                 "This branch should not be taken when feature is enabled"
             );
         }
@@ -971,6 +967,7 @@ mod lib_tests {
 
     // Test public API error types
     #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn test_error_types() {
         // Test ProfileError creation and conversion
         let error = ProfileError::General("test error".to_string());

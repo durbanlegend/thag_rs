@@ -36,7 +36,7 @@
 ///
 /// - All tests are run from a single `test_profiled_behavior` function
 /// - A mix of synchronous and asynchronous test functions
-/// - Appropriate feature gates for time_profiling and full_profiling
+/// - Appropriate feature gates for `time_profiling` and `full_profiling`
 /// - Direct access to profile variables created by the macro
 /// - Explicit verification of profile properties
 /// - Uses async-std for testing async functions
@@ -290,6 +290,9 @@ fn profiled_function_both_legacy_params_test() {
 #[cfg(feature = "time_profiling")]
 #[enable_profiling]
 fn test_profiled_behavior() {
+    // Use async-std to create a runtime for async functions
+    use async_std::task::block_on;
+
     use thag_profiler::safe_alloc;
 
     let closure = || {
@@ -307,9 +310,6 @@ fn test_profiled_behavior() {
         profiled_function_legacy_params_test();
         profiled_function_detailed_memory_test();
         profiled_function_both_legacy_params_test();
-
-        // Use async-std to create a runtime for async functions
-        use async_std::task::block_on;
 
         // Run the async test functions
         block_on(profiled_function_time_test());

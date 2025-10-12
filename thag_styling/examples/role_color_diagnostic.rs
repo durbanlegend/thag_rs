@@ -5,9 +5,12 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example role_color_diagnostic --features "color_detect,ratatui_support"
+//! cargo run -p thag_styling --example role_color_diagnostic --features "color_detect,ratatui_support"
 //! ```
+#![allow(clippy::suboptimal_flops)]
+
 #[cfg(feature = "ratatui_support")]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 fn main() {
     use thag_styling::{paint_for_role, Role, Style, TermAttributes};
 
@@ -59,7 +62,7 @@ fn main() {
                     print!("RGB({:3},{:3},{:3}) ", rgb[0], rgb[1], rgb[2]);
 
                     // Color classification
-                    let (r, g, b) = (rgb[0] as f32, rgb[1] as f32, rgb[2] as f32);
+                    let (r, g, b) = (f32::from(rgb[0]), f32::from(rgb[1]), f32::from(rgb[2]));
                     let brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255.0;
 
                     let color_name = if r > g && r > b && r > 150.0 {
@@ -139,34 +142,29 @@ fn main() {
     let emph_style = Style::from(Role::Emphasis);
     if let Some(color_info) = &emph_style.foreground {
         if let thag_styling::ColorValue::TrueColor { rgb } = &color_info.value {
-            println!("  Actual: RGB({}, {}, {})", rgb[0], rgb[1], rgb[2]);
+            let [r, g, b] = rgb;
+            println!("  Actual: RGB({r}, {g}, {b})");
         }
     }
 
     // Check if there's a pattern mixup
     println!("\n🔄 Checking for Role Mixup Pattern:");
     let color_info = &Style::from(Role::Heading1).foreground;
-    let heading_rgb = if let Some(color_info) = color_info {
+    let heading_rgb = color_info.as_ref().and_then(|color_info| {
         if let thag_styling::ColorValue::TrueColor { rgb } = &color_info.value {
             Some(rgb)
         } else {
             None
         }
-    } else {
-        None
-    };
-
+    });
     let color_info = &Style::from(Role::Code).foreground;
-    let code_rgb = if let Some(color_info) = color_info {
+    let code_rgb = color_info.as_ref().and_then(|color_info| {
         if let thag_styling::ColorValue::TrueColor { rgb } = &color_info.value {
             Some(rgb)
         } else {
             None
         }
-    } else {
-        None
-    };
-
+    });
     if let (Some(h_rgb), Some(c_rgb)) = (heading_rgb, code_rgb) {
         if h_rgb[0] > h_rgb[2] && c_rgb[2] > c_rgb[0] {
             println!("  ⚠️  POSSIBLE MIXUP: HD1 has brown color, Code has blue color");

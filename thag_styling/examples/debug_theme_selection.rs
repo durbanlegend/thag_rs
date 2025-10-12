@@ -3,15 +3,15 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Debug example to check what ColorInitStrategy and theme are being used
+/// Debug example to check what `ColorInitStrategy` and theme are being used
 ///
 /// This example helps diagnose why the integration modules might not be
 /// getting the correct themed colors.
 ///
 /// Run with:
 /// ```bash
-/// cargo run --example debug_theme_selection --features "color_detect"
-/// cargo run --example debug_theme_selection --features "basic"
+/// cargo run -p thag_styling --example debug_theme_selection --features "color_detect"
+/// cargo run -p thag_styling --example debug_theme_selection --features "basic"
 /// ```
 use thag_styling::{paint_for_role, Role, Style, TermAttributes, ThemedStyle};
 
@@ -21,6 +21,7 @@ use thag_styling::ColorInitStrategy;
 #[cfg(feature = "color_detect")]
 use thag_common::terminal;
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     println!("🔍 Debug Theme Selection\n");
 

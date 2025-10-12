@@ -110,7 +110,7 @@ fn test_thread_isolation() {
     }));
 
     // Thread 3: Checks it's unaffected by other threads
-    let barrier3 = barrier.clone();
+    let barrier3 = barrier;
     handles.push(thread::spawn(move || {
         barrier3.wait(); // Synchronize start
 
@@ -146,13 +146,11 @@ fn test_debug_log_zero_cost() {
     // This test should always pass - when debug_logging is disabled,
     // the macro should compile to nothing
     debug_log!("This should be zero-cost when feature is disabled");
-
-    // The fact that this compiles and runs means the macro is working correctly
-    assert!(true);
 }
 
 #[test]
 #[cfg(feature = "full_profiling")]
+#[allow(clippy::cast_precision_loss)]
 fn test_performance_comparison() {
     use std::time::Instant;
 

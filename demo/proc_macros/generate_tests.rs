@@ -8,7 +8,7 @@ use syn::{
     parse_macro_input, Expr, Ident, Token,
 };
 
-/// Parse the input for generate_tests! { test_name: [data] => |params| body }
+/// Parse the input for `generate_tests`! { test_name: [data] => |params| body }
 struct GenerateTestsInput {
     test_name: Ident,
     test_data: Vec<Expr>,
@@ -120,7 +120,7 @@ pub fn generate_tests_impl(tokens: TokenStream) -> TokenStream {
         test_data.len(),
         base_test_name
     );
-    eprintln!("Code:\n{}", generated_code);
+    eprintln!("Code:\n{generated_code}");
 
     TokenStream::from(expanded)
 }

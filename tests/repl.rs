@@ -114,8 +114,8 @@ mod tests {
             });
 
         let history_path = build_state.cargo_home.join(HISTORY_FILE);
-        let history_string =
-            read_to_string(&history_path).expect(&format!("Error reading from {history_path:?}"));
+        let history_string = read_to_string(&history_path)
+            .unwrap_or_else(|_| panic!("Error reading from {history_path:?}"));
 
         let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
         let result = edit_history(&history_string, &staging_path, &mock_reader);

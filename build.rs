@@ -32,24 +32,6 @@ fn main() {
     // 2. Test generation
     // NB: Tell cargo to rerun if any tool file changes
     safe_println!("cargo:rerun-if-changed=src/bin");
-
-    // Check for mutually exclusive features
-    let simple = std::env::var("CARGO_FEATURE_SIMPLELOG").is_ok();
-    let env = std::env::var("CARGO_FEATURE_ENV_LOGGER").is_ok();
-
-    safe_eprintln!("simple={simple}; env={env}");
-    assert!(
-        !(simple & env),
-        "Features 'simplelog' and 'env_logger' are mutually exclusive.\n\
-          Use --no-default-features when enabling env_logger.\n\
-          You will then have to explicitly list default features you still need, such as `full` for the bin or `core` for the lib"    );
-
-    // Ensure at least one logger is selected
-    assert!(
-        !(!simple && !env),
-        "One of 'simplelog' or 'env_logger' must be enabled"
-    );
-
     // Get the OUT_DIR environment variable
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR not set");
     // Note: Cargo suppresses build output. I've tried log and env_logger, ChatGPT, Gemini, Stack Overflow etc.
@@ -97,6 +79,12 @@ fn main() {
             "rug_arbitrary_precision_nums.rs",
         ];
 
+        // Skip scripts with intermittent build failures (all platforms)
+        // Commented out - keeping available if needed. Move problematic scripts to bank/ if persistent.
+        // let intermittent_failures = [
+        //     "reedline_transient_prompt.rs", // libsqlite3-sys race condition in shared target
+        // ];
+
         let multimain = [
             "flume_async.rs",
             "flume_async_profile.rs",
@@ -138,6 +126,11 @@ fn main() {
                     .and_then(|s| s.to_str())
                     .expect("Failed to get source file name");
 
+                // Skip scripts with intermittent failures (all platforms)
+                // if intermittent_failures.contains(&source_name) {
+                //     continue;
+                // }
+
                 // Skip scripts on Windows
                 if cfg!(target_os = "windows") && skip_scripts_on_windows.contains(&source_name) {
                     continue;
@@ -158,13 +151,13 @@ fn main() {
 #[test]
 fn check_{subdir_name}_{test_name}() {{
     {{
+        use std::process::Command;
+
         use thag_proc_macros::{{/*safe_eprintln,*/ safe_osc}};
         // Reset terminal state at start
         safe_osc!("\x1B[0m\x1B[?1049l"); // Reset all attributes and exit alternate screen
 
         set_up();
-
-        use std::process::Command;
 
         // Use precompiled binary instead of cargo run for much faster tests
         // Construct path to built binary
@@ -188,10 +181,10 @@ fn check_{subdir_name}_{test_name}() {{
             .expect("Failed to execute command");
             let err_str = std::str::from_utf8(&output.stderr).expect("Can't parse stderr to &str");
         if !output.status.success() || err_str.contains("Build failed") {{
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
             panic!(
-                "Failed to build file: {source_name}\nstdout: {{}}\nstderr: {{}}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
+                "Failed to build file: {source_name}\nstdout: {{stdout}}\nstderr: {{stderr}}"
             );
         }}
         // safe_eprintln!("{{output:?}}");

@@ -48,11 +48,6 @@ mod tests {
             .unwrap();
             debug_log!("Initialized simplelog");
         });
-
-        #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-        {
-            let _ = env_logger::builder().is_test(true).try_init();
-        }
     }
 
     // Set environment variables before running tests
@@ -126,7 +121,7 @@ mod tests {
     fn test_config_load_config_invalid_format() {
         set_up();
         init_logger();
-        let config_content = r#"invalid = toml"#;
+        let config_content = "invalid = toml";
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
         std::fs::write(&config_path, config_content).expect("Failed to write to temp config file");
@@ -207,11 +202,13 @@ required_features = [
     fn create_test_config() -> Dependencies {
         set_up();
         init_logger();
-        let mut config = Dependencies::default();
-        config.exclude_unstable_features = true;
-        config.exclude_std_feature = true;
-        config.global_excluded_features = vec!["default".to_string(), "sqlite".to_string()];
-        config.always_include_features = vec!["derive".to_string()];
+        let mut config = thag_rs::Dependencies {
+            exclude_unstable_features: true,
+            exclude_std_feature: true,
+            global_excluded_features: vec!["default".to_string(), "sqlite".to_string()],
+            always_include_features: vec!["derive".to_string()],
+            ..Default::default()
+        };
 
         let rustyline_override = FeatureOverride {
             excluded_features: Some(vec!["with-sqlite-history".to_string()]),

@@ -1,11 +1,11 @@
-/// This file contains examples of how to use the warn_once abstraction
-/// to replace the custom warning pattern in record_dealloc.
+/// This file contains examples of how to use the `warn_once` abstraction
+/// to replace the custom warning pattern in `record_dealloc`.
 use thag_profiler::debug_log;
 
 #[cfg(feature = "full_profiling")]
 use thag_profiler::{profiling::ProfileType, safe_alloc, warn_once};
 
-/// Example of using the warn_once! macro in a function similar to record_dealloc
+/// Example of using the `warn_once!` macro in a function similar to `record_dealloc`
 #[test]
 #[cfg(feature = "full_profiling")]
 fn test_example_function_with_warn_once() {
@@ -28,7 +28,7 @@ fn test_example_function_with_warn_once() {
         };
 }
 
-/// Example of how record_dealloc could be refactored to use warn_once!
+/// Example of how `record_dealloc` could be refactored to use `warn_once!`
 #[cfg(feature = "full_profiling")]
 fn example_function_with_warn_once() {
     debug_log!("Entering example function");
@@ -53,7 +53,7 @@ fn example_function_with_warn_once() {
     debug_log!("Example: Running actual processing code");
 }
 
-/// Example of how to apply the pattern to record_dealloc
+/// Example of how to apply the pattern to `record_dealloc`
 #[test]
 fn test_refactored_record_dealloc() {
     // This is a placeholder showing how record_dealloc would be refactored

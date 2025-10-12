@@ -4,7 +4,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Fast download of `thag_rs` demo directory (starter kit) with subdirectories.
-/// Git `sparse-checkout` approach suggested and written by ChatGPT, local directory handling assisted by Claude.
+/// Git `sparse-checkout` approach suggested and written by `ChatGPT`, local directory handling assisted by `Claude`.
 ///
 /// `thag_styling` included
 //# Purpose: Prototype for `thag_get_demo_dir`.

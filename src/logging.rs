@@ -12,9 +12,6 @@ use {
     std::sync::Once,
 };
 
-#[cfg(feature = "env_logger")]
-use env_logger::{Builder, Env};
-
 static DEBUG_LOG_ENABLED: AtomicBool = AtomicBool::new(false);
 
 #[cfg(feature = "simplelog")]
@@ -29,18 +26,6 @@ pub fn enable_debug_logging() {
 /// Returns whether debug logging is currently enabled.
 pub fn is_debug_logging_enabled() -> bool {
     DEBUG_LOG_ENABLED.load(Ordering::SeqCst)
-}
-
-/// Configure log level
-#[cfg(feature = "env_logger")]
-pub fn configure_log() {
-    use log::info;
-    let env = Env::new().filter("RUST_LOG");
-    eprintln!("env={env:?}");
-    let mut builder = Builder::new();
-    builder.parse_env(env).init();
-    eprintln!("builder={builder:?}");
-    info!("Initialized env_logger");
 }
 
 /// Configure log level

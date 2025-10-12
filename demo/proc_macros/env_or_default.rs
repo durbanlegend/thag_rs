@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse::Parse, parse::ParseStream, parse_macro_input, LitStr, Token};
 
-/// Parse the input for env_or_default!("ENV_VAR", "default_value")
+/// Parse the input for `env_or_default!("ENV_VAR`", "`default_value`")
 struct EnvOrDefaultInput {
     env_var: LitStr,
     default_value: LitStr,

@@ -48,7 +48,7 @@ pub fn derive_builder_impl(tokens: TokenStream) -> TokenStream {
         let field_type = &field.ty;
 
         // Create method documentation
-        let doc = format!("Sets the `{}` field.", field_name);
+        let doc = format!("Sets the `{field_name}` field.");
 
         quote! {
             #[doc = #doc]

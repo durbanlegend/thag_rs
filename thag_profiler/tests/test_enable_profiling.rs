@@ -1,4 +1,4 @@
-/// # Test Suite for #[enable_profiling] Attribute Macro
+/// # Test Suite for #[`enable_profiling`] Attribute Macro
 ///
 /// This test suite verifies that the `#[enable_profiling]` attribute macro correctly enables and disables profiling with different options:
 ///
@@ -14,8 +14,8 @@
 ///    - `yes` option: Explicitly enable profiling
 ///    - `no` option: Explicitly disable profiling
 ///    - `time` option: Enable time-only profiling
-///    - `memory` option: Enable memory-only profiling (with full_profiling feature)
-///    - `both` option: Enable both time and memory profiling (with full_profiling feature)
+///    - `memory` option: Enable memory-only profiling (with `full_profiling` feature)
+///    - `both` option: Enable both time and memory profiling (with `full_profiling` feature)
 ///
 /// 3. **Runtime Control**:
 ///    - Environment variable configuration through `THAG_PROFILER`
@@ -28,7 +28,7 @@
 ///    - Complete coverage of environment variable interactions
 ///
 /// 5. **Feature Compatibility**:
-///    - Tests that adapt based on available features (time_profiling, full_profiling)
+///    - Tests that adapt based on available features (`time_profiling`, `full_profiling`)
 ///    - Appropriate feature-specific assertions
 ///
 /// ## Test Design Notes
@@ -78,7 +78,7 @@ fn default_enabled_function() {
 
     // Test section profiling works when enabled
     profile!(default_section, time);
-    let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
+    let _ = (0..100).sum::<i32>(); // Do some work
     end!(default_section);
 }
 
@@ -93,7 +93,7 @@ fn yes_enabled_function() {
 
     // Test section profiling works when enabled
     profile!(yes_section, time);
-    let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
+    let _ = (0..100).sum::<i32>(); // Do some work
     end!(yes_section);
 }
 
@@ -109,7 +109,7 @@ fn no_disabled_function() {
 
     // Section profiling shouldn't create active profiles when disabled
     profile!(no_section, time);
-    let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
+    let _ = (0..100).sum::<i32>(); // Do some work
     end!(no_section);
     // No assertions needed - if profiling is incorrectly enabled, this would still work but not fail the test
 }
@@ -130,7 +130,7 @@ fn time_enabled_function() {
 
     // Test section profiling works when enabled for time
     profile!(time_section, time);
-    let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
+    let _ = (0..100).sum::<i32>(); // Do some work
     end!(time_section);
 }
 
@@ -172,7 +172,7 @@ fn both_enabled_function() {
     // Test section profiling works for both time and memory
     profile!(both_section, both);
     let data = vec![0u8; 1024]; // Allocate some memory
-    let result = (0..100).fold(0, |acc, x| acc + x); // Do some work
+    let result = (0..100).sum::<usize>(); // Do some work
     let _ = data.len() + result; // Use values to avoid compiler optimizations
     end!(both_section);
 }
@@ -255,7 +255,7 @@ fn runtime_controlled_function() {
     // Test section profiling if profiling is enabled
     if is_profiling_enabled() {
         profile!(runtime_section, time);
-        let _ = (0..100).fold(0, |acc, x| acc + x); // Do some work
+        let _ = (0..100).sum::<i32>(); // Do some work
         end!(runtime_section);
     }
 }
@@ -266,6 +266,7 @@ fn runtime_controlled_function() {
 
 #[test]
 #[cfg(feature = "time_profiling")]
+#[allow(clippy::too_many_lines)]
 fn test_enable_profiling_full_sequence() {
     use thag_profiler::profiling::{clear_profile_config_cache, set_global_profile_type};
 
@@ -409,7 +410,7 @@ fn test_enable_profiling_full_sequence() {
         runtime_controlled_function();
     });
     // We don't care if it panicked - just make sure we clean up
-    let _ = set_profile_config(
+    set_profile_config(
         ProfileConfiguration::try_from(vec!["time", "", "announce"].as_slice()).unwrap(),
     );
     disable_profiling();

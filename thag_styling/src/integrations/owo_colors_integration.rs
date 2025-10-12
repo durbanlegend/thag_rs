@@ -241,7 +241,7 @@ mod tests {
         // Should be some form of color
         match color {
             DynColors::Xterm(_) | DynColors::Rgb(_, _, _) | DynColors::Ansi(_) => (),
-            _ => panic!("Expected a concrete color variant"),
+            DynColors::Css(_) => panic!("Expected a concrete color variant"),
         }
     }
 
@@ -324,7 +324,7 @@ mod tests {
         };
         match DynColors::from(&color256) {
             DynColors::Xterm(XtermColors::UserBrightGreen) => (), // Index 42 maps to this
-            _ => (),                                              // Allow other valid mappings
+            _ => panic!("Expected UserBrightGreen"),
         }
 
         let basic_color = ColorInfo {

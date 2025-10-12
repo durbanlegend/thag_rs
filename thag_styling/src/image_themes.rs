@@ -2270,7 +2270,7 @@ mod tests {
     fn test_color_analysis_creation() {
         let color = ColorAnalysis::new([255, 0, 0], 0.5);
         assert_eq!(color.rgb, [255, 0, 0]);
-        assert_eq!(color.frequency, 0.5);
+        assert!((color.frequency - 0.5).abs() < 0.01);
         // Red should have hue around 0 degrees
         assert!((color.hue - 0.0).abs() < 10.0);
     }

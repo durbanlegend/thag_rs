@@ -1,20 +1,20 @@
-//! Diagnostic example to troubleshoot thag_styling issues
+//! Diagnostic example to troubleshoot `thag_styling` issues
 //!
 //! This example helps diagnose environment differences and feature detection issues.
 //!
 //! Run with:
 //! ```bash
 //! # Test with minimal features
-//! cargo run --example diagnostic --features "basic"
+//! cargo run -p thag_styling --example diagnostic --features "basic"
 //!
 //! # Test with color detection
-//! cargo run --example diagnostic --features "color_detect"
+//! cargo run -p thag_styling --example diagnostic --features "color_detect"
 //!
 //! # Test with integrations
-//! cargo run --example diagnostic --features "color_detect,crossterm_support,ratatui_support"
+//! cargo run -p thag_styling --example diagnostic --features "color_detect,crossterm_support,ratatui_support"
 //!
 //! # Test with full features
-//! cargo run --example diagnostic --features "full"
+//! cargo run -p thag_styling --example diagnostic --features "full"
 //! ```
 
 use thag_styling::{Role, Style, TermAttributes};
@@ -55,7 +55,7 @@ fn main() {
     println!("\n✅ Diagnostic complete!");
     println!("\n💡 If you're seeing basic colors instead of rich themed colors,");
     println!("   make sure to include the 'color_detect' feature:");
-    println!("   cargo run --example diagnostic --features \"color_detect,your_integration\"");
+    println!("   cargo run -p thag_styling --example diagnostic --features \"color_detect,your_integration\"");
 }
 
 fn print_environment_info() {
@@ -154,8 +154,8 @@ fn print_theme_analysis() {
         term_attrs.theme.min_color_support
     );
 
-    if let Some(rgb) = term_attrs.term_bg_rgb {
-        println!("   Term BG RGB: RGB({}, {}, {})", rgb[0], rgb[1], rgb[2]);
+    if let Some([r, g, b]) = term_attrs.term_bg_rgb {
+        println!("   Term BG RGB: RGB({r}, {g}, {b})");
     } else {
         println!("   Term BG RGB: None");
     }
@@ -266,6 +266,7 @@ mod tests {
 }
 
 #[cfg(feature = "color_detect")]
+#[allow(clippy::too_many_lines)]
 fn test_strategy_comparison() {
     use thag_styling::ColorInitStrategy;
 
@@ -312,25 +313,22 @@ fn test_strategy_comparison() {
     #[cfg(feature = "color_detect")]
     {
         use supports_color::{on, Stream};
-        match on(Stream::Stdout) {
-            Some(level) => {
-                println!(
-                    "       Color level detected: has_16m={}, has_256={}, has_basic={}",
-                    level.has_16m, level.has_256, level.has_basic
-                );
-                let support = if level.has_16m {
-                    thag_styling::ColorSupport::TrueColor
-                } else if level.has_256 {
-                    thag_styling::ColorSupport::Color256
-                } else {
-                    thag_styling::ColorSupport::Basic
-                };
-                println!("       Mapped to: {:?}", support);
-            }
-            None => {
-                println!("       ⚠️ No color support detected (returns None)");
-                println!("       This maps to ColorSupport::None");
-            }
+        if let Some(level) = on(Stream::Stdout) {
+            println!(
+                "       Color level detected: has_16m={}, has_256={}, has_basic={}",
+                level.has_16m, level.has_256, level.has_basic
+            );
+            let support = if level.has_16m {
+                thag_styling::ColorSupport::TrueColor
+            } else if level.has_256 {
+                thag_styling::ColorSupport::Color256
+            } else {
+                thag_styling::ColorSupport::Basic
+            };
+            println!("       Mapped to: {:?}", support);
+        } else {
+            println!("       ⚠️ No color support detected (returns None)");
+            println!("       This maps to ColorSupport::None");
         }
     }
 
@@ -360,12 +358,9 @@ fn test_strategy_comparison() {
     println!("     - how_initialized: {:?}", match_attrs.how_initialized);
     println!("     - color_support: {:?}", match_attrs.color_support);
     println!("     - theme.name: {}", match_attrs.theme.name);
-    if let Some(rgb) = match_attrs.term_bg_rgb {
-        println!(
-            "     - term_bg_rgb: RGB({}, {}, {})",
-            rgb[0], rgb[1], rgb[2]
-        );
-        let hex = format!("{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+    if let Some([r, g, b]) = match_attrs.term_bg_rgb {
+        println!("     - term_bg_rgb: RGB({r}, {g}, {b})");
+        let hex = format!("{r:02x}{g:02x}{b:02x}");
         println!("     - background_hex: #{}", hex);
     } else {
         println!("     - term_bg_rgb: None");
@@ -380,12 +375,9 @@ fn test_strategy_comparison() {
     );
     println!("     - color_support: {:?}", current_attrs.color_support);
     println!("     - theme.name: {}", current_attrs.theme.name);
-    if let Some(rgb) = current_attrs.term_bg_rgb {
-        println!(
-            "     - term_bg_rgb: RGB({}, {}, {})",
-            rgb[0], rgb[1], rgb[2]
-        );
-        let hex = format!("{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]);
+    if let Some([r, g, b]) = current_attrs.term_bg_rgb {
+        println!("     - term_bg_rgb: RGB({r}, {g}, {b})");
+        let hex = format!("{r:02x}{g:02x}{b:02x}");
         println!("     - background_hex: #{}", hex);
     } else {
         println!("     - term_bg_rgb: None");
@@ -404,12 +396,12 @@ fn test_strategy_comparison() {
     }
 
     // Show if strategies are different
-    if match_attrs.theme.name != current_attrs.theme.name {
+    if match_attrs.theme.name == current_attrs.theme.name {
+        println!("   ✅ Both strategies selected the same theme");
+    } else {
         println!("   ⚠️  STRATEGY MISMATCH: Different themes selected!");
         println!("      Match strategy: {}", match_attrs.theme.name);
         println!("      Determine strategy: {}", current_attrs.theme.name);
-    } else {
-        println!("   ✅ Both strategies selected the same theme");
     }
 
     println!();

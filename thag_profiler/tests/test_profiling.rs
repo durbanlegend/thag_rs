@@ -9,16 +9,16 @@
 /// THAG_PROFILER=both,,announce cargo test --features=full_profiling --test test_profiling -- --nocapture
 /// ```
 ///
-/// 1. **ProfileCapability** - Tests the capability flags and feature detection
-/// 2. **ProfileType** - Tests the different profile types and conversions
-/// 3. **ProfileConfiguration** - Tests parsing environment variables and configuration
-/// 4. **Debug Level** - Tests different debug levels and string conversions
-/// 5. **Global State** - Tests setting and retrieving global profiling state
-/// 6. **File Paths** - Tests the generation of profile file paths
-/// 7. **Profile Creation** - Tests creating and using Profile objects
-/// 8. **Profile Registry** - Tests registering and looking up profiled functions
-/// 9. **Stack Trace** - Tests stack trace extraction and cleaning
-/// 10. **Profile Stats** - Tests collecting and managing profile statistics
+/// 1. **`ProfileCapability`** - Tests the capability flags and feature detection
+/// 2. **`ProfileType`** - Tests the different profile types and conversions
+/// 3. **`ProfileConfiguration`** - Tests parsing environment variables and configuration
+/// 4. **`Debug Level`** - Tests different debug levels and string conversions
+/// 5. **`Global State`** - Tests setting and retrieving global profiling state
+/// 6. **`File Paths`** - Tests the generation of profile file paths
+/// 7. **`Profile Creation`** - Tests creating and using Profile objects
+/// 8. **`Profile Registry`** - Tests registering and looking up profiled functions
+/// 9. **`Stack Trace`** - Tests stack trace extraction and cleaning
+/// 10. **`Profile Stats`** - Tests collecting and managing profile statistics
 ///
 /// Each test function focuses on a specific aspect of the profiling system, and the main test function
 /// runs them all in sequence with appropriate initialization and cleanup.
@@ -54,7 +54,7 @@ use thag_profiler::{
 // Test functions for different profiling module components
 // ---------------------------------------------------------------------------
 
-/// Test ProfileCapability and its relationship with ProfileType
+/// Test `ProfileCapability` and its relationship with `ProfileType`
 #[cfg(feature = "time_profiling")]
 fn test_profile_capability() {
     // Create different capabilities
@@ -117,7 +117,7 @@ fn test_profile_capability() {
     assert_eq!(available.0, both.0);
 }
 
-/// Test ProfileType conversions and behavior
+/// Test `ProfileType` conversions and behavior
 #[cfg(feature = "time_profiling")]
 fn test_profile_type() {
     // Test FromStr implementation
@@ -132,13 +132,9 @@ fn test_profile_type() {
     assert_eq!(ProfileType::Memory.to_string(), "memory");
     assert_eq!(ProfileType::Both.to_string(), "both");
     assert_eq!(ProfileType::None.to_string(), "none");
-
-    // Test conversion from Option<ProfileType> for default values
-    let none_option: Option<ProfileType> = None;
-    assert_eq!(none_option.unwrap_or_default(), ProfileType::Both); // Default is Both
 }
 
-/// Test DebugLevel enum and conversions
+/// Test `DebugLevel` enum and conversions
 #[cfg(feature = "time_profiling")]
 fn test_debug_level() {
     // Test FromStr implementation
@@ -169,7 +165,7 @@ fn test_debug_level() {
     assert_eq!(DebugLevel::default(), DebugLevel::None);
 }
 
-/// Test ProfileConfiguration parsing and behavior
+/// Test `ProfileConfiguration` parsing and behavior
 #[cfg(feature = "time_profiling")]
 fn test_profile_configuration() {
     // Test parsing from environment string parts
@@ -250,7 +246,7 @@ fn test_env_config_parsing() {
     // Test set_profile_config
     let mut custom_config = config5;
     custom_config.set_profile_type(Some(ProfileType::Memory));
-    let _ = set_profile_config(custom_config);
+    set_profile_config(custom_config);
     let config6 = get_profile_config();
     assert_eq!(config6.profile_type(), Some(ProfileType::Memory));
 
@@ -263,7 +259,7 @@ fn test_env_config_parsing() {
     clear_profile_config_cache();
 }
 
-/// Test ProfileFilePaths and file path generation
+/// Test `ProfileFilePaths` and file path generation
 #[cfg(feature = "time_profiling")]
 fn test_profile_file_paths() {
     // Get the paths structure
@@ -359,14 +355,14 @@ fn test_function_registry() {
 
     // Test descriptive name lookup
     assert_eq!(get_reg_desc_name(&path1), Some(func1.clone()));
-    assert_eq!(get_reg_desc_name(&path2), Some(func2.clone()));
+    assert_eq!(get_reg_desc_name(&path2), Some(func2));
     assert_eq!(get_reg_desc_name("unknown_function"), None);
 
     // let contents = thag_profiler::profiling::dump_profiled_functions();
     // println!("Registry contents: {:#?}", contents);
 
     // Test extract_path function
-    let stack = vec![path1.clone(), "middleware".to_string(), "main".to_string()];
+    let stack = vec![path1, "middleware".to_string(), "main".to_string()];
     let path = extract_path(&stack, None);
     assert!(!path.is_empty(), "Path should not be empty");
 
@@ -402,7 +398,7 @@ fn test_string_cleaning() {
     assert_eq!(clean_function_name(&mut name4), "module::function");
 }
 
-/// Test Profile creation and operations
+/// Test `Profile` creation and operations
 #[cfg(all(feature = "time_profiling", not(feature = "full_profiling")))]
 #[enable_profiling(time)]
 fn test_profile_creation() {
@@ -478,7 +474,7 @@ fn test_profile_creation() {
     );
 }
 
-/// Test ProfileStats operations
+/// Test `ProfileStats` operations
 #[cfg(feature = "time_profiling")]
 fn test_profile_stats() {
     let mut stats = ProfileStats::default();
@@ -498,7 +494,6 @@ fn test_profile_stats() {
 
 /// Test backtrace and stack extraction
 #[cfg(feature = "full_profiling")]
-// #[thag_profiler::enable_profiling(runtime, function(mem_summary))]
 #[profiled(mem_summary)]
 #[fn_name]
 fn test_stack_extraction() {

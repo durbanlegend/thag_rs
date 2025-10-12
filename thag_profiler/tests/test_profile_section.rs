@@ -37,17 +37,17 @@
 /// - Properly initializes profiling state before tests
 /// - Various allocation patterns to test memory tracking
 /// - Manual verification that profiles are properly disposed
-/// - Feature-specific tests for full_profiling capability
+/// - Feature-specific tests for `full_profiling` capability
 /// - Explicit assertions on profile properties
 #[cfg(feature = "time_profiling")]
-use thag_profiler::{end, file_stem_from_path_str, profile /*, Profile, ProfileType */};
+use thag_profiler::{enable_profiling, end, file_stem_from_path_str, profile};
 
 // #[cfg(feature = "time_profiling")]
 // use thag_profiler::profiling::{get_reg_desc_name, is_profiled_function};
 
 /// Test time profiling in a section
 #[cfg(feature = "time_profiling")]
-#[thag_profiler::enable_profiling]
+#[enable_profiling]
 fn test_time_section() {
     profile!(test_time_section, time);
 
@@ -75,7 +75,7 @@ fn test_time_section() {
     assert_eq!(profile.end_line(), None);
 
     // Do some work
-    let _ = (0..1000).fold(0, |acc, x| acc + x);
+    let _ = (0..1000).sum::<i32>();
 
     // Mark the end of the section
     end!(test_time_section);
@@ -84,7 +84,7 @@ fn test_time_section() {
 
 /// Test memory profiling in a section (summary only)
 #[cfg(feature = "full_profiling")]
-#[thag_profiler::enable_profiling(memory)]
+#[enable_profiling(memory)]
 fn test_memory_summary_section() {
     profile!(test_memory_summary, mem_summary);
 
@@ -112,7 +112,7 @@ fn test_memory_summary_section() {
 
 /// Test memory profiling in a section (detailed)
 #[cfg(feature = "full_profiling")]
-#[thag_profiler::enable_profiling(memory)]
+#[enable_profiling(memory)]
 fn test_memory_detail_section() {
     profile!(test_memory_detail, mem_detail);
 
@@ -142,7 +142,8 @@ fn test_memory_detail_section() {
 
 /// Test combined time and memory profiling
 #[cfg(feature = "full_profiling")]
-#[thag_profiler::enable_profiling]
+#[enable_profiling]
+#[allow(clippy::cast_sign_loss)]
 fn test_both_profiling_section() {
     profile!(test_both, time, mem_summary);
 
@@ -151,7 +152,7 @@ fn test_both_profiling_section() {
     assert!(!profile.is_detailed_memory());
 
     // Do work and allocate memory
-    let result = (0..1000).fold(0, |acc, x| acc + x);
+    let result = (0..1000).sum::<i32>();
     let data = vec![0u8; result as usize % 10000];
 
     // Prevent optimizer from removing the allocations
@@ -163,7 +164,8 @@ fn test_both_profiling_section() {
 
 /// Test combined time and detailed memory profiling
 #[cfg(feature = "full_profiling")]
-#[thag_profiler::enable_profiling]
+#[enable_profiling]
+#[allow(clippy::suspicious_map)]
 fn test_both_detailed_section() {
     profile!(test_both_detailed, time, mem_detail);
 
@@ -171,20 +173,18 @@ fn test_both_detailed_section() {
     assert_eq!(profile.get_profile_type(), ProfileType::Both);
     assert!(profile.is_detailed_memory());
 
-    // Do work and allocate memory
-    let data = (0..1000).map(|i| i.to_string()).collect::<Vec<_>>();
-
-    // Prevent optimizer from removing the allocations
-    assert_eq!(data.len(), 1000);
-
+    // Do work and allocate memory.
+    // Prevent optimizer from removing the allocations,
+    // hence `#[allow(clippy::suspicious_map)]` attribute on this function.
+    assert_eq!((0..1000).map(|i| i.to_string()).count(), 1000);
     end!(test_both_detailed);
     eprintln!("test_both_detailed_section passed");
 }
 
 /// Test global profile type setting
 #[cfg(feature = "time_profiling")]
-#[cfg_attr(feature = "full_profiling", thag_profiler::enable_profiling(memory))]
-#[cfg_attr(not(feature = "full_profiling"), thag_profiler::enable_profiling(time))]
+#[cfg_attr(feature = "full_profiling", enable_profiling(memory))]
+#[cfg_attr(not(feature = "full_profiling"), enable_profiling(time))]
 fn test_global_profile_section() {
     profile!(test_global, global);
 
@@ -203,7 +203,7 @@ fn test_global_profile_section() {
 
 /// Test nested sections with different profile types
 #[cfg(feature = "full_profiling")]
-#[thag_profiler::enable_profiling]
+#[enable_profiling]
 fn test_nested_sections() {
     profile!(outer_section, time);
 
@@ -211,7 +211,7 @@ fn test_nested_sections() {
     assert_eq!(outer_profile.get_profile_type(), ProfileType::Time);
 
     // Do some work in the outer section
-    let _ = (0..500).fold(0, |acc, x| acc + x);
+    let _ = (0..500).sum::<i32>();
 
     // Create a nested section with different profile type
     profile!(inner_section, mem_detail);
@@ -236,7 +236,7 @@ fn test_nested_sections() {
 
 /// Test unbounded section (without explicit end)
 #[cfg(feature = "full_profiling")]
-#[thag_profiler::enable_profiling]
+#[enable_profiling]
 fn test_unbounded_section() {
     {
         profile!(unbounded_section, mem_detail, unbounded);
@@ -290,7 +290,7 @@ fn test_profile_section_behavior() {
     #[cfg(feature = "full_profiling")]
     #[enable_profiling(memory)]
     fn enable_memory_profiling_for_test() {
-        eprintln!("In test_profile_section_behavior::enable_memory_profiling_for_test")
+        eprintln!("In test_profile_section_behavior::enable_memory_profiling_for_test");
     }
 
     #[enable_profiling(time)]

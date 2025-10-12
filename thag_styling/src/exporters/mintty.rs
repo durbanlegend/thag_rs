@@ -193,8 +193,7 @@ mod tests {
         assert!(content.contains("30,30,46")); // Background color from test theme
 
         // The format should be valid - no syntax errors
-        let lines: Vec<&str> = content.lines().collect();
-        assert!(lines.len() > 3); // Should have header and some config lines
+        assert!(content.lines().count() > 3); // Should have header and some config lines
     }
 
     #[test]

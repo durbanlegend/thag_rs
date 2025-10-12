@@ -96,7 +96,7 @@ fn test_thread_isolation() {
     }));
 
     // Thread 3: Checks it's unaffected by other threads
-    let barrier3 = barrier.clone();
+    let barrier3 = barrier;
     handles.push(thread::spawn(move || {
         barrier3.wait(); // Synchronize start
 
@@ -119,12 +119,14 @@ fn test_thread_isolation() {
 #[test]
 #[cfg(feature = "full_profiling")]
 #[serial]
+#[allow(clippy::cast_precision_loss)]
 fn test_performance_comparison() {
-    thag_profiler::profiling::force_set_profiling_state(true);
-    reset_allocator_states();
     use std::time::Instant;
 
     const ITERATIONS: usize = 1000;
+
+    thag_profiler::profiling::force_set_profiling_state(true);
+    reset_allocator_states();
 
     // Time global atomic version
     let start = Instant::now();
@@ -163,9 +165,6 @@ fn test_debug_log_zero_cost() {
     // This test should always pass - when debug_logging is disabled,
     // the macro should compile to nothing
     debug_log!("This should be zero-cost when feature is disabled");
-
-    // The fact that this compiles and runs means the macro is working correctly
-    assert!(true);
 }
 
 #[test]

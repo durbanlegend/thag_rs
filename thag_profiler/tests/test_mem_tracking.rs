@@ -39,7 +39,7 @@ static TEST_MEMORY: LazyLock<Mutex<Vec<Vec<u8>>>> = LazyLock::new(|| Mutex::new(
 // Test functions for memory tracking
 // ---------------------------------------------------------------------------
 
-/// Test safe_alloc!
+/// Test `safe_alloc!`
 #[cfg(feature = "full_profiling")]
 fn test_with_sys_alloc() {
     thag_profiler::profiling::force_set_profiling_state(true);
@@ -166,6 +166,7 @@ fn test_profiled_memory_allocations() {
 
 /// Test persistent allocations
 #[cfg(feature = "full_profiling")]
+#[allow(clippy::significant_drop_tightening)]
 fn test_persistent_allocations() {
     // Check that allocations from previous test are still valid
     let memory = TEST_MEMORY.lock().unwrap();
@@ -196,7 +197,7 @@ fn test_mem_tracking_full_sequence() {
     // Helper function to enable memory profiling using the attribute macro
     #[enable_profiling(memory)]
     fn enable_memory_profiling_for_test() {
-        eprintln!("In test_mem_tracking_full_sequence::enable_memory_profiling_for_test")
+        eprintln!("In test_mem_tracking_full_sequence::enable_memory_profiling_for_test");
     }
 
     eprintln!("Starting memory tracking tests");

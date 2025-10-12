@@ -2,6 +2,7 @@
 [dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
+#![allow(clippy::suboptimal_flops)]
 
 /// Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
 ///
@@ -101,6 +102,7 @@ impl BaseTheme {
     }
 
     /// Calculate prominence score for a color based on saturation and contrast against background
+    #[allow(clippy::many_single_char_names)]
     fn calculate_prominence(
         hex: &str,
         is_light_theme: bool,
@@ -128,17 +130,17 @@ impl BaseTheme {
             // Light theme adjustments: darker colors are more prominent
             match h {
                 // Red/Orange: Moderate boost for darker reds
-                h if h < 30.0 || h >= 330.0 => 1.08,
+                h if !(30.0..330.0).contains(&h) => 1.08,
                 // Yellow: Small reduction (bright yellows less prominent on light backgrounds)
-                h if h >= 45.0 && h < 75.0 => 0.98,
+                h if (45.0..75.0).contains(&h) => 0.98,
                 // Cyan: Small boost (dark cyans still somewhat prominent)
-                h if h >= 165.0 && h < 210.0 => 1.05,
+                h if (165.0..210.0).contains(&h) => 1.05,
                 // Blue: Small boost for darker blues
-                h if h >= 210.0 && h < 270.0 => 1.05,
+                h if (210.0..270.0).contains(&h) => 1.05,
                 // Purple: Boost for dark purples (prominent against light backgrounds)
-                h if h >= 270.0 && h < 300.0 => 1.10,
+                h if (270.0..300.0).contains(&h) => 1.10,
                 // Magenta/Pink: Moderate boost for darker magentas
-                h if h >= 300.0 && h < 330.0 => 1.08,
+                h if (300.0..330.0).contains(&h) => 1.08,
                 // Other hues: Maintain current scoring
                 _ => 1.0,
             }
@@ -146,17 +148,17 @@ impl BaseTheme {
             // Dark theme adjustments: brighter colors are more prominent
             match h {
                 // Red/Orange: Boost significantly (user consistently ranked these higher)
-                h if h < 30.0 || h >= 330.0 => 1.15,
+                h if !(30.0..330.0).contains(&h) => 1.15,
                 // Yellow/Gold: Small boost for pure yellows
-                h if h >= 45.0 && h < 75.0 => 1.02,
+                h if (45.0..75.0).contains(&h) => 1.02,
                 // Cyan/Light Blue: Boost strongly (user ranked these highest on dark themes)
-                h if h >= 165.0 && h < 210.0 => 1.25,
+                h if (165.0..210.0).contains(&h) => 1.25,
                 // Blue: Boost (user found these more prominent than algorithm calculated)
-                h if h >= 210.0 && h < 270.0 => 1.10,
+                h if (210.0..270.0).contains(&h) => 1.10,
                 // Magenta/Pink: Boost moderately for dark themes
-                h if h >= 300.0 && h < 330.0 => 1.15,
+                h if (300.0..330.0).contains(&h) => 1.15,
                 // Purple: Small reduction (user ranked lower than algorithm)
-                h if h >= 270.0 && h < 300.0 => 0.95,
+                h if (270.0..300.0).contains(&h) => 0.95,
                 // Other hues: Maintain current scoring
                 _ => 1.0,
             }
@@ -307,7 +309,7 @@ impl BaseTheme {
         // Enhance heading1 (base0E)
         let heading1_style = Style::from_fg_hex(&self.palette.base0_e)?.bold();
         palette.heading1 = Self::enhance_single_color_contrast(
-            heading1_style,
+            &heading1_style,
             bg_rgb,
             0.60, // heading contrast threshold
             is_light_theme,
@@ -317,7 +319,7 @@ impl BaseTheme {
         // Enhance heading2 (base0F)
         let heading2_style = Style::from_fg_hex(&self.palette.base0_f)?.bold();
         palette.heading2 = Self::enhance_single_color_contrast(
-            heading2_style,
+            &heading2_style,
             bg_rgb,
             0.60, // heading contrast threshold
             is_light_theme,
@@ -327,7 +329,7 @@ impl BaseTheme {
         // Enhance heading3 (base0C)
         let heading3_style = Style::from_fg_hex(&self.palette.base0_c)?.bold();
         palette.heading3 = Self::enhance_single_color_contrast(
-            heading3_style,
+            &heading3_style,
             bg_rgb,
             0.60, // heading contrast threshold
             is_light_theme,
@@ -393,7 +395,7 @@ impl BaseTheme {
             .map(|(hex, name)| {
                 let style = Style::from_fg_hex(hex).unwrap_or_default().bold();
                 let enhanced_style = Self::enhance_single_color_contrast(
-                    style,
+                    &style,
                     bg_rgb,
                     0.60, // heading contrast threshold
                     is_light_theme,
@@ -608,7 +610,7 @@ impl BaseTheme {
 
     /// Enhance a single color for contrast with role-specific handling
     fn enhance_single_color_contrast(
-        style: Style,
+        style: &Style,
         background_rgb: [u8; 3],
         contrast_threshold: f32,
         is_light_theme: bool,
@@ -616,7 +618,7 @@ impl BaseTheme {
     ) -> Style {
         let [_bg_h, _bg_s, bg_l] = rgb_to_hsl(background_rgb);
 
-        Self::adjust_color_contrast(&style, bg_l, contrast_threshold, is_light_theme, role_name)
+        Self::adjust_color_contrast(style, bg_l, contrast_threshold, is_light_theme, role_name)
     }
 
     /// Adjust a single color's contrast against the background

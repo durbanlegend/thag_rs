@@ -93,7 +93,7 @@ impl Drop for TerminalStateGuard {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::detect_term_capabilities;
+/// use thag_common::terminal::detect_term_capabilities;
 ///
 /// let support = detect_term_capabilities();
 /// println!("Terminal color support: {:?}", support);
@@ -154,7 +154,7 @@ pub fn get_fresh_color_support() -> ColorSupport {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::get_term_bg_luma;
+/// use thag_common::terminal::get_term_bg_luma;
 ///
 /// let luma = get_term_bg_luma();
 /// println!("Terminal background intensity: {:?}", luma);
@@ -192,7 +192,7 @@ pub fn get_term_bg_luma() -> &'static TermBgLuma {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::is_light_color;
+/// use thag_common::terminal::is_light_color;
 ///
 /// assert!(is_light_color([255, 255, 255])); // white is light
 /// assert!(!is_light_color([0, 0, 0]));      // black is dark
@@ -221,8 +221,8 @@ pub fn is_light_color([r, g, b]: [u8; 3]) -> bool {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::get_term_bg_rgb;
-/// use thag_rs::ThagError;
+/// use thag_common::terminal::get_term_bg_rgb;
+/// use thag_common::ThagCommonError;
 ///
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");
@@ -317,8 +317,8 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static [u8; 3]> {
 /// # Examples
 ///
 /// ```
-/// use thag_rs::terminal::get_term_bg_rgb;
-/// use thag_rs::ThagError;
+/// use thag_common::terminal::get_term_bg_rgb;
+/// use thag_common::ThagCommonError;
 ///
 /// let maybe_term_bg_rgb = get_term_bg_rgb();
 /// println!("Terminal background: {maybe_term_bg_rgb:?}");

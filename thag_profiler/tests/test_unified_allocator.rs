@@ -104,7 +104,7 @@ fn test_unified_allocator_threading() {
     }));
 
     // Thread 3: Checks behavior based on approach
-    let barrier3 = barrier.clone();
+    let barrier3 = barrier;
     handles.push(thread::spawn(move || {
         barrier3.wait(); // Synchronize start
 
@@ -152,13 +152,14 @@ fn test_unified_approach_selection() {
 #[cfg(feature = "full_profiling")]
 #[serial]
 fn test_performance_characteristics() {
+    use std::time::Instant;
+
+    const ITERATIONS: usize = 1000;
+
     thag_profiler::profiling::force_set_profiling_state(true);
     assert!(thag_profiler::is_profiling_enabled());
 
     reset_allocator_state();
-
-    use std::time::Instant;
-    const ITERATIONS: usize = 1000;
 
     // Time the thread-local approach
     let start = Instant::now();
@@ -174,15 +175,6 @@ fn test_performance_characteristics() {
 
     // The test passes regardless of performance - we just measure it
     assert!(duration.as_nanos() > 0);
-}
-
-#[test]
-fn test_thread_local_behavior() {
-    // This test verifies the thread-local behavior
-    println!("Using thread-local approach for better isolation");
-
-    // Test always passes - it's about compile-time behavior
-    assert!(true);
 }
 
 #[test]

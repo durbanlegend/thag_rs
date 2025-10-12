@@ -8,7 +8,7 @@ mod tests {
     use thag_rs::Ast;
 
     // Example AST representing use and extern crate statements
-    const IMPORTS: &str = r#"
+    const IMPORTS: &str = r"
         extern crate foo;
         use bar::baz;
         mod glorp;
@@ -34,7 +34,7 @@ mod tests {
         use snarf as qux;
         use std::fmt;
         use qux::corge;
-        "#;
+        ";
 
     const EXPECTED_CRATES: &[&str] = &[
         "bar",
@@ -61,17 +61,17 @@ mod tests {
         set_up();
         // Example AST representing use and extern crate statements
         let ast = syn::parse_file(
-            r#"
+            r"
             extern crate foo;
             use bar::baz;
             use std::fmt;
             use glorp;
-            "#,
+            ",
         )
         .unwrap();
         let ast = Ast::File(ast);
-        let crates_finder = Some(find_crates(&ast)).unwrap();
-        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let crates_finder = find_crates(&ast);
+        let metadata_finder = find_metadata(&ast);
         let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
         assert_eq!(deps, vec!["bar", "foo", "glorp"]);
     }
@@ -82,8 +82,8 @@ mod tests {
         // Example AST representing use and extern crate statements
         let file = syn::parse_file(IMPORTS).unwrap();
         let ast = Ast::File(file);
-        let crates_finder = Some(find_crates(&ast)).unwrap();
-        let metadata_finder = Some(find_metadata(&ast)).unwrap();
+        let crates_finder = find_crates(&ast);
+        let metadata_finder = find_metadata(&ast);
         let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
         assert_eq!(&deps, EXPECTED_CRATES);
     }
@@ -91,13 +91,13 @@ mod tests {
     #[test]
     fn test_ast_infer_deps_from_source() {
         set_up();
-        let source_code = r#"
+        let source_code = r"
             extern crate foo;
             use bar::baz;
             use std::fmt;
             mod glorp;
             use snarf;
-            "#;
+            ";
 
         let deps = infer_deps_from_source(source_code);
         assert_eq!(deps, vec!["bar", "foo", "snarf"]);

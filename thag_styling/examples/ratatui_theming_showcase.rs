@@ -6,9 +6,9 @@ crossterm = "0.28"
 */
 /// Comprehensive Ratatui Theming Showcase
 ///
-/// This example demonstrates how to build a themed TUI application using ratatui
-/// and thag_styling. It showcases various UI components styled with semantic roles
-/// and demonstrates both the ThemedStyle trait and extension methods.
+/// This example demonstrates how to build a themed TUI application using `ratatui`
+/// and `thag_styling`. It showcases various UI components styled with semantic roles
+/// and demonstrates both the `ThemedStyle` trait and extension methods.
 ///
 /// ```Rust
 /// cargo run -p thag_styling --example ratatui_theming_showcase --features ratatui_support
@@ -153,7 +153,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui(f, &mut app))?;
+        terminal.draw(|f| ui(f, &app))?;
 
         if let Event::Key(key) = event::read()? {
             match key.code {
@@ -174,7 +174,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
     }
 }
 
-fn ui(f: &mut Frame, app: &mut App) {
+fn ui(f: &mut Frame, app: &App) {
     let size = f.area();
 
     // Create main layout
@@ -254,6 +254,11 @@ fn render_content(f: &mut Frame, area: Rect, app: &App) {
     }
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines
+)]
 fn render_dashboard_tab(f: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -539,6 +544,7 @@ fn render_settings_tab(f: &mut Frame, area: Rect) {
     f.render_widget(advanced_widget, chunks[2]);
 }
 
+#[allow(clippy::too_many_lines)]
 fn render_about_tab(f: &mut Frame, area: Rect) {
     let about_text = Text::from(vec![
         Line::from(""),

@@ -1,6 +1,6 @@
-//! Demonstration of the ThemedStyle trait across multiple styling crates
+//! Demonstration of the `ThemedStyle` trait across multiple styling crates
 //!
-//! This example shows how to use thag_styling's ThemedStyle trait to create
+//! This example shows how to use `thag_styling`'s `ThemedStyle` trait to create
 //! consistent, theme-aware styling across different terminal UI libraries.
 /*[toml]
 [dependencies]
@@ -10,16 +10,16 @@ thag_styling = { version = "0.2, thag-auto" }
 //! Run with different features to see different integrations:
 //! ```bash
 //! # Basic demo with all integrations (REQUIRES color_detect for rich colors!)
-//! cargo run --example themed_style_demo --features "color_detect,crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
+//! cargo run -p thag_styling --example themed_style_demo --features "color_detect,crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
 //!
 //! # Just crossterm (with rich colors)
-//! cargo run --example themed_style_demo --features "color_detect,crossterm_support"
+//! cargo run -p thag_styling --example themed_style_demo --features "color_detect,crossterm_support"
 //!
 //! # Just ratatui (with rich colors)
-//! cargo run --example themed_style_demo --features "color_detect,ratatui_support"
+//! cargo run -p thag_styling --example themed_style_demo --features "color_detect,ratatui_support"
 //!
 //! # Without color_detect (falls back to basic ANSI colors)
-//! cargo run --example themed_style_demo --features "crossterm_support"
+//! cargo run -p thag_styling --example themed_style_demo --features "crossterm_support"
 //! ```
 
 use thag_styling::{Role, ThemedStyle};
@@ -98,7 +98,7 @@ fn check_theme_status() {
         println!("      [dependencies.thag_styling]");
         println!("      features = [\"color_detect\", \"your_integration_support\"]");
         println!();
-        println!("      Then run: cargo run --example themed_style_demo --features \"color_detect,crossterm_support\"");
+        println!("      Then run: cargo run -p thag_styling --example themed_style_demo --features \"color_detect,crossterm_support\"");
     } else {
         println!("   ✅ Good theme detected!");
     }

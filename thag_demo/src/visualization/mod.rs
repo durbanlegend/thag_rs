@@ -354,6 +354,6 @@ mod tests {
         let config = VisualizationConfig::default();
         assert_eq!(config.title, "Profiling Analysis");
         assert_eq!(config.count_name, "μs");
-        assert_eq!(config.flame_chart, true);
+        assert!(config.flame_chart);
     }
 }

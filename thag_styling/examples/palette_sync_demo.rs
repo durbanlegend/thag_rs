@@ -1,7 +1,7 @@
 //! Palette synchronization demo
 //!
 //! This example demonstrates how to use OSC sequences to update your terminal's
-//! color palette in real-time to match a thag_styling theme.
+//! color palette in real-time to match a `thag_styling` theme.
 //!
 //! Usage:
 //! ```bash
@@ -71,7 +71,7 @@ fn apply_theme(theme_name: &str) {
     println!("✅ Theme applied successfully!");
     println!(
         "🔄 To reset colors, run: {} reset",
-        args().nth(0).unwrap_or_default()
+        args().next().unwrap_or_default()
     );
 
     // Show a quick demonstration
@@ -109,12 +109,12 @@ fn preview_theme(theme_name: &str) {
 
     println!(
         "\n🔄 To make this permanent, run: {} apply {}",
-        args().nth(0).unwrap_or_default(),
+        args().next().unwrap_or_default(),
         theme_name
     );
     println!(
         "🔄 To reset colors, run: {} reset",
-        args().nth(0).unwrap_or_default()
+        args().next().unwrap_or_default()
     );
 }
 
@@ -184,7 +184,7 @@ fn list_themes() {
 
 fn print_usage() {
     let program = args()
-        .nth(0)
+        .next()
         .unwrap_or_else(|| "palette_sync_demo".to_string());
 
     println!("🎨 Thag Styling Palette Sync Demo");

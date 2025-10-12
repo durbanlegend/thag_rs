@@ -1,9 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use lazy_static::lazy_static;
 use phf::phf_set;
 use regex::Regex;
 use std::collections::HashSet;
 use std::hint::black_box;
+use std::sync::LazyLock;
 
 // Approach 1: phf::Set with all terms
 static PHF_FILTER: phf::Set<&'static str> = phf_set! {
@@ -22,14 +22,12 @@ static ARRAY_FILTER: &[&str] = &[
 ];
 
 // Approach 3: Regex + smaller phf::Set
-lazy_static! {
-    static ref NUMERIC_RE: Regex = Regex::new(r"^[fiu]\d{1,3}$").unwrap();
-    static ref HASHSET_FILTER: HashSet<&'static str> = {
-        let mut set = HashSet::new();
-        set.extend(["bool", "str", "error", "fs", "self", "super", "crate"]);
-        set
-    };
-}
+static NUMERIC_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[fiu]\d{1,3}$").unwrap());
+static HASHSET_FILTER: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
+    let mut set = HashSet::new();
+    set.extend(["bool", "str", "error", "fs", "self", "super", "crate"]);
+    set
+});
 
 fn filter_phf(word: &str) -> bool {
     PHF_FILTER.contains(word)
@@ -62,26 +60,26 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("phf_set", |b| {
         b.iter(|| {
-            for word in test_words.iter() {
+            for &word in &test_words {
                 black_box(filter_phf(black_box(word)));
             }
-        })
+        });
     });
 
     c.bench_function("static_array", |b| {
         b.iter(|| {
-            for word in test_words.iter() {
+            for &word in &test_words {
                 black_box(filter_array(black_box(word)));
             }
-        })
+        });
     });
 
     c.bench_function("regex_plus_hashset", |b| {
         b.iter(|| {
-            for word in test_words.iter() {
+            for &word in &test_words {
                 black_box(filter_regex_plus_hashset(black_box(word)));
             }
-        })
+        });
     });
 }
 

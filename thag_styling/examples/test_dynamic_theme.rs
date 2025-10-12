@@ -1,9 +1,9 @@
-//! Test dynamic theme changing to verify that ColorInfo ansi field can be updated
+//! Test dynamic theme changing to verify that `ColorInfo` ansi value can be updated
 //!
 //! This example demonstrates that we can now change themes dynamically without
-//! being stuck with static ANSI color codes from Box::leak.
+//! being stuck with static ANSI color codes from `Box::leak`.
 //!
-//! Run with: cargo run -p thag_styling --example test_dynamic_theme
+//! Run with: `cargo run -p thag_styling --example test_dynamic_theme`
 
 use thag_styling::{ColorInfo, ColorInitStrategy, Role, Style, TermAttributes};
 
@@ -41,7 +41,7 @@ fn main() {
         ([255, 0, 255], "Magenta"),
     ];
 
-    for (rgb, name) in colors.iter() {
+    for (rgb, name) in &colors {
         // Create ColorInfo with RGB values
         let color_info = ColorInfo::rgb(rgb[0], rgb[1], rgb[2]);
         let style = Style::fg(color_info);

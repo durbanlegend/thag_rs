@@ -813,7 +813,9 @@ mod tests {
         let filename = generate_default_filename(&categories, &crates, &filter_prefs);
         // Assert based on expected output
         assert!(filename.starts_with("demo_"));
-        assert!(filename.ends_with(".md"));
+        assert!(std::path::Path::new(&filename)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md")));
         assert!(filename.contains("tok"));
         assert!(filename.contains("ser"));
     }

@@ -49,9 +49,9 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
  ]
 */
 
-/// Zero-configuration setup example for thag_styling
+/// Zero-configuration setup example for `thag_styling`
 ///
-/// This example demonstrates how thag_styling can be used with zero configuration
+/// This example demonstrates how `thag_styling` can be used with zero configuration
 /// while automatically detecting terminal capabilities and choosing appropriate themes.
 ///
 /// Run with:
@@ -78,7 +78,7 @@ fn main() -> io::Result<()> {
 
     // Zero config step 3: Interactive prompts work out of the box
     #[cfg(feature = "inquire_theming")]
-    show_interactive_prompts()?;
+    show_interactive_prompts();
 
     // Zero config step 4: Advanced features just work
     show_advanced_features();
@@ -126,11 +126,7 @@ fn show_cross_library_consistency() -> io::Result<()> {
     // Show the same styling works across different contexts
     println!("  📝 Standard Output:");
     for (role, message) in &messages {
-        println!(
-            "    {}: {}",
-            format!("{role:12}"),
-            paint_for_role(*role, message)
-        );
+        println!("    {role:12}: {}", paint_for_role(*role, message));
     }
     println!();
 
@@ -205,6 +201,7 @@ fn show_cross_library_consistency() -> io::Result<()> {
 }
 
 #[cfg(feature = "ratatui_support")]
+#[allow(clippy::too_many_lines)]
 fn ratatui_user_input_example() {
     use ratatui::{
         crossterm::event::{self, Event, KeyCode, KeyEventKind},
@@ -430,7 +427,7 @@ fn ratatui_user_input_example() {
 }
 
 #[cfg(feature = "inquire_theming")]
-fn show_interactive_prompts() -> io::Result<()> {
+fn show_interactive_prompts() {
     use inquire::set_global_render_config; // For Option B
     use inquire::{Confirm, Select, Text};
     use thag_styling::themed_inquire_config; // For Option B
@@ -443,7 +440,7 @@ fn show_interactive_prompts() -> io::Result<()> {
 
     // Simple text input with theming
     if let Ok(name) = Text::new("What's your name?")
-        .with_render_config(config.clone())
+        .with_render_config(config)
         .prompt()
     {
         println!("  Hello, {}! 👋\n", paint_for_role(Role::Emphasis, &name));
@@ -471,7 +468,6 @@ fn show_interactive_prompts() -> io::Result<()> {
     }
 
     println!();
-    Ok(())
 }
 
 fn show_advanced_features() {
@@ -488,7 +484,7 @@ fn show_advanced_features() {
         thag_styling::TermBgLuma::Dark => {
             println!("    Dark background detected → Using light colors for contrast");
         }
-        _ => {
+        thag_styling::TermBgLuma::Undetermined => {
             println!("    Background auto-detected → Colors automatically optimized");
         }
     }
@@ -532,7 +528,7 @@ fn show_advanced_features() {
     println!();
 }
 
-/// Example of a typical CLI application using zero-config thag_styling
+/// Example of a typical CLI application using zero-config `thag_styling`
 fn example_cli_app() {
     println!("📋 Example CLI Application Output:\n");
 

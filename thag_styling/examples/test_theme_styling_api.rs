@@ -13,14 +13,10 @@ fn main() {
     let _attrs = TermAttributes::get_or_init_with_strategy(&strategy);
 
     // Get a theme to use for demonstration
-    let theme = match Theme::get_builtin("Basic Dark") {
-        Ok(theme) => theme,
-        Err(_) => {
-            println!("Could not load Basic Dark theme, using fallback");
-            return;
-        }
+    let Ok(theme) = Theme::get_builtin("Basic Dark") else {
+        println!("Could not load Basic Dark theme, using fallback");
+        return;
     };
-
     println!("Using theme: {}\n", theme.name);
 
     // Test all the new theme styling methods
@@ -53,7 +49,7 @@ fn main() {
     println!("=== Embedded Usage Examples ===");
 
     theme
-        .normal(&format!(
+        .normal(format!(
             "Status: {} | Errors: {} | Warnings: {}",
             theme.success("OK"),
             theme.error("0"),
@@ -62,7 +58,7 @@ fn main() {
         .println();
 
     theme
-        .normal(&format!(
+        .normal(format!(
             "File: {} contains {} function calls",
             theme.code("main.rs"),
             theme.emphasis("42")
@@ -70,7 +66,7 @@ fn main() {
         .println();
 
     theme
-        .heading2(&format!("Section: {}", theme.info_text("Configuration")))
+        .heading2(format!("Section: {}", theme.info_text("Configuration")))
         .println();
 
     println!();
@@ -87,7 +83,7 @@ fn main() {
 
     // New way (concise)
     theme
-        .normal(&format!("Status: {}", theme.success("OK")))
+        .normal(format!("Status: {}", theme.success("OK")))
         .println();
 
     println!("\n✨ The new API is much more concise and readable!");

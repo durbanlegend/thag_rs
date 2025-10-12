@@ -31,12 +31,6 @@ mod tests {
         });
     }
 
-    #[cfg(feature = "env_logger")]
-    fn init_logger() {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
-
-    #[cfg(not(feature = "env_logger"))]
     fn init_logger() {
         CombinedLogger::init(vec![
             TermLogger::new(
@@ -99,7 +93,7 @@ fn main() {{
         );
         debug_log!("input={input}");
 
-        let output = run(input);
+        let output = run(&input);
         debug_log!("output={output:?}");
 
         let out_str = String::from_utf8_lossy(&output.stdout);
@@ -134,7 +128,7 @@ fn main() {{
 
         debug_log!("input={input}");
 
-        let output = run(input);
+        let output = run(&input);
         safe_eprintln!("output={output:?}");
 
         let result = String::from_utf8_lossy(&output.stdout);
@@ -144,42 +138,7 @@ fn main() {{
         );
     }
 
-    #[test]
-    #[cfg(feature = "env_logger")]
-    #[serial]
-    fn test_logging_env_logger() {
-        set_up();
-        // init_logger();
-        let thag_rs_path = env::current_dir().expect("Error getting current directory");
-
-        let input = format!(
-            r#"/*[toml]
-[dependencies]
-thag_rs = {{ path = {thag_rs_path:#?}, default-features = false, features = ["core", "env_logger"]}}
-*/
-
-use thag_rs::vprtln;
-use thag_rs::Verbosity;
-
-fn main() {{
-    vprtln!(Verbosity::Quieter, "Macro quieter message");
-    vprtln!(Verbosity::Quiet, "Macro quiet message");
-    vprtln!(Verbosity::Normal, "Macro normal message");
-    vprtln!(Verbosity::Verbose, "Macro verbose message");
-}}
-"#
-        );
-
-        debug_log!("input={input}");
-
-        let output = run(input);
-        safe_eprintln!("output={output:?}");
-
-        assert!(String::from_utf8_lossy(&output.stdout)
-            .ends_with("Macro quieter message\nMacro quiet message\nMacro normal message\n"));
-    }
-
-    fn run(input: String) -> std::process::Output {
+    fn run(input: &str) -> std::process::Output {
         let mut child = Command::new("cargo")
             .arg("run")
             .arg("--features=debug_logging")

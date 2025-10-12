@@ -28,17 +28,13 @@ path-guid = "CCDE9D5F-06C2-42C2-8BF7-6EB41E46A496"
 license = false
 eula = false
 
-[package.metadata.cargo-features-validate]
-# Additional validation that logging feature is satisfied
-requires-any = [["simplelog", "env_logger"]]
-
 [package.metadata.docs.rs]
 # features = ["document-features"]
 all-features = true
 
 [workspace]
 members = [
-  "demo/proc_macros",
+  # "demo/proc_macros",
   "thag_common",
   "thag_demo",
   "thag_proc_macros",
@@ -248,7 +244,7 @@ dirs = "6.0"
 document-features = { version = "0.2", optional = true }
 documented = "0.9"
 edit = { version = "0.1", optional = true }
-env_logger = { version = "0.11", optional = true }
+
 heck = { version = "0.5", optional = true }
 inquire = { version = "0.9", optional = true }
 log = "0.4"
@@ -372,7 +368,6 @@ config = ["core", "edit", "mockall", "thag_styling/config", "toml_edit"]
 ## Core and Logging Features
 core = [
   "error_handling",
-  "log_impl",
   "thag_styling",
 ]  # Foundation for all features
 
@@ -382,15 +377,11 @@ debug_logging = []
 ## Documentation features
 document-features = ["dep:document-features"]
 
-## `env_logger` crate (alternative to `simplelog`)
-env_logger = ["dep:env_logger", "log_impl"]
-
 ## Error handling
 error_handling = []
 
 ## All features
 full = ["color_detect", "repl"]  # Simplified as repl includes everything
-log_impl = []  # Requires either simplelog or env_logger
 nightly = []
 no_format_snippet = []
 # dhat-heap = ["dep:dhat"]
@@ -407,7 +398,7 @@ repl = [
 ]
 
 ## `simplelog` crate
-simplelog = ["dep:simplelog", "log_impl"]
+simplelog = ["dep:simplelog"]
 terminal-light = ["dep:terminal-light"]
 
 ## Tools feature - includes all dependencies needed by tools
@@ -453,8 +444,6 @@ tui = [
 #     │    |  │   ├── ast
 #     │    |  │   │   ├── core  ★                # Fundamental feature set
 #     │    |  │   │   │   ├── error_handling     # Error types and handling
-#     │    |  │   │   │   ├── log_impl           # Basic logging infrastructure
-#     │    |  │   │   │   │   └── (simplelog | env_logger)
 #     │    |  │   │   │   └── styling            # Basic terminal styling
 #     │    |  │   │   ├── profiling              # As long as we use instrumentation at this level
 #     │    |  │   │   ├── quote

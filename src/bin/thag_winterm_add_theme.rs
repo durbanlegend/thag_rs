@@ -747,6 +747,6 @@ mod tests {
     #[test]
     fn test_non_windows_placeholder() {
         // This test just ensures the non-Windows version compiles
-        assert!(true);
+        // assert!(true);
     }
 }

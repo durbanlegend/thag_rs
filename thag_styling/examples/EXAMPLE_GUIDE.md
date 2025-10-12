@@ -8,13 +8,13 @@ All examples require appropriate feature flags to be enabled:
 
 ```bash
 # Ratatui integration showcase
-cargo run --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
+cargo run -p thag_styling --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
 
 # Basic styling demo (no features required)
-cargo run --example basic_styling -p thag_styling
+cargo run -p thag_styling --example basic_styling -p thag_styling
 
 # Integration comparisons
-cargo run --example themed_style_demo --features "ratatui_support,crossterm_support" -p thag_styling
+cargo run -p thag_styling --example themed_style_demo --features "ratatui_support,crossterm_support" -p thag_styling
 ```
 
 ## Feature Requirements
@@ -40,7 +40,7 @@ A comprehensive TUI application demonstrating:
 
 **Run:**
 ```bash
-cargo run --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
+cargo run -p thag_styling --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
 ```
 
 **Navigation:**

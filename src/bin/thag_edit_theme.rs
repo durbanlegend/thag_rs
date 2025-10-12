@@ -1,11 +1,3 @@
-//// Interactive theme editor for manual color role adjustments
-///
-/// This tool allows you to interactively edit theme color assignments,
-/// particularly useful when automatic conversion doesn't quite match your preferences.
-///
-//# Purpose: Edit and customize theme color role assignments interactively
-//# Categories: color, interactive, styling, theming, tools
-
 /*[toml]
 [dependencies]
 thag_styling = { version = "0.2, thag-auto" }
@@ -14,6 +6,13 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
 clap = { version = "4.5", features = ["derive"] }
 */
+/// Interactive theme editor for manual color role adjustments
+///
+/// This tool allows you to interactively edit theme color assignments,
+/// particularly useful when automatic conversion doesn't quite match your preferences.
+///
+//# Purpose: Edit and customize theme color role assignments interactively
+//# Categories: color, interactive, styling, theming, tools
 use clap::Parser;
 use inquire::{Confirm, Select};
 use std::collections::HashMap;
@@ -116,7 +115,7 @@ impl ThemeEditor {
                 "Adjust color" => self.adjust_color()?,
                 "Swap two roles" => self.swap_roles()?,
                 "Reset to original" => self.reset_palette()?,
-                "Show current palette" => self.show_palette()?,
+                "Show current palette" => self.show_palette(),
                 "Save and exit" => {
                     if self.save_and_exit()? {
                         break;
@@ -188,7 +187,7 @@ impl ThemeEditor {
             return Ok(());
         }
 
-        let options: Vec<String> = candidates.iter().map(|c| c.preview()).collect();
+        let options: Vec<String> = candidates.iter().map(ColorCandidate::preview).collect();
 
         let selection = Select::new("Select new color:", options).prompt()?;
 
@@ -199,7 +198,7 @@ impl ThemeEditor {
             .ok_or("Color not found")?;
 
         // Update the role
-        self.update_role(role, selected.rgb)?;
+        self.update_role(role, selected.rgb);
         self.modified = true;
 
         println!("✅ Updated {:?} to {}", role, selected.hex);
@@ -238,12 +237,13 @@ impl ThemeEditor {
         let selection = Select::new("How would you like to adjust?", adjustments).prompt()?;
 
         let adjusted_rgb = match selection {
-            "Lighten (+10%)" => Self::adjust_lightness(current_rgb, 0.10),
-            "Darken (-10%)" => Self::adjust_lightness(current_rgb, -0.10),
-            "Increase saturation (+10%)" => Self::adjust_saturation(current_rgb, 0.10),
-            "Decrease saturation (-10%)" => Self::adjust_saturation(current_rgb, -0.10),
+            "Lighten (+10%)" => Self::adjust_lightness(*current_rgb, 0.10),
+            "Darken (-10%)" => Self::adjust_lightness(*current_rgb, -0.10),
+            "Increase saturation (+10%)" => Self::adjust_saturation(*current_rgb, 0.10),
+            "Decrease saturation (-10%)" => Self::adjust_saturation(*current_rgb, -0.10),
             "Custom adjustment" => {
-                return self.custom_color_adjustment(role, *current_rgb);
+                Self::custom_color_adjustment(role, *current_rgb);
+                return Ok(());
             }
             "Cancel" => return Ok(()),
             _ => unreachable!(),
@@ -264,7 +264,7 @@ impl ThemeEditor {
             .prompt()?;
 
         if confirm {
-            self.update_role(role, adjusted_rgb)?;
+            self.update_role(role, adjusted_rgb);
             self.modified = true;
             println!("✅ Adjusted {:?} to {}", role, adjusted_hex);
         }
@@ -272,11 +272,7 @@ impl ThemeEditor {
         Ok(())
     }
 
-    fn custom_color_adjustment(
-        &mut self,
-        _role: Role,
-        current_rgb: [u8; 3],
-    ) -> Result<(), Box<dyn Error>> {
+    fn custom_color_adjustment(_role: Role, current_rgb: [u8; 3]) {
         let [h, s, l] = rgb_to_hsl(current_rgb);
 
         println!(
@@ -290,8 +286,6 @@ impl ThemeEditor {
         // Note: In a real implementation, you'd use inquire's text input
         // For simplicity, using preset adjustments
         println!("⚠️  Custom adjustment not fully implemented. Use preset adjustments.");
-
-        Ok(())
     }
 
     fn swap_roles(&mut self) -> Result<(), Box<dyn Error>> {
@@ -306,8 +300,8 @@ impl ThemeEditor {
         }
 
         // Get current colors
-        let style1 = self.theme.style_for(role1).clone();
-        let style2 = self.theme.style_for(role2).clone();
+        let style1 = self.theme.style_for(role1);
+        let style2 = self.theme.style_for(role2);
 
         // Extract RGB values
         let rgb1 = &style1
@@ -318,8 +312,8 @@ impl ThemeEditor {
             .ok_or_else(|| StylingError::FromStr("No RGB value for Style".to_string()))?;
 
         // Swap them
-        self.update_role(role1, *rgb2)?;
-        self.update_role(role2, *rgb1)?;
+        self.update_role(role1, *rgb2);
+        self.update_role(role2, *rgb1);
         self.modified = true;
 
         println!("✅ Swapped {:?} ↔ {:?}", role1, role2);
@@ -346,7 +340,7 @@ impl ThemeEditor {
         Ok(())
     }
 
-    fn show_palette(&self) -> Result<(), Box<dyn Error>> {
+    fn show_palette(&self) {
         println!("\n📊 Current Palette:\n");
 
         let roles = vec![
@@ -380,7 +374,6 @@ impl ThemeEditor {
         }
 
         println!();
-        Ok(())
     }
 
     fn save_and_exit(&self) -> Result<bool, Box<dyn Error>> {
@@ -518,20 +511,20 @@ impl ThemeEditor {
     }
 
     /// Adjust lightness by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
-    fn adjust_lightness(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
-        let [h, s, l] = rgb_to_hsl(*rgb);
+    fn adjust_lightness(rgb: [u8; 3], factor: f32) -> [u8; 3] {
+        let [h, s, l] = rgb_to_hsl(rgb);
         let new_l = (l + factor).clamp(0.1, 0.9); // Keep reasonable bounds
         hsl_to_rgb(h, s, new_l)
     }
 
     /// Adjust saturation by a factor (e.g., 0.10 for +10%, -0.10 for -10%)
-    fn adjust_saturation(rgb: &[u8; 3], factor: f32) -> [u8; 3] {
-        let [h, s, l] = rgb_to_hsl(*rgb);
+    fn adjust_saturation(rgb: [u8; 3], factor: f32) -> [u8; 3] {
+        let [h, s, l] = rgb_to_hsl(rgb);
         let new_s = (s + factor).clamp(0.0, 1.0);
         hsl_to_rgb(h, new_s, l)
     }
 
-    fn update_role(&mut self, role: Role, rgb: [u8; 3]) -> Result<(), Box<dyn Error>> {
+    fn update_role(&mut self, role: Role, rgb: [u8; 3]) {
         let style = self.theme.style_for(role);
         let mut new_style = Style::with_rgb(rgb);
 
@@ -568,8 +561,6 @@ impl ThemeEditor {
             Role::Quote => self.theme.palette.quote = new_style,
             Role::Commentary => self.theme.palette.commentary = new_style,
         }
-
-        Ok(())
     }
 
     fn style_to_hex(style: &Style) -> String {
@@ -578,7 +569,8 @@ impl ThemeEditor {
             .as_ref()
             .and_then(|color_info| {
                 if let ColorValue::TrueColor { rgb } = &color_info.value {
-                    Some(format!("#{:02x}{:02x}{:02x}", rgb[0], rgb[1], rgb[2]))
+                    let [r, g, b] = rgb;
+                    Some(format!("#{r:02x}{g:02x}{b:02x}"))
                 } else {
                     None
                 }
@@ -624,7 +616,7 @@ fn save_theme(theme: &Theme, path: &Path, create_backup: bool) -> Result<(), Box
 
     // Update the palette section
     if let Some(palette) = doc.get_mut("palette").and_then(|p| p.as_table_mut()) {
-        update_palette_in_toml(palette, &theme.palette)?;
+        update_palette_in_toml(palette, &theme.palette);
     }
 
     // Write back
@@ -638,7 +630,7 @@ fn save_theme(theme: &Theme, path: &Path, create_backup: bool) -> Result<(), Box
 fn update_palette_in_toml(
     palette: &mut toml::map::Map<String, toml::Value>,
     new_palette: &Palette,
-) -> Result<(), Box<dyn Error>> {
+) {
     let roles = vec![
         ("heading1", &new_palette.heading1),
         ("heading2", &new_palette.heading2),
@@ -676,8 +668,6 @@ fn update_palette_in_toml(
             }
         }
     }
-
-    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

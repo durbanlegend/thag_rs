@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::{io::Write, path::Path, sync::Once};
+    use syn::token::RArrow;
     use tempfile::NamedTempFile;
     use thag_rs::ast::{is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type};
     use thag_rs::code_utils::{
@@ -92,7 +93,7 @@ mod tests {
         function_map.insert("unit_fn".to_string(), ReturnType::Default);
         function_map.insert(
             "non_unit_fn".to_string(),
-            ReturnType::Type(Default::default(), Box::new(syn::parse_quote!(i32))),
+            ReturnType::Type(RArrow::default(), Box::new(syn::parse_quote!(i32))),
         );
         function_map
     }

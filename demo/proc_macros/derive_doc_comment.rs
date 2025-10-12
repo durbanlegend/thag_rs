@@ -3,6 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Type};
 
+#[allow(clippy::too_many_lines)]
 pub fn derive_doc_comment_impl(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as DeriveInput);
     let struct_name = &input.ident;
@@ -77,16 +78,14 @@ pub fn derive_doc_comment_impl(tokens: TokenStream) -> TokenStream {
                         let field_name = field.ident.as_ref().unwrap();
                         let field_type = &field.ty;
 
+                        field_names.push(field_name);
                         if let Some(doc) = parse_doc_comment(&field.attrs) {
-                            field_names.push(field_name);
                             field_docs.push(doc);
-                            field_types.push(field_type);
                         } else {
                             // For structs, we'll include fields without docs with a default message
-                            field_names.push(field_name);
                             field_docs.push("No documentation available".to_string());
-                            field_types.push(field_type);
                         }
+                        field_types.push(field_type);
                     }
 
                     let struct_doc = parse_doc_comment(&input.attrs)
@@ -164,7 +163,7 @@ pub fn derive_doc_comment_impl(tokens: TokenStream) -> TokenStream {
 ///
 /// Extracts the content of `#[doc = "..."]` attributes and combines multiple
 /// doc comments into a single string with newlines.
-pub(crate) fn parse_doc_comment(attrs: &[syn::Attribute]) -> Option<String> {
+pub fn parse_doc_comment(attrs: &[syn::Attribute]) -> Option<String> {
     let mut doc_parts = Vec::new();
 
     for attr in attrs {

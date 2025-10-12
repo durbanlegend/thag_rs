@@ -4,9 +4,10 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example minimal_color_test --features "color_detect"
+//! cargo run -p thag_styling --example minimal_color_test --features "color_detect"
 //! ```
 
+#![allow(clippy::suboptimal_flops)]
 use std::env;
 use std::time::Duration;
 
@@ -53,7 +54,8 @@ fn main() {
                 let hex = format!("{:02x}{:02x}{:02x}", r, g, b);
                 println!("   Background hex: #{}", hex);
 
-                let is_light = r as f64 * 0.299 + g as f64 * 0.587 + b as f64 * 0.114 > 127.5;
+                let is_light =
+                    f64::from(r) * 0.299 + f64::from(g) * 0.587 + f64::from(b) * 0.114 > 127.5;
                 println!("   Is light: {}", is_light);
             }
             Err(e) => {

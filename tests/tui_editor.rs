@@ -59,11 +59,6 @@ fn init_logger() {
         .unwrap();
         debug_log!("Initialized simplelog");
     });
-
-    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-    {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
 }
 
 #[test]
@@ -163,12 +158,12 @@ fn test_tui_editor_history_navigate() -> ThagResult<()> {
     safe_eprintln!("path={path:#?}");
 
     // Ensure REPL subdirectory exists
-    fs::create_dir_all(&dir_path)?;
+    fs::create_dir_all(dir_path)?;
 
     // Create REPL file if necessary
     let _ = fs::File::create(&path)?;
 
-    let _ = history.save_to_file(&path)?;
+    history.save_to_file(&path)?;
 
     let history = History::load_from_file(&path);
     safe_eprintln!("History (reloaded)={:#?}", history);

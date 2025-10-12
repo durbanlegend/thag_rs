@@ -68,11 +68,6 @@ fn init_logger() {
         .unwrap();
         info!("Initialized simplelog");
     });
-
-    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-    {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
 }
 
 #[test]

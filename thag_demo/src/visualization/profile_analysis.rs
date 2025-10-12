@@ -483,7 +483,7 @@ mod tests {
     #[test]
     fn test_generate_insights() {
         let functions = vec![
-            ("fibonacci_recursive".to_string(), 1000000),
+            ("fibonacci_recursive".to_string(), 1_000_000),
             ("fibonacci_cached".to_string(), 1000),
             ("cpu_work".to_string(), 500),
         ];

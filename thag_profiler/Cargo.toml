@@ -116,14 +116,8 @@ path = "src/bin/thag_uninstrument.rs"
 required-features = ["instrument_tool"]
 
 [[example]]
-name = "inquire_theming_demo"
-path = "../examples/inquire_theming_demo.rs"
-required-features = ["inquire_theming"]
-
-[[example]]
-name = "tool_with_theming"
-path = "../examples/tool_with_theming.rs"
-required-features = ["inquire_theming"]
+name = "doc_attributes"
+path = "examples/doc_attributes.rs"
 
 [package.metadata.docs.rs]
 all-features = true

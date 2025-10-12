@@ -64,7 +64,8 @@ pub struct ExampleStruct {
 
 impl ExampleStruct {
     /// Public constructor - always visible
-    pub fn new(value: String) -> Self {
+    #[must_use]
+    pub const fn new(value: String) -> Self {
         Self {
             public_field: value,
             private_field: 42,
@@ -85,7 +86,7 @@ impl ExampleStruct {
 
     /// Private method - only visible with --document-private-items
     fn private_method(&self) {
-        println!("Private method called");
+        println!("Private method: {}", self.private_field);
     }
 }
 

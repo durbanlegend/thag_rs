@@ -35,7 +35,7 @@
 //!
 //! Or with `thag_rs`:
 //!
-//! ```rust
+//! ``` ignore
 //! use thag_demo_proc_macros::{DeriveBuilder, cached, timing};
 //!
 //! // Basic usage
@@ -49,18 +49,18 @@
 //!
 //! ## Learning Path
 //!
-//! 1. **DeriveConstructor** - Basic derive macro concepts
-//! 2. **DeriveGetters** - Method generation patterns
-//! 3. **DeriveBuilder** - Complex struct generation
-//! 4. **DeriveDisplay** - Trait implementation
-//! 5. **DeriveDocComment** - Attribute parsing
-//! 6. **cached** - Function transformation (try with `expand` flag)
-//! 7. **timing** - Performance measurement (try with `expand` flag)
-//! 8. **retry** - Error handling patterns (try with `expand` flag)
-//! 9. **file_navigator** - Complex code generation
-//! 10. **compile_time_assert** - Compile-time validation
-//! 11. **env_or_default** - Environment processing
-//! 12. **generate_tests** - Test automation
+//! 1. **`DeriveConstructor`** - Basic derive macro concepts
+//! 2. **`DeriveGetters`** - Method generation patterns
+//! 3. **`DeriveBuilder`** - Complex struct generation
+//! 4. **`DeriveDisplay`** - Trait implementation
+//! 5. **`DeriveDocComment`** - Attribute parsing
+//! 6. **`cached`** - Function transformation (try with `expand` flag)
+//! 7. **`timing`** - Performance measurement (try with `expand` flag)
+//! 8. **`retry`** - Error handling patterns (try with `expand` flag)
+//! 9. **`file_navigator`** - Complex code generation
+//! 10. **`compile_time_assert`** - Compile-time validation
+//! 11. **`env_or_default`** - Environment processing
+//! 12. **`generate_tests`** - Test automation
 //!
 //! ## Debugging Generated Code
 //!
@@ -135,7 +135,7 @@ impl Parse for AttrArgs {
             // Parse as flag
             let flag: syn::Ident = input.parse()?;
             if flag.to_string().as_str() == "expand" {
-                args.expand = true
+                args.expand = true;
             }
         }
 
@@ -175,27 +175,19 @@ impl Parse for RetryArgs {
                 let _: syn::Token![=] = input.parse()?;
                 let value: syn::Expr = input.parse()?;
 
-                match key.to_string().as_str() {
-                    "times" => {
-                        if let syn::Expr::Lit(syn::ExprLit {
-                            lit: syn::Lit::Int(lit_int),
-                            ..
-                        }) = value
-                        {
-                            args.times = Some(lit_int.base10_parse().unwrap_or(3));
-                        }
-                    }
-                    _ => {
-                        // Ignore unknown key=value pairs for now
+                if let "times" = key.to_string().as_str() {
+                    if let syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Int(lit_int),
+                        ..
+                    }) = value
+                    {
+                        args.times = Some(lit_int.base10_parse().unwrap_or(3));
                     }
                 }
             } else {
                 // This is just a flag
-                match key.to_string().as_str() {
-                    "expand" => args.expand = true,
-                    _ => {
-                        // Ignore unknown flags for now to maintain compatibility
-                    }
+                if let "expand" = key.to_string().as_str() {
+                    args.expand = true
                 }
             }
         }
@@ -222,7 +214,8 @@ impl Parse for RetryArgs {
 #[proc_macro_derive(DeriveConstructor, attributes(expand_macro))]
 pub fn derive_constructor(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let _check_input = parse_macro_input!(input as DeriveInput);
+    #[cfg(feature = "expand")]
+    let check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -259,7 +252,8 @@ pub fn derive_constructor(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveBuilder, attributes(expand_macro))]
 pub fn derive_builder(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let _check_input = parse_macro_input!(input as DeriveInput);
+    #[cfg(feature = "expand")]
+    let check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -296,7 +290,8 @@ pub fn derive_builder(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveDisplay, attributes(expand_macro))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let _check_input = parse_macro_input!(input as DeriveInput);
+    #[cfg(feature = "expand")]
+    let check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -332,7 +327,8 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveGetters, attributes(expand_macro))]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let _check_input = parse_macro_input!(input as DeriveInput);
+    #[cfg(feature = "expand")]
+    let check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -496,6 +492,7 @@ pub fn compile_time_assert(input: TokenStream) -> TokenStream {
 ///
 /// ## Example
 /// ```rust
+/// use thag_demo_proc_macros::env_or_default;
 /// const DATABASE_URL: &str = env_or_default!("DATABASE_URL", "localhost:5432");
 /// const DEBUG_MODE: &str = env_or_default!("DEBUG", "false");
 /// ```
@@ -511,6 +508,7 @@ pub fn env_or_default(input: TokenStream) -> TokenStream {
 ///
 /// ## Example
 /// ```rust
+/// use thag_demo_proc_macros::generate_tests;
 /// generate_tests! {
 ///     test_addition: [
 ///         (1, 2, 3),
@@ -583,23 +581,22 @@ fn expand_output(name: &str, output: &TokenStream) {
             eprint!("{pretty_output}");
             eprintln!("{style_reset}{dash_line}{style_reset}");
         }
-        Err(_) => match parse_str::<Expr>(&token_str) {
-            Ok(expr) => {
+        Err(_) => {
+            if let Ok(expr) = parse_str::<Expr>(&token_str) {
                 eprintln!("{style_reset}{dash_line}{style_reset}");
                 eprintln!(
-                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
-                );
+                "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
+            );
                 eprintln!("{}", quote!(#expr));
                 eprintln!("{style_reset}{dash_line}{style_reset}");
-            }
-            Err(_) => {
+            } else {
                 eprintln!("{style_reset}{dash_line}{style_reset}");
                 eprintln!(
-                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
-                );
+                            "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
+                        );
                 eprintln!("{token_str}");
                 eprintln!("{style_reset}{dash_line}{style_reset}");
             }
-        },
+        }
     }
 }

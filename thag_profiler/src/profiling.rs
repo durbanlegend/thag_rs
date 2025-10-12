@@ -3009,16 +3009,9 @@ pub fn dump_profiled_functions() -> Vec<(String, String)> {
 #[allow(dead_code)]
 static TEST_MODE_ACTIVE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// Test utilities module
-///
-/// This provides internal functions for testing only.
-///
-/// Note: All test initialization code should now use the #[enable_profiling] attribute
-/// instead of programmatic enable_profiling function calls
-
 #[cfg(test)]
 /// Checks if we're in test mode to avoid duplicate profiling
-/// This is used by the Profile::new function to avoid creating duplicate profiles
+/// This is used by the `Profile::new` function to avoid creating duplicate profiles
 #[inline]
 pub fn is_test_mode_active() -> bool {
     TEST_MODE_ACTIVE.load(Ordering::SeqCst)
@@ -3103,11 +3096,12 @@ pub fn force_enable_profiling_both_for_tests() {
 #[cfg(test)]
 /// Safely cleans up profiling after a test
 pub fn safely_cleanup_profiling_after_test() {
+    use std::sync::atomic::Ordering;
+
     // First disable profiling (use the public API here)
     disable_profiling();
 
     // Finally reset test mode flag
-    use std::sync::atomic::Ordering;
     TEST_MODE_ACTIVE.store(false, Ordering::SeqCst);
 }
 

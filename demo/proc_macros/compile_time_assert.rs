@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse::Parse, parse::ParseStream, parse_macro_input, Expr, LitStr, Token};
 
-/// Parse the input for compile_time_assert!(condition, "message")
+/// Parse the input for `compile_time_assert!(condition`, "message")
 struct CompileTimeAssertInput {
     condition: Expr,
     message: LitStr,
@@ -14,7 +14,7 @@ impl Parse for CompileTimeAssertInput {
         let condition = input.parse()?;
         input.parse::<Token![,]>()?;
         let message = input.parse()?;
-        Ok(CompileTimeAssertInput { condition, message })
+        Ok(Self { condition, message })
     }
 }
 

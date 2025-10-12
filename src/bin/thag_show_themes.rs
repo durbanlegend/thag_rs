@@ -172,7 +172,7 @@ fn show_terminal_instructions(theme: &Theme) {
     let fg_rgb = match value {
         thag_styling::ColorValue::Basic { index, .. } => styling::index_to_rgb(color_info.index),
         thag_styling::ColorValue::Color256 { color256 } => styling::index_to_rgb(color256),
-        thag_styling::ColorValue::TrueColor { rgb } => rgb.into(),
+        thag_styling::ColorValue::TrueColor { rgb } => rgb,
     };
 
     let fg = styling::rgb_to_hex(&fg_rgb);

@@ -1,11 +1,10 @@
 #![cfg(test)]
 use thag_profiler::warn_once;
 
-/// Tests for the warn_once macro
+/// Tests for the `warn_once` macro
 ///
 /// These tests verify that the warning suppression mechanisms work correctly
 /// by ensuring warning functions are only called once.
-
 #[cfg(test)]
 mod tests {
     use super::*;

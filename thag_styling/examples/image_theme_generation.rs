@@ -1,9 +1,10 @@
 //! Example demonstrating image-based theme generation
 //!
 //! This example shows how to generate terminal color themes from images using
-//! the thag_styling crate's image theme generation capabilities.
+//! the `thag_styling` crate's image theme generation capabilities.
 //!
-//! Run with: cargo run --example image_theme_generation --features image_themes
+//! Run with: `cargo run -p thag_styling --example image_theme_generation --features image_themes`
+#![allow(clippy::suboptimal_flops)]
 
 #[cfg(feature = "image_themes")]
 use thag_styling::{theme_to_toml, ImageThemeConfig, ImageThemeGenerator, TermBgLuma};
@@ -14,11 +15,13 @@ use image::{DynamicImage, Rgb, RgbImage};
 #[cfg(not(feature = "image_themes"))]
 fn main() {
     println!("This example requires the 'image_themes' feature to be enabled.");
-    println!("Run with: cargo run --example image_theme_generation --features image_themes");
+    println!("Run with: cargo run -p thag_styling --example image_theme_generation --features image_themes");
 }
 
 #[cfg(feature = "image_themes")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use std::fs;
+
     println!("🎨 Image Theme Generation Example\n");
 
     // Create a sample image for demonstration
@@ -92,7 +95,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", toml_content);
 
     // Save to file for inspection
-    use std::fs;
     let filename = "example_sunset_theme.toml";
     fs::write(filename, &toml_content)?;
     println!("\n💾 Theme saved to: {}", filename);
@@ -149,6 +151,11 @@ fn create_bright_image() -> DynamicImage {
 }
 
 #[cfg(feature = "image_themes")]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss
+)]
 fn create_sunset_image() -> DynamicImage {
     let mut img = RgbImage::new(300, 200);
 
@@ -243,7 +250,7 @@ fn print_theme_colors(theme: &thag_styling::Theme) {
 }
 
 #[cfg(feature = "image_themes")]
-fn color_256_to_rgb(color: u8) -> [u8; 3] {
+const fn color_256_to_rgb(color: u8) -> [u8; 3] {
     match color {
         0..=15 => {
             // Standard 16 colors

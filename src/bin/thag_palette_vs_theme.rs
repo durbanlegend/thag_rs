@@ -929,9 +929,11 @@ mod tests {
     use thag_styling::{ColorInfo, ColorSupport, Palette, TermBgLuma};
 
     fn create_test_theme() -> Theme {
-        let mut palette = Palette::default();
-        palette.normal = Style::fg(ColorInfo::rgb(220, 220, 220));
-        palette.error = Style::fg(ColorInfo::rgb(255, 100, 100));
+        let palette = Palette {
+            normal: Style::fg(ColorInfo::rgb(220, 220, 220)),
+            error: Style::fg(ColorInfo::rgb(255, 100, 100)),
+            ..Default::default()
+        };
 
         Theme {
             name: "Test Palette Theme".to_string(),
@@ -982,6 +984,6 @@ mod tests {
         let issues = detect_potential_issues(&theme);
 
         // Should detect some issues with the test theme
-        assert!(issues.len() > 0);
+        assert!(!issues.is_empty());
     }
 }

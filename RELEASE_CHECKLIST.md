@@ -22,10 +22,8 @@
 **Note**: Integration tests now use precompiled binary (much faster than before)
 
 #### Workspace Tests
-- [ ] `cargo test --workspace` (default features with simplelog)
-- [ ] `cargo test --workspace --no-default-features --features env_logger,full`
-- [ ] `cargo test --workspace --features tools`
-- [ ] `cargo test --workspace --features profiling`
+- [ ] `cargo test --workspace --jobs 1 -- --test-threads=1` (default features with simplelog)
+- [ ] `cargo test --workspace --features tools,profiling --jobs --exclude integration_test 1 -- --test-threads=1` # OR --lib --bins
 - [ ] Optional: `cargo test --test integration_test -- --test-threads=1` (use 1 thread - script builds can still interfere)
 
 #### Subcrate Tests and Clippy
@@ -54,7 +52,6 @@
 #### Main Workspace Quality Checks
 - [ ] `cargo build --release --workspace`
 - [ ] `cargo clippy --all-targets --workspace`
-- [ ] `cargo clippy --workspace --no-default-features --features env_logger,core`
 - [ ] `cargo fmt --all -- --check`
 - [ ] `cargo doc --workspace --no-deps`
 - [ ] `typos`

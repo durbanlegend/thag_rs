@@ -132,6 +132,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn test_result_type() {
         // Test the ProfileResult type alias
         let success_result: ProfileResult<i32> = Ok(42);
@@ -163,6 +164,8 @@ mod tests {
 
     #[test]
     fn test_error_trait_implementation() {
+        fn takes_error(_err: &dyn std::error::Error) {}
+
         // Test Error trait implementation
         let error = ProfileError::General("test error".to_string());
         let dyn_error: &dyn std::error::Error = &error;
@@ -171,7 +174,6 @@ mod tests {
         assert!(dyn_error.source().is_none());
 
         // Verify it can be used where Error is required
-        fn takes_error(_err: &dyn std::error::Error) {}
         takes_error(&error);
     }
 

@@ -494,6 +494,6 @@ mod tests {
     #[test]
     fn test_non_windows_placeholder() {
         // This test exists to ensure the test module compiles on non-Windows platforms
-        assert!(true);
+        // assert!(true);
     }
 }

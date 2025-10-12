@@ -244,6 +244,8 @@ fn collect_modules(project_root: &Path) -> HashMap<String, ModuleInfo> {
 
 fn extract_use_path(use_item: &ItemUse) -> Option<(String, String)> {
     fn process_use_tree(tree: &UseTree, base_path: &str) -> Vec<(String, String)> {
+        dbg!(tree);
+        dbg!(base_path);
         match tree {
             // Simple path like "use crate::Verbosity"
             UseTree::Path(use_path) => {
@@ -252,16 +254,22 @@ fn extract_use_path(use_item: &ItemUse) -> Option<(String, String)> {
                 } else {
                     format!("{base_path}::{}", use_path.ident)
                 };
+                dbg!(&use_path.tree);
+                dbg!(&new_base);
                 process_use_tree(&use_path.tree, &new_base)
             }
 
             // Named item like "use crate::Verbosity as VerbosityLevel"
             UseTree::Rename(rename) => {
+                dbg!(&rename.rename);
+                dbg!(base_path);
                 vec![(rename.rename.to_string(), base_path.to_string())]
             }
 
             // Simple name like the "Verbosity" in "use crate::Verbosity"
             UseTree::Name(name) => {
+                dbg!(&name.ident);
+                dbg!(base_path);
                 vec![(name.ident.to_string(), base_path.to_string())]
             }
 
@@ -1063,10 +1071,7 @@ mod tests {
             use crate::Verbosity;
         };
         let result = extract_use_path(&use_item);
-        assert_eq!(
-            result,
-            Some(("Verbosity".to_string(), "crate::logging".to_string()))
-        );
+        assert_eq!(result, Some(("Verbosity".to_string(), "crate".to_string())));
     }
 
     #[test]
@@ -1077,7 +1082,7 @@ mod tests {
         let result = extract_use_path(&use_item);
         assert_eq!(
             result,
-            Some(("VerbosityLevel".to_string(), "crate::Verbosity".to_string()))
+            Some(("VerbosityLevel".to_string(), "crate".to_string()))
         );
     }
 

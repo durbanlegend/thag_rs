@@ -2,6 +2,7 @@
 mod tests {
     use cargo_toml::{Dependency, Edition, Manifest, Product};
     use semver::Version;
+    use std::iter;
     use std::{collections::BTreeMap, path::PathBuf, sync::Once, time::Instant};
     use thag_rs::code_utils::to_ast;
     use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
@@ -51,7 +52,7 @@ mod tests {
     #[test]
     fn test_manifest_capture_dep_invalid() {
         set_up();
-        let line = r#"invalid format"#;
+        let line = "invalid format";
         let result = capture_dep(line);
         assert!(result.is_err());
     }
@@ -80,7 +81,7 @@ mod tests {
         set_up();
         init_logger();
 
-        let rs_toml_str = r##"[package]
+        let rs_toml_str = r#"[package]
     name = "toml_block_name"
     version = "0.0.1"
     edition = "2021"
@@ -100,21 +101,21 @@ mod tests {
     [[bin]]
     name = "toml_block_bin_name"
     path = "toml_block_bin_path"
-    "##;
+    "#;
         let rs_manifest = Some(Manifest::from_str(rs_toml_str).unwrap());
         let mut build_state = BuildState {
             source_stem: "example".to_string(),
             source_name: "example.rs".to_string(),
             target_dir_path: std::path::PathBuf::from("/tmp"),
             cargo_manifest: None,
-            rs_manifest: rs_manifest.clone(),
+            rs_manifest,
             ..Default::default()
         };
 
-        let rs_source = r#"
+        let rs_source = r"
         #[macro_use]
         extern crate serde_derive;
-        "#;
+        ";
 
         merge(&mut build_state, rs_source)?;
 
@@ -214,7 +215,7 @@ mod tests {
             build_state.metadata_finder = Some(find_metadata(ast));
         }
 
-        let rs_manifest: Manifest = { extract(&source, Instant::now()) }.unwrap();
+        let rs_manifest: Manifest = { extract(source, Instant::now()) }.unwrap();
 
         // debug_log!("rs_manifest={rs_manifest:#?}");
 
@@ -230,7 +231,7 @@ mod tests {
     fn test_manifest_analyze_type_annotations() {
         set_up();
         init_logger();
-        let source = r#"
+        let source = r"
             struct MyStruct {
                 client: reqwest::Client,
                 pool: sqlx::PgPool,
@@ -240,7 +241,7 @@ mod tests {
                 let cache: redis::Client = redis::Client::new();
                 Ok(())
             }
-        "#;
+        ";
 
         let mut build_state = setup_build_state(source);
 
@@ -267,7 +268,7 @@ mod tests {
     fn test_manifest_analyze_expr_paths() {
         set_up();
         init_logger();
-        let source = r#"
+        let source = r"
             fn main() {
                 // Should detect
                 let client = reqwest::Client::new();
@@ -277,7 +278,7 @@ mod tests {
                 let response = client.get();
                 let data = json.to_string();
             }
-        "#;
+        ";
 
         let mut build_state = setup_build_state(source);
         //         eprintln!(
@@ -361,7 +362,7 @@ mod tests {
     fn test_manifest_analyze_traits_and_types() {
         set_up();
         init_logger();
-        let source = r#"
+        let source = r"
             use tokio;
 
             struct MyStream;
@@ -377,7 +378,7 @@ mod tests {
             fn process<T: serde::de::DeserializeOwned>(data: T) {
                 // ...
             }
-        "#;
+        ";
 
         let mut build_state = setup_build_state(source);
         merge(&mut build_state, source).unwrap();
@@ -438,8 +439,7 @@ mod tests {
             .insert("default".to_string(), vec!["serde".to_string()]);
         manifest.patch.insert(
             "a".to_string(),
-            [("b".to_string(), Dependency::Simple("1.0".to_string()))]
-                .iter()
+            iter::once(&("b".to_string(), Dependency::Simple("1.0".to_string())))
                 .cloned()
                 .collect::<BTreeMap<String, Dependency>>(),
         );
@@ -489,8 +489,8 @@ mod tests {
 
         println!("toml_str={toml_str}");
         assert_eq!(
-            toml_str.replace(" ", "").replace("\n", ""),
-            expected_toml_str.replace(" ", "").replace("\n", "")
+            toml_str.replace([' ', '\n'], ""),
+            expected_toml_str.replace([' ', '\n'], "")
         );
     }
 

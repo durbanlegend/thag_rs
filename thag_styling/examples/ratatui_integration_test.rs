@@ -1,7 +1,7 @@
 //! Ratatui Integration Test
 //!
 //! This example traces exactly which implementation is being called
-//! when using Style::themed() with ratatui to identify why colors are wrong.
+//! when using `Style::themed()` with `ratatui `to identify why colors are wrong.
 //!
 //! Run with:
 //! ```bash

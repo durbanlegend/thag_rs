@@ -236,6 +236,7 @@ mod tests {
     use std::collections::HashMap;
 
     #[test]
+    #[allow(clippy::collection_is_never_read)]
     fn test_parse_folded_data() {
         let mut stacks = HashMap::new();
         stacks.insert("main;foo;bar".to_string(), 100);

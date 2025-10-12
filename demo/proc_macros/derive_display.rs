@@ -3,6 +3,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
+#[allow(clippy::too_many_lines)]
 pub fn derive_display_impl(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as DeriveInput);
     let struct_name = &input.ident;

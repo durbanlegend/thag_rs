@@ -12,7 +12,7 @@
 /// 5. **Manual profile creation** - Tests directly creating and registering profiles
 /// 6. **Registry functions** - Tests the core registry functionality
 /// 7. **Overlapping profiles** - Tests how overlapping profile ranges are handled
-/// 8. **Record allocation** - Tests the record_allocation function directly
+/// 8. **Record allocation** - Tests the `record_allocation` function directly
 ///
 /// Each test function focuses on a specific aspect of the memory attribution system, and the main test function (`test_mem_attribution_full_sequence`) runs them all in sequence with appropriate logging.
 ///
@@ -65,7 +65,7 @@ fn mem_attribution_whole_function() {
     assert!(profile.detailed_memory());
 
     // Verify we can find the profile
-    let found_profile = find_profile(&file_name, fn_name, 0);
+    let found_profile = find_profile(file_name, fn_name, 0);
     assert!(
         found_profile.is_some(),
         "Profile should be registered and findable"
@@ -142,7 +142,10 @@ fn mem_attribution_nested_sections() {
 
 /// Test long-lived allocations that persist across tests
 #[cfg(feature = "full_profiling")]
+#[allow(clippy::cast_possible_truncation)]
 fn mem_attribution_persistent_allocations() {
+    use std::vec::Vec;
+
     profile!(persistent_allocs, mem_detail);
 
     // Create some persistent allocations
@@ -160,7 +163,7 @@ fn mem_attribution_persistent_allocations() {
     // Verify allocations
     let stored_sum = {
         let stored_allocs = TEST_ALLOCATIONS.lock().unwrap();
-        stored_allocs.iter().map(|v| v.len()).sum::<usize>()
+        stored_allocs.iter().map(Vec::len).sum::<usize>()
     };
 
     assert_eq!(stored_sum, 1024 + 2048 + 3072 + 4096 + 5120);
@@ -247,7 +250,7 @@ fn mem_attribution_registry_functions() {
 
         let file_names = ProfileReg::get().get_file_names();
         assert!(
-            file_names.contains(&file_name.to_string()),
+            file_names.contains(&file_name),
             "Registry should contain our file name"
         );
 
@@ -326,7 +329,7 @@ fn mem_attribution_overlapping_profiles() {
     }
 }
 
-/// Test record_allocation function
+/// Test `record_allocation` function
 #[cfg(feature = "full_profiling")]
 fn mem_attribution_record_allocation() {
     // Create a profile with specific line numbers
@@ -400,7 +403,7 @@ fn mem_attribution_record_allocation() {
 #[enable_profiling]
 fn test_mem_attribution_full_sequence() {
     // Set debug logging off
-    let _ = set_profile_config(
+    set_profile_config(
         ProfileConfiguration::try_from(vec!["both", "", "announce"].as_slice()).unwrap(),
     );
 
@@ -444,7 +447,7 @@ fn test_mem_attribution_full_sequence() {
     eprintln!("Verifying persistent allocations...");
     let stored = {
         let stored_allocs = TEST_ALLOCATIONS.lock().unwrap();
-        stored_allocs.iter().map(|v| v.len()).sum::<usize>()
+        stored_allocs.iter().map(Vec::len).sum::<usize>()
     };
     assert_eq!(stored, 1024 + 2048 + 3072 + 4096 + 5120);
 

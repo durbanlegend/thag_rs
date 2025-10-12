@@ -1,8 +1,8 @@
 //! Comprehensive test for the new theme context API
 //!
 //! This demonstrates both new approaches for using guest themes:
-//! 1. Direct theme methods: theme.error("text")
-//! 2. Context switching: theme.with_context(|| { "text".error() })
+//! 1. Direct theme methods: `theme.error("text")`
+//! 2. Context switching: `theme.with_context(|| { "text".error() })`
 
 use thag_styling::{ColorInitStrategy, Styleable, StyledPrint, TermAttributes, Theme};
 
@@ -11,17 +11,17 @@ fn main() {
 
     // Initialize styling
     let strategy = ColorInitStrategy::Default;
-    let _attrs = TermAttributes::get_or_init_with_strategy(&strategy);
+    let attrs = TermAttributes::get_or_init_with_strategy(&strategy);
 
     // Get themes for demonstration - use fallback if specific themes not available
     let dark_theme = Theme::get_builtin("basic_dark")
         .or_else(|_| Theme::get_builtin("Basic Dark"))
-        .unwrap_or_else(|_| _attrs.theme.clone());
+        .unwrap_or_else(|_| attrs.theme.clone());
     let light_theme = Theme::get_builtin("basic_light")
         .or_else(|_| Theme::get_builtin("Basic Light"))
-        .unwrap_or_else(|_| _attrs.theme.clone());
+        .unwrap_or_else(|_| attrs.theme.clone());
 
-    println!("Active theme: {}", _attrs.theme.name);
+    println!("Active theme: {}", attrs.theme.name);
     println!(
         "Guest themes: {} and {}\n",
         dark_theme.name, light_theme.name
@@ -118,10 +118,7 @@ fn main() {
     // New direct method way
     println!("New direct way:");
     guest_theme
-        .normal(&format!(
-            "🖥️  Detected: {}",
-            guest_theme.emphasis("WezTerm")
-        ))
+        .normal(format!("🖥️  Detected: {}", guest_theme.emphasis("WezTerm")))
         .println();
 
     // New context way

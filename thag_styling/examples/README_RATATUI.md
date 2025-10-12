@@ -18,7 +18,7 @@ This example showcases a full-featured TUI application that demonstrates:
 
 ```bash
 # Basic run - themes automatically detected
-cargo run --example ratatui_theming_showcase -p thag_styling
+cargo run -p thag_styling --example ratatui_theming_showcase -p thag_styling
 
 # Or from the demo directory
 cargo run demo/ratatui_integration_demo.rs
@@ -27,7 +27,7 @@ cargo run demo/ratatui_integration_demo.rs
 ### Navigation
 
 - **Tab/→**: Next tab
-- **Shift+Tab/←**: Previous tab  
+- **Shift+Tab/←**: Previous tab
 - **1-4**: Direct tab access
 - **↑/↓**: Scroll content
 - **h/F1**: Toggle help
@@ -111,7 +111,7 @@ The example demonstrates styling with these semantic roles:
 The example includes comprehensive tests covering:
 
 - App state management
-- Navigation functionality  
+- Navigation functionality
 - Theme integration APIs
 - Extension trait methods
 

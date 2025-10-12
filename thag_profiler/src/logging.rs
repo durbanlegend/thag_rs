@@ -248,7 +248,7 @@ mod tests {
         let found_message = safe_alloc! {
             reader
                 .lines()
-                .filter_map(Result::ok)
+                .map_while(Result::ok)
                 .any(|line| line.contains(&unique_msg))
         };
 

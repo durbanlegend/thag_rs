@@ -184,7 +184,7 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 ///
 /// Expressions between matching braces, brackets, parens or quotes may span multiple lines.
 ///
-/// Expressions starting with "// ", "/// ", or  "[Cc]omment " will be ignored as comments.
+/// Expressions starting with "// ", "/// ", or  "\[Cc\]omment " will be ignored as comments.
 ///
 /// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
 ///

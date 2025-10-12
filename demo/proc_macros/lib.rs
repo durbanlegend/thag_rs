@@ -222,7 +222,7 @@ impl Parse for RetryArgs {
 #[proc_macro_derive(DeriveConstructor, attributes(expand_macro))]
 pub fn derive_constructor(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let check_input = parse_macro_input!(input as DeriveInput);
+    let _check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -259,7 +259,7 @@ pub fn derive_constructor(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveBuilder, attributes(expand_macro))]
 pub fn derive_builder(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let check_input = parse_macro_input!(input as DeriveInput);
+    let _check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -296,7 +296,7 @@ pub fn derive_builder(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveDisplay, attributes(expand_macro))]
 pub fn derive_display(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let check_input = parse_macro_input!(input as DeriveInput);
+    let _check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input
@@ -332,7 +332,7 @@ pub fn derive_display(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DeriveGetters, attributes(expand_macro))]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let input_clone = input.clone();
-    let check_input = parse_macro_input!(input as DeriveInput);
+    let _check_input = parse_macro_input!(input as DeriveInput);
 
     #[cfg(feature = "expand")]
     let should_expand = check_input

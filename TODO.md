@@ -748,3 +748,5 @@ thag_styling = { version = "0.2, thag-auto" }
 
 ## Successful thag_profiler test:
 cargo test --no-fail-fast --features full_profiling -- --test-threads=1 --nocapture
+
+-p thag_profiler --test test_tls_vs_global

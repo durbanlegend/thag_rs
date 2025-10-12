@@ -43,6 +43,12 @@ fn test_global_vs_tls_allocator_switching() {
 fn test_macro_versions() {
     // Test that macro versions work correctly
 
+    thag_profiler::profiling::force_set_profiling_state(true);
+    assert!(thag_profiler::is_profiling_enabled());
+
+    // Initially both should be in Tracking mode
+    assert_eq!(current_allocator(), Allocator::Tracking);
+
     safe_alloc! {
         assert_eq!(current_allocator(), Allocator::System);
     };

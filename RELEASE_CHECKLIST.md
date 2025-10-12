@@ -22,9 +22,10 @@
 **Note**: Integration tests now use precompiled binary (much faster than before)
 
 #### Workspace Tests
-- [ ] `cargo test --workspace --jobs 1 -- --test-threads=1` (default features with simplelog)
-- [ ] `cargo test --workspace --features tools,profiling --jobs --exclude integration_test 1 -- --test-threads=1` # OR --lib --bins
-- [ ] Optional: `cargo test --test integration_test -- --test-threads=1` (use 1 thread - script builds can still interfere)
+Note: in future, combine second and third test with `--features tools,profile`, since they are orthogonal and workspace tests run for hours.
+- [x] `cargo test --workspace --jobs 1 -- --test-threads=1` # OR --lib --bins` (default features with simplelog)
+- [x] `cargo test --workspace --features tools --jobs 1 -- --test-threads=1` # OR --lib --bins` (includes integration_test)
+- [x] `cargo test --workspace --features profiling --jobs 1 -- --test-threads=1` # OR --lib --bins` (includes integration_test)
 
 #### Subcrate Tests and Clippy
 **thag_common** (quick - minimal features)
@@ -50,10 +51,10 @@
 - [x] `cd thag_demo && cargo clippy -- -W clippy::pedantic -W clippy::nursery`
 
 #### Main Workspace Quality Checks
-- [ ] `cargo build --release --workspace`
-- [ ] `cargo clippy --all-targets --workspace`
-- [ ] `cargo fmt --all -- --check`
-- [ ] `cargo doc --workspace --no-deps`
+- [x] `cargo build --release --workspace`
+- [x] `cargo clippy --all-targets --workspace`
+- [x] `cargo fmt --all -- --check`
+- [x] `cargo doc --workspace --no-deps`
 - [ ] `typos`
 - [ ] `vale README.md --no-wrap`
 - [ ] `vale thag_profiler/README.md --no-wrap`

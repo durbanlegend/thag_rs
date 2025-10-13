@@ -41,11 +41,13 @@ thag_demo time-profiling
 ```
 Execution time profiling of nested functions with automatic flamegraph generation and browser visualization.
 
-[![asciicast](https://asciinema.org/a/S5C6KoJPzEihNyYUsdADhN2O6.svg)](https://asciinema.org/a/S5C6KoJPzEihNyYUsdADhN2O6)
+#### Demo
 
-*Click to watch: Demo shows building and running an instrumented program, then generating an interactive flamegraph*
+[![asciicast](https://asciinema.org/a/yafJCMFioVa6vur4Pdk52ZG2A.svg)](https://asciinema.org/a/yafJCMFioVa6vur4Pdk52ZG2A)
 
-[![Flamegraph from thag_demo](https://durbanlegend.github.io/thag_rs/thag_demo/assets/flamegraph_demo.png)](https://durbanlegend.github.io/thag_rs/thag_demo/assets/flamegraph_demo.svg)<br>
+*Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
+
+[![Flamegraph from thag_demo](https://durbanlegend.github.io/thag_rs/thag_demo/assets/time_profiling_demo.png)](https://durbanlegend.github.io/thag_rs/thag_demo/assets/time_profiling_demo.svg)<br>
 *Interactive flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
 
 ### 🧠 Memory Profiling
@@ -83,6 +85,38 @@ Run a full-featured benchmark showcasing all profiling capabilities.
 thag_demo browse
 ```
 Browse and run demo scripts interactively with filtering and search.
+
+#### Demo
+
+[![asciicast](https://asciinema.org/a/3TgTf3w3O57Zr7G6GYUuwlq4y.svg)](https://asciinema.org/a/3TgTf3w3O57Zr7G6GYUuwlq4y)
+
+*Click to watch: The demo shows running `thag_demo browse` to view all the `thag` scripts in $THAG_DEMO_DIR, and selecting and running the `ratatui` showcase demo. It also highlights the use of `thag_styling` integrations to automatically theme both the `inquire` selection list and the `ratatui` showcase screen with the current `catppuccin-mocha` theme.*
+
+##### Detailed steps
+
+ - Invoke thag_demo with the browse option.
+
+ - Inquire crate displays themed scrollable list of thag demo scripts.
+
+ - Type rata to narrow the search on the fly.
+
+ - Arrow down to select ratatui_theming_showcase script.
+
+ - Enter to invoke run options for the script.
+
+ - Final Enter builds script if needed and runs it.
+
+ - Demo shows `ratatui` showcase app, themed by thag_styling with the terminal - ’s current catppuccin-mocha theme, as specified by $THAG_THEME.
+
+ - Show 1st panel of app with progress bar responding to keys or mouse.  - Dashed border effect in some areas is an artefact of the video player.
+
+ - Show pop-up help.
+
+ - Show remaining 3 panels in turn.
+
+ - Enter q to return to thag_demo browse.
+
+ - Esc to end thag_demo browse.
 
 ### 📋 List All Scripts
 ```bash

@@ -340,7 +340,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_demo_hel
 
 ### Script: thag_edit_theme.rs
 
-**Description:** / Interactive theme editor for manual color role adjustments
+**Description:**  Interactive theme editor for manual color role adjustments
 
  This tool allows you to interactively edit theme color assignments,
  particularly useful when automatic conversion doesn't quite match your preferences.
@@ -590,7 +590,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_gen_term
 ### Script: thag_get_demo_dir.rs
 
 **Description:**  Fast download of `thag_rs` demo directory (starter kit) with subdirectories.
- Git `sparse-checkout` approach suggested and written by ChatGPT, local directory handling assisted by Claude.
+ Git `sparse-checkout` approach suggested and written by `ChatGPT`, local directory handling assisted by `Claude`.
 
  `thag_styling` included
 

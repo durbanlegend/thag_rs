@@ -11,12 +11,13 @@
 - [x] Create `thag_proc_macros/README.md` (brief, proc macro crate)
 - [x] Capture REPL session GIF/video
 - [x] Capture TUI editor screenshot
-- [ ] Capture thag_demo browse interface screenshot
+- [] Capture thag_demo browse interface video
+- [ ] Capture thag_profiler demo video and add it to intro of thag_profiler README.md.
 - [x] Add images to main README.md
 - [x] Add cross-reference links between READMEs
 - [x] Update CHANGELOG.md with all v0.2.0 changes
-- [ ] Run: `cargo run --bin thag_gen_readme`
-- [ ] Verify demo/README.md looks correct
+- [x] Run: `thag_gen_readme demo and thag_gen_readme src/bin`
+- [ ] Verify demo/README.md and src/bin/README.md look correct
 
 ### Code Quality (Est. 2-3 hours)
 **Note**: Integration tests now use precompiled binary (much faster than before)
@@ -61,8 +62,8 @@ Note: in future, combine second and third test with `--features tools,profile`, 
 - [ ] `vale thag_styling/README.md --no-wrap`
 
 ### Version Verification
-- [ ] All Cargo.toml versions are 0.2.0 (or 0.1.0 for thag_profiler)
-- [ ] Main Cargo.toml dependency versions match subcrate versions
+- [x] All Cargo.toml versions are 0.2.0 (or 0.1.0 for thag_profiler)
+- [x] Main Cargo.toml dependency versions match subcrate versions
 - [ ] No path/git dependencies (only version = "x.y.z")
 - [ ] MSRV correct: `cargo msrv verify`
 - [ ] MSRV in README.md matches

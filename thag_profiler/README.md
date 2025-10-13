@@ -58,6 +58,51 @@ Output analysis:
 
 ---
 
+## Demo
+
+### Part 1: Instrument, profile and start analysis
+
+[![asciicast](https://asciinema.org/a/m42fBuyEFnvQue1LbEWH6M3Jf.svg)](https://asciinema.org/a/m42fBuyEFnvQue1LbEWH6M3Jf)
+
+*Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
+
+#### Detailed steps
+
+ - Invoke thag_demo with the browse option.
+
+ - Inquire crate displays themed scrollable list of thag demo scripts.
+
+ - Type rata to narrow the search on the fly.
+
+ - Arrow down to select ratatui_theming_showcase script.
+
+ - Enter to invoke run options for the script.
+
+ - Final Enter builds script if needed and runs it.
+
+ - Demo shows `ratatui` showcase app, themed by thag_styling with the terminal - ’s current catppuccin-mocha theme, as specified by $THAG_THEME.
+
+ - Show 1st panel of app with progress bar responding to keys or mouse.  - Dashed border effect in some areas is an artefact of the video player.
+
+ - Show pop-up help.
+
+ - Show remaining 3 panels in turn.
+
+ - Enter q to return to thag_demo browse.
+
+ - Esc to end thag_demo browse.
+
+### Part 2: Resume analysis to view the flamegraph
+
+>[📹 Watch the flamegraph in action](/Users/donf/projects/thag_rs/docs/thag_profiler/assets/thag_profile_demo.gif) (15 sec)
+
+*Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
+
+[![Flamegraph from thag_profiling](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)<br>
+*Interactive flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
+
+---
+
 ## Features
 
 - **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are turned off.

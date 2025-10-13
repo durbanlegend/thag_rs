@@ -56,23 +56,25 @@ Note: in future, combine second and third test with `--features tools,profile`, 
 - [x] `cargo clippy --all-targets --workspace`
 - [x] `cargo fmt --all -- --check`
 - [x] `cargo doc --workspace --no-deps`
-- [ ] `typos`
-- [ ] `vale README.md --no-wrap`
-- [ ] `vale thag_profiler/README.md --no-wrap`
-- [ ] `vale thag_styling/README.md --no-wrap`
+- [x] `typos`
+- [x] `vale README.md --no-wrap`
+- [x] `vale thag_demo/README.md --no-wrap`
+- [x] `vale thag_proc_macros/README.md --no-wrap`
+- [x] `vale thag_profiler/README.md --no-wrap`
+- [x] `vale thag_styling/README.md --no-wrap`
 
 ### Version Verification
 - [x] All Cargo.toml versions are 0.2.0 (or 0.1.0 for thag_profiler)
 - [x] Main Cargo.toml dependency versions match subcrate versions
 - [ ] No path/git dependencies (only version = "x.y.z")
-- [ ] MSRV correct: `cargo msrv verify`
-- [ ] MSRV in README.md matches
+- [x] MSRV correct: `cargo msrv verify`
+- [x] MSRV in README.md matches
 
 ### Package Testing
-- [ ] `cd thag_common && cargo package --no-verify`
-- [ ] `cd thag_proc_macros && cargo package --no-verify`
-- [ ] `cd thag_styling && cargo package --no-verify`
-- [ ] `cd thag_profiler && cargo package --no-verify`
+- [x] `cd thag_common && cargo package --no-verify`
+- [x] `cd ../thag_proc_macros && cargo package --no-verify`
+- [ ] `cd ../thag_styling && cargo package --no-verify`
+- [ ] `cd ../thag_profiler && cargo package --no-verify`
 - [ ] `cd .. && cargo package --no-verify` (thag_rs)
 - [ ] `cd thag_demo && cargo package --no-verify`
 - [ ] Review package contents in target/package/

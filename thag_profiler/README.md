@@ -58,9 +58,9 @@ Output analysis:
 
 ---
 
-## Demo
+## Demo: Profiled from scratch in under 2 minutes
 
-### Part 1: Instrument, profile and start analysis
+### Part 1: Instrument, profile and start analysis (1 min 18 sec)
 
 [![asciicast](https://asciinema.org/a/m42fBuyEFnvQue1LbEWH6M3Jf.svg)](https://asciinema.org/a/m42fBuyEFnvQue1LbEWH6M3Jf)
 
@@ -92,11 +92,11 @@ Output analysis:
 
  - Esc to end thag_demo browse.
 
-### Part 2: Resume analysis to view the flamegraph
+### Part 2: Resume analysis to view the flamegraph (21 sec)
 
->[📹 Watch the flamegraph in action](/Users/donf/projects/thag_rs/docs/thag_profiler/assets/thag_profile_demo.gif) (15 sec)
+![📹 Watch the flamegraph in action](../docs/thag_profiler/assets/thag_profile_demo.gif)
 
-*Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
+---
 
 [![Flamegraph from thag_profiling](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)<br>
 *Interactive flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
@@ -129,7 +129,7 @@ Output analysis:
 
 - **Intelligent output naming**: Output files are named with the source program, timestamp and profile type for quick and easy selection.
 
-- **Cross-platform**: Works on macOs, Linux and Windows.
+- **Cross-platform**: Works on macOS, Linux and Windows.
 
 ## Installation
 

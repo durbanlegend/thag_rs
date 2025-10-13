@@ -12,7 +12,8 @@
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
 - [ ]  DONE: Two sets of comments are being smooshed together from lib and mod.
 - [ ]  DONE: thag_rs README section on temp dir space management. FIXED: thag -r and -d are cheap, others not necessarily.
-- [ ]  Add a comment command to REPL.
+- [ ]  DONE: Add a comment command to REPL.
+- [ ]  Update docs/index.html.
 
 use thag_common::{set_verbosity_from_env, vprtln, V};
 
@@ -750,3 +751,11 @@ thag_styling = { version = "0.2, thag-auto" }
 cargo test --no-fail-fast --features full_profiling -- --test-threads=1 --nocapture
 
 -p thag_profiler --test test_tls_vs_global
+
+ffmpeg -i thag_profile_demo.mov -vf "fps=15,scale=1200:-1:flags=lanczos" -c:v gif thag_profile_demo.gif
+
+![Flamegraph interaction](../docs/thag_profiler/assets/thag_profile_demo.gif)
+*Interactive flamegraph showing async and sync operations - click bars to zoom, use search to find functions*
+
+[![Flamegraph interaction](../docs/thag_profiler/assets/thag_profile_demo.gif)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)
+*Click to open interactive SVG with full flamegraph features*

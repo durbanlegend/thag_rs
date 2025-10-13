@@ -43,7 +43,7 @@ firestorm = "0.5.1"
 home = "0.5.11"
 log = "0.4.28"
 mockall = "0.13.1"
-nu-ansi-term = "0.50.1"
+nu-ansi-term = "0.50.3"
 phf = { version = "0.13.1", features = ["macros"] }
 prettyplease = "0.2.37"
 proc-macro2 = "1.0.101"

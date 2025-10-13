@@ -4,7 +4,7 @@
 
 The scripts in src/bin are integrated `thag_rs` tools, in other words they are declared in Cargo.toml and are normally installed as commands. However, if you have cloned the `thag_rs` project you can run them like any other `thag` script.
 
-Conversely, you can make your own tools by using the `thag -x` option to do a release build of any script, even a snippet. You could even use `thag -xe ` to buil
+Conversely, you can make your own tools by using the `thag -x` option to do a release build of any script, even a snippet. You could even use `thag -xe ` to build a command, as described in the main [README.md](../README.md).
 
 ---
 

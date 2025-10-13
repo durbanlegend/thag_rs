@@ -362,7 +362,7 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of edit")))
 }
 
-/// Main function for use by testing or the script runner.
+// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 fn main() -> ThagResult<()> {
     let maybe_ok_config = load(&RealContext::new());

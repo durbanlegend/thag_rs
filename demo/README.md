@@ -4,7 +4,7 @@
 
 The scripts in src/bin are integrated `thag_rs` tools, in other words they are declared in Cargo.toml and are normally installed as commands. However, if you have cloned the `thag_rs` project you can run them like any other `thag` script.
 
-Conversely, you can make your own tools by using the `thag -x` option to do a release build of any script, even a snippet. You could even use `thag -xe ` to buil
+Conversely, you can make your own tools by using the `thag -x` option to do a release build of any script, even a snippet. You could even use `thag -xe ` to build a command, as described in the main [README.md](../README.md).
 
 ---
 
@@ -194,7 +194,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atom
  Attempts to resolve this issue with thread-local storage have not borne fruit.
  For instance async tasks are by no means guaranteed to resume in the same thread
  after suspension.
- The ideal would seem to be a reentrant Mutext with mutability - so far tried
+ The ideal would seem to be a reentrant Mutex with mutability - so far tried
  without success, but a subject for another prototype.
  Dispatcher that routes allocation requests to the desired allocator
  Task-aware allocator that tracks memory allocations
@@ -1064,7 +1064,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
  Will return `Err` if there is an error editing the file.
  # Panics
  Will panic if it can't create the parent directory for the configuration.
- Main function for use by testing or the script runner.
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
@@ -1101,40 +1100,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
  E.g.:
 
  `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
-
- Configuration categories
- Dependency handling
- Crate-specific feature overrides
- Logging settings
- Dependency inference level
- Terminal color settings
- Demo proc macro settings
- Miscellaneous configuration parameters
- A struct for use in normal execution, as opposed to use in testing.
- Initializes and returns the configuration.
- Gets the real or mock context according to whether test mode is detected via the `TEST_ENV` stem variable.
-
- # Panics
-
- Panics if there is any issue accessing the current directory, e.g. if it doesn't exist or we don't have sufficient permissions to access it.
- Load the existing configuration file, if one exists at the specified location.
- The absence of a configuration file is not an error.
-
- # Errors
-
- This function will return an error if it either finds a file and fails to read it,
- or reads the file and fails to parse it.
- Open the configuration file in an editor.
- # Errors
- Will return `Err` if there is an error editing the file.
- # Panics
- Will panic if it can't create the parent directory for the configuration.
- Validate the content of the `config.toml` file.
-
- # Errors
-
- This function will bubble up any Toml parsing errors encountered.
- Main function for use by testing or the script runner.
 
 **Purpose:** Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
 
@@ -2171,7 +2136,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_depen
 
 **Purpose:** Prototype for `thag_get_demo_dir`.
 
-**Crates:** `colored`, `inquire`, `thag_proc_macros`, `thag_styling`
+**Crates:** `colored`, `inquire`, `thag_styling`
 
 **Type:** Program
 
@@ -2587,7 +2552,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_
 **Description:**  Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
  I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
  for a variety of alternative approaches. The various Fibonacci scripts here in the demo
- directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
+ directory also show a range of approaches. `demo/fib_basic_ibig.rs` shows the use of
  the `std::iter::Successors` iterator as well as removing the limitations of Rust
  primitives. Most of the other examples explore different strategies for rapid computation of
  large Fibonacci values, and hopefully demonstrate the usefulness of `thag_rs` as a tool
@@ -6032,6 +5997,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.r
 **Description:**  Published demo from `reedline` crate. Shows use of toml block to specify `reedline`
  features referenced in the example.
 
+ Note that this script has been known to fail with a `libsql` error refegenciny:
+
+ `include!(concat!(env!("OUT_DIR"), "/bindgen.rs"));`
+
+ In this case, try running `thag --cargo <dir_path>/reedline_transient_prompt.rs -- clean`
+ and then rerunning the script.
+
+
 **Purpose:** Demo the use of a transient minimal prompt `! ` for returned history.
 
 **Crates:** `nu_ansi_term`, `reedline`
@@ -6760,7 +6733,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_i
  ```
  # Errors
 
- If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ If the data in this stream is not valid UTF-8 then an error is returned and the read buffer is left unchanged.
  # Panics
 
  If the terminal cannot be reset.
@@ -7314,11 +7287,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_pa
 
 ### Script: syn_visit_use_rename.rs
 
-**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
- for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
+**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that use "as"
+ to rename a dependency so that `thag` doesn't go looking for the temporary name in the registry.
  Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
  statements and fn `visit_file` to initiate the tree traversal. This version expects the script contents
- to consist of a full-fledged Rust program.
+ to consist of a fully-fledged Rust program.
 
 **Purpose:** Prototype.
 
@@ -8435,7 +8408,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_ben
 
 **Purpose:** Ultimately, to provide a prompt-driven front-end to the `thag` command.
 
-**Crates:** `inquire`, `thag_proc_macros`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 

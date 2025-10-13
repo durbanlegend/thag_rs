@@ -464,7 +464,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ] Run cargo tests
 - [ ] Run `gen_readme` for demo, src/bin.
 - [ ] Run `typos` command.
-- [ ] Run `vale README.md --no-wrap` and `vale demo/README.md --no-wrap`.
+- [ ] Run `find . -name "*.md" | while read f; do vale $f --no-wrap; done`.
 - [ ] Run `cargo msrv set/verify`, and update the MSRV in README.md.
 - [ ] Check on https://deps.rs/repo/github/durbanlegend/thag_rs that all dependencies are up to date
       (can link from badge at top of README.md).

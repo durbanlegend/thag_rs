@@ -1,8 +1,8 @@
-/// Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
-/// for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
+/// Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that use "as"
+/// to rename a dependency so that `thag` doesn't go looking for the temporary name in the registry.
 /// Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
 /// statements and fn `visit_file` to initiate the tree traversal. This version expects the script contents
-/// to consist of a full-fledged Rust program.
+/// to consist of a fully-fledged Rust program.
 //# Purpose: Prototype.
 //# Categories: AST, crates, prototype, technique
 //# Sample arguments: `-- demo/crossbeam_epoch_sanitize.rs`

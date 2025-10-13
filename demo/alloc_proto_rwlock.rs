@@ -26,7 +26,7 @@
 /// Attempts to resolve this issue with thread-local storage have not borne fruit.
 /// For instance async tasks are by no means guaranteed to resume in the same thread
 /// after suspension.
-/// The ideal would seem to be a reentrant Mutext with mutability - so far tried
+/// The ideal would seem to be a reentrant Mutex with mutability - so far tried
 /// without success, but a subject for another prototype.
 //# Purpose: Prototype of a ring-fenced allocator for memory profiling.
 //# Categories: profiling, prototype

@@ -32,7 +32,7 @@ An innovative terminal styling system for Rust applications across platforms.
 
     - Generate gorgeous `thag_styling` and terminal themes automatically from your favourite images, and tweak them if you wish.
 
-`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (e.g. warnings, code, headings), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. Includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic meaning* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Examples of built-in themes
 
@@ -606,13 +606,13 @@ println!("{}", styled!("Info", fg = Blue, reversed));                 // Basic A
 
 Contributions will be considered if they fit the goals of the project.
 
-Rust code should pass clippy::pedantic checks.
+Rust code should pass `clippy::pedantic` checks.
 
 The following are of particular interest:
 
 - Additional terminal emulator export formats
 
-- More library integrations (e.g. indicatif)
+- More library integrations (such as. `indicatif`)
 
 - Theme collection expansion
 

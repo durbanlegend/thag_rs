@@ -74,7 +74,7 @@ fn main() -> ThagResult<()> {
 /// ```
 /// # Errors
 ///
-/// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+/// If the data in this stream is not valid UTF-8 then an error is returned and the read buffer is left unchanged.
 /// # Panics
 ///
 /// If the terminal cannot be reset.

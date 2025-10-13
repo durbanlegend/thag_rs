@@ -60,7 +60,7 @@ Output analysis:
 
 ## Features
 
-- **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are disabled.
+- **Zero-cost abstraction**: No runtime overhead when `thag_profiler`'s profiling features are turned off.
 
 - **Execution time profiling**: Low-overhead profiling to highlight hotspots. Profiler overhead is stripped out for accuracy even at small scale.
 
@@ -76,7 +76,7 @@ Output analysis:
 
 - **Graph filtering**: Filter out dead or unwanted sections of flamegraphs and flamecharts for a better view.
 
-- **Proc macro based**: All instrumentation is provided via proc macros that provide a simple flexible interface, precise control, ring-fencing of profiler code from user code and zero-cost abstractions when profiling features are disabled.
+- **Proc macro based**: All instrumentation is provided via proc macros that provide a simple flexible interface, precise control, ring-fencing of profiler code from user code and zero-cost abstractions when profiling features are turned off.
 
 - **Development or release build profiling**: Although `thag_profiler` is focused on the development cycle, it supports profiling release builds, subject to enabling debug information and to any limitations imposed by the `backtrace` crate.
 
@@ -125,7 +125,7 @@ cargo install thag_profiler --features=analyze_tool --bin thag_profile
 
 ### 1. Instrument Your Code for Profiling
 
-You can instrument your code permanently and activate profiling via a feature only as and when needed.
+You can instrument your code permanently or semi-permanently, and activate profiling via a feature only as and when needed.
 
 #### a. Automatically instrument your code:
 
@@ -156,6 +156,8 @@ use thag_profiler::{enable_profiling, profile, profiled};
 ```
 
 **Enable profiling**
+
+NB: exactly **one function** in your app should be annotated with `#[enable_profiling]`. Normally this is `fn main`, but it is possible to annotate a diferent function instead, to narrow the scope of profiling to a section of particular interest.
 
 ```rust
 // Enable profiling for the program.
@@ -251,7 +253,7 @@ fn complex_operation() {
 
 In order to activate profiling, the desired `thag_profiler` feature - `time_profiling` or `full_profiling` - must be enabled at build time in one of two ways:
 
-1. Via a `features` key on the `thag_profiler` dependency in the manifest (Cargo.toml or `thag` toml block).
+1. Via a `features` keyword on the `thag_profiler` dependency in the manifest (Cargo.toml or `thag` toml block).
 
 2. Via a command-line `--features` option.
 
@@ -313,9 +315,9 @@ cargo run --features thag_profiler/time_profiling
 
 #### In scripts run with the `thag(_rs)` script runner
 
-  This section applies only to the `thag(_rs)` script runner, aka [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not using `thag(_rs)`.
+  This section applies only to the `thag(_rs)` script runner [thag](../README.md), of which `thag_profiler` is an offshoot. You can safely ignore it if you're not using `thag(_rs)`.
 
-  Snippets may be profiled if they have a function to be annotated with `#[enable_profiling]`, since the generated `fn main` will be unannotated. For an example see `demo/factorial_ibig_product_instr.rs`.
+  Snippets may be profiled provided they have a function to be annotated with `#[enable_profiling]`, since the generated `fn main` will be unannotated. For an example see `demo/factorial_ibig_product_instr.rs`.
 
   When using `thag_profiler` in `thag` scripts, for a start you have the same two options as above, except for using a `toml` block in place of a `Cargo.toml`. You also have a third option using only dependency inference and configuration:
 
@@ -390,7 +392,7 @@ cargo run bank/mem_prof.rs --features thag_profiler/full_profiling
 
   **3. Dependency inference and/or default feature configuration**:
 
-  The *dependency* may be omitted and will be inferred either from imports (`use thag_profiler::{enable_profiling, ...};`) or if you use the qualified forms of the macros, e.g. #`[thag_profiler::enable_profiling]`.
+  The *dependency* may be omitted and will be inferred either from imports (`use thag_profiler::{enable_profiling, ...};`) or if you use the qualified forms of the macros, for example #`[thag_profiler::enable_profiling]`.
 
   The *feature* may be configured as as a default in `~/.config/thag_rs/config.toml`, which you can conveniently edit via `thag -C`.
 
@@ -413,7 +415,7 @@ default = ["thag_profiler/full_profiling"]
 
 ### 3. Run Your Application
 
-Ensure that the `thag_profiler` feature you need is enabled by one of the methods discussed above. If using `cargo run` from the command line, and the desired feature is not specified by the manifest, you will need to do so via the `--features` argument of `cargo run`.
+Ensure that the `thag_profiler` feature you need is enabled by one of the methods discussed above. If using `cargo run` from the command line, and the desired feature is not specified by the manifest, you need to do so via the `--features` argument of `cargo run`.
 
 If your app is annotated with `#[enable_profiling(runtime)]`, specify the environment variable `THAG_PROFILER=[profile_type][,[output_dir][,[debug_level][,memory_detail]]]`*.
 
@@ -429,7 +431,7 @@ If using `thag` to run a script annotated with `#[enable_profiling]` and feature
 
 ### 4. Analyze Results
 
-When you run your application with profiling enabled, `thag_profiler` will generate folded stack files in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILER` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
+When you run your application with profiling enabled, `thag_profiler` generates folded stack files in the current working directory, unless that location is overridden by the second argument of a `THAG_PROFILER` environment variable used in conjunction with `#[enable_profiling(runtime)]`.
 
 Use the included analysis tool to visualize the results:
 
@@ -443,9 +445,9 @@ By default:
 thag_profile .
 ```
 
-This will open an interactive menu to explore your profiling data and display various flamegraphs, flamecharts or simple statistics.
+This opens an interactive menu to explore your profiling data and display various flamegraphs, flamecharts or simple statistics.
 
-`thag_profile` uses two extremely helpful crates:
+`thag_profile` uses two extremely helpful third-party crates:
 
   - `inquire` to help you select output for analysis and optionally filter out any unwanted functions.
 
@@ -481,11 +483,11 @@ The following optional arguments are available:
 
 - `time`: Specifies time profiling only.
 
-- `no`: Disables profiling as a convenient alternative to disabling the profiling features of the `thag_profiler` dependency. Unlike disabling the features, this only provides zero-cost abstraction for the current function. However, at runtime the profile instantiation code generated by the other macros will immediately return `None` instead of `Some(Profile)` when profiling is disabled, so the overhead will still be very slight.
+- `no`: Disables profiling as a convenient alternative to disabling the profiling features of the `thag_profiler` dependency. Unlike disabling the features, this only provides zero-cost abstraction for the current function. However, at runtime the profile instantiation code generated by the other macros immediately returns `None` instead of `Some(Profile)` when profiling is disabled, so the overhead is still very slight.
 
 - `yes`: (default) Enables profiling according to the feature specified for the `thag_profiler` dependency, which must be either `full_profiling` or `time_profiling`.
 
-- `runtime`: Specifies that a detailed specification will be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration. That being said, the overhead will still be very small, for the reasons stated under the `no` option above.
+- `runtime`: Specifies that a detailed specification is to be provided at runtime via the `THAG_PROFILER` environment variable. This is the only option that allows you to influence profiling at runtime. This includes switching profiling off, thus trading the efficiency of zero-cost abstraction for the flexibility of runtime configuration. That being said, the overhead is still very small, for the reasons stated under the `no` option above.
 
 - `function(...)`: Configures profiling options specific to the current function. Within the parentheses, you can specify any of the arguments that would be accepted by the `#[profiled]` attribute: `time`, `mem_summary`, `mem_detail`, `both`, `global`, `test`
 
@@ -501,7 +503,7 @@ fn main() {
 ```
 
 Enable memory profiling for the program, together with detailed memory profiling for the function itself.
-  Detailed memory profiling will pick up all descendant functions as a matter of course, but you may
+  Detailed memory profiling picks up all descendant functions as a matter of course, but you may
 still choose to annotate any of them with #[profiled] for time profiling:
 
 ```rust
@@ -525,7 +527,7 @@ fn main() {
 The `THAG_PROFILER` environment variable has 4 optional positional comma-separated arguments.
 
 If `#[enable_profiling(runtime)]` is
-specified but either the environment variable or its first argument is missing, no profiling will be done.
+specified but either the environment variable or its first argument is missing, no profiling is done.
 
 Format:
 
@@ -563,7 +565,7 @@ THAG_PROFILER=memory,,quiet thag demo/document_pipeline_profile_minimal.rs  -ft
   ...runs `thag` demo script document_pipeline_profile_minimal.rs with forced rebuild (-f) and timings (-t), memory profiling only, internal debug logging without announcing the log file path, and no detailed output `.folded` files. Note that debug logging requires the `debug_logging` feature of the `thag_profiler` dependency to be enabled, otherwise the `debug_log!` macro compiles to `()` to provide a zero-cost abstraction.
 
 
-The function annotated with `#[enable_profiling]` will be taken to be the root of the profiling callstack.
+The function annotated with `#[enable_profiling]` is taken to be the root of the profiling callstack.
 
 ```rust
 #[enable_profiling]
@@ -646,7 +648,7 @@ fn my_memory_intensive_function() { ... }
 
 - **Feature Flags**: Memory-related profiling options require the `full_profiling` feature to be enabled. If only `time_profiling` is enabled, all memory profiling arguments are ignored.
 
-- **Combined Profiling**: Using both `time` and any memory option (e.g., `mem_detail` or `mem_summary`) is equivalent to using `both`.
+- **Combined Profiling**: Using both `time` and any memory option (for example, `mem_detail` or `mem_summary`) is equivalent to using `both`.
 
 ##### Examples
 
@@ -723,9 +725,9 @@ If `#[enable_profiling]` is used in conjunction with either `#[tokio::main]` or 
 
 #### Interaction with features
 
-If only the `time_profiling` feature is enabled, any memory profiling-specific arguments will be invalid because they depend on the `full_profiling` feature. In this case they will be ignored rather than raise an error.
+If only the `time_profiling` feature is enabled, any memory profiling-specific arguments are invalid because they depend on the `full_profiling` feature. In this case they are ignored rather than raise an error.
 
-E.g.:
+For example:
 
 ```Rust
 #[cfg(feature = "time_profiling")]
@@ -738,13 +740,13 @@ Section profiling with the `profile!` and `end!` macros allows you to profile ho
 
 #### Rules
 
-1. **Global constraints take precedence**: Section profiling modes will be overridden by the program defaults set by `#[enable_profiling]`.
+1. **Global constraints take precedence**: Section profiling modes are overridden by the program defaults set by `#[enable_profiling]`.
 
-2. **Limited integration with functions**: Profiled sections will have ancestors in the callstack, but no children. A function called from within a profiled section will appear in flamegraphs, not as a child of the section but as a child of the parent function and a sibling of the section. This is because profiling hierarchies depend on built-in Rust backtraces, and sections are not a Rust feature but a `thag_profiler` artifact grafted on top of their parent function, and the complexity and overhead of transforming each backtrace to accommodate any sections is not considered worthwhile.
+2. **Limited integration with functions**: Profiled sections will have ancestors in the callstack, but no children. A function called from within a profiled section appears in flamegraphs, not as a child of the section but as a child of the parent function and a sibling of the section. This is because profiling hierarchies depend on built-in Rust backtraces, and sections are not a Rust feature but a `thag_profiler` artifact grafted on top of their parent function, and the complexity and overhead of transforming each backtrace to accommodate any sections is not considered worthwhile.
 
- By the same token, there is no point in using `profile!..end!` purely to wrap a function for memory profiling, as memory allocations are only attributed once and as narrowly as possible, so they will show up in the function and not in the section.
+ By the same token, there is no point in using `profile!..end!` purely to wrap a function for memory profiling, as memory allocations are only attributed once and as narrowly as possible, so they show up in the function and not in the section.
 
-3. **No section nesting or overlaps**: Section profiles should not overlap or be nested in code. This will not be checked, but memory allocations that fall within the scope of more than one section will be attributed to only one of those sections rather than being double-counted.
+3. **No section nesting or overlaps**: Section profiles should not overlap or be nested in code. This is not checked, but memory allocations that fall within the scope of more than one section are attributed to only one of those sections rather than being double-counted.
 
 #### Format
 
@@ -754,7 +756,7 @@ profile!(name[, flag1[, flag2[, ...]]]);
 
 Parameters
 
-- **name**: A valid Rust identifier that will be expanded to the variable name of the `Profile` for the section
+- **name**: A valid Rust identifier to be expanded to the variable name of the `Profile` for the section
 - **flags**: Optional comma-separated identifiers that control profiling behavior
 
 #### Available Flags
@@ -909,15 +911,15 @@ Memory profiling (available via the `full_profiling` feature) accurately tracks 
 
 **Note**: `thag_profiler` provides comprehensive memory tracking that includes allocator metadata, alignment overhead, and intermediate allocations during container growth. This may result in higher allocation counts compared to tools that only track payload data, but gives you the complete picture of your program's actual memory footprint.
 
-### One-Line Exhaustive Memory Profiling
+#### One-Line Exhaustive Detailed Memory Profiling
 
 A handy trick is that simply by annotating the `main` function of your project with `#[enable_profiling(runtime)]` and running it with `THAG_PROFILER=memory,,,true` you can get a fully detailed memory profile showing allocations and one showing deallocations. This also applies transitively to all the dependencies of your project!
 
 Caution: this may be prohibitively slow, depending on your project, although the example below only took a few seconds.
 
-#### A simple example
+##### A simple example of detailed memory profiling
 
-Here we try it on a `thag(_rs)` script that uses `syn` to print out an AST for a Rust source file. The code is available in the `thag_rs` project.
+Here we try the above trick on a `thag(_rs)` script that uses `syn` to print out an AST for a Rust source file. The code is available in the `thag_rs` project.
 
 The script is `demo/syn_dump_syntax_profile_syn.rs` and we run it with `thag` to print out the `syn` AST for another, simple script called demo/hello_main.rs. Below is the execution showing the AST printout, followed by the detailed memory allocation profile for the run from `thag_profile`:
 
@@ -1058,7 +1060,7 @@ donf@MacBook-Air thag_rs %
 [![Global detailed memory flamechart: syn](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamechart_20250521-100000.svg)<br>
 *Global detailed memory profile in <code>inferno</code> "Rust" color scheme showing `syn` crate functions. Click on image for interactive version with clickable bars and search.*
 
-#### A project example
+##### A project example of detailed memory profiling
 
 Here is `thag` itself in REPL mode, profiled in the same way:
 
@@ -1066,7 +1068,7 @@ Here is `thag` itself in REPL mode, profiled in the same way:
 *Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*
 
 
-### Before-and-After (Differential) Profiling
+#### Before-and-After (Differential) Memory Profiling
 
 The `thag_profile` tool supports `inferno`'s differential profiling feature for both time and memory profiles. Simply select this option and the "before" and "after" .folded files.
 
@@ -1102,26 +1104,32 @@ The `thag_profile` tool supports `inferno`'s differential profiling feature for 
 
      In older versions of `async_std` (pre-1.10), there were known interactions that could cause this error in certain usage patterns. If you experience issues with a particular async runtime, consider trying alternatives like `smol` or `tokio`.
 
-- **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency applications may experience contention.
+- **Thread-Safety Considerations**: Memory profiling uses global state protected by mutexes. While this works for most cases, extremely high-concurrency apps may experience contention.
 
-- **Potential Allocator Race Conditions in Async Environments**: Unfortunately, profiling code must share a global allocator (our dispatcher) with user code, and use a global variable to indicate to the dispatcher to use the system allocator in place of the default "tracking" allocator. To avoid a race condition on the global variable in an async environment would require sophisticated locking, complicated by the need to cater for nested profiling code calls. Thread-local storage doesn't work in the presence of thread stealing as practised by `tokio` for one.
+- **Potential Allocator Race Conditions in Async Environments**: Unfortunately, Rust only allows a single global allocator (which `thag_profiler` refers to as the dispatcher), so profiler code must share this with user code. `thag_profiler` uses a thread-local variable to indicate to the dispatcher to use the system allocator for profiler code in place of the default "tracking" allocator.
 
- At the time of writing, the most practical solution found after extensive experimentation has been to use a simple atomic variable to manage the current allocator status and to live with the exposure to the risk of misallocation, much as that goes against Thag's personal style. The mechanism chosen to cater for nested calls is as simple and hopefully as elegant as possible: if profiler code finds the current allocator in user mode, it assumes it's not nested, so it overrides the setting and runs the function with a guard to undo the override, otherwise it assumes it's running nested and does not touch the setting.
+ The dispatcher delegates memory requests from user code to the tracking allocator, which records the point of origin in user code (the "allocation site") and the request type (allocation, deallocation or reallocation), before in turn delegating the request to the Rust system allocator to honour the request. The dispatcher delegates requests from profiler code directly to the system allocator.
 
- To mitigate against profile code allocations being processed through the user code allocator, we identify any such allocation from its backtrace and bypass recording the allocation.
+ Thread-local storage is not a panacea, as `tokio` work stealing can cause a suspended task to resume on a different thread. This means that in an async environment, particularly under stress, the thread-local boolean variable that reflects the current allocator could end up out of sync with the workload it was intended to interact with, either causing user allocations to be processed through the system allocator and thus not be recorded, or causing profiler code allocations to be processed through the tracking allocator. The latter not only risks profiler code allocations being incorrectly recorded as user allocations, but risks causing the whole app to hang due to infinite recursion through the tracking allocator.
 
- The only mitigations against user allocations being processed through the system  allocator - and thus not being recorded - are:
+ Should it be suspected that allocations are being processed through the wrong allocator, leading to inaccuracies, some mitigations you may consider are:
 
- 1. To reduce the number of profiled functions and sections, and if possible the number of threads, to the practical minimum in the final stages of profiling, in order to minimise contention.
+ 1. To use detailed profiling to reveal unexpected or missing allocations.
 
- 2. To check for consistency in the processing of the same  functions and sections over time under different load conditions  and with different amounts of profiled code competing for the  dispatcher.
+ 2. To compare results with another tool such as `DHAT`.
 
- Fortunately, results so far have been very consistent, so contention does not seem to be a significant issue in practice.  However the potential for race conditions is a caveat when memory  profiling in async environments.
+ 3. To reduce the number of profiled functions and sections, and if possible the number of threads, to the practical minimum in the final stages of profiling, in order to minimise contention.
+
+ 4. To check for consistency in the processing of the same functions and sections over time under different load conditions  and with different amounts of profiled code competing for the dispatcher.
+
+ 5. If possible, to copy the relevant sections of code to a profiled `thag` script so as to study the allocations in isolation.
+
+ Fortunately, this potential issue has not shown up in unit testing, and results so far have been very consistent, so contention does not seem to be a significant issue in practice. However the potential for race conditions is a caveat when memory profiling in async environments.
 
 - **Complete Allocation Tracking**: All allocations, including those from libraries and dependencies, are tracked and included in profiling data. This provides a comprehensive view of memory usage
    across your entire application stack, revealing hidden costs from dependencies like async runtimes.
 
- Detailed memory profiling will allow you to drill down into these allocations as well as the resulting deallocations.
+ Detailed memory profiling allows you to drill down into these allocations as well as the resulting deallocations.
 
 - **Peak memory allocation on flamegraphs and flamecharts**: The peak bytes allocated total shown in the graph headers is simply calculated at the available granularity and may therefore be a gross over-estimate. For a normal summary memory graph this is not very accurate as in the absence of profiled child functions it assumes that memory allocated over the life of a profiled function is only deallocated at the end of the function. The global detailed flamegraph, which shows the relative lifespan of each allocation in the call stack, should give an accurate figure which may be much lower.
 
@@ -1135,9 +1143,9 @@ debug = true
 strip = false
 ```
 
-You will also need to provide the features information at build time as described in a previous section.
+You also need to provide the features information at build time as described in a previous section.
 
-If you build your app with `#[enable_profiling(runtime)]`, then at runtime you will need to provide the `THAG_PROFILER` environment variable specifying the runtime parameters.
+If you build your app with `#[enable_profiling(runtime)]`, then at runtime you need to provide the `THAG_PROFILER` environment variable specifying the runtime parameters.
 
 ### Windows Memory Profiling
 
@@ -1296,7 +1304,7 @@ thag_uninstrument 2021 < path/to/your/instrumented_file.rs > path/to/your/de-ins
 * Compare the original and instrumented files to ensure correctness, especially if
 you're using a custom edition.
 
-  E.g.  Comparing before and after with `vimdiff`:
+  For example Comparing before and after with `vimdiff`:
 
     ```
     vimdiff demo/factorial_ibig_product.rs demo/factorial_ibig_product_profile.rs
@@ -1373,9 +1381,9 @@ The analysis tool allows you to choose which `inferno` color scheme to use and r
 
   - Seeing how different phases of your application behave
 
-Note that `inferno` will still aggregate consecutive entries with the same key into a single bar. So if a profiled function or section `f` is called repeatedly in a loop in a synchronous program, these executions will be shown as one. In an async environment, the consecutive entries for `f` may be arbitrarily interleaved with entries written by unrelated asynchronous profiles being dropped, e.g. `f,f,f,a,f,f,b,c,f`. This will cause `inferno` to group the consecutive entries for `f` in the arbitrary consecutive groups thus created.
+Note that `inferno` still aggregates consecutive entries with the same key into a single bar. So if a profiled function or section `f` is called repeatedly in a loop in a synchronous program, these executions are shown as one. In an async environment, the consecutive entries for `f` may be arbitrarily interleaved with entries written by unrelated asynchronous profiles being dropped, for example `f,f,f,a,f,f,b,c,f`. This causes `inferno` to group the consecutive entries for `f` in the arbitrary consecutive groups thus created.
 
-In other words, while `thag_profiler` should always attribute an allocation event to the right function or section, or in a worst case to an ancestor at least, be aware that in an async environment it may attribute the event to the wrong *execution* of that function. We could consider working around this, e.g. by giving each execution a unique subscript, but in the async scenario when multiple instances of `f` are running concurrently, `thag_profiler`'s memory tracker has no sure way to tell them apart anyway, and must resort to arbitrarily attributing the allocation to the most recently instantiated active one of them, falling back to the closest matching ancestor as a last resort.
+In other words, while `thag_profiler` should always attribute an allocation event to the right function or section, or in a worst case to an ancestor at least, be aware that in an async environment it may attribute the event to the wrong *execution* of that function. We could consider working around this, for example by giving each execution a unique subscript, but in the async scenario when multiple instances of `f` are running concurrently, `thag_profiler`'s memory tracker has no sure way to tell them apart anyway, and must resort to arbitrarily attributing the allocation to the most recently instantiated active one of them, falling back to the closest matching ancestor as a last resort.
 
 For time profiling, flamecharts show when each function executed relative to others. For summary memory profiling, they are less significant because all allocations for a function are shown as at the end of execution of the function, because it is at this point that the `Profile` object generated for that execution of the function is dropped, causing its `drop` method to write the function's accumulated allocations to the `-memory.folded` file.
 
@@ -1395,13 +1403,13 @@ In general, choose flamegraphs for a high-level view of resource usage and flame
 
 **5. Verify changes**: Always verify automated changes with a diff tool
 
-**6. Don't run with option `both` for serious time profiling**: The memory profiling overhead will tend to distort the relative execution times of the functions and sections
+**6. Don't run with option `both` for serious time profiling**: The memory profiling overhead tends to distort the relative execution times of the functions and sections
 
 **7. Section profiling in async functions**: For accurate callstack representation in async contexts, use the `async_fn` parameter when manually creating profile sections within async functions
 
 **8. Profiling efficiency**: Every execution of an actively profiled function requires a Profile struct to be set up at the beginning and torn down at the end after logging the captured data for that function execution. The Profile setup and teardown time amount to about 1ms (based on an M1 MacBook). This time is stripped out of the results, but still has an appreciable effect on runtime when profiling very lightweight functions that are called many thousands, millions or billions of times during execution. If such a function is called from a loop, consider profiling the loop as a whole (with a section profile or by factoring it out to a separate profiled function) rather that incurring the extra overhead of profiling the inner function to record each individual function call.
 
-**9. Understand how differential profiling graphs work in `inferno`**: `thag_profiler` delegates these entirely to `inferno`, which does not report straight comparisons but normalises the "before" profile count to match the "after" one in an attempt to compensate for inferred changes in external variables such as machine loading, even though they may in fact be almost entirely due to the changes being compared. This seems to have been optional in the Brendan Gregg's original flamegraph toolkit but not in `inferno`. I don't have strong views on the merits of this impelmentation, but it may cause small but worthwhile changes to literally pale into insignificance beside the most substantial ones, and not show up as improvements until hovered over.
+**9. Understand how differential profiling graphs work in `inferno`**: `thag_profiler` delegates these entirely to `inferno`, which does not report straight comparisons but normalises the "before" profile count to match the "after" one in an attempt to compensate for inferred changes in external variables such as machine loading, even though they may in fact be almost entirely due to the changes being compared. This seems to have been optional in the Brendan Gregg's original flamegraph toolkit but not in `inferno`. I don't have strong views on the merits of this implementation, but it may cause small but worthwhile changes to literally pale into insignificance beside the most substantial ones, and not show up as improvements until hovered over.
 
 ```rust
 async fn fetch_data() {
@@ -1415,7 +1423,7 @@ async fn fetch_data() {
 }
 ```
 
-This ensures that the profile correctly associates the section with its async parent function in the profiling output. Without this parameter, the section will appear a second time in the flamegraph without its async identifier, as we have no way to link the two automatically.
+This ensures that the profile correctly associates the section with its async parent function in the profiling output. Without this parameter, the section will appear a second time in the flamegraph without its async identifier, as there is no way to link the two automatically.
 
 ## Troubleshooting
 
@@ -1425,7 +1433,7 @@ This ensures that the profile correctly associates the section with its async pa
 
 Ensure profiling is enabled and you have write permissions in the current directory.
 
-Ensure your code is compiled with the `debug` option while profiling. E.g. in release mode:
+Ensure your code is compiled with the `debug` option while profiling. For example in release mode:
 
 ```toml
 [profile.release]
@@ -1437,7 +1445,7 @@ Ensure that unbounded section profiles do not go out of scope before the end of 
 
 Ensure that bounded section profiles do not go out of scope before the `end!` macro.
 
-**2. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections. A high degree of contention between threads could also lead to memory allocations not being reported or reported against an ancestor function (i.e. one higher up the callstack).
+**2. Inaccurate profile output**: Ensure you have no nested or overlapping profile sections. A high degree of contention between threads could also lead to memory allocations not being reported or reported against an ancestor function (that is, one higher up the callstack).
 
 **3. Test failures**: Profiled tests must use serialization.
 
@@ -1461,7 +1469,7 @@ The `bash` script `scripts/compare_profilers.sh` can be used to verify the accur
 scripts/compare_profilers.sh
 ```
 
-You will need to have `jq` installed to summarize the `dhat` results.
+You need to have `jq` installed to summarize the `dhat` results.
 
 Notes:
 
@@ -1481,7 +1489,7 @@ Notes:
 THAG_PROFILER=memory,,announce,true thag --features full_profiling demo/thag_profile_benchmark.rs -f
 ```
 
-Then run `thag_profile .` and choose `Memory Profile - Single` and the most recent `thag_profile_benchmark-<yyyymmdd>-<hhmmss>-memory_detail.folded`. Drill down to the affected functions by clicking on each one in turn and compare it to the various occurrences of the same function in the `DHAT` viewer. This currently shows that `thag_profiler` is correctly reflecting 103kB for the inserts (`std::collections::hash::map::HashMap<K,V,S>::insert
+Then run `thag_profile .` and choose `Memory Profile - Single` and the most recent `thag_profile_benchmark-<yyyymmdd>-<hhmmss>-memory_detail.folded`. Drill down to the affected functions by clicking on each one in turn and compare it to the various occurrences of the same function in the `DHAT` viewer. This currently shows that `thag_profiler` is correctly reflecting 103 kB for the inserts (`std::collections::hash::map::HashMap<K,V,S>::insert
 `) which `dhat` is not. There are some other minor discrepancies, but these are due to the DHAT viewer suppressing them as insignificant, and they can be tracked down in the `dhat-heap.json` file.
 
 ## Documentation
@@ -1566,7 +1574,7 @@ A **descendant function** of a function `f` means any function that may be calle
 
 ### Manifest
 
-In a normal project, the manifest is the Cargo.toml file. In a Rust script to be run with `thag(_rs)`, the manifest is a "toml block" consisting of a `/**[toml!] ... */` comment embedded at the top of the script and containing entries in Cargo.toml format. `thag` will use the toml block contents in conjunction with any additional dependencies inferred from the Rust code to generate a Cargo.toml for the script.
+In a normal project, the manifest is the Cargo.toml file. In a Rust script to be run with `thag(_rs)`, the manifest is a "toml block" consisting of a `/**[toml!] ... */` comment embedded at the top of the script and containing entries in Cargo.toml format. `thag` uses the toml block contents in conjunction with any additional dependencies inferred from the Rust code to generate a Cargo.toml for the script.
 
 ## License
 

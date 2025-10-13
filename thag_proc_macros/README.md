@@ -164,11 +164,11 @@ thag_proc_macros = { version = "0.2", features = ["full_profiling"] }
 
 ## How It Works
 
-As a proc macro crate, `thag_proc_macros` operates at compile time. The macros analyze and transform your code during compilation, generating optimized implementations that have zero runtime overhead when profiling features are disabled.
+As a proc macro crate, `thag_proc_macros` operates at compile time. The macros analyze and transform your code during compilation, generating optimized implementations that have zero runtime overhead when profiling features are turned off.
 
 **Key Design Principles**:
 
-- **Zero-cost abstractions** - No overhead when features are disabled
+- **Zero-cost abstractions** - No overhead when features are turned off
 
 - **Compile-time safety** - Errors caught during compilation, not at runtime
 

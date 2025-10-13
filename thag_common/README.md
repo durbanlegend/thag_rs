@@ -15,7 +15,7 @@ This is a foundation crate that provides the shared infrastructure used by `thag
 
 - **Terminal Detection** - Color capability and background detection for adaptive styling
 
-- **Auto Help System** - Automatic extraction of help text from doc comments for CLI tools
+- **Auto Help System** - Automatic extraction of help text from doc comments for command-line tools
 
 - **Configuration Management** - Shared configuration utilities and error handling
 
@@ -131,7 +131,7 @@ OPTIONS:
 CATEGORIES: demo, testing
 ```
 
-The `auto_help` system also works in conjunction with `clap` for more sophisticated CLI tools.
+The `auto_help` system also works in conjunction with `clap` for more sophisticated command-line tools.
 
 ### Example: Number Formatting
 

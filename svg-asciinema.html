@@ -2,21 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SVG Asciinema – Flamegraph Demo</title>
+<title>SVG Asciinema Recorder – Flamegraph Demo</title>
 <style>
   html, body {
     margin: 0;
     padding: 0;
     background: #f9f9f9;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    height: 100vh;
+    font-family: sans-serif;
   }
 
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  #controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  button {
+    background: #007acc;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  button:hover { background: #005f99; }
+  button:disabled { background: #ccc; cursor: default; }
+
   #timeline {
-    width: 1200px;          /* full native width of your SVG */
-    height: 174px;          /* match SVG height */
+    width: 1200px;
+    height: 174px;
     border: 1px solid #ccc;
     box-shadow: 0 0 8px rgba(0,0,0,0.15);
     background: white;
@@ -31,65 +53,113 @@
     display: block;
   }
 
-  #play {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    background: #007acc;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-  #play:hover {
-    background: #005f99;
+  #script {
+    width: 1200px;
+    height: 120px;
+    font-family: monospace;
+    font-size: 13px;
+    resize: vertical;
   }
 </style>
 </head>
 <body>
-  <div id="timeline">
-    <object id="svgobj" data="flamegraph.svg" type="image/svg+xml"></object>
-    <button id="play">Play</button>
+
+  <div id="controls">
+    <button id="record">Record</button>
+    <button id="stop" disabled>Stop</button>
+    <button id="play" disabled>Play</button>
   </div>
 
+  <div id="timeline">
+    <object id="svgobj" data="flamegraph.svg" type="image/svg+xml"></object>
+  </div>
+
+  <textarea id="script" placeholder="Recorded script will appear here..."></textarea>
+
   <script>
+  const recordButton = document.getElementById('record');
+  const stopButton = document.getElementById('stop');
   const playButton = document.getElementById('play');
+  const scriptBox = document.getElementById('script');
   const svgObject = document.getElementById('svgobj');
 
-  // Wait until the embedded SVG loads
+  let recording = false;
+  let startTime = 0;
+  let recorded = [];
+
   svgObject.addEventListener('load', () => {
     const svgDoc = svgObject.contentDocument;
-    const svgRoot = svgDoc.querySelector('svg');
 
-    // Utility: simulate highlighting or clicking bars
-    function highlightBarByText(text, color = 'orange', duration = 800) {
-      const rect = Array.from(svgDoc.querySelectorAll('rect'))
-        .find(r => r.nextElementSibling && r.nextElementSibling.textContent.includes(text));
-      if (rect) {
-        const original = rect.getAttribute('fill');
-        rect.setAttribute('fill', color);
-        setTimeout(() => rect.setAttribute('fill', original), duration);
-      }
+    function getBarLabel(target) {
+      const parent = target.parentNode;
+      const labelEl = parent.querySelector('text');
+      return labelEl ? labelEl.textContent.trim() : '(unknown)';
     }
 
-    // Example animation sequence
-    const demoSteps = [
-      () => highlightBarByText('main'),
-      () => highlightBarByText('foo'),
-      () => highlightBarByText('bar'),
-      () => highlightBarByText('baz')
-    ];
+    function highlightBar(rect, color='orange', duration=600) {
+      const original = rect.getAttribute('fill');
+      rect.setAttribute('fill', color);
+      setTimeout(() => rect.setAttribute('fill', original), duration);
+    }
 
-    playButton.addEventListener('click', async () => {
+    function findBarByLabel(label) {
+      return Array.from(svgDoc.querySelectorAll('rect')).find(r => {
+        const t = r.parentNode.querySelector('text');
+        return t && t.textContent.trim() === label;
+      });
+    }
+
+    // --- Recording setup ---
+    svgDoc.addEventListener('mouseover', e => {
+      if (!recording || e.target.tagName !== 'rect') return;
+      recorded.push({
+        type: 'hover',
+        label: getBarLabel(e.target),
+        time: performance.now() - startTime
+      });
+    });
+    svgDoc.addEventListener('click', e => {
+      if (!recording || e.target.tagName !== 'rect') return;
+      recorded.push({
+        type: 'click',
+        label: getBarLabel(e.target),
+        time: performance.now() - startTime
+      });
+    });
+
+    recordButton.onclick = () => {
+      recorded = [];
+      recording = true;
+      startTime = performance.now();
+      recordButton.disabled = true;
+      stopButton.disabled = false;
       playButton.disabled = true;
-      for (const step of demoSteps) {
-        step();
-        await new Promise(r => setTimeout(r, 1000));
+      scriptBox.value = 'Recording...';
+    };
+
+    stopButton.onclick = () => {
+      recording = false;
+      recordButton.disabled = false;
+      stopButton.disabled = true;
+      playButton.disabled = false;
+      scriptBox.value = JSON.stringify(recorded, null, 2);
+    };
+
+    playButton.onclick = async () => {
+      playButton.disabled = true;
+      const script = JSON.parse(scriptBox.value || '[]');
+      let prevTime = 0;
+      for (const evt of script) {
+        const delay = evt.time - prevTime;
+        prevTime = evt.time;
+        await new Promise(r => setTimeout(r, delay));
+        const rect = findBarByLabel(evt.label);
+        if (rect) {
+          highlightBar(rect, evt.type === 'click' ? 'red' : 'orange');
+        }
       }
       playButton.disabled = false;
-    });
+    };
   });
   </script>
 </body>

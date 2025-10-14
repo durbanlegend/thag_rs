@@ -58,49 +58,63 @@ Output analysis:
 
 ---
 
-## Demo: Profiled from scratch in under 2 minutes
+## 🎬 Demo: Profiled from scratch in 1 minute
 
-### Part 1: Instrument, profile and start analysis (1 min 18 sec)
+### Part 1: Instrument, profile and start analysis (1 min 0 sec)
 
-[![asciicast](https://asciinema.org/a/6nsxNkwyIfzXUzvdJYZ8uZvTR.svg)](https://asciinema.org/a/6nsxNkwyIfzXUzvdJYZ8uZvTR)
+[![asciicast](https://asciinema.org/a/YP6mW01gYgW9EgZ5c01hL0vhc.svg)](https://asciinema.org/a/YP6mW01gYgW9EgZ5c01hL0vhc)
 
 *Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
 
-*Tip: View in ***full-screen mode*** for best legibility*
+*Tip: View in full-screen mode for best legibility*
 
 Use ***`f`*** to toggle full-screen mode.
 
-#### Detailed steps
+<details>
+<summary>📋 **Detailed steps shown in video**</summary>
 
- - Invoke thag_demo with the browse option.
+1. **Instrument** - Auto-add profiling with `thag_instrument`
 
- - Inquire crate displays themed scrollable list of thag demo scripts.
+2. **View changes** - See the diff in `vimdiff`
 
- - Type rata to narrow the search on the fly.
+3. **Run** - Execute the instrumented program as normal
 
- - Arrow down to select ratatui_theming_showcase script.
+    We run with `thag` because it's a stand-alone `thag script`
+4. **Analyze 1: select** - Select analysis type and data with `thag_profile`
 
- - Enter to invoke run options for the script.
+    We could have chosen memory and/or a sequential flamechart instead.
+5. **Analyze 2: generate** - Select flamegraph color scheme, generate and open in browser
 
- - Final Enter builds script if needed and runs it.
+</details>
 
- - Demo shows `ratatui` showcase app, themed by thag_styling with the terminal - ’s current catppuccin-mocha theme, as specified by $THAG_THEME.
+- Since the lightweight `asciinema` tool can't see the browser, we exit at this point and return to view it interactively in Part 2.
 
- - Show 1st panel of app with progress bar responding to keys or mouse.  - Dashed border effect in some areas is an artefact of the video player.
+### Part 2: View and interact with the flamegraph (21 sec)
 
- - Show pop-up help.
+<details>
+<summary>📋 **Try this**</summary>
 
- - Show remaining 3 panels in turn.
+1. **Hover to see details** and see the following displayed for each one as a tooltip and also in the bottom area:
 
- - Enter q to return to thag_demo browse.
+    a. function name, preceded by `async` if applicable
 
- - Esc to end thag_demo browse.
+    b. elapsed time in microseconds
 
-### Part 2: Resume analysis to view the flamegraph (21 sec)
+    c. percentage of total elapsed time that this bar accounts for.
 
-![📹 Watch the flamegraph in action](../docs/thag_profiler/assets/thag_profile_demo.gif)
+2. **Search for functions** Find the `count_words` function:
 
----
+      - Click on the `Search` link in the top right corner, enter `count` in the dialog that pops up, and press Enter. Bars with matching text will display in pink. Notice that the `count_words` function appears in two different call stacks.
+
+3. **Expand bars and undo** Click on one of the pink bars and see how it expands to the full width of the screen, with its call stack below it.
+
+    Click on the `main` or `all` bar at the bottom to restore the full view.
+
+    Click on the other pink bar and see it do the same, showing its slightly different call stack below it.
+
+4. **Reset view** To remove the pink highlighting, click on the `Reset` link.
+
+</details>
 
 [![Flamegraph from thag_profiling](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)<br>
 *Interactive flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
@@ -1243,7 +1257,7 @@ For memory profiling on Windows, your application requires:
 
 - **Guard objects**: TaskGuard objects help manage the lifetime of profiling tasks and ensure proper cleanup when tasks complete.
 
-- **Profile code ring-fencing**: The profiler carefully isolates its own allocations and operations from user code through the use of a dual-allocator system. This ensures that profiling overhead
+- **Profiler code ring-fencing**: The profiler carefully isolates its own allocations and operations from user code through the use of a dual-allocator system. This ensures that profiling overhead
   doesn't contaminate the results, providing clean separation between the measurement apparatus and the code being measured.
 
 Note that deallocations are not reported for normal memory profiling, as they invite a fruitless attempt to identify memory leaks by matching them up by function against the allocations, whereas the deallocations are often done by a parent function. However, deallocations are reported for detailed memory profiling in order to give a complete picture, so this is a better tool for identifying memory leaks, although still not a walk in the park.

@@ -358,27 +358,32 @@ To use this theme with iTerm2:
 4. Select "Import..."
 5. Choose the {theme_filename} file
 6. Select the imported theme from the dropdown
-7. For clear selected text, select contrasting colors for the Selection:Background and Foreground from
-   their respective color wells and color pickers. Thag suggests using colours from the theme's palette
-   for aesthetic reasons.
+7. Enable ☑ "Use custom color for selected text" for clear selected text visibility
 
 The theme will be applied to your current profile.
 
+Note: Selection colors are included in the theme export. If text selection is hard to see,
+ensure the "Use custom color for selected text" checkbox is enabled in the Colors preferences.
 "#
             )
         }
+</text>
+
         ExportFormat::WindowsTerminal => {
             format!(
                 r#"# Windows Terminal Theme Installation
 
 To use this theme with Windows Terminal:
 
-TODO: Formalise: Run `thag demo/windows_terminal_add_theme.rs <json`
-1. Open Windows Terminal
-2. Open Settings (Ctrl+,)
-3. Go to "Open JSON file" in the bottom left
-4. Copy the color scheme from {theme_filename} into the "schemes" array
-5. Add "colorScheme": "{theme_filename}" to your profile settings
+Programmatic installation: Run `thag_winterm_add_theme` to select and install the theme.
+
+Manual installation:
+
+    1. Open Windows Terminal
+    2. Open Settings (Ctrl+,)
+    3. Go to "Open JSON file" in the bottom left
+    4. Copy the color scheme from {theme_filename} into the "schemes" array
+    5. In your profile settings, add: "colorScheme": "{theme_filename}"
 
 Alternatively, you can merge the JSON content directly into your settings.json file.
 "#

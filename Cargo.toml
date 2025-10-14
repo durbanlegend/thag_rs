@@ -9,6 +9,8 @@ license = "MIT OR Apache-2.0"
 include = [
   "Cargo.toml",
   "README.md",
+  "LICENSE-APACHE",
+  "LICENSE-MIT",
   "assets/default_config.toml",
   "build.rs",
   "demo/**",

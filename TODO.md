@@ -3,16 +3,12 @@
 ## High Priority
 
 ## On the go
-- [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
 - [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 - [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc. Add an install for Cygwin.
-- [ ]  thag_styling README.
-- [ ]  Guest Themes and TermAttributes with context.
-- [ ]  Get Claude to do a release plan.
+- [ ]  DONE: thag_styling README.
+- [ ]  DONE: Guest Themes and TermAttributes with context.
+- [ ]  DONE: Get Claude to do a release plan.
 - [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
-- [ ]  DONE: Two sets of comments are being smooshed together from lib and mod.
-- [ ]  DONE: thag_rs README section on temp dir space management. FIXED: thag -r and -d are cheap, others not necessarily.
-- [ ]  DONE: Add a comment command to REPL.
 - [ ]  Update docs/index.html.
 
 use thag_common::{set_verbosity_from_env, vprtln, V};
@@ -55,99 +51,6 @@ fn build_and_extract(script_dir: &Path, bin_name: &str, out_dir: &Path) -> std::
     Ok(out_path)
 }
 ```
-
-
-Now for a big task. I would like your help in a. preparing a co-ordinated release plan for thag_rs and all its subcrates (thag_common, thag_demo, thag_proc_macros, thag_profiler, thag_styling), and b. reviewing the various README.md docs and other markdown files that may merit inclusion. E.g. the main thag_rs README.md mentions the thag_profiler subcrate with a link to its README.md. I want b. to include reviewing the READMEs for completeness. I do not want actual edits to them without my explicit approval. I want the tone to be descriptive and collegial rather than marketing, but to describe the advantages (and costs or drawbacks). This is a passion project and I want the reader to share my vision of it as a helpful tool. I do want to preserve and even expand the number of illustrations, so as to show and not just tell. E.g. with REPL, thag_styling. I have worked very hard on the main and thag_profiler READMEs in particular, as AI has previously not managed to strike the tone I want.
-Wrt to the release plan, please consider the Release checklist in TODO.md lines 405-452 as a starting point or guide - not as gospel.
-
-\((\d+, \d+, \d+)\)
-
-/// Helper function to convert RGB array to RGB tuple
-#[must_use]
-pub const fn rgb_array_to_tuple([r, g, b]: [u8; 3]) -> (u8, u8, u8) {
-    (r, g, b)
-}
-
-/// Helper function to convert RGB tuple to RGB array
-#[must_use]
-pub const fn rgb_tuple_to_array((r, g, b): (u8, u8, u8)) -> [u8; 3] {
-    [r, g, b]
-}
-
-/// Result type alias for styling operations
-pub type StylingResult<T> = Result<T, StylingError>;
-
-6422dbc..c3c7383
-
-/// Alternative version with headings assigned according to prominence.
-///
-
-### iTerm2 Selection Colors
-
-iTerm2 may not import selection colors from .itermcolors files. If your selection
-text is hard to read, manually configure selection colors in iTerm2:
-
-1. Open iTerm2 → Preferences → Profiles → Colors
-2. Set "Selection Color" to a color with good contrast against your background
-3. Enable "Use custom color for selected text" checkbox
-4. Set the selected text color appropriately
-
-For the best visibility with dark themes, we recommend:
-- Selection Color: Use the theme's "commentary" color or a medium-light gray
-- Selected Text Color: Use the theme's normal foreground color
-
-	<key>Selected Text Color</key>
-	<dict>
-		<key>Alpha Component</key>
-		<real>1</real>
-		<key>Blue Component</key>
-		<real>0.74546593427658081</real>
-		<key>Color Space</key>
-		<string>P3</string>
-		<key>Green Component</key>
-		<real>0.80540060997009277</real>
-		<key>Red Component</key>
-		<real>0.75135678052902222</real>
-	</dict>
-	<key>Selection Color</key>
-	<dict>
-		<key>Alpha Component</key>
-		<real>1</real>
-		<key>Blue Component</key>
-		<real>0.80071884393692017</real>
-		<key>Color Space</key>
-		<string>P3</string>
-		<key>Green Component</key>
-		<real>0.83718901872634888</real>
-		<key>Red Component</key>
-		<real>0.80423331260681152</real>
-	</dict>
-
-cp -p exported_themes/mintty/thag-botticelli-birth-of-venus-dark C:/cygwin64/usr/share/mintty/themes/
-
-$PROFILE (C:\Users\donforbes\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1):
-```
-$env:PATH += ";C:\Users\donforbes\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"
-$env:RUST_LOG = "build_run=debug"
-$env:THAG_COLOR_MODE = "truecolor"
-$env:THAG_THEME = "thag-morning-coffee-light"
-thag_sync_palette apply $THAG_THEME
-```
-
-Option 1 makes sense, but the implementation step `2. Add a method to get current `ColorSupport`` raises an issue. I think we need to review how we are doing that. Assuming the `color_detect` feature is active, and that we call styling::TermAttributes::initialize(ColorInitStrategy::Match), this function gets the ColorSupport variant by calling detect_term_capabilities on thag_common/src/terminal.rs and stores it in the color_support field of the static TermAttributes struct instance being constructed. We have also recently added fn terminal::get_fresh_color_support to support dynamic querying. I'm not sure we actually have a good use case for this, and it gives a second version of the truth, which is not great. So I'm reminded to get the applicable ColorSupport variant thus: `TermAttributes::get_or_init().color_support`, and have accordingly commented out and replaced line 438 of src/bin/thag_palette_vs_theme.rs by lines 439f since your response.
-
-I don't know if that might being it into conflict with thag_profiler, which has some potential incompatibilities with thread-locals. (Although I've created and tested bank/thag_palette_vs_theme.rs full profiling without issue.)
-
-cargo test -p thag_proc_macros
-failures:
-    thag_proc_macros/src/lib.rs - category_enum (line 138)
-    thag_proc_macros/src/lib.rs - safe_eprintln (line 784)
-    thag_proc_macros/src/lib.rs - safe_osc (line 806)
-    thag_proc_macros/src/lib.rs - styled (line 830)
-
-test result: FAILED. 9 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1343.71s
-
-error: doctest failed, to rerun pass `-p thag_proc_macros --doc`
 
 
 
@@ -310,17 +213,16 @@ At its very simplest, a single attribute on your `fn main` will generate a flame
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
-- [ ]  Consider releasing a copy of repl.rs as a demo script.
+- [ ]  DONE: Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on supports-color crate?
-- [ ]  Config option for formatting main?
+- [ ]  DROP: Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
-- [ ]  Config loading warn when defaulting to ../assets etc.
+- [ ]  DROP: Config loading warn when defaulting to ../assets etc.
          NB: document that user should save it under ~/.config.
          Check if thag_config_builder does so, also thag -C.
-- [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 - [ ]  Implement deletion of current history line with function key.
 - [ ]  Look for any functions that can run at compile time.
-- [ ]  Make key_handler a trait method?
+- [ ]  DROP: Make key_handler a trait method?
         trait KeyHandler {
           fn handle_keys(
               key_event: KeyEvent,
@@ -346,12 +248,12 @@ At its very simplest, a single attribute on your `fn main` will generate a flame
           ) -> ThagResult<KeyAction>;
         }
 - [ ]  Add FAQ? See Usage notes in Readme.
-- [ ]  Try pre-building colour mappings
+- [ ]  OBSOLETE: Try pre-building colour mappings
 - [ ]  New test for local paths in demo files and maybe even main Cargo.toml.
 - [ ]  Try ThagDisplay trait and derive macro.
 - [ ]  Embed dirs
-- [ ]  Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
-- [ ]  In cargo search, optionally get all features. Config option to omit unstable features.
+- [ ]  DROP: Debug some bad crate names intermittently getting into demo/Readme.md such as xterm and self.
+- [ ]  DROP: In cargo search, optionally get all features. Config option to omit unstable features.
         Add feature overrides config option default-features true/false
         Update thag_config_builder to accept dependencies inference level and default features, as well as Option<> booleans.
 - [ ]  Debug: No history edit function in stdin.
@@ -362,12 +264,12 @@ At its very simplest, a single attribute on your `fn main` will generate a flame
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
-- [ ]  Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
+- [ ]  DONE: Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Consider a disable option?
 - [ ]  Add details of --cargo (-A) option to Readme and `thag_cargo`
-- [ ]  Add profiling to capabilities for scripts.
-- [ ]  Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
+- [ ]  DROP: Add profiling to capabilities for scripts.
+- [ ]  OBSOLETE: Note possible confusion between thag --edit (uses tui editor) vs REPL edit (uses custom editor)
 - [ ]  Consider script to reverse-engineer xterm OSC sequences.
 
 - [ ]  Upgrade all cargo.tomls
@@ -426,6 +328,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ]  Demo proc macro to load collection into enum at build time?
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
+- [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
 
 
 ## Low Priority
@@ -441,6 +344,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ]  Profiling instrumentation to add toml block for thag profiling?
 - [ ]  Profiling: provide an option in instrumentation for conditional instrumentation.
 - [ ]  Add further attributes such as reversed to Style?
+- [ ]  Add conversions to and from `runner` and `cargo-script-mvs`.
 
 
 ## Ideas / Future Enhancements

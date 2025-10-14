@@ -1,166 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>SVG Asciinema Recorder – Flamegraph Demo</title>
+<meta charset="UTF-8" />
+<title>SVG Asciinema Player</title>
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #f9f9f9;
-    font-family: sans-serif;
-  }
-
   body {
+    font-family: sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 20px;
+    margin: 0;
+    background: #f5f5f5;
   }
-
   #controls {
     display: flex;
-    gap: 8px;
+    gap: 10px;
+    margin: 10px 0;
   }
-
   button {
-    background: #007acc;
-    color: white;
-    border: none;
     padding: 6px 12px;
+    border: none;
     border-radius: 6px;
+    background: #ddd;
     cursor: pointer;
-    font-size: 14px;
   }
-  button:hover { background: #005f99; }
-  button:disabled { background: #ccc; cursor: default; }
-
-  #timeline {
-    width: 1200px;
-    height: 174px;
-    border: 1px solid #ccc;
-    box-shadow: 0 0 8px rgba(0,0,0,0.15);
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  #viewer {
     background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
     overflow: hidden;
-    position: relative;
+    max-width: 90vw;
   }
-
-  #timeline object,
-  #timeline svg {
-    width: 100% !important;
-    height: auto !important;
-    display: block;
+  #viewer svg {
+    width: 100%;
+    height: auto;
   }
-
-  #script {
-    width: 1200px;
-    height: 120px;
-    font-family: monospace;
-    font-size: 13px;
-    resize: vertical;
+  #timeline {
+    margin-top: 15px;
+    width: 100%;
+  }
+  #log {
+    margin-top: 10px;
+    width: 90%;
+    max-width: 800px;
+    height: 200px;
   }
 </style>
 </head>
 <body>
 
-  <div id="controls">
-    <button id="record">Record</button>
-    <button id="stop" disabled>Stop</button>
-    <button id="play" disabled>Play</button>
-  </div>
+<div id="controls">
+  <button id="record">Record</button>
+  <button id="stop" disabled>Stop</button>
+  <button id="play" disabled>Play</button>
+</div>
 
-  <div id="timeline">
-    <object id="svgobj" data="flamegraph.svg" type="image/svg+xml"></object>
-  </div>
+<div id="viewer">
+  <!-- Inline the SVG or embed it -->
+  <object id="svgobj" data="flamegraph.svg" type="image/svg+xml" width="1200" height="174"></object>
+</div>
 
-  <textarea id="script" placeholder="Recorded script will appear here..."></textarea>
+<textarea id="log" placeholder="Recorded events (JSON)" readonly></textarea>
 
-  <script>
-  const recordButton = document.getElementById('record');
-  const stopButton = document.getElementById('stop');
-  const playButton = document.getElementById('play');
-  const scriptBox = document.getElementById('script');
-  const svgObject = document.getElementById('svgobj');
+<script>
+let recording = false;
+let events = [];
+let svgDoc = null;
 
-  let recording = false;
-  let startTime = 0;
-  let recorded = [];
+const recordBtn = document.getElementById('record');
+const stopBtn = document.getElementById('stop');
+const playBtn = document.getElementById('play');
+const log = document.getElementById('log');
+const svgObj = document.getElementById('svgobj');
 
-  svgObject.addEventListener('load', () => {
-    const svgDoc = svgObject.contentDocument;
+svgObj.addEventListener('load', () => {
+  svgDoc = svgObj.contentDocument;
+});
 
-    function getBarLabel(target) {
-      const parent = target.parentNode;
-      const labelEl = parent.querySelector('text');
-      return labelEl ? labelEl.textContent.trim() : '(unknown)';
+recordBtn.onclick = () => {
+  if (!svgDoc) return alert('SVG not loaded yet.');
+  events = [];
+  recording = true;
+  recordBtn.disabled = true;
+  stopBtn.disabled = false;
+  playBtn.disabled = true;
+
+  svgDoc.addEventListener('click', onClick);
+  svgDoc.addEventListener('mouseover', onHover);
+};
+
+stopBtn.onclick = () => {
+  recording = false;
+  recordBtn.disabled = false;
+  stopBtn.disabled = true;
+  playBtn.disabled = events.length === 0;
+  svgDoc.removeEventListener('click', onClick);
+  svgDoc.removeEventListener('mouseover', onHover);
+  log.value = JSON.stringify(events, null, 2);
+};
+
+playBtn.onclick = () => {
+  if (!svgDoc) return;
+  let i = 0;
+  function playNext() {
+    if (i >= events.length) return;
+    const ev = events[i++];
+    const el = svgDoc.querySelector(`[data-id="${ev.target}"]`) || svgDoc.getElementById(ev.target);
+    if (el) {
+      el.style.transition = 'fill 0.2s';
+      el.style.fill = ev.type === 'click' ? '#ff6666' : '#ffcc00';
+      setTimeout(() => {
+        el.style.fill = '';
+        playNext();
+      }, 400);
+    } else {
+      playNext();
     }
+  }
+  playNext();
+};
 
-    function highlightBar(rect, color='orange', duration=600) {
-      const original = rect.getAttribute('fill');
-      rect.setAttribute('fill', color);
-      setTimeout(() => rect.setAttribute('fill', original), duration);
-    }
+function onClick(e) {
+  if (!recording) return;
+  const id = e.target.id || e.target.getAttribute('data-id');
+  events.push({ type: 'click', target: id, time: Date.now() });
+}
 
-    function findBarByLabel(label) {
-      return Array.from(svgDoc.querySelectorAll('rect')).find(r => {
-        const t = r.parentNode.querySelector('text');
-        return t && t.textContent.trim() === label;
-      });
-    }
+function onHover(e) {
+  if (!recording) return;
+  const id = e.target.id || e.target.getAttribute('data-id');
+  events.push({ type: 'hover', target: id, time: Date.now() });
+}
+</script>
 
-    // --- Recording setup ---
-    svgDoc.addEventListener('mouseover', e => {
-      if (!recording || e.target.tagName !== 'rect') return;
-      recorded.push({
-        type: 'hover',
-        label: getBarLabel(e.target),
-        time: performance.now() - startTime
-      });
-    });
-    svgDoc.addEventListener('click', e => {
-      if (!recording || e.target.tagName !== 'rect') return;
-      recorded.push({
-        type: 'click',
-        label: getBarLabel(e.target),
-        time: performance.now() - startTime
-      });
-    });
-
-    recordButton.onclick = () => {
-      recorded = [];
-      recording = true;
-      startTime = performance.now();
-      recordButton.disabled = true;
-      stopButton.disabled = false;
-      playButton.disabled = true;
-      scriptBox.value = 'Recording...';
-    };
-
-    stopButton.onclick = () => {
-      recording = false;
-      recordButton.disabled = false;
-      stopButton.disabled = true;
-      playButton.disabled = false;
-      scriptBox.value = JSON.stringify(recorded, null, 2);
-    };
-
-    playButton.onclick = async () => {
-      playButton.disabled = true;
-      const script = JSON.parse(scriptBox.value || '[]');
-      let prevTime = 0;
-      for (const evt of script) {
-        const delay = evt.time - prevTime;
-        prevTime = evt.time;
-        await new Promise(r => setTimeout(r, delay));
-        const rect = findBarByLabel(evt.label);
-        if (rect) {
-          highlightBar(rect, evt.type === 'click' ? 'red' : 'orange');
-        }
-      }
-      playButton.disabled = false;
-    };
-  });
-  </script>
 </body>
 </html>

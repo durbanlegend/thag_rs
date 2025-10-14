@@ -83,3 +83,4 @@ styles/Google/
 styles/Readability/
 styles/Readability_Releases.zip
 sync_docs_report.txt
+demo/document_pipeline_instr.rs

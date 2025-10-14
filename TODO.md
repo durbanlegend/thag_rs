@@ -759,3 +759,5 @@ ffmpeg -i thag_profile_demo.mov -vf "fps=15,scale=1200:-1:flags=lanczos" -c:v gi
 
 [![Flamegraph interaction](../docs/thag_profiler/assets/thag_profile_demo.gif)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)
 *Click to open interactive SVG with full flamegraph features*
+
+asciinema rec -I -i2 --window-size 203x30 --overwrite demo.cast

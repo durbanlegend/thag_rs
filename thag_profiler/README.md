@@ -62,7 +62,7 @@ Output analysis:
 
 ### Part 1: Instrument, profile and start analysis (1 min 18 sec)
 
-[![asciicast](https://asciinema.org/a/U91gngjuL72OIWhyvTf17WbIp.svg)](https://asciinema.org/a/U91gngjuL72OIWhyvTf17WbIp)
+[![asciicast](https://asciinema.org/a/6nsxNkwyIfzXUzvdJYZ8uZvTR.svg)](https://asciinema.org/a/6nsxNkwyIfzXUzvdJYZ8uZvTR)
 
 *Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
 

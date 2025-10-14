@@ -1,0 +1,526 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>SVG Replay (asciinema-like)</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin: 16px; }
+  #controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center;}
+  button, input[type="file"], select { padding:6px 10px; }
+  #viewer { border:1px solid #ddd; padding:8px; display:inline-block; background:#fff; }
+  .replay-hover { outline: 3px solid rgba(255,200,0,0.9); outline-offset: -3px; transition: outline .12s; }
+  .replay-click {
+    animation: clickpulse .5s ease-out;
+    pointer-events: none;
+  }
+  @keyframes clickpulse {
+    0% { transform: scale(1); opacity: .0; filter: blur(0px); }
+    30% { transform: scale(1.12); opacity: .9; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  #timeline { width:300px; }
+  #scriptText { width:100%; height:120px; font-family: monospace; font-size:12px; margin-top:8px; }
+  #status { margin-left: 8px; color:#666; font-size:13px; }
+</style>
+</head>
+<body>
+
+<h3>SVG Replay (asciinema-like)</h3>
+
+<div id="controls">
+  <button id="recStart">Start recording</button>
+  <button id="recStop" disabled>Stop</button>
+  <button id="exportBtn" disabled>Export JSON</button>
+
+  <input id="fileLoad" type="file" accept=".svg,.json"/>
+  <button id="loadSvgBtn">Load external SVG (fetch & inline)</button>
+
+  <select id="speed">
+    <option value="0.5">0.5x</option>
+    <option value="1" selected>1x</option>
+    <option value="1.5">1.5x</option>
+    <option value="2">2x</option>
+  </select>
+  <button id="playBtn" disabled>Play</button>
+  <button id="pauseBtn" disabled>Pause</button>
+  <button id="stepBack" disabled>◀︎</button>
+  <button id="stepFwd" disabled>▶︎</button>
+  <label><input id="loop" type="checkbox"/> Loop</label>
+  <span id="status"></span>
+</div>
+
+<!-- viewer: put your flamegraph svg here inline (recommended).
+     Below is a tiny placeholder. Replace the <svg> content with your flamegraph.svg markup
+     or click 'Load external SVG' to inline one from a file. -->
+<div id="viewer" tabindex="0">
+  <!-- START: replace the SVG below with your flamegraph.svg contents (inline) -->
+  <svg id="demoSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+    <rect x="0" y="0" width="800" height="200" fill="#1b1b1b"/>
+    <!-- example bars -->
+    <g id="flame">
+      <rect id="b1" x="10" y="150" width="200" height="30" fill="#ff7b7b" />
+      <rect id="b2" x="220" y="130" width="180" height="50" fill="#ffa07a" />
+      <rect id="b3" x="410" y="120" width="120" height="60" fill="#ffcf66" />
+      <rect id="b4" x="540" y="160" width="140" height="20" fill="#ffd580" />
+      <!-- tooltip placeholder -->
+      <g id="tooltip" style="display:none; pointer-events:none;">
+        <rect id="ttBg" x="0" y="0" width="120" height="24" rx="6" fill="#111" opacity="0.9"/>
+        <text id="ttText" x="6" y="16" font-size="12" fill="#fff">tooltip</text>
+      </g>
+    </g>
+  </svg>
+  <!-- END: replace -->
+</div>
+
+<textarea id="scriptText" placeholder='Recorded script JSON will appear here...'></textarea>
+
+<script>
+/*
+SVG Replay system
+- Recorder: listens on the inline SVG element and records events
+- Player: replays recorded events by dispatching pointer events + visual hints
+
+Recorded event format (array of events):
+{
+  t: <time ms since start>,
+  type: "move"|"mouseover"|"mouseout"|"click",
+  id: "<element id or selector>",
+  x: <normalized x 0..1>,
+  y: <normalized y 0..1>
+}
+*/
+(function(){
+  const recStart = document.getElementById('recStart');
+  const recStop  = document.getElementById('recStop');
+  const exportBtn = document.getElementById('exportBtn');
+  const fileLoad = document.getElementById('fileLoad');
+  const loadSvgBtn = document.getElementById('loadSvgBtn');
+
+  const playBtn = document.getElementById('playBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const stepBack = document.getElementById('stepBack');
+  const stepFwd = document.getElementById('stepFwd');
+  const speedSel = document.getElementById('speed');
+  const loopChk = document.getElementById('loop');
+
+  const status = document.getElementById('status');
+  const scriptText = document.getElementById('scriptText');
+
+  const viewer = document.getElementById('viewer');
+
+  // The SVG element we'll target (inline)
+  let svg = document.querySelector('#viewer svg');
+  if(!svg){
+    status.textContent = "No inline SVG found — load one or paste inline.";
+  }
+
+  // Recorder state
+  let recording = false;
+  let recStartTime = 0;
+  let events = [];
+
+  // Throttle mousemove to 40ms (~25fps) for compactness
+  const MOVE_THROTTLE_MS = 40;
+  let lastMoveAt = 0;
+
+  // Utility: get element identifier - prefer id, else generate a short selector
+  function getElementId(el){
+    if(!el || !svg) return null;
+    if(el.id) return `#${el.id}`;
+    // try to create a short path relative to svg
+    // prefer data-name or tag+index
+    let path = [];
+    let node = el;
+    while(node && node !== svg){
+      if(node.id) { path.unshift('#'+node.id); break; }
+      let tag = node.tagName;
+      // find index among siblings of same tag
+      let idx = 1;
+      let sib = node.previousElementSibling;
+      while(sib){
+        if(sib.tagName === node.tagName) idx++;
+        sib = sib.previousElementSibling;
+      }
+      path.unshift(`${tag.toLowerCase()}:nth-of-type(${idx})`);
+      node = node.parentElement;
+    }
+    return path.length? path.join('>') : null;
+  }
+
+  function resolveElementById(id){
+    if(!id) return null;
+    try{
+      if(id.startsWith('#')) return svg.querySelector(id);
+      return svg.querySelector(id);
+    }catch(e){
+      return null;
+    }
+  }
+
+  function pointerToSvgCoords(evt){
+    // Convert client coordinates to SVG coordinate system and normalize to 0..1
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    const ctm = svg.getScreenCTM().inverse();
+    const loc = pt.matrixTransform(ctm);
+    const vb = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width ? svg.viewBox.baseVal : {x:0,y:0,width:svg.clientWidth,height:svg.clientHeight};
+    const x = (loc.x - vb.x) / vb.width;
+    const y = (loc.y - vb.y) / vb.height;
+    return {x: x, y: y, abs: loc};
+  }
+
+  // Recorder event handlers
+  function onPointerMove(e){
+    if(!recording) return;
+    const now = performance.now();
+    if(now - lastMoveAt < MOVE_THROTTLE_MS) return;
+    lastMoveAt = now;
+    const el = e.target;
+    const id = getElementId(el);
+    const p = pointerToSvgCoords(e);
+    events.push({t: Math.round(now - recStartTime), type: 'move', id, x: +p.x.toFixed(4), y: +p.y.toFixed(4)});
+    updateStatus(`recording: ${events.length} events`);
+  }
+  function onPointerOver(e){
+    if(!recording) return;
+    const el = e.target;
+    const id = getElementId(el);
+    const p = pointerToSvgCoords(e);
+    events.push({t: Math.round(performance.now() - recStartTime), type: 'mouseover', id, x: +p.x.toFixed(4), y: +p.y.toFixed(4)});
+    updateStatus(`recording: ${events.length} events`);
+  }
+  function onPointerOut(e){
+    if(!recording) return;
+    const el = e.target;
+    const id = getElementId(el);
+    const p = pointerToSvgCoords(e);
+    events.push({t: Math.round(performance.now() - recStartTime), type: 'mouseout', id, x: +p.x.toFixed(4), y: +p.y.toFixed(4)});
+    updateStatus(`recording: ${events.length} events`);
+  }
+  function onPointerDown(e){
+    if(!recording) return;
+    const el = e.target;
+    const id = getElementId(el);
+    const p = pointerToSvgCoords(e);
+    events.push({t: Math.round(performance.now() - recStartTime), type: 'click', id, x: +p.x.toFixed(4), y: +p.y.toFixed(4)});
+    updateStatus(`recording: ${events.length} events`);
+  }
+
+  function attachRecordListeners(){
+    if(!svg) return;
+    svg.addEventListener('pointermove', onPointerMove, {passive:true});
+    svg.addEventListener('pointerover', onPointerOver);
+    svg.addEventListener('pointerout', onPointerOut);
+    svg.addEventListener('pointerdown', onPointerDown);
+  }
+  function detachRecordListeners(){
+    if(!svg) return;
+    svg.removeEventListener('pointermove', onPointerMove);
+    svg.removeEventListener('pointerover', onPointerOver);
+    svg.removeEventListener('pointerout', onPointerOut);
+    svg.removeEventListener('pointerdown', onPointerDown);
+  }
+
+  function startRecording(){
+    if(!svg){ alert('No inline SVG found — either paste it inline in the viewer or use Load external SVG.'); return; }
+    events = [];
+    recording = true;
+    recStartTime = performance.now();
+    lastMoveAt = 0;
+    attachRecordListeners();
+    recStart.disabled = true;
+    recStop.disabled = false;
+    exportBtn.disabled = true;
+    playBtn.disabled = true;
+    pauseBtn.disabled = true;
+    updateStatus('recording...');
+  }
+
+  function stopRecording(){
+    recording = false;
+    detachRecordListeners();
+    recStart.disabled = false;
+    recStop.disabled = true;
+    exportBtn.disabled = false;
+    playBtn.disabled = false;
+    scriptText.value = JSON.stringify({meta:{created: (new Date()).toISOString(), svgId: svg.id||null}, events}, null, 0);
+    updateStatus(`recorded ${events.length} events`);
+  }
+
+  function exportJSON(){
+    const json = scriptText.value || JSON.stringify({meta:{created:(new Date()).toISOString(), svgId: svg.id||null}, events}, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'svg-replay.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Loading external SVG file (file input)
+  fileLoad.addEventListener('change', ev => {
+    const f = ev.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    if(f.type === 'image/svg+xml' || f.name.endsWith('.svg')){
+      reader.onload = () => {
+        // inject svg markup into viewer
+        viewer.innerHTML = reader.result;
+        svg = document.querySelector('#viewer svg');
+        if(svg) svg.style.maxWidth = '100%';
+        updateStatus('Loaded inline SVG from file.');
+      };
+      reader.readAsText(f);
+    }else if(f.name.endsWith('.json')){
+      reader.onload = () => {
+        scriptText.value = reader.result;
+        try{ JSON.parse(reader.result); playBtn.disabled = false; updateStatus('Loaded script JSON.'); }catch(e){ updateStatus('Invalid JSON'); }
+      };
+      reader.readAsText(f);
+    }else{
+      alert('Unsupported file type. Use .svg or .json');
+    }
+    // reset input
+    ev.target.value = '';
+  });
+
+  // You can also fetch an external SVG by URL: user enters a file path. This helps for local testing.
+  loadSvgBtn.addEventListener('click', async () => {
+    const url = prompt('URL or path to SVG to load (requires same-origin or CORS):');
+    if(!url) return;
+    try{
+      const r = await fetch(url);
+      if(!r.ok) throw new Error('Fetch failed: ' + r.status);
+      const text = await r.text();
+      viewer.innerHTML = text;
+      svg = document.querySelector('#viewer svg');
+      if(svg) svg.style.maxWidth = '100%';
+      updateStatus('Loaded SVG from URL.');
+    }catch(err){
+      alert('Failed to load SVG: ' + err);
+    }
+  });
+
+  recStart.addEventListener('click', startRecording);
+  recStop.addEventListener('click', stopRecording);
+  exportBtn.addEventListener('click', exportJSON);
+
+  // Player implementation
+  let playbackTimer = null;
+  let playStart = 0;
+  let script = null;
+  let playIndex = 0;
+  let paused = true;
+  let speed = 1.0;
+
+  function updateStatus(txt){ status.textContent = txt || ''; }
+
+  function loadScriptFromText(){
+    try{
+      const obj = JSON.parse(scriptText.value);
+      if(Array.isArray(obj)) script = {meta:{}, events: obj};
+      else script = obj;
+      playBtn.disabled = false;
+      pauseBtn.disabled = true;
+      stepBack.disabled = false;
+      stepFwd.disabled = false;
+      updateStatus(`script loaded: ${script.events.length} events`);
+      playIndex = 0;
+    }catch(e){
+      alert('Invalid JSON script: ' + e);
+    }
+  }
+
+  // helper: schedule next event
+  function scheduleNext(){
+    if(!script) return;
+    if(playIndex >= script.events.length){
+      if(loopChk.checked){
+        playIndex = 0;
+        playStart = performance.now();
+      } else {
+        stopPlayback();
+        return;
+      }
+    }
+    const evt = script.events[playIndex];
+    const now = (performance.now() - playStart) * speed;
+    const wait = Math.max(0, evt.t - now);
+    playbackTimer = setTimeout(() => {
+      dispatchRecordedEvent(evt);
+      playIndex++;
+      scheduleNext();
+    }, wait);
+  }
+
+  function dispatchRecordedEvent(re){
+    // find target element
+    const target = resolveElementById(re.id) || document.querySelector('#viewer svg') || svg;
+    if(!target){
+      console.warn('Target not found for', re.id);
+      return;
+    }
+    // compute absolute coordinates in client space to create realistic PointerEvent, if needed
+    const vb = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width ? svg.viewBox.baseVal : {x:0,y:0,width:svg.clientWidth,height:svg.clientHeight};
+    const absX = vb.x + (re.x * vb.width);
+    const absY = vb.y + (re.y * vb.height);
+    const pt = svg.createSVGPoint(); pt.x = absX; pt.y = absY;
+    const screenPt = pt.matrixTransform(svg.getScreenCTM());
+    // Visual helpers
+    if(re.type === 'move'){
+      showTooltipAt(re.x, re.y, `x:${(re.x*100).toFixed(1)}% y:${(re.y*100).toFixed(1)}%`);
+      // dispatch pointermove event to the element under the point
+      const elAt = document.elementFromPoint(screenPt.x, screenPt.y);
+      if(elAt){
+        const pe = new PointerEvent('pointermove', {bubbles:true, clientX: screenPt.x, clientY: screenPt.y, pointerType:'mouse', isPrimary:true});
+        elAt.dispatchEvent(pe);
+      }
+    } else if(re.type === 'mouseover'){
+      const el = resolveElementById(re.id) || document.elementFromPoint(screenPt.x, screenPt.y);
+      if(el){
+        el.classList.add('replay-hover');
+        setTimeout(()=> el.classList.remove('replay-hover'), 2000);
+        // dispatch event
+        const pe = new PointerEvent('pointerover', {bubbles:true, clientX: screenPt.x, clientY: screenPt.y, pointerType:'mouse'});
+        el.dispatchEvent(pe);
+      }
+    } else if(re.type === 'mouseout'){
+      const el = resolveElementById(re.id) || document.elementFromPoint(screenPt.x, screenPt.y);
+      if(el){
+        el.classList.remove('replay-hover');
+        const pe = new PointerEvent('pointerout', {bubbles:true, clientX: screenPt.x, clientY: screenPt.y, pointerType:'mouse'});
+        el.dispatchEvent(pe);
+      }
+    } else if(re.type === 'click'){
+      const el = resolveElementById(re.id) || document.elementFromPoint(screenPt.x, screenPt.y);
+      if(el){
+        // add click pulse visual
+        const pulse = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        pulse.setAttribute('cx', absX);
+        pulse.setAttribute('cy', absY);
+        pulse.setAttribute('r', 6);
+        pulse.setAttribute('class','replay-click');
+        svg.appendChild(pulse);
+        setTimeout(()=> pulse.remove(), 600);
+        // dispatch pointerdown/up/click
+        ['pointerdown','pointerup','click'].forEach(name => {
+          const pe = new PointerEvent(name, {bubbles:true, clientX: screenPt.x, clientY: screenPt.y, pointerType:'mouse'});
+          el.dispatchEvent(pe);
+        });
+      }
+    }
+  }
+
+  function showTooltipAt(normX, normY, text){
+    const tt = svg.querySelector('#tooltip');
+    if(!tt) return;
+    const vb = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width ? svg.viewBox.baseVal : {x:0,y:0,width:svg.clientWidth,height:svg.clientHeight};
+    const absX = vb.x + (normX * vb.width);
+    const absY = vb.y + (normY * vb.height);
+    tt.style.display = 'block';
+    tt.setAttribute('transform', `translate(${absX+6},${absY-18})`);
+    const ttext = tt.querySelector('#ttText');
+    if(ttext) ttext.textContent = text;
+    clearTimeout(tt._hide);
+    tt._hide = setTimeout(()=> { tt.style.display = 'none'; }, 900);
+  }
+
+  function startPlayback(){
+    if(!script) loadScriptFromText();
+    if(!script) return;
+    paused = false;
+    speed = parseFloat(speedSel.value) || 1.0;
+    playBtn.disabled = true;
+    pauseBtn.disabled = false;
+    recStart.disabled = true;
+    exportBtn.disabled = true;
+    playStart = performance.now() - (script.events[playIndex]?.t || 0) / (speed);
+    scheduleNext();
+    updateStatus('playing');
+  }
+
+  function stopPlayback(){
+    clearTimeout(playbackTimer);
+    playbackTimer = null;
+    paused = true;
+    playBtn.disabled = false;
+    pauseBtn.disabled = true;
+    recStart.disabled = false;
+    exportBtn.disabled = false;
+    updateStatus('stopped');
+  }
+
+  function pausePlayback(){
+    if(paused) return;
+    const elapsed = (performance.now() - playStart) * speed;
+    // convert to new playIndex based on elapsed
+    let i = script.events.findIndex(e => e.t > elapsed);
+    if(i === -1) i = script.events.length;
+    playIndex = Math.max(0, i);
+    clearTimeout(playbackTimer);
+    playbackTimer = null;
+    paused = true;
+    playBtn.disabled = false;
+    pauseBtn.disabled = true;
+    updateStatus('paused');
+  }
+
+  function stepForward(){
+    if(!script) loadScriptFromText();
+    if(!script) return;
+    // execute single event
+    if(playIndex < script.events.length){
+      dispatchRecordedEvent(script.events[playIndex]);
+      playIndex++;
+      updateStatus(`stepped to ${playIndex}/${script.events.length}`);
+    }
+  }
+  function stepBackward(){
+    if(!script) loadScriptFromText();
+    if(!script) return;
+    playIndex = Math.max(0, playIndex-1);
+    updateStatus(`moved back to ${playIndex}/${script.events.length}`);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if(!script) loadScriptFromText();
+    startPlayback();
+  });
+  pauseBtn.addEventListener('click', pausePlayback);
+  stepFwd.addEventListener('click', stepForward);
+  stepBack.addEventListener('click', stepBackward);
+  speedSel.addEventListener('change', () => { speed = parseFloat(speedSel.value); });
+
+  // Allow editing/pasting a script in the textarea
+  scriptText.addEventListener('change', () => {
+    // enable play if JSON parses
+    try{ JSON.parse(scriptText.value); playBtn.disabled = false; updateStatus('script parsed'); } catch(e){ playBtn.disabled = true; updateStatus('invalid JSON'); }
+  });
+
+  // expose some helpers for console debugging
+  window.SVGReplay = {
+    getCurrentSVG: () => svg,
+    loadScriptFromText,
+    startRecording,
+    stopRecording,
+    startPlayback,
+    pausePlayback
+  };
+
+  // attach initial rec listeners only when recording starts; but we can also make viewer focusable
+  viewer.addEventListener('keydown', (e) => {
+    if(e.key === 'r') startRecording();
+    if(e.key === 'p') {
+      if(pauseBtn.disabled) startPlayback(); else pausePlayback();
+    }
+  });
+
+})();
+</script>
+
+
+</body>
+</html>

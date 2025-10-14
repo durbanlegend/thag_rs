@@ -72,14 +72,14 @@ Note: in future, combine second and third test with `--features tools,profile`, 
 
 ### Package Testing
 - [x] `cd thag_common && cargo package --no-verify`
-- [x] `cd ../thag_proc_macros && cargo package --no-verify`
-- [ ] `cd ../thag_styling && cargo package --no-verify`
-- [ ] `cd ../thag_profiler && cargo package --no-verify`
-- [ ] `cd .. && cargo package --no-verify` (thag_rs)
-- [ ] `cd thag_demo && cargo package --no-verify`
-- [ ] Review package contents in target/package/
-- [ ] Local install test: `cargo install --path . --force`
-- [ ] Test installed binary: `thag --version` and basic commands
+- [x] `cd thag_proc_macros && cargo package --no-verify`
+- [x] `cd thag_styling && cargo package --no-verify` (verified with --list, full package requires published deps)
+- [x] `cd thag_profiler && cargo package --no-verify` (verified with --list, full package requires published deps)
+- [x] `cd .. && cargo package --no-verify` (thag_rs) (verified with --list, full package requires published deps)
+- [x] `cd thag_demo && cargo package --no-verify` (verified with --list, full package requires published deps)
+- [x] Review package contents in target/package/
+- [x] Local install test: `cargo install --path . --force`
+- [x] Test installed binary: `thag --version` and basic commands
 
 ### Final Prep
 - [ ] `find . -name .DS_Store -delete`

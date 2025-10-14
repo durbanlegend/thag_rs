@@ -3,55 +3,9 @@
 ## High Priority
 
 ## On the go
-- [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
-- [ ]  Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc. Add an install for Cygwin.
-- [ ]  DONE: thag_styling README.
-- [ ]  DONE: Guest Themes and TermAttributes with context.
-- [ ]  DONE: Get Claude to do a release plan.
-- [ ]  Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
-- [ ]  Update docs/index.html.
-
-use thag_common::{set_verbosity_from_env, vprtln, V};
-
-```rust
-use std::env;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-
-fn build_and_extract(script_dir: &Path, bin_name: &str, out_dir: &Path) -> std::io::Result<PathBuf> {
-    // Force Cargo to use a shared target dir, e.g. ~/.cache/thag_target
-    let cache_target = dirs::cache_dir()
-        .unwrap_or(env::temp_dir())
-        .join("thag_target");
-
-    let status = Command::new("cargo")
-        .arg("build")
-        .arg("--bin")
-        .arg(bin_name)
-        .current_dir(script_dir)
-        .env("CARGO_TARGET_DIR", &cache_target)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()
-        .expect("failed to run cargo build");
-
-    if !status.success() {
-        panic!("cargo build failed");
-    }
-
-    // The binary will be in <cache_target>/debug/<bin_name>
-    let exe_path = cache_target.join("debug").join(bin_name);
-
-    // Copy the executable out to the runner's output directory
-    let out_path = out_dir.join(bin_name);
-    fs::create_dir_all(out_dir)?;
-    fs::copy(&exe_path, &out_path)?;
-
-    Ok(out_path)
-}
-```
-
+- [ ]  DONE: Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc. Add an install for Cygwin.
+- [ ]  DONE: Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
+- [ ]  DONE: Update docs/index.html.
 
 
 printf "\x1b]4;{};?\x07"
@@ -329,6 +283,7 @@ env NO_COLOR=1 cargo run --no-default-features --features="repl,simplelog" -- -r
 - [ ]  Add a thag feature to apply a git patch to a dependency? Consider adding pre-processing to toml block with support for variables.
 - [ ]  Consider removing Peak from summary flamegraphs and flamecharts due to inaccuracy?
 - [ ]  If thag or thag_demo doesn't find demo scripts, offer to install them?. Make the logic in src/bin/thag_get_demo_dir.rs and demo/download_demos.rs a library function (where?) or a proc macro.
+- [ ]  Feature-gated impls of styling integration for owo-colors and nu_ansi_term in thag_styling ... others?
 
 
 ## Low Priority

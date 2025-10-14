@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SVG Asciinema – Flamegraph Demo</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+  }
+
+  #timeline {
+    width: 1200px;          /* full native width of your SVG */
+    height: 174px;          /* match SVG height */
+    border: 1px solid #ccc;
+    box-shadow: 0 0 8px rgba(0,0,0,0.15);
+    background: white;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #timeline object,
+  #timeline svg {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  #play {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: #007acc;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #play:hover {
+    background: #005f99;
+  }
+</style>
+</head>
+<body>
+  <div id="timeline">
+    <object id="svgobj" data="flamegraph.svg" type="image/svg+xml"></object>
+    <button id="play">Play</button>
+  </div>
+
+  <script>
+  const playButton = document.getElementById('play');
+  const svgObject = document.getElementById('svgobj');
+
+  // Wait until the embedded SVG loads
+  svgObject.addEventListener('load', () => {
+    const svgDoc = svgObject.contentDocument;
+    const svgRoot = svgDoc.querySelector('svg');
+
+    // Utility: simulate highlighting or clicking bars
+    function highlightBarByText(text, color = 'orange', duration = 800) {
+      const rect = Array.from(svgDoc.querySelectorAll('rect'))
+        .find(r => r.nextElementSibling && r.nextElementSibling.textContent.includes(text));
+      if (rect) {
+        const original = rect.getAttribute('fill');
+        rect.setAttribute('fill', color);
+        setTimeout(() => rect.setAttribute('fill', original), duration);
+      }
+    }
+
+    // Example animation sequence
+    const demoSteps = [
+      () => highlightBarByText('main'),
+      () => highlightBarByText('foo'),
+      () => highlightBarByText('bar'),
+      () => highlightBarByText('baz')
+    ];
+
+    playButton.addEventListener('click', async () => {
+      playButton.disabled = true;
+      for (const step of demoSteps) {
+        step();
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      playButton.disabled = false;
+    });
+  });
+  </script>
+</body>
+</html>

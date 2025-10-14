@@ -82,9 +82,9 @@ Note: in future, combine second and third test with `--features tools,profile`, 
 - [x] Test installed binary: `thag --version` and basic commands
 
 ### Final Prep
-- [ ] `find . -name .DS_Store -delete`
-- [ ] Review TODO.md, update completed items
-- [ ] Git status clean, all changes committed
+- [x] `find . -name .DS_Store -delete`
+- [x] Review TODO.md, update completed items
+- [x] Git status clean, all changes committed
 - [ ] Final commit: `git commit -m "Prepare for v0.2.0 release"`
 - [ ] Push: `git push origin main`
 - [ ] Create backup: `git tag pre-v0.2.0-backup && git push origin pre-v0.2.0-backup`

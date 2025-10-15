@@ -47,8 +47,52 @@ Execution time profiling of nested functions with automatic flamegraph generatio
 
 *Click to watch: The demo shows building and running an instrumented program, then generating an interactive flamegraph*
 
+<details>
+<summary>📋 **Detailed steps**</summary>
+
+- Type thag_demo to show the welcome screen showing options.
+
+- Type thag_demo time-profiling to invoke the time profiling demo.
+
+- Builds (if needed) and runs a sample program instrumented with thag_profiler execution time profiling.
+
+- Offers to show a flamegraph of the results. Respond ‘y’.
+
+- Displays collected stats while it builds and shows the flamegraph in the browser.
+
+- The flamegraph is not recorded by the `asciinema` recorder because the latter is terminal-based, but is shown both as PNG and interactive SVG in thag_demo README.md.
+
+- End of demo.
+</details>
+
 [![Flamegraph from thag_demo](https://durbanlegend.github.io/thag_rs/thag_demo/assets/time_profiling_demo.png)](https://durbanlegend.github.io/thag_rs/thag_demo/assets/time_profiling_demo.svg)<br>
 *Interactive flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
+
+<details>
+<summary>📋 **Try this**</summary>
+
+1. **Hover to see details** and see the following displayed for each one as a tooltip and also in the bottom area:
+
+    a. function name, preceded by `async` if applicable
+
+    b. elapsed time in microseconds
+
+    c. percentage of total elapsed time that this bar accounts for.
+
+2. **Search for functions** Find functions whose names contain `_a`:
+
+      - Click on the `Search` link in the top right corner, enter `_a` in the dialog that pops up, and press Enter. Bars with matching text will display in pink. Notice that matching functions appear in three different places stacks.
+
+3. **Expand bars and undo** Click on one of the pink bars and see how it expands to the full width of the screen, with its call stack below it.
+
+    Click on the `main` or `all` bar at the bottom to restore the full view.
+
+    Click on another of the pink bars and see it do the same, showing its slightly different call stack below it.
+
+4. **Reset view** To remove the pink highlighting, click on the `Reset` link.
+
+</details>
+
 
 ### 🧠 Memory Profiling
 ```bash
@@ -92,7 +136,8 @@ Browse and run demo scripts interactively with filtering and search.
 
 *Click to watch: The demo shows running `thag_demo browse` to view all the `thag` scripts in $THAG_DEMO_DIR, and selecting and running the `ratatui` showcase demo. It also highlights the use of `thag_styling` integrations to automatically theme both the `inquire` selection list and the `ratatui` showcase screen with the current `catppuccin-mocha` theme.*
 
-##### Detailed steps
+<details>
+<summary>📋 **Detailed steps**</summary>
 
  - Invoke thag_demo with the browse option.
 
@@ -106,9 +151,9 @@ Browse and run demo scripts interactively with filtering and search.
 
  - Final Enter builds script if needed and runs it.
 
- - Demo shows `ratatui` showcase app, themed by thag_styling with the terminal - ’s current catppuccin-mocha theme, as specified by $THAG_THEME.
+ - Demo shows `ratatui` showcase app, themed by `thag_styling` with the terminal’s current `catppuccin-mocha` theme, as specified by $THAG_THEME.
 
- - Show 1st panel of app with progress bar responding to keys or mouse.  - Dashed border effect in some areas is an artefact of the video player.
+ - Show 1st panel of app with progress bar responding to keys or mouse. **The dashed vertical border effect in some areas is an artefact of the video player**.
 
  - Show pop-up help.
 
@@ -117,6 +162,7 @@ Browse and run demo scripts interactively with filtering and search.
  - Enter q to return to thag_demo browse.
 
  - Esc to end thag_demo browse.
+</details>
 
 ### 📋 List All Scripts
 ```bash

@@ -38,6 +38,30 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 - compile-time macro expansion support for proc macro debugging
 </details>
 
+The ***core purpose of `thag`*** is straightforward: to make it easy and fun to test ideas, explore software, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
+
+`thag` is largely TOML-free thanks to its ***dependency inference***, which automatically detects and configures the crates your code needs.
+
+When you do need TOML, `thag` supports a good subset - dependencies, features, profiles and lints - as well as intelligently generating TOML for you to embed if you choose.
+
+Whether you're:
+
+- Prototyping a concept
+
+- Running crate examples without the need to install
+
+- Using dependencies not supported by the Rust playground
+
+- Debugging proc macros
+
+- Running quick calculations
+
+- Profiling performance of your project
+
+- Converting your scripts into lightning-fast commands
+
+`thag_rs` helps you get answers faster—from simple one-liners to complex multi-file programs.
+
 ### New in `thag` v0.2:
 
 <details>
@@ -45,18 +69,21 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
   - Automatically resolves straightforward dependencies.
 
-      <summary>📋 Supports popular repo, playground and other URLs.</summary>
+  - Default features for crates can be configured with `thag --config/-C`.
 
-      - GitHub
+<details>
+<summary>📋 Supports popular repo, playground and other URLs.</summary>
 
-      - GitLab
+  - GitHub
 
-      - BitBucket
+  - GitLab
 
-      - Rust Playground
+  - BitBucket
 
-      - Straightforward URLs.
-      </details>
+  - Rust Playground
+
+  - Straightforward URLs.
+</details>
 
 </details>
 
@@ -113,45 +140,25 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
 - A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces bad-case disk usage by **97%** (from 6 GB+ to ~225 MB for ~340 scripts) in testing.
 
-- It also provides **10-15x faster rebuilds** and a big speed-up when building scripts with shared dependencies, as dependencies are compiled once and reused across all scripts.
+- The new target architecture also provides **significantly faster rebuilds** and a big speed-up when building scripts with shared dependencies, as dependencies are compiled once and reused across all scripts.
 
 - The ***proc macro starter kit*** goes from being a rough sketchpad to a ***select set of useful and educational examples*** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 #### Companion Crates Released with v0.2:
 
-We're also releasing two independent crates that complement thag_rs:
+We're also releasing three independent crates that complement thag_rs:
 
   - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Learn more →](thag_profiler/README.md)
 
   - ***thag_styling*** - A terminal styling library supporting 290+ popular themes across all major terminal emulators. Automatically adapts to your terminal's color scheme. Used by thag_rs and available for your own projects. [Learn more →](thag_styling/README.md)
 
-The ***core purpose of `thag`*** is straightforward: to make it easy and fun to test ideas, explore software, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
-
-`thag` is largely TOML-free thanks to its ***dependency inference***, which automatically detects and configures the crates your code needs.
-
-When you do need TOML, `thag` supports a good subset - dependencies, features, profiles and lints - as well as intelligently generating TOML for you to embed if you choose.
-
-Whether you're:
-
-- Prototyping a concept
-
-- Running crate examples without the need to install
-
-- Using dependencies not supported by the Rust playground
-
-- Debugging proc macros
-
-- Running quick calculations
-
-- Profiling performance of your project
-
-- Converting your scripts into lightning-fast commands
-
-`thag_rs` helps you get answers faster—from simple one-liners to complex multi-file programs.
+  - ***thag_demo*** - A stand-alone companion tool that lets you preview and run `thag` demo scripts and demos of `thag_profiler`. Perfect for exploring the capabilities of the `thag` script runner, `thag_profiler` and `thag_styling`. Install with `cargo install thag_demo` or view two videos of the demo in its [Readme](thag_demo/README.md).
 
 ___
 
-🚀 **The basics:**
+### Features
+
+🐥 **The basics:**
 
 - Run Rust code straight from the command line or a URL
 

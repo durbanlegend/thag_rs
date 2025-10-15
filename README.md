@@ -25,7 +25,7 @@ v0.2 brings many new features and a sleek look with themes to match your termina
   - an option to build fast commands from your scripts
 
 <details>
-<summary>📋 an improved demo proc macro starter kit   [demo/proc_macros](demo/proc_macros/README.md)</summary>
+<summary>📋 an improved [demo proc macro starter kit](demo/proc_macros/README.md)</summary>
 
 - a ***select set of 12 useful and educational examples***
 
@@ -40,10 +40,8 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
 ### New in `thag` v0.2:
 
-
-
 <details>
-<summary>📋 a command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
+<summary>🛜 a command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
 
   - Automatically resolves straightforward dependencies.
 
@@ -62,7 +60,56 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
 </details>
 
-- 34 other independently installable command-line tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them. Details here: [thag tools](src/bin/README.md).
+<details>
+<summary>🛠️ over 30 other independently installable [command-line tools](src/bin/README.md), including:</summary>
+
+  - 🔬 AST display tool
+
+  - 🚚 cargo runner for scripts
+
+  - 📎 clippy runner for scripts
+
+  - 🛰️ demo directory downloader
+
+  - 🔭 demo finder
+
+  - 🐡 expander for scripts
+
+  - 🎛️ config file generator
+
+  - 📸 stdin to clipboard copy tool
+
+  - 🫟 clipboard to stdout paste tool
+
+  - ⚡️ error variant code generator
+
+  - 🪟 markdown viewer and GitHub markdown compatibility checker
+
+  - ❓ prompted `thag` front-end
+
+  - 👓 `\n` to newline unscrambler
+
+  - 📺 terminal characteristics detector
+
+  - 🖼️ `thag_styling` tools, including:
+
+    - 📽️ theme display
+
+    - 🐄 theme browser
+
+    - 📝 theme editor
+
+    - 🎨 terminal palette vs theme displays
+
+    - 🪄 base16/24 to `thag_styling` theme converter
+
+    - 🪄 image to `thag_styling` theme converter
+
+    - 🪄 `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
+
+    - 🎏 `thag_styling` theme to terminal palette sync tool
+
+</details>
 
 - A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces bad-case disk usage by **97%** (from 6 GB+ to ~225 MB for ~340 scripts) in testing.
 
@@ -161,12 +208,12 @@ ___
 
 - Configurable automated inclusion of `derive` or other features in named dependencies.
 
+- 35 new optional commands as above
+
 - **New in 0.2.0:** Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a THAG_THEME environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
-
-- **New in 0.2.0:** An optional set of 35 [lightweight commands](src/bin/README.md) is now included, to handle such diverse tasks as downloading the demo directory, displaying ASTs, expanding macros in user code, generating error modules and types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, managing thag themes and more.
 
 💡 **Getting Started:**
 

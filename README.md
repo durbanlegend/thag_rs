@@ -8,49 +8,107 @@
 
 ## Intro
 
-***thag(_rs)*** is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
+***thag_rs*** (command ***thag***) is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
 
 v0.2 brings many new features and a sleek look with themes to match your terminal preferences.
 
 ***thag*** includes:
 
-- a script runner
+  - a script runner
 
-- an expression evaluator
+  - an expression evaluator
 
-- a REPL that also lets you save your code as a script
+  - a REPL that also lets you save your code as a script
 
-- playground capability without limitations on dependencies.
+  - playground capability without limitations on dependencies.
 
-- an option to build fast commands from your scripts
+  - an option to build fast commands from your scripts
 
-- a demo proc macro starter kit with support for displaying individual macro expansions at compile time to debug your proc macros, and a sample demo script for each proc macro.
+<details>
+<summary>📋 an improved demo proc macro starter kit   [demo/proc_macros](demo/proc_macros/README.md)</summary>
+
+- a ***select set of 12 useful and educational examples***
+
+- full documentation
+
+- demo scripts
+
+- a learning path
+
+- compile-time macro expansion support for proc macro debugging
+</details>
 
 ### New in `thag` v0.2:
 
   - 2 new independent subcrates:
 
-    - ***thag_styling*** is a terminal styling system for Rust applications across platforms. It supports the most popular terminal emulators from `alacritty` to `zed`, and over 290 popular themes from `atelier` to `zenburn`. Check it out here: [thag_profiler](thag_styling/README.md).
+    - ***thag_profiler***, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library and tools.
 
-    It uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.
+      <details>
+      <summary>📋 Features</summary>
 
-    - ***thag_profiler***, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library. Check it out here: [thag_profiler](thag_profiler/README.md).
+      - Async code compatibility
 
-  - a command ***thag_url*** to intelligently run example scripts directly from popular repo, playground or other URLs.
+      - Execution time and summary or detailed memory profiling.
 
-  - 35 independently installable command-line tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them.
+      - Runtime control
 
-  - A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces bad-case disk usage by **97%** (from 6 GB+ to ~225 MB for ~340 scripts) in testing.
+      - Zero-cost abstraction
 
-  It also provides **10-15x faster rebuilds** and a big speed-up when building scripts with shared dependencies, as dependencies are compiled once and reused across all scripts. See [SHARED_TARGET_IMPLEMENTATION.md](SHARED_TARGET_IMPLEMENTATION.md) for details.
+      - Support for section or single-statement profiling
 
-  - the ***proc macro starter** kit goes from being a rough sketchpad to a ***select set of useful and educational examples*** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+      - Automatic instrumentation and de-instrumentation.
+
+      - `inferno` interactive flamegraphs and flamecharts including differential flamegraphs for before-and-after comparisons
+
+      - Simple execution time and memory usage reports.
+
+      - Filtering of unwanted output from flamegraphs.
+
+      </details>
+
+
+      Check it out here: [thag_profiler](thag_profiler/README.md).
+
+    - ***thag_styling*** is a terminal styling library for Rust applications across platforms. It supports the most popular terminal emulators from `alacritty` to `zed`, and over 290 popular themes from `atelier` to `zenburn`.
+
+      It uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.
+
+      Check it out here: [thag_styling](thag_styling/README.md).
+
+<details>
+<summary>📋 a command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
+
+  - Automatically resolves straightforward dependencies.
+
+      <summary>📋 Supports popular repo, playground and other URLs.</summary>
+
+      - GitHub
+
+      - GitLab
+
+      - BitBucket
+
+      - Rust Playground
+
+      - Straightforward URLs.
+      </details>
+
+</details>
+
+- 35 independently installable command-line tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them. Details here: [thag tools](src/bin/README.md).
+
+- A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces bad-case disk usage by **97%** (from 6 GB+ to ~225 MB for ~340 scripts) in testing.
+
+- It also provides **10-15x faster rebuilds** and a big speed-up when building scripts with shared dependencies, as dependencies are compiled once and reused across all scripts.
+
+- The ***proc macro starter kit*** goes from being a rough sketchpad to a ***select set of useful and educational examples*** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
 The ***core purpose of `thag`*** is straightforward: to make it easy and fun to test ideas, explore software, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
 `thag` is largely TOML-free thanks to its ***dependency inference***, which automatically detects and configures the crates your code needs.
 
-When you do need TOML, `thag` supports it all - dependencies, features, profiles and lints - as well as intelligently generating TOML for you to embed if you choose.
+When you do need TOML, `thag` supports a good subset - dependencies, features, profiles and lints - as well as intelligently generating TOML for you to embed if you choose.
 
 Whether you're:
 
@@ -88,7 +146,7 @@ ___
 
 - Loop-filter mode for data processing
 
-🎯 **Smart Features:**
+💡 **Smart Features:**
 
 - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
 
@@ -125,47 +183,22 @@ ___
 
 - View macro expansions side-by-side with your base script.
 
-- Proc macro development support, including a documented starter kit and an option to show an expanded view of your proc macro at compile time.
-
- **New in 0.2.0:** The proc macro starter kit has been developed into a carefully selected set of 12 high quality and useful macros with demo scripts, full documentation and a learning path. See [demo/proc_macros](demo/proc_macros/README.md).
+- Proc macro development support, including an improved documented [starter kit](demo/proc_macros/README.md) and an option to show an expanded view of your proc macro at compile time.
 
 - Configurable automated inclusion of `derive` or other features in named dependencies.
 
-- **New in 0.2.0:** The independent `thag_profiler` sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, with async support.
+- **New in 0.2.0:** The independent  [thag_profiler](thag_profiler/README.md) sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, with async support.
 
-- **New in 0.2.0:** Support for popular terminal themes via the `thag_styling` sub-crate. `thag` chooses a theme based on a THAG_THEME environment variable or your terminal's background color and your preferred themes.
+- **New in 0.2.0:** Gorgeous coloration and styling across the board thanks to our brand new sibling crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and chooses one based on a THAG_THEME environment variable or your terminal's background color and your preferred themes. `thag_styling` is also available for use in your own projects, and includes integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
 
-- **New in 0.2.0:** An optional set of 35 lightweight commands is now included, to handle such diverse tasks as displaying ASTs, expanding macros in user code, generating error modules and types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, managing thag themes and more.
+- **New in 0.2.0:** An optional set of 35 [lightweight commands](src/bin/README.md) is now included, to handle such diverse tasks as downloading the demo directory, displaying ASTs, expanding macros in user code, generating error modules and types, verifying GitHub-compatible markdown, detecting terminal attributes, running remote scripts from sources like GitHub repos, managing thag themes and more.
 
 💡 **Getting Started:**
 
-Jump into `thag`'s collection of 300+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
-
-### New offshoot: `thag_profiler`
-Concurrently with version 0.2, the ~~Cave~~ House of Thag offers an independent cross-platform profiler. This is implemented as a lightweight sub-crate called `thag_profiler` that can be used on its own or with `thag`. Features:
-
-- Async code compatibility
-
-- Execution time and summary or detailed memory profiling.
-
-- Runtime control
-
-- Zero-cost abstraction
-
-- Support for section or single-statement profiling
-
-- Automatic instrumentation and de-instrumentation.
-
-- `inferno` interactive flamegraphs and flamecharts including differential flamegraphs for before-and-after comparisons
-
-- Simple execution time and memory usage reports.
-
-- Filtering of unwanted output from flamegraphs.
-
-Read about it here: [thag_profiler](thag_profiler/README.md)
+Jump into `thag`'s collection of 330+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
 ## Installation
 
@@ -200,12 +233,12 @@ $ sudo apt-get install pkg-config libssl-dev
 ```
 
 #### Downloading the starter kit (demo directory)
+
+As of 0.2.0, the `thag` tool `thag_get_demo_dir` does a fast download of the demo directory to a location of your choice. `thag` documentation assumes that demo scripts are located in a `demo` subdirectory of your current working directory, so this is recommended as the most convenient option.
+
 As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
 
 Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
-
-As a matter of interest, the `rs_thag` demo file [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/main/download_demo_dir.rs) can download the whole demo directory from Github.
-Click on its link above and from the icons provided by Github you can download it and run it as `thag <dir_path>/download_demo_dir.rs`, or just copy it and paste it into the `thag -d` editor and choose `Ctrl-d` to run it. It should download the entire demo directory from the repo to the directory you choose. Thag pull self up by own sandal straps. Thag eating own dog food! Thag like dog food.
 
 ## Quick start: ways to run the `thag` command
 
@@ -492,7 +525,7 @@ _— The Rust Reference_
   - A [[bin]] to rename the executable output.
 * You can use a **shebang** to write scripts in Rust, or better yet...
 * For **more speed** and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This compiles a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains well over 300 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and color handling, and command-line tool and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains over 330 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and color handling, and command-line tool and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
 * Automatic support for **light or dark backgrounds** and a **16- or 256- color palette** for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colors and dark mode support. However, the dark mode colors it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 

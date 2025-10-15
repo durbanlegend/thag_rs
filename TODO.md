@@ -3,10 +3,9 @@
 ## High Priority
 
 ## On the go
-- [ ]  DONE: Update instructions for thag_gen_terminal_themes.rs (per "TODO" comment mod.rs line 264) and for install of alacritty, mintty etc. Add an install for Cygwin.
-- [ ]  DONE: Document: ensure selection color(s) are set satisfactorily in iterm2 and Apple Terminal.
-- [ ]  DONE: Update docs/index.html.
+- [ ]  Mention `thag_demo` in thag README.md. Mention "co-releases".
 
+Ref 0042 5193
 
 printf "\x1b]4;{};?\x07"
 printf "\x1b]4;01;?\x07"
@@ -167,7 +166,6 @@ At its very simplest, a single attribute on your `fn main` will generate a flame
 
 ## Medium Priority
 - [ ]  More unit and integration tests. Identify new functions requiring unit tests.
-- [ ]  DONE: Consider releasing a copy of repl.rs as a demo script.
 - [ ]  Raise clear_screen as an issue on supports-color crate?
 - [ ]  DROP: Config option for formatting main?
 - [ ]  Config option for stdin -d highlighting preference, like repl.rs
@@ -218,7 +216,6 @@ At its very simplest, a single attribute on your `fn main` will generate a flame
 Try running tests without debug or debug_timings.
 validate_state only when feature minimal not engaged - instead switched off debug and debug-assertions in Cargo.toml
 
-- [ ]  DONE: Consider adding --guided (-G) option or a helper command like thag_url using `inquire` to capture parameters.
 - [ ]  Consider "magic" substitution of latest git with say rev = "$latest" in toml block.
 - [ ]  Consider a disable option?
 - [ ]  Add details of --cargo (-A) option to Readme and `thag_cargo`

@@ -1,11 +1,17 @@
 ## Running the built-in tools
 
-`thag_rs` includes several built-in tools that are compiled as separate binaries. These tools are available after installing `thag_rs` with the `tools` feature enabled.
+`thag_rs` includes several built-in tools that are compiled as separate binaries. These tools are available after installing `thag_rs` with the `tools` feature enabled, or you can install them individually. Some of them require `thag` itself to be installed.
 
-### Installation with tools
+### Installing the tools
 
 ```bash
+# Install all tools
 cargo install thag_rs --features tools
+
+# Or install tools individually, e.g.
+cargo install thag_rs --features tools --bin thag_copy
+cargo install thag_rs --features tools --bin thag_paste
+cargo install thag_rs --features tools --bin thag_legible
 ```
 
 ### Basic usage
@@ -33,7 +39,7 @@ thag_clippy --help
 The tools are organized into several categories:
 
 - **Development tools**: Code analysis, formatting, and development utilities
-- **Theme tools**: Theme conversion and management utilities  
+- **Theme tools**: Theme conversion and management utilities
 - **Documentation tools**: README generation and documentation utilities
 - **Analysis tools**: AST analysis, profiling, and debugging tools
 - **Utility tools**: General-purpose utilities and helpers
@@ -906,8 +912,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_prompt.r
 
 ### Script: thag_rs.rs
 
-**Description:** 
-**Purpose:** 
+**Description:**
+**Purpose:**
 
 **Crates:** `thag_profiler`, `thag_rs`, `thag_styling`
 
@@ -1096,4 +1102,3 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/src/bin/thag_winterm_
 ```
 
 ---
-

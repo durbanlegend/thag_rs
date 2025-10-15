@@ -40,41 +40,7 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
 ### New in `thag` v0.2:
 
-  - 2 new independent subcrates:
 
-    - ***thag_profiler***, a capable, easy-to-use graphical cross-platform profiler. This is packaged as an independent lightweight library and tools.
-
-      <details>
-      <summary>📋 Features</summary>
-
-      - Async code compatibility
-
-      - Execution time and summary or detailed memory profiling.
-
-      - Runtime control
-
-      - Zero-cost abstraction
-
-      - Support for section or single-statement profiling
-
-      - Automatic instrumentation and de-instrumentation.
-
-      - `inferno` interactive flamegraphs and flamecharts including differential flamegraphs for before-and-after comparisons
-
-      - Simple execution time and memory usage reports.
-
-      - Filtering of unwanted output from flamegraphs.
-
-      </details>
-
-
-      Check it out here: [thag_profiler](thag_profiler/README.md).
-
-    - ***thag_styling*** is a terminal styling library for Rust applications across platforms. It supports the most popular terminal emulators from `alacritty` to `zed`, and over 290 popular themes from `atelier` to `zenburn`.
-
-      It uses the current terminal theme to automatically select the right color and style for each message type - headings, errors, code, normal etc.
-
-      Check it out here: [thag_styling](thag_styling/README.md).
 
 <details>
 <summary>📋 a command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
@@ -96,13 +62,21 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
 </details>
 
-- 35 independently installable command-line tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them. Details here: [thag tools](src/bin/README.md).
+- 34 other independently installable command-line tools for further analysing your scripts, such as showing macro expansions and cargo trees, and running clippy or tests against them. Details here: [thag tools](src/bin/README.md).
 
 - A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces bad-case disk usage by **97%** (from 6 GB+ to ~225 MB for ~340 scripts) in testing.
 
 - It also provides **10-15x faster rebuilds** and a big speed-up when building scripts with shared dependencies, as dependencies are compiled once and reused across all scripts.
 
 - The ***proc macro starter kit*** goes from being a rough sketchpad to a ***select set of useful and educational examples*** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+
+#### Companion Crates Released with v0.2:
+
+We're also releasing two independent crates that complement thag_rs:
+
+  - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Learn more →](thag_profiler/README.md)
+
+  - ***thag_styling*** - A terminal styling library supporting 290+ popular themes across all major terminal emulators. Automatically adapts to your terminal's color scheme. Used by thag_rs and available for your own projects. [Learn more →](thag_styling/README.md)
 
 The ***core purpose of `thag`*** is straightforward: to make it easy and fun to test ideas, explore software, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
@@ -150,7 +124,7 @@ ___
 
 - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
 
-  `thag(_rs)` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly URLs including GitHub, GitLab, BitBucket and Rust Playground.
+  `thag` can run many crate examples without needing TOML information. The `thag_url` tool can run them directly URLs including GitHub, GitLab, BitBucket and Rust Playground.
 
   ```bash
   thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
@@ -187,9 +161,7 @@ ___
 
 - Configurable automated inclusion of `derive` or other features in named dependencies.
 
-- **New in 0.2.0:** The independent  [thag_profiler](thag_profiler/README.md) sub-crate is a cross-platform profiling library for execution timeline and/or memory usage, with async support.
-
-- **New in 0.2.0:** Gorgeous coloration and styling across the board thanks to our brand new sibling crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and chooses one based on a THAG_THEME environment variable or your terminal's background color and your preferred themes. `thag_styling` is also available for use in your own projects, and includes integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
+- **New in 0.2.0:** Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a THAG_THEME environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)

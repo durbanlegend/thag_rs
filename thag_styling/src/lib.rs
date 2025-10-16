@@ -1,0 +1,663 @@
+//! Terminal styling system with theme support and color detection for `thag_rs` and third party applications.
+//!
+//! This crate provides a comprehensive styling system for terminal applications, including:
+//! - Color detection and terminal capability assessment
+//! - Theme-based styling with semantic roles
+//! - `inquire` UI integration for consistent theming
+//! - ANSI color conversion and optimization
+//! - Built-in theme collection
+#![cfg_attr(
+    feature = "document-features",
+    cfg_attr(doc, doc = ::document_features::document_features!())
+)]
+#![warn(clippy::pedantic, missing_docs)]
+
+/// Message styling
+pub mod styling;
+
+pub mod integrations;
+
+pub mod palette_sync;
+
+#[cfg(feature = "image_themes")]
+pub mod image_themes;
+
+pub mod exporters;
+
+// Re-export common types
+pub use thag_common::{
+    auto_help, debug_log, get_verbosity, help_system, init_verbosity, prtln, re,
+    set_global_verbosity, set_verbosity, set_verbosity_from_env, vprtln, ColorSupport, TermBgLuma,
+    ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
+};
+
+#[cfg(feature = "color_detect")]
+pub use thag_common::{is_konsole, is_mintty, terminal};
+
+pub use styling::{
+    display_terminal_attributes, display_theme_details, display_theme_roles, find_closest_color,
+    get_rgb, index_to_rgb, paint_for_role, AnsiStyleExt, Color, ColorInfo, ColorInitStrategy,
+    ColorValue, HowInitialized, Palette, PaletteConfig, Role, Style, Styleable, Styled,
+    StyledPrint, StyledString, Styler, TermAttributes, Theme,
+};
+
+// Re-export integration traits and types
+pub use integrations::ThemedStyle;
+
+// Re-export palette sync functionality
+pub use palette_sync::PaletteSync;
+
+#[cfg(feature = "ratatui_support")]
+pub use integrations::ratatui_integration::RatatuiStyleExt;
+
+#[cfg(feature = "nu_ansi_term_support")]
+pub use integrations::nu_ansi_term_integration::NuAnsiTermStyleExt;
+
+#[cfg(feature = "crossterm_support")]
+pub use integrations::crossterm_integration::{CrosstermStyleExt, ThemedStylize};
+
+#[cfg(feature = "inquire_theming")]
+pub use inquire_theming::themed_inquire_config;
+
+pub use thag_proc_macros::{file_navigator, styled};
+
+// Re-export image theme generation types
+#[cfg(feature = "image_themes")]
+pub use image_themes::{
+    generate_and_save_theme, generate_theme_from_image, generate_theme_from_image_with_config,
+    save_theme_to_file, theme_to_toml, ImageThemeConfig, ImageThemeGenerator,
+};
+
+// Re-export theme exporter types
+pub use exporters::{
+    export_all_formats, export_theme_to_file, generate_installation_instructions, ExportFormat,
+    ThemeExporter,
+};
+
+#[cfg(feature = "inquire")]
+use inquire::Select;
+
+/// Result type alias for styling operations
+pub type StylingResult<T> = Result<T, StylingError>;
+
+/// Error types for styling operations
+#[derive(Debug, thiserror::Error)]
+pub enum StylingError {
+    /// Theme-related errors
+    #[error("Theme error: {0}")]
+    Theme(#[from] ThemeError),
+    /// Common errors from `thag_common`
+    #[error("Common error: {0}")]
+    Common(#[from] thag_common::ThagCommonError),
+    /// IO errors
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    /// TOML parsing errors
+    #[error("TOML parsing error: {0}")]
+    TomlParse(#[from] toml::de::Error),
+    /// Parse integer error
+    #[error("Parse error: {0}")]
+    ParseInt(#[from] std::num::ParseIntError),
+    /// String parse error
+    #[error("Parse error: {0}")]
+    ParseStr(#[from] strum::ParseError),
+    /// Parse error
+    #[error("Parse error")]
+    Parse,
+    /// `FromStr` error
+    #[error("FromStr error: {0}")]
+    FromStr(String),
+    /// Generic error with message
+    #[error("{0}")]
+    Generic(String),
+}
+
+impl From<std::fmt::Error> for StylingError {
+    fn from(err: std::fmt::Error) -> Self {
+        Self::Generic(format!("Format error: {err}"))
+    }
+}
+
+/// Theme-related error types
+#[derive(Debug, thiserror::Error)]
+pub enum ThemeError {
+    /// Failed to detect terminal background color
+    #[error("Background RGB not detected or configured for terminal")]
+    BackgroundDetectionFailed,
+    /// Color support mismatch between theme requirements and terminal capabilities
+    #[error("Theme requires {required:?} colors but terminal only supports {available:?}")]
+    ColorSupportMismatch {
+        /// The color support level required by the theme
+        required: ColorSupport,
+        /// The color support level available in the terminal
+        available: ColorSupport,
+    },
+    /// Attempted to use a dark theme with a light terminal background
+    #[error("Only light themes may be selected for a light terminal background")]
+    DarkThemeLightTerm,
+    /// Terminal does not support sufficient colors for the requested operation
+    #[error(
+        "Configured or detected level of terminal colour support is insufficient for this theme"
+    )]
+    InsufficientColorSupport,
+    /// Invalid ANSI escape code format
+    #[error("{0}")]
+    InvalidAnsiCode(String),
+    /// Invalid color support specification
+    #[error("Invalid color support: {0}")]
+    InvalidColorSupport(String),
+    /// Invalid color value format or specification
+    #[error("Invalid color value: {0}")]
+    InvalidColorValue(String),
+    /// Invalid style attribute specification
+    #[error("Invalid style attribute: {0}")]
+    InvalidStyle(String),
+    /// Invalid terminal background luminance value
+    #[error("Unknown value: must be `light` or `dark`: {0}")]
+    InvalidTermBgLuma(String),
+    /// Attempted to use a light theme with a dark terminal background
+    #[error("Only dark themes may be selected for a dark terminal background")]
+    LightThemeDarkTerm,
+    /// No valid background color found for the specified theme
+    #[error("No valid background found for theme {0}")]
+    NoValidBackground(String),
+    /// Terminal background luminance mismatch with theme requirements
+    #[error("Theme requires {theme:?} background but terminal is {terminal:?}")]
+    TermBgLumaMismatch {
+        /// The background luminance required by the theme
+        theme: TermBgLuma,
+        /// The actual background luminance of the terminal
+        terminal: TermBgLuma,
+    },
+    /// Unknown or unrecognized theme name
+    #[error("Unknown theme: {0}")]
+    UnknownTheme(String),
+}
+
+/// Trait for providing styling configuration to break circular dependency
+pub trait StylingConfigProvider {
+    /// Get color support setting
+    fn color_support(&self) -> ColorSupport;
+    /// Get terminal background luminance setting
+    fn term_bg_luma(&self) -> TermBgLuma;
+    /// Get terminal background RGB setting
+    fn term_bg_rgb(&self) -> Option<[u8; 3]>;
+    /// Get background color list
+    fn backgrounds(&self) -> Vec<String>;
+    /// Get preferred light themes
+    fn preferred_light(&self) -> Vec<String>;
+    /// Get preferred dark themes
+    fn preferred_dark(&self) -> Vec<String>;
+}
+
+/// Default implementation that uses no configuration
+pub struct NoConfigProvider;
+
+impl StylingConfigProvider for NoConfigProvider {
+    fn color_support(&self) -> ColorSupport {
+        ColorSupport::Undetermined
+    }
+
+    fn term_bg_luma(&self) -> TermBgLuma {
+        TermBgLuma::default()
+    }
+
+    fn term_bg_rgb(&self) -> Option<[u8; 3]> {
+        None
+    }
+
+    fn backgrounds(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn preferred_light(&self) -> Vec<String> {
+        Vec::new()
+    }
+
+    fn preferred_dark(&self) -> Vec<String> {
+        Vec::new()
+    }
+}
+
+/// Display side-by-side color comparison of terminal palette vs `thag_styling` theme.
+#[allow(clippy::too_many_lines)]
+pub fn display_color_comparison(theme: &Theme) {
+    theme.with_context(|| {
+        format!("🔄 {} Color Mapping:", "ANSI vs Theme".info())
+            .normal()
+            .println();
+        println!("───────────────────────────────");
+
+        // Corrected mappings that match thag_sync_palette behavior
+        let color_mappings = [
+            (
+                "Black (0)",
+                0,
+                "Background",
+                // get_best_dark_color(theme)
+                &Style::with_rgb(theme.bg_rgbs[0]),
+            ),
+            ("Red (1)", 1, "Emphasis", &theme.palette.emphasis),
+            ("Green (2)", 2, "Success", &theme.palette.success),
+            ("Yellow (3)", 3, "Commentary", &theme.palette.commentary),
+            ("Blue (4)", 4, "Info", &theme.palette.info),
+            ("Magenta (5)", 5, "Heading1", &theme.palette.heading1),
+            ("Cyan (6)", 6, "Code", &theme.palette.code),
+            ("White (7)", 7, "Normal", &theme.palette.normal),
+            ("Bright Black (8)", 8, "Subtle", &theme.palette.subtle),
+            ("Bright Red (9)", 9, "Error", &theme.palette.error),
+            ("Bright Green (10)", 10, "Debug", &theme.palette.debug),
+            ("Bright Yellow (11)", 11, "Warning", &theme.palette.warning),
+            ("Bright Blue (12)", 12, "Link", &theme.palette.link),
+            (
+                "Bright Magenta (13)",
+                13,
+                "Heading2",
+                &theme.palette.heading2,
+            ),
+            ("Bright Cyan (14)", 14, "Hint", &theme.palette.hint),
+            ("Bright White (15)", 15, "Quote", &theme.palette.quote),
+        ];
+
+        format!(
+            "{:<20} {:<12} {:<26} Semantic Role",
+            "ANSI Color", "Current", "Expected (Theme)"
+        )
+        .heading3()
+        .println();
+        println!("{}", "─".repeat(80));
+
+        for (name, ansi_index, semantic_role, style) in color_mappings {
+            // Current terminal color (visual sample)
+            let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
+
+            // Expected thag color with RGB info
+            let rgb = style
+                .foreground
+                .as_ref()
+                .map(|color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => *rgb,
+                    ColorValue::Color256 { color256 } => index_to_rgb(*color256),
+                    ColorValue::Basic { index, .. } => index_to_rgb(*index),
+                });
+
+            let thag_display = if let Some([r, g, b]) = rgb {
+                style.paint(format!(
+                    "████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
+                    r, g, b, r, g, b
+                ))
+            } else {
+                // Role::Normal.dim().paint("N/A").to_string()
+                "N/A".to_string()
+            };
+
+            // println!("thag_display={thag_display:?}");
+            println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
+            // println!("{terminal_sample:?}\nthag_display={thag_display:?}");
+        }
+
+        println!();
+    });
+}
+
+/// Check if a color is considered light
+#[must_use]
+pub fn is_light_color([r, g, b]: [u8; 3]) -> bool {
+    // Calculate relative luminance
+    let r_linear = if r <= 10 {
+        f32::from(r) / 3294.6
+    } else {
+        ((f32::from(r) + 14.025) / 269.025).powf(2.4)
+    };
+    let g_linear = if g <= 10 {
+        f32::from(g) / 3294.6
+    } else {
+        ((f32::from(g) + 14.025) / 269.025).powf(2.4)
+    };
+    let b_linear = if b <= 10 {
+        f32::from(b) / 3294.6
+    } else {
+        ((f32::from(b) + 14.025) / 269.025).powf(2.4)
+    };
+
+    let luminance = 0.0722f32.mul_add(b_linear, 0.2126f32.mul_add(r_linear, 0.7152 * g_linear));
+    luminance > 0.5
+}
+
+/// Select a built-in theme using `inquire`.
+///
+/// # Panics
+///
+/// If it fails to load the fallback theme.
+#[cfg(feature = "inquire")]
+#[must_use]
+pub fn select_builtin_theme() -> Option<String> {
+    use inquire::error::InquireResult;
+    use inquire::list_option::ListOption;
+
+    // Initialize terminal attributes to ensure styling works
+    let _term_attrs = TermAttributes::get_or_init();
+    // eprintln!("_term_attrs={_term_attrs:#?}");
+
+    let mut themes = Theme::list_builtin();
+    themes.sort();
+
+    // Create theme options with descriptions
+    let theme_options: Vec<String> = themes
+        .iter()
+        .map(|theme_name| {
+            let theme = Theme::get_builtin(theme_name).unwrap_or_else(|_| {
+                // Fallback in case theme can't be loaded
+                Theme::get_builtin("none").expect("Failed to load fallback theme")
+            });
+            format!("{} - {}", theme_name, theme.description)
+        })
+        .collect();
+
+    // Clear screen initially
+    print!("\x1b[2J\x1b[H");
+
+    let maybe_theme_name = {
+        println!("\n🎨 Interactive Theme Browser");
+        println!("{}", "═".repeat(80));
+        println!("📚 {} themes available", themes.len());
+        println!("💡 Start typing to filter themes by name");
+        println!("{}", "═".repeat(80));
+
+        let selection: InquireResult<ListOption<String>> = Select::new(
+            "🔍 Select a theme to preview:",
+            theme_options,
+        )
+        .with_page_size(24)
+        .with_help_message(
+            "↑↓, PageUp, PageDown: navigate • type to filter • Enter to select • Esc to quit",
+        )
+        .with_reset_cursor(false)
+        .raw_prompt();
+
+        match selection {
+            Ok(selected) => {
+                // cursor = selected.index;
+
+                // Extract theme name from selection (before the " - " separator)
+                let theme_name = selected
+                    .value
+                    .split(" - ")
+                    .next()
+                    .unwrap_or(&selected.value);
+                Some(theme_name.to_string())
+            }
+            Err(inquire::InquireError::OperationCanceled) => {
+                print!("\x1b[2J\x1b[H");
+                println!("👋 Thanks for using the theme browser!");
+                None
+            }
+            Err(e) => {
+                println!("❌ Error: {e}");
+                None
+            }
+        }
+    };
+    maybe_theme_name
+}
+
+/// Helper: HSL -> RGB
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::many_single_char_names,
+    clippy::cast_sign_loss
+)]
+#[must_use]
+pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> [u8; 3] {
+    let c = (1.0 - 2.0f32.mul_add(l, -1.0).abs()) * s;
+    let h_prime = h / 60.0;
+    let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
+
+    let (r1, g1, b1) = match h_prime as u32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        5 | 6_u32..=u32::MAX => (c, 0.0, x),
+    };
+
+    let m = l - c / 2.0;
+    let (r, g, b) = (r1 + m, g1 + m, b1 + m);
+
+    [
+        (r * 255.0).round() as u8,
+        (g * 255.0).round() as u8,
+        (b * 255.0).round() as u8,
+    ]
+}
+
+/// Helper: RGB -> HSL
+#[allow(clippy::many_single_char_names)]
+#[must_use]
+pub fn rgb_to_hsl(rgb: [u8; 3]) -> [f32; 3] {
+    let r = f32::from(rgb[0]) / 255.0;
+    let g = f32::from(rgb[1]) / 255.0;
+    let b = f32::from(rgb[2]) / 255.0;
+
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let delta = max - min;
+
+    let l = (max + min) / 2.0;
+
+    if delta == 0.0 {
+        return [0.0, 0.0, l];
+    }
+
+    let s = if l > 0.5 {
+        delta / (2.0 - max - min)
+    } else {
+        delta / (max + min)
+    };
+
+    let h = if (max - r).abs() < 0.1 {
+        60.0 * (((g - b) / delta) % 6.0)
+    } else if (max - g).abs() < 0.1 {
+        60.0 * (((b - r) / delta) + 2.0)
+    } else {
+        60.0 * (((r - g) / delta) + 4.0)
+    };
+
+    let h = if h < 0.0 { h + 360.0 } else { h };
+
+    [h, s, l]
+}
+
+/// Helper functions for inquire UI theming integration
+#[cfg(feature = "inquire_theming")]
+pub mod inquire_theming {
+    use super::{ColorValue, Role, TermAttributes};
+
+    /// Convert a thag Role to an inquire Color using the current theme
+    #[must_use]
+    pub fn role_to_inquire_color(role: Role) -> Option<inquire::ui::Color> {
+        let term_attrs = TermAttributes::get_or_init();
+        let theme = &term_attrs.theme;
+        let style = theme.style_for(role);
+
+        style.foreground.as_ref().map_or_else(
+            || Some(inquire::ui::Color::AnsiValue(u8::from(&role))),
+            |color_info| match &color_info.value {
+                ColorValue::TrueColor { rgb } => Some(inquire::ui::Color::Rgb {
+                    r: rgb[0],
+                    g: rgb[1],
+                    b: rgb[2],
+                }),
+                ColorValue::Color256 { color256 } => Some(inquire::ui::Color::AnsiValue(*color256)),
+                ColorValue::Basic { .. } => {
+                    // Use thag's existing color mapping for basic terminals
+                    Some(inquire::ui::Color::AnsiValue(u8::from(&role)))
+                }
+            },
+        )
+    }
+
+    /// Create an inquire `RenderConfig` for inquire prompts that respects the current theme
+    #[must_use]
+    #[allow(clippy::too_many_lines)]
+    pub fn themed_inquire_config() -> inquire::ui::RenderConfig<'static> {
+        let mut render_config = inquire::ui::RenderConfig::default();
+
+        // Get terminal attributes and current theme from thag's color system
+        let term_attrs = TermAttributes::get_or_init();
+        let theme = &term_attrs.theme;
+
+        // Helper function to convert thag colors to inquire colors
+        let convert_color = |role: Role| -> inquire::ui::Color {
+            let style = theme.style_for(role);
+            style.foreground.as_ref().map_or_else(
+                || inquire::ui::Color::AnsiValue(u8::from(&role)),
+                |color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => inquire::ui::Color::Rgb {
+                        r: rgb[0],
+                        g: rgb[1],
+                        b: rgb[2],
+                    },
+                    ColorValue::Color256 { color256 } => inquire::ui::Color::AnsiValue(*color256),
+                    ColorValue::Basic { .. } => {
+                        // Use thag's existing color mapping for basic terminals
+                        inquire::ui::Color::AnsiValue(u8::from(&role))
+                    }
+                },
+            )
+        };
+
+        // Helper function to extract RGB values from a role for color distance calculation
+        #[allow(clippy::cast_possible_truncation)]
+        let get_rgb = |role: Role| -> Option<[u8; 3]> {
+            let style = theme.style_for(role);
+            style
+                .foreground
+                .as_ref()
+                .and_then(|color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => Some(*rgb),
+                    ColorValue::Color256 { color256 } => {
+                        // Convert 256-color to RGB for distance calculation
+                        let index = *color256 as usize;
+                        if index < 16 {
+                            // Standard colors
+                            let colors = [
+                                [0, 0, 0],       // Black
+                                [128, 0, 0],     // Red
+                                [0, 128, 0],     // Green
+                                [128, 128, 0],   // Yellow
+                                [0, 0, 128],     // Blue
+                                [128, 0, 128],   // Magenta
+                                [0, 128, 128],   // Cyan
+                                [192, 192, 192], // White
+                                [128, 128, 128], // Bright Black
+                                [255, 0, 0],     // Bright Red
+                                [0, 255, 0],     // Bright Green
+                                [255, 255, 0],   // Bright Yellow
+                                [0, 0, 255],     // Bright Blue
+                                [255, 0, 255],   // Bright Magenta
+                                [0, 255, 255],   // Bright Cyan
+                                [255, 255, 255], // Bright White
+                            ];
+                            colors.get(index).copied()
+                        } else if index < 232 {
+                            // 216 color cube
+                            let n = index - 16;
+                            let r = (n / 36) * 51;
+                            let g = ((n % 36) / 6) * 51;
+                            let b = (n % 6) * 51;
+                            Some([r as u8, g as u8, b as u8])
+                        } else {
+                            // Grayscale
+                            let gray = 8 + (index - 232) * 10;
+                            Some([gray as u8, gray as u8, gray as u8])
+                        }
+                    }
+                    ColorValue::Basic { .. } => {
+                        // Convert basic role to approximate RGB for distance calculation
+                        match role {
+                            Role::Error => Some([255, 0, 0]),
+                            Role::Success => Some([0, 255, 0]),
+                            Role::Warning => Some([255, 255, 0]),
+                            Role::Info => Some([0, 255, 255]),
+                            Role::Code => Some([255, 0, 255]),
+                            Role::Emphasis => Some([255, 128, 0]),
+                            Role::Heading3 => Some([128, 255, 128]),
+                            _ => Some([192, 192, 192]),
+                        }
+                    }
+                })
+        };
+
+        // Color distance function (same as in styling.rs)
+        let color_distance = |c1: [u8; 3], c2: [u8; 3]| -> f32 {
+            let dr = (f32::from(c1[0]) - f32::from(c2[0])).powi(2);
+            let dg = (f32::from(c1[1]) - f32::from(c2[1])).powi(2);
+            let db = (f32::from(c1[2]) - f32::from(c2[2])).powi(2);
+            (dr + dg + db).sqrt()
+        };
+
+        // Choose the best selected_option color based on color distance from Normal
+        let prompt_rgb = get_rgb(Role::Normal);
+        let candidate_roles = [
+            Role::Emphasis,
+            Role::Heading2,
+            Role::Heading3,
+            Role::Info,
+            Role::Success,
+        ];
+
+        let best_role = prompt_rgb.map_or(Role::Code, |normal_color| {
+            candidate_roles
+                .iter()
+                .filter_map(|&role| {
+                    get_rgb(role).map(|rgb| (role, color_distance(normal_color, rgb)))
+                })
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                .map_or(Role::Code, |(role, _)| role)
+        });
+        // Map inquire UI elements to appropriate thag roles
+        render_config.selected_option = Some(
+            inquire::ui::StyleSheet::new()
+                .with_fg(convert_color(best_role))
+                .with_attr(inquire::ui::Attributes::BOLD),
+        );
+
+        // Set regular option styling to Normal role
+        render_config.option =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Normal));
+        render_config.help_message =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Info));
+        render_config.error_message = inquire::ui::ErrorMessageRenderConfig::default_colored()
+            .with_message(inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Error)));
+        render_config.prompt =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Normal));
+        render_config.answer =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Success));
+        render_config.placeholder =
+            inquire::ui::StyleSheet::empty().with_fg(convert_color(Role::Subtle));
+
+        render_config
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hsl_to_rgb() {
+        // Test pure red (hue = 0)
+        let [r, g, b] = hsl_to_rgb(0.0, 1.0, 0.5);
+        assert_eq!([r, g, b], [255, 0, 0]);
+
+        // Test pure green (hue = 120)
+        let [r, g, b] = hsl_to_rgb(120.0, 1.0, 0.5);
+        assert_eq!([r, g, b], [0, 255, 0]);
+
+        // Test pure blue (hue = 240)
+        let [r, g, b] = hsl_to_rgb(240.0, 1.0, 0.5);
+        assert_eq!([r, g, b], [0, 0, 255]);
+    }
+}

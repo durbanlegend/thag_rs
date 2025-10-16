@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-dashu = "0.4.2"
-*/
-
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
 /// Closures and functions are effectively interchangeable here.
 ///
@@ -10,7 +5,7 @@ dashu = "0.4.2"
 /// factorial implementation. `dashu` implements it, so it's straightforward to use.
 ///
 //# Purpose: Demo snippet, `dashu` crate, factorial using `std::iter::Product` trait.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 
 use dashu::ubig;
@@ -24,7 +19,7 @@ fn fac_product(n: usize) -> UBig {
     if n == 0 {
         ubig!(0)
     } else {
-        (1..=n).map(|i| UBig::from(i)).product::<UBig>()
+        (1..=n).map(UBig::from).product::<UBig>()
     }
 }
 

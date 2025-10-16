@@ -1,23 +1,30 @@
 #[cfg(test)]
 mod tests {
-    use cargo_toml::{Dependency, Edition, Manifest};
+    use cargo_toml::{Dependency, Edition, Manifest, Product};
     use semver::Version;
-    use std::path::PathBuf;
-    use std::time::Instant;
-    use thag_rs::code_utils::{self, to_ast};
-    use thag_rs::manifest::{capture_dep, cargo_lookup, configure_default, merge};
-    use thag_rs::shared::{find_crates, find_metadata};
-    use thag_rs::BuildState;
+    use std::iter;
+    use std::{collections::BTreeMap, path::PathBuf, sync::Once, time::Instant};
+    use thag_rs::code_utils::to_ast;
+    use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
+    use thag_rs::{find_crates, find_metadata, BuildState};
+    use thag_styling::{ColorInitStrategy, TermAttributes};
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     fn init_logger() {
         let _ = env_logger::builder().is_test(true).try_init();
+
+        if !TermAttributes::is_initialized() {
+            TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Default);
+        }
     }
 
     #[test]
@@ -45,7 +52,7 @@ mod tests {
     #[test]
     fn test_manifest_capture_dep_invalid() {
         set_up();
-        let line = r#"invalid format"#;
+        let line = "invalid format";
         let result = capture_dep(line);
         assert!(result.is_err());
     }
@@ -74,7 +81,7 @@ mod tests {
         set_up();
         init_logger();
 
-        let rs_toml_str = r##"[package]
+        let rs_toml_str = r#"[package]
     name = "toml_block_name"
     version = "0.0.1"
     edition = "2021"
@@ -94,21 +101,21 @@ mod tests {
     [[bin]]
     name = "toml_block_bin_name"
     path = "toml_block_bin_path"
-    "##;
+    "#;
         let rs_manifest = Some(Manifest::from_str(rs_toml_str).unwrap());
         let mut build_state = BuildState {
             source_stem: "example".to_string(),
             source_name: "example.rs".to_string(),
             target_dir_path: std::path::PathBuf::from("/tmp"),
             cargo_manifest: None,
-            rs_manifest: rs_manifest.clone(),
+            rs_manifest,
             ..Default::default()
         };
 
-        let rs_source = r#"
+        let rs_source = r"
         #[macro_use]
         extern crate serde_derive;
-        "#;
+        ";
 
         merge(&mut build_state, rs_source)?;
 
@@ -208,8 +215,7 @@ mod tests {
             build_state.metadata_finder = Some(find_metadata(ast));
         }
 
-        let rs_manifest: Manifest =
-            { code_utils::extract_manifest(&source, Instant::now()) }.unwrap();
+        let rs_manifest: Manifest = { extract(source, Instant::now()) }.unwrap();
 
         // debug_log!("rs_manifest={rs_manifest:#?}");
 
@@ -225,7 +231,7 @@ mod tests {
     fn test_manifest_analyze_type_annotations() {
         set_up();
         init_logger();
-        let source = r#"
+        let source = r"
             struct MyStruct {
                 client: reqwest::Client,
                 pool: sqlx::PgPool,
@@ -235,7 +241,7 @@ mod tests {
                 let cache: redis::Client = redis::Client::new();
                 Ok(())
             }
-        "#;
+        ";
 
         let mut build_state = setup_build_state(source);
 
@@ -262,7 +268,7 @@ mod tests {
     fn test_manifest_analyze_expr_paths() {
         set_up();
         init_logger();
-        let source = r#"
+        let source = r"
             fn main() {
                 // Should detect
                 let client = reqwest::Client::new();
@@ -272,7 +278,7 @@ mod tests {
                 let response = client.get();
                 let data = json.to_string();
             }
-        "#;
+        ";
 
         let mut build_state = setup_build_state(source);
         //         eprintln!(
@@ -356,7 +362,7 @@ mod tests {
     fn test_manifest_analyze_traits_and_types() {
         set_up();
         init_logger();
-        let source = r#"
+        let source = r"
             use tokio;
 
             struct MyStream;
@@ -372,7 +378,7 @@ mod tests {
             fn process<T: serde::de::DeserializeOwned>(data: T) {
                 // ...
             }
-        "#;
+        ";
 
         let mut build_state = setup_build_state(source);
         merge(&mut build_state, source).unwrap();
@@ -381,5 +387,128 @@ mod tests {
         assert!(manifest.dependencies.contains_key("tokio"));
         assert!(manifest.dependencies.contains_key("diesel"));
         assert!(manifest.dependencies.contains_key("serde"));
+    }
+
+    #[test]
+    fn test_manifest_cargo_manifest_from_str() {
+        set_up();
+        let toml_str = r#"
+            [package]
+            name = "example"
+            version = "0.1.0"
+            edition = "2021"
+
+            [dependencies]
+            serde = "1.0"
+
+            [features]
+            default = ["serde"]
+        "#;
+
+        let manifest: Manifest = Manifest::from_str(toml_str).unwrap();
+
+        let package = manifest.package.expect("Problem unwrapping package");
+        assert_eq!(package.name, "example");
+        assert_eq!(package.version.get().unwrap(), &"0.1.0".to_string());
+        assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
+        assert_eq!(
+            manifest.dependencies.get("serde").unwrap(),
+            &Dependency::Simple("1.0".to_string())
+        );
+
+        println!(
+            r#"manifest.features.get("default").unwrap()={:#?}"#,
+            manifest.features.get("default").unwrap()
+        );
+        // assert_eq!(
+        //     manifest.features.get("default").unwrap(),
+        //     &vec![Feature::Simple("serde".to_string())]
+        // );
+    }
+
+    #[test]
+    fn test_manifest_cargo_manifest_display() {
+        set_up();
+        let mut manifest = manifest::default("example", "path/to/script").unwrap();
+
+        manifest
+            .dependencies
+            .insert("serde".to_string(), Dependency::Simple("1.0".to_string()));
+        manifest
+            .features
+            .insert("default".to_string(), vec!["serde".to_string()]);
+        manifest.patch.insert(
+            "a".to_string(),
+            iter::once(&("b".to_string(), Dependency::Simple("1.0".to_string())))
+                .cloned()
+                .collect::<BTreeMap<String, Dependency>>(),
+        );
+        // manifest.workspace.insert(Workspace::<Value>::default());
+        manifest.workspace = None;
+        manifest.lib = Some(Product {
+            path: None,
+            name: None,
+            test: true,
+            doctest: true,
+            bench: true,
+            doc: true,
+            plugin: false,
+            proc_macro: false,
+            harness: true,
+            edition: Some(Edition::E2021),
+            crate_type: vec!["cdylib".to_string()],
+            required_features: Vec::<String>::new(),
+        });
+        println!("manifest={manifest:#?}");
+
+        let toml_str = toml::to_string(&manifest).unwrap();
+        let expected_toml_str = r#"[package]
+    name = "example"
+    version = "0.0.1"
+    edition = "2021"
+
+    [dependencies]
+    serde = "1.0"
+
+    [features]
+    default = ["serde"]
+
+    [patch.a]
+    b = "1.0"
+
+    [lib]
+    edition = "2021"
+    crate-type = ["cdylib"]
+    required-features = []
+
+    [[bin]]
+    path = "path/to/script"
+    name = "example"
+    required-features = []
+    "#;
+
+        println!("toml_str={toml_str}");
+        assert_eq!(
+            toml_str.replace([' ', '\n'], ""),
+            expected_toml_str.replace([' ', '\n'], "")
+        );
+    }
+
+    #[test]
+    fn test_manifest_extract() {
+        set_up();
+        let source_code = r#"
+            /*[toml]
+            [dependencies]
+            foo = "0.1"
+            bar = "0.2"
+            */
+            "#;
+        let start_time = Instant::now();
+        let manifest = extract(source_code, start_time).unwrap();
+
+        let dependencies = manifest.dependencies;
+        assert!(dependencies.contains_key("foo"));
+        assert!(dependencies.contains_key("bar"));
     }
 }

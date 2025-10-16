@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-#syn = { version = "2.0.90", features = ["extra-traits", "full"] }
-syn = { version = "2.0.90", features = ["full"] }
+#syn = { version = "2", features = ["extra-traits", "full"] }
+syn = { version = "2", features = ["full"] }
 */
 
 #![allow(dead_code, unused_variables)]

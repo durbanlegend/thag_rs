@@ -39,17 +39,28 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
-    parse_file, parse_macro_input, DeriveInput, ExprArray, Ident, LitInt, Token,
+    parse_file, parse_macro_input, parse_str, DeriveInput, Expr, ExprArray, Ident, LitInt, Token,
 };
 
 #[proc_macro_attribute]
-pub fn attribute_basic(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, attribute_basic_impl)
+pub fn attribute_basic(attr: TokenStream, input: TokenStream) -> TokenStream {
+    maybe_expand_attr_macro(
+        cfg!(feature = "expand"),
+        "attribute_basic",
+        &attr,
+        &input,
+        attribute_basic_impl,
+    )
 }
 
 #[proc_macro_derive(DeriveBasic)]
 pub fn derive_basic(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, derive_basic_impl)
+    intercept_and_debug(
+        cfg!(feature = "expand"),
+        "derive_basic",
+        &input,
+        derive_basic_impl,
+    )
 }
 
 #[proc_macro_derive(DeriveCustomModel, attributes(custom_model))]
@@ -113,7 +124,12 @@ pub fn use_mappings(attr: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn repeat_dash(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, repeat_dash_impl)
+    intercept_and_debug(
+        cfg!(feature = "expand"),
+        "repeat_dash",
+        &input,
+        repeat_dash_impl,
+    )
 }
 
 #[proc_macro]
@@ -184,11 +200,16 @@ pub fn host_port_const(tokens: TokenStream) -> TokenStream {
     host_port_const_impl(tokens.into()).into()
 }
 
-fn intercept_and_debug<F>(expand: bool, input: TokenStream, proc_macro: F) -> TokenStream
+fn intercept_and_debug<F>(
+    expand: bool,
+    name: &str,
+    input: &TokenStream,
+    proc_macro: F,
+) -> TokenStream
 where
     F: Fn(TokenStream) -> TokenStream,
 {
-    use inline_colorization::{style_bold, style_reset};
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
 
     // Call the provided macro function
     let output = proc_macro(input.clone());
@@ -201,9 +222,11 @@ where
             Err(e) => eprintln!("Failed to parse tokens: {e:?}"),
             Ok(syn_file) => {
                 let pretty_output = prettyplease::unparse(&syn_file);
-                let dash_line = "-".repeat(70);
+                let dash_line = "─".repeat(70);
                 eprintln!("{style_reset}{dash_line}{style_reset}");
-                eprintln!("{style_bold}Expanded macro:{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+                );
                 eprint!("{pretty_output}");
                 eprintln!("{style_reset}{dash_line}{style_reset}");
             }
@@ -215,7 +238,7 @@ where
 
 #[proc_macro]
 pub fn my_macro(input: TokenStream) -> TokenStream {
-    intercept_and_debug(cfg!(feature = "expand"), input, |_tokens| {
+    intercept_and_debug(cfg!(feature = "expand"), "my_macro", &input, |_tokens| {
         // let tokens: proc_macro2::TokenStream = tokens.clone().into();
 
         // Original macro logic
@@ -224,4 +247,69 @@ pub fn my_macro(input: TokenStream) -> TokenStream {
         };
         TokenStream::from(expanded)
     })
+}
+
+#[proc_macro]
+pub fn current_dir(input: TokenStream) -> TokenStream {
+    eprintln!("current_dir={:?}", std::env::current_dir());
+    input
+}
+
+/// Conditionally expands attribute macros for debugging.
+///
+/// Utility function for displaying generated code from attribute macros.
+fn maybe_expand_attr_macro<F>(
+    expand: bool,
+    name: &str,
+    attr: &TokenStream,
+    item: &TokenStream,
+    attr_macro: F,
+) -> TokenStream
+where
+    F: Fn(TokenStream, TokenStream) -> TokenStream,
+{
+    let output = attr_macro(attr.clone(), item.clone());
+
+    if expand {
+        expand_output(name, &output);
+    }
+
+    output
+}
+
+fn expand_output(name: &str, output: &TokenStream) {
+    use inline_colorization::{color_cyan, color_reset, style_bold, style_reset, style_underline};
+    let output: proc_macro2::TokenStream = output.clone().into();
+    let token_str = output.to_string();
+    let dash_line = "─".repeat(70);
+
+    match parse_file(&token_str) {
+        Ok(syn_file) => {
+            let pretty_output = prettyplease::unparse(&syn_file);
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+            eprintln!(
+                "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset}:{style_reset}\n"
+            );
+            eprint!("{pretty_output}");
+            eprintln!("{style_reset}{dash_line}{style_reset}");
+        }
+        Err(_) => match parse_str::<Expr>(&token_str) {
+            Ok(expr) => {
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as expression):{style_reset}\n"
+                );
+                eprintln!("{}", quote!(#expr));
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+            Err(_) => {
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+                eprintln!(
+                    "{style_bold}{style_underline}Expanded macro{style_reset} {style_bold}{color_cyan}{name}{color_reset} (as token string):{style_reset}\n"
+                );
+                eprintln!("{token_str}");
+                eprintln!("{style_reset}{dash_line}{style_reset}");
+            }
+        },
+    }
 }

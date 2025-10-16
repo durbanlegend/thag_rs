@@ -1,0 +1,133 @@
+name = "UwUnicorn Base16"
+description = "Converted from UwUnicorn theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#241b26"]
+bg_rgbs = [[
+    36,
+    27,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    171,
+    200,
+    187,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    190,
+    187,
+    156,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    179,
+    112,
+    234,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    187,
+    179,
+    218,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    244,
+    145,
+    127,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    228,
+    204,
+    208,
+]
+
+[palette.info]
+rgb = [
+    157,
+    196,
+    214,
+]
+
+[palette.emphasis]
+rgb = [
+    215,
+    156,
+    182,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    178,
+    125,
+    221,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    238,
+    213,
+    217,
+]
+
+[palette.subtle]
+rgb = [
+    160,
+    148,
+    197,
+]
+
+[palette.hint]
+rgb = [
+    161,
+    112,
+    234,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    187,
+    153,
+    192,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    216,
+    129,
+    208,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    217,
+    194,
+    198,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    185,
+    152,
+    193,
+]

@@ -6,34 +6,42 @@ use ratatui::crossterm::{
     event::{Event, KeyCode, KeyEvent, KeyModifiers},
     tty::IsTty,
 };
-use sequential_test::sequential;
-#[cfg(feature = "simplelog")]
-use simplelog::{
-    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
-};
+use serial_test::serial;
 use std::{
     env::set_var,
     io::{stdout, Write},
     process::{Command, Stdio},
+    sync::Once,
+};
+use thag_rs::stdin::{edit, read_to_string};
+use thag_rs::{vprtln, MockEventReader, V};
+
+#[cfg(feature = "simplelog")]
+use simplelog::{
+    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 #[cfg(feature = "simplelog")]
 use std::{fs::File, sync::OnceLock};
-use thag_rs::stdin::{edit, read_to_string};
-use thag_rs::{vlog, MockEventReader, V};
 
 // Set environment variables before running tests
 fn set_up() {
+    static INIT: Once = Once::new();
     init_logger();
-    set_var("TEST_ENV", "1");
     #[cfg(windows)]
     {
-        set_var("VISUAL", "powershell.exe /C Get-Content");
-        set_var("EDITOR", "powershell.exe /C Get-Content");
+        INIT.call_once(|| unsafe {
+            set_var("TEST_ENV", "1");
+            set_var("VISUAL", "powershell.exe /C Get-Content");
+            set_var("EDITOR", "powershell.exe /C Get-Content");
+        });
     }
     #[cfg(not(windows))]
     {
-        set_var("VISUAL", "cat");
-        set_var("EDITOR", "cat");
+        INIT.call_once(|| unsafe {
+            set_var("TEST_ENV", "1");
+            set_var("VISUAL", "cat");
+            set_var("EDITOR", "cat");
+        });
     }
 }
 
@@ -60,11 +68,6 @@ fn init_logger() {
         .unwrap();
         info!("Initialized simplelog");
     });
-
-    #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-    {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
 }
 
 #[test]
@@ -109,7 +112,7 @@ fn test_stdin_edit_stdin_submit() {
 
     let result = edit(&mock_reader);
 
-    vlog!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
+    vprtln!(V::N, "\ntest_edit_stdin_submit result={result:#?}");
     assert!(result.is_ok());
     let lines = result.unwrap();
     // Expecting a Vec with one entry: an empty string
@@ -150,7 +153,7 @@ fn test_stdin_read_to_string() {
 }
 
 #[test]
-#[sequential]
+#[serial]
 fn test_stdin_read_from_stdin() {
     set_up();
     // Trying an alternative to process::Command.
@@ -169,7 +172,7 @@ fn test_stdin_read_from_stdin() {
 }
 
 #[test]
-#[sequential]
+#[serial]
 fn test_stdin_read_stdin() {
     set_up();
     init_logger();
@@ -182,7 +185,7 @@ fn test_stdin_read_stdin() {
 
     let mut child = Command::new("cargo")
         .arg("run")
-        .arg("--features=debug-logs")
+        // .arg("--features=debug_logging")
         .arg("--")
         .arg("-qq")
         .arg("-s")

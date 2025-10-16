@@ -1,11 +1,19 @@
-/*[toml]
-[dependencies]
-ratatui = "0.29.0"
-*/
-
 /// Published example from the `ratatui` crate.
+///
+/// The latest version of this example is available in the [examples] folder in the "latest"
+/// branch of the `ratatui` repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/ratatui/ratatui/blob/latest/examples/user_input.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Demo the featured crate.
-//# Categories: crates
+//# Categories: crates, tui
+//
+// Original `ratatui` crate comments:
 // # [Ratatui] User Input example
 //
 // The latest version of this example is available in the [examples] folder in the repository.
@@ -22,7 +30,7 @@ ratatui = "0.29.0"
 // [examples readme]: https://github.com/ratatui-org/ratatui/blob/main/examples/README.md
 
 // A simple example demonstrating how to handle user input. This is a bit out of the scope of
-// the library as it does not provide any input handling out of the box. However, it may helps
+// the library as it does not provide any input handling out of the box. However, it may help
 // some to get started.
 //
 // This is a very simple example:
@@ -42,7 +50,7 @@ use ratatui::crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{
-    layout::Layout,
+    layout::{Layout, Position},
     prelude::*,
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
@@ -201,7 +209,7 @@ fn ui(f: &mut Frame, app: &App) {
         Constraint::Length(3),
         Constraint::Min(1),
     ]);
-    let [help_area, input_area, messages_area] = vertical.areas(f.size());
+    let [help_area, input_area, messages_area] = vertical.areas(f.area());
 
     let (msg, style) = match app.input_mode {
         InputMode::Normal => (
@@ -245,13 +253,13 @@ fn ui(f: &mut Frame, app: &App) {
             // Make the cursor visible and ask ratatui to put it at the specified coordinates after
             // rendering
             #[allow(clippy::cast_possible_truncation)]
-            f.set_cursor(
+            f.set_cursor_position(Position::new(
                 // Draw the cursor at the current position in the input field.
                 // This position is can be controlled via the left and right arrow key
                 input_area.x + app.cursor_position as u16 + 1,
                 // Move one line down, from the border to the input line
                 input_area.y + 1,
-            );
+            ));
         }
     }
 

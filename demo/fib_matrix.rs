@@ -7,7 +7,7 @@
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demo an alternative to the standard computation for Fibonacci numbers.
-//# Categories: educational, math, recreational, technique
+//# Categories: learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use std::env;
 

@@ -1,68 +1,26 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay};
 use crate::{
-    debug_log, vlog, CrosstermEventReader, EventReader, KeyDisplayLine, ThagError, ThagResult, V,
+    debug_log,
+    tui_editor::{script_key_handler, tui_edit, EditData, History, KeyAction, KeyDisplay},
+    vprtln, CrosstermEventReader, EventReader, Role, ThagError, ThagResult, V,
 };
-use clap::Parser;
 use edit::edit_file;
-use firestorm::profile_fn;
-use mockall::predicate::str;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::Style;
 use std::{
     fmt::Debug,
     fs::OpenOptions,
     io::{self, BufRead, IsTerminal},
     path::PathBuf,
 };
-use strum::{EnumIter, EnumString, IntoStaticStr};
-
-#[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
-#[command(
-    name = "",
-    disable_help_flag = true,
-    disable_help_subcommand = true,
-    verbatim_doc_comment
-)] // Disable automatic help subcommand and flag
-#[strum(serialize_all = "snake_case")]
-/// REPL mode lets you type or paste a Rust expression to be evaluated.
-/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
-/// brackets, parens or quotes may span multiple lines.
-/// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-/// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-/// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-/// comment block of the form
-/// /*[toml]
-/// [dependencies]
-/// ...
-/// */
-/// From here they will be extracted to a dedicated Cargo.toml file.
-/// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-/// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-/// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-/// editor or directly from their temporary disk locations.
-/// The tab key will show command selections and complete partial matching selections."
-enum ReplCommand {
-    /// Show the REPL banner
-    Banner,
-    /// Edit the Rust expression.
-    Edit,
-    /// Edit the generated Cargo.toml
-    Toml,
-    /// Edit history
-    History,
-    /// Show help information
-    Help,
-    /// Show key bindings
-    Keys,
-    /// Exit the REPL
-    Quit,
-}
+use thag_profiler::{enable_profiling, profiled};
+use thag_styling::ThemedStyle;
 
 #[allow(dead_code)]
+#[enable_profiling]
 fn main() -> ThagResult<()> {
     let event_reader = CrosstermEventReader;
     for line in &edit(&event_reader)? {
-        vlog!(V::N, "{line}");
+        vprtln!(V::N, "{line}");
     }
     Ok(())
 }
@@ -95,6 +53,7 @@ fn main() -> ThagResult<()> {
 /// # Panics
 ///
 /// If the terminal cannot be reset.
+#[profiled]
 pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
@@ -121,16 +80,16 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
         history_path: Some(&history_path),
         history: Some(history),
     };
-    let add_keys = [
-        KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
-        KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
-        // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
-    ];
+    // let add_keys = [
+    //     KeyDisplayLine::new(371, "Ctrl+Alt+s", "Save a copy"),
+    //     KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
+    //     // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
+    // ];
     let display = KeyDisplay {
         title: "Enter / paste / edit Rust script.  ^D: submit  ^Q: quit  ^L: keys  ^T: toggle highlighting",
-        title_style: Style::from((Color::Yellow, Modifier::BOLD)),
+        title_style: Style::themed(Role::Heading3),
         remove_keys: &[""; 0],
-        add_keys: &add_keys,
+        add_keys: &[],
     };
     let (key_action, maybe_text) = tui_edit(
         event_reader,
@@ -150,7 +109,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
     )?;
     match key_action {
         KeyAction::Quit(_saved) => Ok(vec![]),
-        // KeyAction::SaveAndExit => false,
+        KeyAction::AbandonChanges => Ok(vec![]),
         KeyAction::Submit => maybe_text.ok_or(ThagError::Cancelled),
         _ => Err(ThagError::FromStr(
             format!("Logic error: {key_action:?} should not return from tui_edit").into(),
@@ -162,7 +121,7 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 ///
 /// # Examples
 ///
-/// ```
+/// ``` ignore
 /// use thag_rs::stdin::read;
 ///
 /// let hello = String::from("Hello world!");
@@ -171,9 +130,10 @@ pub fn edit<R: EventReader + Debug>(event_reader: &R) -> ThagResult<Vec<String>>
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+#[profiled]
 pub fn read() -> Result<String, std::io::Error> {
     if std::io::stdin().is_terminal() {
-        vlog!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+        vprtln!(V::N, "Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
     }
     let buffer = read_to_string(&mut std::io::stdin().lock())?;
     Ok(buffer)
@@ -183,7 +143,7 @@ pub fn read() -> Result<String, std::io::Error> {
 ///
 /// # Examples
 ///
-/// ```
+/// ``` ignore
 /// use thag_rs::stdin::read_to_string;
 ///
 /// let stdin = std::io::stdin();
@@ -195,8 +155,8 @@ pub fn read() -> Result<String, std::io::Error> {
 /// # Errors
 ///
 /// If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+#[profiled]
 pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
-    profile_fn!(read_to_string);
     let mut buffer = String::new();
     input.read_to_string(&mut buffer)?;
     Ok(buffer)
@@ -206,10 +166,10 @@ pub fn read_to_string<R: BufRead>(input: &mut R) -> Result<String, io::Error> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
+#[profiled]
 pub fn edit_history() -> ThagResult<Option<String>> {
     let cargo_home = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
     let history_path = PathBuf::from(cargo_home).join("rs_stdin_history.json");
-    println!("history_path={history_path:#?}");
     OpenOptions::new()
         .write(true)
         .create(true)

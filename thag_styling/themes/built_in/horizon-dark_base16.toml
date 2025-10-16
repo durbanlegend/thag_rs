@@ -1,0 +1,133 @@
+name = "Horizon Dark Base16"
+description = "Converted from Horizon Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1c1e26"]
+bg_rgbs = [[
+    28,
+    30,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    198,
+    147,
+    225,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    228,
+    163,
+    130,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    108,
+    228,
+    239,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    148,
+    165,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    241,
+    148,
+    131,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    227,
+    230,
+    238,
+]
+
+[palette.info]
+rgb = [
+    243,
+    129,
+    156,
+]
+
+[palette.emphasis]
+rgb = [
+    239,
+    185,
+    147,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    113,
+    223,
+    233,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    203,
+    206,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    154,
+    160,
+    192,
+]
+
+[palette.hint]
+rgb = [
+    173,
+    173,
+    174,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    170,
+    174,
+    176,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    239,
+    175,
+    142,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    220,
+    223,
+    228,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    155,
+    160,
+    191,
+]

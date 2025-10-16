@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Same script as `demo/fib_basic_ibig.rs` with basic instrumentation added for benchmarking
 /// against other fibonacci scripts.
 /// Scripts can then be selected and run sequentially.
@@ -15,7 +10,7 @@ ibig = "0.3.6"
 /// F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 ///
 //# Purpose: Demonstrate instrumenting scripts for benchmarking.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::env;

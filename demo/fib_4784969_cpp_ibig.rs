@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Rust port of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
 /// F(4784969) is the first number in the Fibonacci sequence that has one million decimal
 /// digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
@@ -11,7 +6,7 @@ ibig = "0.3.6"
 /// E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
 //# Purpose: Demo 3 very fast Fibonacci algorithms, though still 7-11 times slower than `rug`.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::collections::HashMap;

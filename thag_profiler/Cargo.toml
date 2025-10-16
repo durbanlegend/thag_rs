@@ -1,0 +1,134 @@
+[package]
+name = "thag_profiler"
+version = "0.1.0"
+edition = "2021"
+description = "A lightweight, cross-platform Rust code profiling toolkit with zero overhead when disabled"
+documentation = "https://github.com/durbanlegend/thag_rs/blob/develop/thag_profiler/README.md"
+authors = ["thag_rs developer"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/durbanlegend/thag_rs"
+categories = [
+    "development-tools::profiling",
+    "development-tools",
+    "command-line-utilities",
+]
+keywords = [
+    "profiling",
+    "performance",
+    "flamegraph",
+    "instrumentation",
+    "tracing",
+]
+
+[package.metadata.wix]
+upgrade-guid = "0C80A2EF-343B-4EA3-BCE0-2985B10A2893"
+path-guid = "DB87B3CE-6DCB-436A-85FA-C90A0061C9B3"
+license = false
+eula = false
+
+[dependencies]
+backtrace = "0.3"
+chrono = "0.4"
+dashmap = "6.1"
+dirs = { version = "6.0", optional = true }
+document-features = { version = "0.2", optional = true }
+inferno = { version = "0.12", optional = true }
+inline_colorization = "0.1"
+inquire = { version = "0.9", optional = true }
+once_cell = "1.20"
+parking_lot = { version = "0.12", default-features = false }
+ra_ap_syntax = { version = "0.0.301", optional = true }
+regex = { version = "1.11", default-features = false, features = ["unicode"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", optional = true }
+smol = { version = "2", optional = true }
+strum = { version = "0.27", features = ["derive", "phf"] }
+thag_common = { version = "0.2", path = "../thag_common" }
+thag_proc_macros = { version = "0.2", path = "../thag_proc_macros", default-features = false }
+thag_styling = { version = "0.2", path = "../thag_styling", optional = true }
+
+[dev-dependencies]
+regex = "1.11"
+serial_test = { version = "3.2", features = ["file_locks"] }
+smol = "2.0"
+tokio = { version = "1.36", features = ["rt", "macros", "time"] }
+async-std = { version = "1.12", features = ["attributes"] }
+
+[features]
+#! <br><br>
+#! The following features are supported:
+
+## Default features: none
+default = []
+# default = ["full_profiling", "debug_logging"]
+# default = ["time_profiling"]
+
+## Enable time-based performance profiling.
+time_profiling = ["thag_proc_macros/time_profiling"]
+
+## Enable comprehensive profiling including time and memory usage.
+full_profiling = ["time_profiling", "thag_proc_macros/full_profiling"]
+
+## Enable debug logging of profiling code.
+debug_logging = ["thag_proc_macros/debug_logging"]
+
+## Enable documentation of internal APIs and implementation details.
+internal_docs = ["thag_proc_macros/internal_docs"]
+
+## Documentation features
+document-features = ["dep:document-features"]
+
+## Include dependencies required only for `thag_profile` binary.
+analyze_tool = [
+    "dirs",
+    "inferno",
+    "inquire_theming",
+    "ra_ap_syntax",
+    "serde_json",
+]
+
+## Include dependencies for all tools.
+tools = ["analyze_tool", "instrument_tool"] # Enable all tools
+
+## Include dependencies required for `thag_instrument` and `thag_uninstrument` binaries.
+instrument_tool = ["ra_ap_syntax"] # Dependencies for instrument
+
+## Enable demo visualization functionality with required dependencies.
+demo = ["inferno", "smol"]
+
+## Enable theme-aware `inquire` UI integration.
+inquire_theming = ["inquire", "thag_styling/inquire_theming"]
+
+[[bin]]
+name = "thag_profile"
+path = "src/bin/thag_profile.rs"
+required-features = ["analyze_tool"]
+
+[[bin]]
+name = "thag_instrument"
+path = "src/bin/thag_instrument.rs"
+required-features = ["instrument_tool"]
+
+[[bin]]
+name = "thag_uninstrument"
+path = "src/bin/thag_uninstrument.rs"
+required-features = ["instrument_tool"]
+
+[[example]]
+name = "doc_attributes"
+path = "examples/doc_attributes.rs"
+
+[package.metadata.docs.rs]
+all-features = true
+# For docs.rs, we want to show all features including internal docs
+default-features = false
+features = [
+    "document-features",
+    "full_profiling",
+    "debug_logging",
+    "internal_docs",
+]
+
+[lints.clippy]
+uninlined_format_args = "allow"

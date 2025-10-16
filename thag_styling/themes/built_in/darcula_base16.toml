@@ -1,0 +1,133 @@
+name = "Darcula Base16"
+description = "Converted from Darcula theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2b2b2b"]
+bg_rgbs = [[
+    43,
+    43,
+    43,
+]]
+
+[palette.heading1]
+rgb = [
+    235,
+    192,
+    157,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    183,
+    183,
+    183,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    166,
+    211,
+    155,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    167,
+    219,
+    250,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    187,
+    215,
+    177,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    201,
+    179,
+    213,
+]
+
+[palette.emphasis]
+rgb = [
+    238,
+    234,
+    154,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    170,
+    205,
+    161,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    197,
+    208,
+    220,
+]
+
+[palette.subtle]
+rgb = [
+    183,
+    183,
+    183,
+]
+
+[palette.hint]
+rgb = [
+    180,
+    183,
+    187,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    184,
+    183,
+    183,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    179,
+    199,
+    167,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    255,
+    198,
+    109,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    183,
+    183,
+    183,
+]

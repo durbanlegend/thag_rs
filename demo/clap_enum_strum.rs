@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-serde = { version = "1.0.215", features = ["derive"] }
-strum = { version = "0.26.3", features = ["derive"] }
+clap = { version = "4", features = ["cargo", "derive"] }
+serde = { version = "1", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 */
 
 use clap::{Parser, ValueEnum};
@@ -12,7 +12,7 @@ use strum::{EnumIter, EnumProperty, IntoEnumIterator, IntoStaticStr};
 #[derive(Parser)]
 #[command(version, about, long_about = Some("This is the long 'about'"))]
 struct Cli {
-    /// Which of 3 variants to choose
+    // Which of 3 variants to choose
     #[arg(value_enum)]
     opt: Opt,
 }
@@ -23,13 +23,13 @@ struct Cli {
 #[strum(serialize_all = "kebab-case")]
 enum Opt {
     #[default]
-    /// Help for variant 1
+    // Help for variant 1
     #[strum(props(key = "var1"))]
     VariantNum1,
-    /// Help for variant 2
+    // Help for variant 2
     #[strum(props(key = "var2"))]
     VariantNum2,
-    /// Help for variant 3
+    // Help for variant 3
     #[strum(props(key = "var3"))]
     VariantNum3,
 }
@@ -38,6 +38,7 @@ enum Opt {
 /// E.g. `thag demo/clap_enum_strum.rs -- variant-num2`
 //# Purpose: Simple demo of featured crates, contrasting how they expose variants.
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- variant-num2`
 fn main() {
     let cli = Cli::parse();
 

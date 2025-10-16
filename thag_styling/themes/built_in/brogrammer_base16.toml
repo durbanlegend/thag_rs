@@ -1,0 +1,133 @@
+name = "Brogrammer Base16"
+description = "Converted from Brogrammer theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1f1f1f"]
+bg_rgbs = [[
+    31,
+    31,
+    31,
+]]
+
+[palette.heading1]
+rgb = [
+    120,
+    189,
+    248,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    255,
+    255,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    104,
+    181,
+    238,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    214,
+    219,
+    229,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    246,
+    127,
+    122,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    214,
+    219,
+    229,
+]
+
+[palette.info]
+rgb = [
+    150,
+    147,
+    221,
+]
+
+[palette.emphasis]
+rgb = [
+    125,
+    243,
+    169,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    96,
+    182,
+    247,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    167,
+    174,
+    226,
+]
+
+[palette.subtle]
+rgb = [
+    238,
+    104,
+    108,
+]
+
+[palette.hint]
+rgb = [
+    238,
+    208,
+    104,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    104,
+    176,
+    238,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    247,
+    212,
+    96,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    72,
+    171,
+    245,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    104,
+    238,
+    147,
+]

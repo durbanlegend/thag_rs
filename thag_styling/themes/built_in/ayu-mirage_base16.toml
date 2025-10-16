@@ -1,0 +1,133 @@
+name = "Ayu Mirage Base16"
+description = "Converted from Ayu Mirage theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#171b24"]
+bg_rgbs = [[
+    23,
+    27,
+    36,
+]]
+
+[palette.heading1]
+rgb = [
+    212,
+    191,
+    255,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    242,
+    158,
+    116,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    149,
+    230,
+    203,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    154,
+    141,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    178,
+    117,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    243,
+    244,
+    245,
+]
+
+[palette.info]
+rgb = [
+    119,
+    225,
+    246,
+]
+
+[palette.emphasis]
+rgb = [
+    255,
+    209,
+    115,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    149,
+    230,
+    203,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    204,
+    202,
+    194,
+]
+
+[palette.subtle]
+rgb = [
+    142,
+    158,
+    197,
+]
+
+[palette.hint]
+rgb = [
+    156,
+    166,
+    184,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    161,
+    169,
+    179,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    213,
+    255,
+    128,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    217,
+    215,
+    206,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    144,
+    158,
+    195,
+]

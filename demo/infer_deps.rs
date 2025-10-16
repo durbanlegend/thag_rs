@@ -1,20 +1,10 @@
-/*
-# [toml]
-# [dependencies]
-# clap = { version = "4.5.21", features = ["cargo", "derive"] }
-# #clap-repl = "0.1.1"
-# console = "0.15.8"
-# rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
-# shlex = "1.3.0"
-# strum = { version = "0.26.3", features = ["derive"] }
-*/
 /// Interactively test dependency inferency. This script was arbitrarily copied from
 /// `demo/repl_partial_match.rs`.
 //# Purpose: Test thag manifest module's dependency inference.
 //# Categories: crates, technique, testing
 /// Experiment with matching REPL commands with a partial match of any length.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::DefaultEditor;
@@ -67,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Err(e) => match e {
                 rustyline::error::ReadlineError::Eof
                 | rustyline::error::ReadlineError::Interrupted => break,
-                rustyline::error::ReadlineError::WindowResized => continue,
+                rustyline::error::ReadlineError::Signal(_) => continue,
                 _ => panic!("Error in read line: {e:?}"),
             },
         };

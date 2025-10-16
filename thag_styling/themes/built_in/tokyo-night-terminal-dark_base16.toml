@@ -1,0 +1,133 @@
+name = "Tokyo Night Terminal Dark Base16"
+description = "Converted from Tokyo Night Terminal Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#16161e"]
+bg_rgbs = [[
+    22,
+    22,
+    30,
+]]
+
+[palette.heading1]
+rgb = [
+    187,
+    154,
+    247,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    245,
+    182,
+    87,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    125,
+    207,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    135,
+    156,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    162,
+    111,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    213,
+    214,
+    219,
+]
+
+[palette.info]
+rgb = [
+    122,
+    162,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    234,
+    189,
+    124,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    125,
+    207,
+    255,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    181,
+    184,
+    202,
+]
+
+[palette.subtle]
+rgb = [
+    141,
+    145,
+    191,
+]
+
+[palette.hint]
+rgb = [
+    137,
+    148,
+    195,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    148,
+    152,
+    185,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    120,
+    200,
+    212,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    203,
+    204,
+    209,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    137,
+    151,
+    195,
+]

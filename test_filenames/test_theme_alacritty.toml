@@ -1,0 +1,58 @@
+# Alacritty Color Scheme: thag-vibrant-dark
+# Generated from thag theme
+# Minty fresh dark theme
+
+[colors]
+
+[colors.primary]
+background = "#202020"
+foreground = "#90e090"
+bright_foreground = "#f0b0c0"
+dim_foreground = "#caca92"
+
+[colors.normal]
+black = "#202020"
+red = "#f0d0b0"
+green = "#90e090"
+yellow = "#f0d0b0"
+blue = "#2080b0"
+magenta = "#ac6acd"
+cyan = "#2080b0"
+white = "#90e090"
+
+[colors.bright]
+black = "#caca92"
+red = "#ffffe4"
+green = "#bbffbb"
+yellow = "#ffffe4"
+blue = "#29a6e4"
+magenta = "#90b6ff"
+cyan = "#29a6e4"
+white = "#f0b0c0"
+
+[colors.dim]
+black = "#101010"
+red = "#907c69"
+green = "#568656"
+yellow = "#907c69"
+blue = "#134c69"
+magenta = "#425476"
+cyan = "#134c69"
+white = "#caca92"
+
+[colors.cursor]
+cursor = "#f0b0c0"
+text = "#000000"
+
+[colors.selection]
+background = "#292929"
+text = "#90e090"
+
+[colors.search]
+[colors.search.matches]
+background = "#f0d0b0"
+foreground = "#202020"
+
+[colors.search.focused_match]
+background = "#f0b0c0"
+foreground = "#202020"

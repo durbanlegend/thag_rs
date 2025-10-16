@@ -1,0 +1,133 @@
+name = "Atelier Lakeside Base16"
+description = "Converted from Atelier Lakeside theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#161b1d"]
+bg_rgbs = [[
+    22,
+    27,
+    29,
+]]
+
+[palette.heading1]
+rgb = [
+    149,
+    149,
+    208,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    208,
+    102,
+    229,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    101,
+    231,
+    188,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    241,
+    142,
+    183,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    233,
+    179,
+    124,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    235,
+    248,
+    255,
+]
+
+[palette.info]
+rgb = [
+    119,
+    198,
+    238,
+]
+
+[palette.emphasis]
+rgb = [
+    246,
+    246,
+    111,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    115,
+    217,
+    184,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    171,
+    198,
+    212,
+]
+
+[palette.subtle]
+rgb = [
+    140,
+    174,
+    192,
+]
+
+[palette.hint]
+rgb = [
+    137,
+    175,
+    195,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    134,
+    176,
+    198,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    152,
+    206,
+    126,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    193,
+    228,
+    246,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    138,
+    175,
+    193,
+]

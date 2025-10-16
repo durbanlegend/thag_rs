@@ -1,0 +1,133 @@
+name = "Aztec Base16"
+description = "Converted from Aztec theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#101600"]
+bg_rgbs = [[
+    16,
+    22,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    187,
+    120,
+    208,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    209,
+    78,
+    225,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    84,
+    196,
+    218,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    134,
+    106,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    246,
+    176,
+    82,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    235,
+    160,
+]
+
+[palette.info]
+rgb = [
+    140,
+    124,
+    204,
+]
+
+[palette.emphasis]
+rgb = [
+    246,
+    211,
+    82,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    99,
+    187,
+    204,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    247,
+    217,
+    106,
+]
+
+[palette.subtle]
+rgb = [
+    211,
+    234,
+    68,
+]
+
+[palette.hint]
+rgb = [
+    234,
+    234,
+    68,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    234,
+    199,
+    68,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    119,
+    230,
+    73,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    255,
+    225,
+    120,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    224,
+    234,
+    68,
+]

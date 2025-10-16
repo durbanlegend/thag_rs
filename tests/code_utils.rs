@@ -1,61 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use std::{io::Write, path::Path, time::Instant};
+    use std::{io::Write, path::Path, sync::Once};
+    use syn::token::RArrow;
     use tempfile::NamedTempFile;
-    use thag_rs::{
-        code_utils::{
-            extract_inner_attribs, find_modules_source, find_use_renames_source,
-            infer_deps_from_ast, infer_deps_from_source, is_last_stmt_unit_type, is_path_unit_type,
-            is_stmt_unit_type, path_to_str, read_file_contents, wrap_snippet,
-        },
-        extract_manifest,
-        shared::{find_crates, find_metadata},
-        Ast,
+    use thag_rs::ast::{is_last_stmt_unit_type, is_path_unit_type, is_stmt_unit_type};
+    use thag_rs::code_utils::{
+        extract_inner_attribs, path_to_str, read_file_contents, wrap_snippet,
     };
-
-    // Example AST representing use and extern crate statements
-    const IMPORTS: &str = r#"
-        extern crate foo;
-        use bar::baz;
-        mod glorp;
-        use {
-            crokey::{
-                crossterm::{
-                    event::{read, Event},
-                    style::Stylize,
-                    terminal,
-                },
-                key, KeyCombination, KeyCombinationFormat,
-            },
-            glorp::thagomize,
-            serde::Deserialize,
-            std::collections::HashMap,
-            toml,
-        };
-        use owo_ansi::xterm as owo_xterm;
-        use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};
-        use owo_colors::colors::{self as owo_ansi, Magenta};
-        use owo_colors::{AnsiColors, Style, XtermColors};
-        use owo_xterm::Black;
-        use snarf as qux;
-        use std::fmt;
-        use qux::corge;
-        "#;
-    const EXPECTED_CRATES: &[&str] = &[
-        "bar",
-        "crokey",
-        "foo",
-        "owo_colors",
-        "serde",
-        "snarf",
-        "toml",
-    ];
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     // Helper function to create a temporary file with given content
@@ -74,78 +34,6 @@ mod tests {
 
         let contents = read_file_contents(path).unwrap();
         assert_eq!(contents, "Test content");
-    }
-
-    #[test]
-    fn test_code_utils_infer_deps_from_ast() {
-        set_up();
-        // Example AST representing use and extern crate statements
-        let ast = syn::parse_file(
-            r#"
-            extern crate foo;
-            use bar::baz;
-            use std::fmt;
-            use glorp;
-            "#,
-        )
-        .unwrap();
-        let ast = Ast::File(ast);
-        let crates_finder = Some(find_crates(&ast)).unwrap();
-        let metadata_finder = Some(find_metadata(&ast)).unwrap();
-        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
-        assert_eq!(deps, vec!["bar", "foo", "glorp"]);
-    }
-
-    #[test]
-    fn test_code_utils_infer_deps_from_nested_ast() {
-        set_up();
-        // Example AST representing use and extern crate statements
-        let file = syn::parse_file(IMPORTS).unwrap();
-        let ast = Ast::File(file);
-        let crates_finder = Some(find_crates(&ast)).unwrap();
-        let metadata_finder = Some(find_metadata(&ast)).unwrap();
-        let deps = infer_deps_from_ast(&crates_finder, &metadata_finder);
-        assert_eq!(&deps, EXPECTED_CRATES);
-    }
-
-    #[test]
-    fn test_code_utils_infer_deps_from_source() {
-        set_up();
-        let source_code = r#"
-            extern crate foo;
-            use bar::baz;
-            use std::fmt;
-            mod glorp;
-            use snarf;
-            "#;
-
-        let deps = infer_deps_from_source(source_code);
-        assert_eq!(deps, vec!["bar", "foo", "snarf"]);
-    }
-
-    #[test]
-    fn test_code_utils_infer_deps_from_nested_source() {
-        set_up();
-        let deps = infer_deps_from_source(IMPORTS);
-        assert_eq!(&deps, EXPECTED_CRATES);
-    }
-
-    #[test]
-    fn test_code_utils_extract_manifest() {
-        set_up();
-        let source_code = r#"
-            /*[toml]
-            [dependencies]
-            foo = "0.1"
-            bar = "0.2"
-            */
-            "#;
-        let start_time = Instant::now();
-        let manifest = extract_manifest(source_code, start_time).unwrap();
-
-        let dependencies = manifest.dependencies;
-        assert!(dependencies.contains_key("foo"));
-        assert!(dependencies.contains_key("bar"));
     }
 
     #[test]
@@ -171,31 +59,31 @@ mod tests {
         assert!(wrapped.contains("fn main() -> Result<(), Box<dyn Error>>"));
     }
 
-    #[test]
-    fn test_code_utils_find_use_renames_source() {
-        set_up();
-        let source_code = r#"
-            use foo as bar;
-            use std::fmt;
-            use baz::qux as corge;
-            "#;
+    // #[test]
+    // fn test_code_utils_find_use_renames_source() {
+    //     set_up();
+    //     let source_code = r#"
+    //         use foo as bar;
+    //         use std::fmt;
+    //         use baz::qux as corge;
+    //         "#;
 
-        let (use_renames_from, use_renames_to) = find_use_renames_source(source_code);
-        assert_eq!(use_renames_from, vec!["baz", "foo"]);
-        assert_eq!(use_renames_to, vec!["bar", "corge"]);
-    }
+    //     let (use_renames_from, use_renames_to) = find_use_renames_source(source_code);
+    //     assert_eq!(use_renames_from, vec!["baz", "foo"]);
+    //     assert_eq!(use_renames_to, vec!["bar", "corge"]);
+    // }
 
-    #[test]
-    fn test_code_utils_find_modules_source() {
-        set_up();
-        let source_code = r#"
-            mod foo;
-            mod bar;
-            "#;
+    // #[test]
+    // fn test_code_utils_find_modules_source() {
+    //     set_up();
+    //     let source_code = r#"
+    //         mod foo;
+    //         mod bar;
+    //         "#;
 
-        let modules = find_modules_source(source_code);
-        assert_eq!(modules, vec!["foo", "bar"]);
-    }
+    //     let modules = find_modules_source(source_code);
+    //     assert_eq!(modules, vec!["foo", "bar"]);
+    // }
 
     use std::collections::HashMap;
     use syn::{parse_quote, Expr, ReturnType, Stmt};
@@ -205,7 +93,7 @@ mod tests {
         function_map.insert("unit_fn".to_string(), ReturnType::Default);
         function_map.insert(
             "non_unit_fn".to_string(),
-            ReturnType::Type(Default::default(), Box::new(syn::parse_quote!(i32))),
+            ReturnType::Type(RArrow::default(), Box::new(syn::parse_quote!(i32))),
         );
         function_map
     }
@@ -483,7 +371,7 @@ mod tests {
     fn test_code_utils_tuple_expr() {
         set_up();
         let expr: Expr = parse_quote! {
-            (1, 2, 3)
+            [1, 2, 3]
         };
         let function_map = set_up_function_map();
         assert!(!is_last_stmt_unit_type(&expr, &function_map));

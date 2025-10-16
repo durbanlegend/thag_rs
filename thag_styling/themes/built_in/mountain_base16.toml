@@ -1,0 +1,133 @@
+name = "Mountain Base16"
+description = "Converted from Mountain theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0f0f0f"]
+bg_rgbs = [[
+    15,
+    15,
+    15,
+]]
+
+[palette.heading1]
+rgb = [
+    184,
+    152,
+    184,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    174,
+    137,
+    139,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    132,
+    178,
+    179,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    196,
+    166,
+    167,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    206,
+    177,
+    136,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    240,
+    240,
+    240,
+]
+
+[palette.info]
+rgb = [
+    155,
+    150,
+    186,
+]
+
+[palette.emphasis]
+rgb = [
+    184,
+    181,
+    152,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    137,
+    173,
+    174,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    202,
+    202,
+    202,
+]
+
+[palette.subtle]
+rgb = [
+    155,
+    155,
+    155,
+]
+
+[palette.hint]
+rgb = [
+    155,
+    155,
+    155,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    181,
+    130,
+    133,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    137,
+    174,
+    138,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    231,
+    231,
+    231,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    155,
+    155,
+    155,
+]

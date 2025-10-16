@@ -1,0 +1,133 @@
+name = "Silk Dark Base16"
+description = "Converted from Silk Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0e3c46"]
+bg_rgbs = [[
+    14,
+    60,
+    70,
+]]
+
+[palette.heading1]
+rgb = [
+    192,
+    187,
+    203,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    200,
+    165,
+    179,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    132,
+    227,
+    232,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    176,
+    165,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    185,
+    141,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    210,
+    250,
+    255,
+]
+
+[palette.info]
+rgb = [
+    145,
+    224,
+    245,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    227,
+    141,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    143,
+    217,
+    222,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    199,
+    219,
+    221,
+]
+
+[palette.subtle]
+rgb = [
+    132,
+    222,
+    232,
+]
+
+[palette.hint]
+rgb = [
+    168,
+    194,
+    197,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    147,
+    210,
+    218,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    137,
+    227,
+    189,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    203,
+    242,
+    247,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    146,
+    212,
+    219,
+]

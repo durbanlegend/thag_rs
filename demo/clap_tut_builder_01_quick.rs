@@ -1,13 +1,9 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["cargo"] }
-*/
-
 /// Published example from `clap` tutorial (builder)
 ///
 /// E.g.  `thag demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l`
 //# Purpose: Demonstrate `clap` CLI using the builder option
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- -ddd -c dummy.cfg my_file test -l`
 use std::path::PathBuf;
 
 use clap::{arg, command, value_parser, ArgAction, Command};

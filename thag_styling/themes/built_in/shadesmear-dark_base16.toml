@@ -1,0 +1,133 @@
+name = "ShadeSmear Dark Base16"
+description = "Converted from ShadeSmear Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#232323"]
+bg_rgbs = [[
+    35,
+    35,
+    35,
+]]
+
+[palette.heading1]
+rgb = [
+    234,
+    203,
+    142,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    175,
+    175,
+    175,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    234,
+    169,
+    116,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    236,
+    167,
+    165,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    223,
+    153,
+    185,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    201,
+    201,
+    201,
+]
+
+[palette.info]
+rgb = [
+    154,
+    191,
+    222,
+]
+
+[palette.emphasis]
+rgb = [
+    156,
+    220,
+    220,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    222,
+    171,
+    129,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    219,
+    219,
+    219,
+]
+
+[palette.subtle]
+rgb = [
+    175,
+    175,
+    175,
+]
+
+[palette.hint]
+rgb = [
+    192,
+    192,
+    192,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    228,
+    228,
+    228,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    181,
+    214,
+    137,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    228,
+    228,
+    228,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    175,
+    175,
+    175,
+]

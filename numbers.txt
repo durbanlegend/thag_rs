@@ -1,3 +1,0 @@
-Line 1: 100 apples
-Line 2: 200 oranges
-Line 3: 300 bananas

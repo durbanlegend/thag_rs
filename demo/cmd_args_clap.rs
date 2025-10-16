@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-bitflags = "2.5.0"
-clap = { version = "4.5.21", features = ["derive"] }
-*/
-
 /// Basic CLI example using clap.
 ///
 /// E.g. `thag -t demo/cmd_args_clap.rs -- -atv hello.sh`
@@ -77,7 +71,7 @@ fn main() {
         println!("Running script");
     }
 
-    println!("Running script: {}", opt.script);
+    println!("Script to run: {}", opt.script);
     if !opt.args.is_empty() {
         println!("With arguments:");
         for arg in &opt.args {

@@ -1,0 +1,45 @@
+[package]
+name = "thag_proc_macros"
+version = "0.2.0"
+authors = ["Don Forbes <don.forbes3@gmail.com>"]
+description = "Procedural macros for the thag_rs and thag_profiler crates"
+repository = "https://github.com/durbanlegend/thag_rs"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]
+crossterm = { version = "0.29", optional = true }
+inline_colorization = "0.1"
+prettyplease = "0.2"
+proc-macro2 = "1.0"
+quote = "1.0"
+strict = "0.2"
+syn = { version = "2.0", default-features = false, features = [
+    "clone-impls",
+    "extra-traits",
+    "derive",
+    "parsing",
+    "printing",
+    "proc-macro",
+    "visit-mut",
+] }
+toml = { version = "0.9" }
+
+[dev-dependencies]
+strum = { version = "0.27", features = ["derive", "phf"] }
+
+[features]
+time_profiling = []                 # New feature for conditional compilation
+full_profiling = ["time_profiling"]
+debug_logging = []                  # Zero-cost debug logging
+
+tui = ["crossterm"]
+default = []
+internal_docs = []
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[lints.clippy]
+uninlined_format_args = "allow"

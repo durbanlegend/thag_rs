@@ -1,21 +1,15 @@
 /*[toml]
 [dependencies]
-firestorm = { version = "0.5.1", features = ["enable_system_time"] }
-ratatui = "0.27.0"
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
-#tui-textarea = { git = "https://github.com/joshka/tui-textarea.git", branch = "jm/ratatui-0.27.0", features = ["crossterm", "search"] }
+thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
 */
 
-/// The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
+/// A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate
+/// time profiling.
 ///
 /// Not suitable for running from a URL.
-/// To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
-/// for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
-/// executes twice, so it will need to be closed a second time.
-//# Purpose: Demo featured crates, but `firestorm` profiler in particular.
-//# Categories: crates, exploration, technique
+//# Purpose: Demo `thag_profiler`.
+//# Categories: crates, profiling, technique, tui
 //# Sample arguments: `-- demo/hello.rs demo/hello_minimal.rs`
-use firestorm::profile_fn;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::read;
 use ratatui::crossterm::event::{
@@ -29,16 +23,15 @@ use ratatui::layout::{Alignment, Constraint, Direction, Layout, Margin};
 use ratatui::prelude::Rect;
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::block::Title;
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Terminal;
 use std::borrow::Cow;
 use std::env;
-use std::error::Error;
 use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
+use thag_profiler::*;
 use tui_textarea::{CursorMove, Input, Key, TextArea};
 
 macro_rules! error {
@@ -96,8 +89,8 @@ struct SearchBox<'a> {
 }
 
 impl<'a> Default for SearchBox<'a> {
+    #[profiled]
     fn default() -> Self {
-        profile_fn!(default);
         let mut textarea = TextArea::default();
         textarea.set_block(Block::default().borders(Borders::ALL).title("Search"));
         Self {
@@ -109,13 +102,13 @@ impl<'a> Default for SearchBox<'a> {
 
 #[allow(dead_code)]
 impl<'a> SearchBox<'a> {
+    #[profiled]
     fn open(&mut self) {
-        profile_fn!(open);
         self.open = true;
     }
 
+    #[profiled]
     fn close(&mut self) {
-        profile_fn!(close);
         self.open = false;
         // Remove input for next search. Do not recreate `self.textarea` instance to keep undo history so that users can
         // restore previous input easily.
@@ -123,8 +116,8 @@ impl<'a> SearchBox<'a> {
         self.textarea.delete_line_by_head();
     }
 
+    #[profiled]
     fn height(&self) -> u16 {
-        profile_fn!(height);
         if self.open {
             3
         } else {
@@ -132,8 +125,8 @@ impl<'a> SearchBox<'a> {
         }
     }
 
+    #[profiled]
     fn input(&mut self, input: Input) -> Option<&'_ str> {
-        profile_fn!(input);
         match input {
             Input {
                 key: Key::Enter, ..
@@ -150,8 +143,8 @@ impl<'a> SearchBox<'a> {
         }
     }
 
+    #[profiled]
     fn set_error(&mut self, err: Option<impl Display>) {
-        profile_fn!(set_error);
         let b = if let Some(err) = err {
             Block::default()
                 .borders(Borders::ALL)
@@ -173,8 +166,8 @@ struct Buffer<'a> {
 
 #[allow(dead_code)]
 impl<'a> Buffer<'a> {
+    #[profiled]
     fn new(path: PathBuf) -> io::Result<Self> {
-        // profile_fn!(buffer_new);
         let mut textarea = if let Ok(md) = path.metadata() {
             if md.is_file() {
                 let mut textarea: TextArea = io::BufReader::new(fs::File::open(&path)?)
@@ -206,8 +199,8 @@ impl<'a> Buffer<'a> {
         })
     }
 
+    #[profiled]
     fn save(&mut self) -> io::Result<()> {
-        profile_fn!(save);
         let mut f = io::BufWriter::new(fs::File::create(&self.path)?);
         for line in self.textarea.lines() {
             f.write_all(line.as_bytes())?;
@@ -226,9 +219,8 @@ struct Output<'a> {
 }
 
 impl<'a> Output<'a> {
+    #[profiled]
     fn new() -> Self {
-        profile_fn!(output_new);
-
         let mut textarea = TextArea::default();
         textarea.set_style(Style::default().fg(Color::DarkGray));
         textarea.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
@@ -258,17 +250,17 @@ pub(crate) struct Editor<'a> {
 
 #[allow(dead_code)]
 impl<'a> Editor<'a> {
+    #[profiled]
     pub(crate) fn new<I>(paths: I) -> io::Result<Self>
     where
         I: Iterator,
         I::Item: Into<PathBuf>,
     {
-        // profile_fn!(editor_new);
         let buffers = paths
             .map(|p| Buffer::new(p.into()))
             .collect::<io::Result<Vec<_>>>()?;
         if buffers.is_empty() {
-            return error!("USAGE: cargo run --example editor FILE1 [FILE2...]");
+            return error!("USAGE: thag demo/tui_ta_editor_profile.rs FILE1 FILE2");
         }
         let mut stdout = io::stdout();
         enable_raw_mode()?;
@@ -293,8 +285,8 @@ impl<'a> Editor<'a> {
     }
 
     #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
+    #[profiled]
     pub(crate) fn run(&mut self) -> io::Result<()> {
-        // profile_fn!(run);
         loop {
             let search_height = self.search.height();
             let layout = Layout::default()
@@ -311,7 +303,7 @@ impl<'a> Editor<'a> {
                 );
 
             self.term.draw(|f| {
-                let chunks = layout.split(f.size());
+                let chunks = layout.split(f.area());
 
                 if search_height > 0 {
                     f.render_widget(&self.search.textarea, chunks[0]);
@@ -460,7 +452,7 @@ impl<'a> Editor<'a> {
             } else {
                 let event = read()?;
 
-                if let Paste(data) = event {
+                if let Paste(ref data) = event {
                     self.write_output("Pasting data");
                     self.output.modified = true;
 
@@ -471,7 +463,7 @@ impl<'a> Editor<'a> {
                         buffer.modified = true;
                     }
                 } else {
-                    let input = Input::from(event.clone());
+                    let input = Input::from(event);
                     if input.alt || input.ctrl || input.shift {
                         self.write_output(format!("input={input:?}").as_str());
                     }
@@ -502,7 +494,6 @@ impl<'a> Editor<'a> {
                                     .to_string_lossy()
                             )
                             .into();
-                            // self.message = Some(msg.clone());
                             self.write_output(&msg);
                         }
                         Input {
@@ -538,28 +529,26 @@ impl<'a> Editor<'a> {
         Ok(())
     }
 
+    #[profiled]
     fn write_output(&mut self, msg: &str) {
-        profile_fn!(write_output);
         self.output.textarea.insert_str(msg);
         self.output.textarea.insert_newline();
         self.output.modified = true;
     }
 }
 
+#[profiled(detailed_memory = true)]
 fn show_popup(f: &mut ratatui::prelude::Frame) {
-    profile_fn!(show_popup);
-    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.size());
+    let area = centered_rect(90, NUM_ROWS as u16 + 5, f.area());
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(
-            Title::from("Key bindings - subject to your terminal settings")
-                .alignment(ratatui::layout::Alignment::Center),
-        )
-        .title(Title::from("(^L to toggle)").alignment(Alignment::Center))
+        .title_alignment(Alignment::Center)
+        .title_top("Key bindings - subject to your terminal settings")
+        .title_bottom("(^L to toggle)")
         .add_modifier(Modifier::BOLD);
     f.render_widget(Clear, area);
     //this clears out the background
@@ -591,8 +580,8 @@ fn show_popup(f: &mut ratatui::prelude::Frame) {
 }
 
 impl<'a> Drop for Editor<'a> {
+    #[profiled]
     fn drop(&mut self) {
-        profile_fn!(drop);
         self.term.show_cursor().unwrap();
         disable_raw_mode().unwrap();
         ratatui::crossterm::execute!(
@@ -605,8 +594,8 @@ impl<'a> Drop for Editor<'a> {
     }
 }
 
+#[profiled]
 fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    profile_fn!(cemtered_rect);
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),
@@ -623,22 +612,7 @@ fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 }
 
 #[allow(dead_code)]
-fn main() -> Result<(), Box<dyn Error>> {
-    if firestorm::enabled() {
-        // Profile the `Editor::run` method
-        let flame_dir_path = env::temp_dir().join("flames/");
-        let flame_dir = flame_dir_path.to_string_lossy();
-        firestorm::bench(&*flame_dir, || {
-            let mut editor =
-                Editor::new(env::args_os().skip(1)).expect("Error instantiating Editor");
-            editor
-                .run()
-                .expect("Error calling execute() in firestorm profiler");
-        })
-        .map_err(|e| format!("Error invoking firestorm::bench: {e:?}"))?;
-        Ok(())
-    } else {
-        let mut editor = Editor::new(env::args_os().skip(1))?;
-        Ok(editor.run()?)
-    }
+#[enable_profiling(time)]
+fn main() -> io::Result<()> {
+    Editor::new(env::args_os().skip(1))?.run()
 }

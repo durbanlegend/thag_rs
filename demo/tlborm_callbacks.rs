@@ -1,6 +1,6 @@
 /// `Callbacks` example from `The Little Book of Rust Macros`
 //# Purpose: Demo macro callbacks.
-//# Categories: educational, technique
+//# Categories: learning, technique
 macro_rules! call_with_larch {
     ($callback:ident) => {
         $callback!(larch)

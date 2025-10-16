@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 clap = "4.5.18"
-crossterm = "0.28.1"
+crossterm = "0.29"
 mockall = "0.13.0"
 thag_rs = { path = "/Users/donf/projects/thag_rs/" }
 */

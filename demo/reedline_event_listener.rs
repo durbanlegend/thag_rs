@@ -1,12 +1,17 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-reedline = "0.36.0"
-*/
-
 /// Published example from `reedline` crate.
+///
+/// The latest version of this example is available in the [examples] folder in the `reedline`
+/// repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/nushell/reedline/blob/main/examples/event_listener.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: demo featured crates.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use {
     crossterm::{
         event::{poll, Event, KeyCode, KeyEvent},
@@ -26,7 +31,7 @@ fn main() -> std::io::Result<()> {
 }
 
 // **For debugging purposes only:** Track the terminal events observed by [`Reedline`] and print them.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 pub fn print_events() -> std::io::Result<()> {
     stdout().flush()?;
     terminal::enable_raw_mode()?;

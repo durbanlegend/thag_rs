@@ -1,10 +1,13 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }
 */
 
-use crossterm::{event::{self, Event, KeyCode}, terminal, ExecutableCommand};
+use crossterm::{
+    event::{self, Event, KeyCode},
+    terminal, ExecutableCommand,
+};
 use std::io::{stdout, Write};
 use std::time::{Duration, Instant};
 use winapi::um::consoleapi::SetConsoleMode;

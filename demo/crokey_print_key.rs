@@ -1,10 +1,14 @@
-/*[toml]
-[dependencies]
-crokey = "1.1.0"
-crossterm = "0.28.1"
-*/
-
-/// Published example of combiner from `crokey` crate.
+/// Published example of combiner from the `crokey` crate.
+///
+/// The latest version of this example is available in the [examples] folder
+///  in the `crokey` repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/Canop/crokey/blob/main/examples/print_key/src/main.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 //# Purpose: Demo key combiner.
 //# Categories: crates, technique
 use {

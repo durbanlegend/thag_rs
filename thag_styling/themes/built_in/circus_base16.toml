@@ -1,0 +1,133 @@
+name = "Circus Base16"
+description = "Converted from Circus theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#191919"]
+bg_rgbs = [[
+    25,
+    25,
+    25,
+]]
+
+[palette.heading1]
+rgb = [
+    184,
+    136,
+    226,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    184,
+    136,
+    226,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    114,
+    216,
+    206,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    239,
+    142,
+    162,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    141,
+    215,
+    208,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    113,
+    172,
+    243,
+]
+
+[palette.emphasis]
+rgb = [
+    216,
+    209,
+    140,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    125,
+    205,
+    197,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    191,
+    191,
+    191,
+]
+
+[palette.subtle]
+rgb = [
+    165,
+    165,
+    165,
+]
+
+[palette.hint]
+rgb = [
+    168,
+    161,
+    170,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    165,
+    165,
+    165,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    143,
+    195,
+    135,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    153,
+    153,
+    153,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    165,
+    165,
+    165,
+]

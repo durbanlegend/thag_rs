@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Fast factorial algorithms with arbitrary precision and avoiding recursion.
 /// A version using `std::Iterator::fold` and one using `std::iter::Successors:successors`
 /// are executed and compared to ensure they agree before printing out the value.
@@ -22,7 +17,7 @@ ibig = "0.3.6"
 /// only run one algorithm while others are slowed down by running and comparing two different
 /// algorithms.
 //# Purpose: Demo snippets with functions and closures, `ibig` cross-platform big-number crate.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::env;
@@ -59,4 +54,4 @@ let n: usize = args[1].parse().expect("Please provide a valid number");
 let fac_fold_n = fac_fold(n);
 
 assert_eq!(fac_fold_n, fac_successors(n));
-println!("factorial({n}) = {:#?}", fac_fold_n);
+println!("factorial({n}) = {fac_fold_n:#?}");

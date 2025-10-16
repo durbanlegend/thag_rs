@@ -1,0 +1,133 @@
+name = "OceanicNext Base16"
+description = "Converted from OceanicNext theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1b2b34"]
+bg_rgbs = [[
+    27,
+    43,
+    52,
+]]
+
+[palette.heading1]
+rgb = [
+    213,
+    172,
+    213,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    204,
+    169,
+    156,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    142,
+    217,
+    217,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    160,
+    166,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    177,
+    136,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    216,
+    222,
+    233,
+]
+
+[palette.info]
+rgb = [
+    155,
+    193,
+    230,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    211,
+    136,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    150,
+    209,
+    209,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    198,
+    203,
+    213,
+]
+
+[palette.subtle]
+rgb = [
+    163,
+    180,
+    196,
+]
+
+[palette.hint]
+rgb = [
+    167,
+    181,
+    192,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    166,
+    175,
+    193,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    159,
+    206,
+    154,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    205,
+    211,
+    222,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    165,
+    180,
+    194,
+]

@@ -1,0 +1,133 @@
+name = "Atelier Heath Base16"
+description = "Converted from Atelier Heath theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1b181b"]
+bg_rgbs = [[
+    27,
+    24,
+    27,
+]]
+
+[palette.heading1]
+rgb = [
+    166,
+    141,
+    216,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    225,
+    107,
+    225,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    94,
+    237,
+    237,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    241,
+    155,
+    142,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    236,
+    167,
+    121,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    247,
+    243,
+    247,
+]
+
+[palette.info]
+rgb = [
+    110,
+    132,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    225,
+    191,
+    132,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    92,
+    239,
+    239,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    198,
+    185,
+    198,
+]
+
+[palette.subtle]
+rgb = [
+    176,
+    155,
+    176,
+]
+
+[palette.hint]
+rgb = [
+    174,
+    157,
+    174,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    175,
+    156,
+    175,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    207,
+    201,
+    124,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    216,
+    202,
+    216,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    174,
+    158,
+    174,
+]

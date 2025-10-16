@@ -1,17 +1,6 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.3", features = ["derive"] }
-termbg = "0.5.2"
-*/
-
-use crossterm::cursor::{MoveToColumn, Show};
-use crossterm::ExecutableCommand;
 use owo_colors::colors::css::{Black, DarkOrange, Orange};
 use owo_colors::colors::{Blue, Cyan, Green, Red, White};
 use owo_colors::{OwoColorize, Style};
-use std::io::{stdout, Write};
 use strum::{Display, EnumIter, IntoEnumIterator};
 use termbg::Theme;
 
@@ -81,13 +70,13 @@ pub fn clear_screen() {
 }
 
 fn main() {
-    let timeout = std::time::Duration::from_millis(100);
+    let timeout = std::time::Duration::from_millis(1000);
 
     println!("Check terminal background color");
     let term = termbg::terminal();
     let theme: Result<Theme, termbg::Error> = termbg::theme(timeout);
 
-    println!("  Term : {:?}", term);
+    println!("\n  Term : {:?}", term);
 
     let supports_color: bool = match theme {
         Ok(_theme) => true,
@@ -99,14 +88,14 @@ fn main() {
         match theme.unwrap() {
             Theme::Light => {
                 for variant in LightStyle::iter() {
-                    let msg = &format!("My light theme {variant} message");
+                    let msg = &format!("My light-themed {variant} message");
                     println!("{}", msg.style(variant.get_style()));
                 }
             }
 
             Theme::Dark => {
                 for variant in DarkStyle::iter() {
-                    let msg = &format!("My dark theme {variant} message");
+                    let msg = &format!("My dark-themed {variant} message");
                     println!("{}", msg.style(variant.get_style()));
                 }
             }

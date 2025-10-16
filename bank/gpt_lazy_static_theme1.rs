@@ -9,13 +9,13 @@ extern crate lazy_static;
 use std::sync::Mutex;
 
 #[derive(Debug, PartialEq)]
-enum TermTheme {
+enum TermBgLuma {
     Light,
     Dark,
 }
 
 lazy_static! {
-    static ref TERM_THEME: Mutex<TermTheme> = Mutex::new(TermTheme::Light);
+    static ref TERM_THEME: Mutex<TermBgLuma> = Mutex::new(TermBgLuma::Light);
 }
 
 fn main() {
@@ -24,7 +24,7 @@ fn main() {
 
     // Match the dereferenced value of the Mutex guard
     match *theme {
-        TermTheme::Light => println!("The theme is Light"),
-        TermTheme::Dark => println!("The theme is Dark"),
+        TermBgLuma::Light => println!("The theme is Light"),
+        TermBgLuma::Dark => println!("The theme is Dark"),
     }
 }

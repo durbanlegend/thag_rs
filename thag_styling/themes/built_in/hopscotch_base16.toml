@@ -1,0 +1,133 @@
+name = "Hopscotch Base16"
+description = "Converted from Hopscotch theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#322931"]
+bg_rgbs = [[
+    50,
+    41,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    229,
+    168,
+    185,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    248,
+    156,
+    123,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    130,
+    241,
+    235,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    175,
+    178,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    199,
+    148,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    148,
+    222,
+    249,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    219,
+    148,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    127,
+    245,
+    238,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    213,
+    210,
+    212,
+]
+
+[palette.subtle]
+rgb = [
+    192,
+    179,
+    191,
+]
+
+[palette.hint]
+rgb = [
+    188,
+    183,
+    188,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    188,
+    184,
+    188,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    195,
+    225,
+    147,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    213,
+    211,
+    213,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    190,
+    181,
+    189,
+]

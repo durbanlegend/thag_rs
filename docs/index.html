@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thag_rs Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #2980b9;
+            margin-top: 0;
+        }
+        .intro {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+        }
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .file-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .file-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .description {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+        .file-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 5px 5px 5px 0;
+            transition: background-color 0.3s;
+            font-size: 0.9em;
+        }
+        .file-link:hover {
+            background: #2980b9;
+        }
+        .svg-link {
+            background: #e74c3c;
+        }
+        .svg-link:hover {
+            background: #c0392b;
+        }
+        .png-link {
+            background: #f39c12;
+        }
+        .png-link:hover {
+            background: #e67e22;
+        }
+        .gif-link {
+            background: #9b59b6;
+        }
+        .gif-link:hover {
+            background: #8e44ad;
+        }
+        .md-link {
+            background: #16a085;
+        }
+        .md-link:hover {
+            background: #1abc9c;
+        }
+        .section-badge {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        .inline-preview {
+            margin: 30px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #666;
+            border-top: 2px solid #ddd;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦀 thag_rs Documentation Hub</h1>
+
+        <div class="intro">
+            <p><strong>Welcome to the thag_rs documentation and assets site.</strong></p>
+            <p>This page provides access to profiling visualizations, theme screenshots, demos, and documentation for the thag_rs ecosystem deployed to GitHub Pages.</p>
+        </div>
+
+        <!-- PROFILER SECTION -->
+        <h2>🔥 thag_profiler Visualizations <span class="section-badge">Profiling</span></h2>
+
+        <div class="file-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+            <h3 style="color: white;">Featured: Interactive Profiler Demo</h3>
+            <div class="description" style="color: #f0f0f0;">Complete profiling workflow demonstration with interactive flamegraph</div>
+            <a href="thag_profiler/assets/thag_profile_demo.gif" target="_blank" class="file-link gif-link">View GIF</a>
+            <a href="thag_profiler/assets/thag_profile_demo.svg" target="_blank" class="file-link svg-link">Interactive SVG</a>
+            <a href="thag_profiler/assets/thag_profile_demo.png" target="_blank" class="file-link png-link">PNG Preview</a>
+        </div>
+
+        <div class="file-grid">
+            <div class="file-card">
+                <h3>Time Flamecharts</h3>
+                <div class="description">Interactive time-based flame visualizations showing execution flow</div>
+                <a href="thag_profiler/assets/flamechart_rust_time.svg" target="_blank" class="file-link svg-link">flamechart_rust_time.svg</a>
+                <a href="thag_profiler/assets/flamechart_rust_time.png" target="_blank" class="file-link png-link">PNG</a>
+                <a href="thag_profiler/assets/flamechart.svg" target="_blank" class="file-link svg-link">flamechart.svg</a>
+                <a href="thag_profiler/assets/flamechart_time_20250302-080709.svg" target="_blank" class="file-link svg-link">flamechart (Mar 2)</a>
+                <a href="thag_profiler/assets/flamechart_time_20250519-155436.svg" target="_blank" class="file-link svg-link">flamechart (May 19)</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Time Flamegraphs</h3>
+                <div class="description">Aggregated time-based flame graphs showing cumulative execution</div>
+                <a href="thag_profiler/assets/flamegraph_time_20250302-080709.svg" target="_blank" class="file-link svg-link">flamegraph_time.svg</a>
+                <a href="thag_profiler/assets/flamegraph_time_20250302-080709.png" target="_blank" class="file-link png-link">PNG</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Memory Flamegraphs</h3>
+                <div class="description">Memory allocation and heap analysis visualizations</div>
+                <a href="thag_profiler/assets/flamegraph_mem_20250624-141421.svg" target="_blank" class="file-link svg-link">flamegraph_mem.svg</a>
+                <a href="thag_profiler/assets/flamegraph_mem_diff.svg" target="_blank" class="file-link svg-link">flamegraph_mem_diff.svg</a>
+                <a href="thag_profiler/assets/memory_flamegraph_detail_thag.svg" target="_blank" class="file-link svg-link">memory_detail.svg</a>
+                <a href="thag_profiler/assets/memory_flamegraph_filtered.svg" target="_blank" class="file-link svg-link">memory_filtered.svg</a>
+                <a href="thag_profiler/assets/memory_flamegraph_unfiltered.svg" target="_blank" class="file-link svg-link">memory_unfiltered.svg</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Memory Flamecharts</h3>
+                <div class="description">Timeline-based memory allocation visualizations</div>
+                <a href="thag_profiler/assets/memory_flamechart_20250521-100000.svg" target="_blank" class="file-link svg-link">memory_flamechart.svg</a>
+                <a href="thag_profiler/assets/memory_flamechart_20250521-100000.png" target="_blank" class="file-link png-link">PNG</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Tool Screenshots</h3>
+                <div class="description">Screenshots of profiling tools and workflow</div>
+                <a href="thag_profiler/assets/thag_profile_main.png" target="_blank" class="file-link png-link">thag_profile main menu</a>
+                <a href="thag_profiler/assets/vimdiff_profile_instrument.png" target="_blank" class="file-link png-link">vimdiff instrumentation</a>
+            </div>
+        </div>
+
+        <!-- DEMO SECTION -->
+        <h2>🎬 thag_demo Assets <span class="section-badge">Demonstrations</span></h2>
+
+        <div class="file-grid">
+            <div class="file-card">
+                <h3>Time Profiling Demo</h3>
+                <div class="description">Example flamegraph from thag_demo time profiling demonstration</div>
+                <a href="thag_demo/assets/time_profiling_demo.svg" target="_blank" class="file-link svg-link">Interactive SVG</a>
+                <a href="thag_demo/assets/time_profiling_demo.png" target="_blank" class="file-link png-link">PNG Preview</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Basic Flamegraph Demo</h3>
+                <div class="description">Simple flamegraph demonstration for getting started</div>
+                <a href="thag_demo/assets/flamegraph_demo.svg" target="_blank" class="file-link svg-link">Interactive SVG</a>
+                <a href="thag_demo/assets/flamegraph_demo.png" target="_blank" class="file-link png-link">PNG Preview</a>
+            </div>
+        </div>
+
+        <!-- STYLING SECTION -->
+        <h2>🎨 thag_styling Theme Screenshots <span class="section-badge">Theming</span></h2>
+
+        <div class="file-grid">
+            <div class="file-card">
+                <h3>Catppuccin Mocha</h3>
+                <div class="description">Popular dark theme with pastel colors</div>
+                <a href="thag_styling/assets/catppuccin-mocha.png" target="_blank" class="file-link png-link">View Screenshot</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Dracula Base16</h3>
+                <div class="description">Iconic dark theme with vibrant colors</div>
+                <a href="thag_styling/assets/dracula_base16.png" target="_blank" class="file-link png-link">View Screenshot</a>
+                <a href="thag_styling/assets/ratatui_theming_showcase_dracula_base16.png" target="_blank" class="file-link png-link">Ratatui Showcase</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Gruvbox Light Hard</h3>
+                <div class="description">Retro groove light theme with warm colors</div>
+                <a href="thag_styling/assets/gruvbox-light-hard_base16.png" target="_blank" class="file-link png-link">View Screenshot</a>
+            </div>
+
+            <div class="file-card">
+                <h3>thag Morning Coffee (Light)</h3>
+                <div class="description">Custom light theme inspired by morning coffee</div>
+                <a href="thag_styling/assets/thag-morning-coffee-light.png" target="_blank" class="file-link png-link">View Screenshot</a>
+            </div>
+
+            <div class="file-card">
+                <h3>thag Raphael School of Athens (Dark)</h3>
+                <div class="description">Custom dark theme inspired by Renaissance art</div>
+                <a href="thag_styling/assets/thag-raphael-school-of-athens-dark.png" target="_blank" class="file-link png-link">View Screenshot</a>
+            </div>
+        </div>
+
+        <!-- DOCUMENTATION SECTION -->
+        <h2>📚 Technical Documentation <span class="section-badge">Markdown</span></h2>
+
+        <div class="file-grid">
+            <div class="file-card">
+                <h3>Base Colors Feature</h3>
+                <div class="description">Documentation for the base colors system in theme generation</div>
+                <a href="base_colors_feature.md" target="_blank" class="file-link md-link">Read Documentation</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Runtime Theme Loading</h3>
+                <div class="description">Guide to dynamically loading and switching themes at runtime</div>
+                <a href="runtime_theme_loading.md" target="_blank" class="file-link md-link">Read Documentation</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Theme Improvements Summary</h3>
+                <div class="description">Overview of theme system enhancements and improvements</div>
+                <a href="theme_improvements_summary.md" target="_blank" class="file-link md-link">Read Documentation</a>
+            </div>
+
+            <div class="file-card">
+                <h3>Theme System Complete</h3>
+                <div class="description">Comprehensive documentation of the complete theme system</div>
+                <a href="theme_system_improvements_complete.md" target="_blank" class="file-link md-link">Read Documentation</a>
+            </div>
+        </div>
+
+        <!-- INLINE PREVIEW -->
+        <h2>📊 Inline Preview</h2>
+        <div class="inline-preview">
+            <h3>Featured: Latest Rust Time Flamechart</h3>
+            <p class="description">Interactive flamechart showing Rust execution time profiling. Click and drag to zoom, click labels to explore.</p>
+            <object type="image/svg+xml" data="thag_profiler/assets/flamechart_rust_time.svg" width="100%" height="500">
+                <p>Your browser does not support SVG. <a href="thag_profiler/assets/flamechart_rust_time.svg">View the flamechart directly</a>.</p>
+            </object>
+        </div>
+
+        <footer>
+            <p><strong>thag_rs</strong> — A versatile Rust script runner and profiling toolkit</p>
+            <p>Documentation deployed to GitHub Pages | <a href="https://github.com/durbanlegend/thag_rs">View on GitHub</a></p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,255 @@
+backgrounds = ["#1e1e2e"]
+base_colors = [
+    [
+    30,
+    30,
+    46,
+],
+    [
+    24,
+    24,
+    37,
+],
+    [
+    49,
+    50,
+    68,
+],
+    [
+    69,
+    71,
+    90,
+],
+    [
+    88,
+    91,
+    112,
+],
+    [
+    205,
+    214,
+    244,
+],
+    [
+    245,
+    224,
+    220,
+],
+    [
+    180,
+    190,
+    254,
+],
+    [
+    243,
+    139,
+    168,
+],
+    [
+    250,
+    179,
+    135,
+],
+    [
+    249,
+    226,
+    175,
+],
+    [
+    166,
+    227,
+    161,
+],
+    [
+    148,
+    226,
+    213,
+],
+    [
+    137,
+    180,
+    250,
+],
+    [
+    203,
+    166,
+    247,
+],
+    [
+    242,
+    205,
+    205,
+],
+    [
+    24,
+    24,
+    37,
+],
+    [
+    17,
+    17,
+    27,
+],
+    [
+    235,
+    160,
+    172,
+],
+    [
+    245,
+    224,
+    220,
+],
+    [
+    166,
+    227,
+    161,
+],
+    [
+    137,
+    220,
+    235,
+],
+    [
+    116,
+    199,
+    236,
+],
+    [
+    245,
+    194,
+    231,
+],
+]
+bg_rgbs = [[
+    30,
+    30,
+    46,
+]]
+description = "Converted from Catppuccin Mocha theme"
+min_color_support = "true_color"
+name = "Catppuccin Mocha"
+term_bg_luma = "dark"
+
+[palette.code]
+rgb = [
+    148,
+    226,
+    213,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    207,
+    208,
+    226,
+]
+
+[palette.debug]
+rgb = [
+    116,
+    199,
+    236,
+]
+style = ["dim"]
+
+[palette.emphasis]
+rgb = [
+    249,
+    226,
+    175,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    158,
+    183,
+]
+style = ["bold"]
+
+[palette.heading1]
+rgb = [
+    203,
+    161,
+    252,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    242,
+    205,
+    205,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    140,
+    242,
+    225,
+]
+style = ["bold"]
+
+[palette.hint]
+rgb = [
+    235,
+    160,
+    172,
+]
+style = ["italic"]
+
+[palette.info]
+rgb = [
+    137,
+    180,
+    250,
+]
+
+[palette.link]
+rgb = [
+    166,
+    227,
+    161,
+]
+style = ["underline"]
+
+[palette.normal]
+rgb = [
+    213,
+    221,
+    246,
+]
+
+[palette.quote]
+rgb = [
+    245,
+    224,
+    220,
+]
+style = ["italic"]
+
+[palette.subtle]
+rgb = [
+    245,
+    194,
+    231,
+]
+
+[palette.success]
+rgb = [
+    180,
+    190,
+    254,
+]
+
+[palette.warning]
+rgb = [
+    250,
+    179,
+    135,
+]
+style = ["bold"]

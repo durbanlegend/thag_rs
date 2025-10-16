@@ -1,0 +1,133 @@
+name = "One Black"
+description = "Converted from One Black theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    193,
+    98,
+    222,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    212,
+    81,
+    68,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    255,
+    97,
+    110,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    240,
+    92,
+    104,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    224,
+    150,
+    82,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    74,
+    165,
+    240,
+]
+
+[palette.emphasis]
+rgb = [
+    230,
+    185,
+    101,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    76,
+    190,
+    205,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    171,
+    178,
+    191,
+]
+
+[palette.subtle]
+rgb = [
+    140,
+    140,
+    140,
+]
+
+[palette.hint]
+rgb = [
+    127,
+    135,
+    153,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    145,
+    150,
+    161,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    140,
+    194,
+    101,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    230,
+    230,
+    230,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    118,
+    132,
+    162,
+]

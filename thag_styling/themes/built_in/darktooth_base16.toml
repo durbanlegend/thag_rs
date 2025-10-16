@@ -1,0 +1,133 @@
+name = "Darktooth Base16"
+description = "Converted from Darktooth theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1d2021"]
+bg_rgbs = [[
+    29,
+    32,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    211,
+    157,
+    190,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    232,
+    184,
+    110,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    156,
+    186,
+    175,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    156,
+    144,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    177,
+    120,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    253,
+    244,
+    193,
+]
+
+[palette.info]
+rgb = [
+    120,
+    226,
+    248,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    209,
+    120,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    160,
+    183,
+    174,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    209,
+    199,
+    185,
+]
+
+[palette.subtle]
+rgb = [
+    175,
+    170,
+    167,
+]
+
+[palette.hint]
+rgb = [
+    183,
+    170,
+    159,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    186,
+    171,
+    156,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    158,
+    201,
+    142,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    213,
+    196,
+    161,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    181,
+    169,
+    162,
+]

@@ -1,14 +1,9 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
-/// This serves to prove that the memoization is significantly faster, although
+/// This serves to prove that the memoization is faster, although
 /// not dramatically so.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and no memoization, and ChatGPT implementation.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::env;

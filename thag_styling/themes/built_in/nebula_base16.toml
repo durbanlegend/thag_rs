@@ -1,0 +1,133 @@
+name = "Nebula Base16"
+description = "Converted from Nebula theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#22273b"]
+bg_rgbs = [[
+    34,
+    39,
+    59,
+]]
+
+[palette.heading1]
+rgb = [
+    185,
+    182,
+    217,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    187,
+    169,
+    205,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    136,
+    237,
+    228,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    195,
+    196,
+    230,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    197,
+    196,
+    203,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    199,
+    226,
+    215,
+]
+
+[palette.info]
+rgb = [
+    172,
+    188,
+    227,
+]
+
+[palette.emphasis]
+rgb = [
+    182,
+    217,
+    192,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    147,
+    227,
+    219,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    211,
+    212,
+    214,
+]
+
+[palette.subtle]
+rgb = [
+    167,
+    185,
+    206,
+]
+
+[palette.hint]
+rgb = [
+    185,
+    186,
+    189,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    185,
+    186,
+    188,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    167,
+    165,
+    208,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    199,
+    201,
+    205,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    168,
+    206,
+    203,
+]

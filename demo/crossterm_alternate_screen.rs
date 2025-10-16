@@ -1,15 +1,10 @@
-/*[toml]
-[dependencies]
-ratatui = "0.28.1"
-*/
-
-/// Published example from crossterm crate. Macro version of the example:
+/// Published example from the `crossterm` crate. Macro version of the example:
 /// "Print a rectangle colored with magenta and use both direct execution and lazy execution."
 /// Direct execution with `execute` and lazy execution with `queue`.
 ///
 /// Url: https://docs.rs/crossterm/latest/crossterm/
 //# Purpose: Demo `crossterm` command API.
-//# Categories: crates, technique
+//# Categories: crates, technique, tui
 //# Sample arguments: `-- true`
 use std::{
     env,

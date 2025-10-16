@@ -1,0 +1,30 @@
+name = "None"
+description = "No styling - plain text only"
+term_bg_luma = "dark"                        # Default, but won't affect anything
+min_color_support = "basic"
+backgrounds = ["#ffffff"]                    # Placeholder, won't be used
+
+[palette]
+# Headers and Structure
+heading1 = { ansi = "", index = 0 } # Using "0" for default/no color
+heading2 = { ansi = "", index = 0 }
+heading3 = { ansi = "", index = 0 }
+
+# Status/Alerts
+error = { ansi = "", index = 0 }
+warning = { ansi = "", index = 0 }
+success = { ansi = "", index = 0 }
+info = { ansi = "", index = 0 }
+
+# Emphasis levels
+emphasis = { ansi = "", index = 0 }
+code = { ansi = "", index = 0 }
+normal = { ansi = "", index = 0 }
+subtle = { ansi = "", index = 0 }
+hint = { ansi = "", index = 0 }
+
+# Development
+debug = { ansi = "", index = 0 }
+link = { ansi = "", index = 0 }
+quote = { ansi = "", index = 0 }
+commentary = { ansi = "", index = 0 }

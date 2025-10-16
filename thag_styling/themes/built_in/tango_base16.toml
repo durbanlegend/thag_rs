@@ -1,0 +1,133 @@
+name = "Tango Base16"
+description = "Converted from Tango theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2e3436"]
+bg_rgbs = [[
+    46,
+    52,
+    54,
+]]
+
+[palette.heading1]
+rgb = [
+    212,
+    191,
+    215,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    137,
+    244,
+    244,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    138,
+    241,
+    242,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    180,
+    180,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    250,
+    156,
+    156,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    238,
+    238,
+    236,
+]
+
+[palette.info]
+rgb = [
+    171,
+    199,
+    235,
+]
+
+[palette.emphasis]
+rgb = [
+    250,
+    233,
+    156,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    132,
+    247,
+    249,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    216,
+    220,
+    211,
+]
+
+[palette.subtle]
+rgb = [
+    190,
+    242,
+    138,
+]
+
+[palette.hint]
+rgb = [
+    190,
+    193,
+    188,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    142,
+    189,
+    238,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    189,
+    249,
+    132,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    196,
+    159,
+    192,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    242,
+    231,
+    138,
+]

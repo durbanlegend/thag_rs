@@ -1,12 +1,22 @@
 /*[toml]
-[dependencies]
-nu-ansi-term = "0.50.1"
-reedline = "0.36.0"
+[features]
+default = ["sqlite-dynlib"]
+sqlite = ["reedline/sqlite"]
+sqlite-dynlib = ["reedline/sqlite-dynlib"]
 */
 
-/// Published demo from `reedline` crate.
+/// Published demo from `reedline` crate. Shows use of toml block to specify `reedline`
+/// features referenced in the example.
+///
+/// Note that this script has been known to fail with a `libsql` error refegenciny:
+///
+/// `include!(concat!(env!("OUT_DIR"), "/bindgen.rs"));`
+///
+/// In this case, try running `thag --cargo <dir_path>/reedline_transient_prompt.rs -- clean`
+/// and then rerunning the script.
+///
 //# Purpose: Demo the use of a transient minimal prompt `! ` for returned history.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 // Create a reedline object with a transient prompt.
 // cargo run --example transient_prompt
 //
@@ -32,26 +42,26 @@ pub static TRANSIENT_PROMPT: &str = "! ";
 pub static TRANSIENT_MULTILINE_INDICATOR: &str = ": ";
 
 impl Prompt for TransientPrompt {
-    fn render_prompt_left(&self) -> Cow<str> {
+    fn render_prompt_left(&self) -> Cow<'_, str> {
         Cow::Owned(String::new())
     }
 
-    fn render_prompt_right(&self) -> Cow<str> {
+    fn render_prompt_right(&self) -> Cow<'_, str> {
         Cow::Owned(String::new())
     }
 
-    fn render_prompt_indicator(&self, _prompt_mode: PromptEditMode) -> Cow<str> {
+    fn render_prompt_indicator(&self, _prompt_mode: PromptEditMode) -> Cow<'_, str> {
         Cow::Borrowed(TRANSIENT_PROMPT)
     }
 
-    fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+    fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
         Cow::Borrowed(TRANSIENT_MULTILINE_INDICATOR)
     }
 
     fn render_prompt_history_search_indicator(
         &self,
         history_search: PromptHistorySearch,
-    ) -> Cow<str> {
+    ) -> Cow<'_, str> {
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",

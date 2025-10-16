@@ -129,6 +129,134 @@ Accepts a script file or dynamic options.'
                                 Source='$(var.CargoTargetBinDir)\thag.exe'
                                 KeyPath='yes'/>
                         </Component>
+                        <Component Id='binary1' Guid='*'>
+                            <File
+                                Id='exe1'
+                                Name='thag_ast.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_ast.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary2' Guid='*'>
+                            <File
+                                Id='exe2'
+                                Name='thag_cargo.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_cargo.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary3' Guid='*'>
+                            <File
+                                Id='exe3'
+                                Name='thag_clippy.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_clippy.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary4' Guid='*'>
+                            <File
+                                Id='exe4'
+                                Name='thag_convert_themes.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_convert_themes.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary5' Guid='*'>
+                            <File
+                                Id='exe5'
+                                Name='thag_detect_term.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_detect_term.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary6' Guid='*'>
+                            <File
+                                Id='exe6'
+                                Name='thag_expand.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_expand.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary7' Guid='*'>
+                            <File
+                                Id='exe7'
+                                Name='thag_find_demos.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_find_demos.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary8' Guid='*'>
+                            <File
+                                Id='exe8'
+                                Name='thag_gen_config.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_gen_config.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary9' Guid='*'>
+                            <File
+                                Id='exe9'
+                                Name='thag_gen_errors.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_gen_errors.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary10' Guid='*'>
+                            <File
+                                Id='exe10'
+                                Name='thag_gen_readme.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_gen_readme.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary11' Guid='*'>
+                            <File
+                                Id='exe11'
+                                Name='thag_get_demo.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_get_demo.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary12' Guid='*'>
+                            <File
+                                Id='exe12'
+                                Name='thag_legible.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_legible.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary13' Guid='*'>
+                            <File
+                                Id='exe13'
+                                Name='thag_markdown.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_markdown.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary14' Guid='*'>
+                            <File
+                                Id='exe14'
+                                Name='thag_show_themes.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_show_themes.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary15' Guid='*'>
+                            <File
+                                Id='exe15'
+                                Name='thag_to_rust_script.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_to_rust_script.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary16' Guid='*'>
+                            <File
+                                Id='exe16'
+                                Name='thag_url.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_url.exe'
+                                KeyPath='yes'/>
+                        </Component>
                     </Directory>
                 </Directory>
             </Directory>
@@ -151,6 +279,22 @@ Accepts a script file or dynamic options.'
             <!--<ComponentRef Id='License'/>-->
 
             <ComponentRef Id='binary0'/>
+            <ComponentRef Id='binary1'/>
+            <ComponentRef Id='binary2'/>
+            <ComponentRef Id='binary3'/>
+            <ComponentRef Id='binary4'/>
+            <ComponentRef Id='binary5'/>
+            <ComponentRef Id='binary6'/>
+            <ComponentRef Id='binary7'/>
+            <ComponentRef Id='binary8'/>
+            <ComponentRef Id='binary9'/>
+            <ComponentRef Id='binary10'/>
+            <ComponentRef Id='binary11'/>
+            <ComponentRef Id='binary12'/>
+            <ComponentRef Id='binary13'/>
+            <ComponentRef Id='binary14'/>
+            <ComponentRef Id='binary15'/>
+            <ComponentRef Id='binary16'/>
 
             <Feature
                 Id='Environment'

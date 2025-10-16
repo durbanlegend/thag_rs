@@ -1,21 +1,25 @@
 /*[toml]
 [dependencies]
-crossterm = "0.28.1"
 log = "0.4.22"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-thag_rs = "0.1.9"
+simplelog = { version = "0.12.2", optional = true }
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
 
-strum = { version = "0.26.3", features = ["derive"] }
-supports-color= "3.0.0"
-termbg = "0.5.2"
+[features]
+default = ["simplelog"]
+debug_logging = []
+simplelog = ["dep:simplelog"]
 */
 
 /// Original prototype of `thag_rs`'s `colors` module to style messages according
 /// to their type. I only dropped `owo-colors` because I switched from `rustyline` to
 /// `reedline`, which was already using `nu_ansi_term`.
 ///
+/// The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
+///
+/// See also `demo/colors_old.rs`.
+///
 //# Purpose: Demo older alternative implementation of `colors` module using `owo-colors`.
-//# Categories: prototype, technique
+//# Categories: prototype, reference, testing
 use log::debug;
 use owo_ansi::xterm as owo_xterm;
 use owo_ansi::{Blue, Cyan, Green, Red, White, Yellow};

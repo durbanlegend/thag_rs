@@ -11,12 +11,25 @@ use nu_ansi_term::{Color, Style};
 use std::time::{Duration, Instant};
 use strum::IntoEnumIterator;
 use termbg::terminal;
-use thag_rs::colors::{coloring, ColorSupport, MessageStyle, XtermColor};
+use thag_rs::styling::{ColorSupport, TermBgLuma};
 use thag_rs::logging::V;
-use thag_rs::{cvprtln, vlog, Lvl};
+use thag_rs::{svprtln, vprtln, Role};
 
-let hash_map = Lvl::iter().map(|variant| (variant.to_string(), Style::from(&variant)))
-    .collect::<std::collections::HashMap<String, Style>>();
+// The colors module was removed, so we'll create a simple style mapping instead
+let hash_map = Role::iter().map(|variant| {
+    let style = match variant {
+        Role::ERR => Style::new().fg(Color::Red).bold(),
+        Role::WARN => Style::new().fg(Color::Yellow),
+        Role::EMPH => Style::new().fg(Color::Cyan).bold(),
+        Role::HD1 => Style::new().fg(Color::Blue).bold(),
+        Role::HD2 => Style::new().fg(Color::Blue),
+        Role::SUCC => Style::new().fg(Color::White).bold(),
+        Role::NORM => Style::new().fg(Color::White),
+        Role::DBUG => Style::new().fg(Color::Green),
+        Role::HINT => Style::new().fg(Color::Fixed(8)),
+    };
+    (variant.to_string(), style)
+}).collect::<std::collections::HashMap<String, Style>>();
 // println!("hash_map={hash_map:#?}");
 
 let style_keys = Lvl::iter().map(|variant| variant.to_string())

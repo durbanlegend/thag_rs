@@ -1,14 +1,22 @@
-/*[toml]
-[dependencies]
-reedline = "0.36.0"
-*/
-
 /// Published example from `reedline` crate. See the Vec of commands in the main method standing in for
 /// history. Enter a letter, e.g. "h" and press Tab to see the magic happen: all the commands starting
 /// with that letter will be displayed for selection with a tab, up and down arrows or Enter. Or you can
 /// enter subsequent letters to narrow the search. Noice.
-//# Categories: crates, REPL, technique
+///
+/// The latest version of this example is available in the [examples] folder in the `reedline`
+/// repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/nushell/reedline/blob/main/examples/ide_completions.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Demo `reedline` tab completions.
+//# Categories: crates, repl, technique
+// Original `reedline` crate comments:
+//
 // Create a reedline object with tab completions support
 // cargo run --example completions
 //

@@ -1,0 +1,133 @@
+name = "Nord Light Base16"
+description = "Converted from Nord Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#e5e9f0"]
+bg_rgbs = [[
+    229,
+    233,
+    240,
+]]
+
+[palette.heading1]
+rgb = [
+    143,
+    45,
+    83,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    64,
+    94,
+    150,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    32,
+    143,
+    182,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    131,
+    32,
+    56,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    166,
+    54,
+    22,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    28,
+    124,
+    135,
+]
+
+[palette.info]
+rgb = [
+    40,
+    91,
+    149,
+]
+
+[palette.emphasis]
+rgb = [
+    154,
+    117,
+    0,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    48,
+    135,
+    166,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    46,
+    52,
+    64,
+]
+
+[palette.subtle]
+rgb = [
+    37,
+    90,
+    177,
+]
+
+[palette.hint]
+rgb = [
+    66,
+    96,
+    148,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    77,
+    102,
+    137,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    79,
+    137,
+    76,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    59,
+    66,
+    82,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    55,
+    94,
+    160,
+]

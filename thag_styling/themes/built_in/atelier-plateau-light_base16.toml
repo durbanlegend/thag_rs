@@ -1,0 +1,133 @@
+name = "Atelier Plateau Light Base16"
+description = "Converted from Atelier Plateau Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f4ecec"]
+bg_rgbs = [[
+    244,
+    236,
+    236,
+]]
+
+[palette.heading1]
+rgb = [
+    83,
+    51,
+    149,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    168,
+    57,
+    113,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    49,
+    113,
+    176,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    144,
+    30,
+    30,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    160,
+    70,
+    40,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    27,
+    24,
+    24,
+]
+
+[palette.info]
+rgb = [
+    45,
+    45,
+    154,
+]
+
+[palette.emphasis]
+rgb = [
+    150,
+    100,
+    49,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    63,
+    113,
+    162,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    88,
+    80,
+    80,
+]
+
+[palette.subtle]
+rgb = [
+    137,
+    88,
+    88,
+]
+
+[palette.hint]
+rgb = [
+    117,
+    108,
+    108,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    101,
+    93,
+    93,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    75,
+    139,
+    139,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    41,
+    36,
+    36,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    116,
+    109,
+    109,
+]

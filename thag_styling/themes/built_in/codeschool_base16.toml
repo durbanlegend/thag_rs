@@ -1,0 +1,133 @@
+name = "Codeschool Base16"
+description = "Converted from Codeschool theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#232c31"]
+bg_rgbs = [[
+    35,
+    44,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    243,
+    217,
+    147,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    226,
+    180,
+    138,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    240,
+    124,
+    125,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    177,
+    202,
+    239,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    191,
+    249,
+    141,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    181,
+    216,
+    246,
+]
+
+[palette.info]
+rgb = [
+    177,
+    180,
+    213,
+]
+
+[palette.emphasis]
+rgb = [
+    240,
+    170,
+    150,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    229,
+    136,
+    137,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    205,
+    211,
+    210,
+]
+
+[palette.subtle]
+rgb = [
+    126,
+    176,
+    238,
+]
+
+[palette.hint]
+rgb = [
+    174,
+    190,
+    182,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    179,
+    183,
+    186,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    135,
+    217,
+    229,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    167,
+    207,
+    163,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    165,
+    187,
+    200,
+]

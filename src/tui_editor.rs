@@ -1,48 +1,99 @@
-use crate::code_utils::write_source;
-use crate::file_dialog::{DialogMode, FileDialog, Status};
-use crate::stdin::edit_history;
 use crate::{
-    debug_log, key, regex, EventReader, KeyCombination, KeyDisplayLine, Lvl, ThagError, ThagResult,
+    code_utils::write_source,
+    file_dialog::{DialogMode, FileDialog, Status},
+    key,
+    stdin::edit_history,
+    KeyCombination, ThagError, ThagResult,
 };
-use firestorm::{profile_fn, profile_method};
-use ratatui::crossterm::event::{
+// use crokey::key;
+// use crokey::crossterm::event::KeyEvent;
+use crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event::{self, Paste},
     KeyEvent, KeyEventKind,
 };
+use mockall::automock;
 use ratatui::crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
 use ratatui::layout::{Constraint, Direction, Layout, Margin};
 use ratatui::prelude::{CrosstermBackend, Rect};
-use ratatui::style::{Color, Modifier, Style, Styled, Stylize};
+pub use ratatui::style::Style as RataStyle;
+use ratatui::style::{Color, Modifier, Styled, Stylize};
 use ratatui::text::Line;
 use ratatui::widgets::{block::Block, Borders, Clear, Paragraph};
 use ratatui::{CompletedFrame, Frame, Terminal};
 use regex::Regex;
 use scopeguard::{guard, ScopeGuard};
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
-use std::convert::Into;
-use std::env::var;
-use std::fmt::{Debug, Display};
-use std::io::Write;
-use std::path::PathBuf;
 use std::{
     self,
+    collections::VecDeque,
+    convert::Into,
+    env::var,
+    fmt::{Debug, Display, Write as _},
     fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    time::Duration,
 };
+use thag_common::{debug_log, re};
+use thag_styling::{Role, ThemedStyle};
+// import without risk of name clashing
+use thag_profiler::profiled;
 use tui_textarea::{CursorMove, Input, TextArea};
 
+/// Title displayed at the top of the key bindings popup
 pub const TITLE_TOP: &str = "Key bindings - subject to your terminal settings";
+/// Title displayed at the bottom of the key bindings popup
 pub const TITLE_BOTTOM: &str = "Ctrl+l to hide";
 
+/// Type alias for the crossterm backend with stdout lock
 pub type BackEnd<'a> = CrosstermBackend<std::io::StdoutLock<'a>>;
+/// Type alias for a terminal with the backend
 pub type Term<'a> = Terminal<BackEnd<'a>>;
+/// Type alias for a closure that resets the terminal
 pub type ResetTermClosure<'a> = Box<dyn FnOnce(Term<'a>)>;
+/// Type alias for a scope guard that manages terminal cleanup
 pub type TermScopeGuard<'a> = ScopeGuard<Term<'a>, ResetTermClosure<'a>>;
+/// A trait to allow mocking of the event reader for testing purposes.
+#[automock]
+pub trait EventReader {
+    /// Read a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn read_event(&self) -> ThagResult<Event>;
+    /// Poll for a terminal event.
+    ///
+    /// # Errors
+    ///
+    /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+    fn poll(&self, timeout: Duration) -> ThagResult<bool>;
+}
 
+/// A struct to implement real-world use of the event reader, as opposed to use in testing.
+#[derive(Debug)]
+pub struct CrosstermEventReader;
+
+impl EventReader for CrosstermEventReader {
+    #[profiled]
+    fn read_event(&self) -> ThagResult<Event> {
+        crossterm::event::read().map_err(Into::<ThagError>::into)
+    }
+
+    #[profiled]
+    fn poll(&self, timeout: Duration) -> ThagResult<bool> {
+        crossterm::event::poll(timeout).map_err(Into::<ThagError>::into)
+    }
+}
+
+/// A wrapper around a terminal with scope guard for automatic cleanup.
+///
+/// This struct manages a terminal instance and ensures proper cleanup
+/// when the terminal goes out of scope, regardless of how the program exits.
 pub struct ManagedTerminal<'a> {
     terminal: TermScopeGuard<'a>,
 }
@@ -53,7 +104,8 @@ impl ManagedTerminal<'_> {
     /// # Errors
     ///
     /// This function will return an error if there is an issue drawing to the terminal.
-    pub fn draw<F>(&mut self, f: F) -> std::io::Result<CompletedFrame>
+    #[profiled]
+    pub fn draw<F>(&mut self, f: F) -> std::io::Result<CompletedFrame<'_>>
     where
         F: FnOnce(&mut Frame<'_>),
     {
@@ -71,9 +123,8 @@ impl ManagedTerminal<'_> {
 ///
 /// # Errors
 ///
+#[profiled]
 pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
-    profile_fn!(resolve_term);
-
     if var("TEST_ENV").is_ok() {
         return Ok(None);
     }
@@ -102,54 +153,97 @@ pub fn resolve_term<'a>() -> ThagResult<Option<ManagedTerminal<'a>>> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+/// Represents a single entry in the edit history.
+///
+/// An entry contains both an index for ordering and the actual text content
+/// stored as individual lines. This structure is used to maintain a history
+/// of text edits that can be navigated and restored.
 pub struct Entry {
-    pub index: usize,       // Holds the entry's index
+    /// The index of this entry in the history collection
+    pub index: usize, // Holds the entry's index
+    /// The text content of this entry, stored as separate lines
     pub lines: Vec<String>, // Holds editor content as lines
 }
 
 impl Display for Entry {
+    #[profiled]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        profile_method!(fmt);
         write!(f, "{:?}: {}", self.index, self.lines.join("\n"))
     }
 }
 
 impl Entry {
+    /// Creates a new Entry with the given index and content.
+    ///
+    /// The content string is split into individual lines and stored in the `lines` field.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of this entry in the history collection
+    /// * `content` - The text content to store, which will be split into lines
+    #[profiled]
     pub fn new(index: usize, content: &str) -> Self {
-        profile_method!(new);
         Self {
             index,
             lines: content.lines().map(String::from).collect(),
         }
     }
 
-    // Extracts string contents of entry for use in the editor
+    /// Extracts string contents of entry for use in the editor.
+    ///
+    /// Joins all lines in the entry with newline characters to reconstruct
+    /// the original text content.
+    ///
+    /// # Returns
+    ///
+    /// A String containing the full text content with lines joined by newlines
     #[must_use]
+    #[profiled]
     pub fn contents(&self) -> String {
-        profile_method!(contents);
         self.lines.join("\n")
     }
 }
 
+/// Represents the edit history for a text editor.
+///
+/// This struct maintains a collection of text entries that can be navigated
+/// through, similar to command history in a shell. It tracks the current
+/// position within the history and provides methods for adding, updating,
+/// and navigating through entries.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct History {
+    /// The index of the currently selected entry in the history.
+    /// `None` indicates no current selection or an empty history.
     pub current_index: Option<usize>,
+    /// A double-ended queue containing all history entries.
+    /// Entries are stored as `Entry` objects which contain both
+    /// an index and the text content as lines.
     pub entries: VecDeque<Entry>, // Now a VecDeque of Entries
 }
 
 impl History {
+    /// Creates a new empty History instance.
     #[must_use]
+    #[profiled]
     pub fn new() -> Self {
-        profile_method!(new);
         Self {
             current_index: None,
             entries: VecDeque::with_capacity(20),
         }
     }
 
+    /// Loads a History instance from a file.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path to the file to load from
+    ///
+    /// # Returns
+    ///
+    /// A History instance loaded from the file, or a new empty instance if loading fails
     #[must_use]
+    #[profiled]
     pub fn load_from_file(path: &PathBuf) -> Self {
-        profile_method!(load_from_file);
         let mut history = fs::read_to_string(path).map_or_else(
             |_| Self::default(),
             |data| serde_json::from_str(&data).unwrap_or_else(|_| Self::new()),
@@ -175,25 +269,34 @@ impl History {
         history
     }
 
+    /// Returns true if the current position is at the start of the history.
+    #[allow(clippy::unnecessary_map_or)]
     #[must_use]
+    #[profiled]
     pub fn at_start(&self) -> bool {
-        profile_method!(at_start);
         debug_log!("at_start ...");
         self.current_index
             .map_or(true, |current_index| current_index == 0)
     }
 
+    /// Returns true if the current position is at the end of the history.
+    #[allow(clippy::unnecessary_map_or)]
     #[must_use]
+    #[profiled]
     pub fn at_end(&self) -> bool {
-        profile_method!(at_end);
         debug_log!("at_end ...");
         self.current_index.map_or(true, |current_index| {
             current_index == self.entries.len() - 1
         })
     }
 
+    /// Adds a new entry to the history.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The text content to add to the history
+    #[profiled]
     pub fn add_entry(&mut self, text: &str) {
-        profile_method!(add_entry);
         let new_index = self.entries.len(); // Assign the next index based on current length
         let new_entry = Entry::new(new_index, text);
 
@@ -211,8 +314,14 @@ impl History {
         debug_log!("history={self:?}");
     }
 
+    /// Updates an existing entry in the history or adds a new one if it doesn't exist.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to update
+    /// * `text` - The new text content for the entry
+    #[profiled]
     pub fn update_entry(&mut self, index: usize, text: &str) {
-        profile_method!(update_entry);
         debug_log!("update_entry for index {index}...");
         // Get a mutable reference to the entry at the specified index
         let current_index = self.current_index;
@@ -226,8 +335,13 @@ impl History {
         }
     }
 
+    /// Deletes an entry from the history by index.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to delete
+    #[profiled]
     pub fn delete_entry(&mut self, index: usize) {
-        profile_method!(delete_entry);
         self.entries.retain(|entry| entry.index != index);
 
         // Reassign indices after deletion
@@ -246,8 +360,8 @@ impl History {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered writing the file.
+    #[profiled]
     pub fn save_to_file(&mut self, path: &PathBuf) -> ThagResult<()> {
-        profile_method!(save_to_file);
         self.reassign_indices();
         if let Ok(data) = serde_json::to_string(&self) {
             debug_log!("About to write data=({data}");
@@ -277,8 +391,13 @@ impl History {
         Ok(())
     }
 
+    /// Gets the currently selected entry from the history.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the current entry, or None if the history is empty
+    #[profiled]
     pub fn get_current(&mut self) -> Option<&Entry> {
-        profile_method!(get_current);
         if self.entries.is_empty() {
             return None;
         }
@@ -293,8 +412,17 @@ impl History {
         }
     }
 
+    /// Gets an entry at the specified index and sets it as the current entry.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to retrieve
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the entry at the specified index
+    #[profiled]
     pub fn get(&mut self, index: usize) -> Option<&Entry> {
-        profile_method!(get);
         debug_log!("get({index})...");
         if !(0..self.entries.len()).contains(&index) {
             return None;
@@ -311,8 +439,17 @@ impl History {
         entry
     }
 
+    /// Gets a mutable reference to an entry at the specified index and sets it as the current entry.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The index of the entry to retrieve
+    ///
+    /// # Returns
+    ///
+    /// An optional mutable reference to the entry at the specified index
+    #[profiled]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut Entry> {
-        profile_method!(get_mut);
         debug_log!("get_mut({index})...");
 
         if !(0..self.entries.len()).contains(&index) {
@@ -337,8 +474,8 @@ impl History {
     /// # Panics
     ///
     /// Panics if a logic error is detected, likely when reaching the oldest History entry.
+    #[profiled]
     pub fn get_previous(&mut self) -> Option<&Entry> {
-        profile_method!(get_previous);
         // let this = &mut *self;
         debug_log!("get_previous...");
         if self.entries.is_empty() {
@@ -378,8 +515,8 @@ impl History {
     /// # Panics
     ///
     /// Panics if a logic error is detected, likely when reaching the newest History entry.
+    #[profiled]
     pub fn get_next(&mut self) -> Option<&Entry> {
-        profile_method!(get_next);
         debug_log!("get_next...");
         let this = &mut *self;
         if this.entries.is_empty() {
@@ -415,8 +552,13 @@ impl History {
         )
     }
 
+    /// Gets the last (most recent) entry in the history.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the last entry, or None if the history is empty
+    #[profiled]
     pub fn get_last(&mut self) -> Option<&Entry> {
-        profile_method!(get_last);
         if self.entries.is_empty() {
             return None;
         }
@@ -424,9 +566,9 @@ impl History {
         self.entries.back()
     }
 
-    // Reassign indices so that the newest entry has index 0, and the oldests has len - 1
+    /// Reassigns indices so that the newest entry has index 0, and the oldest has len - 1.
+    #[profiled]
     fn reassign_indices(&mut self) {
-        profile_method!(reassign_indices);
         // let len = self.entries.len();
         for (i, entry) in self.entries.iter_mut().enumerate() {
             entry.index = i;
@@ -434,37 +576,67 @@ impl History {
     }
 }
 
-// Struct to hold data-related parameters
 #[allow(dead_code)]
 #[derive(Debug, Default)]
+/// Struct to hold data-related parameters for the TUI editor
 pub struct EditData<'a> {
+    /// Whether to return the edited text as part of the result
     pub return_text: bool,
+    /// The initial content to display in the editor
     pub initial_content: &'a str,
-    pub save_path: Option<&'a mut PathBuf>,
+    /// Optional path where the edited content should be saved
+    pub save_path: Option<PathBuf>,
+    /// Optional path to the history file for storing edit history
     pub history_path: Option<&'a PathBuf>,
+    /// Optional history object for managing edit history
     pub history: Option<History>,
 }
 
-// Struct to hold display-related parameters
+/// Struct to hold display-related parameters for the TUI editor
 #[derive(Debug)]
 pub struct KeyDisplay<'a> {
+    /// The title to display at the top of the editor
     pub title: &'a str,
-    pub title_style: Style,
+    /// The style to apply to the title text
+    pub title_style: RataStyle,
+    /// Keys to remove from the default key mappings display
     pub remove_keys: &'a [&'a str],
+    /// Additional key mappings to add to the display
     pub add_keys: &'a [KeyDisplayLine],
 }
 
+/// Tracks the scroll state of the popup help display
+#[derive(Debug, Default)]
+pub struct PopupScrollState {
+    /// Current scroll offset (number of rows scrolled down)
+    pub scroll_offset: usize,
+}
+
+/// Represents the different actions that can be taken in response to user input in the TUI editor.
+///
+/// This enum is used to communicate between key handlers and the main editor loop,
+/// indicating what action should be taken based on the user's key press.
 #[derive(Debug)]
 pub enum KeyAction {
+    /// Abandon any unsaved changes and exit without saving
     AbandonChanges,
+    /// Continue with normal editor operation - no special action needed
     Continue, // For other inputs that don't need specific handling
+    /// Quit the editor, with a boolean indicating whether changes have been saved
     Quit(bool),
+    /// Save the current content to file
     Save,
+    /// Save the current content and then exit the editor
     SaveAndExit,
+    /// Show the help screen with key bindings
     ShowHelp,
+    /// Save the current content and submit it (e.g., for REPL execution)
     SaveAndSubmit,
+    /// Submit the current content without necessarily saving to file
     Submit,
+    /// Toggle the syntax highlighting colors
     ToggleHighlight,
+    /// Toggle the visibility of the popup help screen
     TogglePopup,
 }
 
@@ -478,7 +650,8 @@ pub enum KeyAction {
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
+#[profiled]
 pub fn tui_edit<R, F>(
     event_reader: &R,
     edit_data: &mut EditData,
@@ -488,7 +661,7 @@ pub fn tui_edit<R, F>(
 where
     R: EventReader + Debug,
     F: Fn(
-        KeyEvent,
+        ratatui::crossterm::event::KeyEvent,
         Option<&mut ManagedTerminal>,
         &mut TextArea,
         &mut EditData,
@@ -499,16 +672,18 @@ where
 {
     // Initialize state variables
     let mut popup = false;
-    let mut tui_highlight_fg: Lvl = Lvl::EMPH;
+    let mut tui_highlight_fg: Role = Role::Emphasis;
     let mut saved = false;
     let mut status_message: String = String::default(); // Add status message variable
 
     let mut maybe_term = resolve_term()?;
 
-    // Create the TextArea from initial content
+    // Create the `TextArea` from initial content
     let mut textarea = TextArea::from(edit_data.initial_content.lines());
+    textarea.set_hard_tab_indent(true);
+    // eprintln!("textarea.tab_length()={}", textarea.tab_length());
 
-    // Set up the display parameters for the textarea
+    // Set up the display parameters for the `TextArea`
     textarea.set_block(
         Block::default()
             .borders(Borders::ALL)
@@ -516,7 +691,7 @@ where
             .title_style(display.title_style),
     );
 
-    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+    textarea.set_line_number_style(RataStyle::themed(Role::Hint));
     textarea.move_cursor(CursorMove::Bottom);
     // New line with cursor at EOF for usability
     textarea.move_cursor(CursorMove::End);
@@ -529,6 +704,9 @@ where
 
     let remove = display.remove_keys;
     let add = display.add_keys;
+    // Track popup scroll state
+    let mut popup_scroll = PopupScrollState::default();
+
     // Can't make these OnceLock values, since their configuration depends on the `remove`
     // and `add` values passed in by the caller.
     let mut adjusted_mappings: Vec<KeyDisplayLine> = MAPPINGS
@@ -563,32 +741,30 @@ where
                         // Get the size of the available terminal area
                         let area = f.area();
 
-                        // Ensure there's enough height for both the textarea and the status line
+                        // Ensure there's enough height for both the `TextArea` and the status line
                         if area.height > 1 {
                             let chunks = Layout::default()
                                 .direction(Direction::Vertical)
-                                .constraints(
-                                    [
-                                        Constraint::Min(area.height - 3), // Editor area takes up the rest
-                                        Constraint::Length(3),            // Status line gets 1 line
-                                    ]
-                                    .as_ref(),
-                                )
+                                .constraints::<&[Constraint]>(&[
+                                    Constraint::Min(area.height - 3), // Editor area takes up the rest
+                                    Constraint::Length(3),            // Status line gets 1 line
+                                ])
                                 .split(area);
 
-                            // Render the textarea in the first chunk
+                            // Render the `TextArea` in the first chunk
                             f.render_widget(&textarea, chunks[0]);
 
                             // Render the status line in the second chunk
                             let status_block = Block::default()
                                 .borders(Borders::ALL)
                                 .title("Status")
-                                .style(Style::default().fg(Color::White))
-                                .title_style(display.title_style);
+                                .style(RataStyle::themed(Role::Success))
+                                .title_style(display.title_style)
+                                .padding(ratatui::widgets::Padding::horizontal(1));
 
                             let status_text = Paragraph::new::<&str>(status_message.as_ref())
                                 .block(status_block)
-                                .style(Style::default().fg(Color::White));
+                                .style(RataStyle::themed(Role::Info));
 
                             f.render_widget(status_text, chunks[1]);
 
@@ -599,9 +775,10 @@ where
                                     TITLE_BOTTOM,
                                     max_key_len,
                                     max_desc_len,
+                                    &mut popup_scroll,
                                     f,
                                 );
-                            };
+                            }
                             highlight_selection(&mut textarea, tui_highlight_fg);
                             // status_message = String::new();
                         }
@@ -612,14 +789,29 @@ where
                     })?;
 
                     // NB: leave in raw mode until end of session to avoid random appearance of OSC codes on screen
-                    let event = event_reader.read_event();
-                    event.map_err(Into::<ThagError>::into)
+                    event_reader.read_event()
                 },
             )?
         };
 
         if let Paste(ref data) = event {
             textarea.insert_str(normalize_newlines(data));
+        } else if let Event::Mouse(mouse_event) = event {
+            // Handle mouse scrolling in popup
+            if popup {
+                use ratatui::crossterm::event::MouseEventKind;
+                match mouse_event.kind {
+                    MouseEventKind::ScrollDown => {
+                        if popup_scroll.scroll_offset + 1 < adjusted_mappings.len() {
+                            popup_scroll.scroll_offset += 1;
+                        }
+                    }
+                    MouseEventKind::ScrollUp => {
+                        popup_scroll.scroll_offset = popup_scroll.scroll_offset.saturating_sub(1);
+                    }
+                    _ => {}
+                }
+            }
         } else if let Event::Key(key_event) = event {
             // Ignore key release, which creates an unwanted second event in Windows
             if !matches!(key_event.kind, KeyEventKind::Press) {
@@ -629,15 +821,35 @@ where
             // log::debug_log!("key_event={key_event:#?}");
             let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
+            // Handle scrolling in popup before normal editor keys
+            if popup {
+                let max_scroll = adjusted_mappings.len().saturating_sub(10);
+
+                match key_combination {
+                    key!(up) => {
+                        popup_scroll.scroll_offset = popup_scroll.scroll_offset.saturating_sub(1);
+                        continue;
+                    }
+                    key!(down) => {
+                        if popup_scroll.scroll_offset < max_scroll {
+                            popup_scroll.scroll_offset += 1;
+                        }
+                        continue;
+                    }
+                    _ => {} // Let other keys fall through to toggle popup
+                }
+            }
+
             // If using iterm2, ensure Settings | Profiles | Keys | Left Option key is set to Esc+.
             #[allow(clippy::unnested_or_patterns)]
             match key_combination {
                 key!(ctrl - h) | key!(backspace) => {
                     textarea.delete_char();
                 }
-                key!(ctrl - i) | key!(tab) => {
-                    textarea.indent();
-                }
+                // Not how this works. Intercepting tab and Ctrl-i is counter-productive.
+                // key!(ctrl - i) | key!(tab) => {
+                //     textarea.indent();
+                // }
                 key!(ctrl - m) | key!(enter) => {
                     textarea.insert_newline();
                 }
@@ -660,7 +872,7 @@ where
                     textarea.redo();
                 }
                 key!(ctrl - c) => {
-                    textarea.yank_text();
+                    textarea.copy();
                 }
                 key!(ctrl - x) => {
                     textarea.cut();
@@ -692,7 +904,7 @@ where
                     }
                     textarea.move_cursor(CursorMove::Down);
                 }
-                key!(alt - f) | key!(ctrl - right) => {
+                key!(alt - f) => {
                     if textarea.is_selecting() {
                         textarea.cancel_selection();
                     }
@@ -701,39 +913,52 @@ where
                 key!(alt - shift - f) => {
                     textarea.move_cursor(CursorMove::WordEnd);
                 }
-                key!(alt - b) | key!(ctrl - left) => {
+                key!(alt - b) => {
                     if textarea.is_selecting() {
                         textarea.cancel_selection();
                     }
                     textarea.move_cursor(CursorMove::WordBack);
                 }
-                key!(alt - p) | key!(alt - ')') | key!(ctrl - up) => {
+                key!(alt - p) | key!(alt - ')') | key!(f1) => {
                     if textarea.is_selecting() {
                         textarea.cancel_selection();
                     }
                     textarea.move_cursor(CursorMove::ParagraphBack);
                 }
-                key!(alt - n) | key!(alt - '(') | key!(ctrl - down) => {
+                key!(alt - n) | key!(alt - '(') | key!(f2) => {
                     textarea.move_cursor(CursorMove::ParagraphForward);
                 }
-                key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) | key!(ctrl - alt - right) => {
+                key!(ctrl - e) | key!(end) | key!(ctrl - alt - f) => {
                     textarea.move_cursor(CursorMove::End);
                 }
-                key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) | key!(ctrl - alt - left) => {
+                key!(ctrl - a) | key!(home) | key!(ctrl - alt - b) => {
                     textarea.move_cursor(CursorMove::Head);
                 }
                 key!(f9) => {
                     ratatui::crossterm::execute!(std::io::stdout().lock(), DisableMouseCapture,)?;
                     textarea.remove_line_number();
+                    textarea.set_block(
+                        Block::default()
+                            .borders(Borders::NONE)
+                            .title(display.title)
+                            .title_style(display.title_style),
+                    );
                 }
                 key!(f10) => {
+                    // eprintln!("key_combination={key_combination:?}");
                     ratatui::crossterm::execute!(std::io::stdout().lock(), EnableMouseCapture,)?;
-                    textarea.set_line_number_style(Style::default().fg(Color::DarkGray));
+                    textarea.set_line_number_style(RataStyle::themed(Role::Hint));
+                    textarea.set_block(
+                        Block::default()
+                            .borders(Borders::ALL)
+                            .title(display.title)
+                            .title_style(display.title_style),
+                    );
                 }
-                key!(alt - '<') | key!(ctrl - alt - p) | key!(ctrl - alt - up) => {
+                key!(alt - '<') | key!(ctrl - alt - p) => {
                     textarea.move_cursor(CursorMove::Top);
                 }
-                key!(alt - '>') | key!(ctrl - alt - n) | key!(ctrl - alt - down) => {
+                key!(alt - '>') | key!(ctrl - alt - n) => {
                     textarea.move_cursor(CursorMove::Bottom);
                 }
                 key!(alt - c) => {
@@ -742,6 +967,42 @@ where
                     } else {
                         textarea.start_selection();
                     }
+                }
+                key!(alt - shift - 'h') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::WordBack);
+                }
+                key!(alt - shift - 'j') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::Down);
+                }
+                key!(alt - shift - 'k') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::Up);
+                }
+                key!(alt - shift - 'l') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::WordEnd);
+                }
+                key!(alt - shift - 'p') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::ParagraphBack);
+                }
+                key!(alt - shift - 'n') => {
+                    if !textarea.is_selecting() {
+                        textarea.start_selection();
+                    }
+                    textarea.move_cursor(CursorMove::ParagraphForward);
                 }
                 // key!(alt - shift - c) => {
                 //     textarea.start_selection();
@@ -752,12 +1013,13 @@ where
                 key!(ctrl - t) => {
                     // Toggle highlighting colours
                     tui_highlight_fg = match tui_highlight_fg {
-                        Lvl::EMPH => Lvl::BRI,
-                        Lvl::BRI => Lvl::ERR,
-                        Lvl::ERR => Lvl::WARN,
-                        Lvl::WARN => Lvl::HEAD,
-                        Lvl::HEAD => Lvl::SUBH,
-                        _ => Lvl::EMPH,
+                        Role::Emphasis => Role::Info,
+                        Role::Info => Role::Error,
+                        Role::Error => Role::Warning,
+                        Role::Warning => Role::Heading1,
+                        Role::Heading1 => Role::Heading2,
+                        Role::Heading2 => Role::Heading3,
+                        _ => Role::Emphasis,
                     };
                     if var("TEST_ENV").is_err() {
                         #[allow(clippy::option_if_let_else)]
@@ -793,29 +1055,37 @@ where
                             };
                             break Ok((key_action, maybe_text));
                         }
-                        KeyAction::Continue
-                        | KeyAction::Save
-                        | KeyAction::ToggleHighlight
-                        | KeyAction::TogglePopup => continue,
+                        KeyAction::Continue | KeyAction::Save | KeyAction::ToggleHighlight => (),
+                        KeyAction::TogglePopup => {
+                            // Reset scroll position when popup is opened
+                            if popup {
+                                popup_scroll.scroll_offset = 0;
+                            }
+                        }
                         KeyAction::ShowHelp => todo!(),
                     }
                 }
             }
         } else {
             // println!("You typed {key_combination:?} which represents nothing yet"/*, key.blue()*/);
-            let input = Input::from(event);
+            let input = tui_textarea::Input::from(event);
             textarea.input(input);
         }
     }
 }
 
-pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate::MessageLevel) {
-    profile_fn!(highlight_selection);
-    textarea.set_selection_style(
-        Style::default()
-            .fg(Color::Indexed(u8::from(&tui_highlight_fg)))
-            .bold(),
-    );
+/// Highlight the selected text in the `TextArea` with the specified color role.
+///
+/// This function applies styling to the selected text in the `TextArea`, setting
+/// the foreground color based on the provided `Role` and making it bold.
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the `TextArea` to apply highlighting to
+/// * `tui_highlight_fg` - The `Role` that determines the foreground color for highlighting
+#[profiled]
+pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) {
+    textarea.set_selection_style(RataStyle::themed(tui_highlight_fg).bold());
 }
 
 /// Key handler function to be passed into `tui_edit` for editing REPL history.
@@ -824,6 +1094,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: crate:
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
+#[profiled]
 pub fn script_key_handler(
     key_event: KeyEvent,
     maybe_term: Option<&mut ManagedTerminal>,
@@ -833,8 +1104,8 @@ pub fn script_key_handler(
     saved: &mut bool, // TODO decide if we need this
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    profile_fn!(script_key_handler);
-    if !matches!(key_event.kind, KeyEventKind::Press) {
+    // let mut owned_path: PathBuf;
+    if !matches!(key_event.kind, event::KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
 
@@ -845,21 +1116,21 @@ pub fn script_key_handler(
 
     #[allow(clippy::unnested_or_patterns)]
     match key_combination {
-        key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
+        key!(esc) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => save_and_submit(history_path.as_ref(), edit_data, textarea),
-        key!(ctrl - s) | key!(ctrl - alt - s) => {
-            // eprintln!("key_combination={key_combination:?}, maybe_save_path={maybe_save_path:?}");
-            if matches!(key_combination, key!(ctrl - s)) {
+        key!(ctrl - s) | key!(ctrl - alt - s) | key!(f12) => {
+            if matches!(key_combination, key!(ctrl - s)) && edit_data.save_path.is_some() {
+                // eprintln!("key_combination matches ctrl-s");
                 save(
                     edit_data,
                     history_path.as_ref(),
                     textarea,
                     saved,
                     status_message,
-                )?;
-                Ok(KeyAction::Save)
+                )
             } else {
-                save_as(maybe_term, textarea, saved, status_message)
+                let key_action = save_as(edit_data, maybe_term, textarea, saved, status_message)?;
+                Ok(key_action)
             }
         }
         key!(ctrl - l) => {
@@ -901,13 +1172,14 @@ pub fn script_key_handler(
             Ok(KeyAction::Continue)
         }
         _ => {
-            // Update the textarea with the input from the key event
+            // Update the `TextArea` with the input from the key event
             textarea.input(Input::from(key_event)); // Input derived from Event
             Ok(KeyAction::Continue)
         }
     }
 }
 
+#[profiled]
 fn next_hist(edit_data: &mut EditData<'_>, textarea: &mut TextArea<'_>) {
     if let Some(ref mut hist) = edit_data.history {
         // save_if_changed(hist, textarea, &history_path)?;
@@ -918,6 +1190,7 @@ fn next_hist(edit_data: &mut EditData<'_>, textarea: &mut TextArea<'_>) {
     }
 }
 
+#[profiled]
 fn prev_hist(
     edit_data: &mut EditData<'_>,
     textarea: &mut TextArea<'_>,
@@ -940,6 +1213,7 @@ fn prev_hist(
     Ok(())
 }
 
+#[profiled]
 fn wipe_textarea(
     edit_data: &mut EditData<'_>,
     textarea: &mut TextArea<'_>,
@@ -966,14 +1240,16 @@ fn wipe_textarea(
     Ok(())
 }
 
+#[profiled]
 fn save_as(
+    edit_data: &mut EditData<'_>,
     maybe_term: Option<&mut ManagedTerminal<'_>>,
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
     if let Some(term) = maybe_term {
-        let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 40, DialogMode::Save)?;
+        let mut save_dialog: FileDialog<'_> = FileDialog::new(60, 20, DialogMode::Save)?;
         save_dialog.open();
         let mut status = Status::Incomplete;
         while matches!(status, Status::Incomplete) && save_dialog.selected_file.is_none() {
@@ -983,46 +1259,59 @@ fn save_as(
             }
         }
 
+        status_message.clear();
         if let Some(ref to_rs_path) = save_dialog.selected_file {
             save_source_file(to_rs_path, textarea, saved)?;
-            status_message.clear();
-            status_message.push_str(&format!("Saved to {}", to_rs_path.display()));
-
+            let _ = write!(status_message, "Saved to {}", to_rs_path.display());
+            edit_data.save_path = Some(to_rs_path.clone());
             Ok(KeyAction::Save)
         } else {
+            let _ = write!(status_message, "Failed to save file");
             Ok(KeyAction::Continue)
         }
     } else {
+        let _ = write!(status_message, "No terminal to display file save dialog");
         Ok(KeyAction::Continue)
     }
 }
 
+#[profiled]
 fn save(
     edit_data: &mut EditData<'_>,
     history_path: Option<&PathBuf>,
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
     status_message: &mut String,
-) -> ThagResult<()> {
-    if let Some(ref mut save_path) = edit_data.save_path {
+) -> ThagResult<KeyAction> {
+    if let Some(ref save_path) = edit_data.save_path {
         if let Some(hist_path) = history_path {
             let history = &mut edit_data.history;
             if let Some(hist) = history {
                 preserve(textarea, hist, hist_path)?;
-            };
-            let result = save_source_file(save_path, textarea, saved);
-            match result {
-                Ok(()) => {
-                    status_message.clear();
-                    status_message.push_str(&format!("Saved to {}", save_path.display()));
-                }
-                Err(e) => return Err(e),
             }
         }
+        let result = save_source_file(save_path, textarea, saved);
+        // eprintln!("result={result:?}");
+        match result {
+            Ok(()) => {
+                status_message.clear();
+                let _ = write!(status_message, "Saved to {}", save_path.display());
+                Ok(KeyAction::Save)
+            }
+            Err(e) => Err(e),
+        }
+    } else {
+        status_message.clear();
+        let _ = write!(
+            status_message,
+            "No save path: edit_data.save_path={:?}",
+            edit_data.save_path
+        );
+        Ok(KeyAction::Continue)
     }
-    Ok(())
 }
 
+#[profiled]
 fn save_and_submit(
     history_path: Option<&PathBuf>,
     edit_data: &mut EditData<'_>,
@@ -1032,7 +1321,7 @@ fn save_and_submit(
         let history = &mut edit_data.history;
         if let Some(hist) = history {
             preserve(textarea, hist, hist_path)?;
-        };
+        }
     }
     Ok(KeyAction::Submit)
 }
@@ -1043,95 +1332,143 @@ fn save_and_submit(
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encountered by `crossterm::enable_raw_mode`.
+#[profiled]
 pub fn maybe_enable_raw_mode() -> ThagResult<()> {
-    profile_fn!(maybe_enable_raw_mode);
     let test_env = &var("TEST_ENV");
     debug_log!("test_env={test_env:?}");
     if !test_env.is_ok() && !is_raw_mode_enabled()? {
-        debug_log!("Enabling raw mode");
-        enable_raw_mode()?;
+        // Check if stdout is a terminal before enabling raw mode
+        if std::io::IsTerminal::is_terminal(&std::io::stdout()) {
+            debug_log!("Enabling raw mode");
+            enable_raw_mode()?;
+        } else {
+            debug_log!("Skipping raw mode - not a terminal");
+        }
     }
     Ok(())
 }
 
+/// Display a popup with key mappings and descriptions.
+///
+/// This function renders a centered popup window containing a list of key bindings
+/// and their descriptions. The popup is styled with borders and titles, and each
+/// key mapping is displayed in a two-column layout.
+///
+/// # Arguments
+///
+/// * `mappings` - A slice of `KeyDisplayLine` structs containing the key mappings to display
+/// * `title_top` - The title text to display at the top of the popup
+/// * `title_bottom` - The title text to display at the bottom of the popup
+/// * `max_key_len` - The maximum length of key strings for column width calculation
+/// * `max_desc_len` - The maximum length of description strings for column width calculation
+/// * `f` - A mutable reference to the ratatui Frame for rendering
+#[profiled]
+#[allow(clippy::cast_possible_truncation)]
 pub fn display_popup(
     mappings: &[KeyDisplayLine],
     title_top: &str,
     title_bottom: &str,
     max_key_len: u16,
     max_desc_len: u16,
+    scroll_state: &mut PopupScrollState,
     f: &mut ratatui::prelude::Frame<'_>,
 ) {
-    profile_fn!(display_popup);
-    let num_filtered_rows = mappings.len();
+    let total_rows = mappings.len();
+
+    // Calculate available height for content
+    let max_height = f.area().height.saturating_sub(6); // Reserve space for borders and titles
+    let content_height = max_height.min(total_rows as u16);
+
     let block = Block::default()
         .borders(Borders::ALL)
         .title_top(Line::from(title_top).centered())
-        .title_bottom(Line::from(title_bottom).centered())
+        .title_bottom(Line::from(format!("{title_bottom} (scroll with mouse wheel)")).centered())
         .add_modifier(Modifier::BOLD)
-        .fg(Color::Indexed(u8::from(&Lvl::HEAD)));
+        .fg(Color::themed(Role::HD1));
+
     #[allow(clippy::cast_possible_truncation)]
-    let area = centered_rect(
-        max_key_len + max_desc_len + 5,
-        num_filtered_rows as u16 + 5,
-        f.area(),
-    );
+    let area = centered_rect(max_key_len + max_desc_len + 5, content_height + 5, f.area());
+
     let inner = area.inner(Margin {
         vertical: 2,
         horizontal: 2,
     });
-    // this is supposed to clear out the background
+
+    // Clear background and render block
     f.render_widget(Clear, area);
     f.render_widget(block, area);
+
+    // Calculate visible range based on scroll offset
+    let visible_rows = inner.height as usize;
+    let max_scroll = total_rows.saturating_sub(visible_rows);
+    scroll_state.scroll_offset = scroll_state.scroll_offset.min(max_scroll);
+
+    let start_idx = scroll_state.scroll_offset;
+    let end_idx = (start_idx + visible_rows).min(total_rows);
+    let visible_mappings = &mappings[start_idx..end_idx];
+
+    // Create layout for visible rows
     #[allow(clippy::cast_possible_truncation)]
     let row_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(
-            std::iter::repeat(Constraint::Ratio(1, num_filtered_rows as u32))
-                .take(num_filtered_rows),
-        );
+        .constraints(std::iter::repeat_n(
+            Constraint::Length(1),
+            visible_mappings.len(),
+        ));
     let rows = row_layout.split(inner);
 
     for (i, row) in rows.iter().enumerate() {
+        let actual_idx = start_idx + i;
         let col_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(
-                [
-                    Constraint::Length(max_key_len + 1),
-                    Constraint::Length(max_desc_len),
-                ]
-                .as_ref(),
-            );
+            .constraints::<&[Constraint]>(&[
+                Constraint::Length(max_key_len + 1),
+                Constraint::Length(max_desc_len),
+            ]);
         let cells = col_layout.split(*row);
-        let mut widget = Paragraph::new(mappings[i].keys);
-        if i == 0 {
+
+        let mut widget = Paragraph::new(visible_mappings[i].keys);
+        if actual_idx == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
+                .fg(Color::themed(Role::EMPH));
         } else {
-            widget = widget.fg(Color::Indexed(u8::from(&Lvl::SUBH))).not_bold();
+            widget = widget.fg(Color::themed(Role::HD2)).not_bold();
         }
         f.render_widget(widget, cells[0]);
-        let mut widget = Paragraph::new(mappings[i].desc);
 
-        if i == 0 {
+        let mut widget = Paragraph::new(visible_mappings[i].desc);
+        if actual_idx == 0 {
             widget = widget
                 .add_modifier(Modifier::BOLD)
-                .fg(Color::Indexed(u8::from(&Lvl::EMPH)));
+                .fg(Color::themed(Role::EMPH));
         } else {
-            widget = widget.remove_modifier(Modifier::BOLD).set_style(
-                Style::default()
-                    .fg(Color::Indexed(u8::from(&Lvl::NORM)))
-                    .not_bold(),
-            );
+            widget = widget
+                .remove_modifier(Modifier::BOLD)
+                .set_style(RataStyle::themed(Role::INFO).not_bold());
         }
         f.render_widget(widget, cells[1]);
     }
 }
 
 #[must_use]
+/// Creates a centered rectangle within the given area with the specified maximum dimensions.
+///
+/// This function creates a popup-style rectangle that is centered both horizontally
+/// and vertically within the provided area, constrained by the given maximum width
+/// and height.
+///
+/// # Arguments
+///
+/// * `max_width` - The maximum width of the centered rectangle
+/// * `max_height` - The maximum height of the centered rectangle
+/// * `r` - The area within which to center the rectangle
+///
+/// # Returns
+///
+/// A `Rect` representing the centered rectangle
+#[profiled]
 pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
-    profile_fn!(centered_rect);
     let popup_layout = Layout::vertical([
         Constraint::Fill(1),
         Constraint::Max(max_height),
@@ -1151,9 +1488,9 @@ pub fn centered_rect(max_width: u16, max_height: u16, r: Rect) -> Rect {
 /// standard sequence of `"\n"` (backslash + 'n', as opposed to the '\n' (0xa) character for which
 /// it stands).
 #[must_use]
+#[profiled]
 pub fn normalize_newlines(input: &str) -> String {
-    profile_fn!(normalize_newlines);
-    let re: &Regex = regex!(r"\r\n?");
+    let re: &Regex = re!(r"\r\n?");
 
     re.replace_all(input, "\n").to_string()
 }
@@ -1164,8 +1501,8 @@ pub fn normalize_newlines(input: &str) -> String {
 ///
 /// This function will bubble up any `ratatui` or `crossterm` errors encountered.
 // TODO: move to shared or tui_editor?
+#[profiled]
 pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>) -> ThagResult<()> {
-    profile_fn!(reset_term);
     disable_raw_mode()?;
     ratatui::crossterm::execute!(
         term.backend_mut(),
@@ -1181,12 +1518,12 @@ pub fn reset_term(mut term: Terminal<CrosstermBackend<std::io::StdoutLock<'_>>>)
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
+#[profiled]
 pub fn save_if_changed(
     hist: &mut History,
     textarea: &mut TextArea<'_>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    profile_fn!(save_if_changed);
     debug_log!("save_if_changed...");
     if textarea.is_empty() {
         debug_log!("nothing to save(1)...");
@@ -1220,7 +1557,6 @@ pub fn save_if_changed(
 //     textarea: &mut TextArea<'_>,
 //     history_path: &Option<PathBuf>,
 // ) -> ThagResult<()> {
-//     profile_fn!(save_if_changed);
 //     debug_log!("save_if_changed...");
 //     if textarea.is_empty() {
 //         debug_log!("nothing to save(1)...");
@@ -1244,8 +1580,17 @@ pub fn save_if_changed(
 //     Ok(())
 // }
 
+/// Paste the contents of a history entry into a text area.
+///
+/// This function clears the current content of the `TextArea` by selecting all
+/// and cutting it, then inserts the content from the provided history entry.
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the `TextArea` to paste into
+/// * `entry` - The history entry containing the content to paste
+#[profiled]
 pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
-    profile_fn!(paste_to_textarea);
     textarea.select_all();
     textarea.cut();
     // 6
@@ -1257,20 +1602,29 @@ pub fn paste_to_textarea(textarea: &mut TextArea<'_>, entry: &Entry) {
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
+#[profiled]
 pub fn preserve(
     textarea: &mut TextArea<'_>,
     hist: &mut History,
     history_path: &PathBuf,
 ) -> ThagResult<()> {
-    profile_fn!(preserve);
     debug_log!("preserve...");
     save_if_not_empty(textarea, hist);
     save_history(Some(&mut hist.clone()), Some(history_path))?;
     Ok(())
 }
 
+/// Save content from textarea to history if it's not empty.
+///
+/// This function copies the text content from the `TextArea` and adds it to the history
+/// collection if the content is not empty (after trimming whitespace).
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the `TextArea` to copy from
+/// * `hist` - A mutable reference to the History to add the entry to
+#[profiled]
 pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
-    profile_fn!(save_if_not_empty);
     debug_log!("save_if_not_empty...");
 
     let text = copy_text(textarea);
@@ -1280,8 +1634,20 @@ pub fn save_if_not_empty(textarea: &mut TextArea<'_>, hist: &mut History) {
     }
 }
 
+/// Copy the entire text content from a `TextArea`.
+///
+/// This function selects all text in the `TextArea`, copies it, and returns
+/// the content as a single string with newlines preserved.
+///
+/// # Arguments
+///
+/// * `textarea` - A mutable reference to the `TextArea` to copy from
+///
+/// # Returns
+///
+/// A String containing the entire text content of the `TextArea`
+#[profiled]
 pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
-    profile_fn!(copy_text);
     textarea.select_all();
     textarea.copy();
     let text = textarea.yank_text().lines().collect::<Vec<_>>().join("\n");
@@ -1293,11 +1659,11 @@ pub fn copy_text(textarea: &mut TextArea<'_>) -> String {
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
+#[profiled]
 pub fn save_history(
     history: Option<&mut History>,
     history_path: Option<&PathBuf>,
 ) -> ThagResult<()> {
-    profile_fn!(save_history);
     debug_log!("save_history...{history:?}");
     if let Some(hist) = history {
         if let Some(hist_path) = history_path {
@@ -1313,12 +1679,12 @@ pub fn save_history(
 /// # Errors
 ///
 /// This function will bubble up any i/o errors encuntered.
+#[profiled]
 pub fn save_source_file(
     to_rs_path: &PathBuf,
     textarea: &mut TextArea<'_>,
     saved: &mut bool,
 ) -> ThagResult<()> {
-    profile_fn!(save_source_file);
     // Ensure newline at end
     textarea.move_cursor(CursorMove::Bottom);
     textarea.move_cursor(CursorMove::End);
@@ -1330,6 +1696,8 @@ pub fn save_source_file(
     Ok(())
 }
 
+/// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
+///
 #[macro_export]
 macro_rules! key_mappings {
     (
@@ -1347,6 +1715,7 @@ macro_rules! key_mappings {
     };
 }
 
+/// Key mappings for display purposes via (Ctrl-l) in TUI editor and file dialog.
 pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (10, "Key bindings", "Description"),
     (
@@ -1356,25 +1725,22 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     ),
     (
         30,
-        "Shift+Ctrl+arrow keys",
-        "Select/deselect words (←→) or paras (↑↓)"
+        "Alt+shift+ h/j/k/l",
+        "Select/deselect words (←h l→) or lines (↑k j↓)"
     ),
-    (40, "Alt+a", "Select all"),
-    (
-        50,
-        "Alt+c",
-        "Toggle selection mode: start selecting / cancel selection"
-    ),
+    (35, "Alt+shift+ p/n", "Select/deselect paras (↑p n↓)"),
+    (40, "Alt+Shift+a", "Select all"),
+    (50, "Alt+c", "Cancel selection"),
     (60, "Ctrl+d", "Submit"),
     (70, "Ctrl+q", "Cancel and quit"),
-    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
-    (90, "Ctrl+i, Tab", "Indent"),
-    (100, "Ctrl+m, Enter", "Insert newline"),
+    (80, "Ctrl+h, Backspace", "Delete character before cursor"),
+    (90, "Ctrl+i, Tab", "Indent"),
+    (100, "Ctrl+m, Enter", "Insert newline"),
     (110, "Ctrl+k", "Delete from cursor to end of line"),
     (120, "Ctrl+j", "Delete from cursor to start of line"),
     (
         130,
-        "Ctrl+w, Alt+Backspace",
+        "Ctrl+w, Alt+Backspace",
         "Delete one word before cursor"
     ),
     (140, "Alt+d, Delete", "Delete one word from cursor position"),
@@ -1385,38 +1751,30 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (190, "Ctrl+y", "Paste yanked text"),
     (
         200,
-        "Ctrl+v, Shift+Ins, Cmd+v",
-        "Paste from system clipboard"
+        "Ctrl+v, Shift+Ins, Cmd+v",
+        "Paste from system clipboard according to platform"
     ),
-    (210, "Ctrl+f, →", "Move cursor forward one character"),
-    (220, "Ctrl+b, ←", "Move cursor backward one character"),
-    (230, "Ctrl+p, ↑", "Move cursor up one line"),
-    (240, "Ctrl+n, ↓", "Move cursor down one line"),
-    (250, "Alt+f, Ctrl+→", "Move cursor forward one word"),
+    (210, "Ctrl+f, →", "Move cursor forward one character"),
+    (220, "Ctrl+b, ←", "Move cursor backward one character"),
+    (230, "Ctrl+p, ↑", "Move cursor up one line"),
+    (240, "Ctrl+n, ↓", "Move cursor down one line"),
+    (250, "Alt+f", "Move cursor forward one word"),
     (260, "Alt+Shift+f", "Move cursor to next word end"),
-    (270, "Atl+b, Ctrl+←", "Move cursor backward one word"),
-    (280, "Alt+) or p, Ctrl+↑", "Move cursor up one paragraph"),
-    (290, "Alt+( or n, Ctrl+↓", "Move cursor down one paragraph"),
-    (
-        300,
-        "Ctrl+e, End, Ctrl+Alt+f or → , Cmd+→",
-        "Move cursor to end of line"
-    ),
+    (270, "Atl+b", "Move cursor backward one word"),
+    (280, "Alt+p", "Move cursor up one paragraph"),
+    (290, "Alt+n", "Move cursor down one paragraph"),
+    (300, "Ctrl+e, End, Ctrl+Alt+f", "Move cursor to end of line"),
     (
         310,
-        "Ctrl+a, Home, Ctrl+Alt+b or ← , Cmd+←",
+        "Ctrl+a, Home, Ctrl+Alt+b",
         "Move cursor to start of line"
     ),
-    (320, "Alt+<, Ctrl+Alt+p or ↑", "Move cursor to top of file"),
-    (
-        330,
-        "Alt+>, Ctrl+Alt+n or ↓",
-        "Move cursor to bottom of file"
-    ),
-    (340, "PageDown, Cmd+↓", "Page down"),
-    (350, "Alt+v, PageUp, Cmd+↑", "Page up"),
-    (360, "Ctrl+l", "Toggle keys display (this screen)"),
-    (370, "Ctrl+t", "Toggle selection highlight colours"),
+    (320, "Alt+<, Ctrl+Alt+p", "Move cursor to top of file"),
+    (330, "Alt+>, Ctrl+Alt+n", "Move cursor to bottom of file"),
+    (340, "Ctrl+l", "Toggle keys display (this screen)"),
+    (350, "Ctrl+t", "Toggle selection highlight colours"),
+    (360, "Alt+v, PageUp, F1", "Page up"),
+    (370, "PageDown, F2", "Page down"),
     (380, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     (
         390,
@@ -1429,7 +1787,50 @@ pub const MAPPINGS: &[KeyDisplayLine] = key_mappings![
     (
         430,
         "F9",
-        "Suspend mouse capture and line numbers for system copy"
+        "Enter `copy to system clipboard` mode with mouse selection and OS keys"
     ),
-    (440, "F10", "Resume mouse capture and line numbers"),
+    (440, "F10", "Exit `copy to system clipboard` mode"),
+    (450, "F12", "Save as..."),
 ];
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+/// A struct representing a line in the key display help screen.
+/// Contains information about key bindings and their descriptions.
+pub struct KeyDisplayLine {
+    /// Sequence number for ordering the display lines
+    pub seq: usize,
+    /// The key combination string to display
+    pub keys: &'static str, // Or String if you plan to modify the keys later
+    /// The description of what the key combination does
+    pub desc: &'static str, // Or String for modifiability
+}
+
+impl PartialOrd for KeyDisplayLine {
+    #[profiled]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        // profile_method!("partial_cmp");
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for KeyDisplayLine {
+    #[profiled]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // profile_method!("cmp");
+        usize::cmp(&self.seq, &other.seq)
+    }
+}
+
+impl KeyDisplayLine {
+    /// Creates a new `KeyDisplayLine` with the specified sequence number, key combination, and description.
+    ///
+    /// # Arguments
+    ///
+    /// * `seq` - The sequence number for ordering the display lines
+    /// * `keys` - The key combination string to display
+    /// * `desc` - The description of what the key combination does
+    #[must_use]
+    pub const fn new(seq: usize, keys: &'static str, desc: &'static str) -> Self {
+        Self { seq, keys, desc }
+    }
+}

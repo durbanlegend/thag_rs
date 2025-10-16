@@ -1,0 +1,133 @@
+name = "emil Base16"
+description = "Converted from emil theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#efefef"]
+bg_rgbs = [[
+    239,
+    239,
+    239,
+]]
+
+[palette.heading1]
+rgb = [
+    102,
+    14,
+    184,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    141,
+    23,
+    165,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    22,
+    74,
+    201,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    163,
+    9,
+    62,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    178,
+    20,
+    111,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    26,
+    26,
+    47,
+]
+
+[palette.info]
+rgb = [
+    71,
+    19,
+    151,
+]
+
+[palette.emphasis]
+rgb = [
+    188,
+    10,
+    71,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    22,
+    73,
+    201,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    49,
+    49,
+    69,
+]
+
+[palette.subtle]
+rgb = [
+    81,
+    81,
+    142,
+]
+
+[palette.hint]
+rgb = [
+    91,
+    91,
+    132,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    80,
+    80,
+    99,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    0,
+    115,
+    168,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    34,
+    34,
+    58,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    95,
+    95,
+    128,
+]

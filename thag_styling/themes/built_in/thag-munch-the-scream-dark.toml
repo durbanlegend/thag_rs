@@ -1,0 +1,131 @@
+name = "thag-munch-the-scream-dark"
+description = "Generated from image analysis"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#181818"]
+bg_rgbs = [[
+    24,
+    24,
+    24,
+]]
+
+[palette.heading1]
+rgb = [
+    78,
+    165,
+    253,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    132,
+    168,
+    204,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    86,
+    170,
+    253,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    244,
+    137,
+    137,
+]
+
+[palette.warning]
+rgb = [
+    180,
+    180,
+    155,
+]
+
+[palette.success]
+rgb = [
+    249,
+    249,
+    236,
+]
+
+[palette.info]
+rgb = [
+    121,
+    181,
+    211,
+]
+
+[palette.emphasis]
+rgb = [
+    255,
+    130,
+    80,
+]
+
+[palette.code]
+rgb = [
+    169,
+    194,
+    218,
+]
+
+[palette.normal]
+rgb = [
+    249,
+    202,
+    132,
+]
+
+[palette.subtle]
+rgb = [
+    239,
+    239,
+    172,
+]
+
+[palette.hint]
+rgb = [
+    224,
+    224,
+    85,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    254,
+    153,
+    113,
+]
+style = ["italic"]
+
+[palette.link]
+rgb = [
+    255,
+    126,
+    126,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    253,
+    253,
+    158,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    242,
+    173,
+    71,
+]
+style = ["italic"]
+

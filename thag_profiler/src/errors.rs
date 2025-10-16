@@ -1,0 +1,195 @@
+use std::error::Error;
+
+#[derive(Clone, Debug)]
+/// Error types that can occur during profiling operations.
+///
+/// This enum represents the various error conditions that can arise when
+/// working with profiles, including I/O errors, validation errors, and
+/// user interaction errors.
+pub enum ProfileError {
+    /// A general profiling error with a descriptive message.
+    General(String),
+    /// An error that occurred during user inquiry/interaction with the `inquire` crate.
+    Inquire(String),
+    /// An error indicating an invalid profile section was encountered.
+    InvalidSection(String),
+    /// An I/O operation error with details about the failure.
+    Io(String),
+}
+
+impl std::fmt::Display for ProfileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::General(e) => write!(f, "Profiling error: {e}"),
+            Self::Inquire(e) => write!(f, "{e}"),
+            Self::InvalidSection(e) => write!(f, "Invalid profile section: {e}"),
+            Self::Io(e) => write!(f, "IO operation failed: {e}"),
+        }
+    }
+}
+
+impl std::error::Error for ProfileError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::General(_e) => None,
+            Self::Inquire(_e) => None,
+            Self::InvalidSection(_e) => None,
+            Self::Io(_e) => None,
+        }
+    }
+}
+
+impl From<std::io::Error> for ProfileError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(err.to_string())
+    }
+}
+
+#[cfg(feature = "analyze_tool")]
+impl From<inquire::InquireError> for ProfileError {
+    fn from(err: inquire::InquireError) -> Self {
+        Self::Inquire(err.to_string())
+    }
+}
+
+/// A specialized `Result` type for profiling operations.
+/// Provides a convenient shorthand for `Result<T, ProfileError>`.
+pub type ProfileResult<T> = Result<T, ProfileError>;
+
+#[cfg(test)]
+/// Test suite for the `errors.rs` module provides more comprehensive coverage:
+///
+/// ```bash
+/// cargo test --features=analyze_tool,time_profiling errors -- --nocapture
+/// ```
+///
+/// 1. **Display Implementation**: Tests the `Display` implementation for all error variants.
+/// 2. **From Implementations**: Tests the conversion functions for creating different types of errors.
+/// 3. **Conversion from IO Error**: Tests the `From<std::io::Error>` implementation.
+/// 4. **Result Type**: Tests the `ProfileResult` type alias.
+/// 5. **Clone and Debug**: Tests the `Clone` and `Debug` trait implementations.
+/// 6. **Error Trait**: Tests the implementation of the standard library's `Error` trait.
+/// 7. **Inquire Error Conversion**: Tests the conversion from `inquire::InquireError` when the `analyze_tool` feature is enabled.
+///
+/// These tests are designed to be simple, independent units that don't rely on global state, so they can safely run concurrently.
+/// They cover all the key functionality of the `errors.rs` module, including the error variants, conversions, and trait implementations.
+mod tests {
+    use super::*;
+    use std::io::{Error as IoError, ErrorKind};
+
+    #[test]
+    fn test_display() {
+        // Test display implementation for all error variants
+        assert_eq!(
+            ProfileError::General("test error".to_string()).to_string(),
+            "Profiling error: test error"
+        );
+        assert_eq!(
+            ProfileError::Inquire("test inquiry".to_string()).to_string(),
+            "test inquiry"
+        );
+        assert_eq!(
+            ProfileError::InvalidSection("test section".to_string()).to_string(),
+            "Invalid profile section: test section"
+        );
+        assert_eq!(
+            ProfileError::Io("test io".to_string()).to_string(),
+            "IO operation failed: test io"
+        );
+    }
+
+    #[test]
+    fn test_from_implementations() {
+        // Test the General variant
+        let string_error = "test error".to_string();
+        let error = ProfileError::General(string_error);
+        assert!(matches!(error, ProfileError::General(_)));
+
+        // Test the InvalidSection variant
+        let string_error = "test error".to_string();
+        let error = ProfileError::InvalidSection(string_error);
+        assert!(matches!(error, ProfileError::InvalidSection(_)));
+
+        // Test the Inquire variant
+        let string_error = "test inquiry".to_string();
+        let error = ProfileError::Inquire(string_error);
+        assert!(matches!(error, ProfileError::Inquire(_)));
+
+        // Test the Io variant
+        let string_error = "test io".to_string();
+        let error = ProfileError::Io(string_error);
+        assert!(matches!(error, ProfileError::Io(_)));
+    }
+
+    #[test]
+    fn test_from_io_error() {
+        // Test conversion from std::io::Error
+        let io_error = IoError::new(ErrorKind::NotFound, "file not found");
+        let profile_error = ProfileError::from(io_error);
+
+        assert!(matches!(profile_error, ProfileError::Io(_)));
+        assert!(profile_error.to_string().contains("file not found"));
+    }
+
+    #[test]
+    #[allow(clippy::unnecessary_literal_unwrap)]
+    fn test_result_type() {
+        // Test the ProfileResult type alias
+        let success_result: ProfileResult<i32> = Ok(42);
+        let error_result: ProfileResult<i32> = Err(ProfileError::General("test error".to_string()));
+
+        assert_eq!(success_result.unwrap(), 42);
+        assert!(error_result.is_err());
+
+        let error = error_result.unwrap_err();
+        assert!(matches!(error, ProfileError::General(_)));
+    }
+
+    #[test]
+    fn test_clone_and_debug() {
+        // Test Clone implementation
+        let error = ProfileError::General("test error".to_string());
+        let cloned_error = error.clone();
+
+        match cloned_error {
+            ProfileError::General(msg) => assert_eq!(msg, "test error"),
+            _ => panic!("Unexpected error variant after cloning"),
+        }
+
+        // Test Debug implementation
+        let debug_string = format!("{:?}", error);
+        assert!(debug_string.contains("General"));
+        assert!(debug_string.contains("test error"));
+    }
+
+    #[test]
+    fn test_error_trait_implementation() {
+        fn takes_error(_err: &dyn std::error::Error) {}
+
+        // Test Error trait implementation
+        let error = ProfileError::General("test error".to_string());
+        let dyn_error: &dyn std::error::Error = &error;
+
+        // Test source() method
+        assert!(dyn_error.source().is_none());
+
+        // Verify it can be used where Error is required
+        takes_error(&error);
+    }
+
+    #[cfg(feature = "analyze_tool")]
+    #[test]
+    fn test_from_inquire_error() {
+        // This test depends on the analyze_tool feature being enabled
+        use inquire::InquireError;
+
+        let inquire_error = InquireError::NotTTY;
+        let profile_error = ProfileError::from(inquire_error);
+
+        assert!(matches!(profile_error, ProfileError::Inquire(_)));
+        // dbg!(&profile_error);
+        assert!(profile_error
+            .to_string()
+            .contains("The input device is not a TTY"));
+    }
+}

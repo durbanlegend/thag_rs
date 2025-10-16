@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-dashu = "0.4.2"
-*/
-
 /// Use a trait to determine the type of an expression at compile time, provided all cases are known in advance.
 ///
 /// Most upvoted and recommended answer on Stack Overflow page:

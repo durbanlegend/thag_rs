@@ -1,0 +1,133 @@
+name = "Edge Dark Base16"
+description = "Converted from Edge Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#262729"]
+bg_rgbs = [[
+    38,
+    39,
+    41,
+]]
+
+[palette.heading1]
+rgb = [
+    216,
+    148,
+    237,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    147,
+    213,
+    198,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    138,
+    222,
+    203,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    248,
+    163,
+    163,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    246,
+    139,
+    139,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    200,
+    204,
+    210,
+]
+
+[palette.info]
+rgb = [
+    139,
+    198,
+    246,
+]
+
+[palette.emphasis]
+rgb = [
+    233,
+    205,
+    152,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    147,
+    213,
+    198,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    197,
+    203,
+    214,
+]
+
+[palette.subtle]
+rgb = [
+    168,
+    176,
+    192,
+]
+
+[palette.hint]
+rgb = [
+    171,
+    177,
+    189,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    120,
+    186,
+    240,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    184,
+    209,
+    150,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    211,
+    144,
+    231,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    183,
+    190,
+    201,
+]

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-*/
-
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
 /// E.g. `thag demo/clap_tut_derive_04_01_enum.rs -- fast`

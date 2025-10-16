@@ -1,0 +1,133 @@
+name = "Pop Base16"
+description = "Converted from Pop theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    233,
+    73,
+    192,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    244,
+    113,
+    37,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    48,
+    215,
+    232,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    246,
+    85,
+    180,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    245,
+    153,
+    61,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    61,
+    165,
+    245,
+]
+
+[palette.emphasis]
+rgb = [
+    245,
+    208,
+    61,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    37,
+    225,
+    244,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    208,
+    208,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    140,
+    140,
+    140,
+]
+
+[palette.hint]
+rgb = [
+    140,
+    140,
+    140,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    176,
+    176,
+    176,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    73,
+    207,
+    93,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    224,
+    224,
+    224,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    140,
+    140,
+    140,
+]

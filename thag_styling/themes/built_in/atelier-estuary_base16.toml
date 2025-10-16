@@ -1,0 +1,133 @@
+name = "Atelier Estuary Base16"
+description = "Converted from Atelier Estuary theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#22221b"]
+bg_rgbs = [[
+    34,
+    34,
+    27,
+]]
+
+[palette.heading1]
+rgb = [
+    167,
+    200,
+    190,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    189,
+    152,
+    164,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    147,
+    215,
+    127,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    235,
+    183,
+    157,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    199,
+    119,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    244,
+    243,
+    236,
+]
+
+[palette.info]
+rgb = [
+    141,
+    226,
+    179,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    237,
+    119,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    152,
+    205,
+    136,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    201,
+    201,
+    191,
+]
+
+[palette.subtle]
+rgb = [
+    184,
+    181,
+    158,
+]
+
+[palette.hint]
+rgb = [
+    182,
+    181,
+    159,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    181,
+    179,
+    161,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    201,
+    226,
+    115,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    231,
+    230,
+    223,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    183,
+    182,
+    158,
+]

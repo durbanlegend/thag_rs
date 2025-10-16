@@ -1,0 +1,133 @@
+name = "Measured Dark Base16"
+description = "Converted from Measured Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#00211f"]
+bg_rgbs = [[
+    0,
+    33,
+    31,
+]]
+
+[palette.heading1]
+rgb = [
+    179,
+    155,
+    224,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    216,
+    154,
+    186,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    98,
+    216,
+    213,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    221,
+    143,
+    159,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    220,
+    163,
+    124,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    245,
+    245,
+    245,
+]
+
+[palette.info]
+rgb = [
+    136,
+    176,
+    218,
+]
+
+[palette.emphasis]
+rgb = [
+    214,
+    199,
+    125,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    111,
+    203,
+    201,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    220,
+    220,
+    220,
+]
+
+[palette.subtle]
+rgb = [
+    78,
+    235,
+    230,
+]
+
+[palette.hint]
+rgb = [
+    171,
+    171,
+    171,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    195,
+    195,
+    195,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    107,
+    207,
+    130,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    239,
+    239,
+    239,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    78,
+    235,
+    233,
+]

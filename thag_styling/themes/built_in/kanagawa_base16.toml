@@ -1,0 +1,133 @@
+name = "Kanagawa Base16"
+description = "Converted from Kanagawa theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1f1f28"]
+bg_rgbs = [[
+    31,
+    31,
+    40,
+]]
+
+[palette.heading1]
+rgb = [
+    184,
+    168,
+    209,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    218,
+    134,
+    161,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    157,
+    194,
+    184,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    235,
+    168,
+    169,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    174,
+    129,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    198,
+    204,
+    204,
+]
+
+[palette.info]
+rgb = [
+    146,
+    174,
+    231,
+]
+
+[palette.emphasis]
+rgb = [
+    217,
+    197,
+    160,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    161,
+    190,
+    182,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    220,
+    215,
+    186,
+]
+
+[palette.subtle]
+rgb = [
+    159,
+    159,
+    192,
+]
+
+[palette.hint]
+rgb = [
+    160,
+    160,
+    191,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    181,
+    180,
+    171,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    170,
+    190,
+    161,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    200,
+    192,
+    147,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    132,
+    168,
+    219,
+]

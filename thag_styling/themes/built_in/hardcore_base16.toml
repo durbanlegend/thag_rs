@@ -1,0 +1,133 @@
+name = "Hardcore Base16"
+description = "Converted from Hardcore theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#212121"]
+bg_rgbs = [[
+    33,
+    33,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    165,
+    124,
+    248,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    232,
+    184,
+    130,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    163,
+    180,
+    184,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    148,
+    185,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    191,
+    124,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    124,
+    228,
+    248,
+]
+
+[palette.emphasis]
+rgb = [
+    239,
+    229,
+    133,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    165,
+    179,
+    182,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    205,
+    205,
+    205,
+]
+
+[palette.subtle]
+rgb = [
+    173,
+    173,
+    173,
+]
+
+[palette.hint]
+rgb = [
+    173,
+    173,
+    173,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    173,
+    173,
+    173,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    196,
+    241,
+    105,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    229,
+    229,
+    229,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    173,
+    173,
+    173,
+]

@@ -1,12 +1,19 @@
-/*[toml]
-[dependencies]
-nu-ansi-term = "0.50.0"
-reedline = "0.36.0"
-*/
-
 /// Published example from `reedline` crate.
+///
+/// The latest version of this example is available in the [examples] folder in the `reedline`
+/// repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/nushell/reedline/blob/main/examples/hinter.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Explore featured crate.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
+// Original `reedline` crate comments:
+//
 // Create a reedline object with in-line hint support.
 // cargo run --example hinter
 //

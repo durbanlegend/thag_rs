@@ -1,0 +1,133 @@
+name = "Atelier Seaside Base16"
+description = "Converted from Atelier Seaside theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#131513"]
+bg_rgbs = [[
+    19,
+    21,
+    19,
+]]
+
+[palette.heading1]
+rgb = [
+    105,
+    218,
+    241,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    246,
+    100,
+    221,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    198,
+    99,
+    247,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    248,
+    123,
+    145,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    237,
+    210,
+    109,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    244,
+    251,
+    244,
+]
+
+[palette.info]
+rgb = [
+    99,
+    129,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    236,
+    236,
+    110,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    82,
+    212,
+    239,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    175,
+    196,
+    175,
+]
+
+[palette.subtle]
+rgb = [
+    193,
+    204,
+    193,
+]
+
+[palette.hint]
+rgb = [
+    147,
+    173,
+    147,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    145,
+    176,
+    145,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    98,
+    223,
+    98,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    207,
+    232,
+    207,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    192,
+    205,
+    192,
+]

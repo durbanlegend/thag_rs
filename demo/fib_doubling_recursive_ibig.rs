@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Very fast recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
 /// `demo/fib_doubling_iterative_purge.rs` for non-recursive variations.
@@ -28,7 +23,7 @@ ibig = "0.3.6"
 /// and fanning out of calls to fib(), the memoization drastically cuts down recursion.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization, and a good job by ChatGPT.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
 use std::collections::HashMap;

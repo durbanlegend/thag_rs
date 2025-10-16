@@ -1,0 +1,133 @@
+name = "Heetch Dark Base16"
+description = "Converted from Heetch Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#190134"]
+bg_rgbs = [[
+    25,
+    1,
+    52,
+]]
+
+[palette.heading1]
+rgb = [
+    247,
+    112,
+    190,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    246,
+    87,
+    244,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    237,
+    96,
+    147,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    139,
+    245,
+    243,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    145,
+    199,
+    214,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    254,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    247,
+    112,
+    170,
+]
+
+[palette.emphasis]
+rgb = [
+    188,
+    165,
+    194,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    246,
+    87,
+    144,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    192,
+    184,
+    201,
+]
+
+[palette.subtle]
+rgb = [
+    162,
+    117,
+    216,
+]
+
+[palette.hint]
+rgb = [
+    166,
+    151,
+    183,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    165,
+    152,
+    182,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    222,
+    112,
+    163,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    222,
+    218,
+    226,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    165,
+    140,
+    194,
+]

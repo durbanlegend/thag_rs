@@ -1,7 +1,3 @@
-/*[toml]
-[dependencies]
-semver = "1.0.23"
-*/
 /// Prototype of excluding pre-release crates from cargo queries.
 //# Purpose: Prototype technique for `thag_rs`.
 //# Categories: prototype, technique

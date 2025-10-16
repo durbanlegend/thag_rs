@@ -1,0 +1,133 @@
+name = "Unikitty Dark Base16"
+description = "Converted from Unikitty Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2e2a31"]
+bg_rgbs = [[
+    46,
+    42,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    214,
+    151,
+    246,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    239,
+    130,
+    241,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    130,
+    206,
+    241,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    172,
+    215,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    185,
+    148,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    245,
+    244,
+    247,
+]
+
+[palette.info]
+rgb = [
+    159,
+    148,
+    249,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    209,
+    148,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    123,
+    208,
+    248,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    211,
+    210,
+    213,
+]
+
+[palette.subtle]
+rgb = [
+    186,
+    181,
+    191,
+]
+
+[palette.hint]
+rgb = [
+    186,
+    184,
+    188,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    185,
+    183,
+    188,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    127,
+    244,
+    228,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    216,
+    215,
+    218,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    186,
+    183,
+    189,
+]

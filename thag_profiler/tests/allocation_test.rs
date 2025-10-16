@@ -1,0 +1,16 @@
+#[cfg(feature = "full_profiling")]
+use thag_profiler::create_memory_task;
+
+#[test]
+#[cfg(feature = "full_profiling")]
+fn test_basic_allocation() {
+    // Create a memory task
+    let _task = create_memory_task();
+
+    // Do some allocations
+    let data1: Vec<u8> = vec![0; 1024];
+    let data2: Vec<u8> = vec![0; 2048];
+
+    // Keep data in scope
+    println!("Data sizes: {}, {}", data1.len(), data2.len());
+}

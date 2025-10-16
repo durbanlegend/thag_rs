@@ -1,24 +1,16 @@
 [package]
 name = "thag_demo_proc_macros"
-version = "0.1.0"
+version = "0.2.0"
 description = "Demo proc macros for the thag_rs crate"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-const_gen_proc_macro = "0.1.1"
-# const_gen_proc_macro = { path = "/Users/donf/projects/const_gen_proc_macro/lib" }
-darling = "0.20.10"
-deluxe = "0.5.0"
-# expander = "2.2.1"
-expander = { git = "https://github.com/durbanlegend/expander" }
 inline_colorization = "0.1.6"
-prettyplease = "0.2.25"
+prettyplease = "0.2"
 proc-macro2 = "1.0"
 quote = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1"
-strum = { version = "0.26.3", features = ["derive", "phf"] }
 syn = { version = "2.0", default-features = false, features = [
     "full",
     "parsing",

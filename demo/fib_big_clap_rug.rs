@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-rug = { version = "1.24.0", features = ["integer"] }
-*/
-
 /// Fast non-recursive Fibonacci series and individual calculation with big integers.
 /// Won't work with default Windows 11 because of `rug` crate.
 ///
@@ -16,8 +10,14 @@ rug = { version = "1.24.0", features = ["integer"] }
 ///
 /// Using `clap` here is complete overkill, but this is just a demo.
 /// On Linux you may need to install the m4 package.
+///
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
+///
 //# Purpose: Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use clap::{Arg, Command};
 use rug::Integer;

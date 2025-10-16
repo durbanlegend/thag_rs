@@ -4,7 +4,7 @@ name = "termbg_bug"
 features = ["simplelog"]
 
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 log = "0.4.22"
 simplelog = { version = "0.12.2" }
 #termbg = "=0.5.2"
@@ -12,7 +12,7 @@ termbg = "0.6.0"
 #termbg = { path = "/Users/donforbes/Documents/GitHub/termbg" }
 
 [features]
-debug-logs = []
+debug_logging = []
 nightly = []
 default = ["simplelog"]
 simplelog = []
@@ -22,13 +22,12 @@ use log::info;
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-use std::io::{self, Read};
 use std::fs::File;
+use std::io::{self, Read};
 use std::time::Duration;
 use termbg;
 
 fn main() {
-
     CombinedLogger::init(vec![
         TermLogger::new(
             LevelFilter::Info,

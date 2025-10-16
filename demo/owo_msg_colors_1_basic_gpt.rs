@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-termbg = "0.5.2"
-*/
-
 /// An early exploration of message colouring, GPT-generated.
 /// This one uses basic Ansi 16 colours. Try it on dark vs light
 /// backgrounds to see how some of the colours change.

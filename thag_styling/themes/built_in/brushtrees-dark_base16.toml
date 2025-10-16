@@ -1,0 +1,133 @@
+name = "Brush Trees Dark Base16"
+description = "Converted from Brush Trees Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#485867"]
+bg_rgbs = [[
+    72,
+    88,
+    103,
+]]
+
+[palette.heading1]
+rgb = [
+    226,
+    207,
+    226,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    222,
+    212,
+    212,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    205,
+    229,
+    229,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    227,
+    206,
+    206,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    236,
+    215,
+    198,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    204,
+    229,
+    229,
+]
+
+[palette.info]
+rgb = [
+    206,
+    209,
+    227,
+]
+
+[palette.emphasis]
+rgb = [
+    223,
+    226,
+    207,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    207,
+    226,
+    226,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    209,
+    223,
+    225,
+]
+
+[palette.subtle]
+rgb = [
+    208,
+    218,
+    225,
+]
+
+[palette.hint]
+rgb = [
+    209,
+    221,
+    225,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    207,
+    222,
+    226,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    208,
+    226,
+    207,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    206,
+    223,
+    224,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    209,
+    219,
+    224,
+]

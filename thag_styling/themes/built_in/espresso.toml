@@ -1,0 +1,133 @@
+name = "Espresso"
+description = "Converted from Espresso theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#262626"]
+bg_rgbs = [[
+    38,
+    38,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    216,
+    158,
+    224,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    216,
+    140,
+    140,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    240,
+    117,
+    117,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    240,
+    168,
+    168,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    204,
+    133,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    163,
+    195,
+    219,
+]
+
+[palette.emphasis]
+rgb = [
+    155,
+    196,
+    227,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    190,
+    214,
+    255,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    205,
+    205,
+    203,
+]
+
+[palette.subtle]
+rgb = [
+    178,
+    178,
+    178,
+]
+
+[palette.hint]
+rgb = [
+    178,
+    178,
+    178,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    179,
+    179,
+    178,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    193,
+    216,
+    141,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    238,
+    238,
+    236,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    178,
+    178,
+    178,
+]

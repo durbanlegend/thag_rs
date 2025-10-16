@@ -1,18 +1,9 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-clap-repl = "0.1.1"
-console = "0.15.8"
-rustyline = { version = "14.0.0", features=["with-file-history", "default"] }
-shlex = "1.3.0"
-strum = { version = "0.26.3", features = ["derive"] }
-*/
-
-/// Experiment with matching REPL commands with a partial match of any length.
+/// Experiment with matching REPL commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use clap::{CommandFactory, Parser};
 use console::style;
+use rustyline::error::Signal;
 use rustyline::DefaultEditor;
 use std::error::Error;
 use std::str::FromStr;
@@ -32,7 +23,7 @@ enum LoopCommand {
     List,
     /// Delete generated files
     Delete,
-    /// Exit REPL
+    /// Exit REPL (actually works, as does Ctrl-d)
     Quit,
     /// Show help information
     Help,
@@ -63,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Err(e) => match e {
                 rustyline::error::ReadlineError::Eof
                 | rustyline::error::ReadlineError::Interrupted => break,
-                rustyline::error::ReadlineError::WindowResized => continue,
+                rustyline::error::ReadlineError::Signal(Signal::Resize) => continue,
                 _ => panic!("Error in read line: {e:?}"),
             },
         };
@@ -86,7 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // eprintln!("key={key}, split[0]={}", split[0]);
                 }
             }
-        	if matches == 1 {
+            if matches == 1 {
                 cmd
             } else {
                 println!("No single matching key found");
@@ -108,6 +99,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!();
             LoopCommand::print_help();
             continue;
+        }
+        if command == "quit" {
+            println!("\nSo soon?");
+            break;
         }
     }
     Ok(())

@@ -1,0 +1,133 @@
+name = "Solarized Light Base16"
+description = "Converted from Solarized Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fdf6e3"]
+bg_rgbs = [[
+    253,
+    246,
+    227,
+]]
+
+[palette.heading1]
+rgb = [
+    53,
+    58,
+    147,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    192,
+    33,
+    110,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    42,
+    161,
+    152,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    161,
+    15,
+    13,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    190,
+    63,
+    10,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    0,
+    43,
+    54,
+]
+
+[palette.info]
+rgb = [
+    17,
+    114,
+    183,
+]
+
+[palette.emphasis]
+rgb = [
+    181,
+    137,
+    0,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    42,
+    161,
+    152,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    72,
+    95,
+    102,
+]
+
+[palette.subtle]
+rgb = [
+    184,
+    150,
+    41,
+]
+
+[palette.hint]
+rgb = [
+    98,
+    124,
+    127,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    91,
+    123,
+    134,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    133,
+    153,
+    0,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    7,
+    54,
+    66,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    101,
+    124,
+    124,
+]

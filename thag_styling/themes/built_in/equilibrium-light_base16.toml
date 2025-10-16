@@ -1,0 +1,133 @@
+name = "Equilibrium Light Base16"
+description = "Converted from Equilibrium Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f5f0e7"]
+bg_rgbs = [[
+    245,
+    240,
+    231,
+]]
+
+[palette.heading1]
+rgb = [
+    53,
+    74,
+    142,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    192,
+    29,
+    110,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    122,
+    114,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    160,
+    10,
+    13,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    186,
+    64,
+    10,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    24,
+    28,
+    34,
+]
+
+[palette.info]
+rgb = [
+    0,
+    115,
+    181,
+]
+
+[palette.emphasis]
+rgb = [
+    157,
+    111,
+    0,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    0,
+    122,
+    114,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    67,
+    71,
+    78,
+]
+
+[palette.subtle]
+rgb = [
+    148,
+    121,
+    73,
+]
+
+[palette.hint]
+rgb = [
+    102,
+    108,
+    119,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    90,
+    95,
+    102,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    99,
+    114,
+    0,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    44,
+    49,
+    56,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    134,
+    120,
+    87,
+]

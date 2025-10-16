@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-rug = "1.24.1"
-*/
-
 /// Very fast non-recursive calculation of an individual Fibonacci number using the
 /// Fibonacci doubling identity. See also `demo/fib_doubling_recursive.ibig.rs` for the
 /// original recursive implementation and the back story.
@@ -12,8 +7,14 @@ rug = "1.24.1"
 /// This version is derived from `demo/fib_doubling_iterative.rs` with the following
 /// change: that we reduce bloat as best we can  by purging redundant entries from the memo
 /// cache as soon as it's safe to do so.
+///
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
+///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use rug::ops::Pow;
 use rug::{Assign, Integer};

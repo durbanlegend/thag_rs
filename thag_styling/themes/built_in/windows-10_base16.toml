@@ -1,0 +1,133 @@
+name = "Windows 10 Base16"
+description = "Converted from Windows 10 theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0c0c0c"]
+bg_rgbs = [[
+    12,
+    12,
+    12,
+]]
+
+[palette.heading1]
+rgb = [
+    246,
+    84,
+    226,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    66,
+    245,
+    60,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    97,
+    214,
+    214,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    108,
+    120,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    246,
+    215,
+    84,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    242,
+    242,
+    242,
+]
+
+[palette.info]
+rgb = [
+    84,
+    134,
+    246,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    241,
+    165,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    97,
+    214,
+    214,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    204,
+    204,
+    204,
+]
+
+[palette.subtle]
+rgb = [
+    152,
+    152,
+    152,
+]
+
+[palette.hint]
+rgb = [
+    152,
+    152,
+    152,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    185,
+    185,
+    185,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    70,
+    245,
+    60,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    223,
+    223,
+    223,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    152,
+    152,
+    152,
+]

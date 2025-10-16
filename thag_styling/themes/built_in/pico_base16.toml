@@ -1,0 +1,133 @@
+name = "Pico Base16"
+description = "Converted from Pico theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    255,
+    119,
+    168,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    255,
+    204,
+    170,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    41,
+    173,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    246,
+    85,
+    134,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    245,
+    179,
+    61,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    241,
+    232,
+]
+
+[palette.info]
+rgb = [
+    147,
+    133,
+    173,
+]
+
+[palette.emphasis]
+rgb = [
+    245,
+    232,
+    61,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    41,
+    173,
+    255,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    176,
+    166,
+    156,
+]
+
+[palette.subtle]
+rgb = [
+    57,
+    100,
+    223,
+]
+
+[palette.hint]
+rgb = [
+    48,
+    232,
+    159,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    230,
+    94,
+    51,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    37,
+    244,
+    114,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    194,
+    195,
+    199,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    232,
+    48,
+    143,
+]

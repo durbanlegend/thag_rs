@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-*/
-
 use clap::Parser;
 
 /// GPT-generated CLI using the `clap` crate.

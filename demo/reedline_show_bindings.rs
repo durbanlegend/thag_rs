@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-reedline = "0.36.0"
-*/
-
 /// Prototype of key binding display function for `reedline` REPL. This was developed
 /// by giving ChatGPT a simple spec which it flubbed, then repeatedly feeding back errors,
 /// manually corrected code and requests for changes until a nice simple display was
@@ -10,7 +5,7 @@ reedline = "0.36.0"
 /// the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
 /// coding.
 //# Purpose: Demo the end result of development dialog with ChatGPT.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use reedline::{default_emacs_keybindings, EditCommand, KeyCode, KeyModifiers, ReedlineEvent};
 
 fn main() {

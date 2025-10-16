@@ -1,0 +1,133 @@
+name = "Woodland Base16"
+description = "Converted from Woodland theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#231e18"]
+bg_rgbs = [[
+    35,
+    30,
+    24,
+]]
+
+[palette.heading1]
+rgb = [
+    187,
+    144,
+    226,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    201,
+    174,
+    138,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    143,
+    219,
+    121,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    236,
+    154,
+    154,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    235,
+    183,
+    130,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    228,
+    212,
+    200,
+]
+
+[palette.info]
+rgb = [
+    142,
+    172,
+    223,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    214,
+    117,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    149,
+    208,
+    131,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    209,
+    194,
+    182,
+]
+
+[palette.subtle]
+rgb = [
+    186,
+    171,
+    153,
+]
+
+[palette.hint]
+rgb = [
+    194,
+    175,
+    146,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    195,
+    173,
+    145,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    207,
+    210,
+    130,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    215,
+    200,
+    188,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    184,
+    170,
+    156,
+]

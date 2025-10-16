@@ -1,0 +1,43 @@
+
+[palette.error]
+rgb = [224, 64, 48]
+
+[palette.warning]
+rgb = [240, 192, 0]
+
+[palette.success]
+rgb = [144, 224, 144]
+
+[palette.info]
+rgb = [32, 128, 176]
+
+[palette.emphasis]
+rgb = [208, 160, 208]
+
+[palette.code]
+rgb = [112, 48, 144]
+
+[palette.normal]
+rgb = [16, 176, 144]
+
+[palette.subtle]
+rgb = [32, 160, 96]
+
+[palette.hint]
+rgb = [32, 160, 96]
+style = ["italic"]
+
+[palette.debug]
+rgb = [32, 160, 96]
+style = ["dim"]
+
+[palette.link]
+rgb = [32, 160, 96]
+style = ["underline"]
+
+[palette.quote]
+rgb = [32, 160, 96]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [32, 160, 96]

@@ -1,0 +1,133 @@
+name = "Porple Base16"
+description = "Converted from Porple theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#292c36"]
+bg_rgbs = [[
+    41,
+    44,
+    54,
+]]
+
+[palette.heading1]
+rgb = [
+    226,
+    175,
+    205,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    217,
+    185,
+    158,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    171,
+    198,
+    204,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    176,
+    177,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    237,
+    194,
+    164,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    248,
+    248,
+    248,
+]
+
+[palette.info]
+rgb = [
+    172,
+    173,
+    229,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    192,
+    152,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    175,
+    196,
+    201,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    216,
+    216,
+    216,
+]
+
+[palette.subtle]
+rgb = [
+    173,
+    173,
+    202,
+]
+
+[palette.hint]
+rgb = [
+    178,
+    164,
+    211,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    188,
+    188,
+    188,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    183,
+    220,
+    155,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    232,
+    232,
+    232,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    176,
+    168,
+    207,
+]

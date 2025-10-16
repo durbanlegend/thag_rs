@@ -1,14 +1,14 @@
 /*[toml]
-[dependencies]
- bpaf = { version = "0.9.11", features = ["derive", "autocomplete"] }
- bpaf_derive = "0.5.10"
+[features]
+default = ["bpaf/derive", "bpaf/autocomplete"]
 */
 
-/// Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
+/// Published example from the `bpaf` crate.
 ///
 /// E.g. `thag demo/bpaf_cargo_show_asm.rs -- -h`
 //# Purpose: Demo CLI alternative to clap crate
 //# Categories: CLI, crates, technique
+//# Sample arguments: `-- -h`
 use bpaf::{construct, long, Bpaf, Parser, ShellComp};
 use std::{convert::Infallible, path::PathBuf};
 

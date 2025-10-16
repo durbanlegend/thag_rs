@@ -1,0 +1,133 @@
+name = "Helios Base16"
+description = "Converted from Helios theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1d2021"]
+bg_rgbs = [[
+    29,
+    32,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    222,
+    146,
+    167,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    247,
+    161,
+    96,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    104,
+    238,
+    223,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    246,
+    148,
+    158,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    187,
+    120,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    229,
+    229,
+    229,
+]
+
+[palette.info]
+rgb = [
+    124,
+    216,
+    244,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    198,
+    120,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    105,
+    237,
+    222,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    213,
+    213,
+    213,
+]
+
+[palette.subtle]
+rgb = [
+    165,
+    173,
+    178,
+]
+
+[palette.hint]
+rgb = [
+    166,
+    172,
+    177,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    205,
+    205,
+    205,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    188,
+    227,
+    115,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    221,
+    221,
+    221,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    165,
+    173,
+    177,
+]

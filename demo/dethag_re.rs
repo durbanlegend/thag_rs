@@ -1,17 +1,13 @@
-/*[toml]
-[dependencies]
-lazy_static = "1.4.0"
-regex = "1.10.4"
-*/
-
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::error::Error;
 
 /// Unescape `\n` and `\\` markers in a string to convert the wall of text to readable lines.
+/// This is an alternative approach to the original script that ended up as `src/bin/thag_legible.rs`.
 /// This version using regex may be more reliable than the classic approach using .lines().
 /// However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
-/// module more than 5 time larger than that of `thagomizer`.
+/// module almost 7 times larger than that of `thag_legible` for debug builds and 4 times
+/// larger for release builds.
 ///
 /// Tip: Regex tested using https://rustexp.lpil.uk/.
 //# Purpose: Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.

@@ -1,0 +1,133 @@
+name = "Precious Dark Fifteen Base16"
+description = "Converted from Precious Dark Fifteen theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#23262b"]
+bg_rgbs = [[
+    35,
+    38,
+    43,
+]]
+
+[palette.heading1]
+rgb = [
+    183,
+    153,
+    255,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    243,
+    130,
+    216,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    128,
+    230,
+    212,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    163,
+    160,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    186,
+    135,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    206,
+    206,
+    203,
+]
+
+[palette.info]
+rgb = [
+    135,
+    197,
+    249,
+]
+
+[palette.emphasis]
+rgb = [
+    233,
+    208,
+    151,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    139,
+    219,
+    205,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    206,
+    206,
+    203,
+]
+
+[palette.subtle]
+rgb = [
+    172,
+    178,
+    187,
+]
+
+[palette.hint]
+rgb = [
+    179,
+    179,
+    179,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    181,
+    180,
+    177,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    189,
+    212,
+    147,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    186,
+    185,
+    182,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    174,
+    178,
+    184,
+]

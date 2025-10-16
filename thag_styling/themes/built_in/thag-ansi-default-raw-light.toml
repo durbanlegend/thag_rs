@@ -1,0 +1,65 @@
+name = "thag-ansi-default-light"
+description = "Dark theme using standard 16-color ANSI terminal palette for reference and maximum compatibility"
+term_bg_luma = "light"
+min_color_support = "basic"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[255, 255, 255]]
+
+[palette.heading1]
+rgb = [128, 128, 0]  # ANSI 3 - Olive/Dark Yellow
+style = ["bold"]
+
+[palette.heading2]
+rgb = [0, 255, 255]  # ANSI 14 - Aqua/Cyan (bright)
+style = ["bold"]
+
+[palette.heading3]
+rgb = [255, 0, 255]  # ANSI 13 - Fuchsia/Magenta (bright)
+style = ["bold"]
+
+[palette.error]
+rgb = [255, 0, 0]  # ANSI 9 - Red (bright)
+style = ["bold"]
+
+[palette.warning]
+rgb = [128, 128, 0]  # ANSI 3 - Olive/Dark Yellow
+style = ["bold"]
+
+[palette.success]
+rgb = [0, 255, 0]  # ANSI 10 - Lime/Green (bright)
+
+[palette.info]
+rgb = [0, 0, 255]  # ANSI 12 - Blue (bright)
+
+[palette.emphasis]
+rgb = [0, 0, 0]  # ANSI 0 - Black
+style = ["bold"]
+
+[palette.code]
+rgb = [0, 255, 255]  # ANSI 14 - Aqua/Cyan (bright)
+style = ["italic"]
+
+[palette.normal]
+rgb = [128, 128, 128]  # ANSI 8 - Gray/Dark Gray
+
+[palette.subtle]
+rgb = [192, 192, 192]  # ANSI 7 - Silver/Light Gray
+
+[palette.hint]
+rgb = [192, 192, 192]  # ANSI 7 - Silver/Light Gray
+style = ["italic"]
+
+[palette.debug]
+rgb = [192, 192, 192]  # ANSI 7 - Silver/Light Gray
+style = ["dim"]
+
+[palette.link]
+rgb = [0, 0, 255]  # ANSI 12 - Blue (bright)
+style = ["underline"]
+
+[palette.quote]
+rgb = [0, 128, 128]  # ANSI 6 - Teal/Dark Cyan
+style = ["italic"]
+
+[palette.commentary]
+rgb = [192, 192, 192]  # ANSI 7 - Silver/Light Gray

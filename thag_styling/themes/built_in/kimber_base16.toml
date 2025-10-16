@@ -1,0 +1,133 @@
+name = "Kimber Base16"
+description = "Converted from Kimber theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#222222"]
+bg_rgbs = [[
+    34,
+    34,
+    34,
+]]
+
+[palette.heading1]
+rgb = [
+    156,
+    215,
+    218,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    190,
+    159,
+    159,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    142,
+    207,
+    207,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    223,
+    176,
+    176,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    161,
+    191,
+    213,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    230,
+]
+
+[palette.info]
+rgb = [
+    162,
+    190,
+    212,
+]
+
+[palette.emphasis]
+rgb = [
+    230,
+    202,
+    144,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    149,
+    200,
+    200,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    222,
+    222,
+    231,
+]
+
+[palette.subtle]
+rgb = [
+    174,
+    174,
+    174,
+]
+
+[palette.hint]
+rgb = [
+    196,
+    153,
+    153,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    174,
+    174,
+    174,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    153,
+    200,
+    153,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    195,
+    195,
+    180,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    169,
+    180,
+    169,
+]

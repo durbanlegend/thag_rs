@@ -1,0 +1,133 @@
+name = "Atelier Forest Light Base16"
+description = "Converted from Atelier Forest Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f1efee"]
+bg_rgbs = [[
+    241,
+    239,
+    238,
+]]
+
+[palette.heading1]
+rgb = [
+    16,
+    16,
+    182,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    159,
+    11,
+    213,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    33,
+    148,
+    191,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    164,
+    9,
+    24,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    188,
+    58,
+    10,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    27,
+    25,
+    24,
+]
+
+[palette.info]
+rgb = [
+    10,
+    76,
+    189,
+]
+
+[palette.emphasis]
+rgb = [
+    184,
+    122,
+    14,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    50,
+    141,
+    174,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    92,
+    84,
+    81,
+]
+
+[palette.subtle]
+rgb = [
+    130,
+    106,
+    94,
+]
+
+[palette.hint]
+rgb = [
+    121,
+    108,
+    103,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    120,
+    108,
+    104,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    123,
+    151,
+    38,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    44,
+    36,
+    33,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    120,
+    107,
+    104,
+]

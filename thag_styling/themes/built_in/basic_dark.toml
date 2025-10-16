@@ -1,0 +1,31 @@
+name = "Basic Dark"
+description = "Basic dark theme for simple terminals"
+term_bg_luma = "dark"
+min_color_support = "basic"
+backgrounds = []
+
+[palette]
+heading1 = { ansi = "green", index = 2, style = ["bold"] } # Green
+
+# Headers and Structure
+heading2 = { ansi = "blue", index = 4, style = ["bold"] } # Blue
+heading3 = { ansi = "cyan", index = 6, style = ["bold"] } # Cyan
+
+# Status/Alerts
+error = { ansi = "red", index = 1 }           # Red
+warning = { ansi = "yellow", index = 3 }      # Yellow
+success = { ansi = "green", index = 2 }       # Green
+info = { ansi = "bright_yellow", index = 11 } # Bright Yellow
+
+# Emphasis levels
+emphasis = { ansi = "cyan", index = 6, style = ["bold"] }       # Cyan
+code = { ansi = "blue", index = 4 }                             # Blue
+normal = { ansi = "white", index = 7 }                          # White
+subtle = { ansi = "bright_black", index = 8 }                   # Bright Black (Gray)
+hint = { ansi = "bright_cyan", index = 14, style = ["italic"] } # Bright Cyan
+
+# Development
+debug = { ansi = "bright_cyan", index = 14 }                       # Bright Cyan
+link = { ansi = "bright_red", index = 9 }                          # Bright Red
+quote = { ansi = "bright_white", index = 15 }                      # Bright White
+commentary = { ansi = "bright_black", index = 8, style = ["dim"] } # Dim styling

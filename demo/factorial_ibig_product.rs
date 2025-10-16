@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// Fast factorial algorithm with arbitrary precision and avoiding recursion.
 /// Closures and functions are effectively interchangeable here.
 ///
@@ -12,7 +7,7 @@ ibig = "0.3.6"
 /// is pretty verbose in the context of a snippet, but could be useful in an app.
 /// The implementation is thanks to GPT-4.
 //# Purpose: Demo snippet, `ibig` crate, factorial using `std::iter::Product` trait, workaround for implementing an external trait on an external crate.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 use ibig::{ubig, UBig};
 use std::env;
@@ -40,17 +35,13 @@ impl DerefMut for UBigWrapper {
 // Step 3: Implement the Product Trait
 impl Product for UBigWrapper {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
-            UBigWrapper(acc.0 * x.0)
-        })
+        iter.fold(Self(ubig!(1)), |acc, x| Self(acc.0 * x.0))
     }
 }
 
-impl<'a> Product<&'a UBigWrapper> for UBigWrapper {
+impl<'a> Product<&'a Self> for UBigWrapper {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(UBigWrapper(ubig!(1)), |acc, x| {
-            UBigWrapper(acc.0.clone() * x.0.clone())
-        })
+        iter.fold(Self(ubig!(1)), |acc, x| Self(acc.0 * x.0.clone()))
     }
 }
 
@@ -65,9 +56,8 @@ fn fac_product(n: usize) -> UBig {
 
 // Function example using successors
 let fac_successors = |n: usize| -> UBig {
-    successors(Some((ubig!(1), ubig!(1))), |(i, acc)| {
-        Some((i + 1, acc * (i + 1)))
-    })
+    successors(Some((ubig!(1), ubig!(1))), |(i, acc)|
+        Some((i + 1, acc * (i + 1))))
     .map(|(_a, b)| b)
     .nth(n - 1)
     .unwrap()

@@ -1,10 +1,15 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-shlex = "0.1.1"
-*/
-
 /// Example from the clap cookbook, not using the `clap-repl` crate.
+///
+/// The latest version of this example is `repl-derive.rs` in the [examples] folder
+///  in the `clap` repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/clap-rs/clap/blob/master/examples/repl-derive.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 /// Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 //# Purpose: Demo building a repl using `clap` directly.
 //# Categories: REPL, technique

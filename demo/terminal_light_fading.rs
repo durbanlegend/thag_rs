@@ -1,23 +1,10 @@
-/*[toml]
-[dependencies]
-coolor = "1.0.0"
-terminal-light = "1.5.0"
-crossterm = "0.28.1"
-*/
-
 /// A fun published example from the `terminal-light` crate. "Demonstrate mixing
 /// any ANSI color with the background."
 //# Purpose: Mostly recreational.
 //# Categories: crates, recreational
 use {
     coolor::*,
-    crossterm::{
-        cursor::{MoveTo, Show},
-        style::{self, Stylize},
-        terminal::{Clear, ClearType},
-        ExecutableCommand,
-    },
-    std::io::{stdout, Write},
+    crossterm::style::{self, Stylize},
 };
 
 fn print_color(ansi: AnsiColor) {

@@ -1,0 +1,45 @@
+("3024 (base16)", "[colors]
+ansi = [
+    "#090300",
+"#db2d20",
+"#01a252",
+"#fded02",
+"#01a0e4",
+"#a16a94",
+"#b5e4f4",
+"#a5a2a2",
+]
+background = "#090300"
+brights = [
+    "#5c5855",
+    "#db2d20",
+    "#01a252",
+    "#fded02",
+    "#01a0e4",
+    "#a16a94",
+    "#b5e4f4",
+    "#f7f7f7",
+]
+cursor_bg = "#a5a2a2"
+cursor_border = "#a5a2a2"
+cursor_fg = "#090300"
+foreground = "#a5a2a2"
+selection_bg = "#a5a2a2"
+selection_fg = "#090300"
+
+[colors.indexed]
+16 = "#e8bbd0"
+17 = "#cdab53"
+18 = "#3a3432"
+19 = "#4a4543"
+20 = "#807d7c"
+21 = "#d6d5d4"
+
+[metadata]
+
+"),
+aliases = ["3024 (dark) (terminal.sexy)"]
+author = "Jan T. Sott (http://github.com/idleberg)"
+name = "3024 (base16)"
+origin_url = "https://github.com/chriskempson/base16-unclaimed-schemes"
+wezterm_version = "20220807-113146-c2fee766"

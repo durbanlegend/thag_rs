@@ -1,11 +1,6 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.13", features = ["cargo", "derive"] }
-*/
-
 /// Published example from `clap` tutorial (derive), with added displays.
 ///
-/// E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+/// E.g. thag demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 //# Purpose: Demonstrate `clap` CLI using the derive option
 //# Categories: CLI, crates, technique
 //# Sample arguments: `-- add spongebob`

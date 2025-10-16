@@ -1,0 +1,133 @@
+name = "darkmoss Base16"
+description = "Converted from darkmoss theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#171e1f"]
+bg_rgbs = [[
+    23,
+    30,
+    31,
+]]
+
+[palette.heading1]
+rgb = [
+    156,
+    195,
+    204,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    224,
+    146,
+    111,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    102,
+    217,
+    239,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    137,
+    148,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    243,
+    230,
+    117,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    225,
+    234,
+    239,
+]
+
+[palette.info]
+rgb = [
+    150,
+    196,
+    210,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    201,
+    113,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    102,
+    217,
+    239,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    210,
+    210,
+    175,
+]
+
+[palette.subtle]
+rgb = [
+    154,
+    177,
+    180,
+]
+
+[palette.hint]
+rgb = [
+    160,
+    173,
+    175,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    160,
+    176,
+    159,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    135,
+    199,
+    184,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    227,
+    227,
+    200,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    160,
+    172,
+    174,
+]

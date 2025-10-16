@@ -1,0 +1,133 @@
+name = "Sparky"
+description = "Converted from Sparky theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#072b31"]
+bg_rgbs = [[
+    7,
+    43,
+    49,
+]]
+
+[palette.heading1]
+rgb = [
+    213,
+    158,
+    215,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    200,
+    165,
+    136,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    255,
+    114,
+    118,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    139,
+    142,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    182,
+    114,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    131,
+    193,
+    231,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    226,
+    114,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    106,
+    225,
+    231,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    244,
+    245,
+    240,
+]
+
+[palette.subtle]
+rgb = [
+    99,
+    212,
+    238,
+]
+
+[palette.hint]
+rgb = [
+    99,
+    211,
+    238,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    99,
+    218,
+    238,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    147,
+    228,
+    108,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    245,
+    245,
+    241,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    99,
+    218,
+    238,
+]

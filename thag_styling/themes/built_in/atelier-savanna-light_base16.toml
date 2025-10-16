@@ -1,0 +1,133 @@
+name = "Atelier Savanna Light Base16"
+description = "Converted from Atelier Savanna Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#ecf4ee"]
+bg_rgbs = [[
+    236,
+    244,
+    238,
+]]
+
+[palette.heading1]
+rgb = [
+    68,
+    112,
+    132,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    128,
+    109,
+    97,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    28,
+    154,
+    160,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    141,
+    69,
+    33,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    154,
+    104,
+    46,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    23,
+    28,
+    25,
+]
+
+[palette.info]
+rgb = [
+    59,
+    136,
+    140,
+]
+
+[palette.emphasis]
+rgb = [
+    150,
+    116,
+    49,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    28,
+    154,
+    160,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    79,
+    95,
+    85,
+]
+
+[palette.subtle]
+rgb = [
+    88,
+    137,
+    106,
+]
+
+[palette.hint]
+rgb = [
+    103,
+    122,
+    109,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    95,
+    109,
+    100,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    72,
+    153,
+    99,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    35,
+    42,
+    37,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    104,
+    121,
+    109,
+]

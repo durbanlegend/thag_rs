@@ -1,0 +1,133 @@
+name = "Classic Light Base16"
+description = "Converted from Classic Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f5f5f5"]
+bg_rgbs = [[
+    245,
+    245,
+    245,
+]]
+
+[palette.heading1]
+rgb = [
+    132,
+    77,
+    121,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    143,
+    85,
+    54,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    68,
+    167,
+    150,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    142,
+    42,
+    43,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    181,
+    97,
+    28,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    21,
+    21,
+    21,
+]
+
+[palette.info]
+rgb = [
+    62,
+    122,
+    147,
+]
+
+[palette.emphasis]
+rgb = [
+    199,
+    120,
+    10,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    78,
+    157,
+    143,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    48,
+    48,
+    48,
+]
+
+[palette.subtle]
+rgb = [
+    118,
+    118,
+    118,
+]
+
+[palette.hint]
+rgb = [
+    118,
+    118,
+    118,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    80,
+    80,
+    80,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    133,
+    159,
+    76,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    32,
+    32,
+    32,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    118,
+    118,
+    118,
+]

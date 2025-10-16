@@ -7,26 +7,22 @@ edition = "2021"
 
 [dependencies]
 const_gen_proc_macro = "0.1.1"
-# const_gen_proc_macro = { path = "/Users/donf/projects/const_gen_proc_macro/lib" }
-crossterm = "0.28"
 darling = "0.20.10"
 deluxe = "0.5.0"
 expander = "2.2.1"
 inline_colorization = "0.1.6"
 # macro_utils = { path = "../macro_utils" } # Adjust the path as needed
-prettyplease = "0.2.25"
+prettyplease = "0.2.32"
 proc-macro2 = "1.0"
 quote = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
-strict = "0.2"
 syn = { version = "2.0", default-features = false, features = [
     "full",
     "parsing",
     "proc-macro",
     "visit-mut",
 ] }
-thag_proc_macros = { version = "0.1.0", path = "../../src/proc_macros" }
 
 [lib]
 proc-macro = true

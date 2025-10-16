@@ -1,16 +1,9 @@
-/*[toml]
-[dependencies]
-env_logger = "0.11.3"
-log = "0.4.21"
-*/
-
 /// Run a command (in this case a cargo search for the `log` crate),
 /// and capture and print its stdout and stderr concurrently in a
 /// separate thread.
 //# Purpose: Demo process::Command with output capture.
 //# Categories: technique
 use env_logger::Builder;
-use log::debug;
 use std::env;
 use std::ffi::OsStr;
 use std::io::Read;
@@ -45,21 +38,21 @@ fn main() {
 
     // Read the captured output from the pipe
     let mut stdout = child.stdout.take().expect("failed to get stdout");
-    let mut output = String::new();
+    let mut stderr = child.stderr.take().expect("failed to get stderr");
+
+    let mut stdout_output = String::new();
     stdout
-        .read_to_string(&mut output)
+        .read_to_string(&mut stdout_output)
         .expect("failed to read stdout");
 
-    // Print the captured stdout
-    debug!("Captured stdout:\n{}", output);
+    println!("Captured stdout:\n{}", stdout_output);
 
-    let mut stderr = child.stderr.take().expect("failed to get stdout");
+    let mut stderr_output = String::new();
     stderr
-        .read_to_string(&mut output)
+        .read_to_string(&mut stderr_output)
         .expect("failed to read stderr");
 
-    // Print the captured stderr
-    debug!("Captured stderr:\n{}", output);
+    println!("Captured stderr:\n{}", stderr_output);
 
     // Wait for the child process to finish
     child.wait().expect("failed to wait for child");

@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-lazy_static = "1.4.0"
-termbg = "0.5.2"
-*/
-
 /// Prototype of detecting the light or dark theme in use, and registering it
 /// as a static enum value for use in message style selection. Example of using
 /// an LLM to generate a prototype to a simple spec. The `clear_screen` function
@@ -32,20 +25,20 @@ pub fn clear_screen() {
 }
 
 #[derive(Debug, PartialEq)]
-enum TermTheme {
+enum TermBgLuma {
     Light,
     Dark,
 }
 
 lazy_static! {
-    static ref TERM_THEME: TermTheme = {
+    static ref TERM_THEME: TermBgLuma = {
         let timeout = std::time::Duration::from_millis(100);
         // debug!("Check terminal background color");
         let theme = termbg::theme(timeout);
         clear_screen();
         match theme {
-            Ok(Theme::Light) => TermTheme::Light,
-            Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            Ok(Theme::Light) => TermBgLuma::Light,
+            Ok(Theme::Dark) | Err(_) => TermBgLuma::Dark,
         }
     };
 }
@@ -53,7 +46,7 @@ lazy_static! {
 fn main() {
     // Directly match the static variable without a mutex
     match *TERM_THEME {
-        TermTheme::Light => println!("The theme is Light"),
-        TermTheme::Dark => println!("The theme is Dark"),
+        TermBgLuma::Light => println!("The theme is Light"),
+        TermBgLuma::Dark => println!("The theme is Dark"),
     }
 }

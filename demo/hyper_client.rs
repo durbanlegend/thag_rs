@@ -1,18 +1,3 @@
-/*[toml]
-[dependencies]
-hyper = { version = "1", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
-pretty_env_logger = "0.5"
-http-body-util = "0.1"
-bytes = "1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-form_urlencoded = "1"
-http = "1"
-futures-util = { version = "0.3", default-features = false }
-pin-project-lite = "0.2.14"
-*/
-
 #![deny(warnings)]
 #![warn(rust_2018_idioms)]
 use bytes::Bytes;
@@ -30,11 +15,18 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// Published echo-server HTTP client example from the `hyper` crate,
 /// with the referenced modules `support` and `tokiort` refactored
 /// into the script, while respecting their original structure and
-/// redundancies.
-/// You can run the `hyper_echo_server.rs` demo as the HTTP server on
-/// another command line and connect to it on port 3000:
-/// `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
+/// redundancies. I've also synchronised the printing of the response,
+/// which was displaying out of sequence.
+/// You can run one of the hyper demo servers as the HTTP server on
+/// another command line and connect to it on port 3000.
+/// I prefer `hyper_name_server.rs` for variety, but `hyper_hello_server.rs`
+/// or `hyper_echo_server.rs` will work.
 /// Or use any other available HTTP server.
+///
+/// ```bash
+/// thag demo/hyper_client.rs -- http://127.0.0.1:3000
+/// ```
+///
 //# Purpose: Demo `hyper` HTTP client, and incorporating separate modules into the script.
 //# Categories: async, crates, technique
 //# Sample arguments: `-- http://127.0.0.1:3000`
@@ -46,7 +38,7 @@ async fn main() -> Result<()> {
     let url = match env::args().nth(1) {
         Some(url) => url,
         None => {
-            println!("Usage: client <url>");
+            println!("Usage: thag hyper_client -- <url>");
             return Ok(());
         }
     };
@@ -86,20 +78,27 @@ async fn fetch_url(url: hyper::Uri) -> Result<()> {
 
     let mut res = sender.send_request(req).await?;
 
-    println!("Response: {}", res.status());
-    println!("Headers: {:#?}\n", res.headers());
+    let mut stdout = io::stdout();
+    stdout
+        .write_all(format!("Response: {}\n", res.status()).as_bytes())
+        .await?;
+    stdout
+        .write_all(format!("Headers: {:#?}\n\n", res.headers()).as_bytes())
+        .await?;
 
     // Stream the body, writing each chunk to stdout as we get it
     // (instead of buffering and printing at the end).
-    println!("Response body:");
+    stdout.write_all(b"Response body:\n\n").await?;
+
     while let Some(next) = res.frame().await {
         let frame = next?;
         if let Some(chunk) = frame.data_ref() {
-            io::stdout().write_all(&chunk).await?;
+            stdout.write_all(&chunk).await?;
         }
     }
 
-    println!("\n\nDone!\n");
+    stdout.write_all(b"\n\nDone!\n").await?;
+    stdout.flush().await?;
 
     Ok(())
 }

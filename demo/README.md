@@ -1,77 +1,221 @@
-## Running the scripts
+## Running the scripts in `demo` and `src/bin`
+
+### Commonality of scripts and tools
+
+The scripts in src/bin are integrated `thag_rs` tools, in other words they are declared in Cargo.toml and are normally installed as commands. However, if you have cloned the `thag_rs` project you can run them like any other `thag` script.
+
+Conversely, you can make your own tools by using the `thag -x` option to do a release build of any script, even a snippet. You could even use `thag -xe ` to build a command, as described in the main [README.md](../README.md).
+
+---
 
 `thag_rs` uses `clap` for a standard command-line interface. Try `thag --help` (or -h) if
 you get stuck.
 
 ### In its simplest form:
 
+  ```
+  thag <path to script>
+  ```
 
-    thag <path to script>
+#### For example:
 
-###### E.g.:
+  ```
+  thag demo/hello.rs
+  ```
 
-    thag demo/hello.rs
+#### Full syntax:
+
+  ```
+  thag [THAG OPTIONS] <path to script> [-- [SCRIPT OPTIONS]   <script args>]
+  ```
 
 ### Passing options and arguments to a script:
 
 Use `--` to separate options and arguments meant for the script from those meant for `thag` itself.
 
-###### E.g.:
+#### Example 1:
 
-demo/fib_dashu_snippet.rs expects to be passed an integer _n_ and will compute the _nth_ number in the
-Fibonacci sequence.
+`demo/fib_dashu_snippet.rs` expects to be passed an integer _n_ and will compute the _nth_ number in the Fibonacci sequence.
 
-     thag demo/fib_dashu_snippet.rs -- 100
+  thag demo/fib_dashu_snippet.rs -- 100
 
-### Full syntax:
+---
 
-    thag [THAG OPTIONS] <path to script> [-- [SCRIPT OPTIONS] <script args>]
-
-###### E.g.:
+#### Example 2:
 
 `demo/clap_tut_builder_01.rs` is a published example from the `clap` crate.
 Its command-line signature looks like this:
 
-    clap_tut_builder_01 [OPTIONS] [name] [COMMAND]
+##### Signature:
 
-The arguments in their short form are:
+  ```
+  clap_tut_builder_01 [OPTIONS] [name] [COMMAND]
+  ```
 
+This `clap` example takes the following arguments (in their short form):
+
+##### Arguments:
+
+  ```
+  # Arguments to demo/clap_tut_builder_01.rs
+  [OPTIONS]
     `-c <config_file>`      an optional configuration file
-    `-d` / `-dd` / `ddd`    debug, at increasing levels of verbosity
-    [name]                  an optional filename
-    [COMMAND]               a command (e.g. test) to run
+    `-d` / `-dd` / `-ddd`   debug, at increasing levels of verbosity
+  [name]                    an optional filename
+  [COMMAND]                 a command (e.g. test) to run
+  ```
 
 If we were to compile `clap_tut_builder_01` as an executable (`-x` option) and then run it, we might pass
 it some parameters like this:
 
-    clap_tut_builder_01 -dd -c my.cfg my_file test -l
+##### Running compiled script:
+
+  ```
+  clap_tut_builder_01 -dd -c my.cfg my_file test -l
+  ```
 
 and get output like this:
 
-    Value for name: my_file
-    Value for config: my.cfg
-    Debug mode is on
-    Printing testing lists...
+##### Output:
 
-Running the source from `thag` looks similar, we just replace `clap_tut_builder_01` by `thag demo/clap_tut_builder_01.rs --`:
+  ```
+  Value for name: my_file
+  Value for config: my.cfg
+  Debug mode is on
+  Printing testing lists...
+  ```
 
-*thag demo/clap_tut_builder_01.rs --* -dd -c my.cfg my_file test -l
+##### Running the script source from `thag`:
 
-Any parameters for `thag` should go before the `--`, e.g. we may choose use -qq to suppress `thag` messages:
+Running the source from `thag` looks similar. We just replace `clap_tut_builder_01` by `thag demo/clap_tut_builder_01.rs --`:
 
-    thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
+  ```
+  thag demo/clap_tut_builder_01.rs -- -dd -c my.cfg my_file test -l
+  ```
 
-which will give identical output to the above.
+##### Separating `thag` parameters from script parameters:
 
+Any parameters for `thag` itself should go before the `--`.
 
+For example, if we choose to use -qq to suppress `thag` messages:
 
-##### Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.
+  ```
+  thag demo/clap_tut_builder_01.rs -qq -- -dd -c my.cfg my_file test -l
+  ```
 
-### TODO: check:
-For detailed documentation on the `category_enum` procedural macro, see [category_enum](proc_macros/docs/category_enum.md).
+which will give identical output to the compiled script above.
+
+---
+
+***Remember to use `--` to separate options and arguments that are intended for `thag` from those intended for the target script.***
 
 ***
 ## Detailed script listing
+
+### Script: alloc_proto_atomic.rs
+
+**Description:**  Prototype of ring-fenced memory allocators for `thag_profiler`.
+
+ The `global_allocator` attribute flags a `Dispatcher` which dispatches each
+ memory allocation, deallocation and reallocation requests to one of two allocators
+ according to the designated current allocator (held in an atomic boolean) at the
+ moment that it receives the request. The default allocator is `TaskAware` and is
+ used for user code, while the regular system allocator `System` handles requests
+ from profiler code. The role of the `TaskAware` allocator is to record the details
+ of the user code allocation events before passing them to the system allocator.
+
+ To invoke the system allocator directly, profiler code must call a function or
+ closure with fn `with_sys_alloc`, which checks the current allocator, and if it
+ finds it to be `TaskAware`, changes it to `System` and runs the function or closure,
+ with a guard to restore the default to `TaskAware`. If the current allocator is
+ already `System`, `with_sys_alloc` concludes that it must be running nested under
+ another `with_sys_alloc` call, so does nothing except run the function or closure.
+
+ The flaw in this design is its vulnerability to race conditions, e.g. user code
+ in another thread could fail to go through `TaskAware` if `with_sys_alloc` is
+ running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
+ could prematurely reset the current allocator to  `TaskAware` while another
+ instance is still running in another thread. We can and do build in a check in
+ the TaskAware branch to detect and ignore profiler code, but in practice there is
+ little sign of such races being a problem.
+
+ Attempts to resolve this issue with thread-local storage have not borne fruit.
+ For instance async tasks are by no means guaranteed to resume in the same thread
+ after suspension.
+ The ideal would seem to be a reentrant Mutex or RwLock with mutability - so far tried
+ without success, but a subject for another prototype.
+ Dispatcher that routes allocation requests to the active allocator
+ according to the USING_SYSTEM_ALLOCATOR variable for the current thread.
+ Task-aware allocator that tracks memory allocations
+
+**Purpose:** Prototype of a ring-fenced allocator for memory profiling.
+
+**Type:** Program
+
+**Categories:** profiling, prototype
+
+**Link:** [alloc_proto_atomic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atomic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_atomic.rs
+```
+
+---
+
+### Script: alloc_proto_rwlock.rs
+
+**Description:**  Prototype of ring-fenced memory allocators for `thag_profiler`.
+
+ The `global_allocator` attribute flags a `Dispatcher` which dispatches each
+ memory allocation, deallocation and reallocation requests to one of two allocators
+ according to the designated current allocator at the moment that it receives
+ the request. The default allocator is `TaskAware` and is used for user code,
+ while the regular system allocator `System` handles requests from profiler code.
+ The role of the `TaskAware` allocator is to record the details of the user code
+ allocation events before passing them to the system allocator.
+
+ To invoke the system allocator directly, profiler code must call a function or
+ closure with fn `with_sys_alloc`, which checks the current allocator, and if it
+ finds it to be `TaskAware`, changes it to `System` and runs the function or closure,
+ with a guard to restore the default to `TaskAware`. If the current allocator is
+ already `System`, `with_sys_alloc` concludes that it must be running nested under
+ another `with_sys_alloc` call, so does nothing except run the function or closure.
+
+ The flaw in this design is its vulnerability to race conditions, e.g. user code
+ in another thread could fail to go through `TaskAware` if `with_sys_alloc` is
+ running concurrently, or conversely an outer `with_sys_alloc` ending in one thread
+ could prematurely reset the current allocator to  `TaskAware` while another
+ instance is still running in another thread. We can and do build in a check in
+ the TaskAware branch to detect and ignore profiler code, but in practice there is
+ little sign of such races being a problem.
+
+ Attempts to resolve this issue with thread-local storage have not borne fruit.
+ For instance async tasks are by no means guaranteed to resume in the same thread
+ after suspension.
+ The ideal would seem to be a reentrant Mutex with mutability - so far tried
+ without success, but a subject for another prototype.
+ Dispatcher that routes allocation requests to the desired allocator
+ Task-aware allocator that tracks memory allocations
+
+**Purpose:** Prototype of a ring-fenced allocator for memory profiling.
+
+**Crates:** `parking_lot`
+
+**Type:** Program
+
+**Categories:** profiling, prototype
+
+**Link:** [alloc_proto_rwlock.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_rwlock.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/alloc_proto_rwlock.rs
+```
+
+---
 
 ### Script: analyze_snippet_1.rs
 
@@ -89,12 +233,12 @@ For detailed documentation on the `category_enum` procedural macro, see [categor
 
 **Categories:** AST, technique
 
-**Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs)
+**Link:** [analyze_snippet_1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_1.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_1.rs
 ```
 
 ---
@@ -115,12 +259,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 
 **Categories:** AST, technique
 
-**Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs)
+**Link:** [analyze_snippet_2.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_2.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_2.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_2.rs
 ```
 
 ---
@@ -143,36 +287,174 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippe
 
 **Categories:** AST, technique
 
-**Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs)
+**Link:** [analyze_snippet_3.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_3.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/analyze_snippet_3.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/analyze_snippet_3.rs
 ```
 
 ---
 
-### Script: any.rs
+### Script: append_option_to_iter.rs
 
-**Description:**  Demo determining at run-time whether an expression returns a unit value
- so that it can be handled appropriately. When using a code template this is
- short and sweet, but it has to be included in the template and thus the
- generated code, whereas using an AST is quite a mission but works with
- any arbitrary snippet and doesn't pollute the generated source code.
+**Description:**  Demo: Optionally append one item to an iterator.
+ The trick is that `Option` implements the `IntoIterator` trait.
 
-**Purpose:** Demo Rust's answer to dynamic typing.
+**Purpose:** demo a handy trick.
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** type_identification, technique
+**Categories:** learning, technique
 
-**Link:** [any.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs)
+**Link:** [append_option_to_iter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/append_option_to_iter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/append_option_to_iter.rs
+```
+
+---
+
+### Script: attribute_reset_replacement_test.rs
+
+**Description:**  Test enhanced reset replacement with proper text attribute handling
+
+ This demonstrates the fix for text attributes (bold/dim, italic, underline) that
+ were previously leaking from inner styled content when using reset replacement.
+
+ The enhanced system:
+ 1. Analyzes the outer style's ANSI codes
+ 2. Only resets attributes that won't be reapplied
+ 3. Optimizes the reset sequence to avoid redundant operations
+ 4. Maintains perfect context preservation across all nesting levels
+
+**Purpose:** Test enhanced reset replacement with text attribute handling
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, styling, terminal, testing
+
+**Link:** [attribute_reset_replacement_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/attribute_reset_replacement_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/attribute_reset_replacement_test.rs
+```
+
+---
+
+### Script: benchmark.rs
+
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: base code.
+ See `demo/benchmark*.rs` for `firestorm` and `thag_profiler` implementations.
+
+
+**Purpose:** For checking and comparison of profiling tools
+
+**Crates:** `rand`, `rayon`, `regex`, `serde_json`, `sha2`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark.rs
+```
+
+---
+
+### Script: benchmark_firestorm.rs
+
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `firestorm` implementation`.
+ See `demo/benchmark*.rs` for base code and `thag_profiler` implementation.
+
+
+**Purpose:** For checking and comparison of profiling tools
+
+**Crates:** `firestorm`, `rand`, `rayon`, `regex`, `serde_json`, `sha2`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [benchmark_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_firestorm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_firestorm.rs
+```
+
+---
+
+### Script: benchmark_profile.rs
+
+**Description:**  ChagtGPT-generated profiling synchronous time profiling benchmark: `thag_profiler` implementation`.
+ See `demo/benchmark*.rs` for base code and `firestorm` implementation.
+
+
+**Purpose:** For checking and comparison of profiling tools
+
+**Crates:** `rand`, `rayon`, `regex`, `serde_json`, `sha2`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [benchmark_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/benchmark_profile.rs
+```
+
+---
+
+### Script: bg_detect.rs
+
+**Description:**  Background Color Detection
+
+ This script investigates querying palette color 0 as a proxy for background color
+ detection. This approach might work where OSC 11 queries
+ fail, particularly in PowerShell and regular Windows terminals.
+
+ Based on the observation that demo/truecolor*.rs files work in PowerShell,
+ suggesting we can interrogate palette colors from Rust instead of shell scripts.
+ RGB color representation
+ Query background color using standard OSC 11
+ Query palette color 0 using OSC 4 (potential background proxy)
+ Generic OSC color query function
+ Read terminal response with timeout
+ Parse OSC color response (handles both OSC 11 and OSC 4 responses)
+ Parse hex component from OSC response
+ Compare different detection methods
+ Calculate color distance (simple Euclidean)
+
+**Purpose:** Test background color detection via palette color 0 query
+
+**Crates:** `crossterm`, `thag_common`
+
+**Type:** Program
+
+**Categories:** ansi, color, terminal, windows, xterm
+
+**Link:** [bg_detect.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bg_detect.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bg_detect.rs
 ```
 
 ---
@@ -189,12 +471,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/any.rs
 
 **Categories:** crates, exploration, technique
 
-**Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs)
+**Link:** [bitflags.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bitflags.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bitflags.rs
 ```
 
 ---
@@ -210,19 +492,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bitflags.rs
 
 **Categories:** technique
 
-**Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs)
+**Link:** [borrow_wrapped.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/borrow_wrapped.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/borrow_wrapped.rs
 ```
 
 ---
 
 ### Script: bpaf_cargo_show_asm.rs
 
-**Description:**  Published example from `https://github.com/pacak/bpaf/src/docs2/derive_show_asm.md`
+**Description:**  Published example from the `bpaf` crate.
 
  E.g. `thag demo/bpaf_cargo_show_asm.rs -- -h`
 
@@ -234,12 +516,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/borrow_wrapped
 
 **Categories:** CLI, crates, technique
 
-**Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs)
+**Link:** [bpaf_cargo_show_asm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_asm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_show_asm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cargo_show_asm.rs -- -h
 ```
 
 ---
@@ -258,21 +540,21 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cargo_sho
 
 **Categories:** CLI, crates, technique
 
-**Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs)
+**Link:** [bpaf_cmd_chain.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_cmd_chain.rs -- eat Fastfood drink --coffee sleep --time=5
 ```
 
 ---
 
 ### Script: bpaf_derive.rs
 
-**Description:**  Example from bpaf crate docs2/src/command/derive.rs.
+**Description:**  Example from the `bpaf` crate docs2/src/command/derive.rs.
 
- E.g. `demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
+ E.g. `thag demo/bpaf_cmd_ex.rs -- --flag cmd --flag --arg=6`
 
 **Purpose:** Demo CLI alternative to clap crate
 
@@ -282,12 +564,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_cmd_chain
 
 **Categories:** CLI, crates, technique
 
-**Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs)
+**Link:** [bpaf_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_derive.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/bpaf_derive.rs -- --flag cmd --flag --arg=6
 ```
 
 ---
@@ -306,36 +588,60 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/bpaf_derive.rs
 
 **Categories:** technique
 
-**Link:** [cargo_capture_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs)
+**Link:** [cargo_capture_output.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_capture_output.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_capture_output.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_capture_output.rs
 ```
 
 ---
 
-### Script: cargo_lookup.rs
+### Script: cargo_debug_test_case.rs
 
-**Description:**  Explore querying crates.io information for a crate.
+**Description:**  Run a command (in this case an integration test case to be debugged),
+ and capture and print its stdout and stderr concurrently in a
+ separate thread.
 
- Format: `thag demo/cargo_lookup.rs -- <crate_name>`
+**Purpose:** Demo process::Command with output capture, debugging unit tests.
 
-**Purpose:** Proof of concept
+**Crates:** `env_logger`, `log`
+
+**Type:** Program
+
+**Categories:** debugging, technique, testing
+
+**Link:** [cargo_debug_test_case.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_debug_test_case.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_debug_test_case.rs
+```
+
+---
+
+### Script: cargo_lookup_highest.rs
+
+**Description:**  Updated prototype of getting the highest valid release of a crate via `cargo-lookup`.
+ The crate in its raw state only gets the latest. `thag_rs` was picking up `inquire`
+ 8.1 because it was released after 9.1 to fix the same issue on the previous version.
+
+**Purpose:** Originally used to debug and then prototype crate lookup, now brought up to date.
 
 **Crates:** `cargo_lookup`
 
 **Type:** Program
 
-**Categories:** crates, technique
+**Categories:** debugging, prototype
 
-**Link:** [cargo_lookup.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs)
+**Link:** [cargo_lookup_highest.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup_highest.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.rs -- serde
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_lookup_highest.rs
 ```
 
 ---
@@ -354,12 +660,49 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_lookup.r
 
 **Categories:** technique
 
-**Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs)
+**Link:** [cargo_output.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs
+```
+
+---
+
+### Script: clap_demo.rs
+
+**Description:**  Published example from the `clap` crate.
+
+ The latest version of this example is available in the [examples] folder in the `clap` repository.
+ At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
+ and passing the required arguments as normal, like this:
+
+ ```bash
+ thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+ Original `clap` crate comments:
+
+ Simple program to greet a person
+ Simple program to greet a person
+
+**Purpose:** Demo building a repl using `clap` directly.
+
+**Crates:** `clap`
+
+**Type:** Program
+
+**Categories:** REPL, technique
+
+**Link:** [clap_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs -- --name "is this the Krusty Krab?"
 ```
 
 ---
@@ -377,12 +720,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cargo_output.r
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs)
+**Link:** [clap_enum_strum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_strum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_enum_strum.rs -- variant-num2
 ```
 
 ---
@@ -401,12 +744,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_enum_stru
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs)
+**Link:** [clap_num_arg.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs -- 45
 ```
 
 ---
@@ -424,12 +767,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_num_arg.r
 
 **Categories:** REPL, technique
 
-**Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs)
+**Link:** [clap_repl_crate_rustyline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_rustyline.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crate_rustyline.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_rustyline.rs
 ```
 
 ---
@@ -437,6 +780,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crat
 ### Script: clap_repl_diy.rs
 
 **Description:**  Example from the clap cookbook, not using the `clap-repl` crate.
+
+ The latest version of this example is `repl-derive.rs` in the [examples] folder
+  in the `clap` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/clap-rs/clap/blob/master/examples/repl-derive.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
  Can't find a keybinding to navigate history, unlike `clap_repl_crate_rustyline.rs`.
 
 **Purpose:** Demo building a repl using `clap` directly.
@@ -447,12 +801,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_crat
 
 **Categories:** REPL, technique
 
-**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs)
+**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs
 ```
 
 ---
@@ -471,12 +825,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_repl_diy.
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs)
+**Link:** [clap_tut_builder_01_quick.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder_01_quick.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_builder_01_quick.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_builder_01_quick.rs -- -ddd -c dummy.cfg my_file test -l
 ```
 
 ---
@@ -485,7 +839,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_build
 
 **Description:**  Published example from `clap` tutorial (derive), with added displays.
 
- E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+ E.g. thag demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 
 **Purpose:** Demonstrate `clap` CLI using the derive option
 
@@ -495,12 +849,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_build
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs)
+**Link:** [clap_tut_derive_03_04_subcommands.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_03_04_subcommands.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
 ```
 
 ---
@@ -519,12 +873,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs)
+**Link:** [clap_tut_derive_04_01_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_01_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_01_enum.rs -- fast
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_01_enum.rs -- fast
 ```
 
 ---
@@ -543,12 +897,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Categories:** CLI, crates, technique
 
-**Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs)
+**Link:** [clap_tut_derive_04_03_relations.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_03_relations.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
 ```
 
 ---
@@ -557,7 +911,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Description:**  A prototype of the `cmd_args` module of thag_rs itself.
 
- E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+ E.g. `thag -tv demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world`
 
 **Purpose:** Prototype CLI.
 
@@ -567,12 +921,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/clap_tut_deriv
 
 **Categories:** CLI, crates, prototype, technique
 
-**Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs)
+**Link:** [cmd_args.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world
 ```
 
 ---
@@ -592,12 +946,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args.rs --
 
 **Categories:** CLI, crates, technique
 
-**Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs)
+**Link:** [cmd_args_bpaf_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_bpaf_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_bpaf_gpt.rs -- -gbrtv demo/hello.rs -- -fq Hello world
 ```
 
 ---
@@ -616,12 +970,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_bpaf_
 
 **Categories:** CLI, crates, technique
 
-**Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs)
+**Link:** [cmd_args_clap.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_clap.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.rs -- -atv hello.sh
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cmd_args_clap.rs -- -atv hello.sh
 ```
 
 ---
@@ -640,54 +994,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/cmd_args_clap.
 
 **Categories:** technique
 
-**Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs)
+**Link:** [color_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.rs
 ```
-
----
-
-### Script: colors.rs
-
-**Description:**  Runner for current version of `src/colors.rs`, as it's become too enmeshed with other modules to split out nicely.
- We just borrow the main method here and add all the necessary dependencies and imports.
-
- E.g. `thag demo/colors.rs`
-
-**Purpose:** Test the look of the various colours.
-
-**Crates:** `nu_ansi_term`, `strum`, `termbg`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** testing
-
-**Link:** [colors.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors.rs)
-
-**Not suitable to be run from a URL.**
-
 
 ---
 
 ### Script: colors_old.rs
 
-**Description:**  An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
+**Description:**  A version of `thag_rs`'s  now defunct `colors` module to style messages according to their type. Like the `stdin`
  module, `colors` was originally developed here as a separate script and integrated as a module later.
+
+ The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
 
  E.g. `thag demo/colors_old.rs`
 
 **Purpose:** Demo using `thag_rs` to develop a module outside of the project.
 
-**Crates:** `lazy_static`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
+**Crates:** `lazy_static`, `log`, `nu_ansi_term`, `strum`, `supports_color`, `termbg`, `thag_rs`
 
 **Type:** Program
 
-**Categories:** prototype, technique
+**Categories:** prototype, reference, testing
 
-**Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_old.rs)
+**Link:** [colors_old.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors_old.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -700,6 +1034,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
  to their type. I only dropped `owo-colors` because I switched from `rustyline` to
  `reedline`, which was already using `nu_ansi_term`.
 
+ The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
+
+ See also `demo/colors_old.rs`.
+
 
 **Purpose:** Demo older alternative implementation of `colors` module using `owo-colors`.
 
@@ -707,9 +1045,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
 
 **Type:** Program
 
-**Categories:** prototype, technique
+**Categories:** prototype, reference, testing
 
-**Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/colors_orig.rs)
+**Link:** [colors_orig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/colors_orig.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -726,22 +1064,117 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/color_contrast
  Will return `Err` if there is an error editing the file.
  # Panics
  Will panic if it can't create the parent directory for the configuration.
- Main function for use by testing or the script runner.
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `edit`, `firestorm`, `home`, `mockall`, `nu_ansi_term`, `serde`, `serde_with`, `thag_rs`, `toml`
+**Crates:** `edit`, `firestorm`, `home`, `log`, `mockall`, `serde`, `serde_with`, `thag_rs`, `toml`
 
 **Type:** Program
 
 **Categories:** prototype, technique
 
-**Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs)
+**Link:** [config.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
+```
+
+---
+
+### Script: config_with_tests.rs
+
+**Description:**  Demo of unit testing a non-snippet source file such as a library module using `thag --test-only` `(thag -T)`.
+
+ In this case this demo file is the one we're testing.
+
+ The unit tests must be in mod `tests` in the file.
+
+ `thag` will leave the file as is, but generate a temporary Cargo.toml for it in the usual way as a prerequisite for running `cargo test`.
+
+ NB: Leave the doc comments in the body as doc comments because they are expected by the `documented` crate, even though this will lead to them
+ appearing in `demo/README.md`.
+
+ `thag` will then invoke `cargo test` on the file, specifying the Cargo.toml location via `--manifest-path`.
+
+ `thag <filepath> -T [-- <cargo test options>]`
+
+ E.g.:
+
+ `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
+
+ Redundant doc comments will appear below.
+ Configuration categories
+ Dependency handling
+ Logging settings
+ Dependency inference level
+ Terminal color settings
+ Demo proc macro settings
+ Miscellaneous configuration parameters
+
+**Purpose:** Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
+
+**Crates:** `documented`, `edit`, `log`, `mockall`, `serde`, `serde_with`, `simplelog`, `strum`, `tempfile`, `thag_rs`, `toml`, `toml_edit`
+
+**Type:** Program
+
+**Categories:** technique, testing
+
+**Link:** [config_with_tests.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_tests.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config_with_tests.rs TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output
+```
+
+---
+
+### Script: context_demo.rs
+
+**Description:**  TermAttributes context pattern demo.
+
+**Purpose:** Demonstrate TermAttributes context pattern for testing and temporary overrides
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, terminal, testing
+
+**Link:** [context_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/context_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/context_demo.rs
+```
+
+---
+
+### Script: correct_reset_replacement.rs
+
+**Description:**  Correct implementation of reset replacement approach for multi-level nesting
+
+ This implements the approach where each level replaces all reset sequences (\x1b[0m)
+ in its content with its own ANSI color codes, ensuring that outer context is
+ always restored after inner styled content.
+
+**Purpose:** Demonstrate correct reset replacement for perfect context preservation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, prototype, styling
+
+**Link:** [correct_reset_replacement.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/correct_reset_replacement.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/correct_reset_replacement.rs
 ```
 
 ---
@@ -761,12 +1194,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/config.rs
 
 **Categories:** AST, prototype, technique
 
-**Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs)
+**Link:** [count_main_methods.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/count_main_methods.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_methods.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/count_main_methods.rs
 ```
 
 ---
@@ -784,19 +1217,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/count_main_met
 
 **Categories:** technique
 
-**Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs)
+**Link:** [create_next_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/create_next_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/create_next_file.rs
 ```
 
 ---
 
 ### Script: crokey_deser.rs
 
-**Description:**  Published example of serde deserialisation from `crokey` crate.
+**Description:**  Published example of serde deserialisation from the `crokey` crate.
+
+ The latest version of this example is available in the [examples] folder
+  in the `crokey` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/Canop/crokey/blob/main/examples/deser_keybindings/src/main.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo loading keybindings from a file.
 
@@ -806,19 +1250,29 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/create_next_fi
 
 **Categories:** crates, technique
 
-**Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs)
+**Link:** [crokey_deser.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_deser.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_deser.rs
 ```
 
 ---
 
 ### Script: crokey_print_key.rs
 
-**Description:**  Published example of combiner from `crokey` crate.
+**Description:**  Published example of combiner from the `crokey` crate.
+
+ The latest version of this example is available in the [examples] folder
+  in the `crokey` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/Canop/crokey/blob/main/examples/print_key/src/main.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 
 **Purpose:** Demo key combiner.
 
@@ -828,43 +1282,63 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_deser.r
 
 **Categories:** crates, technique
 
-**Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs)
+**Link:** [crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key.rs
 ```
 
 ---
 
 ### Script: crokey_print_key_no_combiner.rs
 
-**Description:**  Published example of KeyCombination from `crokey` crate.
+**Description:**  Published example of KeyCombination from the `crokey` crate.
+
+ The latest version of this example is available in the [examples] folder
+  in the `crokey` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/Canop/crokey/blob/main/examples/print_key_no_combiner/src/main.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo key combination without Combiner.
 
-**Crates:** `crokey`, `crossterm`
+**Crates:** `KeyCombinationFormat`, `crokey`, `key`
 
 **Type:** Program
 
 **Categories:** crates, technique
 
-**Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs)
+**Link:** [crokey_print_key_no_combiner.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key_no_combiner.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_key_no_combiner.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crokey_print_key_no_combiner.rs
 ```
 
 ---
 
 ### Script: crossbeam_channel_fibonacci.rs
 
-**Description:**  `crossbeam-channel` published example.
+**Description:**  Published example from the `crossbeam-channel` crate.
 
- An asynchronous fibonacci sequence generator.
+ The latest version of this example is available in the [examples] folder
+  in the `crossbeam-channel` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/crossbeam-rs/crossbeam/blob/master/crossbeam-channel/examples/fibonacci.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Demo featured crate.
 
@@ -874,12 +1348,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crokey_print_k
 
 **Categories:** crates
 
-**Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs)
+**Link:** [crossbeam_channel_fibonacci.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_fibonacci.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_fibonacci.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_fibonacci.rs
 ```
 
 ---
@@ -897,19 +1371,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
 
 **Categories:** crates
 
-**Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs)
+**Link:** [crossbeam_channel_matching.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_matching.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_matching.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_matching.rs
 ```
 
 ---
 
 ### Script: crossbeam_channel_stopwatch.rs
 
-**Description:**  `crossbeam-channel` published example.
+**Description:**  Published example from the `crossbeam-channel` crate.
 
  Prints the elapsed time every 1 second and quits on `Ctrl+C`. You can reinstate the separate main method for
  Windows provided you run the script with the `--multimain (-m)` option.
@@ -922,12 +1396,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
 
 **Categories:** crates
 
-**Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs)
+**Link:** [crossbeam_channel_stopwatch.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_stopwatch.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_channel_stopwatch.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_channel_stopwatch.rs
 ```
 
 ---
@@ -940,7 +1414,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
  This is the published example from the `crossbeam-epoch` crate. For a more intuitive
  example, you can try the "Canary" example from https://github.com/ericseppanen/epoch_playground.
  and the associated blog post https://codeandbitters.com/learning-rust-crossbeam-epoch/.
- (Not included here due to implicit copyright).
+ (Not included here due to implicit copyright). This will need at least a change from
+ `rng.gen_range(0, bc_size)` to `rng.gen_range(0..bc_size)`, and optional updates to function naming.
 
 
 **Purpose:** Demo featured crate.
@@ -951,19 +1426,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_chan
 
 **Categories:** crates, technique
 
-**Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs)
+**Link:** [crossbeam_epoch_sanitize.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_epoch_sanitize.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoch_sanitize.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossbeam_epoch_sanitize.rs
 ```
 
 ---
 
 ### Script: crossterm.rs
 
-**Description:**  Published example from crossterm crate.
+**Description:**  Published example from the `crossterm` crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/README.md
 
@@ -975,19 +1450,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossbeam_epoc
 
 **Categories:** crates, technique
 
-**Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs)
+**Link:** [crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm.rs
 ```
 
 ---
 
 ### Script: crossterm_alternate_screen.rs
 
-**Description:**  Published example from crossterm crate. Macro version of the example:
+**Description:**  Published example from the `crossterm` crate. Macro version of the example:
  "Print a rectangle colored with magenta and use both direct execution and lazy execution."
  Direct execution with `execute` and lazy execution with `queue`.
 
@@ -999,21 +1474,21 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm.rs
 
 **Type:** Program
 
-**Categories:** crates, technique
+**Categories:** crates, technique, tui
 
-**Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs)
+**Link:** [crossterm_alternate_screen.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_alternate_screen.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alternate_screen.rs -- true
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_alternate_screen.rs -- true
 ```
 
 ---
 
 ### Script: crossterm_command_macro.rs
 
-**Description:**  Published example from crossterm crate. Macro version of the example:
+**Description:**  Published example from the `crossterm` crate. Macro version of the example:
  "Print a rectangle colored with magenta and use both direct execution and lazy execution."
  Direct execution with `execute` and lazy execution with `queue`.
 
@@ -1027,19 +1502,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_alte
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs)
+**Link:** [crossterm_command_macro.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_command_macro.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_command_macro.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_command_macro.rs
 ```
 
 ---
 
 ### Script: crossterm_event_read.rs
 
-**Description:**  Published example from crossterm crate.
+**Description:**  Published example from the `crossterm` crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
  "Demonstrates how to block read events."
@@ -1052,19 +1527,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_comm
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs)
+**Link:** [crossterm_event_read.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_read.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_event_read.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_event_read.rs
 ```
 
 ---
 
 ### Script: crossterm_key_events.rs
 
-**Description:**  Published example from crossterm crate.
+**Description:**  Published example from the `crossterm` crate.
 
  Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/key-display.rs
  "Demonstrates the display format of key events.
@@ -1080,19 +1555,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_even
 
 **Categories:** crates, technique
 
-**Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs)
+**Link:** [crossterm_key_events.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_key_events.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_events.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/crossterm_key_events.rs
 ```
 
 ---
 
 ### Script: ctrlc_demo.rs
 
-**Description:**  Published example from `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
+**Description:**  Published example from the `ctrlc` crate: "Cross platform handling of Ctrl-C signals."
 
 **Purpose:** Demo one option for intercepting Ctrl-C.
 
@@ -1102,12 +1577,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/crossterm_key_
 
 **Categories:** crates, technique
 
-**Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs)
+**Link:** [ctrlc_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ctrlc_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ctrlc_demo.rs
 ```
 
 ---
@@ -1128,19 +1603,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ctrlc_demo.rs
 
 **Categories:** crates, technique
 
-**Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs)
+**Link:** [curl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/curl.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/curl.rs
 ```
 
 ---
 
 ### Script: darling_consume_fields.rs
 
-**Description:**  Published example from `darling` crate showing parsing for derive input.
+**Description:**  Published example from the `darling` crate showing parsing for derive input.
  Extended to show formatted version of emitted code.
 
 **Purpose:** Explore `darling` crate.
@@ -1151,35 +1626,245 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/curl.rs
 
 **Categories:** crates, exploration, technique
 
-**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs)
+**Link:** [darling_consume_fields.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_fields.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_consume_fields.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/darling_consume_fields.rs
 ```
 
 ---
 
-### Script: darling_struct.rs
+### Script: debug_ansi_color_mismatch.rs
 
-**Description:**  Published example from `darling` crate showing parsing for derive input.
- Extended to show formatted version of emitted code.
+**Description:**  Debug ANSI color generation mismatch
 
-**Purpose:** Explore `darling` crate.
+ This script investigates why RGB values don't match the displayed colors
+ by examining the ANSI codes being generated for specific RGB values.
 
-**Crates:** `darling`, `proc_macro2`, `quote`, `syn`
+**Purpose:** Diagnose ANSI color generation mismatch in dynamic color system
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** color, styling, debugging, terminal
 
-**Link:** [darling_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs)
+**Link:** [debug_ansi_color_mismatch.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_color_mismatch.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_color_mismatch.rs
+```
+
+---
+
+### Script: debug_ansi_parsing.rs
+
+**Description:**  Debug ANSI code generation and parsing
+
+ This script helps debug how ANSI codes are generated by the styling system
+ and tests the parsing logic for detecting attributes in ANSI sequences.
+
+**Purpose:** Debug ANSI code generation and attribute detection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [debug_ansi_parsing.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing.rs
+```
+
+---
+
+### Script: debug_ansi_parsing_alt.rs
+
+**Description:**  Debug ANSI code generation and parsing
+
+ This script helps debug how ANSI codes are generated by the styling system
+ and tests the parsing logic for detecting attributes in ANSI sequences.
+
+**Purpose:** Debug ANSI code generation and attribute detection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [debug_ansi_parsing_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing_alt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_ansi_parsing_alt.rs
+```
+
+---
+
+### Script: debug_colors.rs
+
+**Description:**  Debug demo to check theme loading and color values
+
+ This demonstrates:
+ 1. Current theme information
+ 2. Color values for each role
+ 3. RGB values and indices
+ 4. Comparison with expected palette colors
+
+**Purpose:** Debug theme and color loading issues
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, debugging, styling
+
+**Link:** [debug_colors.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors.rs
+```
+
+---
+
+### Script: debug_colors_specific_theme.rs
+
+**Description:**  Debug demo to check specific theme loading and color values
+
+ This demonstrates:
+ 1. Explicit theme selection instead of auto-detection
+ 2. Color values for each role with specific theme
+ 3. RGB values and indices for the monet theme
+ 4. Comparison with auto-detected theme
+
+**Purpose:** Debug specific theme loading vs auto-detection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, debugging, styling, theming
+
+**Link:** [debug_colors_specific_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors_specific_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_colors_specific_theme.rs
+```
+
+---
+
+### Script: debug_detection.rs
+
+**Description:**  Simple diagnostic script to debug the terminal corruption detection
+ Simple corruption detection without synchronization
+ Test what happens with normal println
+ Test manual cursor positioning
+ Test raw mode behavior
+ Test the specific sequence that our detection function uses
+ Visual alignment test
+
+**Purpose:** Debug why we're getting false positives in corruption detection
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** debugging, diagnosis, terminal
+
+**Link:** [debug_detection.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_detection.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_detection.rs
+```
+
+---
+
+### Script: debug_light_theme.rs
+
+**Description:**  Minimal debug script to isolate light theme processing issues
+
+ This script tests light theme generation with minimal parameters
+ to identify where the infinite loop or color issues are occurring.
+
+**Purpose:** Debug light theme generation issues
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [debug_light_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_light_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_light_theme.rs
+```
+
+---
+
+### Script: debug_replace_logic.rs
+
+**Description:**  Debug the replace logic to find why colors are wrong and resets aren't removed
+
+ This demonstrates step-by-step what the replace logic is doing wrong
+ and provides a corrected implementation
+
+**Purpose:** Debug and fix replace logic for multi-level nesting
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** debugging, prototype, styling
+
+**Link:** [debug_replace_logic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_replace_logic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_replace_logic.rs
+```
+
+---
+
+### Script: debug_styled_issue.rs
+
+**Description:**  Debug styled! duplication issue
+
+ Minimal test to isolate the double-printing problem
+
+**Purpose:** Debug styled! macro duplication issue
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** debugging, styling, testing
+
+**Link:** [debug_styled_issue.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_styled_issue.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_styled_issue.rs
 ```
 
 ---
@@ -1196,12 +1881,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/darling_struct
 
 **Categories:** crates, exploration, technique
 
-**Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs)
+**Link:** [derive_deftly.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/derive_deftly.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/derive_deftly.rs
 ```
 
 ---
@@ -1209,9 +1894,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.
 ### Script: dethag_re.rs
 
 **Description:**  Unescape `\n` and `\\` markers in a string to convert the wall of text to readable lines.
+ This is an alternative approach to the original script that ended up as `src/bin/thag_legible.rs`.
  This version using regex may be more reliable than the classic approach using .lines().
  However, at time of writing, `regex` is a 248kB crate, which makes the binary of this
- module more than 5 time larger than that of `thagomizer`.
+ module almost 7 times larger than that of `thag_legible` for debug builds and 4 times
+ larger for release builds.
 
  Tip: Regex tested using https://rustexp.lpil.uk/.
 
@@ -1223,39 +1910,184 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/derive_deftly.
 
 **Categories:** crates, technique, tools
 
-**Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs)
+**Link:** [dethag_re.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/dethag_re.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethag_re.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/dethag_re.rs
 ```
 
 ---
 
-### Script: dethagomizer.rs
+### Script: document_pipeline.rs
 
-**Description:**  Unescape \n and \\" markers in a string to convert the wall of text to readable lines.
- This is trickier than it seems because in a compile-time literal, \n compiles to the
- true line feed character 10 (x0A), whereas a \n generated or captured as a literal
- at run time is encoded as ('\', 'n'() = (92, 110) = 0x5c6e. Not surprisingly, the two
- representations, while they look identical to the programmer, don't always behave
- the same.
+**Description:**  Test async program (uninstrumented base / control version) for `thag_profiler` testing.
+ See also `demo/document_pipeline_profile.rs` and `demo/document_pipeline_profile_minimal.rs`.
 
- See `demo/dethagomizer.rs` for a Regex version.
 
-**Purpose:** Useful script for converting a wall of text such as some TOML errors back into legible formatted messages.
+**Purpose:** Test auto-instrumentation using `thag_profiler`'s `thag-instrument` resulting in `demo/document_pipeline_profile.rs`.
+
+**Crates:** `futures`, `tokio`
 
 **Type:** Program
 
-**Categories:** crates, technique, tools
+**Categories:** prototype, testing
 
-**Link:** [dethagomizer.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs)
+**Link:** [document_pipeline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline.rs
+```
+
+---
+
+### Script: document_pipeline_profile.rs
+
+**Description:**  Test async program (instrumented version) for `thag_profiler` testing.
+ See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile_minimal.rs`.
+
+ Busy-wait for approximately `duration` without calling `.await`.
+ Await was taking 200ms+ in tokio overhead
+
+**Purpose:** Test profiling using `thag_profiler`.
+
+**Crates:** `futures`, `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile.rs
+```
+
+---
+
+### Script: document_pipeline_profile_minimal.rs
+
+**Description:**  Test async program (minimalist instrumented version) for `thag_profiler` debugging.
+ See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile.rs`.
+
+
+**Purpose:** Test and debug profiling using `thag_profiler`.
+
+**Crates:** `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal.rs
+```
+
+---
+
+### Script: document_pipeline_profile_minimal_alt.rs
+
+**Description:**  Test async program (minimalist instrumented version) for `thag_profiler` debugging.
+ See also `demo/document_pipeline.rs` and `demo/document_pipeline_profile.rs`.
+
+
+**Purpose:** Test and debug profiling using `thag_profiler`.
+
+**Crates:** `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_minimal_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal_alt.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_minimal_alt.rs
+```
+
+---
+
+### Script: document_pipeline_profile_sync.rs
+
+**Description:**  Test sync program instrumented version for `thag_profiler` testing. You can use this script and
+ `demo/document_pipeline_profile_sync_firestorm.rs` to compare `thag_profiler` with `firestorm`.
+ Use the `-t` flag to get timings.
+
+ Note that `thag_profiler`'s `Individual Sequential Execution Timeline` option is equivalent to `firestorm`'s `Time Axis`
+ option, while `thag_profiler`'s `Aggregated Execution Timeline` option is equivalent to `firestorm`'s `Merged` option.
+ `thag_profiler`'s `Show Statistics By Total Time` report is equivalent to  `firestorm`'s `Own Time` option.
+
+ E.g.:
+
+ `thag demo/document_pipeline_profile_sync.rs -t`
+
+
+ See all `demo/document_pipeline*.rs` and in particular `demo/document_pipeline_profile_sync_firestorm.rs`.
+
+
+**Purpose:** Test profiling using `thag_profiler`.
+
+**Crates:** `thag_profiler`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_sync.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync.rs
+```
+
+---
+
+### Script: document_pipeline_profile_sync_firestorm.rs
+
+**Description:**  `demo/document_pipeline_profile_sync.rs` to compare `firestorm` with `thag_profiler`.
+ Use the `-t` flag to get timings.
+
+ Note that `thag_profiler`'s `Individual Sequential Execution Timeline` option is equivalent to `firestorm`'s `Timeline`
+ option, while `thag_profiler`'s `Aggregated Execution Timeline` option is equivalent to `firestorm`'s `Merged` option.
+ `thag_profiler`'s `Show Statistics By Total Time` report is equivalent to  `firestorm`'s `Own Time` option.
+
+ Firestorm does an internal warm-up AFAICS, so runs twice, and therefore almost twice as long. So is it apples with apples?
+ Discuss.
+
+ E.g.:
+
+ `thag demo/document_pipeline_profile_sync_firestorm.rs -t`
+
+
+ See all `demo/document_pipeline*.rs` and in particular `demo/document_pipeline_profile_sync.rs`.
+
+
+**Purpose:** Test profiling using `firestorm`.
+
+**Crates:** `firestorm`
+
+**Type:** Program
+
+**Categories:** prototype, testing
+
+**Link:** [document_pipeline_profile_sync_firestorm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync_firestorm.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/document_pipeline_profile_sync_firestorm.rs
 ```
 
 ---
@@ -1273,12 +2105,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/dethagomizer.r
 
 **Categories:** crates, exploration, technique
 
-**Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs)
+**Link:** [documented.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/documented.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented.rs
 ```
 
 ---
@@ -1296,41 +2128,45 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented.rs
 
 **Categories:** crates, prototype, technique
 
-**Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs)
+**Link:** [documented_dependencies.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_dependencies.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/documented_dependencies.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/documented_dependencies.rs
 ```
 
 ---
 
-### Script: download_demo_dir.rs
+### Script: download_demos.rs
 
-**Description:**  Downloader for the `demo` directory. Basics courtesy of GPT.
+**Description:**  Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`
+ with subdirectory support. Git `sparse-checkout` approach suggested and written
+ by ChatGPT, local directory handling assisted by Claude.
 
-**Purpose:** Download the demo directory from Github main.
+ `thag_styling` included
 
-**Crates:** `reqwest`, `rfd`, `serde`
+**Purpose:** Prototype for `thag_get_demo_dir`.
+
+**Crates:** `colored`, `inquire`, `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, technique, tools
+**Categories:** crates, prototype, technique
 
-**Link:** [download_demo_dir.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs)
+**Link:** [download_demos.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/download_demos.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_dir.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/download_demos.rs
 ```
 
 ---
 
 ### Script: duration_snippet.rs
 
-**Description:**  Minimal snippet showing how to add nice additional constructors such as `from_weeks` (and days, hours and
+**Description:**  Minimal snippet showing how to add further nice constructors such as `from_weeks` (and days, hours and
  minutes) to `std::time::Duration`.
 
  These are enabled by adding the inner attribute `#![feature(duration_constructors)]` to the script.
@@ -1361,23 +2197,23 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/download_demo_
 
 **Categories:** technique
 
-**Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs)
+**Link:** [duration_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/duration_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snippet.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/duration_snippet.rs
 ```
 
 ---
 
 ### Script: edit.rs
 
-**Description:**  Published example from edit crate readme.
+**Description:**  Published example from the `edit` crate readme.
 
  Will use the editor specified in VISUAL or EDITOR environment variable.
 
- E.g. `EDITOR=vim thag_rs demo/edit.rs`
+ E.g. `VISUAL="zed --wait" thag demo/edit.rs`
 
 **Purpose:** Demo of edit crate to invoke preferred editor.
 
@@ -1387,12 +2223,38 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/duration_snipp
 
 **Categories:** crates, technique
 
-**Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs)
+**Link:** [edit.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/edit.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit.rs
+```
+
+---
+
+### Script: edit_profile.rs
+
+**Description:**  Profiled version of published example from the `edit` crate readme.
+
+ Will use the editor specified in VISUAL or EDITOR environment variable.
+
+ E.g. `EDITOR="zed --wait" thag demo/edit_profile.rs`
+
+**Purpose:** Demo of edit crate to invoke preferred editor.
+
+**Crates:** `edit`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** crates, profiling, technique
+
+**Link:** [edit_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/edit_profile.rs
 ```
 
 ---
@@ -1407,14 +2269,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/edit.rs
 
 **Type:** Program
 
-**Categories:** crates, prototype
+**Categories:** crates, gui, prototype
 
-**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs)
+**Link:** [egui_code_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_editor.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor.rs
 ```
 
 ---
@@ -1436,12 +2298,62 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/egui_code_edit
 
 **Categories:** crates, prototype, technique
 
-**Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs)
+**Link:** [enum_select.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/enum_select.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/enum_select.rs
+```
+
+---
+
+### Script: env_var_debug.rs
+
+**Description:**  Environment Variable Debug
+
+ This script directly tests the environment variable parsing for color support
+ to debug why THAG_COLOR_MODE=256 isn't working as expected.
+ Direct implementation of check_env_color_support for testing
+
+**Purpose:** Debug environment variable parsing for color support
+
+**Crates:** `thag_common`
+
+**Type:** Program
+
+**Categories:** terminal, color, debugging, environment
+
+**Link:** [env_var_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/env_var_debug.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/env_var_debug.rs
+```
+
+---
+
+### Script: exclusify.rs
+
+**Description:**  Process a folded file to calculate exclusive times
+
+ This function converts inclusive time profiling data to exclusive time:
+ - Inclusive time: total time spent in a function including all child calls
+ - Exclusive time: time spent only in the function itself, excluding child calls
+
+**Purpose:** Prototype converting inclusive elapsed times to exclusive for flamegraphs in order to avoid double counting.
+
+**Type:** Program
+
+**Categories:** profiling, prototype
+
+**Link:** [exclusify.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/exclusify.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/exclusify.rs
 ```
 
 ---
@@ -1461,14 +2373,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/enum_select.rs
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs)
+**Link:** [factorial_dashu_product.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_dashu_product.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dashu_product.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_dashu_product.rs -- 50
 ```
 
 ---
@@ -1500,14 +2412,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_dash
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs)
+**Link:** [factorial_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig.rs -- 50
 ```
 
 ---
@@ -1529,14 +2441,38 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs)
+**Link:** [factorial_ibig_product.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig_product.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product.rs -- 50
+```
+
+---
+
+### Script: factorial_ibig_product_instr.rs
+
+**Description:**  A version of `demo/factorial_ibig_product.rs` instrumented for profiling.
+
+ Run this version in the normal way, then run `tools/thag_profile.rs` to analyse the profiling data.
+
+**Purpose:** Demo `thag_rs` execution timeline and memory profiling.
+
+**Crates:** `ibig`, `thag_profiler`
+
+**Type:** Snippet
+
+**Categories:** profiling
+
+**Link:** [factorial_ibig_product_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_ibig_product_instr.rs -- 50
 ```
 
 ---
@@ -1550,14 +2486,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_ibig
 
 **Type:** Program
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
-**Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs)
+**Link:** [factorial_main_u128_product.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_main_u128_product.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main_u128_product.rs -- 34
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/factorial_main_u128_product.rs -- 34
 ```
 
 ---
@@ -1578,14 +2514,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/factorial_main
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs)
+**Link:** [fib_4784969_cpp_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_ibig.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_ibig.rs -- 50
 ```
 
 ---
@@ -1597,7 +2533,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
  digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
  edging out `fibo` at this scale.
 
- The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
 
  E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 
@@ -1608,14 +2547,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs)
+**Link:** [fib_4784969_cpp_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cpp_rug.rs -- 50
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_4784969_cpp_rug.rs -- 50
 ```
 
 ---
@@ -1625,7 +2564,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 **Description:**  Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
  I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
  for a variety of alternative approaches. The various Fibonacci scripts here in the demo
- directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
+ directory also show a range of approaches. `demo/fib_basic_ibig.rs` shows the use of
  the `std::iter::Successors` iterator as well as removing the limitations of Rust
  primitives. Most of the other examples explore different strategies for rapid computation of
  large Fibonacci values, and hopefully demonstrate the usefulness of `thag_rs` as a tool
@@ -1639,14 +2578,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_4784969_cp
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
-**Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs)
+**Link:** [fib_basic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -- 90
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic.rs -- 90
 ```
 
 ---
@@ -1662,14 +2601,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic.rs -
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs)
+**Link:** [fib_basic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_basic_ibig.rs -- 100
 ```
 
 ---
@@ -1689,20 +2628,26 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_basic_ibig
  Using `clap` here is complete overkill, but this is just a demo.
  On Linux you may need to install the m4 package.
 
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
+
 **Purpose:** Demonstrate snippets, closures, `clap` builder and a fast non-recursive fibonacci algorithm using the `successors`.
 
 **Crates:** `clap`, `rug`
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs)
+**Link:** [fib_big_clap_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_big_clap_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_big_clap_rug.rs -- 100
 ```
 
 ---
@@ -1729,14 +2674,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_big_clap_r
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs)
+**Link:** [fib_binet_astro_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_astro_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astro_snippet.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_astro_snippet.rs -- 100
 ```
 
 ---
@@ -1757,14 +2702,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_astr
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
-**Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs)
+**Link:** [fib_binet_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snippet.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_binet_snippet.rs -- 100
 ```
 
 ---
@@ -1783,14 +2728,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_binet_snip
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs)
+**Link:** [fib_classic_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig.rs -- 100
 ```
 
 ---
@@ -1815,14 +2760,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs)
+**Link:** [fib_classic_ibig_instrumented.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig_instrumented.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ibig_instrumented.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_classic_ibig_instrumented.rs -- 100
 ```
 
 ---
@@ -1844,14 +2789,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_classic_ib
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs)
+**Link:** [fib_dashu_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_dashu_snippet.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snippet.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_dashu_snippet.rs -- 100
 ```
 
 ---
@@ -1881,14 +2826,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_dashu_snip
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs)
+**Link:** [fib_doubling_iterative_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_ibig.rs -- 100
 ```
 
 ---
@@ -1909,14 +2854,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs)
+**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_ibig.rs -- 100
 ```
 
 ---
@@ -1933,20 +2878,26 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
  change: that we reduce bloat as best we can  by purging redundant entries from the memo
  cache as soon as it's safe to do so.
 
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
+
 **Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
 
 **Crates:** `rug`
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs)
+**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_iterative_purge_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_rug.rs -- 100
 ```
 
 ---
@@ -1954,7 +2905,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 ### Script: fib_doubling_no_memo_ibig.rs
 
 **Description:**  A version of `demo/fib_doubling_recursive.rs`, minus the memoization.
- This serves to prove that the memoization is significantly faster, although
+ This serves to prove that the memoization is faster, although
  not dramatically so.
 
 
@@ -1964,14 +2915,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_i
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs)
+**Link:** [fib_doubling_no_memo_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig.rs -- 100
 ```
 
 ---
@@ -2023,14 +2974,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs)
+**Link:** [fib_doubling_no_memo_ibig_1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_1.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_1.rs -- 100
 ```
 
 ---
@@ -2083,14 +3034,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs)
+**Link:** [fib_doubling_no_memo_ibig_2.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_2.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_no_memo_ibig_2.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_memo_ibig_2.rs -- 100
 ```
 
 ---
@@ -2128,14 +3079,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_n
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs)
+**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_recursive_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig.rs -- 100
 ```
 
 ---
@@ -2155,14 +3106,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_doubling_r
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational, technique
+**Categories:** learning, math, recreational, technique
 
-**Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs)
+**Link:** [fib_matrix.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix.rs -- 100
 ```
 
 ---
@@ -2193,14 +3144,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix.rs 
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs)
+**Link:** [fib_matrix_dashu.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_dashu.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_dashu.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_dashu.rs -- 100
 ```
 
 ---
@@ -2231,14 +3182,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_das
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs)
+**Link:** [fib_matrix_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_ibig.rs -- 100
 ```
 
 ---
@@ -2254,6 +3205,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibi
  See https://en.wikipedia.org/wiki/Fibonacci_sequence.
  F0 = 0, F1 = 1, Fn = F(n-1) + F(n-2) for n > 1.
 
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
 
 **Purpose:** Demo a very fast precise computation for large individual Fibonacci numbers.
 
@@ -2261,14 +3217,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_ibi
 
 **Type:** Snippet
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs)
+**Link:** [fib_matrix_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_matrix_rug.rs -- 100
 ```
 
 ---
@@ -2287,38 +3243,90 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_matrix_rug
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, math, recreational, technique
+**Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs)
+**Link:** [fib_quadrupling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_quadrupling_recursive_ibig.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fib_quadrupling_recursive_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_quadrupling_recursive_ibig.rs -- 100
 ```
 
 ---
 
-### Script: filter_demos.rs
+### Script: file_dialog_gui.rs
 
-**Description:**  Select demo scripts and generate and serve HTML report.
+**Description:**  Demo of invoking the Rust formatter programmatically, with the addition of an `rfd`
+ (`Rusty File Dialogs`) cross-platform file chooser to select the file to format.
+ Compare with `demo/file_dialog_thag.rs`, which uses `thag_proc_macros` text-based
+ file navigator and `inquire` to choose the file.
 
- Strategy and grunt work thanks to ChatGPT.
+**Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
 
-**Purpose:** Allow user to select scripts by category.
-
-**Crates:** `edit`, `inquire`, `thag_demo_proc_macros`, `thag_rs`, `tokio`, `warp`
+**Crates:** `rfd`
 
 **Type:** Program
 
-**Categories:** technique, tools
+**Categories:** crates, technique
 
-**Link:** [filter_demos.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs)
+**Link:** [file_dialog_gui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_gui.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_gui.rs
+```
+
+---
+
+### Script: file_dialog_thag.rs
+
+**Description:**  Demo of invoking the Rust formatter programmatically, using `thag_proc_macros`
+ cross-platform file chooser to select the file to format.
+ Compare with `demo/file_dialog_gui.rs`, which uses the platform's native gui.
+
+**Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
+
+**Crates:** `inquire`, `thag_proc_macros`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [file_dialog_thag.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_thag.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/file_dialog_thag.rs
+```
+
+---
+
+### Script: final_original_problem_test.rs
+
+**Description:**  Final test recreating the exact original problem scenario
+
+ This demonstrates the complete solution to your original embedding issue:
+ - Multi-level nesting with different styles and attributes
+ - Perfect context preservation using reset replacement
+ - Direct comparison with the original broken approach
+
+**Purpose:** Final verification that original embedding problem is completely solved
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, testing, validation
+
+**Link:** [final_original_problem_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/final_original_problem_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/final_original_problem_test.rs
 ```
 
 ---
@@ -2333,14 +3341,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/filter_demos.r
 
 **Type:** Snippet
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
-**Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs)
+**Link:** [fizz_buzz_blandy_orendorff.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_blandy_orendorff.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blandy_orendorff.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_blandy_orendorff.rs
 ```
 
 ---
@@ -2353,14 +3361,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_blan
 
 **Type:** Snippet
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
-**Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs)
+**Link:** [fizz_buzz_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fizz_buzz_gpt.rs
 ```
 
 ---
@@ -2378,12 +3386,38 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/fizz_buzz_gpt.
 
 **Categories:** async, crates, technique
 
-**Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs)
+**Link:** [flume_async.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async.rs
+```
+
+---
+
+### Script: flume_async_profile.rs
+
+**Description:**  Published example from the `flume` channel crate.
+ Must be run with --multimain (-m) option to allow multiple main methods.
+
+ Refactored and profiled to test and demonstrate profiling of non-tokio
+ async functions with `thag_profiler`.
+
+**Purpose:** demo and test profiling of non-tokio async functions with `thag_profiler`.
+
+**Crates:** `async_std`, `flume`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** async, crates, proc_macros, profiling, technique
+
+**Link:** [flume_async_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_async_profile.rs
 ```
 
 ---
@@ -2400,12 +3434,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_async.rs
 
 **Categories:** crates, technique
 
-**Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs)
+**Link:** [flume_perf.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_perf.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_perf.rs
 ```
 
 ---
@@ -2423,12 +3457,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_perf.rs
 
 **Categories:** async, crates, technique
 
-**Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs)
+**Link:** [flume_select.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_select.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/flume_select.rs
 ```
 
 ---
@@ -2436,7 +3470,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.r
 ### Script: gen_names.rs
 
 **Description:**  A very simple published example from the random name generator
- `names`.
+ `names`. See also `demo/hyper_name_server.rs`.
 
 **Purpose:** Demo a simple snippet and featured crate.
 
@@ -2446,83 +3480,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/flume_select.r
 
 **Categories:** technique
 
-**Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs)
+**Link:** [gen_names.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/gen_names.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_names.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/gen_names.rs
 ```
 
 ---
 
-### Script: gen_readme.rs
+### Script: generate_theme_from_image.rs
 
-**Description:**  This is the actual script used to collect demo script metadata and generate
- demo/README.md.
+**Description:**  Demo of generating a `thag_styling` theme from an image.
 
- Strategy and grunt work thanks to ChatGPT.
+**Purpose:** Demo making your own themes
 
-**Purpose:** Document demo scripts in a demo/README.md as a guide to the user.
-
-**Crates:** `convert_case`, `thag_demo_proc_macros`, `thag_rs`
-
-**Type:** Program
-
-**Categories:** technique, tools
-
-**Link:** [gen_readme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gen_readme.rs
-```
-
----
-
-### Script: git_dependency.rs
-
-**Description:**  Demo the use of git dependencies in the toml block. Local path dependencies
- work the same way, e.g. `thag_rs = { path = "<path/to-project>/thag_rs" },
- but obviously the path literal will be specific to your environment.
-
-**Purpose:** Demo `git` dependencies, explain `path` dependencies.
-
-**Crates:** `thag_rs`
-
-**Type:** Program
-
-**Categories:** technique
-
-**Link:** [git_dependency.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency.rs
-```
-
----
-
-### Script: git_dependency_snippet.rs
-
-**Description:**  `demo/git_dependency.rs` done as a snippet, just because.
-
-**Purpose:** Demo `git` dependencies as a snippet.
-
-**Crates:** `thag_rs`
+**Crates:** `thag_styling`
 
 **Type:** Snippet
 
-**Categories:** technique
+**Categories:** color, styling, technique, xterm
 
-**Link:** [git_dependency_snippet.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs)
+**Link:** [generate_theme_from_image.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/generate_theme_from_image.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency_snippet.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/generate_theme_from_image.rs
 ```
 
 ---
@@ -2539,12 +3524,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/git_dependency
 
 **Categories:** CLI, crates, technique
 
-**Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs)
+**Link:** [gpt_clap_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/gpt_clap_derive.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_derive.rs -- -bgtv dummy_script.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/gpt_clap_derive.rs -- -bgtv dummy_script.rs
 ```
 
 ---
@@ -2565,7 +3550,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_deriv
 
 **Categories:** crates, technique
 
-**Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_lazy_static_theme.rs)
+**Link:** [gpt_lazy_static_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/gpt_lazy_static_theme.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -2582,12 +3567,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/gpt_clap_deriv
 
 **Categories:** basic
 
-**Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs)
+**Link:** [hello.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hello.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello.rs
 ```
 
 ---
@@ -2602,12 +3587,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello.rs
 
 **Categories:** basic
 
-**Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs)
+**Link:** [hello_main.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_main.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_main.rs
 ```
 
 ---
@@ -2622,12 +3607,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_main.rs
 
 **Categories:** basic
 
-**Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs)
+**Link:** [hello_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_minimal.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hello_minimal.rs
 ```
 
 ---
@@ -2635,7 +3620,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.
 ### Script: history_debug.rs
 
 **Description:**  Debug the history handling logic of the `stdin` module and display the effects.
- Using this abstraction because displays don't work nicely in a TUI editor.
+ Using this abstraction because stdout/stderr displays don't work nicely in a TUI editor.
 
 **Purpose:** Debug and demo history ordering.
 
@@ -2643,14 +3628,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hello_minimal.
 
 **Type:** Snippet
 
-**Categories:** testing
+**Categories:** debugging, testing
 
-**Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs)
+**Link:** [history_debug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/history_debug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/history_debug.rs
 ```
 
 ---
@@ -2660,11 +3645,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.
 **Description:**  Published echo-server HTTP client example from the `hyper` crate,
  with the referenced modules `support` and `tokiort` refactored
  into the script, while respecting their original structure and
- redundancies.
- You can run the `hyper_echo_server.rs` demo as the HTTP server on
- another command line and connect to it on port 3000:
- `thag demo/hyper_client.rs -- http://127.0.0.1:3000`.
+ redundancies. I've also synchronised the printing of the response,
+ which was displaying out of sequence.
+ You can run one of the hyper demo servers as the HTTP server on
+ another command line and connect to it on port 3000.
+ I prefer `hyper_name_server.rs` for variety, but `hyper_hello_server.rs`
+ or `hyper_echo_server.rs` will work.
  Or use any other available HTTP server.
+
+ ```bash
+ thag demo/hyper_client.rs -- http://127.0.0.1:3000
+ ```
+
 
 **Purpose:** Demo `hyper` HTTP client, and incorporating separate modules into the script.
 
@@ -2674,12 +3666,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/history_debug.
 
 **Categories:** async, crates, technique
 
-**Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs)
+**Link:** [hyper_client.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_client.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.rs -- http://127.0.0.1:3000
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_client.rs -- http://127.0.0.1:3000
 ```
 
 ---
@@ -2702,12 +3694,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_client.r
 
 **Categories:** async, crates, technique
 
-**Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs)
+**Link:** [hyper_echo_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_echo_server.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_server.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_echo_server.rs
 ```
 
 ---
@@ -2727,12 +3719,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_echo_ser
 
 **Categories:** async, crates, technique
 
-**Link:** [hyper_hello_server.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs)
+**Link:** [hyper_hello_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_hello_server.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_server.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_hello_server.rs
+```
+
+---
+
+### Script: hyper_name_server.rs
+
+**Description:**  An adaptation of `demo/hyper_hello_server.rs` that uses a thread-local name generator
+ to show that each call to the server legitimately generates a new response.
+
+**Purpose:** Demo `hyper` HTTP hello server, and incorporating separate modules into the script.
+
+**Crates:** `bytes`, `http_body_util`, `hyper`, `names`, `pin_project_lite`, `pretty_env_logger`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, crates, technique
+
+**Link:** [hyper_name_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_name_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/hyper_name_server.rs
 ```
 
 ---
@@ -2749,12 +3764,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/hyper_hello_se
 
 **Categories:** big_numbers, crates, technique
 
-**Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs)
+**Link:** [ibig_big_integers.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ibig_big_integers.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integers.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ibig_big_integers.rs
 ```
 
 ---
@@ -2771,12 +3786,40 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ibig_big_integ
 
 **Categories:** crates, technique
 
-**Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs)
+**Link:** [iced_tour.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/iced_tour.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iced_tour.rs
+```
+
+---
+
+### Script: image_to_multi_format_theme.rs
+
+**Description:**  Demo of generating multi-format terminal themes from images
+
+ This example demonstrates the complete workflow:
+ 1. Generate a theme from an image using image analysis
+ 2. Export that theme to all supported terminal emulator formats
+ 3. Provide installation instructions for each format
+ Extract RGB values from a style for display purposes
+
+**Purpose:** Generate multi-format terminal themes from an image
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, color, demo, styling, technique, terminal, xterm
+
+**Link:** [image_to_multi_format_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/image_to_multi_format_theme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/image_to_multi_format_theme.rs
 ```
 
 ---
@@ -2793,13 +3836,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iced_tour.rs
 
 **Categories:** async, crates, technique
 
-**Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs)
+**Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs
 ```
+
+---
+
+### Script: include_str.rs
+
+**Description:**  Simple demo of `std::include_str` macro showing how to includes other files in demo or neighboring
+ directories.
+
+ This requires a main method so that `thag` won't move the snippet to a location under temp_dir().
+
+ Not suitable for running from a URL.
+
+**Purpose:** demo technique
+
+**Type:** Program
+
+**Categories:** basic, learning, technique
+
+**Link:** [include_str.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/include_str.rs)
+
+**Not suitable to be run from a URL.**
+
 
 ---
 
@@ -2815,14 +3880,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/in_place.rs
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs)
+**Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs
 ```
 
 ---
@@ -2840,65 +3905,21 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/infer_deps.rs
 
 **Categories:** async, crates, technique
 
-**Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs)
+**Link:** [inline_colorization.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorization.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/inline_colorization.rs
-```
-
----
-
-### Script: input_expr_to_ast.rs
-
-**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::Expr).
-
-**Purpose:** Debugging
-
-**Crates:** `syn`
-
-**Type:** Program
-
-**Categories:** AST, crates, technique, tools
-
-**Link:** [input_expr_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_expr_to_ast.rs
-```
-
----
-
-### Script: input_file_to_ast.rs
-
-**Description:**  Tries to convert input to a `syn` abstract syntax tree (syn::File).
-
-**Purpose:** Debugging
-
-**Crates:** `syn`
-
-**Type:** Program
-
-**Categories:** AST, crates, technique, tools
-
-**Link:** [input_file_to_ast.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_ast.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/inline_colorization.rs
 ```
 
 ---
 
 ### Script: interactive_clap_adv_struct.rs
 
-**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
+**Description:**  Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`, and added theming of the `inquire::Select` UI:
 
- This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
+ This example shows further functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
 
 ```
  thag demo/interactive_clap_adv_struct.rs (without parameters) => entered interactive mode
@@ -2917,18 +3938,46 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/input_file_to_
 
 **Purpose:** Demo featured crate.
 
-**Crates:** `clap`, `color_eyre`, `inquire`, `interactive_clap`, `shell_words`, `strum`
+**Crates:** `clap`, `color_eyre`, `inquire`, `interactive_clap`, `shell_words`, `strum`, `thag_styling`
 
 **Type:** Program
 
 **Categories:** CLI, crates, technique
 
-**Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs)
+**Link:** [interactive_clap_adv_struct.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/interactive_clap_adv_struct.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_clap_adv_struct.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/interactive_clap_adv_struct.rs
+```
+
+---
+
+### Script: is_unit_expr.rs
+
+**Description:**  Demo determining at run-time whether an expression returns a unit value
+ so that it can be handled appropriately.
+
+ `thag` needs to know whether an expression returns a unit type or a value
+ that we should display. When using a code template this approach using `Any`
+ is short and sweet, but it has to be included in the template and thus the
+ generated code, whereas the alternative of using an AST is quite a mission
+ but works with any arbitrary snippet and doesn't pollute the generated
+ source code, so `thag` went with the latter.
+
+**Purpose:** Demo Rust's answer to dynamic typing.
+
+**Type:** Snippet
+
+**Categories:** exploration, type_identification, technique
+
+**Link:** [is_unit_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/is_unit_expr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/is_unit_expr.rs
 ```
 
 ---
@@ -2943,12 +3992,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/interactive_cl
 
 **Categories:** basic
 
-**Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs)
+**Link:** [iter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/iter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iter.rs
 ```
 
 ---
@@ -2965,12 +4014,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/iter.rs
 
 **Categories:** crates, technique
 
-**Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs)
+**Link:** [json.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/json.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/json.rs
 ```
 
 ---
@@ -2988,12 +4037,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json.rs
 
 **Categories:** crates, technique
 
-**Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs)
+**Link:** [json_parse.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/json_parse.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/json_parse.rs
 ```
 
 ---
@@ -3012,12 +4061,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/json_parse.rs
 
 **Categories:** testing
 
-**Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs)
+**Link:** [just_a_test_expression.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/just_a_test_expression.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_expression.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/just_a_test_expression.rs
+```
+
+---
+
+### Script: konsole_export_demo.rs
+
+**Description:**  Demo script showing Konsole colorscheme export logic
+
+**Purpose:** Demonstrate exporting thag themes to KDE Konsole .colorscheme format
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, terminal, theming, tools
+
+**Link:** [konsole_export_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/konsole_export_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/konsole_export_demo.rs
 ```
 
 ---
@@ -3033,12 +4104,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/just_a_test_ex
 
 **Categories:** basic, technique
 
-**Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs)
+**Link:** [list_files.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/list_files.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/list_files.rs
 ```
 
 ---
@@ -3049,7 +4120,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_expr.rs`.
- P.S.: This was since implemented as `--loop`.
+
+ P.S.: The `--loop` option has since been implemented in `thag(_rs)`, without closure logic.
 
 **Purpose:** Evaluate closure logic for line processing.
 
@@ -3057,12 +4129,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/list_files.rs
 
 **Categories:** exploration, technique
 
-**Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs)
+**Link:** [loop_closure.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_closure.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_closure.rs
 ```
 
 ---
@@ -3073,7 +4145,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.r
  to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
  the latter since I'm not sure what the closure logic buys us. It's
  going to be checked by the compiler anyway. Compare with `demo/loop_closure.rs`.
- P.S.: This was since implemented as `--loop`.
+
+ P.S.: This has since been implemented in `thag(_rs)` as `--loop`.
 
 **Purpose:** Evaluate expression logic for line processing.
 
@@ -3081,12 +4154,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_closure.r
 
 **Categories:** exploration, technique
 
-**Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs)
+**Link:** [loop_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_expr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_expr.rs
 ```
 
 ---
@@ -3097,7 +4170,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
  to `rust-script`'s `--loop` or `runner`'s `--lines`, but with pre-
  and post-loop logic analogous to `awk`. I got GPT to do me this
  mock-up.
- P.S.: This was since implemented as `--loop`.
+ P.S.: This has since been implemented in `thag(_rs)` as `--loop`.
 
 **Purpose:** Evaluate expression logic for line processing.
 
@@ -3105,12 +4178,50 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_expr.rs
 
 **Categories:** exploration, technique
 
-**Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs)
+**Link:** [loop_pre_post.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_pre_post.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/loop_pre_post.rs -- 'dummy prelude' 'dummy main' 'dummy post' # ... and hit Enter then Ctrl-d
+```
+
+---
+
+### Script: mac_rgb_investigation.rs
+
+**Description:**  Mac RGB Color Investigation
+
+ This script investigates the specific issue on Mac where:
+ - Palette-indexed colors (ESC[38;5;Nm) display correctly
+ - RGB truecolor sequences (ESC[38;2;R;G;Bm) display incorrectly as washed-out colors
+
+ The script tests various color output methods to understand what's happening
+ with RGB color interpretation on macOS terminals.
+ Test color struct for our investigations
+ Test colors - specifically chosen to be distinctive
+ Display a color using different methods for comparison
+ Find the closest 256-color palette index for an RGB color
+ Calculate color distance (simple Manhattan distance)
+ Test OSC sequence color setting and querying
+ Query terminal capabilities using OSC sequences
+ Read a terminal response with timeout
+ Display environment information that might affect color handling
+
+**Purpose:** Investigate Mac RGB color display issues with different escape sequence methods
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** color, debugging, mac_os, terminal
+
+**Link:** [mac_rgb_investigation.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/mac_rgb_investigation.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mac_rgb_investigation.rs
 ```
 
 ---
@@ -3123,14 +4234,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/loop_pre_post.
 
 **Type:** Program
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
-**Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs)
+**Link:** [macro_fn_lazy_static.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_fn_lazy_static.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_static.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_fn_lazy_static.rs
 ```
 
 ---
@@ -3146,12 +4257,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_fn_lazy_
 
 **Categories:** macros, technique
 
-**Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs)
+**Link:** [macro_gen_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_enum.rs
 ```
 
 ---
@@ -3166,12 +4277,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_enum
 
 **Categories:** macros, technique
 
-**Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs)
+**Link:** [macro_gen_styles_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_styles_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styles_enum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_gen_styles_enum.rs
 ```
 
 ---
@@ -3192,12 +4303,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_gen_styl
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_advanced.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs)
+**Link:** [macro_lazy_static_var_advanced.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced.rs
 ```
 
 ---
@@ -3224,12 +4335,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_advanced_alt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs)
+**Link:** [macro_lazy_static_var_advanced_alt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced_alt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_advanced_alt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_advanced_alt.rs
 ```
 
 ---
@@ -3245,12 +4356,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_error_handling.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs)
+**Link:** [macro_lazy_static_var_error_handling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_error_handling.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_error_handling.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_error_handling.rs
 ```
 
 ---
@@ -3269,12 +4380,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique
 
-**Link:** [macro_lazy_static_var_errs.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs)
+**Link:** [macro_lazy_static_var_errs.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_errs.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_static_var_errs.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_static_var_errs.rs
 ```
 
 ---
@@ -3291,12 +4402,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_lazy_sta
 
 **Categories:** macros, technique, type_identification
 
-**Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs)
+**Link:** [macro_print.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_print.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_print.rs
 ```
 
 ---
@@ -3313,12 +4424,56 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/macro_print.rs
 
 **Categories:** crates, prototype, technique
 
-**Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs)
+**Link:** [merge_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs
+```
+
+---
+
+### Script: mintty_color_detect.rs
+
+**Description:**  Mintty Color Detection Test
+
+ This script tests mintty's special OSC 7704 sequence for querying palette colors.
+ Mintty uses a non-standard but more reliable method for color queries compared
+ to standard OSC sequences. This can help detect background colors and verify
+ palette colors in mintty terminals.
+
+ Based on the shell script in TODO.md lines 49-74, this implements the same
+ logic in Rust to query mintty ANSI slots 0-15.
+ RGB color representation
+ Color pair for foreground and background
+ Check if running in mintty
+ Test specific palette color indices
+ Test the full palette (0-15)
+ Query mintty palette color using OSC 7704
+ Read terminal response with timeout
+ Parse mintty OSC 7704 response
+ Expected format: ESC]7704;rgb:RRRR/GGGG/BBBB;rgb:RRRR/GGGG/BBBBBEL
+ or: ESC]7704;{index};rgb:RRRR/GGGG/BBBB;rgb:RRRR/GGGG/BBBBBEL
+ Parse a single rgb: component from mintty response
+ Parse hex component (mintty uses 4-digit hex, we want the high byte)
+ Analyze background detection possibilities
+ Show suggestions for integrating mintty detection
+
+**Purpose:** Test mintty-specific color detection using OSC 7704 sequences
+
+**Crates:** `crossterm`, `thag_common`
+
+**Type:** Program
+
+**Categories:** color, detection, mintty, terminal, windows
+
+**Link:** [mintty_color_detect.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/mintty_color_detect.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mintty_color_detect.rs
 ```
 
 ---
@@ -3335,12 +4490,37 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/merge_toml.rs
 
 **Categories:** crates, technique, testing
 
-**Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs)
+**Link:** [mock_edit.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs
+```
+
+---
+
+### Script: multi_format_theme_export.rs
+
+**Description:**  Demo of multi-format theme export
+
+ This example demonstrates how to export a thag theme to multiple terminal emulator formats
+ including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.
+
+**Purpose:** Export thag themes to multiple terminal emulator formats
+
+**Crates:** `env`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming
+
+**Link:** [multi_format_theme_export.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_format_theme_export.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multi_format_theme_export.rs
 ```
 
 ---
@@ -3355,36 +4535,58 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/mock_edit.rs
 
 **Categories:** error_handling, technique
 
-**Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs)
+**Link:** [multiline_err.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/multiline_err.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/multiline_err.rs
 ```
 
 ---
 
 ### Script: owo_cli_color_support.rs
 
-**Description:**  Published example from `clap` tutorial (derive), with added displays.
+**Description:**  Demo the use of a command-line interface to override the colour support to be provided.
+ The owo-colors "supports-colors" feature must be enabled.
 
- E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
+**Purpose:** Demo setting colour support via a very simple CLI.
 
-**Purpose:** Demonstrate `clap` CLI using the derive option
-
-**Crates:** `clap`
+**Crates:** `clap`, `owo_colors`
 
 **Type:** Program
 
 **Categories:** CLI, crates, technique
 
-**Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs)
+**Link:** [owo_cli_color_support.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_support.rs -- add patrick
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_cli_color_support.rs
+```
+
+---
+
+### Script: owo_colors_integration_demo.rs
+
+**Description:**  Demo and test script for owo-colors integration with `thag_styling`.
+
+
+**Purpose:** Demonstrate and test the owo-colors integration with `thag`'s theming system.
+
+**Crates:** `owo_colors`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, demo, styling, terminal, testing
+
+**Link:** [owo_colors_integration_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_colors_integration_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_colors_integration_demo.rs
 ```
 
 ---
@@ -3403,7 +4605,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** crates, exploration
 
-**Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_1_basic_gpt.rs)
+**Link:** [owo_msg_colors_1_basic_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_msg_colors_1_basic_gpt.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3428,7 +4630,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** crates, prototype, technique
 
-**Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_msg_colors_2_adv_gpt.rs)
+**Link:** [owo_msg_colors_2_adv_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_msg_colors_2_adv_gpt.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3441,13 +4643,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Purpose:** Demo a simple example of adaptive message colouring, and the featured crates.
 
-**Crates:** `crossterm`, `owo_colors`, `strum`, `termbg`
+**Crates:** `owo_colors`, `strum`, `termbg`
 
 **Type:** Program
 
 **Categories:** crates, exploration, technique
 
-**Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_styles.rs)
+**Link:** [owo_styles.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/owo_styles.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3467,12 +4669,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/owo_cli_color_
 
 **Categories:** prototype, technique
 
-**Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs)
+**Link:** [parse_script_rs_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_script_rs_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_rs_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_script_rs_toml.rs
 ```
 
 ---
@@ -3489,12 +4691,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_script_r
 
 **Categories:** prototype
 
-**Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs)
+**Link:** [parse_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/parse_toml.rs
 ```
 
 ---
@@ -3514,7 +4716,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
 
 **Categories:** crates
 
-**Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/pomprt_completion.rs)
+**Link:** [pomprt_completion.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/pomprt_completion.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -3533,35 +4735,43 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/parse_toml.rs
 
 **Categories:** AST, crates, technique
 
-**Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs)
+**Link:** [prettyplease.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/prettyplease.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/prettyplease.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/prettyplease.rs
 ```
 
 ---
 
-### Script: proc_macro_attribute_basic.rs
+### Script: proc_macro_cached.rs
 
-**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
- `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+**Description:**  Demo of the cached attribute macro that adds automatic memoization to functions.
 
-**Purpose:** Sample model of a basic attribute proc macro.
+ This macro demonstrates advanced attribute macro techniques by wrapping functions
+ with caching logic. It automatically stores function results and returns cached
+ values for repeated calls with the same parameters, providing significant
+ performance improvements for expensive computations.
+ Expensive computation that benefits from caching
+ Expensive string processing that benefits from caching
+ Mathematical computation with multiple parameters
+ Prime number checking (expensive operation)
+
+**Purpose:** Demonstrate automatic function memoization with caching
 
 **Crates:** `thag_demo_proc_macros`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, attribute_macros, performance, caching
 
-**Link:** [proc_macro_attribute_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs)
+**Link:** [proc_macro_cached.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_cached.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_attribute_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_cached.rs
 ```
 
 ---
@@ -3573,92 +4783,84 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_att
 
 **Purpose:** Test the proof of concept and potentially the implementation.
 
-**Crates:** `thag_demo_proc_macros`
+**Crates:** `thag_proc_macros`
 
 **Type:** Program
 
 **Categories:** missing
 
-**Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs)
+**Link:** [proc_macro_category_enum.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_category_enum.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_category_enum.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_category_enum.rs
 ```
 
 ---
 
-### Script: proc_macro_const_demo.rs
+### Script: proc_macro_compile_time_assert.rs
 
-**Description:**  Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
+**Description:**  Demo of the compile_time_assert function-like macro for compile-time validation.
 
-**Purpose:** Demo the use of proc macros to generate constants at compile time
+ This macro demonstrates function-like macro parsing with multiple parameters
+ and compile-time validation techniques. It generates assertions that are
+ checked at compile time, causing compilation to fail if conditions are not met.
+
+**Purpose:** Demonstrate compile-time assertions and validation
 
 **Crates:** `thag_demo_proc_macros`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, function_like_macros, compile_time, validation
 
-**Link:** [proc_macro_const_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs)
+**Link:** [proc_macro_compile_time_assert.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_compile_time_assert.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_compile_time_assert.rs
 ```
 
 ---
 
-### Script: proc_macro_const_demo_debug.rs
+### Script: proc_macro_derive_builder.rs
 
-**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
+**Description:**  Demo of the `DeriveBuilder` proc macro that generates builder pattern implementations.
 
-**Purpose:** Second working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_expand.rs`.
+ This macro demonstrates advanced derive macro techniques by generating a complete
+ builder pattern implementation including:
+ - A separate builder struct with optional fields
+ - Fluent API with method chaining
+ - Build-time validation with comprehensive error handling
+ - Default trait implementation
+ - Documentation generation
+
+**Purpose:** Demonstrate builder pattern generation with validation
 
 **Crates:** `thag_demo_proc_macros`
 
-**Type:** Snippet
+**Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros, builder_pattern
 
-**Link:** [proc_macro_const_demo_debug.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_debug.rs
-```
-
----
-
-### Script: proc_macro_const_demo_expand.rs
-
-**Description:**  Exploring integrated macro expansion, based on `demo/proc_macro_const_demo.rs`.
- Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`.
-
-**Purpose:** First working prototype of expanding proc macros for debugging purposes. See also `demo/proc_macro_const_demo_debug.rs`.
-
-**Crates:** `thag_demo_proc_macros`
-
-**Type:** Snippet
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_const_demo_expand.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs)
+**Link:** [proc_macro_derive_builder.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_builder.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_const_demo_expand.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_builder.rs
 ```
 
 ---
 
-### Script: proc_macro_derive_basic.rs
+### Script: proc_macro_derive_constructor.rs
 
-**Description:**  Exploring expansion
+**Description:**  Basic "derive" macro generates a constructor (`new()`) for the struct it annotates.
+
+ It also demonstrates how we can configure an attribute to expand the macro from the
+ caller.
 
 **Purpose:** explore proc macros
 
@@ -3668,257 +4870,391 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_con
 
 **Categories:** proc_macros, technique
 
-**Link:** [proc_macro_derive_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs)
+**Link:** [proc_macro_derive_constructor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_constructor.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_constructor.rs
 ```
 
 ---
 
-### Script: proc_macro_derive_custom_model.rs
+### Script: proc_macro_derive_display.rs
 
-**Description:**  Published example from `https://github.com/anshulsanghi-blog/macros-handbook`
+**Description:**  Demo of the DeriveDisplay proc macro that generates Display trait implementations.
 
-**Purpose:** explore derive proc macros
+ This macro demonstrates advanced trait implementation generation by automatically
+ creating Display implementations for various types:
+ - Structs with named fields
+ - Tuple structs
+ - Unit structs
+ - Enums with all variant types
+ - Proper formatting with separators and type-aware output
+
+**Purpose:** Demonstrate automatic Display trait implementation generation
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros, trait_implementation
 
-**Link:** [proc_macro_derive_custom_model.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs)
+**Link:** [proc_macro_derive_display.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_display.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_custom_model.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_display.rs
 ```
 
 ---
 
 ### Script: proc_macro_derive_doc_comment.rs
 
-**Description:**  Exploring exposing doc comments at runtime.
- Example from https://www.reddit.com/r/rust/comments/pv5v3x/looking_for_a_minimal_example_on_how_to_parse_doc/
+**Description:**  Demo of the enhanced DeriveDocComment proc macro that extracts documentation from multiple types.
 
-**Purpose:** explore proc macros
+ This macro demonstrates advanced derive macro techniques by extracting documentation
+ comments from various Rust items and making them available at runtime:
+ - Enum variants with their documentation
+ - Struct fields with their documentation
+ - The items themselves (struct/enum level docs)
+ - Different struct types (named fields, tuple, unit)
+ Represents the current status of a task or operation
+ A comprehensive user configuration structure
 
-**Crates:** `thag_demo_proc_macros`
+ This struct holds all the necessary configuration
+ for connecting to and managing a server.
+ A simple point in 3D space
+ A marker struct indicating successful initialization
+ Different types of network protocols
 
-**Type:** Program
-
-**Categories:** proc_macros, technique
-
-**Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_doc_comment.rs
-```
-
----
-
-### Script: proc_macro_derive_key_map_list.rs
-
-**Description:**  Use a derive proc macro to implement a table. from a base with additions and deletions.
- Not very useful currently: the dream is to generate a constant and get mappings as a variable.
-
-**Purpose:** explore derive proc macros
+**Purpose:** Demonstrate comprehensive documentation extraction across item types
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros, documentation, attribute_parsing
 
-**Link:** [proc_macro_derive_key_map_list.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs)
+**Link:** [proc_macro_derive_doc_comment.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_doc_comment.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_derive_key_map_list.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_doc_comment.rs
 ```
 
 ---
 
-### Script: proc_macro_expander_demo.rs
+### Script: proc_macro_derive_getters.rs
 
-**Description:**  Published example from crate `expander`
+**Description:**  Demo of the DeriveGetters proc macro that automatically generates getter methods.
 
-**Purpose:** debug proc macros
+ This macro generates getter methods for all fields in a struct, returning references
+ to avoid unnecessary moves. It's a simpler but still useful teaching example that
+ demonstrates:
+ - Derive macro syntax and parsing
+ - Field iteration and type analysis
+ - Method generation with documentation
+ - Error handling for unsupported types
+
+**Purpose:** Demonstrate automatic getter generation
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, derive_macros
 
-**Link:** [proc_macro_expander_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs)
+**Link:** [proc_macro_derive_getters.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_getters.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_expander_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_derive_getters.rs
 ```
 
 ---
 
-### Script: proc_macro_functionlike_basic.rs
+### Script: proc_macro_env_or_default.rs
 
-**Description:**  Exploring proc macro expansion. Expansion may be enabled via the `enable` feature (default = ["expand"]) in
- `demo/proc_macros/Cargo.toml` and the expanded macro will be displayed in the compiler output.
+**Description:**  Demo of the env_or_default function-like macro for compile-time environment variable access.
 
-**Purpose:** Sample model of a basic function-like proc macro.
+ This macro demonstrates compile-time environment variable processing with fallback
+ defaults. It reads environment variables during compilation and generates string
+ literals, providing a zero-overhead configuration management pattern.
+
+**Purpose:** Demonstrate compile-time environment variable access with defaults
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, function_like_macros, configuration, environment
 
-**Link:** [proc_macro_functionlike_basic.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs)
+**Link:** [proc_macro_env_or_default.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_env_or_default.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_functionlike_basic.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_env_or_default.rs
 ```
 
 ---
 
-### Script: proc_macro_host_port_const.rs
+### Script: proc_macro_file_navigator.rs
 
-**Description:**  Demo example generated by ChatGPT, followed by intensive debugging of the `syn` logic in the proc macro.
+**Description:**  Enhanced file navigator demo with editing and saving capabilities.
 
-**Purpose:** Demo the use of proc macros to generate constants at compile time
+ This demo showcases the file_navigator proc macro by:
+ 1. Selecting a file using an interactive file browser
+ 2. Reading and displaying the file content
+ 3. Opening the file in an external editor for modification
+ 4. Saving the modified content to a new file
+ 5. Demonstrating all generated methods from the file_navigator macro
+
+**Purpose:** Comprehensive demo of file_navigator macro with full workflow
+
+**Crates:** `edit`, `inquire`, `thag_demo_proc_macros`
+
+**Type:** Program
+
+**Categories:** technique, proc_macros, file_handling, interactive
+
+**Link:** [proc_macro_file_navigator.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_navigator.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_navigator.rs
+```
+
+---
+
+### Script: proc_macro_generate_tests.rs
+
+**Description:**  Demo of the generate_tests function-like macro for automatic test generation.
+
+ This macro demonstrates repetitive code generation patterns by creating multiple
+ test functions from a list of test data. It reduces boilerplate in test suites
+ and shows how macros can automate common development tasks.
+
+ Note that the expansion is not picked up by `cargo expand`, for reasons unknown.
+ To compensate, the proc macro `generate_tests` prints the test source to `stderr`.
+
+ Also, the expansions of the individual `generate_tests!` invocations are visible
+ if the `expand` argument of the call to fn `maybe_expand_proc_macro` from the proc
+ macro function fn `generate_tests` in `lib.rs` iis set to `true`. So if you prefer
+ to use this, you can remove the hard-coded debugging from `generate_tests.rs`.
+
+ To perform the tests and see the results, simply run:
+
+ ```bash
+ thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+
+ ```
+
+ # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+
+ See also: `demo/test_profile_extract_timestamp.rs`
+
+**Purpose:** Demonstrate automatic test case generation from data
 
 **Crates:** `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, function_like_macros, testing, automation
 
-**Link:** [proc_macro_host_port_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs)
+**Link:** [proc_macro_generate_tests.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_generate_tests.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_host_port_const.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_generate_tests.rs
 ```
 
 ---
 
-### Script: proc_macro_organizing_code.rs
+### Script: proc_macro_retry.rs
 
-**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+**Description:**  Demo of the retry attribute macro that adds automatic retry logic to functions.
 
-**Purpose:** explore proc macros
+ This macro demonstrates attribute macro parameter parsing and error handling
+ patterns by wrapping functions with retry logic. It automatically retries
+ failed function calls with configurable attempts and backoff delays.
+ Unreliable network operation that fails randomly
+ Custom retry count - try 5 times
+ File operation that might fail due to permissions
+ API call with authentication that might fail
+ Resource allocation that might fail under load
+ Service health check with retry
 
-**Crates:** `thag_demo_proc_macros`
+**Purpose:** Demonstrate automatic retry logic with configurable parameters
+
+**Crates:** `rand`, `thag_demo_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, attribute_macros, error_handling, resilience
 
-**Link:** [proc_macro_organizing_code.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs)
+**Link:** [proc_macro_retry.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry.rs
 ```
 
 ---
 
-### Script: proc_macro_organizing_code_const.rs
+### Script: proc_macro_styled.rs
 
-**Description:**  Experimental - work in progress
+**Description:**  Testing the `styled` proc macro with `ansi_styling_support`
 
-**Purpose:** investigate the possibility of generating a useful constant.
+**Purpose:** Test the styled! macro with generated ANSI styling support.
 
-**Crates:** `thag_demo_proc_macros`
+**Crates:** `thag_proc_macros`, `thag_styling`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** ansi, color, demo, macros, proc_macros, styling, terminal
 
-**Link:** [proc_macro_organizing_code_const.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs)
+**Link:** [proc_macro_styled.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_styled.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_const.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_styled.rs
 ```
 
 ---
 
-### Script: proc_macro_organizing_code_tokenstream.rs
+### Script: proc_macro_timing.rs
 
-**Description:**  Published example from `https://github.com/tdimitrov/rust-proc-macro-post`
+**Description:**  Demo of the timing attribute macro that adds automatic execution time measurement.
 
-**Purpose:** explore proc macros
+ This macro demonstrates simple but effective attribute macro patterns by wrapping
+ functions with timing logic. It automatically measures and displays execution time
+ for any function, making it invaluable for performance analysis and optimization.
+ Fast computation - should show minimal timing
+ Medium-speed computation with visible timing
+ Slow computation with artificial delay
+ Recursive function with timing at each level
+ Function that might fail, showing timing regardless
+ Complex data processing with multiple steps
+ Function with generic parameters
+ Async-like simulation (using blocking operations)
 
-**Crates:** `thag_demo_proc_macros`
+**Purpose:** Demonstrate automatic function timing and performance measurement
+
+**Crates:** `thag_proc_macros`
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** technique, proc_macros, attribute_macros, performance, timing
 
-**Link:** [proc_macro_organizing_code_tokenstream.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs)
+**Link:** [proc_macro_timing.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_organizing_code_tokenstream.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs
 ```
 
 ---
 
-### Script: proc_macro_repeat_dash.rs
+### Script: process_results.rs
 
-**Description:**  Exploring expansion: function-like proc macro.
+**Description:**  Trait for processing results of an iterator.
+ From Chaim freedman's answer to https://stackoverflow.com/questions/69746026/how-to-convert-an-iterator-of-results-into-a-result-of-an-iterator,
+ combined with an example from the `itertools` crate at https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.process_results.
 
-**Purpose:** explore proc macros
 
-**Crates:** `thag_demo_proc_macros`
+**Purpose:** RYO iterator result processor
 
 **Type:** Program
 
-**Categories:** proc_macros, technique
+**Categories:** learning, technique
 
-**Link:** [proc_macro_repeat_dash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs)
+**Link:** [process_results.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_repeat_dash.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/process_results.rs
 ```
 
 ---
 
-### Script: proc_macro_string_concat.rs
+### Script: production_palette_query.rs
 
-**Description:**  Published example from `https://github.com/redmcg/const_gen_proc_macro`
+**Description:**  Production-Ready Terminal Palette Query
 
-**Purpose:** Use proc macros to generate constants at compile time
+ This script demonstrates a production-ready implementation of OSC 4 palette
+ querying using the crossterm method, which has been proven to work reliably
+ across all major macOS terminals (Zed, WezTerm, Apple Terminal, iTerm2,
+ Alacritty, and Kitty).
 
-**Crates:** `thag_demo_proc_macros`
+ Unlike the experimental version, this focuses on the reliable crossterm
+ approach and includes proper error handling, caching, and integration
+ patterns suitable for use in the `thag_styling` subcrate.
+ RGB color representation
+ Error types for palette querying
+ Cached palette query results
+ Production-ready palette color query using crossterm threading
+ Parse OSC 4 response from accumulated buffer
+ Parse hex component (2 or 4 digits)
+ Get terminal identifier for caching
+ Production-ready palette detection with caching
+ Compare palette colors with current thag theme
+ Extract RGB from a thag Style
+ Display palette colors in a formatted table
 
-**Type:** Snippet
+**Purpose:** Production-ready palette querying with crossterm
 
-**Categories:** proc_macros, technique
+**Crates:** `crossterm`, `thag_styling`
 
-**Link:** [proc_macro_string_concat.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs)
+**Type:** Program
+
+**Categories:** color, styling, terminal
+
+**Link:** [production_palette_query.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/production_palette_query.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_string_concat.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/production_palette_query.rs
+```
+
+---
+
+### Script: profile_file.rs
+
+**Description:**  An early profiling prototype that tries to profile a file with macros via injection
+ into its `syn` abstract syntax tree. The drawback is that this technique discards
+ valuable information like comments and formatting.
+
+ Note that the injected profiling code is no longer valid. this is a demonstration only
+
+ E.g.: `thag demo/profile_file.rs < demo/hello_main.rs > $TMPDIR/hello_main_profiled.rs`
+
+
+**Purpose:** Debugging
+
+**Crates:** `prettyplease`, `quote`, `syn`
+
+**Type:** Program
+
+**Categories:** AST, crates, demo, learning, profiling, technique
+
+**Link:** [profile_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/profile_file.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profile_file.rs
 ```
 
 ---
@@ -3936,19 +5272,19 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/proc_macro_str
 
 **Categories:** crates
 
-**Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs)
+**Link:** [profiling_puffin_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin_demo.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puffin_demo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin_demo.rs
 ```
 
 ---
 
-### Script: puffin_profiler_egui.rs
+### Script: puffin_egui.rs
 
-**Description:**  Published demo from the `puffin` crate.
+**Description:**  Published demo from the `puffin` crate. See `demo/puffin_egui_29.rs` for a newer version.
 
 **Purpose:** Demo featured crate.
 
@@ -3958,12 +5294,35 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/profiling_puff
 
 **Categories:** crates
 
-**Link:** [puffin_profiler_egui.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs)
+**Link:** [puffin_egui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profiler_egui.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
+```
+
+---
+
+### Script: puffin_egui_28.rs
+
+**Description:**  Published demo from the `puffin` profiling crate. The only change is to add a toml block
+ entry to prevent a more recent `eframe` version from clashing with `puffin`.
+
+**Purpose:** Demo featured crate.
+
+**Crates:** `eframe`, `puffin`, `puffin_egui`
+
+**Type:** Program
+
+**Categories:** crates
+
+**Link:** [puffin_egui_28.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_28.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_28.rs
 ```
 
 ---
@@ -3993,20 +5352,105 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/puffin_profile
 
  So let's work out the 3 child triples of (3, 4, 5).
 
-**Purpose:** Recreational, educational.
+**Purpose:** Recreational, learning.
 
 **Crates:** `io`
 
 **Type:** Snippet
 
-**Categories:** educational, math, recreational
+**Categories:** learning, math, recreational
 
-**Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs)
+**Link:** [py_thag.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/py_thag.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/py_thag.rs
+```
+
+---
+
+### Script: ra_ap_syntax_tree.rs
+
+**Description:**  Parse and display the `rust-analyzer` (not `syn`) format syntax tree of a Rust source file.
+
+ Assumes the input is a valid Rust program and that its Rust edition is 2021
+
+
+**Purpose:** examine a `ra_ap_syntax` syntax tree.
+
+**Crates:** `ra_ap_syntax`
+
+**Type:** Program
+
+**Categories:** AST, crates, technique
+
+**Link:** [ra_ap_syntax_tree.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tree.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ra_ap_syntax_tree.rs
+```
+
+---
+
+### Script: ratatui_integration_demo.rs
+
+**Description:**  Simple Ratatui + thag_styling Integration Demo
+
+ This demo shows how to create a basic themed TUI application using ratatui
+ and thag_styling's semantic role system.
+
+ E.g.:
+ ```
+ thag demo/ratatui_integration_demo.rs
+ ```
+
+**Purpose:** Basic demonstration of ratatui integration with thag_styling
+
+**Crates:** `crossterm`, `ratatui`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, gui, theming, tui
+
+**Link:** [ratatui_integration_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integration_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_integration_demo.rs
+```
+
+---
+
+### Script: ratatui_theming_showcase.rs
+
+**Description:**  Comprehensive Ratatui Theming Showcase
+
+ This example demonstrates how to build a themed TUI application using ratatui
+ and thag_styling. It showcases various UI components styled with semantic roles
+ and demonstrates both the ThemedStyle trait and extension methods.
+
+ ```Rust
+ E.g. `thag demo/ratatui_theming_showcase`
+ ```
+
+**Purpose:** Comprehensive showcase of ratatui integration with thag_styling themes
+
+**Crates:** `crossterm`, `ratatui`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, theming, tui
+
+**Link:** [ratatui_theming_showcase.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_theming_showcase.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_theming_showcase.rs
 ```
 
 ---
@@ -4015,27 +5459,75 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/py_thag.rs
 
 **Description:**  Published example from the `ratatui` crate.
 
+ The latest version of this example is available in the [examples] folder in the "latest"
+ branch of the `ratatui` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/ratatui/ratatui/blob/latest/examples/user_input.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Demo the featured crate.
 
 **Crates:** `ratatui`
 
 **Type:** Program
 
-**Categories:** crates
+**Categories:** crates, tui
 
-**Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs)
+**Link:** [ratatui_user_input.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_input.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input.rs
+```
+
+---
+
+### Script: ratatui_user_input_profile.rs
+
+**Description:**  Profiling the published example from the `ratatui` crate (`demo/ratatui_user_input.rs`)
+ with `thag_profiler`.
+
+
+**Purpose:** Demo the featured crate.
+
+**Crates:** `ratatui`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** crates, profiling, tui
+
+**Link:** [ratatui_user_input_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs
 ```
 
 ---
 
 ### Script: readline_crossterm.rs
 
-**Description:**  Published crossterm example.
+**Description:**  Published example from `crossterm` crate.
+
+ The latest version of this example is available in the [examples] folder in the `crossterm`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read-char-line.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+ Original `crossterm` crate comments:
+
  Demonstrates how to block read characters or a full line.
  Just note that crossterm is not required to do this and can be done with `io::stdin()`.
 
@@ -4047,12 +5539,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ratatui_user_i
 
 **Categories:** crates
 
-**Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs)
+**Link:** [readline_crossterm.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crossterm.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_crossterm.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crossterm.rs
 ```
 
 ---
@@ -4061,20 +5553,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/readline_cross
 
 **Description:**  Published example `basic.rs` from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/basic.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** demo featured crates.
 
 **Crates:** `reedline`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs)
+**Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_keybindings.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic_keybindings.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_keybindings.rs
 ```
 
 ---
@@ -4083,20 +5586,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_basic
 
 **Description:**  Published example from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/completions.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** demo featured crates.
 
 **Crates:** `reedline`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs)
+**Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_completions.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_completions.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_completions.rs
 ```
 
 ---
@@ -4105,20 +5619,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_compl
 
 **Description:**  Published example from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/event_listener.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** demo featured crates.
 
 **Crates:** `crossterm`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs)
+**Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_listener.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event_listener.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_listener.rs
 ```
 
 ---
@@ -4127,20 +5652,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_event
 
 **Description:**  Published example from `reedline` crate.
 
+ Try typing - among others - the known commands "test", "hello world", "hello world reedline", "this is the reedline crate".
+
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/highlighter.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Explore featured crate.
 
 **Crates:** `reedline`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs)
+**Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlighter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highlighter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlighter.rs
 ```
 
 ---
@@ -4149,20 +5687,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_highl
 
 **Description:**  Published example from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/hinter.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Explore featured crate.
 
 **Crates:** `nu_ansi_term`, `reedline`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs)
+**Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinter.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.rs
 ```
 
 ---
@@ -4171,20 +5720,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_hinte
 
 **Description:**  Published example from `reedline` crate.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/history.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Demo `reedline` file-backed history.
 
 **Crates:** `reedline`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs)
+**Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_history.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history.rs
 ```
 
 ---
@@ -4196,20 +5756,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_histo
  with that letter will be displayed for selection with a tab, up and down arrows or Enter. Or you can
  enter subsequent letters to narrow the search. Noice.
 
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/ide_completions.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Demo `reedline` tab completions.
 
 **Crates:** `reedline`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs)
+**Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_completions.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_completions.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_completions.rs
 ```
 
 ---
@@ -4217,6 +5788,17 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_c
 ### Script: reedline_list_bindings.rs
 
 **Description:**  Published example from `reedline` crate.
+
+ The latest version of this example is available in the [examples] folder in the `reedline`
+ repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/list_bindings.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
  List all keybinding information
 
 **Purpose:** Explore featured crate.
@@ -4225,22 +5807,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_ide_c
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs)
+**Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bindings.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_bindings.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bindings.rs
 ```
 
 ---
 
 ### Script: reedline_multiline.rs
 
-**Description:**  Exploratory prototype of REPL support for multi-line expressions. Based on published example
- `custom_prompt.rs` in `reedline` crate.
+**Description:**  Exploratory prototype of REPL support for multi-line expressions. Loosely based on the
+ published example `custom_prompt.rs` in `reedline` crate.
+
+ The latest version of the original `custom_prompt.rs` is available in the [examples] folder
+ in the `reedline` repository. At time of writing you can run it successfully just
+ by invoking its URL with the `thag_url` tool, like this:
+
+ ```bash
+ thag_url https://github.com/nushell/reedline/blob/main/examples/custom_prompt.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
 
 **Purpose:** Explore options for handling multi-line expressions in a REPL.
 
@@ -4248,14 +5841,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_list_
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs)
+**Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multiline.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multiline.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multiline.rs
 ```
 
 ---
@@ -4270,14 +5863,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_multi
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs)
+**Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_stdin.rs
 ```
 
 ---
@@ -4286,20 +5879,44 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_read_
 
 **Description:**  Published example from `reedline-repl-rs` crate.
 
+ Sample invocation and dialogue:
+
+ ```bash
+ thag demo/reedline_repl.rs
+ Welcome to MyApp
+ MyApp〉say hello World!
+ Hello, World!
+ MyApp〉say goodbye --spanish                                                                                                                                06/30/2025 02:13:40 PM
+ Adiós!
+ MyApp〉[Ctrl-D]
+ $
+ ```
+
+ The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
+ At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
+ and passing the required arguments as normal, like this:
+
+ ```bash
+ thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/subcommands.rs
+ ```
+
+ This requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
 
 **Crates:** `reedline_repl_rs`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs)
+**Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs
 ```
 
 ---
@@ -4309,20 +5926,31 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl.
 **Description:**  Published example from `reedline-repl-rs` crate. This one uses the
  `clap` builder pattern; there is also one using the`clap` derive pattern.
 
+ The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
+ At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
+ and passing the required arguments as normal, like this:
+
+ ```bash
+ thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/with_context.rs
+ ```
+
+ Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+
+
 **Purpose:** Evaluation of featured crate and of using clap to structure command input.
 
 **Crates:** `reedline_repl_rs`
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs)
+**Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_context.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_context.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_context.rs
 ```
 
 ---
@@ -4342,14 +5970,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_repl_
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs)
+**Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bindings.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_bindings.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bindings.rs
 ```
 
 ---
@@ -4364,21 +5992,30 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_show_
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs)
+**Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.rs
 ```
 
 ---
 
 ### Script: reedline_transient_prompt.rs
 
-**Description:**  Published demo from `reedline` crate.
+**Description:**  Published demo from `reedline` crate. Shows use of toml block to specify `reedline`
+ features referenced in the example.
+
+ Note that this script has been known to fail with a `libsql` error refegenciny:
+
+ `include!(concat!(env!("OUT_DIR"), "/bindgen.rs"));`
+
+ In this case, try running `thag --cargo <dir_path>/reedline_transient_prompt.rs -- clean`
+ and then rerunning the script.
+
 
 **Purpose:** Demo the use of a transient minimal prompt `! ` for returned history.
 
@@ -4386,14 +6023,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_stdin
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs)
+**Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_transient_prompt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_transient_prompt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_transient_prompt.rs
 ```
 
 ---
@@ -4413,12 +6050,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/reedline_trans
 
 **Categories:** prototype
 
-**Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs)
+**Link:** [regex_capture_toml.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_toml.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_toml.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_toml.rs
 ```
 
 ---
@@ -4433,21 +6070,21 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/regex_capture_
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs)
+**Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs
 ```
 
 ---
 
 ### Script: repl_partial_match.rs
 
-**Description:**  Experiment with matching REPL commands with a partial match of any length.
+**Description:**  Experiment with matching REPL commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 
@@ -4455,14 +6092,65 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_block.rs
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs)
+**Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_match.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs
+```
+
+---
+
+### Script: repl_ryo.rs
+
+**Description:**  A demo of a roll-your-own REPL. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
+ as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
+ plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
+
+**Purpose:** Demonstrate building a `thag`-style REPL.
+
+**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `thag_styling`, `tui_textarea`
+
+**Type:** Program
+
+**Categories:** demo, repl, technique, tui
+
+**Link:** [repl_ryo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs
+```
+
+---
+
+### Script: rgb_palette_comparison.rs
+
+**Description:**  RGB vs Palette Color Comparison
+
+ This script directly demonstrates the issue where RGB truecolor sequences
+ display differently than expected compared to palette-indexed colors.
+ It tests the specific color mentioned: RGB(91, 116, 116) which should be
+ a dark duck-egg blue-green but appears as washed-out salmon pink.
+ Find the closest 256-color palette index for an RGB color
+ Calculate color distance (Manhattan distance)
+
+**Purpose:** Demonstrate RGB vs palette color display differences on Mac
+
+**Type:** Program
+
+**Categories:** color, debugging, mac_os, terminal
+
+**Link:** [rgb_palette_comparison.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rgb_palette_comparison.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rgb_palette_comparison.rs
 ```
 
 ---
@@ -4473,7 +6161,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_m
  last line to return a tuple of the state of the values of interest, as a quick way
  of displaying them.
 
- Won't work with default Windows 11 because of `rug` crate.
+
+ **Not compatible with Windows MSVC.**
+
+ The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+ take several minutes to compile on first use or a version change.
+
  On Linux you may need to install the m4 package.
 
 
@@ -4485,36 +6178,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/repl_partial_m
 
 **Categories:** crates, technique
 
-**Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs)
+**Link:** [rug_arbitrary_precision_nums.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rug_arbitrary_precision_nums.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rug_arbitrary_precision_nums.rs
-```
-
----
-
-### Script: rustfmt.rs
-
-**Description:**  Prototype of invoking the Rust formatter programmatically, with the addition of an `rfd`
- (`Rusty File Dialogs`) cross-platform file chooser to select the file to format. The code
- for both was AI-generated because I find AI very handy for this kind of grunt work.
-
-**Purpose:** Demo file chooser and calling an external program, in this case the Rust formatter.
-
-**Crates:** `rfd`
-
-**Type:** Program
-
-**Categories:** crates, technique
-
-**Link:** [rustfmt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rug_arbitrary_precision_nums.rs
 ```
 
 ---
@@ -4529,12 +6198,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt.rs
 
 **Categories:** crates, technique
 
-**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs)
+**Link:** [rustfmt_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt_stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustfmt_stdin.rs
 ```
 
 ---
@@ -4547,14 +6216,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustfmt_stdin.
 
 **Type:** Program
 
-**Categories:** educational
+**Categories:** learning
 
-**Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs)
+**Link:** [rustlings_smart_pointers_rc1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustlings_smart_pointers_rc1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smart_pointers_rc1.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustlings_smart_pointers_rc1.rs
 ```
 
 ---
@@ -4569,14 +6238,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustlings_smar
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs)
+**Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_compl.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.rs
 ```
 
 ---
@@ -4593,14 +6262,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_comp
 
 **Type:** Program
 
-**Categories:** crates, REPL, technique
+**Categories:** crates, repl, technique
 
-**Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs)
+**Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs
 ```
 
 ---
@@ -4617,12 +6286,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/rustyline_full
 
 **Categories:** prototype, technique
 
-**Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs)
+**Link:** [semver_exclude_prerelease.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/semver_exclude_prerelease.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude_prerelease.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/semver_exclude_prerelease.rs
 ```
 
 ---
@@ -4639,12 +6308,118 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/semver_exclude
 
 **Categories:** crates, exploration
 
-**Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs)
+**Link:** [side_by_side_diff.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/side_by_side_diff.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_diff.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/side_by_side_diff.rs
+```
+
+---
+
+### Script: simple_osc4_test.rs
+
+**Description:**  Simple OSC 4 Test
+
+ A minimal test script to debug OSC 4 response capture issues.
+ This script sends a single OSC 4 query and tries different methods
+ to capture the response, helping identify why responses are visible
+ but not being captured programmatically.
+ RGB color representation
+ Try to parse OSC 4 response
+ Method 1: Direct stdin reading with crossterm raw mode
+ Method 2: Try using shell command with script/expect
+ Method 3: Use expect-like approach
+ Method 4: Manual observation test
+ Method 5: Redirect to file test
+
+**Purpose:** Debug OSC 4 response capture mechanisms
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** debugging, exploration, terminal
+
+**Link:** [simple_osc4_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_osc4_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_osc4_test.rs
+```
+
+---
+
+### Script: simple_reset_test.rs
+
+**Description:**  Simple test to see if reset replacement is being called
+
+ This creates the exact scenario from the stress test to see where
+ the reset replacement logic is failing.
+
+**Purpose:** Debug reset replacement execution
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [simple_reset_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_reset_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_reset_test.rs
+```
+
+---
+
+### Script: simple_stress_test.rs
+
+**Description:**  Simple stress test with raw ANSI inspection
+
+ This recreates the stress test scenario and shows the raw ANSI codes
+ to verify if the reset replacement is working correctly.
+
+**Purpose:** Debug stress test with raw ANSI inspection
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, debugging, testing
+
+**Link:** [simple_stress_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_stress_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_stress_test.rs
+```
+
+---
+
+### Script: simple_theme_test.rs
+
+**Description:**  Simple test to debug theme loading issues
+
+**Purpose:** Simple test for runtime theme loading logic
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, styling, theming
+
+**Link:** [simple_theme_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_theme_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_theme_test.rs
 ```
 
 ---
@@ -4661,12 +6436,124 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/side_by_side_d
 
 **Categories:** crates
 
-**Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs)
+**Link:** [slog_expressions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/slog_expressions.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressions.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/slog_expressions.rs
+```
+
+---
+
+### Script: smol_background_task_return.rs
+
+**Description:**  ChatGPT-generated example of running a single task in the background.
+
+**Purpose:** Demo.
+
+**Crates:** `smol`
+
+**Type:** Program
+
+**Categories:** crates, demo
+
+**Link:** [smol_background_task_return.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_background_task_return.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_background_task_return.rs
+```
+
+---
+
+### Script: smol_chat_client.rs
+
+**Description:**  Published example from `smol crate`. See also `demo/smol_chat_server.rs` and
+ `demo/smol_chat_server_profile.rs`.
+
+**Purpose:** Demo, and participant in `thag_profiler` test.
+
+**Crates:** `smol`
+
+**Type:** Program
+
+**Categories:** demo
+
+**Link:** [smol_chat_client.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_client.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_client.rs
+```
+
+---
+
+### Script: smol_chat_server.rs
+
+**Description:**  Published example from `smol crate`. See also `demo/smol_chat_client.rs` and
+ `demo/smol_chat_server_profile.rs`.
+ An event on the chat server.
+ Dispatches events to clients.
+ Reads messages from the client and forwards them to the dispatcher task.
+
+**Purpose:** Demo, and basis for `thag_profiler` test.
+
+**Crates:** `async_channel`, `async_dup`, `smol`
+
+**Type:** Program
+
+**Categories:** demo
+
+**Link:** [smol_chat_server.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server.rs
+```
+
+---
+
+### Script: smol_chat_server_profile.rs
+
+**Description:**  Published example from `smol crate`, instrumented for testing of `thag_profiler`, with clean shutdown
+ added.
+
+ Instrumented with that sub-crate's `thag-instrument` command, and shutdown logic added by Claude Sonnet 3.7.
+
+ See also `demo/smol_chat_server.rs` and
+ `demo/smol_chat_client.rs`.
+
+ E.g. `thag demo/smol_chat_server_profile.rs`
+
+ Features added by Claude for clean shutdown to preserve profiling data:
+
+ 1. **Guaranteed Shutdown**: The server now automatically shuts down after 30 seconds, ensuring that profiling data can be properly finalized.
+
+ 2. **Graceful Task Handling**: Tasks are allowed to complete with timeouts, preventing hanging processes.
+
+ 3. **Non-Blocking Accept Logic**: The server can check for termination signals while accepting connections without blocking.
+ An event on the chat server.
+ Dispatches events to clients.
+ Reads messages from the client and forwards them to the dispatcher task.
+
+**Purpose:** Test `thag_profiler` with `smol` async crate.
+
+**Crates:** `async_channel`, `async_dup`, `futures_lite`, `smol`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** profiling, testing
+
+**Link:** [smol_chat_server_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server_profile.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/smol_chat_server_profile.rs
 ```
 
 ---
@@ -4681,14 +6568,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/slog_expressio
 
 **Type:** Snippet
 
-**Categories:** crates, educational
+**Categories:** crates, learning
 
-**Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs)
+**Link:** [snippet_import_scope.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_import_scope.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import_scope.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_import_scope.rs
 ```
 
 ---
@@ -4696,21 +6583,66 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_import
 ### Script: snippet_name_clash.rs
 
 **Description:**  Demo scope of import statements. Two conflicting imports with the same name
- coexisting in the same `println!` invocation. Demonstrates that when wrapping
- a snippet we can't assume it's OK to pull the imports up to the top level.
+ `ubig` coexisting in the same `println!` invocation. Demonstrates that when
+ wrapping a snippet we can't assume it's OK to pull the imports up to the top
+ level.
 
 **Purpose:** Prototype to confirm leaving imports in situ when wrapping snippets.
 
+**Crates:** `dashu`, `ibig`
+
 **Type:** Snippet
 
-**Categories:** crates, educational
+**Categories:** crates, learning
 
-**Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs)
+**Link:** [snippet_name_clash.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_name_clash.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_clash.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/snippet_name_clash.rs
+```
+
+---
+
+### Script: sort_itertools.rs
+
+**Description:**  Demo sorting RGB tuples using `itertools`. Generated by ChatGPT.
+
+**Purpose:** A simple demonstration.
+
+**Crates:** `itertools`
+
+**Type:** Program
+
+**Categories:** crates, learning, technique
+
+**Link:** [sort_itertools.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_itertools.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_itertools.rs
+```
+
+---
+
+### Script: sort_std.rs
+
+**Description:**  Demo sorting RGB tuples using `std`. Generated by ChatGPT.
+
+**Purpose:** A simple demonstration.
+
+**Type:** Program
+
+**Categories:** crates, learning, technique
+
+**Link:** [sort_std.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_std.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/sort_std.rs
 ```
 
 ---
@@ -4728,41 +6660,166 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/snippet_name_c
 
 **Type:** Program
 
-**Categories:** crates, prototype, technique
+**Categories:** crates, prototype, technique, tui
 
-**Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs)
+**Link:** [stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin.rs
 ```
 
 ---
 
 ### Script: stdin_main.rs
 
-**Description:**  A version of `thag_rs`'s `stdin` module from the `main` `git` branch for the purpose of comparison
- with the `develop` branch version being debugged.
+**Description:**  Open the history file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
 
- E.g. `thag demo/stdin_main.rs`
- Apply highlights to the text depending on the light or dark theme as detected, configured
- or defaulted, or as toggled by the user with Ctrl-t.
+**Purpose:** Debugging and demonstration.
 
-**Purpose:** Debugging.
-
-**Crates:** `crossterm`, `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_rs`, `tui_textarea`
+**Crates:** `edit`, `ratatui`, `thag_rs`
 
 **Type:** Program
 
-**Categories:** testing
+**Categories:** demo, testing, tui
 
-**Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs)
+**Link:** [stdin_main.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main.rs
+```
+
+---
+
+### Script: stdin_main_old_instr.rs
+
+**Description:**  Apply highlights to the text depending on the light or dark theme as detected, configured
+ or defaulted, or as toggled by the user with Ctrl-t.
+
+**Purpose:** Debugging.
+
+**Crates:** `lazy_static`, `mockall`, `ratatui`, `regex`, `scopeguard`, `serde`, `serde_json`, `thag_profiler`, `thag_rs`, `tui_textarea`
+
+**Type:** Program
+
+**Categories:** testing, tui
+
+**Link:** [stdin_main_old_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_old_instr.rs
+```
+
+---
+
+### Script: stdin_main_upd_instr.rs
+
+**Description:**  Edit the stdin stream.
+
+
+ # Examples
+
+ ```no_run
+ use thag_rs::stdin::edit;
+ use thag_rs::CrosstermEventReader;
+ use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers };
+ use thag_rs::MockEventReader;
+
+ let mut event_reader = MockEventReader::new();
+ event_reader.expect_read_event().return_once(|| {
+     Ok(Event::Key(KeyEvent::new(
+         KeyCode::Char('d'),
+         KeyModifiers::CONTROL,
+     )))
+ });
+ let actual = edit(&event_reader);
+ let buf = vec![""];
+ assert!(matches!(actual, Ok(buf)));
+ ```
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and the read buffer is left unchanged.
+ # Panics
+
+ If the terminal cannot be reset.
+ Prompt for and read Rust source code from stdin.
+
+ # Examples
+
+ ``` ignore
+ use thag_rs::stdin::read;
+
+ let hello = String::from("Hello world!");
+ assert!(matches!(read(), Ok(hello)));
+ ```
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ Read Rust source code into a String from the provided reader (e.g., stdin or a mock reader).
+
+ # Examples
+
+ ``` ignore
+ use thag_rs::stdin::read_to_string;
+
+ let stdin = std::io::stdin();
+ let mut input = stdin.lock();
+ let hello = String::from("Hello world!");
+ assert!(matches!(read_to_string(&mut input), Ok(hello)));
+ ```
+
+ # Errors
+
+ If the data in this stream is not valid UTF-8 then an error is returned and buf is unchanged.
+ Open the history file in an editor.
+ # Errors
+ Will return `Err` if there is an error editing the file.
+
+**Purpose:** Debugging.
+
+**Crates:** `edit`, `ratatui`, `thag_profiler`, `thag_rs`
+
+**Type:** Program
+
+**Categories:** profiling, testing, tui
+
+**Link:** [stdin_main_upd_instr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_upd_instr.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/stdin_main_upd_instr.rs
+```
+
+---
+
+### Script: string_to_static_str.rs
+
+**Description:**  Demo: Convert a `String` to a `&'static str` at runtime, then do
+ the same for a whole vector of `String`s.
+
+ This should only be used when it's appropriate for the string
+ reference to remain allocated for the life of the program.
+
+**Purpose:** demo a handy trick.
+
+**Type:** Program
+
+**Categories:** learning, technique
+
+**Link:** [string_to_static_str.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/string_to_static_str.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/string_to_static_str.rs
 ```
 
 ---
@@ -4781,12 +6838,166 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/stdin_main.rs
 
 **Categories:** CLI, crates, technique
 
-**Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs)
+**Link:** [structopt_cli_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/structopt_cli_gpt.rs -- -- -Vt dummy.rs 1 2 3
+```
+
+---
+
+### Script: styleable_improvements_demo.rs
+
+**Description:**  Demo showcasing improved Styleable trait with individual role methods
+
+ This demonstrates:
+ 1. Consolidated style_with() method that works with any Styler
+ 2. Individual role methods: .error(), .success(), .info(), etc.
+ 3. Comparison with Role.paint() approach
+ 4. Using &self instead of self (non-consuming)
+
+**Purpose:** Demo improved Styleable trait with role methods
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ergonomics, styling
+
+**Link:** [styleable_improvements_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styleable_improvements_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styleable_improvements_demo.rs
+```
+
+---
+
+### Script: styled_macro_enhanced.rs
+
+**Description:**  Enhanced styled! Macro Demonstration
+
+ This demo showcases the enhanced styled! macro with support for:
+ - Basic ANSI colors (original logic)
+ - 256-color palette indices
+ - True RGB colors
+ - Multiple text effects
+
+ The enhanced macro now supports three color formats:
+ 1. Basic colors: Red, Green, Blue, etc. (uses terminal palette)
+ 2. Color256(index): 256-color palette (0-255)
+ 3. Rgb(r, g, b): True RGB colors (0-255 per component)
+
+**Purpose:** Demonstrate enhanced styled! macro with 256-color and RGB support
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** styling, macros, color, demo
+
+**Link:** [styled_macro_enhanced.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_macro_enhanced.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_macro_enhanced.rs
+```
+
+---
+
+### Script: styled_string_concept.rs
+
+**Description:**  Concept demo for StyledString that preserves outer styling context
+
+ This demonstrates a potential StyledString type that could work like
+ colored's ColoredString, automatically restoring outer styling after
+ inner reset sequences.
+ A styled string that preserves styling context like colored's ColoredString
+ Extended Styleable trait that returns StyledString instead of plain String
+
+**Purpose:** Concept for context-preserving styled strings
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** concepts, prototype, styling
+
+**Link:** [styled_string_concept.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_concept.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_concept.rs
+```
+
+---
+
+### Script: styling_demo.rs
+
+**Description:**  Demonstrates the colour and styling options of `thag_rs`.
+ Also demos the full 256-colour palette as per `demo/colors*.rs`.
+
+ E.g. `thag demo/styling_demo.rs`
+
+**Purpose:** Demonstrate and test the look of available colour palettes and styling settings.
+
+**Crates:** `strum`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** prototype, reference, testing
+
+**Link:** [styling_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_demo.rs
+```
+
+---
+
+### Script: styling_migration_guide.rs
+
+**Description:**  Comprehensive migration guide from old embedding systems to StyledString
+
+ This demo shows side-by-side comparisons of:
+ 1. sprtln_with_embeds! → StyledString with println!
+ 2. svprtln_with_embeds! → StyledString with vprintln!
+ 3. format_with_embeds → format! with StyledString
+ 4. Embedded struct → StyledString directly
+
+ IMPORTANT: This guide is specifically about replacing the EMBEDDING system.
+ The Styled<T> struct (.style().bold()) serves a different purpose and remains:
+ - Styled<T>: General text effects (bold, italic, etc.) - KEEP USING
+ - StyledString: Semantic roles + embedding/nesting - NEW PREFERRED WAY
+
+ The new StyledString approach provides:
+ - Better attribute reset handling (no bleeding)
+ - More natural Rust syntax with method chaining
+ - Unlimited nesting depth without pre-planning
+ - Better performance (no macro overhead)
+ - Cleaner, more maintainable code
+
+**Purpose:** Migration guide from old embedding systems to StyledString
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** documentation, examples, migration, styling
+
+**Link:** [styling_migration_guide.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_migration_guide.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styling_migration_guide.rs
 ```
 
 ---
@@ -4807,12 +7018,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/structopt_cli_
 
 **Categories:** crates
 
-**Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs)
+**Link:** [supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color.rs
 ```
 
 ---
@@ -4828,12 +7039,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color
 
 **Categories:** crates, prototype
 
-**Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs)
+**Link:** [supports_color_win.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color_win.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color_win.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/supports_color_win.rs
 ```
 
 ---
@@ -4856,12 +7067,48 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/supports_color
 
 **Categories:** AST, crates, technique
 
-**Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs)
+**Link:** [syn_dump_syntax.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_syntax.rs -- demo/hello_main.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax.rs -- demo/hello_main.rs
+```
+
+---
+
+### Script: syn_dump_syntax_profile_syn.rs
+
+**Description:**  A version of the published example from the `syn` crate used to demonstrate profiling a dependency with `thag_profiler`.
+ Description "Parse a Rust source file into a `syn::File` and print out a debug representation of the syntax tree."
+
+ Pass it the absolute or relative path of any Rust PROGRAM source file, e.g. its own
+ path that you passed to the script runner to invoke it.
+
+ NB: Pick a script that is a valid program (containing `fn main()` as opposed to a snippet).
+
+ E.g.:
+
+ ```
+ THAG_PROFILER=both,,announce,true thag demo/syn_dump_syntax_profile_syn.rs -tf -- demo/hello_main.rs
+ ```
+
+ See the `README.md` for the explanation of the `THAG_PROFILER` arguments
+
+**Purpose:** demonstrate profiling a dependency with `thag_profiler`.
+
+**Crates:** `colored`, `syn`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** AST, crates, technique
+
+**Link:** [syn_dump_syntax_profile_syn.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax_profile_syn.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax_profile_syn.rs -- demo/hello_main.rs
 ```
 
 ---
@@ -4891,12 +7138,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_dump_synta
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs)
+**Link:** [syn_quote.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_quote.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_quote.rs
 ```
 
 ---
@@ -4914,12 +7161,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_quote.rs
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs)
+**Link:** [syn_remove_attributes.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_remove_attributes.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_attributes.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_remove_attributes.rs
 ```
 
 ---
@@ -4928,7 +7175,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_att
 
 **Description:**  Prototype that uses the Visitor pattern of the `syn` crate to determine the dependencies of a
  Rust source program passed to the script. Specifically the combination of fn `visit_item_extern_crate`
- to process the nodes representing `extern crate` statements and fn `visit_expr` to initiate the tree
+ to process the nodes representing `extern crate` statements and fn `visit_expr` to start the tree
  traversal. This version expects the script contents to consist of a Rust expression.
 
 **Purpose:** Prototype.
@@ -4939,12 +7186,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_remove_att
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs)
+**Link:** [syn_visit_extern_crate_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_expr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_expr.rs -- demo/just_a_test_expression.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_expr.rs -- demo/just_a_test_expression.rs
 ```
 
 ---
@@ -4964,12 +7211,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_exte
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs)
+**Link:** [syn_visit_extern_crate_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_extern_crate_file.rs -- demo/syn_visit_extern_crate_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_extern_crate_file.rs -- demo/syn_visit_extern_crate_file.rs
 ```
 
 ---
@@ -4984,18 +7231,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_exte
 
 **Purpose:** Demo programmatically modifying Rust source code using `syn` and `quote`.
 
-**Crates:** `quote`, `syn`
+**Crates:** `prettyplease`, `quote`, `syn`
 
 **Type:** Program
 
 **Categories:** AST, crates, technique
 
-**Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs)
+**Link:** [syn_visit_node_type.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_node_type.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node_type.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_node_type.rs
 ```
 
 ---
@@ -5015,12 +7262,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_node
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs)
+**Link:** [syn_visit_use_path_expr.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_expr.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_expr.rs -- demo/just_a_test_expression.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_expr.rs -- demo/just_a_test_expression.rs
 ```
 
 ---
@@ -5040,23 +7287,23 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs)
+**Link:** [syn_visit_use_path_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_path_file.rs -- demo/syn_visit_use_path_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_path_file.rs -- demo/syn_visit_use_path_file.rs
 ```
 
 ---
 
 ### Script: syn_visit_use_rename.rs
 
-**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that exist
- for the purpose of renaming a dependency so that we don't go looking for the temporary in the registry.
+**Description:**  Prototype that uses the Visitor pattern of the `syn` crate to identify `use` statements that use "as"
+ to rename a dependency so that `thag` doesn't go looking for the temporary name in the registry.
  Specifically the combination of fn `visit_use_rename` to process the nodes representing `extern crate`
  statements and fn `visit_file` to initiate the tree traversal. This version expects the script contents
- to consist of a full-fledged Rust program.
+ to consist of a fully-fledged Rust program.
 
 **Purpose:** Prototype.
 
@@ -5066,12 +7313,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs)
+**Link:** [syn_visit_use_rename.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_rename.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_rename.rs -- demo/crossbeam_epoch_sanitize.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_rename.rs -- demo/crossbeam_epoch_sanitize.rs
 ```
 
 ---
@@ -5091,12 +7338,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** AST, crates, prototype, technique
 
-**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs)
+**Link:** [syn_visit_use_tree_file.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_tree_file.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_tree_file.rs -- demo/syn_visit_use_tree_file.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_visit_use_tree_file.rs -- demo/syn_visit_use_tree_file.rs
 ```
 
 ---
@@ -5113,35 +7360,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/syn_visit_use_
 
 **Categories:** crates
 
-**Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs)
+**Link:** [tempfile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tempfile.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tempfile.rs
 ```
-
----
-
-### Script: term_detection_pack.rs
-
-**Description:**  A basic tool I cobbled together that uses different crates to a) test terminal
- types on different platforms, b) determine and cross-check if a light or dark
- theme is in use and c) determine the level of colour supported reported by
- the terminal.
-
-**Purpose:** Allow checking of terminals on platforms to be supported, also test reliability of different crates.
-
-**Crates:** `crossterm`, `log`, `simplelog`, `supports_color`, `termbg`, `terminal_light`
-
-**Type:** Snippet
-
-**Categories:** crates, tools
-
-**Link:** [term_detection_pack.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/term_detection_pack.rs)
-
-**Not suitable to be run from a URL.**
-
 
 ---
 
@@ -5159,10 +7384,51 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Categories:** crates
 
-**Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/termbg.rs)
+**Link:** [termbg.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/termbg.rs)
 
 **Not suitable to be run from a URL.**
 
+
+---
+
+### Script: terminal_color_diagnostics.rs
+
+**Description:**  Terminal Color Diagnostics
+
+ This script performs comprehensive diagnostics of terminal color capabilities,
+ specifically designed to investigate issues where RGB truecolor sequences
+ display incorrectly while palette-indexed colors work correctly.
+
+ The script tests multiple aspects of color handling:
+ - Basic ANSI color support
+ - 256-color palette support
+ - RGB truecolor support
+ - OSC sequence handling
+ - Terminal environment detection
+ - Color profile and gamma correction issues
+ Test color struct for diagnostics
+ Diagnostic test colors chosen to highlight color handling issues
+ Terminal capability flags
+ Analyze terminal environment variables and settings
+ Read terminal response with timeout
+ Find closest 256-color index for RGB color
+ Calculate Manhattan distance between colors
+
+**Purpose:** Comprehensive terminal color capability diagnostics and troubleshooting
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** color, debugging, diagnosis, terminal
+
+**Link:** [terminal_color_diagnostics.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_color_diagnostics.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_color_diagnostics.rs
+```
 
 ---
 
@@ -5179,12 +7445,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tempfile.rs
 
 **Categories:** crates
 
-**Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs)
+**Link:** [terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light.rs
 ```
 
 ---
@@ -5202,12 +7468,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Categories:** crates, recreational
 
-**Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs)
+**Link:** [terminal_light_fading.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_fading.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_fading.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_fading.rs
 ```
 
 ---
@@ -5219,18 +7485,117 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Purpose:** Demo of the `terminal-light` crate.
 
-**Crates:** `coolor`, `crossterm`, `terminal_light`
+**Crates:** `crossterm`, `terminal_light`
 
 **Type:** Program
 
 **Categories:** crates
 
-**Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs)
+**Link:** [terminal_light_skins.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_skins.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light_skins.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_skins.rs
+```
+
+---
+
+### Script: terminal_reset_test.rs
+
+**Description:**  Demo script to test terminal reset logic for OSC sequence corruption
+ Soft terminal reset - attempts to restore normal terminal behavior
+ Hard terminal reset - more aggressive reset
+ Simulate the problematic OSC sequence output that causes corruption
+ Test if terminal state is corrupted by checking cursor position
+ Demonstrate detection of terminal corruption
+ Main demo function
+
+**Purpose:** Test terminal reset when OSC sequences cause line discipline corruption
+
+**Type:** Program
+
+**Categories:** debugging, terminal, xterm
+
+**Link:** [terminal_reset_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_reset_test.rs
+```
+
+---
+
+### Script: test_all_formats_with_konsole.rs
+
+**Description:**  Demo script to test all export formats including the new Konsole exporter
+
+**Purpose:** Test all available theme export formats to verify Konsole integration
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, terminal, testing, theming
+
+**Link:** [test_all_formats_with_konsole.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_all_formats_with_konsole.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_all_formats_with_konsole.rs
+```
+
+---
+
+### Script: test_ansi_parsing_logic.rs
+
+**Description:**  Simple test for ANSI parsing logic
+
+ This tests the has_ansi_code function directly to verify it correctly
+ distinguishes between color codes and text attributes.
+
+**Purpose:** Test ANSI parsing logic for text attributes
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** ansi, styling, testing
+
+**Link:** [test_ansi_parsing_logic.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsing_logic.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsing_logic.rs
+```
+
+---
+
+### Script: test_auto_help.rs
+
+**Description:**  This program exists to demonstrate the `thag_common` `auto_help` logic.
+ Invoking it with the argument `--help/-h` will display the doc comments as help.
+ An optional `//# Purpose: ` line may be included to form the top-level help summary.
+ An optional `//# Categories:` line may be used to list comma-separated categories
+ to be shown at the bottom of the help screen.
+
+**Purpose:** This is the optional `//# Purpose: ` line that becomes the help summary.
+
+**Crates:** `thag_common`
+
+**Type:** Program
+
+**Categories:** demo, testing
+
+**Link:** [test_auto_help.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_auto_help.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_auto_help.rs
 ```
 
 ---
@@ -5255,194 +7620,957 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/terminal_light
 
 **Categories:** crates, testing
 
-**Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs)
+**Link:** [test_clap_4707.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/test_clap_4707.rs -- --write --show-hex
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_clap_4707.rs -- --write --show-hex
 ```
 
 ---
 
-### Script: thag_cargo.rs
+### Script: test_coffee_theme.rs
 
-**Description:**  `thag` prompted front-end command to run Cargo commands on scripts. It is recommended to compile this to an executable with -x.
- Prompts the user to select a Rust script and a cargo command to run against the script's generated project, and
- and invokes `thag` with the --cargo option to run it.
+**Description:**  Test script to debug color selection for the morning coffee image
 
-**Purpose:** A user-friendly interface to the `thag` `--cargo` option.
+ This script specifically tests the hue range assignments and fallback logic
+ to understand why colors aren't matching their intended hue ranges.
 
-**Crates:** `atty`, `inquire`, `rustix`
+**Purpose:** Debug hue range assignments in morning coffee theme generation
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** technique, thag_front_ends, tools
+**Categories:** color, styling, terminal, theming, tools
 
-**Link:** [thag_cargo.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs)
+**Link:** [test_coffee_theme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_coffee_theme.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_cargo.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_coffee_theme.rs
 ```
 
 ---
 
-### Script: thag_clippy.rs
+### Script: test_color_mode_override.rs
 
-**Description:**  `thag` prompted front-end command to run `clippy` on scripts. It is recommended to compile this to an executable with -x.
- Prompts the user to select a Rust script and one or more Clippy lints to run against the script's generated project, and
- and invokes `thag` with the --cargo option to run it.
+**Description:**  Test Color Mode Override
 
-**Purpose:** A user-friendly interface to the `thag` `--cargo` option specifically for running `cargo clippy` on a script.
+ This script tests the THAG_COLOR_MODE environment variable override
+ logic to force specific color modes in thag_styling.
+ This is particularly useful for working around terminal issues
+ like Zed's RGB truecolor handling problems.
 
-**Crates:** `atty`, `colored`, `inquire`, `rustix`
+**Purpose:** Test THAG_COLOR_MODE environment variable logic
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** technique, thag_front_ends, tools
+**Categories:** terminal, color, testing, configuration
 
-**Link:** [thag_clippy.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs)
+**Link:** [test_color_mode_override.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_color_mode_override.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_clippy.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_color_mode_override.rs
 ```
 
 ---
 
-### Script: thag_config_builder.rs
+### Script: test_dark_theme_tuning.rs
 
-**Description:**  Prompted config file builder for `thag`, intended to be saved as a command with `-x`.
+**Description:**  Dark theme tuning previewer - shows fine-tuning effects optimized for dark themes
 
-**Purpose:** Handy configuration file builder.
+ This script demonstrates fine-tuning controls with parameter ranges
+ optimized for dark theme generation. For light themes, use test_light_theme_tuning.rs
 
-**Crates:** `colored`, `convert_case`, `dirs`, `documented`, `inquire`, `strum`, `syn`, `thag_rs`, `toml`
+**Purpose:** Preview and tune dark theme generation with optimized parameters
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, technique, tools
+**Categories:** color, styling, terminal, theming, tools
 
-**Link:** [thag_config_builder.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs)
+**Link:** [test_dark_theme_tuning.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dark_theme_tuning.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_config_builder.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dark_theme_tuning.rs
 ```
 
 ---
 
-### Script: thag_crokey_print_key.rs
+### Script: test_dynamic_ansi_generation.rs
 
-**Description:**  Published example of KeyCombination from `crokey` crate, modified to use
- basic `crokey` key combos embedded in `thag_rs` under MIT licence.
+**Description:**  Test dynamic ANSI generation for different color support levels
 
-**Purpose:** Test for stability and consistency across different platforms and terminals.
+ This script verifies that our new dynamic ANSI generation approach
+ correctly adapts ANSI escape sequences based on terminal color support.
 
-**Crates:** `crossterm`, `thag_rs`
+**Purpose:** Test and demonstrate dynamic ANSI generation for different terminal capabilities
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, testing
+**Categories:** color, styling, terminal, testing
 
-**Link:** [thag_crokey_print_key.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs)
+**Link:** [test_dynamic_ansi_generation.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dynamic_ansi_generation.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_crokey_print_key.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_dynamic_ansi_generation.rs
 ```
 
 ---
 
-### Script: thag_from_rust_script.rs
+### Script: test_filename_handling.rs
 
-**Description:**  Converts embedded manifest format from `rust-script` to `thag`.
+**Description:**  Quick test to verify filename handling for different formats
 
- E.g. `cat <path_to_rust_script_file> | thag -qq demo/thag_from_rust_script.rs | thag -s [-- [options] [args] ...]`
+**Purpose:** Test filename handling
 
- Place any command-line options and/or arguments for the script at the end after a -- as shown.
-
-
-**Purpose:** Convenience for any `rust-script` user who wants to try out `thag`.
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, tools
+**Categories:** file_handling, testing
 
-**Link:** [thag_from_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs)
+**Link:** [test_filename_handling.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_filename_handling.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_from_rust_script.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_filename_handling.rs
+```
+
+---
+
+### Script: test_fine_tuning.rs
+
+**Description:**  Test script to demonstrate fine-tuning controls for theme generation
+
+ This script shows how to use the saturation multiplier, lightness adjustment,
+ and contrast multiplier to fine-tune generated themes.
+
+**Purpose:** Demonstrate fine-tuning controls for image theme generation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_fine_tuning.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_fine_tuning.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_fine_tuning.rs
+```
+
+---
+
+### Script: test_image_theme_contrast.rs
+
+**Description:**  Test script to demonstrate improved contrast in image theme generation
+
+ This script shows the enhanced contrast adjustment logic
+ with minimum lightness differences for better readability.
+
+**Purpose:** Demonstrate improved contrast in image theme generation
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_image_theme_contrast.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_image_theme_contrast.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_image_theme_contrast.rs
+```
+
+---
+
+### Script: test_konsole_export.rs
+
+**Description:**  Test script for Konsole theme export logic
+
+**Purpose:** Test the Konsole colorscheme exporter with Catppuccin Mocha theme
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** terminal, testing, theming
+
+**Link:** [test_konsole_export.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_konsole_export.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_konsole_export.rs
+```
+
+---
+
+### Script: test_light_extreme.rs
+
+**Description:**  Extreme parameter test for light themes to verify fine-tuning is working
+
+ This script tests light theme generation with extreme parameter differences
+ to see if the fine-tuning system is actually responsive.
+
+**Purpose:** Test extreme light theme parameter differences
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_light_extreme.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_extreme.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_extreme.rs
+```
+
+---
+
+### Script: test_light_theme_tuning.rs
+
+**Description:**  Light theme tuning previewer - shows fine-tuning effects optimized for light themes
+
+ This script demonstrates fine-tuning controls with parameter ranges
+ optimized for light theme generation. For dark themes, use test_dark_theme_tuning.rs
+
+**Purpose:** Preview and tune light theme generation with optimized parameters
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, tools
+
+**Link:** [test_light_theme_tuning.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_theme_tuning.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_theme_tuning.rs
+```
+
+---
+
+### Script: test_mintty_comprehensive.rs
+
+**Description:**  Comprehensive test for all mintty logic
+
+ This demo script thoroughly tests the mintty theme exporter logic
+ including exporting themes, validating output format, and checking integration
+ with the theme generation system.
+
+**Purpose:** Comprehensive test of mintty theme logic
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, demo
+
+**Link:** [test_mintty_comprehensive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_comprehensive.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_comprehensive.rs
+```
+
+---
+
+### Script: test_mintty_export.rs
+
+**Description:**  Test script for mintty theme exporter
+
+ This demo script tests the mintty theme exporter logic
+ by loading a built-in theme and exporting it to mintty format.
+
+**Purpose:** Test mintty theme export logic
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, demo
+
+**Link:** [test_mintty_export.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_export.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_export.rs
+```
+
+---
+
+### Script: test_mintty_in_gen.rs
+
+**Description:**  Test that mintty format is included in theme generator
+
+ This demo script tests that the mintty exporter is properly integrated
+ into the theme generation system by checking if it's in the list of formats.
+
+**Purpose:** Test mintty format integration in theme generator
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, theming, demo
+
+**Link:** [test_mintty_in_gen.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_in_gen.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_in_gen.rs
+```
+
+---
+
+### Script: test_original_color_issue.rs
+
+**Description:**  Test to verify the original color issue is fixed
+
+ This script simulates the original problem where TrueColor themes
+ would generate inappropriate ANSI codes for terminals with limited
+ color support, and verifies that our dynamic ANSI generation fix works.
+
+**Purpose:** Test and verify the fix for the original TrueColor/256-color compatibility issue
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, styling, terminal, testing, debugging
+
+**Link:** [test_original_color_issue.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_original_color_issue.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_original_color_issue.rs
+```
+
+---
+
+### Script: test_palette_optimization.rs
+
+**Description:**  Test script to verify the palette optimization changes
+
+ This script demonstrates the new roles (Link, Quote, Commentary) that replaced
+ the old Trace role, ensuring the perfect 1:1 mapping with 16-color terminal palette.
+
+
+**Purpose:** Test and demonstrate the palette optimization changes
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** styling, testing
+
+**Link:** [test_palette_optimization.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_palette_optimization.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_palette_optimization.rs
+```
+
+---
+
+### Script: test_proc_macro_examples.rs
+
+**Description:**  Test script to validate that proc macro examples work correctly.
+ This script runs a selection of proc macro examples to ensure they compile and execute properly.
+
+**Purpose:** Test proc macro examples to ensure they work correctly
+
+**Crates:** `thag_rs`
+
+**Type:** Program
+
+**Categories:** proc_macros, testing, tools
+
+**Link:** [test_proc_macro_examples.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_proc_macro_examples.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_proc_macro_examples.rs
+```
+
+---
+
+### Script: test_profile_extract_timestamp.rs
+
+**Description:**  Demo of the generate_tests function-like macro for automatic test generation.
+
+ This macro demonstrates repetitive code generation patterns by creating multiple
+ test functions from a list of test data. It reduces boilerplate in test suites
+ and shows how macros can automate common development tasks.
+
+ Note that the expansion is not picked up by `cargo expand`, for reasons unknown.
+ To compensate, the proc macro `generate_tests` prints the test source to `stderr`.
+
+ Also, the expansions of the individual `generate_tests!` invocations are visible
+ if the `expand` argument of the call to fn `maybe_expand_proc_macro` from the proc
+ macro function fn `generate_tests` in `lib.rs` iis set to `true`. So if you prefer
+ to use this, you can remove the hard-coded debugging from `generate_tests.rs`.
+
+ To perform the tests and see the results, simply run:
+
+ ```bash
+ thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+
+ ```
+
+ # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+
+ See also: `demo/proc_macro_generate_tests.rs`
+
+**Purpose:** Demonstrate automatic test case generation from data
+
+**Crates:** `thag_demo_proc_macros`, `thag_profiler`
+
+**Type:** Snippet
+
+**Categories:** technique, proc_macros, function_like_macros, testing, automation
+
+**Link:** [test_profile_extract_timestamp.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profile_extract_timestamp.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profile_extract_timestamp.rs
+```
+
+---
+
+### Script: test_profiler_demo_viz.rs
+
+**Description:**  Test script to verify the profiler demo visualization feature works
+ Work in progress.
+
+**Purpose:** test if the error exists, then periodically to see if it persists.
+
+**Crates:** `thag_profiler`
+
+**Type:** Program
+
+**Categories:** profiling, testing
+
+**Link:** [test_profiler_demo_viz.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_demo_viz.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_demo_viz.rs
+```
+
+---
+
+### Script: test_runtime_theme_loading.rs
+
+**Description:**  Demo script that tests the new runtime theme loading logic.
+
+ This script demonstrates:
+ 1. Loading themes from user-specified directories via config
+ 2. Loading themes via THAG_THEME_DIR environment variable
+ 3. Fallback to built-in themes when user themes aren't found
+ 4. Proper error handling for missing directories/themes
+
+**Purpose:** Test runtime theme loading from user-specified directories
+
+**Crates:** `thag_common`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, styling, theming
+
+**Link:** [test_runtime_theme_loading.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_runtime_theme_loading.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_runtime_theme_loading.rs
+```
+
+---
+
+### Script: test_safe_print_macros.rs
+
+**Description:**  Demo script to test the new safe print macros for terminal synchronization
+ Test basic safe print logic
+ Test OSC sequences with safe_osc macro
+ Test concurrent safe prints (the main use case)
+ Test mixing safe and unsafe prints (demonstration)
+ Test error output scenarios
+ Demonstrate unit test usage pattern
+
+**Purpose:** Test safe print macros that prevent terminal corruption in concurrent environments
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** terminal, testing, macros, synchronization
+
+**Link:** [test_safe_print_macros.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_macros.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_macros.rs
+```
+
+---
+
+### Script: test_shared_cache.rs
+
+**Description:**  A simple demo script to test the new shared target directory and executable cache.
+
+ This script uses `serde_json` as a dependency to verify that:
+ 1. Dependencies are compiled once and shared across all scripts
+ 2. The executable is cached in the executable cache directory
+ 3. Subsequent runs are fast due to warm cache
+
+ Run with: `thag demo/test_shared_cache.rs`
+ Then run again to see the speed improvement from caching.
+ Clean cache with: `thag --clean` or `thag --clean bins`
+
+**Purpose:** Test shared target directory and executable cache logic
+
+**Crates:** `serde_json`
+
+**Type:** Program
+
+**Categories:** testing, demo
+
+**Link:** [test_shared_cache.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_shared_cache.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_shared_cache.rs
+```
+
+---
+
+### Script: test_sprtln.rs
+
+**Description:**  Test script to verify sprtln macro works with both Style and Role
+
+**Purpose:** Testing
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** macros, styling, technique, testing
+
+**Link:** [test_sprtln.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_sprtln.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_sprtln.rs
+```
+
+---
+
+### Script: test_styled_simple.rs
+
+**Description:**  Simple test for enhanced styled! macro
+
+ Tests the four color formats: Basic ANSI, 256-color, RGB, and Hex
+
+**Purpose:** Simple test of enhanced styled! macro with all color formats
+
+**Crates:** `thag_proc_macros`
+
+**Type:** Program
+
+**Categories:** color, macros, styling, testing
+
+**Link:** [test_styled_simple.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_styled_simple.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_styled_simple.rs
+```
+
+---
+
+### Script: test_urgency_hierarchy.rs
+
+**Description:**  Urgency Hierarchy Demonstration
+
+ This script demonstrates the new urgency-based ANSI color hierarchy where
+ bright colors are used for the most critical/urgent messages, following
+ established ANSI safety color standards and terminal application conventions.
+
+
+**Purpose:** Demonstrate the urgency-based color hierarchy in terminal output
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** demo, styling, testing
+
+**Link:** [test_urgency_hierarchy.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_urgency_hierarchy.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_urgency_hierarchy.rs
+```
+
+---
+
+### Script: test_verbosity_setting.rs
+
+**Description:**  Test the new verbosity setting logic
+
+**Purpose:** Demonstrate and test the improved verbosity setting API
+
+**Crates:** `thag_rs`
+
+**Type:** Program
+
+**Categories:** debugging, testing
+
+**Link:** [test_verbosity_setting.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/test_verbosity_setting.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_verbosity_setting.rs
+```
+
+---
+
+### Script: thag_async_benchmark.rs
+
+**Description:**  Focused async benchmark comparing tokio vs smol memory profiling with `thag_profiler` vs `dhat-rs`.
+ Tests async runtime overhead and task spawning memory usage.
+
+ # Test with tokio + thag_profiler
+ THAG_PROFILER=memory,,announce,true thag --features 'full_profiling,tokio-runtime' demo/thag_async_benchmark.rs -tfm
+
+ # Test with tokio + dhat
+ thag --features 'dhat-heap,tokio-runtime' demo/thag_async_benchmark.rs -tfm
+
+ # Test with smol + thag_profiler
+ THAG_PROFILER=memory,,announce,true thag --features 'full_profiling,smol-runtime' demo/thag_async_benchmark.rs -tfm
+
+ # Test with smol + dhat
+ thag --features 'dhat-heap,smol-runtime' demo/thag_async_benchmark.rs -tfm
+
+**Purpose:** Validate async memory profiling accuracy across different runtimes
+
+**Crates:** `dhat`, `smol`, `thag_profiler`, `tokio`
+
+**Type:** Program
+
+**Categories:** async, benchmark, profiling
+
+**Link:** [thag_async_benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_async_benchmark.rs
+```
+
+---
+
+### Script: thag_auto_example.rs
+
+**Description:**  Example script demonstrating proper thag-auto usage.
+ This shows how to use the thag-auto keyword for automatic dependency resolution.
+
+ The thag-auto system allows scripts to work in different environments:
+ - Development: Uses local path when THAG_DEV_PATH is set
+ - Git: Uses git repository when THAG_GIT_REF is set
+ - Default: Uses crates.io versions (may require published versions)
+
+ If you get a "version not found" error, it means the specified version
+ doesn't exist on crates.io yet. Set THAG_DEV_PATH or THAG_GIT_REF to use
+ local or git versions instead.
+
+**Purpose:** Demonstrate thag-auto dependency resolution system
+
+**Type:** Program
+
+**Categories:** demo, documentation
+
+**Link:** [thag_auto_example.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_auto_example.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_auto_example.rs
+```
+
+---
+
+### Script: thag_convert_themes_6422dbc.rs
+
+**Description:**  Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.
+
+ ## Usage examples:
+
+ ### Convert a single theme
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm/atelier_seaside_light.yaml -o themes/converted
+ ```
+
+ ### Convert a directory of themes (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -v
+ ```
+
+ ### Convert and also generate 256-color versions (verbosely)
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -c -v
+ ```
+
+ ### Force overwrite existing themes
+
+ ```Rust
+ thag_convert_themes -i themes/wezterm -o themes/converted -f
+ ```
+
+
+**Purpose:** Theme generation.
+
+**Crates:** `clap`, `serde`, `serde_yaml_ok`, `thag_styling`, `toml`
+
+**Type:** Program
+
+**Categories:** tools
+
+**Link:** [thag_convert_themes_6422dbc.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_convert_themes_6422dbc.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_convert_themes_6422dbc.rs
+```
+
+---
+
+### Script: thag_profile_benchmark.rs
+
+**Description:**  Benchmark comparison between thag_profiler and dhat-rs for memory profiling accuracy.
+ This creates known allocation patterns and compares the results from both profilers.
+
+**Purpose:** Validate thag_profiler accuracy against dhat-rs reference implementation
+
+**Crates:** `dhat`, `thag_profiler`
+
+**Type:** Program
+
+**Categories:** benchmark, profiling
+
+**Link:** [thag_profile_benchmark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_benchmark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_profile_benchmark.rs
 ```
 
 ---
 
 ### Script: thag_prompt.rs
 
-**Description:**  Early prototype of prompting front-end for `thag`.
+**Description:**  Early prototype of a front-end prompt for `thag`.
 
 **Purpose:** Ultimately, to provide a prompt-driven front-end to the `thag` command.
 
-**Crates:** `inquire`
+**Crates:** `inquire`, `thag_styling`
 
 **Type:** Program
 
 **Categories:** prototype, thag_front_ends, tools
 
-**Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs)
+**Link:** [thag_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_prompt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_prompt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_prompt.rs
 ```
 
 ---
 
-### Script: thag_to_rust_script.rs
+### Script: thag_styling_color_test.rs
 
-**Description:**  Converts embedded manifest format from `thag` to `rust-script`.
+**Description:**  Thag Styling Color Output Test
 
-**Purpose:** Convenience for any `thag` user who wants to try out `rust-script`.
+ This script tests what thag_styling actually outputs when THAG_COLOR_MODE
+ is set. Unlike the diagnostic comparison scripts, this shows the real
+ escape sequences that thag_styling generates based on the detected
+ color support mode.
+
+**Purpose:** Test actual thag_styling color output with THAG_COLOR_MODE environment variable
+
+**Crates:** `thag_styling`
 
 **Type:** Program
 
-**Categories:** crates, tools
+**Categories:** terminal, color, testing, styling
 
-**Link:** [thag_to_rust_script.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs)
+**Link:** [thag_styling_color_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_styling_color_test.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_to_rust_script.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_styling_color_test.rs
 ```
 
 ---
 
-### Script: thag_url.rs
+### Script: thag_validate_precise.rs
 
-**Description:**  `thag` front-end command to run scripts from URLs. It is recommended to compile this with -x.
+**Description:**  Precise validation test with exactly known allocation sizes to verify
+ thag_profiler accuracy and understand differences with dhat-rs.
 
-**Purpose:** A front-end to allow thag to run scripts from URLs while offloading network dependencies from `thag` itself.
+**Purpose:** Validate profiler accuracy with precisely measurable allocations
 
-**Crates:** `syn`, `tempfile`, `tinyget`, `url`
+**Crates:** `dhat`, `thag_profiler`
 
 **Type:** Program
 
-**Categories:** technique, thag_front_ends, tools
+**Categories:** profiling, testing
 
-**Link:** [thag_url.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs)
+**Link:** [thag_validate_precise.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_validate_precise.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/thag_validate_precise.rs
+```
+
+---
+
+### Script: theme_color_mapping_comparison.rs
+
+**Description:**  Theme Color Mapping Comparison Tool
+
+ This tool shows exactly how the source thag-vibrant-dark theme colors
+ map to the exported Alacritty format, helping debug color differences.
+ Display the source theme's semantic colors with RGB values
+ Show the mapping logic from semantic to ANSI colors
+ Extract RGB values from a style
+ Extract RGB information from a style for display
+
+**Purpose:** Test color mapping.
+
+**Crates:** `thag_styling`
+
+**Type:** Program
+
+**Categories:** color, testing, theming
+
+**Link:** [theme_color_mapping_comparison.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_color_mapping_comparison.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_color_mapping_comparison.rs
+```
+
+---
+
+### Script: theme_dracula_dark.rs
+
+**Description:**  Prototype of styling with Dracula theme colours.
+
+**Purpose:** Investigate incorporating popular themes into styling.
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [theme_dracula_dark.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_dracula_dark.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_dracula_dark.rs
+```
+
+---
+
+### Script: theme_gruvbox_light.rs
+
+**Description:**  Prototype of styling with GruvBox Light theme colours.
+
+**Purpose:** Investigate incorporating popular themes into styling.
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [theme_gruvbox_light.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light.rs
+```
+
+---
+
+### Script: theme_gruvbox_light_hard.rs
+
+**Description:**  Prototype of styling with GruvBox Light Hard theme colours.
+
+**Purpose:** Investigate incorporating popular themes into styling.
+
+**Type:** Program
+
+**Categories:** technique
+
+**Link:** [theme_gruvbox_light_hard.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light_hard.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/theme_gruvbox_light_hard.rs
 ```
 
 ---
@@ -5461,12 +8589,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/thag_url.rs
 
 **Categories:** basic
 
-**Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs)
+**Link:** [time_cookbook.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/time_cookbook.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/time_cookbook.rs
 ```
 
 ---
@@ -5479,14 +8607,36 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/time_cookbook.
 
 **Type:** Program
 
-**Categories:** educational, technique
+**Categories:** learning, technique
 
-**Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs)
+**Link:** [tlborm_callbacks.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tlborm_callbacks.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbacks.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tlborm_callbacks.rs
+```
+
+---
+
+### Script: to_relative_path.rs
+
+**Description:**  ChatGPT 4.1-generated script expresses an absolute path relative to the current working directory.
+
+**Purpose:** Use `pathdiff` crate to compute a relative path relative to the CWD.
+
+**Crates:** `pathdiff`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [to_relative_path.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/to_relative_path.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/to_relative_path.rs
 ```
 
 ---
@@ -5494,7 +8644,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbac
 ### Script: tokio_hello_short.rs
 
 **Description:**  Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
- Before running, start a server: `ncat -l 6142` in another terminal.
+ Before running, start a background server: `ncat -l 6142 &`.
 
 **Purpose:** Demo running `tokio` from `thag_rs`.
 
@@ -5502,14 +8652,14 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tlborm_callbac
 
 **Type:** Program
 
-**Categories:** async, educational, technique
+**Categories:** async, learning, technique
 
-**Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs)
+**Link:** [tokio_hello_short.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_short.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_short.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_short.rs
 ```
 
 ---
@@ -5517,7 +8667,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_sh
 ### Script: tokio_hello_world.rs
 
 **Description:**  Published example from `tokio` crate. Before running, start a server: `ncat -l 6142`
- in another terminal.
+ in another terminal, or simply `ncat -l 6142 &` in the same terminal.
 
 **Purpose:** Demo running `tokio` from `thag_rs`.
 
@@ -5525,14 +8675,96 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_sh
 
 **Type:** Program
 
-**Categories:** async, educational, technique
+**Categories:** async, learning, technique
 
-**Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs)
+**Link:** [tokio_hello_world.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_world.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_world.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/tokio_hello_world.rs
+```
+
+---
+
+### Script: truecolor_quantization_test.rs
+
+**Description:**  TrueColor Quantization Detection Test
+
+ This test detects whether a terminal silently quantizes TrueColor values
+ to a 256-color palette, as suspected with Apple Terminal. The strategy:
+
+ 1. Test colors that should be identical in TrueColor but different in 256-color
+ 2. Test colors that fall between 256-color palette entries
+ 3. Use statistical analysis of multiple color tests
+ 4. Compare expected vs actual color distances
+
+ If the terminal silently quantizes, we'll see:
+ - Colors that should be different become identical
+ - Systematic rounding to 256-color palette values
+ - Loss of precision in color gradients
+ RGB color representation
+ Test result for a single color
+ Parse hex component from OSC response
+ Detect if we're running in mintty (which always supports TrueColor)
+ Parse OSC 10 response
+ Set and query a color with timing (supports mintty via OSC 7704)
+ Convert RGB to nearest 256-color palette equivalent
+ Generate test colors that reveal quantization
+
+**Purpose:** Detect silent TrueColor quantization in terminals
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** terminal, color, testing
+
+**Link:** [truecolor_quantization_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_quantization_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_quantization_test.rs
+```
+
+---
+
+### Script: truecolor_test.rs
+
+**Description:**  TrueColor Detection
+
+ This script tests TrueColor detection support by sending a TrueColor escape
+ sequence and querying the result, as suggested by https://github.com/termstandard/colors.
+
+ The approach:
+ 1. Query current foreground color (OSC 10)
+ 2. Set a specific TrueColor foreground (OSC 10 with RGB)
+ 3. Query the foreground color again
+ 4. Restore original foreground color
+ 5. Compare set vs queried values to determine TrueColor support
+ RGB color representation
+ Parse hex component from OSC response
+ Detect if we're running in mintty (which always supports TrueColor)
+ Parse OSC 10 (foreground color) response
+ Query current foreground color using OSC 10
+ Set foreground color using OSC 10
+ Test TrueColor support by setting and querying
+
+**Purpose:** Test TrueColor support using OSC sequence probing
+
+**Crates:** `crossterm`
+
+**Type:** Program
+
+**Categories:** ansi, color, styling, terminal, testing, theming, tools, windows, xterm
+
+**Link:** [truecolor_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.rs
 ```
 
 ---
@@ -5549,9 +8781,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, exploration, technique, tui
 
-**Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_scrollview.rs)
+**Link:** [tui_scrollview.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_scrollview.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5574,9 +8806,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, exploration, technique, tui
 
-**Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor.rs)
+**Link:** [tui_ta_editor.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_editor.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5585,22 +8817,20 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 ### Script: tui_ta_editor_profile.rs
 
-**Description:**  The same script as `demo/tui_ta_editor.rs`, but with `firestorm` profiling.
+**Description:**  A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate
+ time profiling.
 
  Not suitable for running from a URL.
- To see the profiling flamegraph after exiting the program, look in dir `flames` under the `env::temp_dir()`
- for your operating system. Note that due to an apparent bug in `firestorm`, the `Editor::run` method currently
- executes twice, so it will need to be closed a second time.
 
-**Purpose:** Demo featured crates, but `firestorm` profiler in particular.
+**Purpose:** Demo `thag_profiler`.
 
-**Crates:** `firestorm`, `ratatui`, `tui_textarea`
+**Crates:** `ratatui`, `thag_profiler`, `tui_textarea`
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, profiling, technique, tui
 
-**Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_editor_profile.rs)
+**Link:** [tui_ta_editor_profile.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_editor_profile.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5619,9 +8849,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Type:** Program
 
-**Categories:** crates, exploration, technique
+**Categories:** crates, exploration, technique, tui
 
-**Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_minimal.rs)
+**Link:** [tui_ta_minimal.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_minimal.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5641,9 +8871,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Type:** Program
 
-**Categories:** crates
+**Categories:** crates, tui
 
-**Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_ta_vim.rs)
+**Link:** [tui_ta_vim.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_ta_vim.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5665,9 +8895,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Type:** Program
 
-**Categories:** async, crates, educational, exploration, technique
+**Categories:** async, crates, learning, exploration, technique, tui
 
-**Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/tui_tokio_editor_gpt.rs)
+**Link:** [tui_tokio_editor_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/tui_tokio_editor_gpt.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5688,12 +8918,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/tokio_hello_wo
 
 **Categories:** type_identification, technique
 
-**Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs)
+**Link:** [type_of_at_compile_time_1.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_1.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_1.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_1.rs
 ```
 
 ---
@@ -5719,12 +8949,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_com
 
 **Categories:** type_identification, technique
 
-**Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs)
+**Link:** [type_of_at_compile_time_2.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_2.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_compile_time_2.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_compile_time_2.rs
 ```
 
 ---
@@ -5742,12 +8972,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_com
 
 **Categories:** type_identification, technique
 
-**Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs)
+**Link:** [type_of_at_run_time.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_run_time.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run_time.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/type_of_at_run_time.rs
 ```
 
 ---
@@ -5756,20 +8986,20 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/type_of_at_run
 
 **Description:**  Implement trait std::iter::Product for `ibig::UBig`. Example provided by GPT.
 
-**Purpose:** Educational / reference.
+**Purpose:** Learning / reference.
 
 **Crates:** `ibig`
 
 **Type:** Program
 
-**Categories:** big_numbers, educational, reference, technique
+**Categories:** big_numbers, learning, reference, technique
 
-**Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs)
+**Link:** [ubig_product_gpt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/ubig_product_gpt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_gpt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ubig_product_gpt.rs
 ```
 
 ---
@@ -5784,12 +9014,165 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/ubig_product_g
 
 **Categories:** technique
 
-**Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs)
+**Link:** [unzip.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/unzip.rs
+```
+
+---
+
+### Script: visual_rgb_test.rs
+
+**Description:**  Visual RGB Rendering Test
+
+ This script tests whether terminals actually render RGB truecolor sequences correctly
+ by displaying them side-by-side with their closest 256-color palette equivalents.
+ This helps detect terminals that accept RGB sequences but render them incorrectly
+ (like Apple Terminal showing salmon pink instead of duck-egg blue-green).
+ Test colors specifically chosen to reveal rendering issues
+ Colors designed to reveal different types of rendering issues
+ Find the closest 256-color palette index for an RGB color
+ Calculate Manhattan distance between two RGB colors
+
+**Purpose:** Visual test to detect accurate RGB truecolor rendering vs palette quantization
+
+**Type:** Program
+
+**Categories:** color, diagnosis, terminal, testing
+
+**Link:** [visual_rgb_test.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/visual_rgb_test.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/visual_rgb_test.rs
+```
+
+---
+
+### Script: warn_once.rs
+
+**Description:**  This script demonstrates the usage of the `warn_once` pattern for suppressing repeated
+ log messages with minimal runtime overhead.
+
+ The dependency is `thag_profiler` because that's the only place it's used at time of writing, even though this is
+ not in any way a profiling-specific function.
+
+ Disclosure: the `thag_profiler` `warn_once` macro uses unsafe code.
+
+ Credit to `Claude 3.7 Sonnet`.
+ Simple example that shows a warning only once despite multiple calls
+ Example with early return pattern
+ Example using multiple warn_once! calls for different conditions
+ Performance comparison between naive approach and warn_once
+ Real-world example based on the record_dealloc function
+ Main entry point
+
+**Purpose:** Demo a macro I found useful, explained and benchmarked here in great detail thanks to Claude.
+
+**Crates:** `thag_profiler`
+
+**Type:** Program
+
+**Categories:** demo, macros, technique
+
+**Link:** [warn_once.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once.rs
+```
+
+---
+
+### Script: warn_once_with_id_standalone.rs
+
+**Description:**  This script demonstrates the usage of the `warn_once_with_id` function for suppressing repeated
+ log messages with minimal runtime overhead using unique IDs.
+
+ This is a standalone implementation that doesn't require any external dependencies.
+ The function uses unsafe code for maximum performance with a fast path after the first warning.
+
+ Credit to `Claude Sonnet 4` for the implementation and comprehensive demo.
+ Standalone implementation of warn_once_with_id function
+
+ This function provides a high-performance way to suppress repeated warnings
+ using unique IDs to track different warning sites independently.
+
+ # Safety
+
+ This function is unsafe because:
+ - It uses static mutable data with UnsafeCell
+ - Caller must ensure each ID is unique per call site
+ - The ID should be < 128 for optimal performance (higher IDs use modulo)
+
+ # Arguments
+
+ * `id` - Unique identifier for this warning site (0-127 for best performance)
+ * `condition` - Whether the warning condition is met
+ * `warning_fn` - Closure to execute for the warning (called only once)
+
+ # Returns
+
+ * `true` if the condition was met (regardless of whether warning was shown)
+ * `false` if the condition was not met
+
+ # Example
+
+ ```rust
+ const MY_WARNING_ID: usize = 1;
+
+ unsafe {
+     warn_once_with_id(MY_WARNING_ID, some_error_condition, || {
+         eprintln!("This warning will only appear once!");
+     });
+ }
+ ```
+ Demo showing multiple independent warnings with different IDs
+ Demo showing performance characteristics
+ Demo showing thread safety
+ Demo showing real-world usage patterns
+ Demo showing ID collision handling
+ Demo showing early return pattern
+
+**Purpose:** Standalone demo of warn_once_with_id function with embedded implementation
+
+**Type:** Program
+
+**Categories:** demo, macros, technique, unsafe, performance
+
+**Link:** [warn_once_with_id_standalone.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once_with_id_standalone.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/warn_once_with_id_standalone.rs
+```
+
+---
+
+### Script: web_safe_colors_to_256.rs
+
+**Description:**  Map and visually test conversion of web safe colours to 256 colours, //: using the `owo-colors` crate colour names and mappings.
+
+**Purpose:** Work out and test colour conversion.
+
+**Crates:** `itertools`, `owo_colors`
+
+**Type:** Program
+
+**Categories:** demo, reference, testing
+
+**Link:** [web_safe_colors_to_256.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/web_safe_colors_to_256.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/web_safe_colors_to_256.rs
 ```
 
 ---
@@ -5804,12 +9187,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/unzip.rs
 
 **Categories:** testing
 
-**Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs)
+**Link:** [win_test_control.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_control.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_control.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_control.rs
 ```
 
 ---
@@ -5826,12 +9209,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_contr
 
 **Categories:** testing
 
-**Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs)
+**Link:** [win_test_supports_color.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_supports_color.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_supports_color.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_supports_color.rs
 ```
 
 ---
@@ -5848,7 +9231,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_suppo
 
 **Categories:** testing
 
-**Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termbg.rs)
+**Link:** [win_test_termbg.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_termbg.rs)
 
 **Not suitable to be run from a URL.**
 
@@ -5867,12 +9250,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_suppo
 
 **Categories:** testing
 
-**Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs)
+**Link:** [win_test_terminal_light.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_terminal_light.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_terminal_light.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_terminal_light.rs
 ```
 
 ---
@@ -5896,7 +9279,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termi
  Finally, the `termbg` crate was swallowing the first character of input in Windows and causing a
  "rightward march" of log output due to suppression of carriage returns in all environments. I've
  addressed the former by using non-blocking `crossterm` event polling instead of `stdin`, and also
- introduced a
+ had a PR accepted into the `termbg` crate as v0.6.1. This should substantially address the issue
+ although I have not yet managed to overcome an occasional outbreak rightward march in any given
+ environment. The only fix I know for this is a completely new terminal session, but
+ Ensure the following is present as a dependency in the toml block or defaulted in your configuration
+ file (for the Windows builds this is intended for):
+ (`thag - C`): `winapi = { version = "0.3.9", features = ["consoleapi", "processenv", "winbase"] }`
 
 **Purpose:** Debug `termbg`
 
@@ -5906,12 +9294,34 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_termi
 
 **Categories:** testing
 
-**Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs)
+**Link:** [win_test_vt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/master/demo/win_test_vt.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/win_test_vt.rs
+```
+
+---
+
+### Script: windows_detect_powershell.rs
+
+**Description:**  Prototype of PowerShell detection
+
+**Purpose:** Detect if we're running under PowerShell.
+
+**Crates:** `sysinfo`
+
+**Type:** Program
+
+**Categories:** detection, terminal, testing, windows
+
+**Link:** [windows_detect_powershell.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_powershell.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/windows_detect_powershell.rs
 ```
 
 ---

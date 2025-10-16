@@ -1,0 +1,133 @@
+name = "Tomorrow Night Base16"
+description = "Converted from Tomorrow Night theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1d1f21"]
+bg_rgbs = [[
+    29,
+    31,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    193,
+    167,
+    201,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    198,
+    155,
+    145,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    138,
+    205,
+    196,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    232,
+    162,
+    162,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    240,
+    174,
+    128,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    157,
+    186,
+    211,
+]
+
+[palette.emphasis]
+rgb = [
+    247,
+    204,
+    121,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    145,
+    198,
+    190,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    197,
+    200,
+    198,
+]
+
+[palette.subtle]
+rgb = [
+    162,
+    168,
+    180,
+]
+
+[palette.hint]
+rgb = [
+    170,
+    172,
+    170,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    180,
+    183,
+    180,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    201,
+    207,
+    135,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    224,
+    224,
+    224,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    161,
+    169,
+    182,
+]

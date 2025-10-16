@@ -1,0 +1,133 @@
+name = "Windows 95 Light Base16"
+description = "Converted from Windows 95 Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fcfcfc"]
+bg_rgbs = [[
+    252,
+    252,
+    252,
+]]
+
+[palette.heading1]
+rgb = [
+    168,
+    0,
+    168,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    12,
+    237,
+    12,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    168,
+    168,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    168,
+    0,
+    0,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    212,
+    212,
+    11,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    0,
+    0,
+    0,
+]
+
+[palette.info]
+rgb = [
+    0,
+    0,
+    168,
+]
+
+[palette.emphasis]
+rgb = [
+    168,
+    84,
+    0,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    0,
+    168,
+    168,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    84,
+    84,
+    84,
+]
+
+[palette.subtle]
+rgb = [
+    125,
+    125,
+    125,
+]
+
+[palette.hint]
+rgb = [
+    125,
+    125,
+    125,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    125,
+    125,
+    125,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    0,
+    168,
+    0,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    42,
+    42,
+    42,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    125,
+    125,
+    125,
+]

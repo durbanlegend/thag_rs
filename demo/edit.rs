@@ -1,15 +1,9 @@
-/*[toml]
-[dependencies]
-#edit = { version = "0.1.5", features = ["better-path"] }
-edit = "0.1.5"
-*/
-
 #[allow(unused_doc_comments)]
-/// Published example from edit crate readme.
+/// Published example from the `edit` crate readme.
 ///
 /// Will use the editor specified in VISUAL or EDITOR environment variable.
 ///
-/// E.g. `EDITOR=vim thag_rs demo/edit.rs`
+/// E.g. `VISUAL="zed --wait" thag demo/edit.rs`
 //# Purpose: Demo of edit crate to invoke preferred editor.
 //# Categories: crates, technique
 use std::env;
@@ -19,7 +13,10 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
 
+
+#[cfg(target_os = "windows")]
 env::set_var("VISUAL", "cmd.exe /C type");
+#[cfg(target_os = "windows")]
 env::set_var("EDITOR", "cmd.exe /C type");
 
 fn get_full_editor_cmd(s: String) -> Result<(PathBuf, Vec<String>)> {
@@ -51,7 +48,7 @@ fn string_to_cmd(s: String) -> (PathBuf, Vec<String>) {
     )
 }
 
-#[rustfmt::skip]
+// #[rustfmt::skip]
 static HARDCODED_NAMES: &[&str] = &[
     // GUI editors
     "code.cmd -n -w", "atom.exe -w", "subl.exe -w",
@@ -63,12 +60,12 @@ static HARDCODED_NAMES: &[&str] = &[
 ];
 
 static ENV_VARS: &[&str] = &["VISUAL", "EDITOR"];
-let x = ENV_VARS
+let editor = ENV_VARS
         .iter()
         .filter_map(env::var_os)
         .filter(|v| !v.is_empty())
         .filter_map(|v| v.into_string().ok()).next();
-println!("x={x:?}");
+println!("editor={editor:?}");
 let editor_cmd = ENV_VARS
         .iter()
         .filter_map(env::var_os)

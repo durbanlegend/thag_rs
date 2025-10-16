@@ -1,0 +1,133 @@
+name = "Vesper Base16"
+description = "Converted from Vesper theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#101010"]
+bg_rgbs = [[
+    16,
+    16,
+    16,
+]]
+
+[palette.heading1]
+rgb = [
+    214,
+    144,
+    148,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    185,
+    157,
+    128,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    118,
+    195,
+    173,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    237,
+    126,
+    126,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    218,
+    176,
+    131,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    213,
+    213,
+    213,
+]
+
+[palette.info]
+rgb = [
+    154,
+    184,
+    184,
+]
+
+[palette.emphasis]
+rgb = [
+    255,
+    199,
+    153,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    126,
+    186,
+    170,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    183,
+    183,
+    183,
+]
+
+[palette.subtle]
+rgb = [
+    156,
+    156,
+    156,
+]
+
+[palette.hint]
+rgb = [
+    156,
+    156,
+    156,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    156,
+    156,
+    156,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    137,
+    175,
+    175,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    193,
+    193,
+    193,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    156,
+    156,
+    156,
+]

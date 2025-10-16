@@ -1,8 +1,6 @@
 /*[toml]
 [dependencies]
-colored = "2.1.0"
-quote = "1.0.37"
-syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing"] }
+# Alternatively can use `use proc_macro2;` with dependency inference and default config
 proc-macro2 = { version = "1", features = ["span-locations"] }
 */
 
@@ -58,7 +56,7 @@ enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::IncorrectUsage => write!(f, "Usage: dump-syntax path/to/filename.rs"),
+            Error::IncorrectUsage => write!(f, "Usage: syn_dump_syntax path/to/filename.rs"),
             Error::ReadFile(error) => write!(f, "Unable to read file: {}", error),
             Error::ParseFile {
                 error,

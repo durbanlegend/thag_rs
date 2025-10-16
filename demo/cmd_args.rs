@@ -1,15 +1,9 @@
-/*[toml]
-[dependencies]
-bitflags = "2.5.0"
-clap = { version = "4.5.21", features = ["cargo", "derive"] }
-*/
-
 /// A prototype of the `cmd_args` module of thag_rs itself.
 ///
-/// E.g. `thag -tv demo/cmd_args.rs -- -gbrtv demo/hello.rs -- -fq Hello world`
+/// E.g. `thag -tv demo/cmd_args.rs -- -tv demo/hello.rs -- -fq Hello world`
 //# Purpose: Prototype CLI.
 //# Categories: CLI, crates, prototype, technique
-//# Sample arguments: `-- -gbrtv demo/hello.rs -- -fq Hello world`
+//# Sample arguments: `-- -tv demo/hello.rs -- -fq Hello world`
 use bitflags::{bitflags, parser::ParseError};
 use clap::{ArgGroup, Parser};
 use std::{error::Error, fmt, str};

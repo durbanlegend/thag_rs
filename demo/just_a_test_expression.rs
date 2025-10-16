@@ -1,6 +1,6 @@
-/// This is an arbitrary expression for use by scripts like `demo/syn_visit_extern_crate_expr.rs`
-/// and `demo/syn_visit_use_path_expr.rs`.
-/// Don't remove the surrounding braces, because those serve to make it an expression.
+//: This is an arbitrary expression for use by scripts like `demo/syn_visit_extern_crate_expr.rs`
+//: and `demo/syn_visit_use_path_expr.rs`.
+//: Don't remove the surrounding braces, because those serve to make it an expression.
 //# Purpose: Testing.
 //# Categories: testing
 {

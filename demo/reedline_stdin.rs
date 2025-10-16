@@ -1,11 +1,6 @@
-/*[toml]
-[dependencies]
-reedline = "0.36.0"
-*/
-
 /// Exploring `reedline` crate.
 //# Purpose: explore featured crate.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,

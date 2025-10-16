@@ -1,0 +1,133 @@
+name = "Spacemacs Base16"
+description = "Converted from Spacemacs theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1f2022"]
+bg_rgbs = [[
+    31,
+    32,
+    34,
+]]
+
+[palette.heading1]
+rgb = [
+    230,
+    131,
+    240,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    224,
+    121,
+    160,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    111,
+    234,
+    195,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    150,
+    147,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    204,
+    123,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    248,
+    248,
+    248,
+]
+
+[palette.info]
+rgb = [
+    133,
+    189,
+    238,
+]
+
+[palette.emphasis]
+rgb = [
+    240,
+    220,
+    131,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    124,
+    221,
+    190,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    198,
+    198,
+    198,
+]
+
+[palette.subtle]
+rgb = [
+    173,
+    173,
+    173,
+]
+
+[palette.hint]
+rgb = [
+    173,
+    173,
+    173,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    184,
+    184,
+    184,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    173,
+    238,
+    108,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    232,
+    232,
+    232,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    161,
+    156,
+    189,
+]

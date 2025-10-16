@@ -1,0 +1,133 @@
+name = "Precious Light White Base16"
+description = "Converted from Precious Light White theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#ffffff"]
+bg_rgbs = [[
+    255,
+    255,
+    255,
+]]
+
+[palette.heading1]
+rgb = [
+    95,
+    46,
+    184,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    169,
+    62,
+    147,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    8,
+    119,
+    103,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    154,
+    52,
+    50,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    160,
+    87,
+    13,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    85,
+    85,
+    85,
+]
+
+[palette.info]
+rgb = [
+    24,
+    109,
+    170,
+]
+
+[palette.emphasis]
+rgb = [
+    135,
+    101,
+    0,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    8,
+    119,
+    103,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    85,
+    85,
+    85,
+]
+
+[palette.subtle]
+rgb = [
+    128,
+    128,
+    128,
+]
+
+[palette.hint]
+rgb = [
+    128,
+    128,
+    128,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    99,
+    99,
+    99,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    85,
+    115,
+    1,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    85,
+    85,
+    85,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    128,
+    128,
+    128,
+]

@@ -1,0 +1,133 @@
+name = "Material Lighter Base16"
+description = "Converted from Material Lighter theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fafafa"]
+bg_rgbs = [[
+    250,
+    250,
+    250,
+]]
+
+[palette.heading1]
+rgb = [
+    63,
+    11,
+    209,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    227,
+    23,
+    18,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    57,
+    173,
+    181,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    184,
+    10,
+    39,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    209,
+    54,
+    11,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    97,
+    97,
+    97,
+]
+
+[palette.info]
+rgb = [
+    60,
+    98,
+    160,
+]
+
+[palette.emphasis]
+rgb = [
+    209,
+    140,
+    11,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    57,
+    173,
+    181,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    48,
+    146,
+    137,
+]
+
+[palette.subtle]
+rgb = [
+    101,
+    127,
+    144,
+]
+
+[palette.hint]
+rgb = [
+    93,
+    139,
+    152,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    85,
+    112,
+    160,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    132,
+    177,
+    68,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    80,
+    190,
+    180,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    46,
+    199,
+    184,
+]

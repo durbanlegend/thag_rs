@@ -7,7 +7,7 @@ use dashu::integer::IBig;
 use itertools::iterate;
 use std::iter::successors;
 
-//// Windows-friendly version of fib_fac.rs. It lists the first 51 fibonacci numbers
+/// Windows-friendly version of fib_fac.rs. It lists the first 51 fibonacci numbers
 /// (0..50), followed by the first 51 factorials.
 ///
 /// See https://en.wikipedia.org/wiki/Fibonacci_sequence.

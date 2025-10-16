@@ -1,0 +1,133 @@
+name = "Gotham Base16"
+description = "Converted from Gotham theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0c1014"]
+bg_rgbs = [[
+    12,
+    16,
+    20,
+]]
+
+[palette.heading1]
+rgb = [
+    155,
+    159,
+    183,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    142,
+    145,
+    171,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    77,
+    235,
+    196,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    240,
+    131,
+    123,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    234,
+    146,
+    104,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    211,
+    235,
+    233,
+]
+
+[palette.info]
+rgb = [
+    106,
+    202,
+    232,
+]
+
+[palette.emphasis]
+rgb = [
+    246,
+    194,
+    92,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    91,
+    221,
+    189,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    153,
+    200,
+    211,
+]
+
+[palette.subtle]
+rgb = [
+    120,
+    146,
+    192,
+]
+
+[palette.hint]
+rgb = [
+    77,
+    190,
+    235,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    88,
+    193,
+    224,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    101,
+    186,
+    212,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    153,
+    209,
+    206,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    77,
+    171,
+    235,
+]

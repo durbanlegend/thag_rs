@@ -1,0 +1,133 @@
+name = "iA Light Base16"
+description = "Converted from iA Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f6f6f6"]
+bg_rgbs = [[
+    246,
+    246,
+    246,
+]]
+
+[palette.heading1]
+rgb = [
+    155,
+    57,
+    138,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    139,
+    108,
+    55,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    45,
+    107,
+    177,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    156,
+    90,
+    2,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    201,
+    53,
+    11,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    93,
+    93,
+    93,
+]
+
+[palette.info]
+rgb = [
+    42,
+    161,
+    169,
+]
+
+[palette.emphasis]
+rgb = [
+    197,
+    127,
+    15,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    45,
+    107,
+    177,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    24,
+    24,
+    24,
+]
+
+[palette.subtle]
+rgb = [
+    119,
+    119,
+    119,
+]
+
+[palette.hint]
+rgb = [
+    119,
+    119,
+    119,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    118,
+    118,
+    118,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    56,
+    120,
+    28,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    131,
+    131,
+    131,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    24,
+    167,
+    213,
+]

@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
-*/
-
 /// Partially worked-out solution to colouring and styling messages based on the level of
 /// colour support of the current terminal and whether a light or dark theme is currently
 /// selected. This was the interim result of a dialog with ChatGPT to figure out a solution

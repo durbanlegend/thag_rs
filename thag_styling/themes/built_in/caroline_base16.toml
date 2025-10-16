@@ -1,0 +1,133 @@
+name = "caroline Base16"
+description = "Converted from caroline theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1c1213"]
+bg_rgbs = [[
+    28,
+    18,
+    19,
+]]
+
+[palette.heading1]
+rgb = [
+    220,
+    132,
+    152,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    201,
+    126,
+    132,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    167,
+    160,
+    161,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    227,
+    150,
+    156,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    224,
+    128,
+    150,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    237,
+    169,
+    140,
+]
+
+[palette.info]
+rgb = [
+    191,
+    161,
+    175,
+]
+
+[palette.emphasis]
+rgb = [
+    242,
+    129,
+    113,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    166,
+    160,
+    161,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    210,
+    176,
+    168,
+]
+
+[palette.subtle]
+rgb = [
+    195,
+    131,
+    134,
+]
+
+[palette.hint]
+rgb = [
+    194,
+    135,
+    132,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    195,
+    139,
+    132,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    177,
+    159,
+    149,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    197,
+    141,
+    123,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    194,
+    135,
+    133,
+]

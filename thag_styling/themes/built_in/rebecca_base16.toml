@@ -1,0 +1,133 @@
+name = "Rebecca Base16"
+description = "Converted from Rebecca theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#292a44"]
+bg_rgbs = [[
+    41,
+    42,
+    68,
+]]
+
+[palette.heading1]
+rgb = [
+    165,
+    192,
+    250,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    249,
+    141,
+    203,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    147,
+    184,
+    243,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    206,
+    206,
+    228,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    237,
+    167,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    217,
+    211,
+    222,
+]
+
+[palette.info]
+rgb = [
+    165,
+    250,
+    223,
+]
+
+[palette.emphasis]
+rgb = [
+    195,
+    165,
+    250,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    157,
+    186,
+    232,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    241,
+    239,
+    248,
+]
+
+[palette.subtle]
+rgb = [
+    195,
+    150,
+    240,
+]
+
+[palette.hint]
+rgb = [
+    177,
+    177,
+    213,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    173,
+    173,
+    217,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    141,
+    249,
+    226,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    204,
+    204,
+    255,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    170,
+    172,
+    219,
+]

@@ -13,8 +13,6 @@ spin1 = { package = "spin", version = "0.9.8", features = ["mutex"] }
 futures-sink = { version = "0.3", default-features = false, optional = true }
 futures-core = { version = "0.3", default-features = false, optional = true }
 nanorand = { version = "0.7", features = ["getrandom"], optional = true }
-flume = "0.11"
-rustix = "0.37.19"
 */
 
 /// Published example from the `flume` channel crate.

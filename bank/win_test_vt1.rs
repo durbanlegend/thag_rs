@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-# crossterm = "0.28.1"
+# crossterm = "0.29"
 winapi = { version = "0.3.9", features = ["consoleapi", "handleapi", "processenv", "winbase"] }
 */
 
@@ -95,9 +95,8 @@ fn main() -> Result<()> {
     )?;
 
     // print!("Setting background color: \x1B]11;rgb:00/00/00;\x07"); // ANSI sequence for querying background
-                                                        // print!("Querying background color: \x1B]11;rgb:00/00/00;\x07"); // ANSI sequence for querying background
+    // print!("Querying background color: \x1B]11;rgb:00/00/00;\x07"); // ANSI sequence for querying background
     stdout.flush().unwrap();
-
 
     // Query foreground and background colors (using ANSI sequences)
     println!("\nQuerying terminal for colors and cursor position...");

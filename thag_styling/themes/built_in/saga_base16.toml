@@ -1,0 +1,133 @@
+name = "SAGA Base16"
+description = "Converted from SAGA theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#05080a"]
+bg_rgbs = [[
+    5,
+    8,
+    10,
+]]
+
+[palette.heading1]
+rgb = [
+    220,
+    195,
+    249,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    246,
+    221,
+    221,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    197,
+    237,
+    193,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    212,
+    233,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    251,
+    203,
+    174,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    204,
+    211,
+    254,
+]
+
+[palette.info]
+rgb = [
+    201,
+    255,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    251,
+    235,
+    200,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    197,
+    237,
+    193,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    220,
+    226,
+    247,
+]
+
+[palette.subtle]
+rgb = [
+    94,
+    158,
+    201,
+]
+
+[palette.hint]
+rgb = [
+    96,
+    156,
+    200,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    97,
+    154,
+    198,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    247,
+    221,
+    255,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    248,
+    234,
+    231,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    94,
+    158,
+    201,
+]

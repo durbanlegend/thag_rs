@@ -1,9 +1,4 @@
-/*[toml]
-[dependencies]
-crossterm = "0.28.1"
-*/
-
-/// Published example from crossterm crate.
+/// Published example from the `crossterm` crate.
 ///
 /// Url: https://github.com/crossterm-rs/crossterm/blob/master/examples/event-read.rs
 /// "Demonstrates how to block read events."

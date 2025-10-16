@@ -1,0 +1,133 @@
+name = "Da One Ocean Base16"
+description = "Converted from Da One Ocean theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#171726"]
+bg_rgbs = [[
+    23,
+    23,
+    38,
+]]
+
+[palette.heading1]
+rgb = [
+    231,
+    153,
+    255,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    208,
+    152,
+    134,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    138,
+    245,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    143,
+    152,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    255,
+    195,
+    135,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    119,
+    186,
+    248,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    152,
+    119,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    138,
+    245,
+    255,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.subtle]
+rgb = [
+    135,
+    148,
+    207,
+]
+
+[palette.hint]
+rgb = [
+    162,
+    169,
+    179,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    200,
+    200,
+    200,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    165,
+    206,
+    135,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    255,
+    255,
+    255,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    157,
+    165,
+    184,
+]

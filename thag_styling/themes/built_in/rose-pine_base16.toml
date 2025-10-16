@@ -1,0 +1,133 @@
+name = "Rosé Pine Base16"
+description = "Converted from Rosé Pine theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#191724"]
+bg_rgbs = [[
+    25,
+    23,
+    36,
+]]
+
+[palette.heading1]
+rgb = [
+    248,
+    193,
+    117,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    160,
+    157,
+    182,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    156,
+    207,
+    216,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    141,
+    172,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    193,
+    117,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    188,
+    186,
+    205,
+]
+
+[palette.info]
+rgb = [
+    196,
+    167,
+    231,
+]
+
+[palette.emphasis]
+rgb = [
+    235,
+    188,
+    186,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    156,
+    207,
+    216,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    224,
+    222,
+    244,
+]
+
+[palette.subtle]
+rgb = [
+    148,
+    141,
+    199,
+]
+
+[palette.hint]
+rgb = [
+    159,
+    155,
+    185,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    156,
+    151,
+    189,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    124,
+    189,
+    216,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    224,
+    222,
+    244,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    146,
+    138,
+    201,
+]

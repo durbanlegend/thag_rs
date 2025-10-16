@@ -1,0 +1,133 @@
+name = "iA Dark Base16"
+description = "Converted from iA Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1a1a1a"]
+bg_rgbs = [[
+    26,
+    26,
+    26,
+]]
+
+[palette.heading1]
+rgb = [
+    199,
+    159,
+    192,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    209,
+    177,
+    124,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    137,
+    174,
+    196,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    236,
+    170,
+    147,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    233,
+    125,
+    125,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    248,
+    248,
+    248,
+]
+
+[palette.info]
+rgb = [
+    142,
+    204,
+    221,
+]
+
+[palette.emphasis]
+rgb = [
+    214,
+    188,
+    144,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    143,
+    173,
+    189,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    204,
+    204,
+    204,
+]
+
+[palette.subtle]
+rgb = [
+    166,
+    166,
+    166,
+]
+
+[palette.hint]
+rgb = [
+    166,
+    166,
+    166,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    184,
+    184,
+    184,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    160,
+    188,
+    145,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    232,
+    232,
+    232,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    106,
+    196,
+    227,
+]

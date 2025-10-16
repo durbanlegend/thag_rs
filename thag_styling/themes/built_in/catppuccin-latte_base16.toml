@@ -1,0 +1,133 @@
+name = "Catppuccin Latte Base16"
+description = "Converted from Catppuccin Latte theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#eff1f5"]
+bg_rgbs = [[
+    239,
+    241,
+    245,
+]]
+
+[palette.heading1]
+rgb = [
+    90,
+    10,
+    193,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    190,
+    39,
+    39,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    23,
+    146,
+    153,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    169,
+    9,
+    43,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    193,
+    77,
+    10,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    9,
+    33,
+    169,
+]
+
+[palette.info]
+rgb = [
+    10,
+    72,
+    193,
+]
+
+[palette.emphasis]
+rgb = [
+    188,
+    116,
+    16,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    23,
+    146,
+    153,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    72,
+    75,
+    106,
+]
+
+[palette.subtle]
+rgb = [
+    77,
+    102,
+    152,
+]
+
+[palette.hint]
+rgb = [
+    91,
+    103,
+    138,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    94,
+    103,
+    135,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    64,
+    160,
+    43,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    210,
+    75,
+    45,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    87,
+    103,
+    142,
+]

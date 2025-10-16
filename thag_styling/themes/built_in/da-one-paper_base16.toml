@@ -1,0 +1,133 @@
+name = "Da One Paper Base16"
+description = "Converted from Da One Paper theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#faf0dc"]
+bg_rgbs = [[
+    250,
+    240,
+    220,
+]]
+
+[palette.heading1]
+rgb = [
+    129,
+    42,
+    147,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    154,
+    84,
+    61,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    54,
+    161,
+    142,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    147,
+    17,
+    34,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    180,
+    52,
+    9,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    0,
+    0,
+    0,
+]
+
+[palette.info]
+rgb = [
+    9,
+    69,
+    180,
+]
+
+[palette.emphasis]
+rgb = [
+    136,
+    74,
+    53,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    66,
+    149,
+    135,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    24,
+    24,
+    24,
+]
+
+[palette.subtle]
+rgb = [
+    108,
+    108,
+    108,
+]
+
+[palette.hint]
+rgb = [
+    88,
+    88,
+    88,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    40,
+    40,
+    40,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    96,
+    143,
+    72,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    0,
+    0,
+    0,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    108,
+    108,
+    108,
+]

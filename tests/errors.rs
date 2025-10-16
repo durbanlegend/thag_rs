@@ -1,9 +1,8 @@
-// tests/errors.rs
-
 use clap::{Arg, Command};
 use std::error::Error;
 use std::ffi::OsString;
 use std::io;
+use std::sync::Once;
 use strum::ParseError as StrumParseError;
 use toml::de::Error as TomlDeError;
 use toml::ser::Error as TomlSerError;
@@ -12,15 +11,18 @@ use thag_rs::errors::ThagError;
 
 // Set environment variables before running tests
 fn set_up() {
-    std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    static INIT: Once = Once::new();
+    INIT.call_once(|| unsafe {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    });
 }
 
 #[test]
 fn test_errors_io_error() {
     set_up();
-    let io_err = io::Error::new(io::ErrorKind::Other, "I/O error occurred");
+    let io_err = io::Error::other("I/O error occurred");
     let build_run_err: ThagError = io_err.into();
     match build_run_err {
         ThagError::Io(_) => (),
@@ -37,6 +39,7 @@ fn test_errors_clap_error() {
         .unwrap_err();
     let build_run_err: ThagError = clap_err.into();
     match build_run_err {
+        #[cfg(feature = "clap")]
         ThagError::ClapError(_) => (),
         _ => panic!("Expected ThagError::ClapError variant"),
     }
@@ -111,7 +114,7 @@ fn test_errors_display() {
 #[test]
 fn test_errors_source() {
     set_up();
-    let io_err = io::Error::new(io::ErrorKind::Other, "I/O error occurred");
+    let io_err = io::Error::other("I/O error occurred");
     let build_run_err: ThagError = io_err.into();
     assert!(build_run_err.source().is_some());
 }

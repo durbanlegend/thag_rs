@@ -1,0 +1,133 @@
+name = "Decaf Base16"
+description = "Converted from Decaf theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2d2d2d"]
+bg_rgbs = [[
+    45,
+    45,
+    45,
+]]
+
+[palette.heading1]
+rgb = [
+    239,
+    179,
+    247,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    255,
+    147,
+    179,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    190,
+    214,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    173,
+    171,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    203,
+    147,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    159,
+    203,
+    237,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    217,
+    147,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    190,
+    214,
+    255,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    211,
+    211,
+    211,
+]
+
+[palette.subtle]
+rgb = [
+    185,
+    185,
+    185,
+]
+
+[palette.hint]
+rgb = [
+    185,
+    185,
+    185,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    183,
+    187,
+    183,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    204,
+    229,
+    142,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    224,
+    224,
+    224,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    185,
+    185,
+    185,
+]

@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-terminal-light = "1.4.0"
-*/
-
 /// This seems to "reliably" swallow the very first character entered in Window, prior to `termbg` 0.6.0..
 //# Purpose: Show how crates sending an OSC to the terminal in Windows will not get a response and will unintentionally "steal" your first character instead.
 //# Categories: testing

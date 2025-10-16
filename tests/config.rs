@@ -1,22 +1,29 @@
 #[cfg(test)]
 mod tests {
+    use std::{env::current_dir, path::PathBuf, sync::Arc, sync::Once};
+    use tempfile::TempDir;
+    use thag_proc_macros::safe_eprintln;
+    use thag_rs::{
+        config::{
+            self, validate_config_format, Config, Dependencies, FeatureOverride, MockContext,
+            RealContext,
+        },
+        load, ColorSupport, Context, TermBgLuma, ThagResult, Verbosity,
+    };
+
     #[cfg(feature = "simplelog")]
     use simplelog::{
-        ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+        ColorChoice, CombinedLogger, LevelFilter, TermLogger, TerminalMode, WriteLogger,
     };
-    use std::sync::Arc;
-    use std::{env::current_dir, path::PathBuf};
+
     #[cfg(feature = "simplelog")]
-    use std::{fs::File, sync::OnceLock};
-    use thag_rs::{
-        colors::{ColorSupport, TermTheme},
-        config::{
-            self, validate_config_format, Dependencies, FeatureOverride, MockContext, RealContext,
-        },
-        debug_log, load,
-        logging::Verbosity,
-        Context,
-    };
+    use std::fs::File;
+
+    #[cfg(feature = "simplelog")]
+    use std::sync::OnceLock;
+
+    #[cfg(feature = "simplelog")]
+    use thag_rs::debug_log;
 
     #[cfg(feature = "simplelog")]
     static LOGGER: OnceLock<()> = OnceLock::new();
@@ -28,31 +35,29 @@ mod tests {
             CombinedLogger::init(vec![
                 TermLogger::new(
                     LevelFilter::Debug,
-                    Config::default(),
+                    simplelog::Config::default(),
                     TerminalMode::Mixed,
                     ColorChoice::Auto,
                 ),
                 WriteLogger::new(
                     LevelFilter::Debug,
-                    Config::default(),
+                    simplelog::Config::default(),
                     File::create("app.log").unwrap(),
                 ),
             ])
             .unwrap();
             debug_log!("Initialized simplelog");
         });
-
-        #[cfg(not(feature = "simplelog"))] // This will use env_logger if simplelog is not active
-        {
-            let _ = env_logger::builder().is_test(true).try_init();
-        }
     }
 
     // Set environment variables before running tests
     fn set_up() {
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| unsafe {
+            std::env::set_var("TEST_ENV", "1");
+            std::env::set_var("VISUAL", "cat");
+            std::env::set_var("EDITOR", "cat");
+        });
     }
 
     #[test]
@@ -81,8 +86,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(config.logging.default_verbosity, Verbosity::Normal);
-        assert_eq!(config.colors.color_support, ColorSupport::default());
-        assert_eq!(config.colors.term_theme, TermTheme::default());
+        assert_eq!(config.styling.color_support, ColorSupport::default());
+        assert_eq!(config.styling.term_bg_luma, TermBgLuma::default());
     }
 
     #[test]
@@ -116,7 +121,7 @@ mod tests {
     fn test_config_load_config_invalid_format() {
         set_up();
         init_logger();
-        let config_content = r#"invalid = toml"#;
+        let config_content = "invalid = toml";
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let config_path = temp_dir.path().join("config.toml");
         std::fs::write(&config_path, config_content).expect("Failed to write to temp config file");
@@ -136,8 +141,9 @@ mod tests {
         };
 
         let config = load(&get_context());
-        // eprintln!("config={config:#?}");
-        assert!(config.is_err());
+        // It's expected to fall back to a partial config now.
+        assert!(config.is_ok());
+        safe_eprintln!("config={config:#?}");
     }
 
     // #[ignore = "Opens file and expects human interaction"]
@@ -154,14 +160,41 @@ mod tests {
             .return_const(config_path.clone());
         mock_context.expect_is_real().return_const(false);
 
-        let result = config::edit(&mock_context).expect("Failed to edit config");
+        let result = config::open(&mock_context).expect("Failed to edit config");
 
         assert!(config_path.exists(), "Config file should be created");
         let config_content =
             std::fs::read_to_string(&config_path).expect("Failed to read config file");
+        // safe_eprintln!("config_content={config_content}");
+        #[cfg(target_os = "windows")]
         assert!(
-            config_content.contains("Please set up the config file as follows"),
-            "Config file should contain the template text"
+            config_content.contains("[dependencies.feature_overrides.syn]"),
+            "Config file should contain the expected `syn` crate overrides"
+        );
+        #[cfg(target_os = "windows")]
+        assert!(
+            config_content.contains("[dependencies.feature_overrides.syn]"),
+            "Config file should contain the expected `syn` crate overrides"
+        );
+        #[cfg(target_os = "windows")]
+        assert!(
+            config_content.contains("visit-mut"),
+            "Config file should contain the expected `syn` crate overrides"
+        );
+        #[cfg(not(target_os = "windows"))]
+        assert!(
+            config_content.contains(
+                r#"[dependencies.feature_overrides.syn]
+required_features = [
+    "extra-traits",
+    "fold",
+    "full",
+    "parsing",
+    "visit",
+    "visit-mut",
+]"#
+            ),
+            "Config file should contain the expected `syn` crate overrides"
         );
         assert_eq!(result, Some(String::from("End of edit")));
     }
@@ -169,11 +202,13 @@ mod tests {
     fn create_test_config() -> Dependencies {
         set_up();
         init_logger();
-        let mut config = Dependencies::default();
-        config.exclude_unstable_features = true;
-        config.exclude_std_feature = true;
-        config.global_excluded_features = vec!["default".to_string(), "sqlite".to_string()];
-        config.always_include_features = vec!["derive".to_string()];
+        let mut config = thag_rs::Dependencies {
+            exclude_unstable_features: true,
+            exclude_std_feature: true,
+            global_excluded_features: vec!["default".to_string(), "sqlite".to_string()],
+            always_include_features: vec!["derive".to_string()],
+            ..Default::default()
+        };
 
         let rustyline_override = FeatureOverride {
             excluded_features: Some(vec!["with-sqlite-history".to_string()]),
@@ -202,7 +237,7 @@ mod tests {
         assert!(!filtered.contains(&"default".to_string()));
         assert!(filtered.contains(&"derive".to_string())); // Always included
         assert!(!filtered.contains(&"std".to_string()));
-        eprintln!("config={}", toml::to_string_pretty(&config).unwrap());
+        safe_eprintln!("config={}", toml::to_string_pretty(&config).unwrap());
     }
 
     #[test]
@@ -260,5 +295,33 @@ mod tests {
         "#;
 
         assert!(validate_config_format(invalid_config).is_err());
+    }
+
+    #[test]
+    fn test_config_load_or_create_default_when_config_doesnt_exist() -> ThagResult<()> {
+        // Create a temporary directory that will be automatically cleaned up when the test ends
+        let temp_dir = TempDir::new()?;
+        let mut mock_context = MockContext::new();
+
+        // Set up the config path inside the temporary directory
+        let config_path = temp_dir.path().join("thag_rs").join("config.toml");
+
+        mock_context
+            .expect_get_config_path()
+            .return_const(config_path.clone());
+
+        mock_context.expect_is_real().return_const(false);
+
+        let maybe_config = Config::load_or_create_default(&mock_context);
+
+        assert!(
+            maybe_config.is_ok(),
+            "Expected Ok result, got {:?}",
+            maybe_config
+        );
+        assert!(config_path.exists(), "Config file was not created");
+
+        // TempDir will automatically clean up when it goes out of scope
+        Ok(())
     }
 }

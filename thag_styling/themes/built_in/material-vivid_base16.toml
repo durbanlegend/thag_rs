@@ -1,0 +1,133 @@
+name = "Material Vivid Base16"
+description = "Converted from Material Vivid theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#202124"]
+bg_rgbs = [[
+    32,
+    33,
+    36,
+]]
+
+[palette.heading1]
+rgb = [
+    176,
+    148,
+    226,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    190,
+    167,
+    159,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    110,
+    224,
+    239,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    157,
+    150,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    199,
+    126,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    126,
+    194,
+    248,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    236,
+    126,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    102,
+    230,
+    247,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    197,
+    200,
+    203,
+]
+
+[palette.subtle]
+rgb = [
+    167,
+    173,
+    182,
+]
+
+[palette.hint]
+rgb = [
+    167,
+    170,
+    182,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    169,
+    174,
+    180,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    102,
+    247,
+    176,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    162,
+    162,
+    162,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    166,
+    175,
+    182,
+]

@@ -1,0 +1,133 @@
+name = "Equilibrium Gray Light Base16"
+description = "Converted from Equilibrium Gray Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f1f1f1"]
+bg_rgbs = [[
+    241,
+    241,
+    241,
+]]
+
+[palette.heading1]
+rgb = [
+    55,
+    76,
+    147,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    197,
+    30,
+    113,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    0,
+    122,
+    114,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    165,
+    11,
+    13,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    191,
+    62,
+    5,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    27,
+    27,
+    27,
+]
+
+[palette.info]
+rgb = [
+    0,
+    115,
+    181,
+]
+
+[palette.emphasis]
+rgb = [
+    157,
+    111,
+    0,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    0,
+    122,
+    114,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    71,
+    71,
+    71,
+]
+
+[palette.subtle]
+rgb = [
+    114,
+    114,
+    114,
+]
+
+[palette.hint]
+rgb = [
+    114,
+    114,
+    114,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    94,
+    94,
+    94,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    99,
+    114,
+    0,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    48,
+    48,
+    48,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    114,
+    114,
+    114,
+]

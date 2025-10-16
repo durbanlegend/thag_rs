@@ -2,7 +2,8 @@
 /// to `rust-script`'s `--loop` or `runner`'s `--lines`. Might go with
 /// the latter since I'm not sure what the closure logic buys us. It's
 /// going to be checked by the compiler anyway. Compare with `demo/loop_expr.rs`.
-/// P.S.: This was since implemented as `--loop`.
+///
+/// P.S.: The `--loop` option has since been implemented in `thag(_rs)`, without closure logic.
 //# Purpose: Evaluate closure logic for line processing.
 //# Categories: exploration, technique
 use std::io::Read;

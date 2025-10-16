@@ -1,15 +1,10 @@
-/*[toml]
-[dependencies]
-ibig = "0.3.6"
-*/
-
 /// A curiosity: In this version I tried doubling up the doubling technique by
 /// deriving formulae for F4n and F4n+1 in terms of Fn and Fn+1, but it didn't
 /// pay off in terms of speed. It's good to test the limits, but for practical
 /// purposes stick to the doubling algorithm.
 ///
 //# Purpose: Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization.
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::{ibig, IBig};
 use std::collections::HashMap;

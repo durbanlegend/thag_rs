@@ -1,14 +1,13 @@
 /*[toml]
 [dependencies]
-env_logger = "0.11.3"
-rustyline = { version = "14.0.0", features=["with-file-history", "default", "derive"] }
+rustyline = { version = "=14", features=["with-file-history", "default", "derive"] }
 */
 
 /// Example from `rustyline` crate readme.
 /// MatchingBracketValidator uses matching brackets to decide between single- and multi-line
 /// input.
 //# Purpose: Explore `rustyline` crate.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rustyline::completion::FilenameCompleter;

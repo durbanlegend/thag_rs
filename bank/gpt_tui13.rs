@@ -55,7 +55,7 @@ fn reset_stdin() {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 1: Read from stdin if there's any input
-    let initial_content = read_from_stdin().unwrap_or_else(|_| "".to_string());
+    let initial_content = read_from_stdin().unwrap_or_else(|_| String::new());
 
     // Step 2: Reset stdin state to ensure no leftover input remains
     reset_stdin();

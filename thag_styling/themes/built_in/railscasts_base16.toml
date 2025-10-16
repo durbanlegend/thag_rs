@@ -1,0 +1,133 @@
+name = "Railscasts Base16"
+description = "Converted from Railscasts theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2b2b2b"]
+bg_rgbs = [[
+    43,
+    43,
+    43,
+]]
+
+[palette.heading1]
+rgb = [
+    182,
+    179,
+    235,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    217,
+    190,
+    150,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    151,
+    216,
+    150,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    178,
+    171,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    238,
+    192,
+    154,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    249,
+    247,
+    243,
+]
+
+[palette.info]
+rgb = [
+    169,
+    200,
+    223,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    208,
+    143,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    158,
+    209,
+    157,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    230,
+    225,
+    220,
+]
+
+[palette.subtle]
+rgb = [
+    167,
+    172,
+    200,
+]
+
+[palette.hint]
+rgb = [
+    165,
+    175,
+    201,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    212,
+    207,
+    201,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    197,
+    218,
+    148,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    244,
+    241,
+    237,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    163,
+    172,
+    204,
+]

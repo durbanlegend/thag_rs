@@ -1,0 +1,40 @@
+# Example thag configuration with theme_dir setting
+# This file demonstrates how to configure thag to use custom themes from a user directory
+#
+# To use this configuration:
+# 1. Copy this file to ~/.config/thag/config.toml (or your platform's config directory)
+# 2. Modify the theme_dir path to point to your custom themes directory
+# 3. Place your .toml theme files in that directory
+# 4. Use THAG_THEME=your-theme-name to select custom themes
+
+[styling]
+# Directory where your custom theme files are stored
+# This can be overridden by the THAG_THEME_DIR environment variable
+theme_dir = "/Users/username/.config/thag/themes"
+
+# Optional: Set color support level (basic, color256, true_color, or leave for auto-detection)
+# color_support = "true_color"
+
+# Optional: Override terminal background detection
+# term_bg_luma = "dark"  # or "light"
+# term_bg_rgb = [40, 44, 52]  # RGB values if known
+
+# Theme preferences for auto-detection (these work with both builtin and custom themes)
+preferred_dark = ["my-custom-dark", "dracula", "nord"]
+preferred_light = ["my-custom-light", "github", "one-light"]
+
+# Fallback themes if preferred themes don't match
+fallback_dark = ["basic_dark"]
+fallback_light = ["basic_light"]
+
+[logging]
+# Set default verbosity level
+default_verbosity = "info"
+
+[dependencies]
+# Dependency inference settings
+inference_level = "config"
+
+[misc]
+# Remove quotes from string outputs
+unquote = true

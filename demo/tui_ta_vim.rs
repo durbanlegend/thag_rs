@@ -1,16 +1,9 @@
-/*[toml]
-[dependencies]
-# crossterm = "0.28.1"
-ratatui = "0.28.1"
-tui-textarea = { version = "0.6.1", features = ["crossterm", "search"] }
-*/
-
 /// Published basic `vim` editor example from crate `tui-textarea`. Mildly tweaked
 /// to use `ratatui::crossterm` re-exports instead of `crossterm` directly.
 //# Purpose: Demo TUI `vim` editor and featured crates, including `crossterm`.
 ///
 /// Not suitable for running from a URL.
-//# Categories: crates
+//# Categories: crates, tui
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use ratatui::crossterm::terminal::{

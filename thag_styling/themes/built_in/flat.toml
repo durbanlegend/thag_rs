@@ -1,0 +1,133 @@
+name = "Flat"
+description = "Converted from Flat theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#082845"]
+bg_rgbs = [[
+    8,
+    40,
+    69,
+]]
+
+[palette.heading1]
+rgb = [
+    212,
+    141,
+    242,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    236,
+    123,
+    122,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    240,
+    120,
+    118,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    246,
+    165,
+    163,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    201,
+    134,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    231,
+    236,
+    237,
+]
+
+[palette.info]
+rgb = [
+    149,
+    186,
+    234,
+]
+
+[palette.emphasis]
+rgb = [
+    148,
+    186,
+    235,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    134,
+    224,
+    193,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    200,
+    204,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    132,
+    158,
+    225,
+]
+
+[palette.hint]
+rgb = [
+    162,
+    177,
+    195,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    169,
+    178,
+    188,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    134,
+    224,
+    151,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    176,
+    182,
+    186,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    156,
+    156,
+    202,
+]

@@ -1,0 +1,77 @@
+# Light0_hard: #f9f5d7 (Hardest contrast background)
+# Light0:      #fbf1c7 (Default contrast background)
+# Light1:      #ebdbb2
+# Light2:      #d5c4a1
+# Light3:      #bdae93
+# Light4:      #a89984 (Softest contrast)
+#
+# Foreground Colors:
+# Dark0_hard:  #1d2021 (Hardest contrast)
+# Dark0:       #282828 (Default contrast)
+# Dark1:       #3c3836
+# Dark2:       #504945
+# Dark3:       #665c54
+# Dark4:       #7c6f64 (Softest contrast)
+#
+# Bright Colors:
+# Bright Red:    #9d0006
+# Bright Green:  #79740e
+# Bright Yellow: #b57614
+# Bright Blue:   #076678
+# Bright Purple: #8f3f71
+# Bright Aqua:   #427b58
+# Bright Orange: #af3a03
+#
+# Regular Colors:
+# Red:     #cc241d
+# Green:   #98971a
+# Yellow:  #d79921
+# Blue:    #458588
+# Purple:  #b16286
+# Aqua:    #689d6a
+# Orange:  #d65d0e
+#
+# Gray:
+# Gray: #928374
+
+name = "Gruvbox Light Hard"
+description = "Light theme with high contrast and warm colors"
+term_bg_luma = "light"
+min_color_support = "true_color"
+# List of known backgrounds with optional comments
+backgrounds = [
+    "#f9f5d7", # Official
+    "#d9c8a4", # Zed Terminal
+    "#fbf1c7", # Alternative light
+]
+
+[palette]
+# Headers and Structure
+heading1 = { rgb = [157, 0, 6], style = ["bold"] }    # Bright Red
+heading2 = { rgb = [121, 116, 14], style = ["bold"] } # Bright Yellow
+heading3 = { rgb = [66, 123, 88], style = ["bold"] }  # Bright Green
+
+# Status/Alerts
+error = { rgb = [204, 36, 29] }    # Red
+warning = { rgb = [181, 118, 20] } # Yellow
+success = { rgb = [121, 116, 14] } # Bright Yellow
+info = { rgb = [7, 102, 120] }     # Blue
+
+# Emphasis levels
+emphasis = { rgb = [146, 60, 131] }                  # Purple
+code = { rgb = [66, 123, 88] }                       # Green
+normal = { rgb = [60, 56, 54] }                      # Dark Gray
+subtle = { rgb = [102, 92, 84] }                     # Medium Gray
+hint = { rgb = [146, 131, 116], style = ["italic"] } # Light Gray
+
+# Development
+debug = { rgb = [168, 153, 132] } # Gray
+link = { rgb = [204, 36, 29] } # Red for links
+quote = { rgb = [189, 174, 147] } # Light Gray for quotes
+commentary = { rgb = [
+    168,
+    153,
+    132,
+], style = [
+    "dim",
+] } # Gray dim for commentary

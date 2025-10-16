@@ -1,7 +1,9 @@
 #![allow(dead_code)]
-/// Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`
+/// Recycled test suite from `https://github.com/redmcg/const_gen_proc_macro`,
+/// licensed under MIT and Apache-2 licences.
 //# Purpose: Demo the use of proc macros to generate constants at compile time
-// "use thag_demo_proc_macros..." is a magic import that will be substituted by proc_macros.proc_macro_crate_path
+//# Categories: proc_macros, technique
+// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
 // in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_demo_proc_macros::const_demo;
 

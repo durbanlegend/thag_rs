@@ -1,0 +1,133 @@
+name = "Blue Forest Base16"
+description = "Converted from Blue Forest theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#141f2e"]
+bg_rgbs = [[
+    20,
+    31,
+    46,
+]]
+
+[palette.heading1]
+rgb = [
+    124,
+    198,
+    248,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    231,
+    231,
+    231,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    128,
+    255,
+    128,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    255,
+    250,
+    177,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    255,
+    128,
+    128,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    172,
+    195,
+    226,
+]
+
+[palette.info]
+rgb = [
+    162,
+    207,
+    245,
+]
+
+[palette.emphasis]
+rgb = [
+    145,
+    204,
+    255,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    128,
+    255,
+    128,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    249,
+    224,
+    148,
+]
+
+[palette.subtle]
+rgb = [
+    111,
+    236,
+    111,
+]
+
+[palette.hint]
+rgb = [
+    160,
+    255,
+    160,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    111,
+    236,
+    111,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    128,
+    255,
+    128,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    145,
+    204,
+    255,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    124,
+    167,
+    223,
+]

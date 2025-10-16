@@ -1,0 +1,133 @@
+name = "Material Darker Base16"
+description = "Converted from Material Darker theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#212121"]
+bg_rgbs = [[
+    33,
+    33,
+    33,
+]]
+
+[palette.heading1]
+rgb = [
+    199,
+    146,
+    234,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    247,
+    100,
+    124,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    137,
+    221,
+    255,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    249,
+    148,
+    154,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    152,
+    124,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    130,
+    170,
+    255,
+]
+
+[palette.emphasis]
+rgb = [
+    248,
+    204,
+    124,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    137,
+    221,
+    255,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    238,
+    255,
+    255,
+]
+
+[palette.subtle]
+rgb = [
+    173,
+    173,
+    173,
+]
+
+[palette.hint]
+rgb = [
+    173,
+    173,
+    173,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    178,
+    204,
+    214,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    195,
+    232,
+    141,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    238,
+    255,
+    255,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    173,
+    173,
+    173,
+]

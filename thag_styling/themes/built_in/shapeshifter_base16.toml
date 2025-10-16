@@ -1,0 +1,133 @@
+name = "Shapeshifter Base16"
+description = "Converted from Shapeshifter theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f9f9f9"]
+bg_rgbs = [[
+    249,
+    249,
+    249,
+]]
+
+[palette.heading1]
+rgb = [
+    207,
+    11,
+    161,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    105,
+    84,
+    45,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    24,
+    219,
+    200,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    182,
+    10,
+    10,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    201,
+    109,
+    16,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    0,
+    0,
+    0,
+]
+
+[palette.info]
+rgb = [
+    11,
+    26,
+    207,
+]
+
+[palette.emphasis]
+rgb = [
+    207,
+    207,
+    11,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    12,
+    231,
+    210,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    16,
+    32,
+    21,
+]
+
+[palette.subtle]
+rgb = [
+    122,
+    122,
+    122,
+]
+
+[palette.hint]
+rgb = [
+    85,
+    85,
+    85,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    52,
+    52,
+    52,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    14,
+    216,
+    57,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    4,
+    4,
+    4,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    122,
+    122,
+    122,
+]

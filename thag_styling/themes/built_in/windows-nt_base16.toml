@@ -1,0 +1,133 @@
+name = "Windows NT Base16"
+description = "Converted from Windows NT theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
+
+[palette.heading1]
+rgb = [
+    245,
+    61,
+    245,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    37,
+    244,
+    37,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    48,
+    232,
+    232,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    246,
+    85,
+    85,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    245,
+    245,
+    61,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    61,
+    61,
+    245,
+]
+
+[palette.emphasis]
+rgb = [
+    245,
+    245,
+    61,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    37,
+    244,
+    244,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    192,
+    192,
+    192,
+]
+
+[palette.subtle]
+rgb = [
+    140,
+    140,
+    140,
+]
+
+[palette.hint]
+rgb = [
+    140,
+    140,
+    140,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    161,
+    161,
+    161,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    37,
+    244,
+    37,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    224,
+    224,
+    224,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    140,
+    140,
+    140,
+]

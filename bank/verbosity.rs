@@ -8,7 +8,7 @@ ratatui = "=0.26.3"
 */
 
 use thag_rs::log;
-use thag_rs::logging::Verbosity;
+use thag_rs::Verbosity;
 
 fn main() {
     log!(Verbosity::Quiet, "Quiet message");

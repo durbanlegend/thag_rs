@@ -1,0 +1,133 @@
+name = "Zenbones Base16"
+description = "Converted from Zenbones theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#191919"]
+bg_rgbs = [[
+    25,
+    25,
+    25,
+]]
+
+[palette.heading1]
+rgb = [
+    142,
+    207,
+    214,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    165,
+    165,
+    165,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    93,
+    181,
+    237,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    194,
+    187,
+    189,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    232,
+    131,
+    143,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    191,
+    191,
+    191,
+]
+
+[palette.info]
+rgb = [
+    218,
+    138,
+    203,
+]
+
+[palette.emphasis]
+rgb = [
+    178,
+    204,
+    152,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    104,
+    179,
+    227,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    212,
+    170,
+    204,
+]
+
+[palette.subtle]
+rgb = [
+    222,
+    110,
+    124,
+]
+
+[palette.hint]
+rgb = [
+    214,
+    147,
+    116,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    107,
+    176,
+    223,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    222,
+    146,
+    108,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    118,
+    179,
+    187,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    164,
+    192,
+    138,
+]

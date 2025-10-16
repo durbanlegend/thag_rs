@@ -1,12 +1,11 @@
 /*[toml]
 [dependencies]
-env_logger = "0.11.3"
-rustyline = { version = "14.0.0", features=["with-file-history", "default", "derive", "rustyline-derive"] }
+rustyline = { version = "=14", features=["with-file-history", "default", "derive"] }
 */
 
 /// Published example from the `rustyline` crate.
 //# Purpose: Demo using `thag_rs` to run a basic REPL as a script.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rustyline::completion::FilenameCompleter;

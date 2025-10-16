@@ -1,7 +1,3 @@
-/*[toml]
-[dependencies]
-regex = "1.10.4"
-*/
 use regex::Regex;
 
 /// Prototype of extracting Cargo manifest metadata from source code using
@@ -17,8 +13,8 @@ fn extract_toml_block(input: &str) -> Option<String> {
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
 
-// Using the dodge of interpolating the toml literal here so as not to
-// break the script runner when it parses the source code for /*[toml].
+// Using the dodge of interpolating the toml literal here so as to prevent a
+// false positive when `thag` parses the source code looking for the toml block.
 fn main() {
     let input = format!(
         r#"/*[{}]

@@ -1,0 +1,133 @@
+name = "Stella Base16"
+description = "Converted from Stella theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2b213c"]
+bg_rgbs = [[
+    43,
+    33,
+    60,
+]]
+
+[palette.heading1]
+rgb = [
+    197,
+    148,
+    255,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    214,
+    190,
+    159,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    160,
+    214,
+    204,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    231,
+    204,
+    194,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    191,
+    169,
+    230,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    235,
+    220,
+    255,
+]
+
+[palette.info]
+rgb = [
+    176,
+    181,
+    223,
+]
+
+[palette.emphasis]
+rgb = [
+    219,
+    219,
+    180,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    166,
+    208,
+    200,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    211,
+    203,
+    221,
+]
+
+[palette.subtle]
+rgb = [
+    181,
+    161,
+    213,
+]
+
+[palette.hint]
+rgb = [
+    183,
+    172,
+    202,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    185,
+    173,
+    200,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    182,
+    208,
+    166,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    180,
+    165,
+    200,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    182,
+    167,
+    206,
+]

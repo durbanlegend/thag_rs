@@ -1,18 +1,10 @@
-/*[toml]
-[dependencies]
-darling = "0.20.10"
-proc-macro2 = "1.0.88"
-quote = "1.0.37"
-syn = "2.0.87"
-*/
-
 // The use of fields in debug print commands does not count as "used",
 // which causes the fields to trigger an unwanted dead code warning.
 #![allow(dead_code)]
 
 // This example shows how to do struct and field parsing using darling.
 
-/// Published example from `darling` crate showing parsing for derive input.
+/// Published example from the `darling` crate showing parsing for derive input.
 /// Extended to show formatted version of emitted code.
 //# Purpose: Explore `darling` crate.
 //# Categories: crates, exploration, technique

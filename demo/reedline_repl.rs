@@ -1,11 +1,31 @@
-/*[toml]
-[dependencies]
-reedline-repl-rs = "1.1.1"
-*/
-
 /// Published example from `reedline-repl-rs` crate.
+///
+/// Sample invocation and dialogue:
+///
+/// ```bash
+/// thag demo/reedline_repl.rs
+/// Welcome to MyApp
+/// MyApp〉say hello World!
+/// Hello, World!
+/// MyApp〉say goodbye --spanish                                                                                                                                06/30/2025 02:13:40 PM
+/// Adiós!
+/// MyApp〉[Ctrl-D]
+/// $
+/// ```
+///
+/// The latest version of this example is available in the [examples] folder in the `reedline-repl-rs` repository.
+/// At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
+/// and passing the required arguments as normal, like this:
+///
+/// ```bash
+/// thag_url https://github.com/arturh85/reedline-repl-rs/blob/main/examples/subcommands.rs
+/// ```
+///
+/// This requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
+// Original `reedline-repl-rs` crate comments:
 // Subcommands example
 use reedline_repl_rs::clap::{Arg, ArgAction, ArgMatches, Command};
 use reedline_repl_rs::{Repl, Result};

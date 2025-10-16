@@ -1,7 +1,3 @@
-/*[toml]
-[dependencies]
-derive-deftly = "0.14.2"
-*/
 /// Introductory example from the `derive-deftly` user guide.
 //# Purpose: Explore proc macro alternatives.
 //# Categories: crates, exploration, technique

@@ -1,0 +1,133 @@
+name = "Atelier Dune Base16"
+description = "Converted from Atelier Dune theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#20201d"]
+bg_rgbs = [[
+    32,
+    32,
+    29,
+]]
+
+[palette.heading1]
+rgb = [
+    210,
+    136,
+    231,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    231,
+    111,
+    133,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    103,
+    238,
+    198,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    243,
+    149,
+    149,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    248,
+    173,
+    119,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    254,
+    251,
+    236,
+]
+
+[palette.info]
+rgb = [
+    126,
+    154,
+    241,
+]
+
+[palette.emphasis]
+rgb = [
+    247,
+    226,
+    120,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    106,
+    235,
+    197,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    205,
+    202,
+    187,
+]
+
+[palette.subtle]
+rgb = [
+    179,
+    176,
+    163,
+]
+
+[palette.hint]
+rgb = [
+    182,
+    179,
+    159,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    185,
+    180,
+    157,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    156,
+    217,
+    124,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    232,
+    228,
+    207,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    181,
+    177,
+    161,
+]

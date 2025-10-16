@@ -1,17 +1,11 @@
 /*[toml]
 [dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-color-eyre = "0.6.3"
-inquire = "0.7.5"
-interactive-clap = "0.3.1"
-shell-words = "1.1.0"
-strum = { version = "0.26.3", features = ["derive"] }
-strum_macros = "0.24"
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
-/// Published example from the `interactive-clap` crate. I've adapted the run instractions below for use with `thag_rs`:
+/// Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`, and added theming of the `inquire::Select` UI:
 ///
-/// This example shows additional functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
+/// This example shows further functionality of the "interactive-clap" macro for parsing command-line data into a structure using macro attributes.
 ///
 ///```
 /// thag demo/interactive_clap_adv_struct.rs (without parameters) => entered interactive mode
@@ -30,8 +24,9 @@ strum_macros = "0.24"
 //# Purpose: Demo featured crate.
 //# Categories: CLI, crates, technique
 use clap;
-use color_eyre;
-use inquire::Select;
+// `set_global_render_config` is for optional theming of `inquire::Select`.
+use inquire::{set_global_render_config, Select};
+
 use interactive_clap::{ResultFromCli, ToCliArgs};
 use shell_words;
 use strum::{EnumDiscriminants, EnumIter, EnumMessage, IntoEnumIterator};
@@ -156,6 +151,9 @@ impl std::fmt::Display for ColorPaletteDiscriminants {
 }
 
 fn main() -> color_eyre::Result<()> {
+    // For optional theming of `inquire::Select`.
+    set_global_render_config(thag_styling::themed_inquire_config());
+
     let mut cli_args = Args::parse();
     let context = (); // default: input_context = ()
     loop {

@@ -1,0 +1,133 @@
+name = "Purpledream Base16"
+description = "Converted from Purpledream theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#100510"]
+bg_rgbs = [[
+    16,
+    5,
+    16,
+]]
+
+[palette.heading1]
+rgb = [
+    221,
+    81,
+    246,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    200,
+    101,
+    129,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    67,
+    178,
+    234,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    115,
+    105,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    246,
+    219,
+    81,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    240,
+    255,
+]
+
+[palette.info]
+rgb = [
+    81,
+    191,
+    246,
+]
+
+[palette.emphasis]
+rgb = [
+    246,
+    81,
+    191,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    57,
+    182,
+    245,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    221,
+    208,
+    221,
+]
+
+[palette.subtle]
+rgb = [
+    182,
+    119,
+    182,
+]
+
+[palette.hint]
+rgb = [
+    165,
+    137,
+    165,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    187,
+    176,
+    187,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    57,
+    245,
+    139,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    238,
+    224,
+    238,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    173,
+    128,
+    173,
+]

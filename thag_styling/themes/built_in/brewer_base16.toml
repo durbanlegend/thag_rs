@@ -1,0 +1,133 @@
+name = "Brewer Base16"
+description = "Converted from Brewer theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0c0d0e"]
+bg_rgbs = [[
+    12,
+    13,
+    14,
+]]
+
+[palette.heading1]
+rgb = [
+    144,
+    136,
+    196,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    224,
+    133,
+    83,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    128,
+    177,
+    211,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    247,
+    110,
+    111,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    246,
+    139,
+    86,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    252,
+    253,
+    254,
+]
+
+[palette.info]
+rgb = [
+    103,
+    176,
+    229,
+]
+
+[palette.emphasis]
+rgb = [
+    229,
+    168,
+    103,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    128,
+    177,
+    211,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    183,
+    184,
+    185,
+]
+
+[palette.subtle]
+rgb = [
+    150,
+    153,
+    156,
+]
+
+[palette.hint]
+rgb = [
+    152,
+    153,
+    155,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    152,
+    153,
+    155,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    93,
+    213,
+    130,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    218,
+    219,
+    220,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    151,
+    153,
+    155,
+]

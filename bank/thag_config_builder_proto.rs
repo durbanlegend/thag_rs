@@ -4,7 +4,8 @@ colored = "2.1.0"
 dirs = "5.0"
 inquire = "0.7.5"
 semver = "1.0.23"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.219", features = ["derive"] }
+thag_rs = { path = "/Users/donf/projects/thag_rs", default-features = false, features = ["core", "simplelog"] }
 tokio = { version = "1", features = ["full"] }
 toml = "0.8"
 */
@@ -18,11 +19,11 @@ use inquire::validator::{StringValidator, Validation};
 use inquire::{Confirm, Select, Text};
 use serde::Serialize;
 use std::{fs, path::PathBuf};
-use syn::{parse_file, Attribute, Item, Meta};
 
 type Error = CustomUserError;
 
 // Custom validators
+#[allow(dead_code)]
 #[derive(Clone)]
 struct VersionValidator;
 
@@ -111,7 +112,7 @@ struct Colors {
     #[doc = "Color support level (auto, always, never)"]
     color_support: Option<String>,
     #[doc = "Terminal theme (dark, light)"]
-    term_theme: Option<String>,
+    term_bg_luma: Option<String>,
 }
 
 #[derive(Default, Serialize)]
@@ -153,6 +154,7 @@ struct FeatureOverride {
     required_features: Vec<String>,
 }
 
+#[allow(dead_code)]
 async fn prompt_feature_override() -> Result<(String, FeatureOverride), Box<dyn std::error::Error>>
 {
     let crate_name = Text::new("Crate name:")
@@ -291,17 +293,17 @@ fn prompt_colors_config_with_escape() -> Result<Option<Colors>, Box<dyn std::err
         return Ok(None);
     };
 
-    let term_theme = Select::new("Terminal theme:", vec!["dark", "light"])
+    let term_bg_luma = Select::new("Terminal theme:", vec!["dark", "light"])
         .with_help_message("Choose theme based on your terminal background")
         .prompt_skippable()?;
 
-    let Some(term_theme) = term_theme else {
+    let Some(term_bg_luma) = term_bg_luma else {
         return Ok(None);
     };
 
     Ok(Some(Colors {
         color_support: Some(color_support.to_string()),
-        term_theme: Some(term_theme.to_string()),
+        term_bg_luma: Some(term_bg_luma.to_string()),
     }))
 }
 

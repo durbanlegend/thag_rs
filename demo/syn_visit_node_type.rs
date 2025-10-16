@@ -1,10 +1,3 @@
-/*[toml]
-[dependencies]
-prettyplease = "0.2.25"
-quote = "1.0.37"
-syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visit", "visit-mut"] }
-*/
-
 /// Demo of selectively modifying source code using `syn` and `quote`. This is from a solution posted by user Yandros on the Rust Playground
 /// in answer to a question asked on the Rust users forum. The discussion and Playground link are to be found here:
 /// https://users.rust-lang.org/t/writing-proc-macros-with-syn-is-there-a-way-to-visit-parts-of-the-ast-that-match-a-given-format/54733/4
@@ -12,6 +5,7 @@ syn = { version = "2.0.90", features = ["extra-traits", "full", "parsing", "visi
 /// I've embellished it to show how it can be formatted with `prettyplease` if parsed as a `syn::File`.
 //# Purpose: Demo programmatically modifying Rust source code using `syn` and `quote`.
 //# Categories: AST, crates, technique
+use prettyplease;
 
 const INPUT_CODE: &str = stringify! {
     fn foobar() {
@@ -62,8 +56,8 @@ fn main() {
     println!("{}", code.clone().into_token_stream());
     println!();
 
-    // Note: dependency inference can't currently look inside the token stream
-    // of a macro to find a crate, so use a toml block or a use statement, or
-    // a variable assignment to prettyplease::unparse(&code) outside of the println!.
+    // Note: dependency inference can't currently look inside the token stream of a macro to find a crate,
+    // so to ensure prettyplease gets included in the manifest, use a toml block or a use statement, or a
+    // variable assignment to prettyplease::unparse(&code) outside of the println!.
     println!("{}", prettyplease::unparse(&code));
 }

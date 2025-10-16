@@ -1,0 +1,133 @@
+name = "vulcan Base16"
+description = "Converted from vulcan theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#041523"]
+bg_rgbs = [[
+    4,
+    21,
+    35,
+]]
+
+[palette.heading1]
+rgb = [
+    164,
+    171,
+    181,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    172,
+    149,
+    148,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    175,
+    146,
+    144,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    180,
+    182,
+    191,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    164,
+    171,
+    181,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    142,
+    196,
+    229,
+]
+
+[palette.info]
+rgb = [
+    184,
+    162,
+    161,
+]
+
+[palette.emphasis]
+rgb = [
+    173,
+    180,
+    185,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    172,
+    149,
+    148,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    167,
+    188,
+    203,
+]
+
+[palette.subtle]
+rgb = [
+    85,
+    150,
+    234,
+]
+
+[palette.hint]
+rgb = [
+    184,
+    136,
+    139,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    153,
+    151,
+    169,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    172,
+    149,
+    148,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    143,
+    140,
+    154,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    84,
+    182,
+    236,
+]

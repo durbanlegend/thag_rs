@@ -1,0 +1,43 @@
+[colors]
+ansi = [
+    "#f768a3", # base08
+    "#f768a3", # base09
+    "#faaea2", # base0B
+    "#faaea2", # base0A
+    "#258fc4", # base0D
+    "#f768a3", # base0E
+    "#258fc4", # base0C
+    "#606bac", # base05
+]
+background = "#0a0920" # base00
+brights = [
+    "#333773", # base03
+    "#f768a3", # base08
+    "#faaea2", # base0B
+    "#faaea2", # base0A
+    "#258fc4", # base0D
+    "#f768a3", # base0E
+    "#258fc4", # base0C
+    "#9aaae5", # base07
+]
+cursor_bg = "#606bac" # base05
+cursor_border = "#606bac" # base05
+cursor_fg = "#0a0920" # base00
+foreground = "#606bac" # base05
+selection_bg = "#606bac" # base05
+selection_fg = "#0a0920" # base00
+
+[colors.indexed]
+16 = "#f768a3" # base09
+17 = "#f768a3" # base0F
+18 = "#13133a" # base01
+19 = "#23255a" # base02
+20 = "#4a5293" # base04
+21 = "#7986c5" # base06
+
+[metadata]
+aliases = ["eris (base16)"]
+author = "ed (https://codeberg.org/ed)"
+name = "eris (base16)"
+origin_url = "https://codeberg.org/ed/base16-schemes/src/branch/main/schemes/eris.yaml"
+wezterm_version = "20240203-110809-5046fc22"

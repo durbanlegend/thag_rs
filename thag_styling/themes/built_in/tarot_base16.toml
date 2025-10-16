@@ -1,0 +1,133 @@
+name = "tarot Base16"
+description = "Converted from tarot theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0e091d"]
+bg_rgbs = [[
+    14,
+    9,
+    29,
+]]
+
+[palette.heading1]
+rgb = [
+    200,
+    144,
+    175,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    194,
+    125,
+    128,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    157,
+    170,
+    149,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    235,
+    135,
+    157,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    97,
+    115,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    234,
+    155,
+    136,
+]
+
+[palette.info]
+rgb = [
+    170,
+    158,
+    186,
+]
+
+[palette.emphasis]
+rgb = [
+    255,
+    101,
+    101,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    157,
+    168,
+    151,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    213,
+    157,
+    174,
+]
+
+[palette.subtle]
+rgb = [
+    165,
+    90,
+    228,
+]
+
+[palette.hint]
+rgb = [
+    218,
+    101,
+    202,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    213,
+    106,
+    172,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    191,
+    171,
+    128,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    196,
+    104,
+    109,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    201,
+    95,
+    224,
+]

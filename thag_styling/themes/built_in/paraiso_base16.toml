@@ -1,0 +1,133 @@
+name = "Paraiso Base16"
+description = "Converted from Paraiso theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2f1e2e"]
+bg_rgbs = [[
+    47,
+    30,
+    46,
+]]
+
+[palette.heading1]
+rgb = [
+    192,
+    172,
+    211,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    241,
+    117,
+    177,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    128,
+    229,
+    224,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    250,
+    166,
+    159,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    249,
+    202,
+    134,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    231,
+    233,
+    219,
+]
+
+[palette.info]
+rgb = [
+    134,
+    221,
+    249,
+]
+
+[palette.emphasis]
+rgb = [
+    249,
+    220,
+    134,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    139,
+    218,
+    214,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    207,
+    204,
+    202,
+]
+
+[palette.subtle]
+rgb = [
+    194,
+    164,
+    190,
+]
+
+[palette.hint]
+rgb = [
+    183,
+    174,
+    177,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    182,
+    175,
+    176,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    142,
+    215,
+    183,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    185,
+    182,
+    176,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    189,
+    168,
+    184,
+]

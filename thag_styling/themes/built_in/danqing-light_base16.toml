@@ -1,0 +1,133 @@
+name = "DanQing Light Base16"
+description = "Converted from DanQing Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fcfefd"]
+bg_rgbs = [[
+    252,
+    254,
+    253,
+]]
+
+[palette.heading1]
+rgb = [
+    130,
+    47,
+    178,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    202,
+    105,
+    36,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    25,
+    205,
+    226,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    190,
+    53,
+    10,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    160,
+    113,
+    65,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    45,
+    48,
+    47,
+]
+
+[palette.info]
+rgb = [
+    68,
+    41,
+    184,
+]
+
+[palette.emphasis]
+rgb = [
+    214,
+    163,
+    11,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    13,
+    215,
+    238,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    90,
+    96,
+    93,
+]
+
+[palette.subtle]
+rgb = [
+    58,
+    193,
+    139,
+]
+
+[palette.hint]
+rgb = [
+    97,
+    154,
+    130,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    114,
+    137,
+    127,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    126,
+    174,
+    77,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    67,
+    72,
+    70,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    60,
+    191,
+    183,
+]

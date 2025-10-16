@@ -1,0 +1,133 @@
+name = "Everforest Base16"
+description = "Converted from Everforest theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#2d353b"]
+bg_rgbs = [[
+    45,
+    53,
+    59,
+]]
+
+[palette.heading1]
+rgb = [
+    228,
+    182,
+    204,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    188,
+    197,
+    190,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    164,
+    221,
+    178,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    248,
+    186,
+    187,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    189,
+    163,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    253,
+    246,
+    227,
+]
+
+[palette.info]
+rgb = [
+    187,
+    223,
+    218,
+]
+
+[palette.emphasis]
+rgb = [
+    236,
+    215,
+    174,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    170,
+    215,
+    181,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    231,
+    222,
+    202,
+]
+
+[palette.subtle]
+rgb = [
+    180,
+    197,
+    205,
+]
+
+[palette.hint]
+rgb = [
+    187,
+    198,
+    190,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    186,
+    198,
+    189,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    197,
+    216,
+    169,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    230,
+    226,
+    204,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    182,
+    195,
+    202,
+]

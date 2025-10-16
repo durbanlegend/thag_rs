@@ -1,38 +1,40 @@
-/*[toml]
-[dependencies]
-clap = { version = "4.5.13", features = ["cargo", "derive"] }
-*/
-
-/// Published example from `clap` tutorial (derive), with added displays.
-///
-/// E.g. thag_rs demo/clap_tut_derive_03_04_subcommands.rs -- add spongebob
-//# Purpose: Demonstrate `clap` CLI using the derive option
+/// Demo the use of a command-line interface to override the colour support to be provided.
+/// The owo-colors "supports-colors" feature must be enabled.
+//# Purpose: Demo setting colour support via a very simple CLI.
 //# Categories: CLI, crates, technique
-//# Sample arguments: `-- add patrick`
-use clap::{Parser, Subcommand};
+use clap::{Parser, ValueEnum};
+use owo_colors::{OwoColorize, Stream};
 
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-#[command(propagate_version = true)]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
+#[derive(Debug, Parser)]
+struct MyApp {
+    #[clap(long, value_enum, global = true, default_value = "auto")]
+    color: Color,
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    /// Adds files to myapp
-    Add { name: Option<String> },
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum Color {
+    Always,
+    Auto,
+    Never,
+}
+
+impl Color {
+    fn init(self) {
+        // Set a supports-color override based on the variable passed in.
+        match self {
+            Color::Always => owo_colors::set_override(true),
+            Color::Auto => {}
+            Color::Never => owo_colors::set_override(false),
+        }
+    }
 }
 
 fn main() {
-    let cli = Cli::parse();
+    let app = MyApp::parse();
+    app.color.init();
 
-    // You can check for the existence of subcommands, and if found use their
-    // matches just as you would the top level cmd
-    match &cli.command {
-        Commands::Add { name } => {
-            println!("'myapp add' was used, name is: {name:?}");
-        }
-    }
+    println!(
+        "My number is {}",
+        42.if_supports_color(Stream::Stdout, |text| text.cyan())
+    );
 }

@@ -1,30 +1,40 @@
 #![allow(clippy::uninlined_format_args)]
+use crate::{
+    ast::{infer_deps_from_ast, infer_deps_from_source},
+    code_utils::get_source_path,
+    config::DependencyInference,
+    maybe_config, Ast, BuildState, Dependencies, Style, ThagError, ThagResult,
+};
+use cargo_lookup::{Package, Query, Release};
+use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
+use regex::Regex;
+use serde_merge::omerge;
+use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
+use syn::{parse_file, File};
+use thag_common::{debug_log, get_verbosity, re, vprtln, V};
+use thag_proc_macros::styled;
+use thag_profiler::{end, profile, profiled};
+use thag_styling::{svprtln, AnsiStyleExt, Role};
+
 #[cfg(debug_assertions)]
 use crate::debug_timings;
-use crate::{
-    code_utils::{get_source_path, infer_deps_from_ast, infer_deps_from_source},
-    config::DependencyInference,
-    get_verbosity,
-}; // Valid if no circular dependency
-use crate::{
-    cvprtln, debug_log, maybe_config, regex, vlog, BuildState, Dependencies, Lvl, ThagResult, V,
-};
-use cargo_lookup::Query;
-use cargo_toml::{Dependency, DependencyDetail, Manifest};
-use firestorm::{profile_fn, profile_section};
-use nu_ansi_term::Style;
-use regex::Regex;
-use semver::VersionReq;
-use serde_merge::omerge;
-#[cfg(debug_assertions)]
-use std::time::Instant;
-use std::{collections::BTreeMap, path::PathBuf, str::FromStr};
 
 #[allow(clippy::missing_panics_doc)]
 #[must_use]
+/// Looks up a crate's latest stable version using cargo-lookup.
+///
+/// Attempts to find the crate by name, trying both the original name and a hyphenated
+/// version (replacing underscores with hyphens). Returns the crate name and version
+/// if found.
+///
+/// # Arguments
+/// * `dep_crate` - The name of the crate to look up
+///
+/// # Returns
+/// * `Some((name, version))` if the crate is found with a stable version
+/// * `None` if the crate is not found or has no stable versions
+#[profiled]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
-    profile_fn!(cargo_lookup);
-
     // Try both original and hyphenated versions
     let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
 
@@ -45,9 +55,6 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
                     package.releases().len()
                 );
 
-                // Request only stable versions (no pre-release)
-                let req = VersionReq::parse("*").unwrap();
-
                 // Log all available versions and their pre-release status
                 // #[cfg(debug_assertions)]
                 // for release in package.releases() {
@@ -62,7 +69,7 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
                 //     );
                 // }
 
-                let release = package.version(&req).filter(|r| r.vers.pre.is_empty());
+                let release = highest_release(&package);
 
                 match release {
                     Some(r) => {
@@ -82,12 +89,34 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
             }
             Err(e) => {
                 debug_log!("Failed to look up crate {}: {}", crate_name, e);
-                continue;
             }
         }
     }
 
     None
+}
+
+/// Returns the highest non-yanked release for a package, matching how
+/// `cargo search` resolves versions.
+///
+/// Note:
+/// - `cargo_lookup::Package::latest()` returns the *last uploaded* release,
+///   which may not be the highest semver (e.g. an 0.8.x patch uploaded after
+///   a 0.9.x release).
+/// - To mirror `cargo search`, we must manually:
+///   1. Filter out yanked releases,
+///   2. Compare using semver ordering,
+///   3. Return the highest version.
+///
+/// Example:
+/// If crates.io has `0.9.1`, `0.9.0` (yanked), and `0.8.1` (uploaded last),
+/// `Package::latest()` gives `0.8.1`, but this function returns `0.9.1`.
+fn highest_release(pkg: &Package) -> Option<&Release> {
+    pkg.releases()
+        .iter()
+        .filter(|r| !r.yanked)
+        .filter(|r| r.vers.pre.is_empty())
+        .max_by_key(|r| r.vers.clone()) // vers is already semver::Version
 }
 
 /// Attempt to capture the dependency name and version from the first line returned by
@@ -96,21 +125,20 @@ pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
 /// Will return `Err` if the first line does not match the expected crate name and a valid version number.
 /// # Panics
 /// Will panic if the regular expression is malformed.
+#[profiled]
 pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
-    profile_fn!(capture_dep);
-
     debug_log!("first_line={first_line}");
-    let re: &Regex = regex!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
+    let re: &Regex = re!(r#"^(?P<name>[\w-]+) = "(?P<version>\d+\.\d+\.\d+)"#);
 
     let (name, version) = if re.is_match(first_line) {
         let captures = re.captures(first_line).unwrap();
         let name = captures.get(1).unwrap().as_str();
         let version = captures.get(2).unwrap().as_str();
-        // vlog!(V::N, "Dependency name: {}", name);
-        // vlog!(V::N, "Dependency version: {}", version);
+        // vprtln!(V::N, "Dependency name: {}", name);
+        // vprtln!(V::N, "Dependency version: {}", version);
         (String::from(name), String::from(version))
     } else {
-        vlog!(V::QQ, "Not a valid Cargo dependency format.");
+        vprtln!(V::QQ, "Not a valid Cargo dependency format.");
         return Err("Not a valid Cargo dependency format".into());
     };
     Ok((name, version))
@@ -119,8 +147,8 @@ pub fn capture_dep(first_line: &str) -> ThagResult<(String, String)> {
 /// Configure the default manifest from the `BuildState` instance.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
+#[profiled]
 pub fn configure_default(build_state: &BuildState) -> ThagResult<Manifest> {
-    profile_fn!(configure_default);
     let source_stem = &build_state.source_stem;
 
     let gen_src_path = get_source_path(build_state);
@@ -137,10 +165,10 @@ gen_src_path={gen_src_path}",
 /// Parse the default manifest from a string template.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
+#[profiled]
 pub fn default(source_stem: &str, gen_src_path: &str) -> ThagResult<Manifest> {
-    profile_fn!(default);
     let cargo_manifest = format!(
-        r##"[package]
+        r#"[package]
 name = "{}"
 version = "0.0.1"
 edition = "2021"
@@ -156,12 +184,11 @@ edition = "2021"
 [[bin]]
 name = "{}"
 path = "{}"
-edition = "2021"
-"##,
+"#,
         source_stem, source_stem, gen_src_path
     );
 
-    // vlog!(V::N, "cargo_manifest=\n{cargo_manifest}");
+    // vprtln!(V::N, "cargo_manifest=\n{cargo_manifest}");
 
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
@@ -170,8 +197,8 @@ edition = "2021"
 /// into the default manifest.
 /// # Errors
 /// Will return `Err` if there is any error parsing the default manifest.
+#[profiled]
 pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
-    profile_fn!(merge);
     #[cfg(debug_assertions)]
     let start_merge_manifest = Instant::now();
 
@@ -186,7 +213,7 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     //     .as_ref()
     //     .map_or_else(|| infer_deps_from_source(rs_source), infer_deps_from_ast);
 
-    profile_section!(infer_deps_and_merge);
+    profile!(infer_deps, time);
     let rs_inferred_deps = if let Some(ref use_crates) = build_state.crates_finder {
         build_state.metadata_finder.as_ref().map_or_else(
             || infer_deps_from_source(rs_source),
@@ -195,10 +222,11 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     } else {
         infer_deps_from_source(rs_source)
     };
+    end!(infer_deps);
 
     // debug_log!("build_state.rs_manifest={0:#?}\n", build_state.rs_manifest);
 
-    profile_section!(merge_manifest);
+    profile!(merge_manifest, time);
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         if !rs_inferred_deps.is_empty() {
             #[cfg(debug_assertions)]
@@ -226,23 +254,339 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
 
     // Reassign the merged manifest back to build_state
     build_state.cargo_manifest = Some(merged_manifest);
+    end!(merge_manifest);
 
     #[cfg(debug_assertions)]
     debug_timings(&start_merge_manifest, "Processed features");
     Ok(())
 }
 
-fn call_omerge(
-    cargo_manifest: &Manifest,
-    rs_manifest: &mut Manifest,
-) -> Result<Manifest, crate::ThagError> {
-    profile_fn!(call_omerge);
+#[profiled]
+fn call_omerge(cargo_manifest: &Manifest, rs_manifest: &mut Manifest) -> ThagResult<Manifest> {
     // eprintln!("cargo_manifest={cargo_manifest:#?}, rs_manifest={rs_manifest:#?}");
     Ok(omerge(cargo_manifest, rs_manifest)?)
 }
 
+/// Identify use ... as statements for inclusion in / exclusion from Cargo.toml metadata.
+///
+/// Include the "from" name and exclude the "to" name.
+/// Fallback version for when an abstract syntax tree cannot be parsed.
+#[must_use]
+#[profiled]
+pub fn find_use_renames_source(code: &str) -> (Vec<String>, Vec<String>) {
+    debug_log!("In code_utils::find_use_renames_source");
+    let use_as_regex: &Regex = re!(r"(?m)^\s*use\s+(\w+).*? as\s+(\w+)");
+
+    let mut use_renames_from: Vec<String> = vec![];
+    let mut use_renames_to: Vec<String> = vec![];
+
+    for cap in use_as_regex.captures_iter(code) {
+        let from_name = cap[1].to_string();
+        let to_name = cap[2].to_string();
+
+        debug_log!("use_rename: from={from_name}, to={to_name}");
+        use_renames_from.push(from_name);
+        use_renames_to.push(to_name);
+    }
+
+    use_renames_from.sort();
+    use_renames_from.dedup();
+
+    debug_log!("use_renames from source: from={use_renames_from:#?}, to={use_renames_to:#?}");
+    (use_renames_from, use_renames_to)
+}
+
+/// Extract embedded Cargo.toml metadata from a Rust source string.
+/// # Errors
+/// Will return `Err` if there is any error in parsing the toml data into a manifest.
+#[profiled]
+pub fn extract(
+    rs_full_source: &str,
+    #[allow(unused_variables)] start_parsing_rs: Instant,
+) -> ThagResult<Manifest> {
+    let maybe_rs_toml = extract_toml_block(rs_full_source);
+
+    profile!(parse, mem_summary, time);
+    let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
+        // debug_log!("rs_toml_str={rs_toml_str}");
+        Manifest::from_str(&rs_toml_str)?
+    } else {
+        Manifest::from_str("")?
+    };
+    end!(parse);
+
+    profile!(set_edition, mem_summary, time);
+    if let Some(package) = rs_manifest.package.as_mut() {
+        package.edition = cargo_toml::Inheritable::Set(Edition::E2021);
+    }
+    end!(set_edition);
+
+    // debug_log!("rs_manifest={rs_manifest:#?}");
+
+    #[cfg(debug_assertions)]
+    debug_timings(&start_parsing_rs, "extract_manifest parsed source");
+    Ok(rs_manifest)
+}
+
+/// Processes thag-auto dependencies in the manifest, replacing them with appropriate
+/// dependency sources based on environment variables and context.
+///
+/// # Arguments
+/// * `build_state` - Mutable reference to the build state containing the manifest
+///
+/// # Returns
+/// * `ThagResult<()>` - Success or error result
+///
+/// # Errors
+///
+/// This function will bubble up any error returned by `resolve_thag_dependency`.
+/// # Environment Variables
+/// * `THAG_DEV_PATH` - Absolute path to local `thag_rs` development directory
+/// * `THAG_GIT_REF` - Git reference (branch/tag/commit) for git dependencies
+/// * `THAG_GIT_REPO` - Git repository URL (defaults to standard `thag_rs` repo)
+/// * `CI` - Indicates CI environment
+#[profiled]
+pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
+    if let Some(ref mut rs_manifest) = build_state.rs_manifest {
+        let thag_crates = [
+            "thag_common",
+            "thag_rs",
+            "thag_proc_macros",
+            "thag_profiler",
+            "thag_styling",
+        ];
+
+        for crate_name in &thag_crates {
+            if let Some(dependency) = rs_manifest.dependencies.get(*crate_name) {
+                if should_process_thag_auto(dependency) {
+                    let new_dependency = resolve_thag_dependency(crate_name, dependency)?;
+                    rs_manifest
+                        .dependencies
+                        .insert((*crate_name).to_string(), new_dependency);
+                    build_state.thag_auto_processed = true;
+                }
+            }
+            // Cater for windows target needing to avoid `color_detect` feature in the first instance.
+            for target in rs_manifest.target.values_mut() {
+                if let Some(dependency) = target.dependencies.get_mut(*crate_name) {
+                    if should_process_thag_auto(dependency) {
+                        *dependency = resolve_thag_dependency(crate_name, &dependency.clone())?;
+                        // target
+                        //     .dependencies
+                        //     .insert((*crate_name).to_string(), new_dependency);
+                        build_state.thag_auto_processed = true;
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Checks if a dependency has `thag-auto` enabled by looking for a version string
+/// that contains "`thag-auto`" as a marker
+fn should_process_thag_auto(dependency: &Dependency) -> bool {
+    match dependency {
+        Dependency::Detailed(detail) => {
+            // Check if version contains our marker
+            detail
+                .version
+                .as_ref()
+                .is_some_and(|v| v.contains("thag-auto"))
+        }
+        Dependency::Simple(version) => version.contains("thag-auto"),
+        Dependency::Inherited(_) => false,
+    }
+}
+
+/// Resolves a thag dependency based on environment variables and context
+fn resolve_thag_dependency(
+    crate_name: &str,
+    original_dep: &Dependency,
+) -> ThagResult<cargo_toml::Dependency> {
+    // Extract base dependency details, preserving features and other settings
+    let (base_version, features, default_features) = match original_dep {
+        Dependency::Detailed(detail) => {
+            let version = detail.version.as_ref().and_then(|v| {
+                // Extract real version from "version,thag-auto" format
+                if v.contains("thag-auto") {
+                    v.split(',').next().map(|s| s.trim().to_string())
+                } else {
+                    Some(v.clone())
+                }
+            });
+            (version, detail.features.clone(), detail.default_features)
+        }
+        Dependency::Simple(version) => {
+            let version = if version.contains("thag-auto") {
+                version.split(',').next().map(|s| s.trim().to_string())
+            } else {
+                Some(version.clone())
+            };
+            (version, Vec::new(), true)
+        }
+        Dependency::Inherited(_) => return Ok(original_dep.clone()),
+    };
+
+    // Create new dependency detail with preserved settings
+    let mut new_detail = Box::new(DependencyDetail {
+        features,
+        default_features,
+        ..Default::default()
+    });
+
+    // Determine dependency source based on environment
+    let is_ci = env::var("CI").is_ok();
+    let git_ref_env_var = if is_ci { "GITHUB_REF" } else { "THAG_GIT_REF" };
+    if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
+        // Development: use local path
+        let crate_path = match crate_name {
+            "thag_common" => format!("{}/thag_common", dev_path),
+            "thag_proc_macros" => format!("{}/thag_proc_macros", dev_path),
+            "thag_profiler" => format!("{}/thag_profiler", dev_path),
+            "thag_styling" => format!("{}/thag_styling", dev_path),
+            _ => dev_path,
+        };
+
+        new_detail.path = Some(crate_path);
+        debug_log!("Using local path for {}: {:?}", crate_name, new_detail.path);
+    } else if is_ci || env::var(git_ref_env_var).is_ok() {
+        // CI or explicit git reference: use git dependency
+        let git_repo = env::var("THAG_GIT_REPO")
+            .unwrap_or_else(|_| "https://github.com/durbanlegend/thag_rs".to_string());
+        let git_ref = env::var(git_ref_env_var).map_or_else(
+            |_| "main".to_string(),
+            |s| {
+                let var_start = s.rfind('/').map_or_else(|| 0, |pos| pos + 1);
+                s[var_start..].to_string()
+            },
+        );
+
+        new_detail.git = Some(git_repo);
+        new_detail.branch = Some(git_ref);
+        debug_log!(
+            "Using git dependency for {}: {:?} @ {:?}",
+            crate_name,
+            new_detail.git,
+            new_detail.branch
+        );
+    } else {
+        // Default: use crates.io version
+        if let Some(version) = base_version {
+            let query: Query = format!("{crate_name}@={version}")
+                .parse()
+                .map_err(|e| ThagError::FromStr(format!("Failed to parse query: {e}").into()))?;
+            let result = query.submit();
+            // .map_err(|e| ThagError::FromStr(format!("{e}").into()))?;
+            // .map_err(|e| -> ThagError { format!("{e}").into() })?;
+            if let Ok(Some(release)) = result {
+                let vers = release.vers;
+                new_detail.version = Some(format!("{}.{}.{}", vers.major, vers.minor, vers.patch));
+                debug_log!(
+                    "Using crates.io version for {crate_name}: {:?}",
+                    new_detail.version
+                );
+            } else {
+                display_thag_auto_help();
+                return Err(ThagError::FromStr(
+                    format!("{crate_name} version {} not found in crates.io", version).into(),
+                ));
+            }
+        }
+    }
+    Ok(Dependency::Detailed(new_detail))
+}
+
+fn display_thag_auto_help() {
+    svprtln!(
+        Role::ERR,
+        V::N,
+        "Build failed - thag dependency issue detected"
+    );
+    svprtln!(
+        Role::EMPH,
+        V::N,
+        r"
+This script uses thag dependencies (thag_common, thag_rs, thag_proc_macros, thag_profiler or thag_styling)
+with the 'thag-auto' keyword, which automatically resolves to the appropriate
+dependency source based on your environment.
+
+The most likely issue is that the version specified in the script doesn't exist
+on crates.io yet. To fix this, you have several options:
+
+1. DEVELOPMENT (recommended): Set environment variable to use local path
+    {}, e.g.:
+
+   {}
+
+2. GIT DEPENDENCY: Use git reference to get the latest version
+   export THAG_GIT_REF=main
+
+3. ALWAYS RUN THROUGH THAG: Use 'thag script.rs' instead of 'cargo build'
+   (This allows thag-auto processing to work properly)
+
+The thag-auto system is designed to work with crates.io by default, falling back
+to git or local paths when environment variables are set. This allows the same
+script to work in different environments without modification.
+
+For more details, see the comments in demo scripts or the thag documentation.",
+        if cfg!(target_os = "windows") {
+            "(Assuming PowerShell:) $env:THAG_DEV_PATH = absolute\\path\\to\\thag_rs"
+        } else {
+            "export THAG_DEV_PATH=/absolute/path/to/thag_rs"
+        },
+        styled!(
+            if cfg!(target_os = "windows") {
+                "$env:THAG_DEV_PATH = $PWD"
+            } else {
+                "export THAG_DEV_PATH=$PWD"
+            },
+            bold,
+            reversed
+        )
+    );
+}
+
+#[profiled]
+fn extract_toml_block(input: &str) -> Option<String> {
+    let re: &Regex = re!(r"(?s)/\*\[toml\](.*?)\*/");
+    re.captures(input)
+        .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+}
+
+/// Extract the `use` statements from source and parse them to a `syn::File` in order to
+/// extract the dependencies..
+///
+/// # Errors
+///
+/// This function will return an error if `syn` fails to parse the `use` statements as a `syn::File`.
+#[profiled]
+pub fn extract_and_wrap_uses(source: &str) -> Result<Ast, syn::Error> {
+    // Step 1: Capture `use` statements
+    let use_simple_regex: &Regex = re!(r"(?m)(^\s*use\s+[^;{]+;\s*$)");
+    let use_nested_regex: &Regex = re!(r"(?ms)(^\s*use\s+\{.*\};\s*$)");
+
+    let mut use_statements: Vec<String> = vec![];
+
+    for cap in use_simple_regex.captures_iter(source) {
+        let use_string = cap[1].to_string();
+        use_statements.push(use_string);
+    }
+    for cap in use_nested_regex.captures_iter(source) {
+        let use_string = cap[1].to_string();
+        use_statements.push(use_string);
+    }
+
+    // Step 2: Parse as `syn::File`
+    let ast: File = parse_file(&use_statements.join("\n"))?;
+    // eprintln!("ast={ast:#?}");
+
+    // Return wrapped in `Ast::File`
+    Ok(Ast::File(ast))
+}
+
+#[profiled]
 fn clean_features(features: Vec<String>) -> Vec<String> {
-    profile_fn!(clean_features);
     let mut features: Vec<String> = features
         .into_iter()
         .filter(|f| !f.contains('/')) // Filter out features with slashes
@@ -251,8 +595,8 @@ fn clean_features(features: Vec<String>) -> Vec<String> {
     features
 }
 
+#[profiled]
 fn get_crate_features(name: &str) -> Option<Vec<String>> {
-    profile_fn!(get_crate_features);
     let query: Query = match name.parse() {
         Ok(q) => q,
         Err(e) => {
@@ -286,34 +630,41 @@ fn get_crate_features(name: &str) -> Option<Vec<String>> {
     }
 }
 
+/// Look up dependencies and add them to the manifest's dependency map.
+///
+/// This function takes a list of inferred dependency names from Rust source code
+/// and attempts to look up their versions using cargo lookup. Based on the
+/// inference level, it will add basic dependencies or include features.
+///
+/// # Arguments
+/// * `inference_level` - The level of dependency inference to perform
+/// * `rs_inferred_deps` - List of dependency names inferred from source code
+/// * `rs_dep_map` - Mutable reference to the dependency map to populate
 #[allow(clippy::missing_panics_doc)]
+#[profiled]
 pub fn lookup_deps(
     inference_level: &DependencyInference,
     rs_inferred_deps: &[String],
     rs_dep_map: &mut BTreeMap<String, Dependency>,
 ) {
-    profile_fn!(lookup_deps);
-
-    // #[cfg(debug_assertions)]
-    // eprintln!("In lookup_deps: rs_inferred_deps={rs_inferred_deps:#?}");
     if rs_inferred_deps.is_empty() {
         return;
     }
 
     let existing_toml_block = !&rs_dep_map.is_empty();
     let mut new_inferred_deps: Vec<String> = vec![];
-    let recomm_style = Style::from(&Lvl::SUBH);
+    let recomm_style = &Style::for_role(Role::Heading1);
     let recomm_inf_level = &DependencyInference::Config;
     let actual_style = if inference_level == recomm_inf_level {
         recomm_style
     } else {
-        Style::from(&Lvl::EMPH)
+        &Style::for_role(Role::Emphasis)
     };
     let styled_inference_level = actual_style.paint(inference_level.to_string());
     let styled_recomm_inf_level = recomm_style.paint(recomm_inf_level.to_string());
     // Hack: use reset string \x1b[0m here to avoid mystery white-on-white bug.
-    cvprtln!(
-        &Lvl::NORM,
+    svprtln!(
+        Role::NORM,
         V::V,
         "\x1b[0mRecommended dependency inference_level={styled_recomm_inf_level}, actual={styled_inference_level}"
     );
@@ -343,7 +694,6 @@ pub fn lookup_deps(
             match inference_level {
                 DependencyInference::None => {
                     // Skip dependency entirely
-                    continue;
                 }
                 DependencyInference::Min => {
                     // Just add basic dependency
@@ -358,12 +708,6 @@ pub fn lookup_deps(
                         if let (Some(final_features), default_features) =
                             features_for_inference_level
                         {
-                            // let detail = DependencyDetail {
-                            //     version: Some(version.clone()),
-                            //     features: final_features,
-                            //     default_features,
-                            //     ..Default::default()
-                            // };
                             rs_dep_map.entry(name.clone()).or_insert_with(|| {
                                 Dependency::Detailed(Box::new(DependencyDetail {
                                     version: Some(version.clone()),
@@ -382,10 +726,6 @@ pub fn lookup_deps(
             }
         }
     }
-    // Not sure we need this
-    // if rs_dep_map.is_empty() {
-    //     return;
-    // }
 
     if get_verbosity() < V::V
         || matches!(inference_level, DependencyInference::None)
@@ -402,12 +742,14 @@ pub fn lookup_deps(
     );
 }
 
+#[profiled]
 fn insert_simple(rs_dep_map: &mut BTreeMap<String, Dependency>, name: String, version: String) {
     rs_dep_map
         .entry(name)
         .or_insert_with(|| Dependency::Simple(version));
 }
 
+#[profiled]
 fn display_toml_info(
     existing_toml_block: bool,
     new_inferred_deps: &[String],
@@ -432,7 +774,7 @@ fn display_toml_info(
                         "{dep_name} = \"{}\"\n",
                         dep.version
                             .as_ref()
-                            .expect("Error unwrapping version for {dep_name}"),
+                            .unwrap_or_else(|| panic!("Error unwrapping version for {dep_name}")),
                     );
                     toml_block.push_str(&dep_line);
                 } else {
@@ -446,7 +788,7 @@ fn display_toml_info(
                         dep_name,
                         dep.version
                             .as_ref()
-                            .expect("Error unwrapping version for {dep_name}"),
+                            .unwrap_or_else(|| panic!("Error unwrapping version for {dep_name}")),
                         dep.features
                             .iter()
                             .map(|f| format!("\"{}\"", f))
@@ -463,65 +805,27 @@ fn display_toml_info(
     if !existing_toml_block {
         toml_block.push_str("*/");
     }
-    let styled_toml_block = Style::from(&Lvl::SUBH).paint(&toml_block);
-    let styled_inference_level = Style::from(&Lvl::EMPH).paint(inference_level.to_string());
+    let styled_toml_block = Style::for_role(Role::Heading2).paint(&toml_block);
+    let styled_inference_level = Style::for_role(Role::EMPH).paint(inference_level.to_string());
     let wording = if existing_toml_block {
         format!("This is the {styled_inference_level} manifest information that was generated for this run. If you want to, you can merge it into the existing toml block at")
     } else {
         format!("This toml block contains the same {styled_inference_level} manifest information that was generated for this run. If you want to, you can copy it into")
     };
-    vlog!(
+    vprtln!(
         V::N,
-        "\n{wording} the top of your script for faster execution in future:\n{styled_toml_block}\n"
+        "\n{wording} the top of your script, to lock it down or maybe compile a little faster in future:\n{styled_toml_block}\n"
     );
 }
 
-// fn show_all_toml_variants(
-//     name: &str,
-//     version: &str,
-//     features: Option<&Vec<String>>,
-//     dep_config: &Dependencies,
-// ) {
-//     profile_fn!(show_all_toml_variants);
-//     if let Some(all_features) = features {
-//         println!("\nAvailable dependency configurations for {}:", name);
-
-//         println!("\nMinimal:");
-//         println!("{} = \"{}\"\n", name, version);
-
-//         if let (Some(max_features), default_features) = dep_config.get_features_for_inference_level(
-//             name,
-//             all_features,
-//             &DependencyInference::Maximal,
-//         ) {
-//             let maybe_default_features = if default_features {
-//                 ""
-//             } else {
-//                 ", default-features = false "
-//             };
-//             println!("Maximal:");
-//             println!(
-//                 "{} = {{ version = \"{}{maybe_default_features}\", features = [{}] }}\n",
-//                 name,
-//                 version,
-//                 max_features
-//                     .iter()
-//                     .map(|f| format!("\"{}\"", f))
-//                     .collect::<Vec<_>>()
-//                     .join(", ")
-//             );
-//         }
-//     }
-// }
-
+#[profiled]
 fn proc_macros_magic(
     rs_dep_map: &mut BTreeMap<String, Dependency>,
     dep_name: &str,
     dir_name: &str,
 ) {
-    profile_fn!(proc_macros_magic);
-    cvprtln!(
-        Lvl::BRI,
+    svprtln!(
+        Role::INFO,
         V::V,
         r#"Found magic import `{dep_name}`: attempting to generate path dependency from `proc_macros.(...)proc_macro_crate_path` in config file ".../config.toml"."#
     );
@@ -545,14 +849,14 @@ fn proc_macros_magic(
         },
     );
     let magic_proc_macros_dir = maybe_magic_proc_macros_dir.as_ref().map_or_else(|| {
-        cvprtln!(
-            Lvl::BRI,
+        svprtln!(
+            Role::INFO,
             V::V,
             r#"No `config.proc_macros.proc_macro_crate_path` in config file for "use {dep_name};": defaulting to "{default_proc_macros_dir}"."#
         );
         default_proc_macros_dir
     }, |proc_macros_dir| {
-        cvprtln!(Lvl::BRI, V::V, "Found {proc_macros_dir:#?}.");
+        svprtln!(Role::INFO, V::V, "Found {proc_macros_dir:#?}.");
         proc_macros_dir.to_string()
     });
 
@@ -568,4 +872,21 @@ fn proc_macros_magic(
         ..Default::default()
     }));
     rs_dep_map.insert(dep_name.to_string(), dep);
+}
+
+/// Identify mod statements for exclusion from Cargo.toml metadata.
+/// Fallback version for when an abstract syntax tree cannot be parsed.
+#[must_use]
+#[profiled]
+pub fn find_modules_source(code: &str) -> Vec<String> {
+    let module_regex: &Regex = re!(r"(?m)^[\s]*mod\s+([^;{\s]+)");
+    debug_log!("In code_utils::find_use_renames_source");
+    let mut modules: Vec<String> = vec![];
+    for cap in module_regex.captures_iter(code) {
+        let module = cap[1].to_string();
+        debug_log!("module={module}");
+        modules.push(module);
+    }
+    debug_log!("modules from source={modules:#?}");
+    modules
 }

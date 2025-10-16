@@ -1,0 +1,133 @@
+name = "Harmonic16 Dark Base16"
+description = "Converted from Harmonic16 Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0b1c2c"]
+bg_rgbs = [[
+    11,
+    28,
+    44,
+]]
+
+[palette.heading1]
+rgb = [
+    217,
+    144,
+    181,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    211,
+    124,
+    124,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    113,
+    168,
+    223,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    227,
+    194,
+    160,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    221,
+    221,
+    140,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    247,
+    249,
+    251,
+]
+
+[palette.info]
+rgb = [
+    181,
+    140,
+    221,
+]
+
+[palette.emphasis]
+rgb = [
+    181,
+    217,
+    144,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    124,
+    168,
+    211,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    203,
+    214,
+    226,
+]
+
+[palette.subtle]
+rgb = [
+    112,
+    168,
+    223,
+]
+
+[palette.hint]
+rgb = [
+    139,
+    168,
+    196,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    170,
+    188,
+    206,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    124,
+    211,
+    168,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    229,
+    235,
+    241,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    127,
+    167,
+    208,
+]

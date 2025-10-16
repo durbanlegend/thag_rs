@@ -1,0 +1,133 @@
+name = "Mellow Purple Base16"
+description = "Converted from Mellow Purple theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#1e0528"]
+bg_rgbs = [[
+    30,
+    5,
+    40,
+]]
+
+[palette.heading1]
+rgb = [
+    152,
+    160,
+    199,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    77,
+    111,
+    255,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    237,
+    89,
+    230,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    128,
+    240,
+    248,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    104,
+    241,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    248,
+    192,
+    255,
+]
+
+[palette.info]
+rgb = [
+    221,
+    104,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    165,
+    110,
+    241,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    246,
+    80,
+    239,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    255,
+    238,
+    255,
+]
+
+[palette.subtle]
+rgb = [
+    159,
+    89,
+    237,
+]
+
+[palette.hint]
+rgb = [
+    163,
+    89,
+    237,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    223,
+    102,
+    216,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    80,
+    246,
+    86,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    255,
+    238,
+    255,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    162,
+    89,
+    237,
+]

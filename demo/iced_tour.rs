@@ -1,7 +1,6 @@
 /*[toml]
 [dependencies]
 iced = { version = "^0.12.1", features = ["image", "debug"] }
-tracing-subscriber = "0.3"
 */
 
 /// The full tour of the `iced` crate published in the `iced` examples.

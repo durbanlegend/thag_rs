@@ -1,0 +1,133 @@
+name = "selenized-black Base16"
+description = "Converted from selenized-black theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#181818"]
+bg_rgbs = [[
+    24,
+    24,
+    24,
+]]
+
+[palette.heading1]
+rgb = [
+    165,
+    128,
+    226,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    235,
+    110,
+    183,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    96,
+    232,
+    218,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    248,
+    134,
+    131,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    158,
+    107,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    222,
+    222,
+    222,
+]
+
+[palette.info]
+rgb = [
+    107,
+    172,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    238,
+    210,
+    116,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    111,
+    218,
+    207,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    190,
+    190,
+    190,
+]
+
+[palette.subtle]
+rgb = [
+    164,
+    164,
+    164,
+]
+
+[palette.hint]
+rgb = [
+    164,
+    164,
+    164,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    164,
+    164,
+    164,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    161,
+    220,
+    109,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    222,
+    222,
+    222,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    164,
+    164,
+    164,
+]

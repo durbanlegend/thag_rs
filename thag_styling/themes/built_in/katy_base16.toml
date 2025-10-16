@@ -1,0 +1,133 @@
+name = "Katy Base16"
+description = "Converted from Katy theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#292d3e"]
+bg_rgbs = [[
+    41,
+    45,
+    62,
+]]
+
+[palette.heading1]
+rgb = [
+    212,
+    167,
+    242,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    249,
+    135,
+    154,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    141,
+    195,
+    242,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    187,
+    209,
+    247,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    250,
+    180,
+    159,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    159,
+    188,
+    250,
+]
+
+[palette.emphasis]
+rgb = [
+    243,
+    210,
+    166,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    146,
+    195,
+    237,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    201,
+    206,
+    232,
+]
+
+[palette.subtle]
+rgb = [
+    173,
+    171,
+    213,
+]
+
+[palette.hint]
+rgb = [
+    174,
+    180,
+    209,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    172,
+    187,
+    211,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    171,
+    219,
+    164,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    150,
+    159,
+    208,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    173,
+    171,
+    213,
+]

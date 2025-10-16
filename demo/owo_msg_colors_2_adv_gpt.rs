@@ -1,12 +1,6 @@
 /*[toml]
-[dependencies]
-crossterm = "0.28.1"
-enum-assoc = "1.1.0"
-log = "0.4.22"
-owo-colors = { version = "4.0.0", features = ["supports-colors"] }
-strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
-supports-color= "3.0.0"
-termbg = "0.5.2"
+[features]
+default = ["strum/phf"]     # Because `strum` omits to publish "phf" feature for discovery by cargo-lookup.
 */
 
 /// More fully worked-out prototype of colouring and styling messages based on the level of
@@ -27,7 +21,7 @@ use owo_xterm::{
     LightCaribbeanGreen, LochmaraBlue, Silver,
 };
 use std::str::FromStr;
-use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
+use strum::*;
 use supports_color::Stream;
 use termbg::Theme;
 
@@ -55,7 +49,7 @@ enum ColorLevel {
 }
 
 #[derive(EnumString, Display, PartialEq)]
-enum TermTheme {
+enum TermBgLuma {
     Light,
     Dark,
 }
@@ -72,8 +66,7 @@ enum MessageType {
 }
 
 #[derive(Assoc, Clone, Debug, Display, EnumIter, EnumString, PartialEq)]
-#[strum(serialize_all = "snake_case")]
-#[strum(use_phf)]
+#[strum(use_phf, serialize_all = "snake_case")]
 #[func(pub fn value(&self) -> Style)]
 enum MessageStyle {
     // Use Assoc to associate owo-colors::Style with each variant
@@ -138,15 +131,6 @@ enum MessageStyle {
     Xterm256DarkDebug,
 }
 
-// termbg sends an operating system command (OSC) to interrogate the screen
-// but with side effects which we undo here.
-fn clear_screen() {
-    //     let mut out = stdout();
-    //     out.execute(MoveToColumn(0)).unwrap();
-    //     out.execute(Show).unwrap();
-    //     out.flush().unwrap();
-}
-
 fn get_theme() -> Result<Theme, termbg::Error> {
     let timeout = std::time::Duration::from_millis(100);
 
@@ -164,12 +148,12 @@ fn main() {
     debug!("  Term : {:?}", term);
 
     let maybe_theme = get_theme();
-    let term_theme = match maybe_theme {
+    let term_bg_luma = match maybe_theme {
         Ok(theme) => match theme {
-            Theme::Light => TermTheme::Light,
-            Theme::Dark => TermTheme::Dark,
+            Theme::Light => TermBgLuma::Light,
+            Theme::Dark => TermBgLuma::Dark,
         },
-        Err(_) => TermTheme::Dark,
+        Err(_) => TermBgLuma::Dark,
     };
 
     let maybe_color_support = supports_color::on(Stream::Stdout);
@@ -190,7 +174,7 @@ fn main() {
         let msg_level = MessageType::Warning;
 
         let color_qual = color_level.unwrap().to_string().to_lowercase();
-        let theme_qual = term_theme.to_string().to_lowercase();
+        let theme_qual = term_bg_luma.to_string().to_lowercase();
         let msg_level_qual = msg_level.to_string().to_lowercase();
         // debug!("Calling from_str on {}_{}_{}", &color_qual, &theme_qual, &msg_level_qual);
         let style = MessageStyle::from_str(&format!(

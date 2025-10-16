@@ -1,0 +1,133 @@
+name = "Grayscale Light Base16"
+description = "Converted from Grayscale Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f7f7f7"]
+bg_rgbs = [[
+    247,
+    247,
+    247,
+]]
+
+[palette.heading1]
+rgb = [
+    107,
+    107,
+    107,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    94,
+    94,
+    94,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    120,
+    120,
+    120,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    94,
+    94,
+    94,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    107,
+    107,
+    107,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    16,
+    16,
+    16,
+]
+
+[palette.info]
+rgb = [
+    104,
+    104,
+    104,
+]
+
+[palette.emphasis]
+rgb = [
+    107,
+    107,
+    107,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    120,
+    120,
+    120,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    70,
+    70,
+    70,
+]
+
+[palette.subtle]
+rgb = [
+    120,
+    120,
+    120,
+]
+
+[palette.hint]
+rgb = [
+    120,
+    120,
+    120,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    82,
+    82,
+    82,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    120,
+    120,
+    120,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    37,
+    37,
+    37,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    120,
+    120,
+    120,
+]

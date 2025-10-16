@@ -1,0 +1,133 @@
+name = "Summerfruit Dark Base16"
+description = "Converted from Summerfruit Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#151515"]
+bg_rgbs = [[
+    21,
+    21,
+    21,
+]]
+
+[palette.heading1]
+rgb = [
+    247,
+    101,
+    237,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    223,
+    141,
+    99,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    86,
+    236,
+    236,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    248,
+    125,
+    190,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    180,
+    101,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    101,
+    154,
+    247,
+]
+
+[palette.emphasis]
+rgb = [
+    247,
+    244,
+    101,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    90,
+    233,
+    233,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    208,
+    208,
+    208,
+]
+
+[palette.subtle]
+rgb = [
+    161,
+    161,
+    161,
+]
+
+[palette.hint]
+rgb = [
+    161,
+    161,
+    161,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    176,
+    176,
+    176,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    77,
+    246,
+    97,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    224,
+    224,
+    224,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    161,
+    161,
+    161,
+]

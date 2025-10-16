@@ -4,16 +4,16 @@ name = "tui_edit_stdin"
 features = ["simplelog"]
 
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 log = "0.4.22"
-ratatui = "0.28.1"
+ratatui = "0.29"
 simplelog = { version = "0.12.2" }
 #env_logger = { version = "0.11.5", optional = true }
 thag_rs = { path = "/Users/donf/projects/thag_rs" }
 tui-textarea = "0.6.1"
 
 [features]
-debug-logs = []
+debug_logging = []
 nightly = []
 default = ["simplelog"]
 simplelog = []

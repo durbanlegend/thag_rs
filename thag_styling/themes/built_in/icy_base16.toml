@@ -1,0 +1,133 @@
+name = "Icy Dark Base16"
+description = "Converted from Icy Dark theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#021012"]
+bg_rgbs = [[
+    2,
+    16,
+    18,
+]]
+
+[palette.heading1]
+rgb = [
+    80,
+    228,
+    246,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    56,
+    226,
+    245,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    66,
+    215,
+    234,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    104,
+    230,
+    247,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    179,
+    235,
+    242,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    104,
+    229,
+    247,
+]
+
+[palette.info]
+rgb = [
+    80,
+    227,
+    246,
+]
+
+[palette.emphasis]
+rgb = [
+    128,
+    222,
+    234,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    69,
+    214,
+    232,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    104,
+    229,
+    247,
+]
+
+[palette.subtle]
+rgb = [
+    66,
+    211,
+    234,
+]
+
+[palette.hint]
+rgb = [
+    66,
+    213,
+    234,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    66,
+    214,
+    234,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    77,
+    208,
+    225,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    32,
+    217,
+    243,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    66,
+    212,
+    234,
+]

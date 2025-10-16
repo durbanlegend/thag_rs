@@ -1,7 +1,11 @@
 /// Original is `https://github.com/flip1995/tui-rs-file-dialog/blob/master/src/lib.rs`
 /// Copyright (c) 2023 Philipp Krones
 /// Licence: MIT
-use firestorm::{profile_fn, profile_method};
+use crate::{
+    key, key_mappings,
+    tui_editor::{self, centered_rect, display_popup, KeyDisplayLine, PopupScrollState},
+    KeyCombination,
+};
 use ratatui::crossterm::{
     cursor::{Hide, Show},
     event::{KeyCode, KeyEvent, KeyEventKind},
@@ -9,7 +13,7 @@ use ratatui::crossterm::{
 };
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Style, Stylize},
     text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
     Frame,
@@ -22,19 +26,17 @@ use std::{
     iter,
     path::{Path, PathBuf},
 };
+use thag_common::{debug_log, lazy_static_var};
+use thag_profiler::profiled;
+use thag_styling::{Role, ThemedStyle};
 use tui_textarea::{Input, TextArea};
-
-use crate::{debug_log, key, key_mappings, lazy_static_var, Lvl};
-use crate::{shared::KeyDisplayLine, tui_editor::display_popup};
-use crate::{
-    tui_editor::{self, centered_rect},
-    KeyCombination,
-};
 
 /// File dialog mode to distinguish between Open and Save dialogs
 #[derive(Debug, PartialEq, Eq)]
 pub enum DialogMode {
+    /// Open file dialog mode for selecting existing files
     Open,
+    /// Save file dialog mode for specifying file names to save
     Save,
 }
 
@@ -49,13 +51,19 @@ pub enum FilePattern {
 /// Enum to represent which part of the dialog has focus.
 #[derive(Debug, PartialEq, Eq)]
 pub enum DialogFocus {
-    List,  // Focus on file list
-    Input, // Focus on input area
+    /// Focus on file list
+    List,
+    /// Focus on input area
+    Input,
 }
 
+/// Status enum to represent the completion state of file dialog operations.
 pub enum Status {
+    /// Operation completed successfully
     Complete,
+    /// Operation is still in progress
     Incomplete,
+    /// User requested to quit the operation
     Quit,
 }
 
@@ -77,6 +85,7 @@ pub struct FileDialog<'a> {
     open: bool,
     current_dir: PathBuf,
     show_hidden: bool,
+    popup_scroll: PopupScrollState,
 
     list_state: ListState,
     items: Vec<String>,
@@ -87,13 +96,16 @@ pub struct FileDialog<'a> {
     /// Current focus of the Save dialog (List or Input)
     focus: DialogFocus,
 
+    /// Whether to show the popup with key bindings
     pub popup: bool,
     title_bottom: &'a str,
 
     /// Input for the file name in Input mode
     pub input: TextArea<'a>,
 
+    /// Buffer for search/filter functionality
     pub buf: String,
+    // term_attrs: &'static TermAttributes,
 }
 
 // impl<FilePattern> FileDialog<'_, FilePattern> {
@@ -106,8 +118,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
+    #[profiled]
     pub fn new(width: u16, height: u16, mode: DialogMode) -> Result<Self> {
-        profile_method!(new);
         let mut s = Self {
             width: cmp::min(width, 100),
             height: cmp::min(height, 100),
@@ -116,6 +128,7 @@ impl FileDialog<'_> {
             open: false,
             current_dir: PathBuf::from(".").canonicalize()?,
             show_hidden: false,
+            popup_scroll: PopupScrollState::default(),
             list_state: ListState::default(),
             items: vec![],
             mode,
@@ -124,6 +137,7 @@ impl FileDialog<'_> {
             input: TextArea::default(),
             title_bottom: "Ctrl+l to show keys",
             buf: String::new(),
+            // term_attrs: TermAttributes::get_or_init(),
         };
         s.update_entries()?;
         Ok(s)
@@ -134,8 +148,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will return an error if there is a problem canonicalizing the directory.
+    #[profiled]
     pub fn set_dir(&mut self, dir: &Path) -> Result<()> {
-        profile_method!(set_dir);
         self.current_dir = dir.canonicalize()?;
         self.update_entries()
     }
@@ -145,8 +159,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
+    #[profiled]
     pub fn set_filter(&mut self, filter: FilePattern) -> Result<()> {
-        profile_method!(set_filter);
         self.filter = Some(filter);
         self.update_entries()
     }
@@ -156,8 +170,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
+    #[profiled]
     pub fn reset_filter(&mut self) -> Result<()> {
-        profile_method!(reset_filter);
         self.filter.take();
         self.update_entries()
     }
@@ -169,47 +183,46 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
+    #[profiled]
     pub fn toggle_show_hidden(&mut self) -> Result<()> {
-        profile_method!(toggle_show_hidden);
         self.show_hidden = !self.show_hidden;
         self.update_entries()
     }
 
     /// Opens the file dialog.
+    #[profiled]
     pub fn open(&mut self) {
-        profile_method!(open);
         self.selected_file.take();
         self.open = true;
     }
 
     /// Closes the file dialog.
+    #[allow(clippy::missing_const_for_fn)]
+    #[profiled]
     pub fn close(&mut self) {
-        profile_method!(close);
         self.open = false;
     }
 
     /// Returns whether the file dialog is currently open.
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    pub const fn is_open(&self) -> bool {
+    pub fn is_open(&self) -> bool {
         self.open
     }
 
     /// Draws the file dialog in the TUI application.
+    #[profiled]
     pub fn draw(&mut self, f: &mut Frame) {
-        profile_method!(draw);
         if self.open {
             let area = centered_rect(self.width, self.height, f.area());
 
             // Split the area into two parts: one for the file list and one for the input field.
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(
-                    [
-                        Constraint::Length(3),            // Input field area
-                        Constraint::Min(self.height - 3), // File list area
-                    ]
-                    .as_ref(),
-                )
+                .constraints::<&[Constraint]>(&[
+                    Constraint::Length(3), // Input field area
+                    Constraint::Min(5),    // File list area (fills remaining space)
+                ])
                 .split(area);
 
             // Determine if the file list has focus
@@ -220,11 +233,11 @@ impl FileDialog<'_> {
                 .title(title.clone())
                 .borders(Borders::ALL)
                 .border_style(if file_list_focus {
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::HEAD)))
-                        .add_modifier(Modifier::BOLD)
+                    ratatui::style::Style::themed(Role::Heading1)
                 } else {
-                    Style::default().fg(Color::DarkGray).dim()
+                    ratatui::style::Style::default()
+                        .fg(ratatui::style::Color::DarkGray)
+                        .dim()
                 })
                 .title_bottom(Line::from(self.title_bottom).centered());
             let list_items: Vec<ListItem> = self
@@ -234,15 +247,9 @@ impl FileDialog<'_> {
                 .collect();
             let list = List::new(list_items)
                 .block(block)
-                .highlight_style(
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::EMPH)))
-                        .bold(),
-                )
+                .highlight_style(Style::themed(Role::EMPH).bold())
                 .style(if file_list_focus {
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::SUBH)))
-                        .not_bold()
+                    Style::themed(Role::HD2).not_bold()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
                 });
@@ -253,9 +260,7 @@ impl FileDialog<'_> {
             if self.mode == DialogMode::Save {
                 // Create a Block for the input area with borders and background
                 let input_style = if input_focus {
-                    Style::default()
-                        .fg(Color::Indexed(u8::from(&Lvl::HEAD)))
-                        .bold()
+                    Style::themed(Role::HD1).bold()
                 } else {
                     Style::default().fg(Color::DarkGray).dim()
                 };
@@ -274,13 +279,7 @@ impl FileDialog<'_> {
                 if input_focus {
                     self.input.set_style(Style::default());
                     self.input
-                        .set_selection_style(Style::default().bg(Color::Blue));
-                    self.input.set_cursor_style(Style::default()); //.on_magenta());
-                    self.input.set_cursor_line_style(
-                        Style::default()
-                            .fg(Color::Indexed(u8::from(&Lvl::EMPH)))
-                            .bold(),
-                    );
+                        .set_selection_style(Style::themed(Role::EMPH).bold());
                 } else {
                     self.input.set_style(Style::default().dim());
                     self.input.set_selection_style(Style::default().hidden());
@@ -303,15 +302,16 @@ impl FileDialog<'_> {
                     title_bottom,
                     max_key_len,
                     max_desc_len,
+                    &mut self.popup_scroll,
                     f,
                 );
-            };
+            }
         }
     }
 
     /// Goes to the next item in the file list.
+    #[profiled]
     pub fn next(&mut self) {
-        profile_method!(next);
         let i = match self.list_state.selected() {
             Some(i) => cmp::min(self.items.len() - 1, i + 1),
             None => cmp::min(self.items.len().saturating_sub(1), 1),
@@ -319,8 +319,8 @@ impl FileDialog<'_> {
         self.list_state.select(Some(i));
     }
     /// Goes to the previous item in the file list.
+    #[profiled]
     pub fn previous(&mut self) {
-        profile_method!(previous);
         let i = self
             .list_state
             .selected()
@@ -332,8 +332,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
+    #[profiled]
     pub fn up(&mut self) -> Result<()> {
-        profile_method!(up);
         self.current_dir.pop();
         self.update_entries()
     }
@@ -347,8 +347,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered by the `update_entries` method.
+    #[profiled]
     pub fn select(&mut self) -> Result<()> {
-        profile_method!(select);
         // Open mode logic (already correct)
         debug_log!("In select()");
         let Some(selected) = self.list_state.selected() else {
@@ -411,8 +411,8 @@ impl FileDialog<'_> {
     /// # Errors
     ///
     /// This function will bubble up any i/o errors encountered.
+    #[profiled]
     fn update_entries(&mut self) -> Result<()> {
-        profile_method!(update_entries);
         self.items = iter::once("..".to_string())
             .chain(
                 fs::read_dir(&self.current_dir)?
@@ -420,7 +420,7 @@ impl FileDialog<'_> {
                     .filter(|e| -> bool {
                         let e = e.path();
                         if e.file_name()
-                            .map_or(false, |n| n.to_string_lossy().starts_with('.'))
+                            .is_some_and(|n| n.to_string_lossy().starts_with('.'))
                         {
                             return self.show_hidden;
                         }
@@ -430,12 +430,12 @@ impl FileDialog<'_> {
                             return true;
                         }
                         match self.filter.as_ref().unwrap() {
-                            FilePattern::Extension(ext) => e.extension().map_or(false, |e| {
+                            FilePattern::Extension(ext) => e.extension().is_some_and(|e| {
                                 e.to_ascii_lowercase() == OsString::from(ext.to_ascii_lowercase())
                             }),
                             FilePattern::Substring(substr) => e
                                 .file_name()
-                                .map_or(false, |n| n.to_string_lossy().contains(substr)),
+                                .is_some_and(|n| n.to_string_lossy().contains(substr)),
                         }
                     })
                     .map(|file| {
@@ -475,9 +475,8 @@ impl FileDialog<'_> {
     /// # Panics
     ///
     /// Panics if there is a logic error popping the last character out of the search buffer.
-    #[allow(clippy::unnested_or_patterns)]
+    #[profiled]
     pub fn handle_input(&mut self, key_event: KeyEvent) -> Result<Status> {
-        profile_method!(handle_input);
         // Make sure for Windows
         if matches!(key_event.kind, KeyEventKind::Press) {
             debug_log!("key_event={key_event:#?}");
@@ -496,6 +495,7 @@ impl FileDialog<'_> {
                 _ => match self.focus {
                     DialogFocus::List => {
                         // Handle keys for navigating the file list
+                        #[allow(clippy::unnested_or_patterns)]
                         match key_combination {
                             key!(tab) | key!(backtab) => {
                                 debug_log!("Matched Tab / Backtab in {:#?} mode", self.focus);
@@ -526,6 +526,7 @@ impl FileDialog<'_> {
                         }
                     }
                     DialogFocus::Input => {
+                        #[allow(clippy::unnested_or_patterns)]
                         match key_combination {
                             key!(tab) | key!(backtab) => {
                                 debug_log!("Matched Tab / Backtab in {:#?} mode", self.focus);
@@ -545,24 +546,24 @@ impl FileDialog<'_> {
     }
 }
 
+#[profiled]
 fn get_max_lengths(mappings: &[KeyDisplayLine]) -> (u16, u16) {
-    profile_fn!(get_max_lengths);
     lazy_static_var!(
         (u16, u16),
+        deref,
         mappings
             .iter()
             .fold((0_u16, 0_u16), |(max_key, max_desc), row| {
                 let key_len = row.keys.len().try_into().unwrap();
                 let desc_len = row.desc.len().try_into().unwrap();
                 (max_key.max(key_len), max_desc.max(desc_len))
-            }),
-        deref
+            })
     )
 }
 
 /// Handle input in Save mode (for typing file name).
+#[profiled]
 fn handle_save_input(text_area: &mut TextArea, key: KeyEvent) {
-    profile_fn!(handle_save_input);
     // Convert the KeyEvent into an Input that TextArea can handle
     let input = Input::from(key);
     text_area.input(input);

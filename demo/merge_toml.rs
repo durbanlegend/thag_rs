@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-cargo_toml = "0.20.4"
-serde_merge = "0.1.3"
-*/
-
 /// Prototype of comprehensive merge of script toml metadata with defaults.
 //# Purpose: Develop for inclusion in main project.
 //# Categories: crates, prototype, technique
@@ -49,8 +43,8 @@ fn merge_manifests(
         // eprintln!("Found bin.edition={:#?}", bin.edition);
         // Don't accept the default of E2015. This is the only way I can think of
         // to stop it defaulting to E2015 and then overriding the template value.
-        if matches!(bin.edition, Edition::E2015) {
-            bin.edition = cargo_toml::Edition::E2021;
+        if matches!(bin.edition, Some(Edition::E2015)) {
+            bin.edition = Some(Edition::E2021);
         }
     }
 

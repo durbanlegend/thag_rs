@@ -1,15 +1,8 @@
-/*[toml]
-[dependencies]
-ratatui = "0.29.0"
-scopeguard = "1.2.0"
-tui-textarea = { version = "0.7.0", features = ["crossterm", "search"] }
-*/
-
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
 ///
 /// Not suitable for running from a URL.
 //# Purpose: Demo TUI editor and featured crates, including `crossterm`, and the use of the `scopeguard` crate to reset the terminal when it goes out of scope.
-//# Categories: crates, exploration, technique
+//# Categories: crates, exploration, technique, tui
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{
     self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event::Paste,

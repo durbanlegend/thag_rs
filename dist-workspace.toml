@@ -10,7 +10,13 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell", "powershell", "msi"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+]
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program
@@ -20,11 +26,7 @@ install-updater = false
 #
 [[dist.extra-artifacts]]
 artifacts = ["demo.zip"]
-build = ["sh", "-c", "zip demo.zip demo/*"]
-
-[[dist.extra-artifacts]]
-artifacts = ["tools.zip"]
-build = ["sh", "-c", "zip tools.zip tools/*"]
+build = ["sh", "-c", "zip demo.zip demo/* demo/proc_macros/*"]
 
 [[dist.extra-artifacts]]
 artifacts = ["assets/default_config.toml"]

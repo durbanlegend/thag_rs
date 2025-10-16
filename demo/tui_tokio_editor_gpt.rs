@@ -1,16 +1,9 @@
-/*[toml]
-[dependencies]
-ratatui = "0.27.0"
-tokio = { version = "1", features = ["full"] }
-tui-textarea = { version = "0.5.1", features = ["crossterm", "search"] }
-*/
-
 /// GPT-provided demo of a very basic TUI (terminal user interface) editor using
 /// `tokio` and the `crossterm` / `ratatui` / `tui-textarea` stack. provides a blank editor
 /// screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
 /// prints the captured data.
 //# Purpose: Exploring options for editing input. e.g. for a REPL.
-//# Categories: async, crates, educational, exploration, technique
+//# Categories: async, crates, learning, exploration, technique, tui
 ///
 /// Not suitable for running from a URL.
 use ratatui::crossterm::{
@@ -75,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Step 4: Main loop for TUI
     loop {
         terminal.draw(|f| {
-            let size = f.size();
+            let size = f.area();
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([Constraint::Percentage(100)].as_ref())

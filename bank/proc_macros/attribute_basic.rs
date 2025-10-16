@@ -1,15 +1,16 @@
 #![allow(clippy::module_name_repetitions)]
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{parse_macro_input, DeriveInput};
 
-pub fn attribute_basic_impl(tokens: TokenStream) -> TokenStream {
-    let tokens: proc_macro2::TokenStream = tokens.clone().into();
+pub fn attribute_basic_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let item: proc_macro2::TokenStream = item.clone().into();
+    let attr: proc_macro2::TokenStream = attr.clone().into();
 
-    // Attach logic to the input
+    // Annotate the item with the requested attribute
     let expanded = quote! {
-        #[allow(unused_variables)]
-        #tokens
+        #[#attr]
+        #item
     };
     TokenStream::from(expanded)
 }

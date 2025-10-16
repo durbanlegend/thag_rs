@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { path = "/Users/donf/projects/thag_rs/src/proc_macros" }
+thag_proc_macros = { path = "/Users/donf/projects/thag_rs/thag_proc_macros" }
 */
 use thag_proc_macros::MyDescription;
 

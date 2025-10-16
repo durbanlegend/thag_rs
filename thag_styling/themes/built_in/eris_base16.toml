@@ -1,0 +1,133 @@
+name = "eris Base16"
+description = "Converted from eris theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#0a0920"]
+bg_rgbs = [[
+    10,
+    9,
+    32,
+]]
+
+[palette.heading1]
+rgb = [
+    247,
+    104,
+    163,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    247,
+    104,
+    163,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    85,
+    186,
+    236,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    248,
+    124,
+    175,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    247,
+    104,
+    163,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    154,
+    170,
+    229,
+]
+
+[palette.info]
+rgb = [
+    107,
+    196,
+    240,
+]
+
+[palette.emphasis]
+rgb = [
+    250,
+    174,
+    162,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    90,
+    184,
+    231,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    160,
+    168,
+    212,
+]
+
+[palette.subtle]
+rgb = [
+    89,
+    89,
+    232,
+]
+
+[palette.hint]
+rgb = [
+    106,
+    113,
+    215,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    114,
+    124,
+    207,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    250,
+    174,
+    162,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    121,
+    134,
+    197,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    99,
+    103,
+    223,
+]

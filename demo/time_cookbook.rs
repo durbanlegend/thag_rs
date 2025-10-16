@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-chrono = "0.4.38"
-*/
-
 /// Simple time demo pasted directly from Rust cookbook. Run without -q to show how
 /// `thag_rs` will find the missing `chrono` manifest entry and display a specimen
 /// toml block you can paste in at the top of the script.

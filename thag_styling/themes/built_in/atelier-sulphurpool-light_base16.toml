@@ -1,0 +1,133 @@
+name = "Atelier Sulphurpool Light Base16"
+description = "Converted from Atelier Sulphurpool Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#f5f7ff"]
+bg_rgbs = [[
+    245,
+    247,
+    255,
+]]
+
+[palette.heading1]
+rgb = [
+    49,
+    72,
+    170,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    153,
+    92,
+    117,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    34,
+    162,
+    201,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    180,
+    53,
+    14,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    196,
+    95,
+    23,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    32,
+    39,
+    70,
+]
+
+[palette.info]
+rgb = [
+    29,
+    119,
+    191,
+]
+
+[palette.emphasis]
+rgb = [
+    182,
+    129,
+    37,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    34,
+    162,
+    201,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    76,
+    84,
+    118,
+]
+
+[palette.subtle]
+rgb = [
+    51,
+    75,
+    194,
+]
+
+[palette.hint]
+rgb = [
+    99,
+    108,
+    146,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    93,
+    104,
+    152,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    172,
+    151,
+    57,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    41,
+    50,
+    86,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    93,
+    105,
+    152,
+]

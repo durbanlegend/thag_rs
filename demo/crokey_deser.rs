@@ -1,11 +1,15 @@
-/*[toml]
-[dependencies]
-crokey = "1.0.1"
-serde = { version = "1.0.215", features = ["derive"] }
-toml = "0.8.19"
-*/
-
-/// Published example of serde deserialisation from `crokey` crate.
+/// Published example of serde deserialisation from the `crokey` crate.
+///
+/// The latest version of this example is available in the [examples] folder
+///  in the `crokey` repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/Canop/crokey/blob/main/examples/deser_keybindings/src/main.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Demo loading keybindings from a file.
 //# Categories: crates, technique
 use {

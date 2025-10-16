@@ -1,9 +1,3 @@
-/*[toml]
-[dependencies]
-quote = "1.0.37"
-syn = { version = "2.0.90", features = ["full"] }
-*/
-
 /// Prototype of a simple partial expression evaluator. It solicits a Rust expression and embeds
 /// it in a `println!` statement for use in generated code.
 ///
@@ -27,7 +21,8 @@ use syn::{self, Expr};
 fn main() {
     loop {
         println!("Enter an expression (e.g., 2 + 3)");
-        println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done",);
+        println!("Enter or paste lines of Rust source code at the prompt and press Ctrl-D on a new line when done");
+        println!("Enter q as the expression to quit",);
         let mut input = Vec::<u8>::new();
         std::io::stdin()
             .read_to_end(&mut input)
@@ -37,6 +32,10 @@ fn main() {
             Ok(v) => v,
             Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
         };
+
+        if input.starts_with('q') {
+            break;
+        }
 
         // Parse the expression string into a syntax tree
         let expr: Result<Expr, syn::Error> = syn::parse_str::<Expr>(&input.trim());

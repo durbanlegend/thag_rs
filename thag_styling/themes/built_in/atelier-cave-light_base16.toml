@@ -1,0 +1,133 @@
+name = "Atelier Cave Light Base16"
+description = "Converted from Atelier Cave Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#efecf4"]
+bg_rgbs = [[
+    239,
+    236,
+    244,
+]]
+
+[palette.heading1]
+rgb = [
+    86,
+    18,
+    182,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    174,
+    51,
+    174,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    25,
+    127,
+    200,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    137,
+    37,
+    79,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    157,
+    71,
+    43,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    25,
+    23,
+    28,
+]
+
+[palette.info]
+rgb = [
+    22,
+    48,
+    177,
+]
+
+[palette.emphasis]
+rgb = [
+    150,
+    100,
+    49,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    44,
+    124,
+    181,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    86,
+    79,
+    95,
+]
+
+[palette.subtle]
+rgb = [
+    106,
+    88,
+    137,
+]
+
+[palette.hint]
+rgb = [
+    111,
+    103,
+    122,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    101,
+    95,
+    109,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    42,
+    146,
+    146,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    38,
+    35,
+    42,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    110,
+    104,
+    121,
+]

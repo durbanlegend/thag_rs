@@ -1,39 +1,50 @@
 #![allow(clippy::uninlined_format_args)]
-use crate::builder::process_expr;
-use crate::code_utils::{self, clean_up, display_dir_contents, extract_ast_expr, extract_manifest};
-use crate::tui_editor::{
-    script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay, ManagedTerminal,
-};
 use crate::{
-    cprtln, cvprtln, get_verbosity, key, lazy_static_var, regex, vlog, BuildState, Cli,
-    CrosstermEventReader, EventReader, KeyCombination, KeyDisplayLine, Lvl, ProcFlags, ThagError,
-    ThagResult, V,
+    builder::process_expr,
+    code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
+    key, lazy_static_var,
+    manifest::extract,
+    tui_editor::{
+        script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
+        ManagedTerminal, RataStyle,
+    },
+    BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
+    KeyDisplayLine, ProcFlags, ThagError, ThagResult,
 };
 use clap::{CommandFactory, Parser};
-use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
+// use crossterm::style::types::color::Color as ReedlineColor;
 use edit::edit_file;
-use firestorm::{profile_fn, profile_method};
-use nu_ansi_term::{Color, Style as NuStyle};
-use ratatui::style::{Style as RataStyle, Stylize};
+use nu_ansi_term::{Color as NuColor, Style as NuStyle};
+use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
-    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
-    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    default_emacs_keybindings, Color as ReedLineColor, ColumnarMenu, DefaultCompleter,
+    DefaultHinter, DefaultValidator, EditCommand, Emacs, ExampleHighlighter, FileBackedHistory,
+    HistoryItem, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::fmt::Debug;
-use std::fs::{self, read_to_string, OpenOptions};
-use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::time::Instant;
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    fmt::{Debug, Write as _},
+    fs::{self, read_to_string, OpenOptions},
+    io::{BufWriter, Write},
+    path::{Path, PathBuf},
+    str::FromStr,
+    time::Instant,
+};
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
+use thag_profiler::profiled;
+use thag_styling::{
+    display_terminal_attributes, display_theme_details, display_theme_roles, re, sprtln, vprtln,
+    Role, Style, TermAttributes, ThemedStyle, V,
+};
 use tui_textarea::{Input, TextArea};
 
+/// The filename for the REPL history file.
 pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
+
+/// The default multiline indicator string used in the REPL prompt.
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 const EVENT_DESCS: &[[&str; 2]; 33] = &[
@@ -169,24 +180,32 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 
 /// REPL mode lets you type or paste a Rust expression to be evaluated.
 ///
-/// Start by choosing the eval option and entering your expression. Expressions between matching braces,
-/// brackets, parens or quotes may span multiple lines.
+/// Enter the expression to be evaluated.
+///
+/// Expressions between matching braces, brackets, parens or quotes may span multiple lines.
+///
+/// Expressions starting with "// ", "/// ", or  "\[Cc\]omment " will be ignored as comments.
+///
 /// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+///
 /// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
 /// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
 /// comment block of the form
-/// ``` rust
+/// ``` rustdoc
 /// /*[toml]
 /// [dependencies]
 /// ...
 /// */
 /// ```
 /// From here they will be extracted to a dedicated Cargo.toml file.
+///
 /// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+///
 /// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
 /// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
 /// editor or directly from their temporary disk locations.
-/// The tab key will show command selections and complete partial matching selections."
+///
+/// The tab key will show command selections and complete partial matching selections.
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
     name = "",
@@ -199,17 +218,19 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 pub enum ReplCommand {
     /// Show the REPL banner
     Banner,
-    /// Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
+    /// Promote the Rust expression to the TUI REPL, which can handle any script.
+    /// This is a one-way process, but the original expression will be saved in history.
     Tui,
-    /// Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
+    /// Edit the Rust expression in the configured or default editor.
+    /// Edit+run is an alternative to prompt-line evaluation or TUI for longer snippets and programs.
     Edit,
     /// Edit the generated Cargo.toml
     Toml,
     /// Attempt to build and run the Rust expression
     Run,
-    /// Delete all temporary files for this eval (see list)
+    /// Delete all temporary files for the current evaluation (see `list` command)
     Delete,
-    /// List temporary files for this eval
+    /// List temporary files for this the current evaluation
     List,
     /// Edit history
     History,
@@ -217,13 +238,15 @@ pub enum ReplCommand {
     Help,
     /// Show key bindings
     Keys,
+    /// Show theme and terminal attributes (change via `thag -C` and rerun)
+    Theme,
     /// Exit the REPL
     Quit,
 }
 
 impl ReplCommand {
+    #[profiled]
     fn print_help() {
-        profile_method!(print_help);
         let mut command = Self::command();
         // let mut buf = Vec::new();
         // command.write_help(&mut buf).unwrap();
@@ -236,31 +259,31 @@ impl ReplCommand {
 #[allow(clippy::module_name_repetitions)]
 pub struct ReplPrompt(pub &'static str);
 impl Prompt for ReplPrompt {
-    fn render_prompt_left(&self) -> Cow<str> {
-        profile_method!(render_prompt_left);
+    #[profiled]
+    fn render_prompt_left(&self) -> Cow<'_, str> {
         Cow::Owned(self.0.to_string())
     }
 
-    fn render_prompt_right(&self) -> Cow<str> {
-        profile_method!(render_prompt_right);
+    #[profiled]
+    fn render_prompt_right(&self) -> Cow<'_, str> {
         Cow::Owned(String::new())
     }
 
-    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
-        profile_method!(render_prompt_indicator);
+    #[profiled]
+    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<'_, str> {
         Cow::Owned("> ".to_string())
     }
 
-    fn render_prompt_multiline_indicator(&self) -> Cow<str> {
-        profile_method!(render_prompt_multiline_indicator);
+    #[profiled]
+    fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 
+    #[profiled]
     fn render_prompt_history_search_indicator(
         &self,
         history_search: PromptHistorySearch,
-    ) -> Cow<str> {
-        profile_method!(render_prompt_history_search_indicator);
+    ) -> Cow<'_, str> {
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",
@@ -271,20 +294,26 @@ impl Prompt for ReplPrompt {
             prefix, history_search.term
         ))
     }
+
+    #[profiled]
+    fn get_prompt_color(&self) -> reedline::Color {
+        lazy_static_var!(ReedLineColor, deref, ReedLineColor::themed(Role::Success))
+    }
 }
 
-fn get_heading_style() -> &'static NuStyle {
-    profile_fn!(get_heading_style);
-    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::HEAD))
+#[profiled]
+fn get_heading_style() -> &'static Style {
+    lazy_static_var!(Style, Style::for_role(Role::HD1))
 }
 
-fn get_subhead_style() -> &'static NuStyle {
-    profile_fn!(get_subhead_style);
-    lazy_static_var!(NuStyle, NuStyle::from(&Lvl::SUBH))
+#[profiled]
+fn get_subhead_style() -> &'static Style {
+    lazy_static_var!(Style, Style::for_role(Role::HD2))
 }
 
+/// Add menu keybindings to the provided keybindings configuration.
+#[profiled]
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
-    profile_fn!(add_menu_keybindings);
     keybindings.add_binding(
         KeyModifiers::NONE,
         KeyCode::Tab,
@@ -327,7 +356,7 @@ pub fn run_repl(
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
     let hist_backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
-    let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
+    let history = Box::new(FileBackedHistory::with_file(40, history_path.clone())?);
 
     let cmd_vec = ReplCommand::iter()
         .map(<ReplCommand as Into<&'static str>>::into)
@@ -350,23 +379,41 @@ pub fn run_repl(
     // println!("{:#?}", keybindings.get_keybindings());
 
     let edit_mode = Box::new(Emacs::new(keybindings.clone()));
-    let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
-    highlighter.change_colors(
-        Color::from(&Lvl::HEAD),
-        Color::from(&Lvl::EMPH),
-        Color::from(&Lvl::NORM),
-    );
-    let mut line_editor = Reedline::create()
+    let mut line_editor_builder = Reedline::create()
         .with_validator(Box::new(DefaultValidator))
-        .with_hinter(Box::new(
-            DefaultHinter::default().with_style(NuStyle::from(&Lvl::Ghost).italic()),
-        ))
         .with_history(history)
         .with_history_exclusion_prefix(Some("q".into()))
-        .with_highlighter(highlighter)
         .with_completer(completer)
         .with_menu(ReedlineMenu::EngineCompleter(completion_menu))
-        .with_edit_mode(edit_mode);
+        .with_edit_mode(edit_mode)
+        .with_ansi_colors(TermAttributes::get_or_init().color_support != ColorSupport::None);
+
+    let term_attrs = TermAttributes::get_or_init();
+
+    // Only add highlighting if color support is available
+    if matches!(
+        term_attrs.color_support,
+        ColorSupport::None | ColorSupport::Undetermined
+    ) {
+        // Add default hinter without styling when no color support
+        line_editor_builder = line_editor_builder.with_hinter(Box::new(DefaultHinter::default()));
+    } else {
+        let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
+        let nu_match = NuColor::themed(Role::Code);
+        let nu_notmatch = NuColor::themed(Role::Info);
+        let nu_neutral = NuColor::themed(Role::Emphasis);
+        highlighter.change_colors(nu_match, nu_notmatch, nu_neutral);
+
+        // Add highlighter to builder
+        line_editor_builder = line_editor_builder.with_highlighter(highlighter);
+
+        // Add styled hinter
+        line_editor_builder = line_editor_builder.with_hinter(Box::new(
+            DefaultHinter::default().with_style(NuStyle::themed(Role::Hint).italic()),
+        ));
+    }
+
+    let mut line_editor = line_editor_builder;
 
     let bindings = keybindings.get_keybindings();
     let reedline_events = bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
@@ -393,7 +440,7 @@ pub fn run_repl(
     let formatted_bindings = format_bindings(&named_reedline_events, max_cmd_len);
 
     // Determine the length of the longest key description for padding
-    let max_key_len = lazy_static_var!(usize, get_max_key_len(formatted_bindings), deref);
+    let max_key_len = lazy_static_var!(usize, deref, get_max_key_len(formatted_bindings));
     // eprintln!("max_key_len={max_key_len}");
 
     loop {
@@ -412,8 +459,18 @@ pub fn run_repl(
             continue;
         }
 
-        let (first_word, _rest) = parse_line(rs_source);
-        let maybe_cmd = {
+        let (first_word, rest) = parse_line(rs_source);
+
+        if first_word == "#"
+            || first_word == "//"
+            || first_word == "///"
+            || first_word.to_lowercase() == "comment"
+        {
+            // sprtln!(Role::HD3, "{rs_source}");
+            continue;
+        }
+        // vprtln!(V::VV, "first_word={first_word}, rest={rest:#?}");
+        let maybe_cmd = if rest.is_empty() {
             let mut matches = 0;
             let mut cmd = String::new();
             for key in &cmd_vec {
@@ -432,6 +489,8 @@ pub fn run_repl(
                 // println!("No single matching key found");
                 None
             }
+        } else {
+            None
         };
 
         if let Some(cmd) = maybe_cmd {
@@ -445,16 +504,19 @@ pub fn run_repl(
                         break;
                     }
                     ReplCommand::Tui => {
+                        if TermAttributes::get_or_init().color_support == ColorSupport::None {
+                            println!("Sorry, TUI features require terminal color support");
+                            continue;
+                        }
                         let source_path = &build_state.source_path;
-                        let mut save_path: PathBuf =
-                            build_state.cargo_home.join("repl_tui_save.rs");
+                        let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
                         // let backup_path: PathBuf =
                         //     &build_state.cargo_home.join("repl_tui_backup.rs");
 
                         let rs_source = read_to_string(source_path)?;
                         tui(
                             rs_source.as_str(),
-                            &mut save_path,
+                            &save_path,
                             build_state,
                             args,
                             proc_flags,
@@ -477,6 +539,10 @@ pub fn run_repl(
                         list(build_state)?;
                     }
                     ReplCommand::History => {
+                        if TermAttributes::get_or_init().color_support == ColorSupport::None {
+                            println!("Sorry, TUI features require terminal color support");
+                            continue;
+                        }
                         review_history(
                             &mut line_editor,
                             &history_path,
@@ -486,6 +552,14 @@ pub fn run_repl(
                     }
                     ReplCommand::Keys => {
                         show_key_bindings(formatted_bindings, max_key_len);
+                    }
+                    ReplCommand::Theme => {
+                        let term_attrs = TermAttributes::get_or_init();
+                        let theme = &term_attrs.theme;
+
+                        display_theme_roles(theme);
+                        display_theme_details(theme);
+                        display_terminal_attributes(theme);
                     }
                 }
                 continue;
@@ -502,6 +576,7 @@ pub fn run_repl(
 /// # Errors
 ///
 /// This function will bubble up any error encountered in processing.
+#[profiled]
 pub fn process_source(
     rs_source: &str,
     build_state: &mut BuildState,
@@ -509,22 +584,22 @@ pub fn process_source(
     proc_flags: &ProcFlags,
     start: Instant,
 ) -> ThagResult<()> {
-    profile_fn!(process_source);
-    let rs_manifest = extract_manifest(rs_source, Instant::now())?;
+    let rs_manifest = extract(rs_source, Instant::now())?;
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
         build_state.ast = Some(crate::Ast::Expr(expr_ast));
         process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        cprtln!(&(&Lvl::ERR).into(), "Error parsing code: {maybe_ast:#?}");
-    };
+        sprtln!(Role::ERR, "Error parsing code: {maybe_ast:#?}");
+    }
     Ok(())
 }
 
+#[profiled]
 fn tui(
     initial_content: &str,
-    save_path: &mut PathBuf,
+    save_path: &Path,
     build_state: &mut BuildState,
     args: &Cli,
     proc_flags: &ProcFlags,
@@ -544,7 +619,7 @@ fn tui(
     let mut edit_data = EditData {
         return_text: true,
         initial_content: &initial_content,
-        save_path: Some(save_path),
+        save_path: Some(save_path.to_path_buf()),
         history_path: Some(&history_path),
         history: Some(history),
     };
@@ -556,7 +631,7 @@ fn tui(
 
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&Lvl::SUBH).bold(),
+        title_style: RataStyle::themed(Role::HD2),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -604,6 +679,7 @@ fn tui(
     Ok(())
 }
 
+#[profiled]
 fn review_history(
     line_editor: &mut Reedline,
     history_path: &PathBuf,
@@ -618,7 +694,7 @@ fn review_history(
     if confirm {
         let history_mut = line_editor.history_mut();
         let saved_history = fs::read_to_string(staging_path)?;
-        eprintln!("staging_path={staging_path:?}");
+        eprintln!("staging_path={}", staging_path.display());
         eprintln!("saved_history={saved_history}");
         history_mut.clear()?;
         for line in saved_history.lines() {
@@ -634,9 +710,9 @@ fn review_history(
 /// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
+#[profiled]
 pub fn decode(input: &str) -> String {
-    profile_fn!(decode);
-    let re = regex!(r"(<\\n>)");
+    let re = re!(r"(<\\n>)");
     let lf = std::str::from_utf8(&[10_u8]).unwrap();
     re.replace_all(input, lf).to_string()
 }
@@ -646,16 +722,16 @@ pub fn decode(input: &str) -> String {
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[profiled]
 pub fn edit_history<R: EventReader + Debug>(
     initial_content: &str,
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
-    let mut staging_path_buf = staging_path.to_path_buf();
     let mut edit_data = EditData {
         return_text: false,
         initial_content,
-        save_path: Some(&mut staging_path_buf),
+        save_path: Some(staging_path.to_path_buf()),
         history_path: None,
         history: None::<History>,
     };
@@ -665,7 +741,7 @@ pub fn edit_history<R: EventReader + Debug>(
     ];
     let display = KeyDisplay {
         title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&Lvl::HEAD).bold(),
+        title_style: RataStyle::themed(Role::HD2),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
@@ -707,6 +783,7 @@ pub fn edit_history<R: EventReader + Debug>(
 /// # Errors
 ///
 /// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+#[profiled]
 pub fn history_key_handler(
     key_event: KeyEvent,
     _maybe_term: Option<&mut ManagedTerminal>,
@@ -717,12 +794,11 @@ pub fn history_key_handler(
     saved: &mut bool,
     status_message: &mut String,
 ) -> ThagResult<KeyAction> {
-    profile_fn!(history_key_handler);
     // Make sure for Windows
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
-    let maybe_save_path = &mut edit_data.save_path;
+    let maybe_save_path = &edit_data.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
     match key_combination {
@@ -730,17 +806,17 @@ pub fn history_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             // Save logic
-            save_file(maybe_save_path, textarea)?;
+            save_file(maybe_save_path.as_ref(), textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            let save_file = save_file(maybe_save_path, textarea)?;
+            let save_file = save_file(maybe_save_path.as_ref(), textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
             status_message.clear();
-            status_message.push_str(&format!("Saved to {save_file}"));
+            let _ = write!(status_message, "Saved to {save_file}");
             Ok(KeyAction::Save)
         }
         key!(ctrl - l) => {
@@ -760,12 +836,9 @@ pub fn history_key_handler(
     }
 }
 
-fn save_file(
-    maybe_save_path: &Option<&mut PathBuf>,
-    textarea: &TextArea<'_>,
-) -> ThagResult<String> {
-    profile_fn!(save_file);
-    let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
+#[profiled]
+fn save_file(maybe_save_path: Option<&PathBuf>, textarea: &TextArea<'_>) -> ThagResult<String> {
+    let staging_path = maybe_save_path.ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -782,25 +855,24 @@ fn save_file(
 
 /// Return the maximum length of the key descriptor for a set of styled and
 /// formatted key / description bindings to be displayed on screen.
+#[profiled]
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
-    profile_fn!(get_max_key_len);
-    let style: NuStyle = *get_heading_style();
+    let style = get_heading_style();
     formatted_bindings
         .iter()
         .map(|(key_desc, _)| {
             let key_desc = style.paint(key_desc);
-            let key_desc = format!("{key_desc}");
             key_desc.len()
         })
         .max()
         .unwrap_or(0)
 }
 
+#[profiled]
 fn format_bindings(
     named_reedline_events: &[(String, &ReedlineEvent)],
     max_cmd_len: usize,
 ) -> &'static Vec<(String, String)> {
-    profile_fn!(format_bindings);
     lazy_static_var!(Vec<(String, String)>, {
         let mut formatted_bindings = named_reedline_events
             .iter()
@@ -825,50 +897,45 @@ fn format_bindings(
     })
 }
 
+#[profiled]
 fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
-    profile_fn!(get_max_cmd_len);
     // Calculate max command len for padding
-    lazy_static_var!(
-        usize,
-        {
-            // Determine the length of the longest command for padding
-            // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
-            let style = get_subhead_style();
-            let max_cmd_len = reedline_events
-                .iter()
-                .map(|reedline_event| {
-                    if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
-                        edit_cmds
-                            .iter()
-                            .map(|cmd| {
-                                let key_desc = style.paint(format!("{cmd:?}"));
-                                let key_desc = format!("{key_desc}");
-                                key_desc.len()
-                            })
-                            .max()
-                            .unwrap_or(0)
-                    } else if !format!("{reedline_event}").starts_with("UntilFound") {
-                        let event_desc = style.paint(format!("{reedline_event:?}"));
-                        let event_desc = format!("{event_desc}");
-                        event_desc.len()
-                    } else {
-                        0
-                    }
-                })
-                .max()
-                .unwrap_or(0);
-            // Add 2 bytes of padding
-            max_cmd_len + 2
-        },
-        deref
-    )
+    lazy_static_var!(usize, deref, {
+        // Determine the length of the longest command for padding
+        // NB: Can't extract this to a method because for some reason reedline does not expose KeyCombination.
+        let style = get_subhead_style();
+        let max_cmd_len = reedline_events
+            .iter()
+            .map(|reedline_event| {
+                if let ReedlineEvent::Edit(edit_cmds) = reedline_event {
+                    edit_cmds
+                        .iter()
+                        .map(|cmd| {
+                            let key_desc = style.paint(format!("{cmd:?}"));
+                            key_desc.len()
+                        })
+                        .max()
+                        .unwrap_or(0)
+                } else if !format!("{reedline_event}").starts_with("UntilFound") {
+                    let event_desc = style.paint(format!("{reedline_event:?}"));
+                    event_desc.len()
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap_or(0);
+        // Add 2 bytes of padding
+        max_cmd_len + 2
+    })
 }
 
+/// Display key bindings with their descriptions.
+#[profiled]
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
-    profile_fn!(show_key_bindings);
     println!();
-    cprtln!(
-        &(&Lvl::EMPH).into(),
+    sprtln!(
+        Role::EMPH,
         "Key bindings - subject to your terminal settings"
     );
 
@@ -876,16 +943,15 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     let style = get_heading_style();
     for (key_desc, cmd_desc) in formatted_bindings {
         let key_desc = style.paint(key_desc);
-        let key_desc = format!("{key_desc}");
         println!("{key_desc:<width$}    {cmd_desc}", width = max_key_len);
     }
     println!();
 }
 
-// Helper function to convert KeyModifiers to string
+/// Helper function to convert `KeyModifiers` to string
 #[must_use]
+#[profiled]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
-    profile_fn!(format_key_modifier);
     let mut modifiers = Vec::new();
     if modifier.contains(KeyModifiers::CONTROL) {
         modifiers.push("CONTROL");
@@ -904,10 +970,10 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
     }
 }
 
-// Helper function to convert KeyCode to string
+/// Helper function to convert `KeyCode` to string
 #[must_use]
+#[profiled]
 pub fn format_key_code(key_code: KeyCode) -> String {
-    profile_fn!(format_key_code);
     match key_code {
         KeyCode::Backspace => "Backspace".to_string(),
         KeyCode::Enter => "Enter".to_string(),
@@ -939,13 +1005,13 @@ pub fn format_key_code(key_code: KeyCode) -> String {
     }
 }
 
-// Helper function to format ReedlineEvents other than Edit, and their doc comments
+/// Helper function to format `ReedlineEvents` other than `Edit`, and their doc comments
 /// # Panics
 /// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]
 #[must_use]
+#[profiled]
 pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
-    profile_fn!(format_non_edit_events);
     let event_desc_map = lazy_static_var!(HashMap<&'static str, &'static str>, {
         EVENT_DESCS
             .iter()
@@ -954,7 +1020,6 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     });
 
     let event_highlight = get_subhead_style().paint(event_name);
-    let event_highlight = format!("{event_highlight}");
     let event_desc = format!(
         "{:<max_cmd_len$} {}",
         event_highlight,
@@ -967,8 +1032,8 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
 /// # Panics
 /// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[must_use]
+#[profiled]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
-    profile_fn!(format_edit_commands);
     let cmd_desc_map: &HashMap<&str, &str> =
         lazy_static_var!(HashMap<&'static str, &'static str>, {
             CMD_DESCS
@@ -985,16 +1050,15 @@ pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> St
 }
 
 #[allow(clippy::too_many_lines)]
+#[profiled]
 fn format_cmd_desc(
     cmd: &EditCommand,
     cmd_desc_map: &HashMap<&str, &str>,
     max_cmd_len: usize,
 ) -> String {
-    profile_fn!(format_cmd_desc);
     let style = get_subhead_style();
 
     let cmd_highlight = style.paint(format!("{cmd:?}"));
-    let cmd_highlight = format!("{cmd_highlight}");
     match cmd {
         EditCommand::MoveToStart { select }
         | EditCommand::MoveToLineStart { select }
@@ -1103,16 +1167,16 @@ fn format_cmd_desc(
 /// # Errors
 /// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
+#[profiled]
 pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
-    profile_fn!(delete);
     // let build_state = &context.build_state;
     let clean_up = clean_up(&build_state.source_path, &build_state.target_dir_path);
     if clean_up.is_ok()
         || (!&build_state.source_path.exists() && !&build_state.target_dir_path.exists())
     {
-        vlog!(V::QQ, "Deleted");
+        vprtln!(V::QQ, "Deleted");
     } else {
-        vlog!(
+        vprtln!(
             V::QQ,
             "Failed to delete all files - enter l(ist) to list remaining files"
         );
@@ -1124,6 +1188,7 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
+#[profiled]
 pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
     edit_file(source_path)?;
 
@@ -1134,21 +1199,22 @@ pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
 /// # Errors
 /// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
+#[profiled]
 pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     let cargo_toml_file = &build_state.cargo_toml_path;
     if cargo_toml_file.exists() {
         edit_file(cargo_toml_file)?;
     } else {
-        vlog!(V::QQ, "No Cargo.toml file found - have you run anything?");
+        vprtln!(V::QQ, "No Cargo.toml file found - have you run anything?");
     }
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
 /// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
+#[profiled]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
-    profile_fn!(parse_line);
-    let re: &Regex = regex!(r#"("[^"\n]+"|[\S]+)"#);
+    let re: &Regex = re!(r#"("[^"\n]+"|[\S]+)"#);
 
     let mut args = re
         .captures_iter(line)
@@ -1159,25 +1225,22 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
 }
 
 /// Display the REPL banner.
+#[profiled]
 pub fn disp_repl_banner(cmd_list: &str) {
-    profile_fn!(disp_repl_banner);
-    cvprtln!(
-        Lvl::HEAD,
-        get_verbosity(),
+    sprtln!(
+        Role::HD1,
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
 
     println!();
 
-    cvprtln!(
-        Lvl::SUBH,
-        get_verbosity(),
+    sprtln!(
+        Role::HD2,
         r"Expressions in matching braces, brackets or quotes may span multiple lines."
     );
 
-    cvprtln!(
-        Lvl::SUBH,
-        get_verbosity(),
+    sprtln!(
+        Role::HD2,
         r"Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );
 }
@@ -1189,11 +1252,11 @@ pub fn disp_repl_banner(cmd_list: &str) {
 /// The process lacks permissions to view the contents.
 /// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
+#[profiled]
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
-    profile_fn!(list);
     let source_path = &build_state.source_path;
     if source_path.exists() {
-        vlog!(V::QQ, "File: {source_path:?}");
+        vprtln!(V::QQ, "File: {source_path:?}");
     }
 
     // Display directory contents
@@ -1201,7 +1264,7 @@ pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
 
     // Check if neither file nor directory exist
     if !&source_path.exists() && !&build_state.target_dir_path.exists() {
-        vlog!(V::QQ, "No temporary files found");
+        vprtln!(V::QQ, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
 }

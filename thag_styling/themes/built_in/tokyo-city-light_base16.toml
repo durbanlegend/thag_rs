@@ -1,0 +1,133 @@
+name = "Tokyo City Light Base16"
+description = "Converted from Tokyo City Light theme"
+term_bg_luma = "light"
+min_color_support = "true_color"
+backgrounds = ["#fbfbfd"]
+bg_rgbs = [[
+    251,
+    251,
+    253,
+]]
+
+[palette.heading1]
+rgb = [
+    90,
+    74,
+    120,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    90,
+    74,
+    120,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    76,
+    80,
+    94,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    141,
+    57,
+    73,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    150,
+    80,
+    39,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    23,
+    29,
+    35,
+]
+
+[palette.info]
+rgb = [
+    52,
+    84,
+    138,
+]
+
+[palette.emphasis]
+rgb = [
+    76,
+    80,
+    94,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    76,
+    80,
+    94,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    52,
+    59,
+    89,
+]
+
+[palette.subtle]
+rgb = [
+    101,
+    101,
+    148,
+]
+
+[palette.hint]
+rgb = [
+    112,
+    118,
+    137,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    76,
+    80,
+    94,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    72,
+    94,
+    48,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    29,
+    37,
+    44,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    62,
+    90,
+    187,
+]

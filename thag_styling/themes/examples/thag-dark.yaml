@@ -1,0 +1,21 @@
+system: "base16"
+scheme: "Thag Dark Base 16"
+author: "Don Forbes (http://github.com/durbanlegend)"
+variant: "dark"
+palette:
+  base00: "000000" # black background
+  base01: "1a1a1a" # dark gray, used for lighter background (optional)
+  base02: "2a2a2a" # selection background
+  base03: "3a3a3a" # comments, etc.
+  base04: "806550" # medium coffee brown
+  base05: "d7b87d" # golden tan / light coffee foam (main foreground)
+  base06: "ffcc66" # warm intense yellow
+  base07: "ffffff" # white, used for upper boundary
+  base08: "64d6ff" # electric pale blue (was blue)
+  base09: "3cb0ff" # softer sky blue (was orange)
+  base0A: "ffaa00" # intense amber-orange (was magenta)
+  base0B: "a36f40" # rich coffee brown (was green)
+  base0C: "4fc0e8" # cyan-blue (accent, was cyan)
+  base0D: "2daeea" # vibrant electric blue (was red)
+  base0E: "ffbb33" # golden orange (was yellow)
+  base0F: "5a4b3f" # coffee ground dark brown (was brown)

@@ -1,20 +1,32 @@
 #[cfg(test)]
 use cargo_toml::Manifest;
-use thag_rs::builder::{build, generate, run};
+use quote::ToTokens;
+use std::sync::Once;
+use std::{
+    env::current_dir,
+    fs::{self, OpenOptions},
+    io::Write,
+    path::PathBuf,
+    time::Instant,
+};
+use thag_proc_macros::{safe_eprintln, safe_println};
+use thag_rs::ast::Ast;
+use thag_rs::builder::{build, display_timings, generate, run, BuildState, ScriptState};
 use thag_rs::cmd_args::Cli;
+use thag_rs::code_utils::{self};
 use thag_rs::config::DependencyInference;
-use thag_rs::{code_utils, escape_path_for_windows, execute, TMPDIR};
-use thag_rs::{BuildState, ProcFlags};
-// use sequential_test::sequential;
-use std::env::current_dir;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+#[cfg(debug_assertions)]
+use thag_rs::debug_timings;
+use thag_rs::{escape_path_for_windows, execute, ProcFlags, EXECUTABLE_CACHE_SUBDIR, TMPDIR};
 
 // Set environment variables before running tests
 fn set_up() {
-    std::env::set_var("TEST_ENV", "1");
-    std::env::set_var("VISUAL", "cat");
-    std::env::set_var("EDITOR", "cat");
+    static INIT: Once = Once::new();
+    INIT.call_once(|| unsafe {
+        std::env::set_var("TEST_ENV", "1");
+        std::env::set_var("VISUAL", "cat");
+        std::env::set_var("EDITOR", "cat");
+    });
 }
 
 // Helper function to create a sample Cli structure
@@ -36,16 +48,21 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         .expect("Problem stripping Rust suffix");
     let current_dir = std::env::current_dir().expect("Could not get current dir");
     let working_dir_path = current_dir.clone();
-    let cargo_home = home::cargo_home().expect("Could not get Cargo home");
+    let cargo_home_string = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let cargo_home = PathBuf::from(cargo_home_string);
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
     fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
-    let target_path = target_dir_path
-        .clone()
-        .join("target/debug")
-        .join(source_stem);
-    let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
-    let source_dir_path = current_dir.clone().join("tests/assets");
-    let source_path = current_dir.clone().join("tests/assets").join(source_name);
+    // Target path points to executable cache with the new shared target implementation
+    let target_path = if cfg!(windows) {
+        TMPDIR
+            .join(EXECUTABLE_CACHE_SUBDIR)
+            .join(format!("{}.exe", source_stem))
+    } else {
+        TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
+    };
+    let cargo_toml_path = target_dir_path.join("Cargo.toml");
+    let source_dir_path = current_dir.join("tests/assets");
+    let source_path = current_dir.join("tests/assets").join(source_name);
     BuildState {
         working_dir_path,
         source_stem: source_stem.into(),
@@ -66,11 +83,12 @@ fn create_sample_build_state(source_name: &str) -> BuildState {
         metadata_finder: None,
         infer: DependencyInference::None,
         args: vec![],
+        features: None,
+        thag_auto_processed: false,
     }
 }
 
 #[test]
-// #[sequential]
 fn test_builder_execute_dynamic_script() {
     set_up();
     let mut cli = create_sample_cli(Some(
@@ -133,7 +151,6 @@ fn test_builder_generate_source_file() {
 }
 
 #[test]
-// #[sequential]
 fn test_builder_build_cargo_project() {
     set_up();
     let source_name = "bitflags_t.rs";
@@ -143,10 +160,11 @@ fn test_builder_build_cargo_project() {
 
     let current_dir = current_dir().expect("Could not get current dir");
     let source_path = current_dir.join("tests/assets").join(source_name);
-    let cargo_home = home::cargo_home().expect("Could not get Cargo home");
+    let cargo_home_str = std::env::var("CARGO_HOME").unwrap_or_else(|_| ".".into());
+    let cargo_home = PathBuf::from(cargo_home_str);
     let target_dir_path = TMPDIR.join("thag_rs").join(source_stem);
     fs::create_dir_all(target_dir_path.clone()).expect("Failed to create script directory");
-    let cargo_toml_path = target_dir_path.clone().join("Cargo.toml");
+    let cargo_toml_path = target_dir_path.join("Cargo.toml");
     let cargo_toml = format!(
         r#"[package]
 name = "bitflags_t"
@@ -187,13 +205,13 @@ name = "bitflags_t"
         .write_all(cargo_toml.as_bytes())
         .expect("error writing Cargo.toml");
 
-    let target_rs_path = target_dir_path.clone().join(source_name);
+    let target_rs_path = target_dir_path.join(source_name);
 
     let rs_source =
         code_utils::read_file_contents(&source_path).expect("Error reading script contents");
     let _source_file = code_utils::write_source(&target_rs_path, &rs_source)
         .expect("Problem writing source to target path");
-    // println!("source_file={source_file:#?}");
+    // safe_println!("source_file={source_file:#?}");
 
     let build_state = BuildState {
         working_dir_path: current_dir.clone(),
@@ -202,10 +220,14 @@ name = "bitflags_t"
         source_dir_path: current_dir.join("tests/assets"),
         source_path,
         cargo_home,
-        target_path: target_dir_path
-            .clone()
-            .join("target/debug")
-            .join(source_stem),
+        // With shared target implementation, target_path points to executable cache
+        target_path: if cfg!(windows) {
+            TMPDIR
+                .join(EXECUTABLE_CACHE_SUBDIR)
+                .join(format!("{}.exe", source_stem))
+        } else {
+            TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
+        },
         cargo_toml_path,
         target_dir_path,
         rs_manifest: None,
@@ -218,6 +240,8 @@ name = "bitflags_t"
         metadata_finder: None,
         infer: DependencyInference::None,
         args: vec![],
+        features: None,
+        thag_auto_processed: false,
     };
     dbg!(&build_state);
     let proc_flags = ProcFlags::empty();
@@ -226,26 +250,24 @@ name = "bitflags_t"
 }
 
 #[test]
-// #[sequential]
 fn test_builder_run_script() {
     set_up();
     let source_name = "fib_fac_dashu_t.rs";
     let source_stem: &str = source_name
         .strip_suffix(thag_rs::RS_SUFFIX)
         .expect("Problem stripping Rust suffix");
-    let target_dir_path = TMPDIR
-        .join("thag_rs")
-        .join(source_stem)
-        .join("target/debug");
+    // With shared target implementation, executables are cached in EXECUTABLE_CACHE_SUBDIR
     let target_path = if cfg!(windows) {
-        target_dir_path.join(source_stem.to_string() + ".exe")
+        TMPDIR
+            .join(EXECUTABLE_CACHE_SUBDIR)
+            .join(format!("{}.exe", source_stem))
     } else {
-        target_dir_path.join(source_stem)
+        TMPDIR.join(EXECUTABLE_CACHE_SUBDIR).join(source_stem)
     };
 
     // Remove executable if it exists, and check
     let result = fs::remove_file(&target_path);
-    eprintln!("Result of fs::remove_file({target_path:?}): {result:?}");
+    safe_eprintln!("Result of fs::remove_file({target_path:?}): {result:?}");
     assert!(!target_path.exists());
 
     // Generate and build executable, and check it exists.
@@ -254,7 +276,7 @@ fn test_builder_run_script() {
     cli.build = true;
     let result = execute(&mut cli);
     assert!(result.is_ok());
-    println!("target_path={target_path:#?}");
+    safe_println!("target_path={target_path:#?}");
     assert!(target_path.exists());
 
     // Finally, run it
@@ -264,4 +286,121 @@ fn test_builder_run_script() {
     let proc_flags = ProcFlags::empty();
     let result = run(&proc_flags, &cli.args, &build_state);
     assert!(result.is_ok());
+}
+
+#[test]
+#[cfg(debug_assertions)]
+fn test_builder_debug_timings() {
+    set_up();
+    let start = Instant::now();
+    debug_timings(&start, "test_process");
+    // No direct assertion, this just ensures the function runs without panic
+}
+
+#[test]
+fn test_builder_display_timings() {
+    set_up();
+    let start = Instant::now();
+    let proc_flags = ProcFlags::empty();
+    display_timings(&start, "test_process", &proc_flags);
+    // No direct assertion, this just ensures the function runs without panic
+}
+
+#[test]
+fn test_builder_build_state_pre_configure() {
+    set_up();
+    let _ = env_logger::try_init();
+
+    let proc_flags = ProcFlags::empty();
+    let cli = Cli::default();
+    let script = "tests/assets/fizz_buzz_t.rs";
+    let script_state = ScriptState::Named {
+        script: script.to_string(),
+        script_dir_path: PathBuf::from(script),
+    };
+
+    let build_state = BuildState::pre_configure(&proc_flags, &cli, &script_state).unwrap();
+
+    assert_eq!(build_state.source_stem, "fizz_buzz_t");
+    assert_eq!(build_state.source_name, "fizz_buzz_t.rs");
+    assert_eq!(
+        build_state.source_dir_path,
+        PathBuf::from(script)
+            .parent()
+            .unwrap()
+            .canonicalize()
+            .unwrap()
+    );
+    assert_eq!(
+        build_state.cargo_home,
+        PathBuf::from(std::env::var("CARGO_HOME").unwrap())
+    );
+}
+
+#[test]
+fn test_builder_script_state_getters() {
+    set_up();
+    let anonymous_state = ScriptState::Anonymous;
+    assert!(anonymous_state.get_script().is_none());
+    assert!(anonymous_state.get_script_dir_path().is_none());
+
+    let named_empty_state = ScriptState::NamedEmpty {
+        script: "test_script".to_string(),
+        script_dir_path: PathBuf::from("/path/to/scripts"),
+    };
+    assert_eq!(
+        named_empty_state.get_script(),
+        Some("test_script".to_string())
+    );
+    assert_eq!(
+        named_empty_state.get_script_dir_path(),
+        Some(PathBuf::from("/path/to/scripts"))
+    );
+
+    let named_state = ScriptState::Named {
+        script: "test_script".to_string(),
+        script_dir_path: PathBuf::from("/path/to/scripts"),
+    };
+    assert_eq!(named_state.get_script(), Some("test_script".to_string()));
+    assert_eq!(
+        named_state.get_script_dir_path(),
+        Some(PathBuf::from("/path/to/scripts"))
+    );
+}
+
+#[test]
+fn test_builder_ast_to_tokens() {
+    use proc_macro2::TokenStream;
+    use quote::quote;
+    use syn::parse_quote;
+
+    set_up();
+
+    let file: syn::File = parse_quote! {
+        fn main() {
+            safe_println!("Hello, world!");
+        }
+    };
+    let expr: syn::Expr = parse_quote! {
+        safe_println!("Hello, world!")
+    };
+
+    let ast_file = Ast::File(file);
+    let ast_expr = Ast::Expr(expr);
+
+    let mut tokens_file = TokenStream::new();
+    ast_file.to_tokens(&mut tokens_file);
+    let expected_file: TokenStream = quote! {
+        fn main() {
+            safe_println!("Hello, world!");
+        }
+    };
+    assert_eq!(tokens_file.to_string(), expected_file.to_string());
+
+    let mut tokens_expr = TokenStream::new();
+    ast_expr.to_tokens(&mut tokens_expr);
+    let expected_expr: TokenStream = quote! {
+        safe_println!("Hello, world!")
+    };
+    assert_eq!(tokens_expr.to_string(), expected_expr.to_string());
 }

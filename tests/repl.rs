@@ -3,29 +3,30 @@ mod tests {
     use clap::CommandFactory;
     use clap::Parser;
     use std::path::PathBuf;
+    use std::sync::Once;
     use std::time::Instant;
     use thag_rs::cmd_args::{Cli, ProcFlags};
     use thag_rs::code_utils::read_file_contents;
     use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, process_source};
     #[cfg(not(windows))]
     use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
-    use thag_rs::shared::BuildState;
-
-    use std::sync::Once;
-    static INIT: Once = Once::new();
+    use thag_rs::BuildState;
 
     fn init_logger() {
-        INIT.call_once(|| {
-            env_logger::init();
-        });
+        env_logger::init();
     }
 
     // Set environment variables before running tests
     fn set_up() {
-        init_logger();
-        std::env::set_var("TEST_ENV", "1");
-        std::env::set_var("VISUAL", "cat");
-        std::env::set_var("EDITOR", "cat");
+        static INIT: Once = Once::new();
+        INIT.call_once(|| {
+            unsafe {
+                std::env::set_var("TEST_ENV", "1");
+                std::env::set_var("VISUAL", "cat");
+                std::env::set_var("EDITOR", "cat");
+            }
+            init_logger();
+        });
     }
 
     #[test]
@@ -71,8 +72,8 @@ mod tests {
     fn test_repl_edit_history() {
         use std::fs::read_to_string;
 
-        use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
         use mockall::Sequence;
+        use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
         use thag_rs::MockEventReader;
 
         set_up();
@@ -113,8 +114,8 @@ mod tests {
             });
 
         let history_path = build_state.cargo_home.join(HISTORY_FILE);
-        let history_string =
-            read_to_string(&history_path).expect(&format!("Error reading from {history_path:?}"));
+        let history_string = read_to_string(&history_path)
+            .unwrap_or_else(|_| panic!("Error reading from {history_path:?}"));
 
         let staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
         let result = edit_history(&history_string, &staging_path, &mock_reader);

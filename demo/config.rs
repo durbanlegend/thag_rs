@@ -1,16 +1,17 @@
 /*[toml]
 [dependencies]
-log = "0.4.22"
-edit = "0.1.5"
-firestorm = "0.5.1"
-home = "0.5.9"
-mockall = "0.13.1"
-nu-ansi-term = "0.50.1"
-serde = { version = "1.0", features = ["derive"] }
-serde_with = "3.11.0"
-toml = "0.8.19"
-# thag_rs = { path = "/Users/donf/projects/thag_rs" }
-thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
+simplelog = { version = "0.12", optional = true }
+# The 'thag-auto' keyword automatically resolves dependencies based on your environment:
+# - Default: Uses crates.io (no environment variables needed)
+# - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
+# - Git: Set THAG_GIT_REF=main to use git repository instead of crates.io
+# Note: Run with 'thag script.rs' not 'cargo build' to enable thag-auto processing
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+
+[features]
+default = ["simplelog"]
+debug_logging = []
+simplelog = ["dep:simplelog"]
 */
 
 /// Prototype of configuration file implementation. Delegated the grunt work to ChatGPT.
@@ -19,8 +20,8 @@ thag_rs = { git = "https://github.com/durbanlegend/thag_rs", branch = "main" }
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use home;
+use log;
 use mockall::{automock, predicate::str};
-use nu_ansi_term;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 #[cfg(target_os = "windows")]
@@ -32,26 +33,26 @@ use std::{
     path::PathBuf,
 };
 use thag_rs::{
-    cvprtln, debug_log, lazy_static_var, vlog, ColorSupport, Lvl, TermTheme, ThagResult, Verbosity,
-    V,
+    debug_log, lazy_static_var, svprtln, ColorSupport, Role, TermBgLuma, ThagResult, Verbosity, V,
 };
 
 /// Initializes and returns the configuration.
 #[allow(clippy::module_name_repetitions)]
-pub fn maybe_config() -> Option<Config> {
+pub fn maybe_config() -> &'static ThagResult<Option<Config>> {
     profile_fn!(maybe_config);
-    lazy_static_var!(Option<Config>, maybe_load_config()).clone()
+    lazy_static_var!(ThagResult<Option<Config>>, maybe_load_config())
 }
 
-fn maybe_load_config() -> Option<Config> {
+fn maybe_load_config() -> ThagResult<Option<Config>> {
     profile_fn!(maybe_load_config);
-    // eprintln!("In maybe_load_config, should not see this message more than once");
-    let maybe_config = load(&RealContext::new());
-    if let Some(config) = maybe_config {
-        // debug_log!("Loaded config: {config:?}");
-        return Some(config);
-    }
-    None::<Config>
+    // // eprintln!("In maybe_load_config, should not see this message more than once");
+    // let maybe_ok_config = load(&RealContext::new());
+    // if let Ok<maybe_config> = maybe_ok_config {
+    //     // debug_log!("Loaded config: {config:?}");
+    //     return maybe_config;
+    // }
+    // None::<Config>
+    load(&RealContext::new())
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -123,31 +124,25 @@ impl Dependencies {
             debug_log!("Applying overrides for crate {}", crate_name);
 
             // Remove excluded features
-            let before_len = filtered.len();
-            filtered = filtered
-                .into_iter()
-                .filter(|f| {
-                    let keep = !override_config.excluded_features.contains(f);
-                    if !keep {
-                        debug_log!("Excluding feature '{}' due to crate-specific override", f);
-                    }
-                    keep
-                })
-                .collect();
-
-            // Add required features
-            for f in &override_config.required_features {
-                if !filtered.contains(f) {
-                    debug_log!("Adding required feature '{}'", f);
-                    filtered.push(f.clone());
-                }
+            if let Some(ref excluded_features) = override_config.excluded_features {
+                // let before_len = filtered.len();
+                filtered = filtered
+                    .into_iter()
+                    .filter(|f| {
+                        let keep = !excluded_features.contains(f);
+                        if !keep {
+                            debug_log!("Excluding feature '{}' due to crate-specific override", f);
+                        }
+                        keep
+                    })
+                    .collect();
             }
 
-            // Replace excluded features with alternatives if any were excluded
-            if filtered.len() < before_len {
-                for f in &override_config.alternative_features {
+            // Add required features
+            if let Some(ref required_features) = override_config.required_features {
+                for f in required_features {
                     if !filtered.contains(f) {
-                        debug_log!("Adding alternative feature '{}'", f);
+                        debug_log!("Adding required feature '{}'", f);
                         filtered.push(f.clone());
                     }
                 }
@@ -208,9 +203,13 @@ impl Dependencies {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FeatureOverride {
-    pub excluded_features: Vec<String>,
-    pub required_features: Vec<String>,
-    pub alternative_features: Vec<String>,
+    /// Features to be excluded for crate
+    pub excluded_features: Option<Vec<String>>,
+    /// Features required for crate
+    pub required_features: Option<Vec<String>>,
+    /// `false` specifies a detailed dependency with `default-features = false`.
+    /// Default: true, in line with the Cargo default.
+    pub default_features: Option<bool>,
 }
 
 #[serde_as]
@@ -229,7 +228,7 @@ pub struct Colors {
     pub color_support: ColorSupport,
     #[serde(default)]
     #[serde_as(as = "DisplayFromStr")]
-    pub term_theme: TermTheme,
+    pub term_bg_luma: TermBgLuma,
 }
 
 #[serde_as]
@@ -244,7 +243,7 @@ pub struct ProcMacros {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
-    #[serde_as(as = "DisplayFromStr")]
+    // #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }
 
@@ -303,20 +302,20 @@ impl Context for RealContext {
 }
 
 #[must_use]
-pub fn load(context: &dyn Context) -> Option<Config> {
+pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     profile_fn!(load);
     let config_path = context.get_config_path();
 
     eprintln!("config_path={config_path:?}");
 
     if config_path.exists() {
-        let config_str = fs::read_to_string(config_path).ok()?;
+        let config_str = fs::read_to_string(config_path)?;
         debug_log!("config_str={config_str:?}");
-        let config: Config = toml::from_str(&config_str).ok()?;
+        let config: Config = toml::from_str(&config_str)?;
         debug_log!("config={config:?}");
-        Some(config)
+        Ok(Some(config))
     } else {
-        None
+        Ok(None)
     }
 }
 
@@ -363,24 +362,30 @@ pub fn edit(context: &dyn Context) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of edit")))
 }
 
-/// Main function for use by testing or the script runner.
+// Main function for use by testing or the script runner.
 #[allow(dead_code)]
 fn main() -> ThagResult<()> {
-    let maybe_config = load(&RealContext::new());
-
-    if let Some(config) = maybe_config {
-        cvprtln!(Lvl::EMPH, V::QQ, "Loaded config:");
-        let toml = &toml::to_string_pretty(&config)?;
-        for line in toml.lines() {
-            cvprtln!(Lvl::BRI, V::QQ, "{line}");
+    let maybe_ok_config = load(&RealContext::new());
+    match maybe_ok_config {
+        Ok(maybe_config) => {
+            if let Some(config) = maybe_config {
+                svprtln!(Role::EMPH, V::QQ, "Loaded config:");
+                let toml = &toml::to_string_pretty(&config)?;
+                for line in toml.lines() {
+                    svprtln!(Role::SUCC, V::QQ, "{line}");
+                }
+                eprintln!();
+                eprintln!(
+                    "verbosity={:?}, ColorSupport={:?}, TermBgLuma={:?}",
+                    config.logging.default_verbosity,
+                    config.colors.color_support,
+                    config.colors.term_bg_luma
+                );
+            } else {
+                eprintln!("No configuration file found.");
+            }
         }
-        eprintln!();
-        eprintln!(
-            "verbosity={:?}, ColorSupport={:?}, TermTheme={:?}",
-            config.logging.default_verbosity, config.colors.color_support, config.colors.term_theme
-        );
-    } else {
-        eprintln!("No configuration file found.");
+        Err(e) => println!("{e}"),
     }
     Ok(())
 }

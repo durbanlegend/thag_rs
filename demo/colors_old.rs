@@ -1,25 +1,22 @@
 /*[toml]
 [dependencies]
-lazy_static = "1.5.0"
-log = "0.4.22"
-nu-ansi-term = { version = "0.50.0", features = ["derive_serde_style"] }
-thag_rs = "0.1.9"
-strum = { version = "0.26.3", features = ["derive", "strum_macros", "phf"] }
-supports-color= "3.0.0"
-termbg = "0.6"
+thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
 */
-/// An older version of `thag_rs`'s `colors` module to style messages according to their type. Like the `stdin`
+/// A version of `thag_rs`'s  now defunct `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.
+///
+/// The `colors` module was superseded by `styling`. See `demo/styling_demo.rs`
 ///
 /// E.g. `thag demo/colors_old.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
-//# Categories: prototype, technique
+//# Categories: prototype, reference, testing
 use lazy_static::lazy_static;
+use log::debug;
 use std::{fmt::Display, str::FromStr};
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use supports_color::Stream;
 use termbg::Theme;
-use thag_rs::{debug_log, logging::Verbosity, vlog};
+use thag_rs::{vprtln, Verbosity};
 
 lazy_static! {
     pub static ref COLOR_SUPPORT: Option<ColorSupport> = match supports_color::on(Stream::Stdout) {
@@ -34,14 +31,14 @@ lazy_static! {
     };
 
     #[derive(Debug)]
-    pub static ref TERM_THEME: TermTheme = {
+    pub static ref TERM_THEME: TermBgLuma = {
         let timeout = std::time::Duration::from_millis(100);
-        debug_log!("Check terminal background color");
+        debug!("Check terminal background color");
         let theme = termbg::theme(timeout);
         // clear_screen();
         match theme {
-            Ok(Theme::Light) => TermTheme::Light,
-            Ok(Theme::Dark) | Err(_) => TermTheme::Dark,
+            Ok(Theme::Light) => TermBgLuma::Light,
+            Ok(Theme::Dark) | Err(_) => TermBgLuma::Dark,
         }
     };
 }
@@ -58,7 +55,7 @@ macro_rules! nu_color_println {
         let content = format!("{}", format_args!($($arg)*));
      let style = $style;
     // Qualified form to avoid imports in calling code.
-    #[cfg(windows)] {vlog!(Verbosity::Quiet, "{}\r", style.paint(content));} else {vlog!(Verbosity::Quiet, "{}", style.paint(content)); }
+    #[cfg(windows)] {vprtln!(Verbosity::Quiet, "{}\r", style.paint(content));} else {vprtln!(Verbosity::Quiet, "{}", style.paint(content)); }
     }};
 }
 
@@ -71,7 +68,7 @@ pub enum ColorSupport {
 }
 
 #[derive(EnumString, Display, PartialEq)]
-pub enum TermTheme {
+pub enum TermBgLuma {
     Light,
     Dark,
 }
@@ -190,11 +187,9 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
             "{}_{}_{}",
             &color_qual, &theme_qual, &msg_level_qual
         ));
-        debug_log!(
+        debug!(
             "Called from_str on {}_{}_{}, found {message_style:#?}",
-            &color_qual,
-            &theme_qual,
-            &msg_level_qual,
+            &color_qual, &theme_qual, &msg_level_qual,
         );
         match message_style {
             Ok(message_style) => NuThemeStyle::get_style(&message_style),
@@ -209,7 +204,7 @@ pub fn nu_resolve_style(message_level: MessageLevel) -> nu_ansi_term::Style {
 fn main() {
     let term = termbg::terminal();
     // clear_screen();
-    debug_log!("  Term : {:?}", term);
+    debug!("  Term : {:?}", term);
 
     let color_support = match supports_color::on(Stream::Stdout) {
         Some(color_support) => {
@@ -224,10 +219,10 @@ fn main() {
 
     match color_support {
         None => {
-            vlog!(Verbosity::Normal, "No colour support found for terminal");
+            vprtln!(Verbosity::Normal, "No colour support found for terminal");
         }
         Some(support) => {
-            vlog!(
+            vprtln!(
                 Verbosity::Normal,
                 "{}",
                 nu_resolve_style(MessageLevel::Warning).paint("Colored Warning message\n")
@@ -235,7 +230,7 @@ fn main() {
 
             for variant in MessageStyle::iter() {
                 let variant_string: &str = &variant.to_string();
-                vlog!(
+                vprtln!(
                     Verbosity::Normal,
                     "My {} message",
                     variant.get_style().paint(variant_string)
@@ -243,10 +238,10 @@ fn main() {
             }
 
             if matches!(support, ColorSupport::Xterm256) {
-                vlog!(Verbosity::Normal, "");
+                vprtln!(Verbosity::Normal, "");
                 XtermColor::iter().for_each(|variant| {
                     let color = variant.get_color();
-                    vlog!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
+                    vprtln!(Verbosity::Normal, "{}", color.paint(variant.to_string()));
                 });
             }
         }

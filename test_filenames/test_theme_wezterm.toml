@@ -1,0 +1,47 @@
+[metadata]
+name = "thag-vibrant-dark"
+author = "thag theme generator"
+origin_url = "Generated from thag theme"
+wezterm_version = "20240203-110809-5046fc22"
+aliases = ["thag-vibrant-dark (thag-generated)"]
+
+[colors]
+background = "#202020" # Primary background
+foreground = "#90e090" # Primary foreground
+
+ansi = [
+    "#202020", # black
+    "#f0d0b0", # red
+    "#90e090", # green
+    "#f0d0b0", # yellow
+    "#2080b0", # blue
+    "#ac6acd", # magenta
+    "#2080b0", # cyan
+    "#90e090", # white
+]
+
+brights = [
+    "#caca92", # bright black
+    "#ffffe4", # bright red
+    "#bbffbb", # bright green
+    "#ffffe4", # bright yellow
+    "#29a6e4", # bright blue
+    "#90b6ff", # bright magenta
+    "#29a6e4", # bright cyan
+    "#f0b0c0", # bright white
+]
+
+cursor_bg = "#f0b0c0" # Cursor background
+cursor_border = "#f0b0c0" # Cursor border
+cursor_fg = "#202020" # Cursor text
+
+selection_bg = "#292929" # Selection background
+selection_fg = "#90e090" # Selection foreground
+
+[colors.indexed]
+16 = "#f0d0b0"
+17 = "#090909"
+18 = "#232323"
+19 = "#262626"
+20 = "#caca92"
+21 = "#f0b0c0"

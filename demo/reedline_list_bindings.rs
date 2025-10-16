@@ -1,11 +1,17 @@
-/*[toml]
-[dependencies]
-reedline = "0.36.0"
-*/
-
 /// Published example from `reedline` crate.
+///
+/// The latest version of this example is available in the [examples] folder in the `reedline`
+/// repository. At time of writing you can run it successfully just
+/// by invoking its URL with the `thag_url` tool, like this:
+///
+/// ```bash
+/// thag_url https://github.com/nushell/reedline/blob/main/examples/list_bindings.rs
+/// ```
+///
+/// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
+///
 //# Purpose: Explore featured crate.
-//# Categories: crates, REPL, technique
+//# Categories: crates, repl, technique
 use reedline::{
     get_reedline_default_keybindings, get_reedline_edit_commands,
     get_reedline_keybinding_modifiers, get_reedline_keycodes, get_reedline_prompt_edit_modes,

@@ -1,7 +1,3 @@
-/*[toml]
-[dependencies]
-tempfile = "3.10.1"
-*/
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 

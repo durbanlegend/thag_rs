@@ -1,0 +1,133 @@
+name = "Gruvbox Material Dark, Soft Base16"
+description = "Converted from Gruvbox Material Dark, Soft theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#32302f"]
+bg_rgbs = [[
+    50,
+    48,
+    47,
+]]
+
+[palette.heading1]
+rgb = [
+    229,
+    174,
+    189,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    226,
+    180,
+    152,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    172,
+    212,
+    166,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    181,
+    178,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    250,
+    191,
+    153,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    251,
+    241,
+    199,
+]
+
+[palette.info]
+rgb = [
+    187,
+    216,
+    210,
+]
+
+[palette.emphasis]
+rgb = [
+    238,
+    210,
+    165,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    176,
+    207,
+    171,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    237,
+    220,
+    191,
+]
+
+[palette.subtle]
+rgb = [
+    194,
+    187,
+    184,
+]
+
+[palette.hint]
+rgb = [
+    199,
+    188,
+    178,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    213,
+    196,
+    165,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    206,
+    215,
+    163,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    235,
+    219,
+    178,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    197,
+    188,
+    180,
+]

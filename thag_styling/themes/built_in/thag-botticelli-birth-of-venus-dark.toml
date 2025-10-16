@@ -1,0 +1,131 @@
+name = "thag-botticelli-birth-of-venus-dark"
+description = "Generated from image analysis"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#181818"]
+bg_rgbs = [[
+    24,
+    24,
+    24,
+]]
+
+[palette.heading1]
+rgb = [
+    246,
+    246,
+    238,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    205,
+    110,
+    148,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    192,
+    72,
+    120,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    178,
+    100,
+    100,
+]
+
+[palette.warning]
+rgb = [
+    226,
+    226,
+    179,
+]
+
+[palette.success]
+rgb = [
+    240,
+    240,
+    216,
+]
+
+[palette.info]
+rgb = [
+    96,
+    168,
+    168,
+]
+
+[palette.emphasis]
+rgb = [
+    192,
+    144,
+    120,
+]
+
+[palette.code]
+rgb = [
+    108,
+    150,
+    150,
+]
+
+[palette.normal]
+rgb = [
+    168,
+    192,
+    192,
+]
+
+[palette.subtle]
+rgb = [
+    238,
+    193,
+    170,
+]
+
+[palette.hint]
+rgb = [
+    230,
+    162,
+    127,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    168,
+    124,
+    124,
+]
+style = ["italic"]
+
+[palette.link]
+rgb = [
+    176,
+    102,
+    102,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    236,
+    194,
+    172,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    165,
+    195,
+    195,
+]
+style = ["italic"]
+

@@ -1,0 +1,133 @@
+name = "Materia Base16"
+description = "Converted from Materia theme"
+term_bg_luma = "dark"
+min_color_support = "true_color"
+backgrounds = ["#263238"]
+bg_rgbs = [[
+    38,
+    50,
+    56,
+]]
+
+[palette.heading1]
+rgb = [
+    151,
+    182,
+    250,
+]
+style = ["bold"]
+
+[palette.heading2]
+rgb = [
+    246,
+    129,
+    135,
+]
+style = ["bold"]
+
+[palette.heading3]
+rgb = [
+    148,
+    227,
+    220,
+]
+style = ["bold"]
+
+[palette.error]
+rgb = [
+    251,
+    175,
+    179,
+]
+style = ["bold"]
+
+[palette.warning]
+rgb = [
+    250,
+    189,
+    151,
+]
+style = ["bold"]
+
+[palette.success]
+rgb = [
+    255,
+    255,
+    255,
+]
+
+[palette.info]
+rgb = [
+    151,
+    221,
+    250,
+]
+
+[palette.emphasis]
+rgb = [
+    250,
+    230,
+    151,
+]
+style = ["bold"]
+
+[palette.code]
+rgb = [
+    156,
+    218,
+    213,
+]
+style = ["italic"]
+
+[palette.normal]
+rgb = [
+    205,
+    211,
+    222,
+]
+
+[palette.subtle]
+rgb = [
+    169,
+    194,
+    205,
+]
+
+[palette.hint]
+rgb = [
+    180,
+    187,
+    194,
+]
+style = ["italic"]
+
+[palette.debug]
+rgb = [
+    201,
+    204,
+    211,
+]
+style = ["dim"]
+
+[palette.link]
+rgb = [
+    184,
+    234,
+    140,
+]
+style = ["underline"]
+
+[palette.quote]
+rgb = [
+    213,
+    219,
+    229,
+]
+style = ["italic"]
+
+[palette.commentary]
+rgb = [
+    169,
+    193,
+    205,
+]

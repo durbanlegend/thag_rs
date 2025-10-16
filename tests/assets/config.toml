@@ -1,4 +1,5 @@
 [logging]
+
 # Available options for Verbosity:
 #   quieter - Minimal output, suitable for piping to another process
 #   quiet - Less detailed output
@@ -8,28 +9,14 @@
 
 default_verbosity = "normal"
 
-[colors]
-# Color support override. Sets the terminal's color support level. The alternative is
-# to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
-# to interrogate the terminal, which could cause misbehaviour, or may choose a default,
-# which might not take advantage of the full capabilities of the terminal.
-# If the terminal can't handle your chosen level, this may cause unwanted control strings
-# to be interleaved with the messages.
-# If your terminal can handle 16m colors, choose xterm256
-# Available options for ColorSupport:
-#   xterm256 - Full color support, suitable for color palettes of 256 colours (16 bit) or higher.
-#   ansi16 - Basic 16-color support
-#   none - No color support
-#   auto_detect - Auto-detect from terminal
-# color_support = "ansi16"
+[styling]
 
-# Terminal light/dark override. Tells thag_rs whether you are using a light or dark theme,
-# instead of letting thag_rs interrogate the terminal, which could cause misbehaviour
-# on Windows in particular, or choose a default, which if incorrect could compromise the
-# legibility of text.
-# Valid values are: "dark" or "light".
-# "dark" is generally a safe choice as the colors should be legible even for a light theme
-# term_theme = "dark"
+# Available options for ColorSupport:
+#   undetermined - Still to be determined or defaulted
+#   none - No color support
+#   basic - Basic 16-color support
+#   color256 - Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
+#   true_color - Full color support, 24 bits -> 16 million colors.
 
 # Demo proc macro settings
 [proc_macros]
@@ -128,7 +115,6 @@ required_features = [
     "visit",
     "visit-mut",
 ]
-default_features = false
 
 [dependencies.feature_overrides.tokio]
 excluded_features = ["unstable-async-driver"]
@@ -149,4 +135,4 @@ required_features = ["consoleapi", "processenv", "winbase"]
 # This behaviour only applies to snippets that explicitly or implicitly return a string
 # value. It does not affect well-formed programs or println! statements in snippets.
 # Valid values are: "true" or "false" (default).
-unquote = "true"
+unquote = true

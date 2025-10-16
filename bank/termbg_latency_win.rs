@@ -4,26 +4,26 @@ name = "termbg_latency_win"
 features = ["simplelog"]
 
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29"
 log = "0.4.22"
 simplelog = { version = "0.12.2" }
 #termbg = "0.5.2"
 termbg = { path = "/Users/donforbes/Documents/GitHub/termbg" }
 
 [features]
-debug-logs = []
+debug_logging = []
 nightly = []
 default = ["simplelog"]
 simplelog = []
 */
 
+use log::info;
 /// Test changes to latency function.
 ///
 //# Purpose: Test for possible PR to `termbg` crate.
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-use log::info;
 use std::fs::File;
 use std::time::Duration;
 use termbg;

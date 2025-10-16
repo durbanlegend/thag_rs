@@ -1,12 +1,8 @@
 #! /usr/bin/env thag
-/*[toml]
-[dependencies]
-itertools = "0.12.1"
-*/
 /// Fast non-recursive classic Fibonacci calculations for a specific value or an entire sequence.
 /// I can't recall the exact source, but see for example https://users.rust-lang.org/t/fibonacci-sequence-fun/77495
 /// for a variety of alternative approaches. The various Fibonacci scripts here in the demo
-/// directory also show a number of approaches. `demo/fib_basic_ibig.rs` shows the use of
+/// directory also show a range of approaches. `demo/fib_basic_ibig.rs` shows the use of
 /// the `std::iter::Successors` iterator as well as removing the limitations of Rust
 /// primitives. Most of the other examples explore different strategies for rapid computation of
 /// large Fibonacci values, and hopefully demonstrate the usefulness of `thag_rs` as a tool
@@ -14,7 +10,7 @@ itertools = "0.12.1"
 ///
 /// As the number of Fibonacci examples here shows, this took me down a Fibonacci rabbit hole.
 //# Purpose: Demo fast small-scale fibonacci using Rust primitives and `itertools` crate.
-//# Categories: educational, math, recreational, technique
+//# Categories: learning, math, recreational, technique
 //# Sample arguments: `-- 90`
 use itertools::iterate;
 use std::env;

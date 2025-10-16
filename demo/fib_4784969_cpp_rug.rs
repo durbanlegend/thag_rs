@@ -1,19 +1,17 @@
-/*[toml]
-[dependencies]
-rug = { version = "1.24.0", features = ["integer"] }
-*/
-
 /// Rust port of C++ example from `https://github.com/ZiCog/fibo_4784969` - so named because
 /// F(4784969) is the first number in the Fibonacci sequence that has one million decimal
 /// digits. This contains 3 alternative algorithms to compare their speed, with `fibo_new`
 /// edging out `fibo` at this scale.
 ///
-/// The `rug` crate runs blindingly fast, but I for one found it very difficult to get this to compile.
+/// **Not compatible with Windows MSVC.**
+///
+/// The `rug` crate runs blindingly fast, but be aware the rug dependency `gmp-mpfr-sys` may
+/// take several minutes to compile on first use or a version change.
 ///
 /// E.g.: `thag demo/fib_4784969_cpp_ibig.rs -- 4784969   // or any positive integer`
 ///
 //# Purpose: Demo 3 very fast Fibonacci algorithms (F(4784969) in 0.33 to 0.58 sec for me).
-//# Categories: big_numbers, educational, math, recreational, technique
+//# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 50`
 use rug::{Complete, Integer};
 use std::collections::HashMap;

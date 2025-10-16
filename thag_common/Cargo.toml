@@ -1,0 +1,60 @@
+[package]
+name = "thag_common"
+version = "0.2.0"
+authors = ["Don Forbes <don.forbes3@gmail.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Common types, macros, and utilities shared across thag_rs subcrates"
+repository = "https://github.com/durbanlegend/thag_rs"
+categories = ["development-tools"]
+keywords = ["utilities", "macros", "common"]
+rust-version = "1.82"
+
+[dependencies]
+dirs = "6.0"
+document-features = { version = "0.2", optional = true }
+documented = "0.9"
+log = "0.4"
+parking_lot = "0.12"
+regex = "1.11"
+serde = { version = "1.0", features = ["derive"] }
+strum = { version = "0.27", features = ["derive", "phf"] }
+thiserror = "2.0"
+
+# Config feature dependencies
+edit = { version = "0.1", optional = true }
+mockall = { version = "0.13", optional = true }
+toml_edit = { version = "0.23", optional = true }
+toml = { version = "0.9", optional = true }
+
+# Color detect feature dependencies
+ratatui = { version = "0.29", optional = true }
+scopeguard = { version = "1.2", optional = true }
+supports-color = { version = "3.0", optional = true }
+termbg = { version = "0.6", optional = true }
+
+[features]
+#! <br><br>
+#! The following features are supported:
+
+## Default features: none
+default = []
+
+## Enable debug logging at compile time
+debug_logging = []
+
+## Documentation features
+document-features = ["dep:document-features"]
+
+## Configuration management
+config = ["edit", "mockall", "toml_edit", "toml"]
+
+## Terminal color support detection and background color detection
+color_detect = ["config", "ratatui", "scopeguard", "supports-color", "termbg"]
+
+[lib]
+name = "thag_common"
+path = "src/lib.rs"
+
+[lints.clippy]
+uninlined_format_args = "allow"

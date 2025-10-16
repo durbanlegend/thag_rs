@@ -87,7 +87,7 @@ Note: in future, combine second and third test with `--features tools,profile`, 
 - [x] Git status clean, all changes committed
 - [x] Final commit: `git commit -m "Prepare for v0.2.0 release"`
 - [x] Push: `git push origin main`
-- [x] Create backup: `git tag pre-v0.2.0-backup && git push origin pre-v0.2.0-backup`
+- [x] Create backup: `git tag backup-before-release && git push origin backup-before-release` (avoid version numbers in tag to prevent triggering release workflow)
 
 ---
 

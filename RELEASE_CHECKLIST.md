@@ -38,18 +38,18 @@ Note: in future, combine second and third test with `--features tools,profile`, 
 - [x] `cd thag_proc_macros && cargo clippy -- -W clippy::pedantic -W clippy::nursery`
 
 **thag_styling** (test key feature combinations)
-- [x] `cd thag_styling && cargo test --no-fail-fast --features basic -- --test-threads=2`
-- [x] `cd thag_styling && cargo test --no-fail-fast --features full -- --test-threads=2`
+- [x] `cd thag_styling && cargo test --no-fail-fast --features basic -- --test-threads=1`
+- [x] `cd thag_styling && cargo test --no-fail-fast --features full -- --test-threads=1`
 - [x] `cd thag_styling && cargo clippy --features full -- -W clippy::pedantic -W clippy::nursery`
 
 **thag_profiler** (test profiling modes)
-- [x] `cd thag_profiler && cargo test`
-- [x] `cd thag_profiler && cargo test --features full_profiling`
-- [x] `cd thag_profiler && cargo clippy --features full_profiling -- -W clippy::pedantic -W clippy::nursery`
+- [x] `cd thag_profiler && cargo test; cd -`
+- [x] `cd thag_profiler && cargo test --features full_profiling -- --test-threads=1; cd -`
+- [x] `cd thag_profiler && cargo clippy --features full_profiling -- -W clippy::pedantic -W clippy::nursery; cd -`
 
 **thag_demo**
-- [x] `cd thag_demo && cargo test`
-- [x] `cd thag_demo && cargo clippy -- -W clippy::pedantic -W clippy::nursery`
+- [x] `cd thag_demo && cargo test; cd -`
+- [x] `cd thag_demo && cargo clippy -- -W clippy::pedantic -W clippy::nursery; cd -`
 
 #### Main Workspace Quality Checks
 - [x] `cargo build --release --workspace`

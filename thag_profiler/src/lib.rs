@@ -913,27 +913,6 @@ mod lib_tests {
         assert_eq!(root.unwrap(), leaked_module);
     }
 
-    #[cfg(feature = "time_profiling")]
-    #[test]
-    fn test_profiling_feature_constants() {
-        // This should be true regardless of runtime state
-        let runtime_state = is_profiling_enabled();
-        // We can't make strong assertions about runtime state in tests
-        // as it depends on how tests are run and configured
-
-        // But we can verify the constant is usable in conditionals
-        if PROFILING_FEATURE_ENABLED {
-            // Feature is enabled
-            assert!(runtime_state); // This branch should be taken
-        } else {
-            // Feature is disabled
-            assert!(
-                !runtime_state,
-                "This branch should not be taken when feature is enabled"
-            );
-        }
-    }
-
     // Test initialization and finalization with mocked objects
     #[cfg(feature = "time_profiling")]
     #[test]

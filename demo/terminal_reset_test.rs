@@ -1,4 +1,4 @@
-/// Demo script to test terminal reset functionality for OSC sequence corruption
+/// Demo script to test terminal reset logic for OSC sequence corruption
 //# Purpose: Test terminal reset when OSC sequences cause line discipline corruption
 //# Categories: debugging, terminal, xterm
 use std::io::{stdout, Write};

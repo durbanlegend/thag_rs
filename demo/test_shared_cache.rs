@@ -1,5 +1,5 @@
 #!/usr/bin/env thag
-//# Purpose: Test shared target directory and executable cache functionality
+//# Purpose: Test shared target directory and executable cache logic
 //# Categories: testing, demo
 
 /// A simple demo script to test the new shared target directory and executable cache.
@@ -15,7 +15,7 @@
 use serde_json::{json, Value};
 
 fn main() {
-    println!("Testing shared target and executable cache functionality");
+    println!("Testing shared target and executable cache logic");
     println!("=========================================================\n");
 
     // Create some JSON data to demonstrate the dependency is working

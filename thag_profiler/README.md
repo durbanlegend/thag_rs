@@ -220,7 +220,7 @@ use thag_profiler::{enable_profiling, profile, profiled};
 
 **Enable profiling**
 
-NB: exactly **one function** in your app should be annotated with `#[enable_profiling]`. Normally this is `fn main`, but it is possible to annotate a diferent function instead, to narrow the scope of profiling to a section of particular interest.
+NB: exactly **one function** in your app should be annotated with `#[enable_profiling]`. Normally this is `fn main`, but it is possible to annotate a different function instead, to narrow the scope of profiling to a section of particular interest.
 
 ```rust
 // Enable profiling for the program.
@@ -1171,7 +1171,7 @@ The `thag_profile` tool supports `inferno`'s differential profiling feature for 
 
 - **Potential Allocator Race Conditions in Async Environments**: Unfortunately, Rust only allows a single global allocator (which `thag_profiler` refers to as the dispatcher), so profiler code must share this with user code. `thag_profiler` uses a thread-local variable to indicate to the dispatcher to use the system allocator for profiler code in place of the default "tracking" allocator.
 
- The dispatcher delegates memory requests from user code to the tracking allocator, which records the point of origin in user code (the "allocation site") and the request type (allocation, deallocation or reallocation), before in turn delegating the request to the Rust system allocator to honour the request. The dispatcher delegates requests from profiler code directly to the system allocator.
+ The dispatcher delegates memory requests from user code to the tracking allocator, which records the point of origin in user code (the "allocation site") and the request type (allocation, deallocation or reallocation) and size, before in turn delegating the request to the Rust system allocator to honour the request. The dispatcher delegates requests from profiler code directly to the system allocator.
 
  Thread-local storage is not a panacea, as `tokio` work stealing can cause a suspended task to resume on a different thread. This means that in an async environment, particularly under stress, the thread-local boolean variable that reflects the current allocator could end up out of sync with the workload it was intended to interact with, either causing user allocations to be processed through the system allocator and thus not be recorded, or causing profiler code allocations to be processed through the tracking allocator. The latter not only risks profiler code allocations being incorrectly recorded as user allocations, but risks causing the whole app to hang due to infinite recursion through the tracking allocator.
 

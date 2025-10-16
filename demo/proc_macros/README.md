@@ -296,6 +296,7 @@ Demonstrates compile-time environment processing and configuration management.
 
 ## Example
 ```rust
+use thag_demo_proc_macros::env_or_default;
 const DATABASE_URL: &str = env_or_default!("DATABASE_URL", "localhost:5432");
 const DEBUG_MODE: &str = env_or_default!("DEBUG", "false");
 ```
@@ -312,7 +313,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_env_o
 
 ### `file_navigator`
 
-Generates interactive file system navigation functionality.
+Generates interactive file system navigation logic.
 
 Creates structures and functions for file selection and directory navigation.
 Demonstrates complex code generation and external crate integration.
@@ -343,6 +344,7 @@ Demonstrates test automation and repetitive code generation patterns.
 
 ## Example
 ```rust
+use thag_demo_proc_macros::generate_tests;
 generate_tests! {
     test_addition: [
         (1, 2, 3),
@@ -430,4 +432,3 @@ export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory
 cargo run --bin thag -- demo/proc_macro_const_demo.rs
 cargo run --bin thag -- demo/proc_macro_derive_constructor.rs
 ```
-

@@ -8,7 +8,7 @@
 # Install all tools
 cargo install thag_rs --features tools
 
-# Or install tools individually, e.g.
+# Or install tools individually, for example:
 cargo install thag_rs --features tools --bin thag_copy
 cargo install thag_rs --features tools --bin thag_paste
 cargo install thag_rs --features tools --bin thag_legible

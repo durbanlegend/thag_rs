@@ -5,7 +5,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
 
 /// Test script to demonstrate improved contrast in image theme generation
 ///
-/// This script shows the enhanced contrast adjustment functionality
+/// This script shows the enhanced contrast adjustment logic
 /// with minimum lightness differences for better readability.
 //# Purpose: Demonstrate improved contrast in image theme generation
 //# Categories: color, styling, terminal, theming, tools

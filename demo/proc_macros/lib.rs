@@ -368,7 +368,7 @@ pub fn derive_doc_comment(input: TokenStream) -> TokenStream {
     maybe_expand_proc_macro(false, "derive_doc_comment", &input, derive_doc_comment_impl)
 }
 
-/// Generates interactive file system navigation functionality.
+/// Generates interactive file system navigation logic.
 ///
 /// Creates structures and functions for file selection and directory navigation.
 /// Demonstrates complex code generation and external crate integration.

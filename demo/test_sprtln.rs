@@ -19,28 +19,28 @@ fn main() {
 
     println!("Testing sprtln! macro with different input types:\n");
 
-    // Test with Style directly (existing functionality)
+    // Test with Style directly (existing logic)
     sprtln!(
         Style::from(Role::Code),
         "This uses Style::from(Role::Code): {}",
         "hello world"
     );
 
-    // Test with Role directly (new functionality)
+    // Test with Role directly (new logic)
     sprtln!(
         Role::Code,
         "This uses Role::Code directly: {}",
         "hello world"
     );
 
-    // Test with modified styles (existing functionality should still work)
+    // Test with modified styles (existing logic should still work)
     sprtln!(
         Style::from(Role::Normal).bold(),
         "This uses Style::from(Role::Normal).bold(): {}",
         "hello world"
     );
 
-    // Test with Color styles (existing functionality should still work)
+    // Test with Color styles (existing logic should still work)
     sprtln!(
         &Color::yellow().bold(),
         "This uses &Color::yellow().bold(): {}",

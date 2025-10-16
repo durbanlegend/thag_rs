@@ -122,7 +122,7 @@ fn main() {
 }
 ```
 
-Output shows an interactive menu with the current directory structure, e.g.:
+Output shows an interactive menu with the current directory structure, for example:
 
 ```
 > *TYPE PATH TO NAVIGATE*

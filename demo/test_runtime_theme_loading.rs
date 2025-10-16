@@ -7,7 +7,7 @@ thag_common = { version = "0.2, thag-auto" }
 //# Purpose: Test runtime theme loading from user-specified directories
 //# Categories: demo, styling, theming
 
-/// Demo script that tests the new runtime theme loading functionality.
+/// Demo script that tests the new runtime theme loading logic.
 ///
 /// This script demonstrates:
 /// 1. Loading themes from user-specified directories via config

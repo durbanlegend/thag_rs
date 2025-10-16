@@ -1093,6 +1093,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
 
  `thag` will leave the file as is, but generate a temporary Cargo.toml for it in the usual way as a prerequisite for running `cargo test`.
 
+ NB: Leave the doc comments in the body as doc comments because they are expected by the `documented` crate, even though this will lead to them
+ appearing in `demo/README.md`.
+
  `thag` will then invoke `cargo test` on the file, specifying the Cargo.toml location via `--manifest-path`.
 
  `thag <filepath> -T [-- <cargo test options>]`
@@ -1100,6 +1103,15 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/config.rs
  E.g.:
 
  `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
+
+ Redundant doc comments will appear below.
+ Configuration categories
+ Dependency handling
+ Logging settings
+ Dependency inference level
+ Terminal color settings
+ Demo proc macro settings
+ Miscellaneous configuration parameters
 
 **Purpose:** Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
 
@@ -4061,7 +4073,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/just_a_test_expr
 
 ### Script: konsole_export_demo.rs
 
-**Description:**  Demo script showing Konsole colorscheme export functionality
+**Description:**  Demo script showing Konsole colorscheme export logic
 
 **Purpose:** Demonstrate exporting thag themes to KDE Konsole .colorscheme format
 
@@ -4432,7 +4444,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/merge_toml.rs
  palette colors in mintty terminals.
 
  Based on the shell script in TODO.md lines 49-74, this implements the same
- functionality in Rust to query mintty ANSI slots 0-15.
+ logic in Rust to query mintty ANSI slots 0-15.
  RGB color representation
  Color pair for foreground and background
  Check if running in mintty
@@ -4490,7 +4502,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs
 
 ### Script: multi_format_theme_export.rs
 
-**Description:**  Demo of multi-format theme export functionality
+**Description:**  Demo of multi-format theme export
 
  This example demonstrates how to export a thag theme to multiple terminal emulator formats
  including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.
@@ -6394,7 +6406,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/simple_stress_te
 
 **Description:**  Simple test to debug theme loading issues
 
-**Purpose:** Simple test for runtime theme loading functionality
+**Purpose:** Simple test for runtime theme loading logic
 
 **Crates:** `thag_styling`
 
@@ -6869,7 +6881,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styleable_improv
 **Description:**  Enhanced styled! Macro Demonstration
 
  This demo showcases the enhanced styled! macro with support for:
- - Basic ANSI colors (original functionality)
+ - Basic ANSI colors (original logic)
  - 256-color palette indices
  - True RGB colors
  - Multiple text effects
@@ -7491,7 +7503,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/terminal_light_s
 
 ### Script: terminal_reset_test.rs
 
-**Description:**  Demo script to test terminal reset functionality for OSC sequence corruption
+**Description:**  Demo script to test terminal reset logic for OSC sequence corruption
  Soft terminal reset - attempts to restore normal terminal behavior
  Hard terminal reset - more aggressive reset
  Simulate the problematic OSC sequence output that causes corruption
@@ -7564,7 +7576,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_ansi_parsin
 
 ### Script: test_auto_help.rs
 
-**Description:**  This program exists to demonstrate the `thag_common` `auto_help` functionality.
+**Description:**  This program exists to demonstrate the `thag_common` `auto_help` logic.
  Invoking it with the argument `--help/-h` will display the doc comments as help.
  An optional `//# Purpose: ` line may be included to form the top-level help summary.
  An optional `//# Categories:` line may be used to list comma-separated categories
@@ -7648,11 +7660,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_coffee_them
 **Description:**  Test Color Mode Override
 
  This script tests the THAG_COLOR_MODE environment variable override
- functionality to force specific color modes in thag_styling.
+ logic to force specific color modes in thag_styling.
  This is particularly useful for working around terminal issues
  like Zed's RGB truecolor handling problems.
 
-**Purpose:** Test THAG_COLOR_MODE environment variable functionality
+**Purpose:** Test THAG_COLOR_MODE environment variable logic
 
 **Crates:** `thag_styling`
 
@@ -7771,7 +7783,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_fine_tuning
 
 **Description:**  Test script to demonstrate improved contrast in image theme generation
 
- This script shows the enhanced contrast adjustment functionality
+ This script shows the enhanced contrast adjustment logic
  with minimum lightness differences for better readability.
 
 **Purpose:** Demonstrate improved contrast in image theme generation
@@ -7794,7 +7806,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_image_theme
 
 ### Script: test_konsole_export.rs
 
-**Description:**  Test script for Konsole theme export functionality
+**Description:**  Test script for Konsole theme export logic
 
 **Purpose:** Test the Konsole colorscheme exporter with Catppuccin Mocha theme
 
@@ -7866,13 +7878,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_light_theme
 
 ### Script: test_mintty_comprehensive.rs
 
-**Description:**  Comprehensive test for all mintty functionality
+**Description:**  Comprehensive test for all mintty logic
 
- This demo script thoroughly tests the mintty theme exporter functionality
+ This demo script thoroughly tests the mintty theme exporter logic
  including exporting themes, validating output format, and checking integration
  with the theme generation system.
 
-**Purpose:** Comprehensive test of mintty theme functionality
+**Purpose:** Comprehensive test of mintty theme logic
 
 **Crates:** `thag_styling`
 
@@ -7894,10 +7906,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_mintty_comp
 
 **Description:**  Test script for mintty theme exporter
 
- This demo script tests the mintty theme exporter functionality
+ This demo script tests the mintty theme exporter logic
  by loading a built-in theme and exporting it to mintty format.
 
-**Purpose:** Test mintty theme export functionality
+**Purpose:** Test mintty theme export logic
 
 **Crates:** `thag_styling`
 
@@ -8085,7 +8097,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_profiler_de
 
 ### Script: test_runtime_theme_loading.rs
 
-**Description:**  Demo script that tests the new runtime theme loading functionality.
+**Description:**  Demo script that tests the new runtime theme loading logic.
 
  This script demonstrates:
  1. Loading themes from user-specified directories via config
@@ -8114,7 +8126,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_runtime_the
 ### Script: test_safe_print_macros.rs
 
 **Description:**  Demo script to test the new safe print macros for terminal synchronization
- Test basic safe print functionality
+ Test basic safe print logic
  Test OSC sequences with safe_osc macro
  Test concurrent safe prints (the main use case)
  Test mixing safe and unsafe prints (demonstration)
@@ -8152,7 +8164,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_safe_print_
  Then run again to see the speed improvement from caching.
  Clean cache with: `thag --clean` or `thag --clean bins`
 
-**Purpose:** Test shared target directory and executable cache functionality
+**Purpose:** Test shared target directory and executable cache logic
 
 **Crates:** `serde_json`
 
@@ -8245,7 +8257,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/test_urgency_hie
 
 ### Script: test_verbosity_setting.rs
 
-**Description:**  Test the new verbosity setting functionality
+**Description:**  Test the new verbosity setting logic
 
 **Purpose:** Demonstrate and test the improved verbosity setting API
 

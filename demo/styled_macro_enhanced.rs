@@ -7,7 +7,7 @@ thag_styling = { version = "0.2, thag-auto" }
 /// Enhanced styled! Macro Demonstration
 ///
 /// This demo showcases the enhanced styled! macro with support for:
-/// - Basic ANSI colors (original functionality)
+/// - Basic ANSI colors (original logic)
 /// - 256-color palette indices
 /// - True RGB colors
 /// - Multiple text effects
@@ -26,7 +26,7 @@ ansi_styling_support! {}
 fn main() {
     println!("🎨 Enhanced styled! Macro Demonstration\n");
 
-    // Basic ANSI colors (original functionality)
+    // Basic ANSI colors (original logic)
     println!("=== Basic ANSI Colors (Terminal Palette) ===");
     println!("{}", styled!("Red text", fg = Red));
     println!("{}", styled!("Green bold", fg = Green, bold));

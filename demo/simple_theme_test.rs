@@ -3,7 +3,7 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-//# Purpose: Simple test for runtime theme loading functionality
+//# Purpose: Simple test for runtime theme loading logic
 //# Categories: demo, styling, theming
 
 /// Simple test to debug theme loading issues

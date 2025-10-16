@@ -10,7 +10,7 @@ use std::thread;
 use std::time::Duration;
 use thag_proc_macros::{safe_eprint, safe_eprintln, safe_osc, safe_print, safe_println};
 
-/// Test basic safe print functionality
+/// Test basic safe print logic
 fn test_basic_safe_prints() {
     safe_println!("=== Testing Basic Safe Print Macros ===");
 

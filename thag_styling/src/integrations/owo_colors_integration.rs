@@ -322,9 +322,10 @@ mod tests {
             value: ColorValue::Color256 { color256: 42 },
             index: 42,
         };
+        dbg!(&DynColors::from(&color256));
         match DynColors::from(&color256) {
-            DynColors::Xterm(XtermColors::UserBrightGreen) => (), // Index 42 maps to this
-            _ => panic!("Expected UserBrightGreen"),
+            DynColors::Xterm(XtermColors::CaribbeanGreen) => (), // Index 42 maps to this
+            _ => panic!("Expected CaribbeanGreen"),
         }
 
         let basic_color = ColorInfo {

@@ -18,7 +18,7 @@ An innovative terminal styling system for Rust applications across platforms.
 
   - Built-in integrations make it easy to apply the current terminal theme to `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`.
 
-  - Supports TrueColor, 256-color or 16-colour emulators with auto-detection.
+  - Supports TrueColor, 256-color or 16-color emulators with auto-detection.
 
   - Works with the most popular terminal emulators on Mac, Windows and Linux. Tested on Alacritty, Apple Terminal, Gnome Terminal, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), VS Code, WezTerm, Windows Terminal (PowerShell, WSL Ubuntu and Command Prompt) and Zed. Should work with any emulator that supports the OSC ANSI escape sequences for color setting.
 
@@ -88,7 +88,7 @@ Here is a small sample of the 300+ built-in `thag_styling` themes, with descript
 ### Theme Ecosystem
 - **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, Cattpucin and many more
 - **Theme Generation** — From images using advanced color extraction
-- **Multi-Format Export** — Alacritty, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. Except for Konsole and Mintty, these and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, e.g. Apple Terminal, GNOME Terminal, VS Code and Zed.
+- **Multi-Format Export** — Alacritty, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. Except for Konsole and Mintty, these and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, for example Apple Terminal, GNOME Terminal, VS Code and Zed.
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 

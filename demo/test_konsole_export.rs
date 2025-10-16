@@ -3,7 +3,7 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Test script for Konsole theme export functionality
+/// Test script for Konsole theme export logic
 //# Purpose: Test the Konsole colorscheme exporter with Catppuccin Mocha theme
 //# Categories: terminal, testing, theming
 use std::path::Path;

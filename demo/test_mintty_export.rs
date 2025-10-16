@@ -5,9 +5,9 @@ thag_styling = { version = "0.2, thag-auto" }
 
 /// Test script for mintty theme exporter
 ///
-/// This demo script tests the mintty theme exporter functionality
+/// This demo script tests the mintty theme exporter logic
 /// by loading a built-in theme and exporting it to mintty format.
-//# Purpose: Test mintty theme export functionality
+//# Purpose: Test mintty theme export logic
 //# Categories: color, styling, terminal, theming, demo
 use thag_styling::exporters::{ExportFormat, ThemeExporter};
 use thag_styling::Theme;

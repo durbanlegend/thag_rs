@@ -6,7 +6,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 thag_styling = { version = "0.2, thag-auto", features = ["config"] }
 */
 
-/// Demo of multi-format theme export functionality
+/// Demo of multi-format theme export
 ///
 /// This example demonstrates how to export a thag theme to multiple terminal emulator formats
 /// including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.

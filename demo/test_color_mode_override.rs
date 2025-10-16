@@ -6,10 +6,10 @@ thag_styling = { version = "0.2, thag-auto" }
 /// Test Color Mode Override
 ///
 /// This script tests the THAG_COLOR_MODE environment variable override
-/// functionality to force specific color modes in thag_styling.
+/// logic to force specific color modes in thag_styling.
 /// This is particularly useful for working around terminal issues
 /// like Zed's RGB truecolor handling problems.
-//# Purpose: Test THAG_COLOR_MODE environment variable functionality
+//# Purpose: Test THAG_COLOR_MODE environment variable logic
 //# Categories: terminal, color, testing, configuration
 use thag_styling::TermAttributes;
 

@@ -11,6 +11,9 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 ///
 /// `thag` will leave the file as is, but generate a temporary Cargo.toml for it in the usual way as a prerequisite for running `cargo test`.
 ///
+/// NB: Leave the doc comments in the body as doc comments because they are expected by the `documented` crate, even though this will lead to them
+/// appearing in `demo/README.md`.
+///
 /// `thag` will then invoke `cargo test` on the file, specifying the Cargo.toml location via `--manifest-path`.
 ///
 /// `thag <filepath> -T [-- <cargo test options>]`
@@ -18,7 +21,8 @@ thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["c
 /// E.g.:
 ///
 /// `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
-//
+///
+/// Redundant doc comments will appear below.
 //# Purpose: Demonstrate unit testing a file in situ without wrapping it if it doesn't have a main method.
 //# Categories: technique, testing
 //# Sample arguments: `TEST_CONFIG_PATH=~/.config/thag_rs/config.toml thag demo/config_with_tests.rs -Tv -- --nocapture --show-output`
@@ -52,19 +56,19 @@ use std::env;
 
 const DEFAULT_CONFIG: &str = include_str!("../assets/default_config.toml");
 
-// Configuration categories
+/// Configuration categories
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Config {
-    // Logging configuration
+    /// Logging configuration
     pub logging: Logging,
-    // Color settings
+    /// Color settings
     pub colors: Colors,
-    // Proc macros directory location, e.g. `demo/proc_macros`
+    /// Proc macros directory location, e.g. `demo/proc_macros`
     pub proc_macros: ProcMacros,
-    // Dependency handling settings
+    /// Dependency handling settings
     pub dependencies: Dependencies, // New section
-    // Miscellaneous settings
+    /// Miscellaneous settings
     pub misc: Misc,
 }
 
@@ -152,26 +156,26 @@ impl Config {
     }
 }
 
-// Dependency handling
+/// Dependency handling
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Dependencies {
-    // Exclude features containing "unstable"
+    /// Exclude features containing "unstable"
     pub exclude_unstable_features: bool,
-    // Exclude the "std" feature
+    /// Exclude the "std" feature
     pub exclude_std_feature: bool,
-    // Features that should always be included if present, e.g. `derive`
+    /// Features that should always be included if present, e.g. `derive`
     pub always_include_features: Vec<String>,
-    // Exclude releases with pre-release markers such as -beta.
+    /// Exclude releases with pre-release markers such as -beta.
     pub exclude_prerelease: bool, // New option
-    // Crate-specific feature overrides
+    /// Crate-specific feature overrides
     pub feature_overrides: HashMap<String, FeatureOverride>,
-    // Features that should always be excluded
+    /// Features that should always be excluded
     pub global_excluded_features: Vec<String>,
-    // How much `thag_rs` should intervene in inferring dependencies from code.
+    /// How much `thag_rs` should intervene in inferring dependencies from code.
     pub inference_level: DependencyInference,
-    // // `false` specifies a detailed dependency with `default-features = false`.
+    // /// `false` specifies a detailed dependency with `default-features = false`.
     // pub default_features: bool,
 }
 
@@ -438,12 +442,12 @@ pub struct FeatureOverride {
     pub default_features: Option<bool>,
 }
 
-// Logging settings
+/// Logging settings
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]
 #[serde(default)]
 pub struct Logging {
-    // Default verbosity setting
+    /// Default verbosity setting
     #[serde_as(as = "DisplayFromStr")]
     pub default_verbosity: Verbosity,
 }
@@ -460,18 +464,18 @@ pub struct Logging {
     Documented,
     DocumentedVariants,
 )]
-// Dependency inference level
+/// Dependency inference level
 #[strum(use_phf, serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")] // Add this line
 pub enum DependencyInference {
-    // Don't infer any dependencies
+    /// Don't infer any dependencies
     None,
-    // Basic dependencies without features
+    /// Basic dependencies without features
     Min,
-    // Use config.toml feature overrides
+    /// Use config.toml feature overrides
     #[default]
     Config,
-    // Include all features not excluded by config
+    /// Include all features not excluded by config
     Max,
 }
 
@@ -494,22 +498,22 @@ impl<'de> de::Deserialize<'de> for DependencyInference {
     }
 }
 
-// Terminal color settings
+/// Terminal color settings
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Documented, DocumentedFields, Serialize)]
 pub struct Colors {
-    // Color support override. Sets the terminal's color support level. The alternative is
-    // to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
-    // to interrogate the terminal, which could cause misbehaviour, or may choose a default,
-    // which might not take advantage of the full capabilities of the terminal.
-    // If the terminal can't handle your chosen level, this may cause unwanted control strings
-    // to be interleaved with the messages.
-    // If your terminal can handle 16m colors, choose xterm256
+    /// Color support override. Sets the terminal's color support level. The alternative is
+    /// to leave it up to thag_rs, which depending on the platform may call 3rd-party crates
+    /// to interrogate the terminal, which could cause misbehaviour, or may choose a default,
+    /// which might not take advantage of the full capabilities of the terminal.
+    /// If the terminal can't handle your chosen level, this may cause unwanted control strings
+    /// to be interleaved with the messages.
+    /// If your terminal can handle 16m colors, choose xterm256
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default)]
     pub color_support: ColorSupport,
     #[serde(default)]
-    // Light or dark terminal background override
+    /// Light or dark terminal background override
     #[serde_as(as = "DisplayFromStr")]
     pub term_bg_luma: TermBgLuma,
 }
@@ -523,25 +527,25 @@ impl Default for Colors {
     }
 }
 
-// Demo proc macro settings
+/// Demo proc macro settings
 #[serde_as]
 #[derive(Clone, Debug, Default, Deserialize, Documented, DocumentedFields, Serialize)]
 #[serde(default)]
 pub struct ProcMacros {
-    // Absolute or relative path to bank proc macros crate, e.g. bank/proc_macros.
+    /// Absolute or relative path to bank proc macros crate, e.g. bank/proc_macros.
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub bank_proc_macro_crate_path: Option<String>,
-    // Absolute or relative path to demo proc macros crate, e.g. demo/proc_macros.
+    /// Absolute or relative path to demo proc macros crate, e.g. demo/proc_macros.
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub demo_proc_macro_crate_path: Option<String>,
 }
 
-// Miscellaneous configuration parameters
+/// Miscellaneous configuration parameters
 #[serde_as]
 #[derive(Clone, Debug, Default, Documented, DocumentedFields, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Misc {
-    // Strip double quotes from around string literals returned by snippets
+    /// Strip double quotes from around string literals returned by snippets
     // #[serde_as(as = "DisplayFromStr")]
     pub unquote: bool,
 }

@@ -88,7 +88,7 @@ Whether you're:
 </details>
 
 <details>
-<summary>🛠️ over 30 other independently installable [command-line tools](src/bin/README.md), including:</summary>
+<summary>🛠️ over 30 other independently installable [command-line tools](src/bin/README.md)</summary>
 
   - 🔬 AST display tool
 
@@ -108,7 +108,7 @@ Whether you're:
 
   - 🫟 clipboard to stdout paste tool
 
-  - ⚡️ error variant code generator
+  - 💥 error variant code generator
 
   - 🪟 markdown viewer and GitHub markdown compatibility checker
 
@@ -116,7 +116,7 @@ Whether you're:
 
   - 👓 `\n` to newline unscrambler
 
-  - 📺 terminal characteristics detector
+  - 🖥️ terminal characteristics detector
 
   - 🖼️ `thag_styling` tools, including:
 
@@ -130,9 +130,9 @@ Whether you're:
 
     - 🪄 base16/24 to `thag_styling` theme converter
 
-    - 🪄 image to `thag_styling` theme converter
+    - 🏞️ image to `thag_styling` theme converter
 
-    - 🪄 `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
+    - 👨‍🔧 `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
 
     - 🎏 `thag_styling` theme to terminal palette sync tool
 
@@ -160,19 +160,19 @@ ___
 
 🐥 **The basics:**
 
-- Run Rust code straight from the command line or a URL
+- Run Rust code straight from the command line or a URL.
 
-- Evaluate expressions on the fly
+- Evaluate expressions on the fly.
 
-- Interactive REPL mode for rapid prototyping
+- Interactive REPL mode for rapid prototyping.
 
-- Uses AST analysis to understand your code
+- Uses AST analysis to understand your code.
 
 - "toml block" comments use `cargo_toml` to support not only dependencies but other valid manifest entries such as features, profiles and lints.
 
-- Shebang support for true scripting (but `thag`'s command building is much better still!)
+- Shebang support for true scripting (but `thag`'s command building is much better still!).
 
-- Loop-filter mode for data processing
+- Loop-filter mode for data processing.
 
 💡 **Smart Features:**
 
@@ -222,9 +222,11 @@ ___
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
 
-💡 **Getting Started:**
+🐣 **Getting Started:**
 
-Jump into `thag`'s collection of 330+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
+Jump into `thag`'s collection of 330+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. A good way to do this is to install the [thag_demo](thag_demo/README.md) crate and run `thag_demo browse` to filter, select and run demo scripts from a scrollable list.
+
+Suggestions and contributions welcome (under MIT/Apache 2 license) if they fit the goals of the project
 
 ## Installation
 
@@ -544,7 +546,7 @@ _— The Rust Reference_
 
 
 * **Dependency inference** from code, with generation of minimal and maximal toml blocks for pasting into your Rust source script.
-* **Any valid Cargo.toml** input may be specified in the toml block, e.g.:
+* **Any valid Cargo.toml** input may be specified in the toml block, for example:
   - Specific features of dependencies for advanced functionality
   - Local path and git dependencies
   - A [profile.dev] with a non-default optimisation level

@@ -312,7 +312,7 @@ fn demo_early_return() {
         unsafe {
             if warn_once_with_id(400, should_skip, || {
                 println!("WARNING: Skipping expensive operation due to configuration");
-                println!("This may impact functionality. Check your settings.");
+                println!("This may impact your code's logic. Check your settings.");
             }) {
                 return None; // Early return when condition is met
             }

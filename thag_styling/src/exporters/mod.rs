@@ -367,7 +367,6 @@ ensure the "Use custom color for selected text" checkbox is enabled in the Color
 "#
             )
         }
-</text>
 
         ExportFormat::WindowsTerminal => {
             format!(

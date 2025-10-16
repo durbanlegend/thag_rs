@@ -3,7 +3,7 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Demo script showing Konsole colorscheme export functionality
+/// Demo script showing Konsole colorscheme export logic
 //# Purpose: Demonstrate exporting thag themes to KDE Konsole .colorscheme format
 //# Categories: styling, terminal, theming, tools
 use std::path::Path;

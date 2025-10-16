@@ -153,7 +153,7 @@ Browse and run demo scripts interactively with filtering and search.
 
  - Demo shows `ratatui` showcase app, themed by `thag_styling` with the terminal’s current `catppuccin-mocha` theme, as specified by $THAG_THEME.
 
- - Show 1st panel of app with progress bar responding to keys or mouse. **The dashed vertical border effect in some areas is an artefact of the video player**.
+ - Show first panel of app with progress bar responding to keys or mouse. **The dashed vertical border effect in some areas is an artefact of the video player**.
 
  - Show pop-up help.
 

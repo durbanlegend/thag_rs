@@ -715,7 +715,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cache_functionality() {
+    fn test_cache_logic() {
         let mut cache = PaletteCache::new("test_terminal".to_string());
         let color = Rgb::new(255, 0, 0);
 

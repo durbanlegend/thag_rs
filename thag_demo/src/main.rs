@@ -463,8 +463,6 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
     // Clear screen initially
     print!("\x1b[2J\x1b[H");
 
-    let mut cursor = 0_usize;
-
     loop {
         println!("\n🚀 Interactive Demo Browser");
         println!("{}", "═".repeat(80));
@@ -483,14 +481,11 @@ fn interactive_demo_browser(verbose: bool) -> Result<()> {
             Select::new("🔍 Select a demo script to run:", demo_options.clone())
                 .with_page_size(20)
                 .with_help_message("↑↓ navigate • type to filter • Enter to run • Esc to quit")
-                .with_reset_cursor(false)
-                .with_starting_cursor(cursor)
+                .with_reset_cursor(true)
                 .raw_prompt();
 
         match selection {
             Ok(selected) => {
-                cursor = selected.index;
-
                 // Extract demo name from selection (before the " - " separator)
                 let demo_name = selected
                     .value

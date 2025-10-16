@@ -3,19 +3,19 @@
 thag_styling = { version = "0.2, thag-auto" }
 */
 
-/// Comprehensive test for all mintty functionality
+/// Comprehensive test for all mintty logic
 ///
-/// This demo script thoroughly tests the mintty theme exporter functionality
+/// This demo script thoroughly tests the mintty theme exporter logic
 /// including exporting themes, validating output format, and checking integration
 /// with the theme generation system.
-//# Purpose: Comprehensive test of mintty theme functionality
+//# Purpose: Comprehensive test of mintty theme logic
 //# Categories: color, styling, terminal, theming, demo
 use std::collections::HashMap;
 use thag_styling::exporters::{ExportFormat, ThemeExporter};
 use thag_styling::Theme;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("🐙 Comprehensive Mintty Functionality Test");
+    println!("🐙 Comprehensive Mintty Logic Test");
     println!("==========================================\n");
 
     // Test 1: Verify mintty is in available formats
@@ -155,7 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!("\n🎉 All tests passed! Mintty functionality is working correctly.");
+    println!("\n🎉 All tests passed! Mintty logic is working correctly.");
     println!("\n📊 Summary:");
     println!("   ✅ Format integration: Working");
     println!("   ✅ Theme export: Working");

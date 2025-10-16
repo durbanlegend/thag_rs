@@ -12,7 +12,7 @@ crossterm = "0.28"
 /// palette colors in mintty terminals.
 ///
 /// Based on the shell script in TODO.md lines 49-74, this implements the same
-/// functionality in Rust to query mintty ANSI slots 0-15.
+/// logic in Rust to query mintty ANSI slots 0-15.
 //# Purpose: Test mintty-specific color detection using OSC 7704 sequences
 //# Categories: color, detection, mintty, terminal, windows
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};

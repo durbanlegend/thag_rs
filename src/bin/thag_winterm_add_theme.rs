@@ -27,7 +27,7 @@ use thag_styling::{auto_help, help_system::check_help_and_exit};
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     check_help_and_exit(&help);
@@ -120,6 +120,8 @@ fn main() {
 
         println!("\n🎉 Theme installation completed!");
     }
+
+    Ok(())
 }
 
 #[cfg(target_os = "windows")]
@@ -190,7 +192,7 @@ fn select_individual_toml_themes(
                         selected_themes.push(theme);
                     }
                     Err(e) => {
-                        println!("   ❌ Failed to load theme: {}", e.to_string().red());
+                        println!("   ❌ Failed to load theme: {}", e.to_string().error());
                         continue;
                     }
                 }
@@ -481,6 +483,7 @@ fn load_theme_from_json(json_file: &Path) -> Result<Theme, Box<dyn Error>> {
             "Imported from {}",
             json_file.file_name().unwrap_or_default().to_string_lossy()
         ),
+        base_colors: None,
     })
 }
 

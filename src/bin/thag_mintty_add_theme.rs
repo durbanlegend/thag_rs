@@ -15,6 +15,7 @@ use inquire::set_global_render_config;
 
 #[cfg(target_os = "windows")]
 use std::{
+    error::Error,
     fs,
     path::{Path, PathBuf},
 };
@@ -28,7 +29,7 @@ use thag_styling::{auto_help, help_system::check_help_and_exit};
 file_navigator! {}
 
 #[allow(clippy::too_many_lines)]
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     check_help_and_exit(&help);
@@ -157,6 +158,7 @@ fn main() {
             show_usage_instructions();
         }
     }
+    Ok(())
 }
 
 /// Check if we have write permission to a directory

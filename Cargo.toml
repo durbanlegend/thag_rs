@@ -13,6 +13,7 @@ include = [
   "LICENSE-MIT",
   "assets/default_config.toml",
   "build.rs",
+  "build_utils.rs",
   "demo/**",
   "src/**",
   "tests/**",

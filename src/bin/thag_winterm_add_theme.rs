@@ -12,6 +12,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 //# Categories: color, styling, terminal, theming, tools, windows
 #[cfg(target_os = "windows")]
 use inquire::set_global_render_config;
+
 #[cfg(target_os = "windows")]
 use std::{
     error::Error,
@@ -20,13 +21,15 @@ use std::{
 };
 
 #[cfg(target_os = "windows")]
-use thag_styling::{file_navigator, themed_inquire_config, Styleable, Theme};
-
-use thag_styling::{auto_help, help_system::check_help_and_exit};
+use thag_styling::{
+    auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config, Styleable,
+    Theme,
+};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
+#[cfg(target_os = "windows")]
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
@@ -677,6 +680,12 @@ fn show_usage_instructions(added_schemes: &[(String, String)]) {
 //             _ => None,
 //         })
 // }
+
+#[cfg(not(target_os = "windows"))]
+fn main() {
+    eprintln!("This tool is only available on Windows.");
+    std::process::exit(1);
+}
 
 #[cfg(test)]
 mod tests {

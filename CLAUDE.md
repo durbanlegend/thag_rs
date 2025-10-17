@@ -11,6 +11,10 @@
 - Flamegraph: `cargo flamegraph`
 - Profile: `cargo run --features profiling -- [args]`
 
+## Dependency versioning
+
+Always use only `major.minor` unless there is a good reason to use the `patch` part.
+
 ## Demo and sample scripts
 - For the main thag_rs crate, example code should be implemented as scripts in the demo subdirectory.
 Run with `cargo run demo/script_name.rs`. Any valid Cargo.toml info can be placed in the normal format in a toml block at the top of the program, like this:

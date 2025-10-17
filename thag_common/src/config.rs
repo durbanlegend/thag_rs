@@ -21,7 +21,7 @@ use strum::{Display, EnumString};
 use toml::Value;
 use toml_edit::DocumentMut;
 
-const DEFAULT_CONFIG: &str = include_str!("../../assets/default_config.toml");
+const DEFAULT_CONFIG: &str = include_str!("../assets/default_config.toml");
 
 /// Configuration categories
 #[derive(Clone, Debug, Default, Deserialize, Serialize, Documented, DocumentedFields)]

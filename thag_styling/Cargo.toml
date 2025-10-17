@@ -15,7 +15,7 @@ document-features = { version = "0.2", optional = true }
 log = "0.4"
 nu-ansi-term = { version = "0.50", optional = true }
 owo-colors = { version = "4.1", optional = true }
-phf = { version = "0.12", features = ["macros"] }
+phf = { version = "0.13", features = ["macros"] }
 regex = "1.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -40,7 +40,7 @@ auto-palette = { version = "0.9", optional = true }
 palette = { version = "0.7", optional = true }
 
 [build-dependencies]
-phf = { version = "0.12", features = ["macros"] }
+phf = { version = "0.13", features = ["macros"] }
 tempfile = "3.20"
 thag_proc_macros = { path = "../thag_proc_macros", version = "0.2.1" }
 toml = "0.9"

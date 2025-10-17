@@ -252,7 +252,7 @@ log = "0.4"
 mockall = { version = "0.13", optional = true }
 nu-ansi-term = { version = "0.50", optional = true }
 pathdiff = { version = "0.2", optional = true }
-phf = { version = "0.12", features = ["macros"] }
+phf = { version = "0.13", features = ["macros"] }
 prettyplease = { version = "0.2", optional = true }
 proc-macro2 = "1.0"
 quote = { version = "1.0", optional = true }
@@ -313,7 +313,7 @@ test-generator = "0.3"
 tokio = { version = "1.36", features = ["macros", "rt", "time"] }
 
 [build-dependencies]
-phf = { version = "0.12", features = ["macros"] }
+phf = { version = "0.13", features = ["macros"] }
 tempfile = "3.20"
 thag_proc_macros = { path = "thag_proc_macros", version = "0.2.1" }
 toml = "0.9"

@@ -476,7 +476,7 @@ fn load_theme_from_json(json_file: &Path) -> Result<Theme, Box<dyn Error>> {
         min_color_support: ColorSupport::TrueColor,
         palette: Palette::default(),
         backgrounds: vec!["#000000".to_string()],
-        bg_rgbs: vec![(0, 0, 0)],
+        bg_rgbs: vec![[0, 0, 0]],
         description: format!(
             "Imported from {}",
             json_file.file_name().unwrap_or_default().to_string_lossy()

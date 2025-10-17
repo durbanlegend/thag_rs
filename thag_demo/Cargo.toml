@@ -10,6 +10,12 @@ readme = "README.md"
 keywords = ["demo", "profiling", "rust", "thag", "examples"]
 categories = ["development-tools", "command-line-utilities"]
 
+[package.metadata.wix]
+upgrade-guid = "20E43CCD-D8A5-44E9-A295-AB8CE5F76877"
+path-guid = "3A77A597-CCA5-46CC-90E6-7C8B6D829C49"
+license = false
+eula = false
+
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 colored = "3.0"

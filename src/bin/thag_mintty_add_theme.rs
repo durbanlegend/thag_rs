@@ -21,9 +21,9 @@ use std::{
 };
 
 #[cfg(target_os = "windows")]
-use thag_styling::{file_navigator, themed_inquire_config, Styleable};
-
-use thag_styling::{auto_help, help_system::check_help_and_exit};
+use thag_styling::{
+    auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config, Styleable,
+};
 
 #[cfg(target_os = "windows")]
 file_navigator! {}

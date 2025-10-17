@@ -60,17 +60,17 @@
 
     <Product
         Id='*'
-        Name='thag_profiler'
-        UpgradeCode='0C80A2EF-343B-4EA3-BCE0-2985B10A2893'
-        Manufacturer='thag_rs developer'
+        Name='thag_demo'
+        UpgradeCode='20E43CCD-D8A5-44E9-A295-AB8CE5F76877'
+        Manufacturer='Don Forbes'
         Language='1033'
         Codepage='1252'
         Version='$(var.Version)'>
 
         <Package Id='*'
             Keywords='Installer'
-            Description='A lightweight, cross-platform Rust code profiling toolkit with zero overhead when disabled'
-            Manufacturer='thag_rs developer'
+            Description='Interactive demos for thag_rs and thag_profiler - run Rust profiling examples without installing thag'
+            Manufacturer='Don Forbes'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
@@ -83,11 +83,11 @@
             DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
-        <Property Id='DiskPrompt' Value='thag_profiler Installation'/>
+        <Property Id='DiskPrompt' Value='thag_demo Installation'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='thag_profiler'>
+                <Directory Id='APPLICATIONFOLDER' Name='thag_demo'>
                     
                     <!--
                       Enabling the license sidecar file in the installer is a four step process:
@@ -110,7 +110,7 @@
                     -->
 
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='DB87B3CE-6DCB-436A-85FA-C90A0061C9B3' KeyPath='yes'>
+                        <Component Id='Path' Guid='3A77A597-CCA5-46CC-90E6-7C8B6D829C49' KeyPath='yes'>
                             <Environment
                                 Id='PATH'
                                 Name='PATH'
@@ -123,25 +123,9 @@
                         <Component Id='binary0' Guid='*'>
                             <File
                                 Id='exe0'
-                                Name='thag_instrument.exe'
+                                Name='thag_demo.exe'
                                 DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\thag_instrument.exe'
-                                KeyPath='yes'/>
-                        </Component>
-                        <Component Id='binary1' Guid='*'>
-                            <File
-                                Id='exe1'
-                                Name='thag_profile.exe'
-                                DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\thag_profile.exe'
-                                KeyPath='yes'/>
-                        </Component>
-                        <Component Id='binary2' Guid='*'>
-                            <File
-                                Id='exe2'
-                                Name='thag_uninstrument.exe'
-                                DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\thag_uninstrument.exe'
+                                Source='$(var.CargoTargetBinDir)\thag_demo.exe'
                                 KeyPath='yes'/>
                         </Component>
                     </Directory>
@@ -166,8 +150,6 @@
             <!--<ComponentRef Id='License'/>-->
 
             <ComponentRef Id='binary0'/>
-            <ComponentRef Id='binary1'/>
-            <ComponentRef Id='binary2'/>
 
             <Feature
                 Id='Environment'
@@ -191,7 +173,7 @@
         <!--<Icon Id='ProductICO' SourceFile='wix\Product.ico'/>-->
         <!--<Property Id='ARPPRODUCTICON' Value='ProductICO' />-->
 
-        <Property Id='ARPHELPLINK' Value='https://github.com/durbanlegend/thag_rs/blob/develop/thag_profiler/README.md'/>
+        <Property Id='ARPHELPLINK' Value='https://github.com/durbanlegend/thag_rs'/>
         
         <UI>
             <UIRef Id='WixUI_FeatureTree'/>

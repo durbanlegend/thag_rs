@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", features = ["tools"] }
+thag_common = { version = "0.2, thag-auto" }
+thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion
@@ -21,9 +22,9 @@ use std::{
     process::{Command, Stdio},
 };
 use tempfile::tempdir;
-use thag_rs::{
+use thag_common::ThagCommonError;
+use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
-    tool_errors::ToolError,
 };
 
 file_navigator! {}
@@ -96,8 +97,9 @@ fn expand_script() -> Result<()> {
         ScriptMode::Interactive => {
             // Use the file selector
             let mut navigator = FileNavigator::new();
-            select_file(&mut navigator, Some("rs"), false)
-                .map_err(|e| ToolError::ThreadSafe(format!("Failed to select file: {e}",).into()))?
+            select_file(&mut navigator, Some("rs"), false).map_err(|e| {
+                ThagCommonError::Generic(format!("Failed to select file: {e}",).into())
+            })?
         }
     };
     if !input_path.exists() {

@@ -3,7 +3,7 @@
 //# Categories: crates, tools
 use std::io::{self, Read, Write};
 
-use thag_rs::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit};
 fn read_stdin() -> Result<String, io::Error> {
     let mut buffer = String::new();
     io::stdin().lock().read_to_string(&mut buffer)?;

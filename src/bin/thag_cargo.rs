@@ -1,6 +1,5 @@
 /*[toml]
 [dependencies]
-atty = "0.2.14"
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_common = { version = "0.2, thag-auto" }
 */
@@ -14,9 +13,8 @@ thag_common = { version = "0.2, thag-auto" }
 #[allow(clippy::single_component_path_imports)]
 use inquire;
 use std::{error::Error, path::PathBuf, process::Command};
-use thag_common::{auto_help, help_system::check_help_and_exit};
+use thag_common::{auto_help, help_system::check_help_and_exit, ThagCommonError};
 use thag_proc_macros::file_navigator;
-use thag_rs::tool_errors::ToolError;
 
 file_navigator! {}
 
@@ -192,8 +190,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         ScriptMode::Interactive => {
             // Use the file selector
             let mut navigator = FileNavigator::new();
-            select_file(&mut navigator, Some("rs"), false)
-                .map_err(|e| ToolError::ThreadSafe(format!("Failed to select file: {e}",).into()))?
+            select_file(&mut navigator, Some("rs"), false).map_err(|e| {
+                ThagCommonError::Generic(format!("Failed to select file: {e}",).into())
+            })?
         }
     };
 

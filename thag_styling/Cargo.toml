@@ -9,6 +9,7 @@ repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools"]
 keywords = ["styling", "terminal", "themes", "colors", "ansi"]
 rust-version = "1.82"
+exclude = [".DS_Store"]
 
 [dependencies]
 document-features = { version = "0.2", optional = true }

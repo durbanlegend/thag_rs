@@ -28,6 +28,7 @@ use thag_styling::{auto_help, help_system::check_help_and_exit};
 #[cfg(target_os = "windows")]
 file_navigator! {}
 
+#[cfg(target_os = "windows")]
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), Box<dyn Error>> {
     // Check for help first - automatically extracts from source comments
@@ -468,6 +469,12 @@ fn show_usage_instructions() {
     println!();
     println!("💡 Tip: The theme will apply to all new Mintty windows.");
     println!("   Existing windows may need to be restarted to see the changes.");
+}
+
+#[cfg(not(target_os = "windows"))]
+fn main() {
+    eprintln!("This tool is only available on Windows.");
+    std::process::exit(1);
 }
 
 #[cfg(test)]

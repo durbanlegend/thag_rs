@@ -1,7 +1,7 @@
 [package]
 description = "A versatile cross-platform playground and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -279,10 +279,10 @@ syn = { version = "2", features = [
 tempfile = { version = "3.20", optional = true }
 termbg = { version = "0.6", optional = true }
 terminal-light = { version = "1.8", optional = true }
-thag_common = { path = "thag_common", version = "0.2" }
-thag_proc_macros = { path = "thag_proc_macros", version = "0.2" }
-thag_profiler = { path = "thag_profiler", version = "0.1", optional = true }
-thag_styling = { path = "thag_styling", version = "0.2", default-features = false, optional = true }
+thag_common = { path = "thag_common", version = "0.2.1" }
+thag_proc_macros = { path = "thag_proc_macros", version = "0.2.1" }
+thag_profiler = { path = "thag_profiler", version = "0.1.1", optional = true }
+thag_styling = { path = "thag_styling", version = "0.2.1", default-features = false, optional = true }
 tinyget = { version = "1.0", features = ["https"], optional = true }
 tokio = { version = "1.36", features = [
   "macros",
@@ -315,7 +315,7 @@ tokio = { version = "1.36", features = ["macros", "rt", "time"] }
 [build-dependencies]
 phf = { version = "0.12", features = ["macros"] }
 tempfile = "3.20"
-thag_proc_macros = { path = "thag_proc_macros", version = "0.2" }
+thag_proc_macros = { path = "thag_proc_macros", version = "0.2.1" }
 toml = "0.9"
 
 [target.'cfg(windows)'.dependencies]

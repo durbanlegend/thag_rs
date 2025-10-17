@@ -14,6 +14,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
 use inquire::set_global_render_config;
 #[cfg(target_os = "windows")]
 use std::{
+    error::Error,
     fs,
     path::{Path, PathBuf},
 };

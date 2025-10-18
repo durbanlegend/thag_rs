@@ -12,3 +12,11 @@ updates:
     # Add these settings:
     rebase-strategy: "auto"
     open-pull-requests-limit: 10
+    # Ignore specific dependencies that need to match other crate versions
+    ignore:
+      - dependency-name: "crossterm"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "phf"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]

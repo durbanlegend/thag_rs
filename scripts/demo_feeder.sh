@@ -3,7 +3,7 @@ lines=(
     "# Here's a short demo of the thag REPL."
     "# Evaluating a single-line expression:"
     "# We can get as gnarly as we like. Let's compute a series of cubes:"
-    '(1..=50).map(|x| x * x).filter(|x| x % 3 != 0).enumerate().map(|(i, v)| format!("{}:{}", i, v)).collect::<Vec<_>>().join(", ")'
+    '(1..=50).map(|x| x * x).filter(|x| x % 3 != 0).enumerate().map(|(i, v)| println!("{}:{}", i, v)).collect::<Vec<_>>().join(", ")'
     "# Evaluating a multi-line expression:"
     "{
 let nums = vec![1, 2, 3, 4];
@@ -30,7 +30,7 @@ echo ""
 while true; do
     if [ $index -le $max ]; then
         echo "[$index/$max] ${lines[$index]}"
-        echo -n "${lines[$index]}" | pbcopy
+        echo -n "${lines[$index]}" | thag_copy
         echo "  → Copied to clipboard. Press Cmd-V in terminal."
         ((index++))
     else

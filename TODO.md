@@ -3,7 +3,9 @@
 ## High Priority
 
 ## On the go
-- [ ]  Mention `thag_demo` in thag README.md. Mention "co-releases".
+- [x]  Mention `thag_demo` in thag README.md. Mention "co-releases".
+- [ ]  Add Linux and Windows builds to checklists - Claude do release 0.2 post-mortem
+- [ ]  thag_styling to re-export ThagCommonError.
 
 Ref 0042 5193
 
@@ -617,3 +619,100 @@ ffmpeg -i thag_profile_demo.mov -vf "fps=15,scale=1200:-1:flags=lanczos" -c:v gi
 *Click to open interactive SVG with full flamegraph features*
 
 asciinema rec -I -i2 --window-size 203x30 --overwrite demo.cast
+
+
+# thag_rs v0.2.1
+
+This release addresses cross-platform build issues discovered in v0.2.0.
+
+## What's Fixed
+
+### Package Installation
+- Fixed `thag_common` path to `default_config.toml` (moved from workspace root to `thag_common/assets/`)
+- Added missing `build_utils.rs` to package includes
+- Resolved `.DS_Store` packaging issues
+
+### Cross-Platform Compatibility
+- Added missing `std::error::Error` import for Windows builds
+- Properly gated Windows-only tools (`thag_winterm_add_theme`, `thag_mintty_add_theme`) with platform-specific compilation
+- Verified builds on Windows, Linux, and macOS
+
+## Published Crates
+
+All crates updated to v0.2.1 (v0.1.1 for thag_profiler):
+
+- `thag_common` 0.2.1
+- `thag_proc_macros` 0.2.1
+- `thag_styling` 0.2.1
+- `thag_profiler` 0.1.1
+- `thag_rs` 0.2.1
+- `thag_demo` 0.2.1
+
+Previous v0.2.0 versions have been yanked.
+
+## Documentation
+
+- See [CLAUDE.md](https://github.com/durbanlegend/thag_rs/blob/main/CLAUDE.md) for development guidelines
+- Added major.minor version convention for demo script toml blocks
+
+---
+
+For the full v0.2.x feature set, see the [v0.2.0 release notes](https://github.com/durbanlegend/thag_rs/releases/tag/v0.2.0).
+
+---
+
+## Installation
+
+Install via cargo:
+```bash
+cargo install thag_rs
+## Installation
+
+Install via cargo:
+```bash
+cargo install thag_rs
+```
+
+Or download pre-built binaries below for your platform.
+
+
+
+## Install thag_rs 0.2.1
+
+### Install prebuilt binaries via shell script
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-installer.sh | sh
+```
+
+### Install prebuilt binaries via powershell script
+
+```sh
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-installer.ps1 | iex"
+```
+
+## Download thag_rs 0.2.1
+
+|  File  | Platform | Checksum |
+|--------|----------|----------|
+| [thag_rs-aarch64-apple-darwin.tar.xz](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-aarch64-apple-darwin.tar.xz) | Apple Silicon macOS | [checksum](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-aarch64-apple-darwin.tar.xz.sha256) |
+| [thag_rs-x86_64-apple-darwin.tar.xz](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-apple-darwin.tar.xz) | Intel macOS | [checksum](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-apple-darwin.tar.xz.sha256) |
+| [thag_rs-x86_64-pc-windows-msvc.zip](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-pc-windows-msvc.zip) | x64 Windows | [checksum](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-pc-windows-msvc.zip.sha256) |
+| [thag_rs-x86_64-pc-windows-msvc.msi](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-pc-windows-msvc.msi) | x64 Windows | [checksum](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-pc-windows-msvc.msi.sha256) |
+| [thag_rs-x86_64-unknown-linux-gnu.tar.xz](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-unknown-linux-gnu.tar.xz) | x64 Linux | [checksum](https://github.com/durbanlegend/thag_rs/releases/download/v0.2.1/thag_rs-x86_64-unknown-linux-gnu.tar.xz.sha256) |
+
+A versatile cross-platform script runner, REPL and playground for Rust expressions, snippets, programs and proc macros. Release 0.2.1 brings gorgeous theming, 30+ useful command-line tools, a profiler, proc macro assists, a demo preview and many enhancements.
+
+
+https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=4db8875ca7b472a65a31d571158181a3
+
+/// features for a given crate can be configured via `thag -C`).
+///
+/// Failing that, it is recommended to paste the raw source into the thag TUI editor (`thag -d`) or a new
+/// .rs, create a `/*[toml] ... */` block at the top, and paste into it the missing dependencies and features
+/// from the `Cargo.toml` file on the website that pertains to the example. Use `Ctrl-d` to submit it
+/// from the editor or run the script with `thag </path/to/file>` in the normal way.
+///
+/// Alternatively, you can add the toml block to the failing web_script file and re-run it as a normal script.
+
+#! /usr/bin/env thag

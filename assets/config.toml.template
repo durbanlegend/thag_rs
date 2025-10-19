@@ -132,9 +132,11 @@ required_features = ["blocking", "json"]
 [dependencies.feature_overrides.rug]
 required_features = ["integer", "std"]
 
+[dependencies.feature_overrides.rustix]
+required_features = ["fs"]
+
 [dependencies.feature_overrides.rustyline]
 excluded_features = ["with-sqlite-history"]
-required_features = [""]
 
 [dependencies.feature_overrides.spin1]
 required_features = ["mutex"]
@@ -152,9 +154,16 @@ required_features = [
     "visit-mut",
 ]
 
+[dependencies.feature_overrides.thag_common]
+required_features = ["color_detect"]
+default_features = true
+
 [dependencies.feature_overrides.thag_rs]
 required_features = ["core", "simplelog"]
 default_features = false
+
+[dependencies.feature_overrides.tinyget]
+required_features = ["https"]
 
 [dependencies.feature_overrides.tokio]
 excluded_features = ["unstable-async-driver"]

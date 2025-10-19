@@ -5,7 +5,7 @@
 //! `thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
 //! and examples to make it as quick and easy as possible to explore coding solutions without tedious setup.
 //!
-//! 🚀 **Core Features:**
+//! 🧱 **Core Features:**
 //!
 //! - Run Rust code straight from the command line
 //!
@@ -21,7 +21,7 @@
 //!
 //! - Loop-filter mode for data processing
 //!
-//! 🎯 **Smart Features:**
+//! 🕶️ **Smart Features:**
 //!
 //! - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`)
 //!
@@ -50,7 +50,7 @@
 //!
 //! 💡 **Getting Started:**
 //!
-//! Jump into `thag`'s collection of 250+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible.
+//! Jump into `thag`'s collection of 330+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/master/demo/README.md) to see what's possible.
 //! Contributions will be considered under MIT/Apache 2 license.
 //!
 //! Whether you're prototyping, learning, or building tools, `thag_rs` adapts to your style - from quick one-liners to full-featured programs.

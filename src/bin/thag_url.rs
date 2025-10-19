@@ -4,7 +4,7 @@ thag_common = { version = "0.2, thag-auto" }
 */
 /// `thag` front-end command to run Rust scripts from URLs provided that `thag` can figure out the dependencies.
 ///
-/// It supports raw files as well as GitHub, GitLab, Bitbucket and the Rust Playground.
+/// It supports raw files as well as GitHub, GitHub Gists, GitLab, Bitbucket and the Rust Playground.
 ///
 /// This relies on `thag`'s dependency inference to resolve dependencies and even features (since default
 /// features for a given crate can be configured via `thag -C`). Failing that, you can of course paste the raw
@@ -32,6 +32,7 @@ use url::Url;
 
 enum SourceType {
     GitHub,
+    GitHubGist,
     GitLab,
     Bitbucket,
     RustPlayground,
@@ -146,6 +147,7 @@ fn fetch_and_validate(url: &str) -> Result<String, UrlError> {
 fn detect_source_type(url: &Url) -> SourceType {
     url.host_str().map_or(SourceType::Raw, |host| match host {
         "github.com" => SourceType::GitHub,
+        "gist.github.com" => SourceType::GitHubGist,
         "gitlab.com" => SourceType::GitLab,
         "bitbucket.org" => SourceType::Bitbucket,
         "play.rust-lang.org" => SourceType::RustPlayground,
@@ -177,6 +179,38 @@ fn convert_to_raw_url(url_str: &str) -> Result<String, UrlError> {
             let raw_url = url_str
                 .replace("github.com", "raw.githubusercontent.com")
                 .replace("/blob/", "/");
+            eprintln!("raw_url={raw_url}");
+            Ok(raw_url)
+        }
+        SourceType::GitHubGist => {
+            let path = url.path();
+
+            // Already a raw gist URL
+            if url_str.contains("gist.githubusercontent.com") && path.ends_with("/raw") {
+                return Ok(url_str.to_string());
+            }
+
+            // Extract username and gist ID from path like /rust-play/794c1d0bd13ea427c9acafb348a88bc5
+            let parts: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+            if parts.len() < 2 {
+                return Err(UrlError::SyntaxError(
+                    "Invalid GitHub Gist URL format: expected gist.github.com/username/gist_id"
+                        .to_string(),
+                ));
+            }
+
+            let username = parts[0];
+            let gist_id = parts[1];
+
+            // Validate gist ID length (32 hex characters)
+            if gist_id.len() != 32 {
+                return Err(UrlError::SyntaxError(
+                    "Invalid gist ID format: expected 32-character hex string".to_string(),
+                ));
+            }
+
+            // Convert to raw URL
+            let raw_url = format!("https://gist.githubusercontent.com/{username}/{gist_id}/raw");
             eprintln!("raw_url={raw_url}");
             Ok(raw_url)
         }
@@ -288,7 +322,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             let temp_dir = std::env::temp_dir();
             let pid = std::process::id();
             let temp_file_path = temp_dir.join(format!("web_script_{pid}.rs"));
-            let temp_ws_dir = temp_dir.join(format!("thag_rs/web_script_{pid}"));
 
             // Write content to temporary file
             std::fs::write(&temp_file_path, &content)?;
@@ -304,21 +337,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // Wait for thag to complete
             let status = child.wait()?;
-
-            // Clean up the temporary file
-            eprintln!("Removing temporary script at: {}", temp_file_path.display());
-            if let Err(e) = std::fs::remove_file(&temp_file_path) {
-                eprintln!("Warning: Could not remove temporary directory: {e}");
-            }
-
-            // Clean up the temporary target directory
-            eprintln!(
-                "Removing temporary target directory at: {}",
-                temp_ws_dir.display()
-            );
-            if let Err(e) = std::fs::remove_dir_all(&temp_ws_dir) {
-                panic!("Warning: Could not remove temporary target directory: {e}");
-            }
 
             if !status.success() {
                 std::process::exit(status.code().unwrap_or(1));
@@ -346,12 +364,14 @@ fn print_usage(program: &str) {
     eprintln!("Usage: {program} <url> [additional_thag_args] [-- <script_args>]");
     eprintln!("Supported sources:");
     eprintln!("  - GitHub (github.com)");
+    eprintln!("  - GitHub Gists (gist.github.com)");
     eprintln!("  - GitLab (gitlab.com)");
     eprintln!("  - Bitbucket (bitbucket.org)");
     eprintln!("  - Rust Playground (play.rust-lang.org)");
     eprintln!("  - Raw URLs (direct links to raw content)");
     eprintln!("\nExamples:");
     eprintln!("  {program} https://github.com/user/repo/blob/master/script.rs -- -m");
+    eprintln!("  {program} https://gist.github.com/rust-play/794c1d0bd13ea427c9acafb348a88bc5");
     eprintln!("  {program} https://github.com/user/repo/blob/master/script.rs -v");
     eprintln!(
         "  {program} https://github.com/user/repo/blob/master/script.rs -- script_arg1 script_arg2"
@@ -400,6 +420,38 @@ mod tests {
         let expected =
             "https://gist.githubusercontent.com/rust-play/362dc87d7c1c8f2d569cc205165424d3/raw";
         assert_eq!(convert_to_raw_url(url).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_github_gist_url() {
+        let url = "https://gist.github.com/rust-play/794c1d0bd13ea427c9acafb348a88bc5";
+        let expected =
+            "https://gist.githubusercontent.com/rust-play/794c1d0bd13ea427c9acafb348a88bc5/raw";
+        assert_eq!(convert_to_raw_url(url).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_github_gist_raw_url() {
+        let url =
+            "https://gist.githubusercontent.com/rust-play/794c1d0bd13ea427c9acafb348a88bc5/raw";
+        assert_eq!(convert_to_raw_url(url).unwrap(), url);
+    }
+
+    #[test]
+    fn test_github_gist_with_different_user() {
+        let url = "https://gist.github.com/durbanlegend/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6";
+        let expected =
+            "https://gist.githubusercontent.com/durbanlegend/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6/raw";
+        assert_eq!(convert_to_raw_url(url).unwrap(), expected);
+    }
+
+    #[test]
+    fn test_invalid_gist_urls() {
+        // Test invalid gist ID (too short)
+        assert!(convert_to_raw_url("https://gist.github.com/rust-play/short").is_err());
+
+        // Test missing gist ID
+        assert!(convert_to_raw_url("https://gist.github.com/rust-play").is_err());
     }
 
     #[test]

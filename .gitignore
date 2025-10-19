@@ -84,3 +84,7 @@ styles/Readability/
 styles/Readability_Releases.zip
 sync_docs_report.txt
 demo/document_pipeline_instr.rs
+scripts/cli_demo_feeder.sh
+scripts/cli_demo_typer.sh
+scripts/demo_feeder_thag.sh
+scripts/demo_setup.sh

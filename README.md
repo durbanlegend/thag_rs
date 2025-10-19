@@ -25,7 +25,7 @@ v0.2 brings many new features and a sleek look with themes to match your termina
   - an option to build fast commands from your scripts
 
 <details>
-<summary>📋 an improved [demo proc macro starter kit](demo/proc_macros/README.md)</summary>
+<summary>📋 an improved <a href="demo/proc_macros/README.md">demo proc macro starter kit</a></summary>
 
 - a ***select set of 12 useful and educational examples***
 
@@ -88,7 +88,7 @@ Whether you're:
 </details>
 
 <details>
-<summary>🛠️ over 30 other independently installable [command-line tools](src/bin/README.md)</summary>
+<summary>🛠️ over 30 other independently installable <a href="src/bin/README.md">command-line tools</a></summary>
 
   - 🔬 AST display tool
 

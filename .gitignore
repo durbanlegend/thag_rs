@@ -88,3 +88,5 @@ scripts/cli_demo_feeder.sh
 scripts/cli_demo_typer.sh
 scripts/demo_feeder_thag.sh
 scripts/demo_setup.sh
+splice.cast
+thag_2.1-demo copy.cast

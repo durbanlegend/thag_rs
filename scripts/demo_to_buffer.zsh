@@ -52,7 +52,7 @@ DEMO_LINES=(
     "curl -s https://gist.githubusercontent.com/rust-play/c95c26d75ca7eb43c42f0e17896a41ad/raw | thag -s"
     ": # thag can also edit and run the standard input with the --edit/-d option:"
     "curl -s https://gist.githubusercontent.com/rust-play/c95c26d75ca7eb43c42f0e17896a41ad/raw | thag -d"
-    ": #' thag --edit/-d option can now recall this script from its history. Let's save it as a script and copy its location:"
+    ": #' thag --edit/-d option can now recall this snippet from its history. Let's save it as a script and copy its location:"
     "thag -d"
     ": #' Now let's run the saved script:"
     "thag demo/my_gist.rs"

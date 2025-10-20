@@ -1,6 +1,6 @@
-# Announcing <mark><strong>thag 0.2</strong></mark>: A versatile Rust REPL/script runner with dependency inference and TUI editing
+# Announcing thag 0.2: A versatile Rust REPL/script runner with dependency inference and TUI editing
 
-As a veteran experimenter, it's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the mean time I want to slice and dice Rust, while making the most of the quality Rust tooling that already exists. I threw my hat in the ring with thag 0.1 in late 2024, and now, for those who might be interested in this kind of thing, I offer for your consideration the enhanced [thag 0.2](https://github.com/durbanlegend/thag_rs/blob/main/README.md) with theming goodness and a companion [profiler](https://github.com/durbanlegend/thag_rs/blob/main/thag_profiler/README.md) for good measure.
+As a veteran experimenter, it's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the mean time I want to slice and dice Rust, while making the most of the quality Rust tooling that already exists. I threw my hat in the ring with thag 0.1 in 2024, and now, for those who might be interested in this kind of thing, I offer for your consideration the enhanced [thag 0.2](https://github.com/durbanlegend/thag_rs/blob/main/README.md) with theming goodness and a companion [profiler](https://github.com/durbanlegend/thag_rs/blob/main/thag_profiler/README.md) for good measure.
 
 ## What is thag?
 
@@ -33,31 +33,7 @@ Lot word below.
 
 - An integrated TUI editor for quick modifications, integration with user's preferred editor
 
-- 30+ command-line tools to for various tasks:
-
-  - execute scripts from URLs
-
-  - expand scripts
-
-  - run cargo commands on scripts such as clippy, test, tree, doc.
-
-  - copy and paste between the clipboard and standard input/output
-
-  - convert embedded '\n' characters to line feeds
-
-  - display terminal characteristics and color palette as well as the active thag theme
-
-  - generate custom error types, etc.
-
-  - styling / theming tools for:
-
-    - theme creation from images
-
-    - theme editing
-
-    - conversion between thag themes and terminal themes
-
-    - dynamic override of the terminal palette with thag theme colors (for popular terminal emulators with exceptions noted).
+- 30+ command-line tools to execute scripts from URLs, expand scripts, run clippy or other cargo commands on them, copy and paste between the clipboard and standard input/output, generate custom error types, convert embedded '\n' characters to line feeds, display terminal characteristics, and many more including a range of theming tools.
 
 - Full support for proc macros and complex dependencies
 
@@ -91,55 +67,57 @@ I wanted to be able to try out a piece of Rust logic quickly or build a small pr
 
 See the demo link above for a better exposition
 
-```bash
-# Command-line expression
-thag -e '(1..=34).product::<u128>()'
+### Command-line expression
+`thag -e '(1..=34).product::<u128>()'`
 
-# Simple script
-thag script.rs
+### Simple script
+`thag script.rs`
 
-# Simple script with arguments and options
-thag demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
+### Simple script with arguments and options
+`thag demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt`
 
-# REPL mode
-thag -r
+### REPL mode
+`thag -r`
 
-# From URL
-thag_url https://gist.github.com/user/abc123
+### From URL
+`thag_url https://gist.github.com/user/abc123`
 
-# Paste-edit-submit cycle
-thag -d
+### Paste-edit-submit cycle
+`thag -d`
 
-# Edit in TUI
-thag -d < script.rs
+### Edit in TUI
+`thag -d < script.rs`
 
-# Run or evaluate from standard input
-cat script.rs | thag -s
+### Run or evaluate from standard input
+`cat script.rs | thag -s`
 
-# From the system clipboard
-thag_paste | thag -s
+### From the system clipboard
+`thag_paste | thag -s`
 
-# Loop/filter mode
-ls -1 | thag -l 'format!("{i:3}. {line}")'
+### Loop/filter mode
+`ls -1 | thag -l 'format!("{i:3}. {line}")'`
 
-# Shebang support
-./script.rs
+### Shebang support
+`./script.rs`
 
-# Command creation (release build to ~/.cargo/bin)
-thag -x some_tool.rs
-some_tool
-```
+### Command creation (release build to ~/.cargo/bin)
+`thag -x some_tool.rs`
+`some_tool`
 
 ## REPL demo
 
-[![asciicast](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT.svg)](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT)
+[Repl demo here](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT)
+*REPL session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
 
-*Click to watch: Interactive REPL session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
+## TUI Editor demos
 
-## TUI Editor screenshot
+Built-in TUI editor with syntax highlighting and themed interface
 
-![TUI Editor](assets/edit1t.png)
-*Built-in TUI editor with syntax highlighting and themed interface*
+[TUI Editor demo 1](https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY)
+*Edit and submit from stdin (0:30)*
+
+[TUI Editor demo 2](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG)
+*Retrieve history and paste in text from clipboard (1:14)*
 
 ## Technical details
 
@@ -162,14 +140,13 @@ The project also includes two subcrates that may be independently useful:
 
   - CLI demo here: [Profiled from scratch in one minute](https://asciinema.org/a/YP6mW01gYgW9EgZ5c01hL0vhc)
 
-  - Generated interactive flamegraph here: [![Flamegraph from thag_profiling](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)<br>
+  - Generated interactive flamegraph here: [Flamegraph from thag_profiling](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)
+
   *Interactive inferno flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
 
 ## Installation
 
-```bash
-cargo install thag_rs
-```
+`cargo install thag_rs`
 
 Repository: https://github.com/durbanlegend/thag_rs
 

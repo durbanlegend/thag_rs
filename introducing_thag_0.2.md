@@ -1,10 +1,10 @@
-# Announcing <span style="font-size:1.15em; font-weight:700; background:#fff3a6; padding:0.08em 0.25em; border-radius:4px;">thag 0.2</span>: A versatile Rust REPL/script runner with dependency inference and TUI editing
+# Announcing <mark><strong>thag 0.2</strong></mark>: A versatile Rust REPL/script runner with dependency inference and TUI editing
 
 As a veteran experimenter, it's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the mean time I want to slice and dice Rust, while making the most of the quality Rust tooling that already exists. I threw my hat in the ring with thag 0.1 in late 2024, and now, for those who might be interested in this kind of thing, I offer for your consideration the enhanced [thag 0.2](https://github.com/durbanlegend/thag_rs/blob/main/README.md) with theming goodness and a companion [profiler](https://github.com/durbanlegend/thag_rs/blob/main/thag_profiler/README.md) for good measure.
 
 ## What is thag?
 
-thag is a Rust playground and REPL that aims to lower the barriers to running quick Rust experiments, while still supporting full project complexity when needed.
+thag (crate name thag_rs) is a Rust playground and REPL that aims to lower the barriers to running quick Rust experiments, while still supporting full project complexity when needed.
 
 ## Why use lot word when demo do trick?
 

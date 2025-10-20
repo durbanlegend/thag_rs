@@ -33,7 +33,31 @@ Lot word below.
 
 - An integrated TUI editor for quick modifications, integration with user's preferred editor
 
-- 30+ command-line tools to execute scripts from URLs, expand scripts, run clippy or other cargo commands on them, copy and paste between the clipboard and standard input/output, convert embedded '\n' characters to line feeds, display terminal characteristics and color palette as well as the active thag theme, generate custom error types, etc. Styling / theming tools allow theme creation from images, theme editing, conversion between thag themes and terminal themes, and dynamic override of the terminal palette with thag theme colors (for popular terminal emulators with exceptions noted).
+- 30+ command-line tools to for various tasks:
+
+  - execute scripts from URLs
+
+  - expand scripts
+
+  - run cargo commands on scripts such as clippy, test, tree, doc.
+
+  - copy and paste between the clipboard and standard input/output
+
+  - convert embedded '\n' characters to line feeds
+
+  - display terminal characteristics and color palette as well as the active thag theme
+
+  - generate custom error types, etc.
+
+  - styling / theming tools for:
+
+    - theme creation from images
+
+    - theme editing
+
+    - conversion between thag themes and terminal themes
+
+    - dynamic override of the terminal palette with thag theme colors (for popular terminal emulators with exceptions noted).
 
 - Full support for proc macros and complex dependencies
 

@@ -33,7 +33,7 @@ Lot word below.
 
 - An integrated TUI editor for quick modifications, integration with user's preferred editor
 
-- 30+ command-line tools to execute scripts from URLs, expand scripts, run clippy or other cargo commands on them, copy and paste between the clipboard and standard input/output, convert embedded '\n' characters to line feeds, display terminal characteristics, palette and thag theming, apply thag theme to the terminal, generate custom error types, etc.
+- 30+ command-line tools to execute scripts from URLs, expand scripts, run clippy or other cargo commands on them, copy and paste between the clipboard and standard input/output, convert embedded '\n' characters to line feeds, display terminal characteristics and color palette as well as the active thag theme, generate custom error types, etc. Styling / theming tools allow theme creation from images, theme editing, conversion between thag themes and terminal themes, and dynamic override of the terminal palette with thag theme colors (for popular terminal emulators with exceptions noted).
 
 - Full support for proc macros and complex dependencies
 
@@ -153,15 +153,13 @@ Repository: https://github.com/durbanlegend/thag_rs
 
 Since I've been using the tool intensively over 18 months to bootstrap itself and build the companion crates, I hope it inspires confidence and feels somewhat polished. Areas where feedback would be valuable:
 
-1. Cases where dependency inference fails or guesses wrong
+1. REPL UX suggestions
 
-2. REPL UX suggestions
+2. Integration experiences with existing tools
 
-3. Integration experiences with existing tools
+3. Feature requests or use cases I haven't considered
 
-4. Feature requests or use cases I haven't considered
-
-5. Any bugs, quality issues or opportunities to reduce friction
+4. Any bugs, quality issues or opportunities to reduce friction
 
 The project is MIT/Apache-2.0 licensed.
 

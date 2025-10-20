@@ -1,44 +1,71 @@
-# Announcing thag 0.2: A versatile Rust REPL/script runner with dependency inference and TUI editing
+# Announcing <span style="font-size:1.15em; font-weight:700; background:#fff3a6; padding:0.08em 0.25em; border-radius:4px;">thag 0.2</span>: A versatile Rust REPL/script runner with dependency inference and TUI editing
 
-As a veteran experimenter, it's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the mean time I want to slice and dice Rust, while making the most of the great Rust tooling that already exists. I threw my hat in the ring with thag 0.1 in 2024, and now, for those who might be interested in this kind of thing, I offer for your consideration the enhanced [thag 0.2](https://github.com/durbanlegend/thag_rs/blob/main/README.md) with theming goodness and a companion [profiler](https://github.com/durbanlegend/thag_rs/blob/main/thag_profiler/README.md) for good measure.
+As a veteran experimenter, it's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the mean time I want to slice and dice Rust, while making the most of the quality Rust tooling that already exists. I threw my hat in the ring with thag 0.1 in late 2024, and now, for those who might be interested in this kind of thing, I offer for your consideration the enhanced [thag 0.2](https://github.com/durbanlegend/thag_rs/blob/main/README.md) with theming goodness and a companion [profiler](https://github.com/durbanlegend/thag_rs/blob/main/thag_profiler/README.md) for good measure.
 
 ## What is thag?
 
-thag is a Rust playground and REPL that aims to reduce the ceremony of running quick Rust experiments while still supporting full project complexity when needed.
+thag is a Rust playground and REPL that aims to lower the barriers to running quick Rust experiments, while still supporting full project complexity when needed.
 
 ## Why use lot word when demo do trick?
 
-[Demo here (7 min)](https://asciinema.org/a/cIqUWnYBygGz2ZiEhGOfmSPMX)
-*Recommended to watch in full-screen mode*
+[Demo here (7 min)](https://asciinema.org/a/UXkWIf2gsFHD2JeCkLx5A60hG)
+*Recommended to watch in full-screen mode*.
+
+Lot word below.
 
 ## Core features
+
 - Run Rust programs, snippets and expressions without explicit Cargo.toml boilerplate.
+
 - Automatic dependency inference, with the ability to configure default-feature overrides for any crate in your user preferences.
+
 - Comprehensive, authentic Cargo.toml support for dependencies, features, profiles and lints when needed, via an embedded /*[toml] ... */ block.
-- A built-in REPL with multi-line editing, history, TUI-editor and preferred-editor support, and ability to save expressions as functional thag scripts.
+
+- A built-in REPL with multi-line capability, history, TUI-editor and preferred-editor support, and ability to save expressions as functional thag scripts.
+
 - The ability to execute scripts from URLs (useful for sharing examples).
+
 - Common processing engine with multiple UIs - command-line expression, REPL expression, stdin, paste-and-run TUI editor or script.
+
 - An option to build commands as release builds from scripts and even expressions.
+
 - Suitable as a filter in *nix pipe / filter chains.
+
 - An integrated TUI editor for quick modifications, integration with user's preferred editor
+
 - 30+ command-line tools to execute scripts from URLs, expand scripts, run clippy or other cargo commands on them, copy and paste between the clipboard and standard input/output, convert embedded '\n' characters to line feeds, display terminal characteristics, palette and thag theming, apply thag theme to the terminal, generate custom error types, etc.
+
 - Full support for proc macros and complex dependencies
+
 - 330+ demo scripts and a proc macro starter kit.
-- 290+ terminal themes (automated conversion from popular theme collections)
+
+- 290+ terminal themes (automated conversion from popular theme collections) thanks to companion crate [thag_styling](https://github.com/durbanlegend/thag_rs/blob/main/thag_styling/README.md)
 
 ## Motivation
 
 I wanted to be able to try out a piece of Rust logic quickly or build a small proof of concept with the minimum of fuss, and save it in a library for later, without having to build a Rust project for each one. Prior script runners and the Rust Playground solve part of this, but I wanted:
+
   - A better REPL experience.
-  - Support for any and all depencencies.
-  - Able to run crate examples without cloning the crates
+
+  - Support for any and all dependencies.
+
+  - The ability to run crate examples without cloning the crates
+
   - A tool that would be reliable, flexible, fast and frictionless.
-  - A minimum of manual dependency management - let the runner infer and build the Cargo.toml from the `use` statements etc. in the `syn` AST.
-  - AST- and cargo_toml-based so as to be reliable and not tripped up by code in comments.
+
+  - Straightforward use of standard Rust / Cargo tooling for leverage and maintainability.
+
+  - A minimum of manual dependency management - let the runner infer and build the Cargo.toml from the `use` statements, qualifiers etc. in the `syn` AST.
+
+  - An AST- and cargo_toml-based engine so as to be reliable and not tripped up by code in comments.
+
   - Cross-platform capability and minimal restrictions on the development environment, so it could be useful to others.
+
   - A development path from idea to expression to snippet to script to module.
 
-## Example Usage
+## Example usage
+
+See the demo link above for a better exposition
 
 ```bash
 # Command-line expression
@@ -46,6 +73,9 @@ thag -e '(1..=34).product::<u128>()'
 
 # Simple script
 thag script.rs
+
+# Simple script with arguments and options
+thag demo/clap_tut_derive_04_03_relations.rs -- --major -c config.toml --spec-in input.txt
 
 # REPL mode
 thag -r
@@ -65,6 +95,9 @@ cat script.rs | thag -s
 # From the system clipboard
 thag_paste | thag -s
 
+# Loop/filter mode
+ls -1 | thag -l 'format!("{i:3}. {line}")'
+
 # Shebang support
 ./script.rs
 
@@ -73,19 +106,40 @@ thag -x some_tool.rs
 some_tool
 ```
 
-[Include screenshot/demo of REPL or TUI here]
+## REPL demo
 
-## Technical Details
+[![asciicast](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT.svg)](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT)
+
+*Click to watch: Interactive REPL session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
+
+## TUI Editor screenshot
+
+![TUI Editor](assets/edit1t.png)
+*Built-in TUI editor with syntax highlighting and themed interface*
+
+## Technical details
+
 - Uses standard tooling: cargo, syn, quote, serde etc.
 - Uses a shared compilation cache to speed up rebuilds and builds with common dependencies.
 - Infers dependencies by analyzing AST for imports and qualifiers.
-- Supports embedded Cargo.toml via cargo_toml in script comments for complex cases
-- Cross-platform: macOS, Linux, and Windows
+- Supports embedded Cargo.toml via cargo_toml in script comments for complex cases.
+- Cross-platform: macOS, Linux, and Windows.
   - (Contributed fixes to termbg and expander crates for Windows compatibility)
 
+## New companion crates
+
 The project also includes two subcrates that may be independently useful:
-- **thag_styling**: Terminal theme library and tools with 290+ themes converted from popular collections, for a beautiful cohesive appearance that automatically matches the user's terminal theme with guaranteed legibility and minimal effort. The developer does not need to specify colors and styles directly and worry about ensuring legibility on different light or dark backgrounds. Instead, messages are styled according to purpose (heading1, error, warning etc.) and theming is then automatic according to the end user's preferred theme. Verbosity gating is also built in.
+
+- **thag_styling**: Goodbye to primitive coloring and having to worry about whether your color choices will look good or even be legible on the user's differently-themed terminal.
+
+  thag_styling is a terminal theme library and tools with 290+ themes converted from popular collections, for a beautiful cohesive appearance that automatically matches the user's terminal theme with guaranteed legibility and minimal effort. The developer does not need to specify colors and styles directly and worry about ensuring legibility on different light or dark backgrounds. Instead, messages are styled according to purpose (heading1, error, warning etc.) and theming is then automatic according to the end user's preferred theme. Verbosity gating is also built in.
+
 - **thag_profiler**: Zero-overhead time and memory profiling toolkit with auto-instrumentation, async support and `inferno` flamegraph generation.
+
+  - CLI demo here: [Profiled from scratch in one minute](https://asciinema.org/a/YP6mW01gYgW9EgZ5c01hL0vhc)
+
+  - Generated interactive flamegraph here: [![Flamegraph from thag_profiling](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/thag_profile_demo.svg)<br>
+  *Interactive inferno flamegraph showing execution time across nested function calls. Click image for interactive version with clickable bars and search.*
 
 ## Installation
 
@@ -95,15 +149,20 @@ cargo install thag_rs
 
 Repository: https://github.com/durbanlegend/thag_rs
 
-## Current Status
+## Current status
 
-The tool is functional and I use it daily. Areas where feedback would be valuable:
+Since I've been using the tool intensively over 18 months to bootstrap itself and build the companion crates, I hope it inspires confidence and feels somewhat polished. Areas where feedback would be valuable:
+
 1. Cases where dependency inference fails or guesses wrong
-2. REPL UX suggestions (what's missing from your workflow?)
+
+2. REPL UX suggestions
+
 3. Integration experiences with existing tools
+
 4. Feature requests or use cases I haven't considered
 
-The project is MIT/Apache-2.0 licensed and contributions are welcome.
+5. Any bugs, quality issues or opportunities to reduce friction
 
-I built this primarily to solve my own workflow issues, but I hope others find it useful. Happy to answer questions about design decisions or implementation details.
-```
+The project is MIT/Apache-2.0 licensed.
+
+I built thag primarily to solve my own workflow issues, but I hope others find it useful. Happy to answer questions about design decisions or implementation details.

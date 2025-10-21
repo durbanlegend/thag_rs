@@ -1,6 +1,6 @@
 # thag 0.2 – Rust REPL and script runner with dependency inference
 
-As a veteran experimenter, it's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the meantime I wanted a fast, low-boilerplate way to slice and dice Rust while keeping compatibility with existing tooling.
+Rather than wait for the [cargo-script RFC](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), I wrote ***thag*** as a fast, low-boilerplate way to experiment with Rust while keeping compatibility with existing tooling.
 
 [**thag 0.2**](https://github.com/durbanlegend/thag_rs/blob/main/README.md) brings theming goodness and a companion [profiler](https://github.com/durbanlegend/thag_rs/blob/main/thag_profiler/README.md) for good measure.
 
@@ -26,14 +26,14 @@ thag (crate name thag_rs) is a Rust playground and REPL that aims to lower the b
 - Authentic `Cargo.toml` support for dependencies, features, profiles, and lints via embedded `/*[toml] ... */` blocks
 - Built-in REPL with multi-line editing, history, TUI support, and preferred-editor integration
 - Execute scripts from URLs for easy sharing
-- Common engine behind CLI, REPL, stdin, and TUI modes
-- Optional build commands as reusable binaries
+- A common engine behind CLI (expression / script / stdin / loop), REPL, and TUI modes
+- Compile scripts, snippets, or expressions to native binaries with -x option
 
 ---
 
 ## 🥕 Motivation
 
-I need to work out ideas as snippets and save them for later. Prior script runners and the Rust Playground solve part of this, but I wanted:
+I needed to work out ideas as snippets and save them for later. Prior script runners and the Rust Playground solve part of this, but I wanted:
 
   - Support for any and all dependencies.
 
@@ -62,4 +62,4 @@ I need to work out ideas as snippets and save them for later. Prior script runne
 
 ---
 
-Feedback, ideas, and performance impressions are very welcome — especially from anyone who’s used **cargo-script**, **rust-script**, **evcxr** or similar.
+Feedback, ideas, and performance impressions are welcome — especially from anyone who’s used **cargo-script**, **rust-script**, **evcxr** or similar.

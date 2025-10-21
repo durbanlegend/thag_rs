@@ -716,3 +716,19 @@ https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=4db8875c
 /// Alternatively, you can add the toml block to the failing web_script file and re-run it as a normal script.
 
 #! /usr/bin/env thag
+
+I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the meantime I wanted a fast, low-boilerplate way to slice and dice Rust while keeping compatibility with existing tooling.
+
+Creating one-off Rust utilities should be as easy as bash or python scripts - just write a file and run it. The [cargo-script RFC](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639) articulates this vision well, but in the meantime I wanted a fast, low-boilerplate way to slice and dice Rust while keeping compatibility with existing tooling.
+
+The [cargo-script RFC](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639) nails the friction: to experiment with an API in Rust, you have to cargo new, edit Cargo.toml, edit main.rs, cargo run, then delete it all. I wanted a fast, low-boilerplate alternative that works with existing tooling.
+
+It's trivial to throw bash or python scripts into a directory and add it to your path. Why not Rust? The [cargo-script RFC](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639) makes the case for this, but in the meantime I wanted a fast, low-boilerplate solution that works with existing tooling.
+
+I'm a fan of the [cargo-script initiative](link) - the prototyping friction in Rust is real. In the meantime, I wanted a fast, low-boilerplate way to slice and dice Rust while keeping compatibility with existing tooling.
+
+The [cargo-script RFC](link) nails it: prototyping in Rust has too much friction. In the meantime, I wanted a fast, low-boilerplate way to experiment with Rust while keeping compatibility with existing tooling.
+
+It's always struck me as unfortunate to have to make a new Rust project for every little thing. I'm a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the meantime I wanted a fast, low-boilerplate way to slice and dice Rust while keeping compatibility with existing tooling.
+
+Option to build anything that can run as a reusable binary

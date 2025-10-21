@@ -18,7 +18,7 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 
   - an expression evaluator
 
-  - a REPL that also lets you save your code as a script
+  - rapid iteration mode that also lets you save your code as a script
 
   - playground capability without limitations on dependencies.
 
@@ -164,7 +164,7 @@ ___
 
 - Evaluate expressions on the fly.
 
-- Interactive REPL mode for rapid prototyping.
+- Rapid iteration mode for rapid prototyping.
 
 - Uses AST analysis to understand your code.
 
@@ -194,13 +194,13 @@ ___
 
 - Playground features with no limit on dependencies:
 
-  - REPL edit / run commands using your favourite editor.
+  - Rapid iteration mode edit / run commands using your favourite editor.
 
-  - REPL tui command using built-in TUI editor with Ctrl-D submit.
+  - Rapid iteration mode tui command using built-in TUI editor with Ctrl-D submit.
 
   - TUI edit-submit from command line with `thag -d`, which also accepts piped input.
 
-- An evolution path for your code from REPL to edit-submit loop to saved scripts.
+- An evolution path for your code from rapid iteration mode to edit-submit loop to saved scripts.
 
 - Edit-submit standard input.
 
@@ -328,18 +328,18 @@ demo/fib_basic.rs -- 10
 This is useful, but a shebang still means building the script each time you use it.
 Instead, you can simply compile it to a fast Rust command with the --executable (-x) option. See `As an executable` below.
 
-### * As a REPL (Read-Evaluate-Print Loop):
+### * In rapid iteration mode:
 
 ```bash
-thag --repl                                                     # Short form: -r
+thag --rapid                                                    # Short form: -r
 ```
 
 [![asciicast](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT.svg)](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT)
 
-*Click to watch: Interactive REPL session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
+*Click to watch: Interactive rapid iteration session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
 
 (The orange flashes on the command line as I paste in input are caused by the `reedline` hinter helpfully matching the pasted input against history to offer completion hints.)
-The REPL has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
+Rapid iteration mode has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
 
 ### * With standard input:
 
@@ -404,10 +404,10 @@ Shift-Up: `\033;[2A` and `Shift-Down`: `\033;[2B`. Use the Esc key to generate \
 
 If all else fails, try another terminal emulator.
 
-The TUI editor is also used in the promote-to-TUI (`tui`) and edit history (`history`) functions in the REPL, so the
+The TUI editor is also used in the promote-to-TUI (`tui`) and edit history (`history`) functions in rapid iteration mode, so the
 above also applies there.
 
-Similar considerations apply to the basic REPL mode (--repl / -r). Note that the key bindings there are not identical to the TUI because the basic REPL uses mostly standard `reedline` emacs
+Similar considerations apply to rapid iteration mode (--rapid / -r). Note that the key bindings there are not identical to the TUI because rapid iteration mode uses mostly standard `reedline` emacs
 key bindings and the TUI uses mostly standard `tui-textarea` key bindings.
 
 ### * As a filter on standard input (loop mode):
@@ -538,8 +538,8 @@ _— The Rust Reference_
 * Aims to be the most capable and reliable script runner for Rust code.
 * A choice of modes:
     * **Expression mode** for small individual expressions on the fly.
-    * **REPL mode** offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
-    If REPL mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the REPL editor.
+    * **Rapid iteration mode** offers interactivity, and accepts multi-line expressions since it uses bracket matching to wait for closing braces, brackets, parens and quotes.
+    If rapid iteration mode becomes too limiting, you have two alternative ways to promote your expression to a full-fledged script from the rapid iteration editor.
     * **Stdin mode** accepts larger scripts and programs on the fly, as typed, pasted or piped input or as URLs (via `thag_url`).
     * **Edit mode** via a basic TUI (terminal user interface) editor, with optional `thag_url` or other piped input.
     * The classic **script mode** runs an .rs file consisting of a valid Rust snippet or program.
@@ -553,7 +553,7 @@ _— The Rust Reference_
   - A [[bin]] to rename the executable output.
 * You can use a **shebang** to write scripts in Rust, or better yet...
 * For **more speed** and a seamless experience you can build your own commands, using the `--executable` (`-x`) option. This compiles a valid script to a release-optimised executable command in the Cargo bin directory `<home>/.cargo/bin`.
-* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains over 330 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and color handling, and command-line tool and REPL building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
+* `thag_rs` supports a personal library of code samples for reuse. The downloadable **starter set** in the demo subdirectory contains over 330 demo scripts, including numerous examples from popular crates. It also has many original examples ranging from the trivial to the complex, including many prototypes of concepts used in building the project, such as TUI editing, `syn` AST manipulation, terminal theme detection and color handling, and command-line tool and rapid iteration mode building. There are also demos of compile-time and run-time Rust type detection strategies, informal testing scripts, the script that generates the README for the demos, and a range of fast big-integer factorial and Fibonacci calculation scripts
 * Automatic support for **light or dark backgrounds** and a **16- or 256- color palette** for different message types, according to terminal capability. Alternatively, you can specify your terminal preferences in a `config.toml` file. On Windows prior to the Windows Terminal 1.22 Preview of August 2024, interrogating the terminal is not supported and tends to cause interference, so in the absence of a `config.toml` file, `thag_rs` currently defaults to basic Ansi-16 colors and dark mode support. However, the dark mode colors it uses have been chosen to work well with most light modes.
 * In some cases you may be able to develop a module of a project individually by giving it its own main method and embedded Cargo dependencies and running it from `thag_rs`. Failing that, you can always work on a minimally modified copy in another location. This approach allows you to develop and debug a new module without having it break your project. For example the demo versions of colors.rs and stdin.rs were both prototypes that were fully developed as scripts before being merged into the main `thag_rs` project.
 
@@ -703,23 +703,24 @@ thag_rs completed processing script fizz_buzz_gpt.rs in 0.59s
 bash-3.2$
 ```
 
-### Using the REPL
+### Using rapid iteration mode
 ```bash
 thag -r
 ```
-This starts an interactive REPL session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
-Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano, etc.) and rerun it. The REPL also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
-You can access the last 25 REPL commands or expressions from within the REPL function just by using the up and down arrow keys to navigate history.
+This starts an interactive rapid iteration session where you can enter or paste in a single- or multi-line Rust expression and press Enter to run it. You can also retrieve and optionally edit an expression from history.
+Having evaluated the expression you may choose to edit it, and / or the generated Cargo.toml, in your preferred editor (VS Code, Helix, Zed, nano, etc.) and rerun it. Rapid iteration mode also offers basic housekeeping functions for the temporary files generated, otherwise being in temporary space they will be cleaned up by the operating system in due course.
 
-#### General notes on REPL
-The REPL temporary files are created under the `rs_repl` subdirectory of your temporary directory (for example $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `repl_script.rs`.
+You can access the last 25 commands or expressions from within rapid iteration mode just by using the up and down arrow keys to navigate history.
 
-The REPL feature is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. If you're in REPL mode and it starts cramping your style, you can clear the REPL command line with `Ctrl-u` and promote the current expression to a full-blown script using either the built-in TUI editor with history support, or the editor of your choice without history support. Both of these options mean that your Rust script no longer has to be a smallish single expression, and both allow you to save your script to a .rs file or your choice and run it from the command line after you exit the REPL session.
+#### General notes on rapid iteration mode
+Rapid iteration mode temporary files are created under the `rs_repl` subdirectory of your temporary directory (for example $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `repl_script.rs`.
 
-1. _The TUI editor._ The `tui` REPL command opens your current REPL expression in the built-in TUI editor. When you've finished editing, you can run it with `Ctrl-d` and/or save it to a .rs file of your choice. The `tui` command also places the expression in the TUI editor's history, which by the way is kept separate from the REPL's history because it is not subject to the same limitations. `Ctrl-d` autosaves your changes so that you can keep repeating the cycle of `tui` and `Ctrl-d` until you're satisfied with the outcome. The TUI editor is pretty basic but has the advantage of file-backed history support so you can come back to your code later.
+Rapid iteration mode is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. If you're in rapid iteration mode and it starts cramping your style, you can clear the command line with `Ctrl-u` and promote the current expression to a full-blown script using either the built-in TUI editor with history support, or the editor of your choice without history support. Both of these options mean that your Rust script no longer has to be a smallish single expression, and both allow you to save your script to a .rs file or your choice and run it from the command line after you exit the session.
 
-2. _Your preferred editor._ You can enter the `edit` command on the REPL command line to edit your script in your preferred editor as configured via the $VISUAL or $EDITOR environment variables, and save it from there. Get back to the REPL session by closing the edit session or tabbing back in the operating system, and run the updated code with the REPL's `run` command. Alternatively you can save the source to a .rs file. As with `tui` and `Ctrl-d`, you can keep repeating the cycle of `edit` and `run` until you're satisfied. However, since the `edit` command has no history support, the only way to see it or preserve the final code in history is to switch to the `tui` command once you've finished, which adds it to the TUI history.
+1. _The TUI editor._ The `tui` command opens your current expression in the built-in TUI editor. When you've finished editing, you can run it with `Ctrl-d` and/or save it to a .rs file of your choice. The `tui` command also places the expression in the TUI editor's history, which by the way is kept separate from rapid iteration mode's history because it is not subject to the same limitations. `Ctrl-d` autosaves your changes so that you can keep repeating the cycle of `tui` and `Ctrl-d` until you're satisfied with the outcome. The TUI editor is pretty basic but has the advantage of file-backed history support so you can come back to your code later.
+
+2. _Your preferred editor._ You can enter the `edit` command on the command line to edit your script in your preferred editor as configured via the $VISUAL or $EDITOR environment variables, and save it from there. Get back to the session by closing the edit session or tabbing back in the operating system, and run the updated code with the `run` command. Alternatively you can save the source to a .rs file. As with `tui` and `Ctrl-d`, you can keep repeating the cycle of `edit` and `run` until you're satisfied. However, since the `edit` command has no history support, the only way to see it or preserve the final code in history is to switch to the `tui` command once you've finished, which adds it to the TUI history.
 
 ## Usage notes
 
@@ -764,7 +765,7 @@ by choosing only the features you need
 default
 ├── simplelog
 └── full
-    ├── repl
+    ├── repl                                    # Rapid iteration mode (feature name)
     │   └── tui
     │    |  ├── build
     │    |  │   ├── ast
@@ -820,7 +821,7 @@ Optional features can be added at any level:
 - no_format_snippet
 - profiling
 Note: when using without default features, must specify a logging implementation:
-cargo add thag_rs --no-default-features --features="repl,simplelog"
+cargo add thag_rs --no-default-features --features="repl,simplelog"  # "repl" feature enables rapid iteration mode
 or
 cargo add thag_rs --no-default-features --features="repl,env_logger"
 ```
@@ -834,12 +835,12 @@ After the late Thag Simmons. A stone-age power tool for the [grug brained develo
 (Hat-tip to the author of `rust-script`)
 
 * `cargo-script` - The Rust RFC Book `https://rust-lang.github.io/rfcs/3424-cargo-script.html`
-* `evcxr` - Perhaps the most well-known Rust REPL.
+* `evcxr` - Perhaps the most well-known Rust REPL (true REPL with line-by-line state preservation).
 * `cargo-script` - (Unrelated to the Rust RFC one). Rust script runner (unmaintained project).
 * `rust-script` - maintained fork of the preceding cargo-script.
 * `cargo-eval` - maintained fork of the preceding cargo-script.
 * `cargo-play` - local Rust playground.
-* `irust` - limited Rust REPL.
+* `irust` - limited Rust REPL (true REPL with line-by-line state preservation).
 * `runner` - experimental tool for running Rust snippets without Cargo, exploring dynamic vs static linking for speed. I have an extensively modified fork of this crate on GitHub, but I highly recommend using the current `thag_rs` crate rather than that fork.
 * `cargo-script-mvs` - RFC demo.
 

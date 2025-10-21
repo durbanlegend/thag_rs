@@ -1,4 +1,4 @@
-# thag 0.2 – Rust REPL and script runner with dependency inference
+# thag 0.2 – Rust playground and script runner with dependency inference
 
 Rather than wait for the [cargo-script RFC](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), I wrote ***thag*** as a fast, low-boilerplate way to experiment with Rust while keeping compatibility with existing tooling.
 
@@ -8,7 +8,7 @@ Rather than wait for the [cargo-script RFC](https://internals.rust-lang.org/t/pr
 
 ## 🦀 What is thag?
 
-thag (crate name thag_rs) is a Rust playground and REPL that aims to lower the barriers to running quick Rust experiments, while still supporting full project complexity when needed.
+thag (crate name thag_rs) is a Rust playground that aims to lower the barriers to running quick Rust experiments, while still supporting full project complexity when needed.
 
 ---
 
@@ -24,24 +24,26 @@ thag (crate name thag_rs) is a Rust playground and REPL that aims to lower the b
 - Run Rust programs, snippets, and expressions without explicit `Cargo.toml` boilerplate
 - Automatic dependency inference, with configurable default-feature overrides
 - Authentic `Cargo.toml` support for dependencies, features, profiles, and lints via embedded `/*[toml] ... */` blocks
-- Built-in REPL with multi-line editing, history, TUI support, and preferred-editor integration
+- Built-in rapid iteration mode with multi-line editing, history, TUI support, and preferred-editor integration
 - Execute scripts from URLs for easy sharing
-- A common engine behind CLI (expression / script / stdin / loop), REPL, and TUI modes
+- A common engine behind CLI (expression / script / stdin / loop), rapid iteration mode, and TUI modes
 - Compile scripts, snippets, or expressions to native binaries with -x option
 
 ---
 
 ## 🥕 Motivation
 
-I needed to work out ideas as snippets and save them for later. Prior script runners and the Rust Playground solve part of this, but I wanted:
+I needed to work out ideas as snippets and save them for later. Prior script runners and the Rust Playground solve part of this, but I wanted all the following:
 
   - Support for any and all dependencies.
 
-  - The ability to run crate examples without cloning the crates
+  - The ability to run crate examples without cloning the crates.
 
   - A tool that would be reliable, flexible, fast and frictionless.
 
-  - Straightforward use of standard Rust / Cargo tooling for leverage and maintainability.
+  - Use of standard Rust / Cargo tooling for leverage and maintainability.
+
+  - Rapid iteration mode that doesn't require special commands or pre-selected crates - just vanilla Rust with an optional toml dependency block.
 
   - A minimum of manual dependency management - let the runner infer and build the Cargo.toml from the `use` statements, qualifiers etc. in the `syn` AST.
 
@@ -62,4 +64,8 @@ I needed to work out ideas as snippets and save them for later. Prior script run
 
 ---
 
-Feedback, ideas, and performance impressions are welcome — especially from anyone who’s used **cargo-script**, **rust-script**, **evcxr** or similar.
+Feedback, ideas, and performance impressions are welcome — especially from anyone who’s used the **cargo-script** crate, **runner**, **rust-script** or similar.
+
+---
+
+**Edit:** Clarified that thag's `-r` mode is "rapid iteration" not a traditional REPL (which preserves state line-by-line).

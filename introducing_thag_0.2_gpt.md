@@ -1,3 +1,5 @@
+# thag 0.2 – Rust REPL and script runner with dependency inference
+
 Rust is great, but creating a full Cargo project for every little experiment gets old. I built **thag**, a REPL and script runner that lets you run snippets, scripts, and full projects seamlessly — now at version **0.2**.
 
 I’ve long been a fan of the [cargo-script initiative](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639), but in the meantime I wanted a fast, low-boilerplate way to slice and dice Rust while keeping compatibility with existing tooling.

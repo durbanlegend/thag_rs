@@ -50,8 +50,8 @@ pub struct Cli {
     /// Evaluate a quoted Rust expression on the fly
     #[arg(short, long = "expr", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
-    /// REPL mode (read–eval–print loop) for Rust expressions, or for dynamic scripts using TUI or external editors.
-    #[arg(short = 'r', long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
+    /// Rapid iteration mode for Rust expressions, or for dynamic scripts using TUI or external editors.
+    #[arg(short = 'r', long = "rapid", alias = "repl", visible_alias = "iter", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub repl: bool,
     /// Read script from stdin
     #[arg(short, long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]

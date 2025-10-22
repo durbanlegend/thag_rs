@@ -511,4 +511,60 @@ mod tests {
         assert!(dependencies.contains_key("foo"));
         assert!(dependencies.contains_key("bar"));
     }
+
+    #[test]
+    fn test_manifest_target_specific_deps_not_duplicated() -> Result<(), Box<dyn std::error::Error>>
+    {
+        set_up();
+        init_logger();
+
+        // Test that dependencies in target-specific sections don't get duplicated
+        // in the main dependencies section during inference and merge
+        let rs_toml_str = r#"[package]
+    name = "target_test"
+    version = "0.0.1"
+    edition = "2021"
+
+    [target.'cfg(unix)'.dependencies]
+    serde = { version = "1.0", features = ["derive"] }
+    "#;
+
+        let rs_manifest = Some(Manifest::from_str(rs_toml_str).unwrap());
+        let mut build_state = BuildState {
+            source_stem: "target_test".to_string(),
+            source_name: "target_test.rs".to_string(),
+            target_dir_path: std::path::PathBuf::from("/tmp"),
+            cargo_manifest: None,
+            rs_manifest,
+            ..Default::default()
+        };
+
+        // Source code that uses serde - this would normally trigger inference
+        let rs_source = r"
+        use serde::Serialize;
+
+        #[derive(Serialize)]
+        struct MyStruct {
+            field: String,
+        }
+        ";
+
+        merge(&mut build_state, rs_source)?;
+
+        if let Some(ref manifest) = build_state.cargo_manifest {
+            // serde should NOT be in main dependencies (it's already in target dependencies)
+            assert!(!manifest.dependencies.contains_key("serde"));
+
+            // Verify it still exists in target dependencies
+            let target_deps = manifest.target.get("cfg(unix)");
+            assert!(target_deps.is_some());
+            if let Some(target) = target_deps {
+                assert!(target.dependencies.contains_key("serde"));
+            }
+        } else {
+            panic!("Expected cargo_manifest to be populated after merge");
+        }
+
+        Ok(())
+    }
 }

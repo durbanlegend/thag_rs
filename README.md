@@ -714,7 +714,7 @@ Having evaluated the expression you may choose to edit it, and / or the generate
 You can access the last 25 commands or expressions from within rapid iteration mode just by using the up and down arrow keys to navigate history.
 
 #### General notes on rapid iteration mode
-Rapid iteration mode temporary files are created under the `rs_repl` subdirectory of your temporary directory (for example $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `repl_script.rs`.
+Rapid iteration mode temporary files are created under the `rs_repl` subdirectory of your temporary directory (for example $TMPDIR in *nixes, and referenced as std::env::temp_dir() in Rust). The generated script is called `iter_script.rs`.
 
 Rapid iteration mode is not suited to scripts of over about 1K characters, due to the limitations of the underlying line editor. If you're in rapid iteration mode and it starts cramping your style, you can clear the command line with `Ctrl-u` and promote the current expression to a full-blown script using either the built-in TUI editor with history support, or the editor of your choice without history support. Both of these options mean that your Rust script no longer has to be a smallish single expression, and both allow you to save your script to a .rs file or your choice and run it from the command line after you exit the session.
 
@@ -765,7 +765,7 @@ by choosing only the features you need
 default
 ├── simplelog
 └── full
-    ├── repl                                    # Rapid iteration mode (feature name)
+    ├── iter                                    # Rapid iteration mode (feature name)
     │   └── tui
     │    |  ├── build
     │    |  │   ├── ast
@@ -821,9 +821,11 @@ Optional features can be added at any level:
 - no_format_snippet
 - profiling
 Note: when using without default features, must specify a logging implementation:
-cargo add thag_rs --no-default-features --features="repl,simplelog"  # "repl" feature enables rapid iteration mode
+cargo add thag_rs --no-default-features --features="iter,simplelog"
 or
-cargo add thag_rs --no-default-features --features="repl,env_logger"
+cargo add thag_rs --no-default-features --features="iter,env_logger"
+
+Deprecated: "repl" feature still works as an alias for "iter" but will be removed in a future version.
 ```
 
 ## Why "thag"?

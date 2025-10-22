@@ -193,6 +193,32 @@ path = "{}"
     Ok(Manifest::from_str(&cargo_manifest)?)
 }
 
+/// Check if a dependency exists in a manifest, either in regular dependencies
+/// or in any target-specific dependencies.
+///
+/// # Arguments
+/// * `manifest` - The manifest to check
+/// * `dep_name` - The name of the dependency to look for
+///
+/// # Returns
+/// * `true` if the dependency exists in the manifest
+/// * `false` otherwise
+fn dependency_exists_in_manifest(manifest: &Manifest, dep_name: &str) -> bool {
+    // Check regular dependencies
+    if manifest.dependencies.contains_key(dep_name) {
+        return true;
+    }
+
+    // Check target-specific dependencies
+    for target in manifest.target.values() {
+        if target.dependencies.contains_key(dep_name) {
+            return true;
+        }
+    }
+
+    false
+}
+
 /// Merge manifest data harvested from the source script and its optional embedded toml block
 /// into the default manifest.
 /// # Errors
@@ -229,16 +255,26 @@ pub fn merge(build_state: &mut BuildState, rs_source: &str) -> ThagResult<()> {
     profile!(merge_manifest, time);
     let merged_manifest = if let Some(ref mut rs_manifest) = build_state.rs_manifest {
         if !rs_inferred_deps.is_empty() {
-            #[cfg(debug_assertions)]
-            debug_log!(
-                "rs_dep_map (before inferred) {:#?}",
-                rs_manifest.dependencies
-            );
-            lookup_deps(
-                &build_state.infer,
-                &rs_inferred_deps,
-                &mut rs_manifest.dependencies,
-            );
+            // Filter out dependencies that already exist in rs_manifest (from toml block)
+            // to avoid conflicts between target.dependencies and dependencies
+            let filtered_deps: Vec<String> = rs_inferred_deps
+                .into_iter()
+                .filter(|dep| !dependency_exists_in_manifest(rs_manifest, dep))
+                .collect();
+
+            if !filtered_deps.is_empty() {
+                vprtln!(V::V, "rs_inferred_deps (filtered): {filtered_deps:#?}");
+                vprtln!(
+                    V::V,
+                    "rs_dep_map (before inferred) {:#?}",
+                    rs_manifest.dependencies
+                );
+                lookup_deps(
+                    &build_state.infer,
+                    &filtered_deps,
+                    &mut rs_manifest.dependencies,
+                );
+            }
 
             #[cfg(debug_assertions)]
             debug_log!(

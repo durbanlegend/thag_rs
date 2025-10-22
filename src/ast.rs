@@ -155,7 +155,7 @@ impl<'a> Visit<'a> for CratesFinder {
         }
     }
 
-    #[profiled]
+    // Recursive - do not profile
     fn visit_use_tree(&mut self, node: &'a UseTree) {
         match node {
             UseTree::Group(_) => {

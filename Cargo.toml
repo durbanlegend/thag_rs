@@ -383,21 +383,24 @@ document-features = ["dep:document-features"]
 error_handling = []
 
 ## All features
-full = ["color_detect", "repl"]  # Simplified as repl includes everything
+full = ["color_detect", "iter"]  # Simplified as iter includes everything
 nightly = []
 no_format_snippet = []
 # dhat-heap = ["dep:dhat"]
 pathdiff = ["dep:pathdiff"]
 profiling = ["thag_proc_macros/full_profiling", "thag_profiler/full_profiling"]
 
-## REPL capability
-repl = [
+## Rapid iteration mode capability
+iter = [
   "nu-ansi-term",
   "reedline",
   "thag_styling/crossterm_support",
   "thag_styling/nu_ansi_term_support",
   "tui",  # Includes all TUI features
 ]
+
+## Deprecated: use "iter" instead
+repl = ["iter"]
 
 ## `simplelog` crate
 simplelog = ["dep:simplelog"]

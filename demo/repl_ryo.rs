@@ -62,7 +62,7 @@ use thag_rs::{
         ManagedTerminal, RataStyle,
     },
     vprtln, Ast, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
-    KeyDisplayLine, ProcFlags, ScriptState, ThagError, ThagResult, REPL_SCRIPT_NAME, REPL_SUBDIR,
+    KeyDisplayLine, ProcFlags, ScriptState, ThagError, ThagResult, ITER_SCRIPT_NAME, REPL_SUBDIR,
     TMPDIR, V,
 };
 use thag_styling::{
@@ -1423,8 +1423,8 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         // Ensure REPL subdirectory exists
         fs::create_dir_all(&gen_repl_temp_dir_path)?;
 
-        // Create REPL file if necessary
-        let path = gen_repl_temp_dir_path.join(REPL_SCRIPT_NAME);
+        // Create rapid iteration file if necessary
+        let path = gen_repl_temp_dir_path.join(ITER_SCRIPT_NAME);
         let _ = fs::File::create(&path)?;
         Some(path)
     };

@@ -123,8 +123,8 @@ pub mod tui_editor;
 // REPL functionality:
 // Interactive command execution
 //-----------------------------------------------------------------------------
-/// REPL implementation
-#[cfg(feature = "repl")]
+/// Rapid iteration implementation
+#[cfg(feature = "iter")]
 pub mod repl;
 
 //-----------------------------------------------------------------------------
@@ -219,8 +219,8 @@ pub const EXECUTABLE_CACHE_SUBDIR: &str = "thag_rs_bins";
 pub const FLOWER_BOX_LEN: usize = 70;
 /// Package name from Cargo.toml
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
-/// Default filename for REPL scripts
-pub const REPL_SCRIPT_NAME: &str = "repl_script.rs";
+/// Default filename for rapid iteration scripts
+pub const ITER_SCRIPT_NAME: &str = "iter_script.rs";
 /// Subdirectory name for REPL files
 pub const REPL_SUBDIR: &str = "rs_repl";
 /// Rust source file extension

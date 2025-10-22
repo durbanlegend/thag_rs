@@ -72,8 +72,8 @@ pub struct Cli {
     /// Evaluate a quoted expression on the fly
     #[arg(short, long = "expr", conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
-    /// REPL mode (read–eval–print loop) for Rust expressions. Option: existing script name
-    #[arg(short = 'r', long, conflicts_with_all(["generate", "build"]))]
+    /// Rapid iteration mode for Rust expressions. Option: existing script name
+    #[arg(short = 'r', long = "rapid", alias = "repl", visible_alias = "iter", conflicts_with_all(["generate", "build"]))]
     pub repl: bool,
     /// Read script from stdin
     #[arg(short, long, conflicts_with_all(["generate", "build"]))]

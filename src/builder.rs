@@ -52,9 +52,9 @@ use crate::Verbosity::{Debug as Dbug, Verbose};
 use crate::{
     get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config, modified_since_compiled,
     repeat_dash, validate_args, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
-    ThagResult, DYNAMIC_SUBDIR, EXECUTABLE_CACHE_SUBDIR, FLOWER_BOX_LEN, PACKAGE_NAME,
-    REPL_SCRIPT_NAME, REPL_SUBDIR, RS_SUFFIX, SHARED_TARGET_SUBDIR, TEMP_DIR_NAME,
-    TEMP_SCRIPT_NAME, TMPDIR, TOML_NAME,
+    ThagResult, DYNAMIC_SUBDIR, EXECUTABLE_CACHE_SUBDIR, FLOWER_BOX_LEN, ITER_SCRIPT_NAME,
+    PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX, SHARED_TARGET_SUBDIR, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
+    TMPDIR, TOML_NAME,
 };
 use cargo_toml::Manifest;
 use regex::Regex;
@@ -84,7 +84,7 @@ use {
     log::{log_enabled, Level::Debug},
 };
 
-#[cfg(feature = "repl")]
+#[cfg(feature = "iter")]
 use crate::repl::run_repl;
 
 #[cfg(feature = "build")]
@@ -632,8 +632,8 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         // Ensure REPL subdirectory exists
         fs::create_dir_all(&gen_repl_temp_dir_path)?;
 
-        // Create REPL file if necessary
-        let path = gen_repl_temp_dir_path.join(REPL_SCRIPT_NAME);
+        // Create rapid iteration file if necessary
+        let path = gen_repl_temp_dir_path.join(ITER_SCRIPT_NAME);
         let _ = fs::File::create(&path)?;
         Some(path)
     } else {
@@ -754,9 +754,9 @@ fn process(
 
     let mut build_state = BuildState::pre_configure(proc_flags, args, script_state)?;
     if is_repl {
-        #[cfg(not(feature = "repl"))]
-        return Err("repl requires `repl` feature".into());
-        #[cfg(feature = "repl")]
+        #[cfg(not(feature = "iter"))]
+        return Err("rapid iteration requires `iter` feature".into());
+        #[cfg(feature = "iter")]
         {
             debug_log!("build_state.source_path={:?}", build_state.source_path);
             run_repl(args, proc_flags, &mut build_state, start)

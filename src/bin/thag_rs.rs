@@ -24,8 +24,6 @@ use thag_rs::V;
 #[cfg(feature = "build")]
 use thag_rs::{execute, get_args, ThagResult};
 
-// use thag_rs::ThagResult;
-
 #[enable_profiling(no)]
 pub fn main() {
     #[cfg(feature = "build")]

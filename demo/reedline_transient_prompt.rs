@@ -1,6 +1,6 @@
 /*[toml]
 [features]
-default = ["sqlite-dynlib"]
+default = ["sqlite"]
 sqlite = ["reedline/sqlite"]
 sqlite-dynlib = ["reedline/sqlite-dynlib"]
 */

@@ -51,7 +51,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "thag"
-path = "src/bin/thag_rs.rs"
+path = "src/bin/thag.rs"
 
 # Add these [[bin]] sections after your existing thag binary
 [[bin]]

@@ -178,7 +178,7 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["Paste", "Paste content from local buffer at the current cursor position"],
 ];
 
-/// ITER mode lets you type or paste a Rust expression to be evaluated.
+/// Iterator mode lets you type or paste a Rust expression to be evaluated.
 ///
 /// Enter the expression to be evaluated.
 ///

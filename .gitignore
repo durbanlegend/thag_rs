@@ -144,3 +144,11 @@ thag_repl_demo.gif
 thag_tui_demo1.cast
 thag_tui_demo2.cast
 uninstall_thag_protocol.sh
+
+thag_demo/ENV_VARS_EXAMPLE.md
+thag_demo/USAGE_IMPROVEMENTS.md
+thag_profiler/DOCUMENTATION_STRATEGY.md
+thag_styling/PALETTE_QUERYING.md
+thag_styling/examples/INTEGRATION_ASSESSMENT.md
+thag_styling/readme_notes.md
+thag_styling/src/integrations/INTEGRATION_GUIDE.md

@@ -3,7 +3,7 @@
 clap-repl = "0.1.1" # Old `rustyline`-compatible version
 */
 
-/// Older version of published clap_repl crate example, modified to prototype a
+/// Older version of published `clap_repl` crate example, modified to prototype a
 /// (dummy) Rust REPL.
 //# Purpose: Yet another REPL demo, this time using `rustyline`.
 //# Categories: REPL, technique

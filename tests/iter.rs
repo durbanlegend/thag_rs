@@ -7,9 +7,9 @@ mod tests {
     use std::time::Instant;
     use thag_rs::cmd_args::{Cli, ProcFlags};
     use thag_rs::code_utils::read_file_contents;
-    use thag_rs::repl::{delete, disp_repl_banner, list, parse_line, process_source};
+    use thag_rs::iter::{delete, disp_banner, list, parse_line, process_source};
     #[cfg(not(windows))]
-    use thag_rs::repl::{edit, edit_history, toml, HISTORY_FILE};
+    use thag_rs::iter::{edit, edit_history, toml, HISTORY_FILE};
     use thag_rs::BuildState;
 
     fn init_logger() {
@@ -33,10 +33,10 @@ mod tests {
     fn test_repl_command_print_help() {
         set_up();
         let mut output = Vec::new();
-        let mut command = thag_rs::repl::ReplCommand::command();
+        let mut command = thag_rs::iter::IterCommand::command();
         command.write_long_help(&mut output).unwrap();
         let help_output = String::from_utf8(output).unwrap();
-        assert!(help_output.contains("REPL mode lets you type or paste a Rust expression"));
+        assert!(help_output.contains("Iterator mode lets you type or paste a Rust expression"));
     }
 
     #[test]
@@ -50,10 +50,10 @@ mod tests {
     }
 
     #[test]
-    fn test_repl_disp_repl_banner() {
+    fn test_iter_disp_banner() {
         set_up();
         let cmd_list = "command1, command2";
-        disp_repl_banner(cmd_list);
+        disp_banner(cmd_list);
         // As this function prints to stdout, there's no direct return value to assert.
         // We assume that if it runs without panic, it is successful.
     }
@@ -152,7 +152,7 @@ mod tests {
     #[test]
     fn test_repl_process_source() {
         set_up();
-        let args = Cli::parse_from(["test", "--repl"]);
+        let args = Cli::parse_from(["test", "--iter"]);
         let proc_flags = ProcFlags::default();
         let source_path = PathBuf::from("tests/assets/hello_t.rs");
         let rs_source = read_file_contents(&source_path).expect("Missing source file");
@@ -183,7 +183,7 @@ mod tests {
     // #[test]
     // fn test_repl_run_repl() {
     //     set_up();
-    //     let mut options = Cli::parse_from(["test", "repl"]);
+    //     let mut options = Cli::parse_from(["test", "iter"]);
     //     let proc_flags = ProcFlags::default();
     //     let mut build_state = BuildState::default();
     //     let start = Instant::now();

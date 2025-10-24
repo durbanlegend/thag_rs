@@ -1,6 +1,6 @@
-/// Experiment with matching REPL commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
+/// Experiment with matching rapid iteration mode commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::error::Signal;
@@ -23,7 +23,7 @@ enum LoopCommand {
     List,
     /// Delete generated files
     Delete,
-    /// Exit REPL (actually works, as does Ctrl-d)
+    /// Exit (actually works, as does Ctrl-d)
     Quit,
     /// Show help information
     Help,

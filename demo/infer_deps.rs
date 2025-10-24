@@ -1,10 +1,10 @@
 /// Interactively test dependency inferency. This script was arbitrarily copied from
-/// `demo/repl_partial_match.rs`.
+/// `demo/iterf_partial_match.rs`.
 //# Purpose: Test thag manifest module's dependency inference.
 //# Categories: crates, technique, testing
-/// Experiment with matching REPL commands with a partial match of any length.
+/// Experiment with matching repid iteration mode commands with a partial match of any length.
 //# Purpose: Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use clap::{CommandFactory, Parser};
 use console::style;
 use rustyline::DefaultEditor;
@@ -26,7 +26,7 @@ enum LoopCommand {
     List,
     /// Delete generated files
     Delete,
-    /// Exit REPL
+    /// Exit
     Quit,
     /// Show help information
     Help,

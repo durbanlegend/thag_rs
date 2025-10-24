@@ -327,7 +327,7 @@ pub fn create_temp_source_file() -> ThagResult<PathBuf> {
     // Create a directory inside of `std::env::temp_dir()`
     let gen_expr_temp_dir_path = TMPDIR.join(DYNAMIC_SUBDIR);
 
-    // Ensure REPL subdirectory exists
+    // Ensure ITER subdirectory exists
     fs::create_dir_all(&gen_expr_temp_dir_path)?;
 
     let filename = TEMP_SCRIPT_NAME;

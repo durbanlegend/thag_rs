@@ -1086,7 +1086,7 @@ fn create_demo_cli_with_args(
         args,
         force: opts.force,
         expression: None,
-        repl: false,
+        iter: false,
         stdin: false,
         edit: false,
         filter: None,

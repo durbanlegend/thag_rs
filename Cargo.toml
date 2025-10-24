@@ -1,5 +1,5 @@
 [package]
-description = "A versatile cross-platform playground and REPL for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
+description = "A versatile cross-platform playground for Rust snippets, expressions and programs.\nAccepts a script file or dynamic options."
 name = "thag_rs"
 version = "0.2.1"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
@@ -22,7 +22,7 @@ default-run = "thag"
 readme = "README.md"
 repository = "https://github.com/durbanlegend/thag_rs"
 categories = ["command-line-utilities", "development-tools::build-utils"]
-keywords = ["REPL", "eval", "playground", "runner", "script"]
+keywords = ["command_line", "eval", "playground", "runner", "script"]
 rust-version = "1.82"
 
 [package.metadata.wix]
@@ -443,7 +443,7 @@ tui = [
 # default
 # ├── simplelog
 # └── full
-#     ├── repl
+#     ├── iter
 #     │   └── tui
 #     │    |  ├── build
 #     │    |  │   ├── ast
@@ -506,9 +506,9 @@ tui = [
 # - profiling
 #
 # Note: When using without default features, must specify a logging implementation:
-# cargo add thag_rs --no-default-features --features="repl,simplelog"
+# cargo add thag_rs --no-default-features --features="iter,simplelog"
 # or
-# cargo add thag_rs --no-default-features --features="repl,env_logger"
+# cargo add thag_rs --no-default-features --features="iter,env_logger"
 
 [lints.clippy]
 uninlined_format_args = "allow"

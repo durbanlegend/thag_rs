@@ -157,10 +157,10 @@ fn test_tui_editor_history_navigate() -> ThagResult<()> {
     let path = dir_path.join("rs_stdin_hist.json");
     safe_eprintln!("path={path:#?}");
 
-    // Ensure REPL subdirectory exists
+    // Ensure iterator subdirectory exists
     fs::create_dir_all(dir_path)?;
 
-    // Create REPL file if necessary
+    // Create iterator file if necessary
     let _ = fs::File::create(&path)?;
 
     history.save_to_file(&path)?;

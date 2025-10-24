@@ -28,7 +28,7 @@ pub mod exporters;
 pub use thag_common::{
     auto_help, debug_log, get_verbosity, help_system, init_verbosity, prtln, re,
     set_global_verbosity, set_verbosity, set_verbosity_from_env, vprtln, ColorSupport, TermBgLuma,
-    ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
+    ThagCommonError, ThagCommonResult, Verbosity, OUTPUT_MANAGER, V,
 };
 
 #[cfg(feature = "color_detect")]
@@ -88,7 +88,7 @@ pub enum StylingError {
     Theme(#[from] ThemeError),
     /// Common errors from `thag_common`
     #[error("Common error: {0}")]
-    Common(#[from] thag_common::ThagCommonError),
+    Common(#[from] ThagCommonError),
     /// IO errors
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),

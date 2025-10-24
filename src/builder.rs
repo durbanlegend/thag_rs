@@ -8,8 +8,8 @@
 //! The `execute` function does a preliminary assessment and invokes the `process` function, which starts
 //! by pre-configuring a `BuildState` struct instance to drive the build. In the case of script file input
 //! this includes individual target directory information under `temp_dir()` corresponding to the input
-//! filename. If standard input, edit or REPL command-line options were chosen, `process` will invoke the
-//! `stdin` or `repl` modules to solicit the script or expression input, otherwise it will obtain it from a
+//! filename. If standard input, edit or ITER command-line options were chosen, `process` will invoke the
+//! `stdin` or `iter` modules to solicit the script or expression input, otherwise it will obtain it from a
 //! script file path passed in as the main argument, or from a command-line argument such as `--expr (-e)`.
 //!
 //! Once the input is finalised, `builder` broadly speaking handles the three major processing stages,
@@ -53,7 +53,7 @@ use crate::{
     get_home_dir, get_proc_flags, get_verbosity, manifest, maybe_config, modified_since_compiled,
     repeat_dash, validate_args, Ast, Cli, ColorSupport, Dependencies, ProcFlags, Role, ThagError,
     ThagResult, DYNAMIC_SUBDIR, EXECUTABLE_CACHE_SUBDIR, FLOWER_BOX_LEN, ITER_SCRIPT_NAME,
-    PACKAGE_NAME, REPL_SUBDIR, RS_SUFFIX, SHARED_TARGET_SUBDIR, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
+    ITER_SUBDIR, PACKAGE_NAME, RS_SUFFIX, SHARED_TARGET_SUBDIR, TEMP_DIR_NAME, TEMP_SCRIPT_NAME,
     TMPDIR, TOML_NAME,
 };
 use cargo_toml::Manifest;
@@ -85,7 +85,7 @@ use {
 };
 
 #[cfg(feature = "iter")]
-use crate::repl::run_repl;
+use crate::iter::run_iter;
 
 #[cfg(feature = "build")]
 struct ExecutionFlags {
@@ -96,7 +96,7 @@ struct ExecutionFlags {
 #[cfg(feature = "build")]
 impl ExecutionFlags {
     const fn new(proc_flags: &ProcFlags, cli: &Cli) -> Self {
-        let is_repl = proc_flags.contains(ProcFlags::REPL);
+        let is_repl = proc_flags.contains(ProcFlags::ITER);
         let is_expr = cli.expression.is_some();
         let is_stdin = proc_flags.contains(ProcFlags::STDIN);
         let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -276,7 +276,7 @@ impl BuildState {
     ) -> ThagResult<BuildPaths> {
         // Working directory setup
         let working_dir_path = if flags.is_repl {
-            TMPDIR.join(REPL_SUBDIR)
+            TMPDIR.join(ITER_SUBDIR)
         } else {
             env::current_dir()?.canonicalize()?
         };
@@ -479,10 +479,10 @@ impl BuildState {
 /// An enum to encapsulate the type of script in play.
 #[derive(Debug)]
 pub enum ScriptState {
-    /// Repl with no script name provided by user
+    /// Iter with no script name provided by user
     #[allow(dead_code)]
     Anonymous,
-    /// Repl with script name.
+    /// Iter with script name.
     NamedEmpty {
         /// The script name/path
         script: String,
@@ -623,17 +623,17 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         return clean_cache(what);
     }
 
-    let is_repl = args.repl;
+    let is_repl = args.iter;
     validate_args(args, &proc_flags)?;
     let repl_source_path = if is_repl {
-        let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
-        debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
+        let gen_iter_temp_dir_path = TMPDIR.join(ITER_SUBDIR);
+        debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_iter_temp_dir_path:?}");
 
-        // Ensure REPL subdirectory exists
-        fs::create_dir_all(&gen_repl_temp_dir_path)?;
+        // Ensure ITER subdirectory exists
+        fs::create_dir_all(&gen_iter_temp_dir_path)?;
 
         // Create rapid iteration file if necessary
-        let path = gen_repl_temp_dir_path.join(ITER_SCRIPT_NAME);
+        let path = gen_iter_temp_dir_path.join(ITER_SCRIPT_NAME);
         let _ = fs::File::create(&path)?;
         Some(path)
     } else {
@@ -646,7 +646,7 @@ pub fn execute(args: &mut Cli) -> ThagResult<()> {
         return Err(ThagError::UnsupportedTerm(
             r" for `--edit (-d)` option.
 Unfortunately, TUI features require terminal color support.
-As an alternative, consider using the `edit` + `run` functions of `--repl (-r)`."
+As an alternative, consider using the `edit` + `run` functions of `--iter (-r)`."
                 .into(),
         ));
     }
@@ -676,9 +676,9 @@ fn resolve_script_dir_path(
     let script_dir_path = if is_repl {
         repl_source_path
             .as_ref()
-            .ok_or("Missing path of newly created REPL source file")?
+            .ok_or("Missing path of newly created ITER source file")?
             .parent()
-            .ok_or("Could not find parent directory of repl source file")?
+            .ok_or("Could not find parent directory of iter source file")?
             .to_path_buf()
     } else if is_dynamic {
         debug_log!("is_dynamic={is_dynamic}");
@@ -721,7 +721,7 @@ fn set_script_state(
         }
     } else if is_repl {
         let script = repl_source_path
-            .ok_or("Missing newly created REPL source path")?
+            .ok_or("Missing newly created ITER source path")?
             .display()
             .to_string();
         ScriptState::NamedEmpty {
@@ -745,7 +745,7 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> ThagResult<()> {
-    let is_repl = args.repl;
+    let is_repl = args.iter;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -759,7 +759,7 @@ fn process(
         #[cfg(feature = "iter")]
         {
             debug_log!("build_state.source_path={:?}", build_state.source_path);
-            run_repl(args, proc_flags, &mut build_state, start)
+            run_iter(args, proc_flags, &mut build_state, start)
         }
     } else if is_dynamic {
         let rs_source = if is_expr {
@@ -856,7 +856,7 @@ fn log_init_setup(start: Instant, args: &Cli, proc_flags: &ProcFlags) {
 fn debug_log_config() {
     debug_log!("PACKAGE_NAME={PACKAGE_NAME}");
     debug_log!("VERSION={VERSION}");
-    debug_log!("REPL_SUBDIR={REPL_SUBDIR}");
+    debug_log!("ITER_SUBDIR={ITER_SUBDIR}");
 }
 
 /// Generate, build and run the script or expression.
@@ -1103,7 +1103,6 @@ pub fn generate(
     }
 
     let target_rs_path = build_state.target_dir_path.join(&build_state.source_name);
-    // let is_repl = proc_flags.contains(ProcFlags::REPL);
     vprtln!(V::V, "GGGGGGGG Creating source file: {target_rs_path:?}");
 
     if !build_state.build_from_orig_source {

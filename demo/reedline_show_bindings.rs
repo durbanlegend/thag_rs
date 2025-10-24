@@ -1,11 +1,11 @@
-/// Prototype of key binding display function for `reedline` REPL. This was developed
+/// Prototype of key binding display function for `reedline` iterative processor. This was developed
 /// by giving ChatGPT a simple spec which it flubbed, then repeatedly feeding back errors,
 /// manually corrected code and requests for changes until a nice simple display was
-/// achieved. This was then refined into the `keys` display of the `thag_rs` REPL, with
+/// achieved. This was then refined into the `keys` display of the `thag_rs` iterative processor, with
 /// the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
 /// coding.
 //# Purpose: Demo the end result of development dialog with ChatGPT.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use reedline::{default_emacs_keybindings, EditCommand, KeyCode, KeyModifiers, ReedlineEvent};
 
 fn main() {

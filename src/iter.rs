@@ -1,45 +1,31 @@
-/*[toml]
-[dependencies]
-# Specifying these in the toml block to ensure compatibility with thag_rs's Cargo.toml.
-clap = { version = "4.5", features = ["cargo", "derive"] }
-nu-ansi-term = { version = "0.50", features = ["derive_serde_style"] }
-ratatui = { version = "0.29", features = ["crossterm"] }
-strum = { version = "0.27", features = ["derive"] }
-tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
-
-thag_profiler = { version = "0.1, thag-auto", default-features = false }
-thag_rs = { version = "0.2, thag-auto", features = ["repl", "reedline", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
-
-[features]
-debug_logging = ["thag_rs/debug_logging"]
-default = ["reedline", "simplelog"]
-reedline = ["thag_rs/reedline"]
-simplelog = ["thag_rs/simplelog"]
-*/
 #![allow(clippy::uninlined_format_args)]
-/// A demo of a roll-your-own REPL. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
-/// as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
-/// plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
-//# Purpose: Demonstrate building a `thag`-style REPL.
-//# Categories: demo, repl, technique, tui
+use crate::{
+    builder::process_expr,
+    code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
+    key, lazy_static_var,
+    manifest::extract,
+    tui_editor::{
+        script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
+        ManagedTerminal, RataStyle,
+    },
+    BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
+    KeyDisplayLine, ProcFlags, ThagError, ThagResult,
+};
 use clap::{CommandFactory, Parser};
+// use crossterm::style::types::color::Color as ReedlineColor;
 use edit::edit_file;
-use nu_ansi_term::Color as NuColor;
+use nu_ansi_term::{Color as NuColor, Style as NuStyle};
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
-use ratatui::style::Color;
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
-    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
-    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    default_emacs_keybindings, Color as ReedLineColor, ColumnarMenu, DefaultCompleter,
+    DefaultHinter, DefaultValidator, EditCommand, Emacs, ExampleHighlighter, FileBackedHistory,
+    HistoryItem, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
 use std::{
     borrow::Cow,
-    cell::RefCell,
     collections::HashMap,
-    error::Error,
     fmt::{Debug, Write as _},
     fs::{self, read_to_string, OpenOptions},
     io::{BufWriter, Write},
@@ -48,85 +34,17 @@ use std::{
     time::Instant,
 };
 use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
-use thag_profiler::{enable_profiling, profiled};
-use thag_rs::{
-    builder::process_expr,
-    cmd_args::set_verbosity,
-    code_utils::{self, clean_up, display_dir_contents, extract_ast_expr},
-    debug_log, debug_timings, get_verbosity, key, lazy_static_var,
-    logging::configure_log,
-    manifest::extract,
-    re, svprtln,
-    tui_editor::{
-        script_key_handler, tui_edit, EditData, Entry, History, KeyAction, KeyDisplay,
-        ManagedTerminal, RataStyle,
-    },
-    vprtln, Ast, BuildState, Cli, ColorSupport, CrosstermEventReader, EventReader, KeyCombination,
-    KeyDisplayLine, ProcFlags, ScriptState, ThagError, ThagResult, ITER_SCRIPT_NAME, REPL_SUBDIR,
-    TMPDIR, V,
-};
+use thag_profiler::profiled;
 use thag_styling::{
-    display_terminal_attributes, display_theme_details, display_theme_roles, ColorInitStrategy,
-    Role::{self, Success},
-    Style, TermAttributes,
+    display_terminal_attributes, display_theme_details, display_theme_roles, re, sprtln, vprtln,
+    Role, Style, TermAttributes, ThemedStyle, V,
 };
 use tui_textarea::{Input, TextArea};
 
-// impl From<&ColorInfo> for NuColor {
-//     #[profiled]
-//     fn from(color_info: &ColorInfo) -> Self {
-//         Self::Fixed(color_info.index)
-//     }
-// }
+/// The filename for the ITER history file.
+pub const HISTORY_FILE: &str = "thag_iter_hist.txt";
 
-// Custom get_args function that automatically sets repl=true for the bank REPL
-fn get_args() -> Cli {
-    // Try to parse normally first
-    match Cli::try_parse() {
-        Ok(mut cli) => {
-            cli.repl = true; // Always enable REPL mode for the bank
-            cli
-        }
-        Err(_) => {
-            // If parsing fails (e.g., no arguments provided), create a default CLI with repl=true
-            Cli {
-                script: None,
-                features: None,
-                args: Vec::new(),
-                force: false,
-                expression: None,
-                repl: true, // This is the key - enable REPL mode by default
-                stdin: false,
-                edit: false,
-                filter: None,
-                toml: None,
-                begin: None,
-                end: None,
-                multimain: false,
-                timings: false,
-                verbose: 0,
-                normal_verbosity: false,
-                quiet: 0,
-                generate: false,
-                build: false,
-                executable: false,
-                check: false,
-                expand: false,
-                unquote: None,
-                config: false,
-                infer: None,
-                cargo: false,
-                test_only: false,
-                clean: None,
-            }
-        }
-    }
-}
-
-// The filename for the REPL history file.
-pub const HISTORY_FILE: &str = "thag_repl_hist.txt";
-
-// The default multiline indicator string used in the REPL prompt.
+/// The default multiline indicator string used in the ITER prompt.
 pub static DEFAULT_MULTILINE_INDICATOR: &str = "";
 
 const EVENT_DESCS: &[[&str; 2]; 33] = &[
@@ -260,26 +178,34 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
     ["Paste", "Paste content from local buffer at the current cursor position"],
 ];
 
-// REPL mode lets you type or paste a Rust expression to be evaluated.
-//
-// Start by choosing the eval option and entering your expression. Expressions between matching braces,
-// brackets, parens or quotes may span multiple lines.
-// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
-// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
-// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
-// comment block of the form
-// ``` rustdoc
-// /*[toml]
-// [dependencies]
-// ...
-// */
-// ```
-// From here they will be extracted to a dedicated Cargo.toml file.
-// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
-// At any stage before exiting the REPL, or at least as long as your TMPDIR is not cleared, you can
-// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
-// editor or directly from their temporary disk locations.
-// The tab key will show command selections and complete partial matching selections."
+/// ITER mode lets you type or paste a Rust expression to be evaluated.
+///
+/// Enter the expression to be evaluated.
+///
+/// Expressions between matching braces, brackets, parens or quotes may span multiple lines.
+///
+/// Expressions starting with "// ", "/// ", or  "\[Cc\]omment " will be ignored as comments.
+///
+/// If valid, the expression will be converted into a Rust program, and built and run using Cargo.
+///
+/// Dependencies will be inferred from imports if possible using a Cargo search, but the overhead
+/// of doing so can be avoided by placing them in Cargo.toml format at the top of the expression in a
+/// comment block of the form
+/// ``` rustdoc
+/// /*[toml]
+/// [dependencies]
+/// ...
+/// */
+/// ```
+/// From here they will be extracted to a dedicated Cargo.toml file.
+///
+/// In this case the whole expression must be enclosed in curly braces to include the TOML in the expression.
+///
+/// At any stage before exiting the iterator, or at least as long as your TMPDIR is not cleared, you can
+/// go back and edit your expression or its generated Cargo.toml file and copy or save them from the
+/// editor or directly from their temporary disk locations.
+///
+/// The tab key will show command selections and complete partial matching selections.
 #[derive(Debug, Parser, EnumIter, EnumString, IntoStaticStr)]
 #[command(
     name = "",
@@ -289,34 +215,36 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 )] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "snake_case")]
 #[allow(clippy::module_name_repetitions)]
-pub enum ReplCommand {
-    // Show the REPL banner
+pub enum IterCommand {
+    /// Show the banner
     Banner,
-    // Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
+    /// Promote the Rust expression to the TUI editor, which can handle any script.
+    /// This is a one-way process, but the original expression will be saved in history.
     Tui,
-    // Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
+    /// Edit the Rust expression in the configured or default editor.
+    /// Edit+run is an alternative to prompt-line evaluation or TUI for longer snippets and programs.
     Edit,
-    // Edit the generated Cargo.toml
+    /// Edit the generated Cargo.toml
     Toml,
-    // Attempt to build and run the Rust expression
+    /// Attempt to build and run the Rust expression
     Run,
-    // Delete all temporary files for this eval (see list)
+    /// Delete all temporary files for the current evaluation (see `list` command)
     Delete,
-    // List temporary files for this eval
+    /// List temporary files for this the current evaluation
     List,
-    // Edit history
+    /// Edit history
     History,
-    // Show help information
+    /// Show help information
     Help,
-    // Show key bindings
+    /// Show key bindings
     Keys,
-    // Show theme and terminal attributes (change via `thag -C`)
+    /// Show theme and terminal attributes (change via `thag -C` and rerun)
     Theme,
-    // Exit the REPL
+    /// Exit the iterator
     Quit,
 }
 
-impl ReplCommand {
+impl IterCommand {
     #[profiled]
     fn print_help() {
         let mut command = Self::command();
@@ -327,27 +255,27 @@ impl ReplCommand {
     }
 }
 
-// A struct to implement the Prompt trait.
+/// A struct to implement the Prompt trait.
 #[allow(clippy::module_name_repetitions)]
-pub struct ReplPrompt(pub &'static str);
-impl Prompt for ReplPrompt {
+pub struct IterPrompt(pub &'static str);
+impl Prompt for IterPrompt {
     #[profiled]
-    fn render_prompt_left(&self) -> Cow<str> {
+    fn render_prompt_left(&self) -> Cow<'_, str> {
         Cow::Owned(self.0.to_string())
     }
 
     #[profiled]
-    fn render_prompt_right(&self) -> Cow<str> {
+    fn render_prompt_right(&self) -> Cow<'_, str> {
         Cow::Owned(String::new())
     }
 
     #[profiled]
-    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<str> {
+    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<'_, str> {
         Cow::Owned("> ".to_string())
     }
 
     #[profiled]
-    fn render_prompt_multiline_indicator(&self) -> Cow<str> {
+    fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
         Cow::Borrowed(DEFAULT_MULTILINE_INDICATOR)
     }
 
@@ -355,7 +283,7 @@ impl Prompt for ReplPrompt {
     fn render_prompt_history_search_indicator(
         &self,
         history_search: PromptHistorySearch,
-    ) -> Cow<str> {
+    ) -> Cow<'_, str> {
         let prefix = match history_search.status {
             PromptHistorySearchStatus::Passing => "",
             PromptHistorySearchStatus::Failing => "failing ",
@@ -369,12 +297,7 @@ impl Prompt for ReplPrompt {
 
     #[profiled]
     fn get_prompt_color(&self) -> reedline::Color {
-        if let Some(color_info) = Style::for_role(Success).foreground {
-            Color::Indexed(color_info.index).into()
-        } else {
-            vprtln!(V::VV, "defaulting to Green");
-            Color::Green.into()
-        }
+        lazy_static_var!(ReedLineColor, deref, ReedLineColor::themed(Role::Success))
     }
 }
 
@@ -388,7 +311,7 @@ fn get_subhead_style() -> &'static Style {
     lazy_static_var!(Style, Style::for_role(Role::HD2))
 }
 
-// Add menu keybindings to the provided keybindings configuration.
+/// Add menu keybindings to the provided keybindings configuration.
 #[profiled]
 pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     keybindings.add_binding(
@@ -416,14 +339,14 @@ pub fn add_menu_keybindings(keybindings: &mut Keybindings) {
     );
 }
 
-// Run the REPL.
-// # Errors
-// Will return `Err` if there is any error in running the REPL.
-// # Panics
-// Will panic if there is a problem configuring the `reedline` history file.
+/// Run the iterator.
+/// # Errors
+/// Will return `Err` if there is any error in running the iterator.
+/// # Panics
+/// Will panic if there is a problem configuring the `reedline` history file.
 #[allow(clippy::module_name_repetitions)]
 #[allow(clippy::too_many_lines)]
-pub fn run_repl(
+pub fn run_iter(
     args: &Cli,
     proc_flags: &ProcFlags,
     build_state: &mut BuildState,
@@ -433,10 +356,10 @@ pub fn run_repl(
     let history_path = build_state.cargo_home.join(HISTORY_FILE);
     let hist_staging_path: PathBuf = build_state.cargo_home.join("hist_staging.txt");
     let hist_backup_path: PathBuf = build_state.cargo_home.join("hist_backup.txt");
-    let history = Box::new(FileBackedHistory::with_file(25, history_path.clone())?);
+    let history = Box::new(FileBackedHistory::with_file(40, history_path.clone())?);
 
-    let cmd_vec = ReplCommand::iter()
-        .map(<ReplCommand as Into<&'static str>>::into)
+    let cmd_vec = IterCommand::iter()
+        .map(<IterCommand as Into<&'static str>>::into)
         .map(String::from)
         .collect::<Vec<String>>();
 
@@ -476,37 +399,17 @@ pub fn run_repl(
         line_editor_builder = line_editor_builder.with_hinter(Box::new(DefaultHinter::default()));
     } else {
         let mut highlighter = Box::new(ExampleHighlighter::new(cmd_vec.clone()));
-        let nu_match = {
-            Style::for_role(Role::Code)
-                .foreground
-                .as_ref()
-                .map_or(NuColor::Green, NuColor::from)
-        };
-        let nu_notmatch = {
-            Style::for_role(Role::Info)
-                .foreground
-                .as_ref()
-                .map_or(NuColor::Red, NuColor::from)
-        };
-        let nu_neutral = {
-            Style::for_role(Role::Emphasis)
-                .foreground
-                .as_ref()
-                .map_or(NuColor::DarkGray, NuColor::from)
-        };
+        let nu_match = NuColor::themed(Role::Code);
+        let nu_notmatch = NuColor::themed(Role::Info);
+        let nu_neutral = NuColor::themed(Role::Emphasis);
         highlighter.change_colors(nu_match, nu_notmatch, nu_neutral);
 
         // Add highlighter to builder
         line_editor_builder = line_editor_builder.with_highlighter(highlighter);
 
         // Add styled hinter
-        let our_ghost = Style::for_role(Role::Hint);
-        let nu_ghost = our_ghost
-            .foreground
-            .as_ref()
-            .map_or(NuColor::LightGray, NuColor::from);
         line_editor_builder = line_editor_builder.with_hinter(Box::new(
-            DefaultHinter::default().with_style(nu_ghost.italic()),
+            DefaultHinter::default().with_style(NuStyle::themed(Role::Hint).italic()),
         ));
     }
 
@@ -516,9 +419,9 @@ pub fn run_repl(
     let reedline_events = bindings.values().cloned().collect::<Vec<ReedlineEvent>>();
     let max_cmd_len = get_max_cmd_len(&reedline_events);
 
-    let prompt = ReplPrompt("repl");
+    let prompt = IterPrompt("iter");
     let cmd_list = &cmd_vec.join(", ");
-    disp_repl_banner(cmd_list);
+    disp_banner(cmd_list);
 
     // Collect and format key bindings while user is taking in the display banner
     // NB: Can't extract this to a method either, because reedline does not expose KeyCombination.
@@ -557,6 +460,15 @@ pub fn run_repl(
         }
 
         let (first_word, rest) = parse_line(rs_source);
+
+        if first_word == "#"
+            || first_word == "//"
+            || first_word == "///"
+            || first_word.to_lowercase() == "comment"
+        {
+            // sprtln!(Role::HD3, "{rs_source}");
+            continue;
+        }
         // vprtln!(V::VV, "first_word={first_word}, rest={rest:#?}");
         let maybe_cmd = if rest.is_empty() {
             let mut matches = 0;
@@ -582,52 +494,49 @@ pub fn run_repl(
         };
 
         if let Some(cmd) = maybe_cmd {
-            if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
-                match repl_command {
-                    ReplCommand::Banner => disp_repl_banner(cmd_list),
-                    ReplCommand::Help => {
-                        ReplCommand::print_help();
+            if let Ok(iter_command) = IterCommand::from_str(&cmd) {
+                match iter_command {
+                    IterCommand::Banner => disp_banner(cmd_list),
+                    IterCommand::Help => {
+                        IterCommand::print_help();
                     }
-                    ReplCommand::Quit => {
+                    IterCommand::Quit => {
                         break;
                     }
-                    ReplCommand::Tui => {
+                    IterCommand::Tui => {
                         if TermAttributes::get_or_init().color_support == ColorSupport::None {
                             println!("Sorry, TUI features require terminal color support");
                             continue;
                         }
                         let source_path = &build_state.source_path;
-                        let mut save_path: PathBuf =
-                            build_state.cargo_home.join("repl_tui_save.rs");
-                        // let backup_path: PathBuf =
-                        //     &build_state.cargo_home.join("repl_tui_backup.rs");
+                        let save_path: PathBuf = build_state.cargo_home.join("repl_tui_save.rs");
 
                         let rs_source = read_to_string(source_path)?;
                         tui(
                             rs_source.as_str(),
-                            &mut save_path,
+                            &save_path,
                             build_state,
                             args,
                             proc_flags,
                         )?;
                     }
-                    ReplCommand::Edit => {
+                    IterCommand::Edit => {
                         edit(&build_state.source_path)?;
                     }
-                    ReplCommand::Toml => {
+                    IterCommand::Toml => {
                         toml(build_state)?;
                     }
-                    ReplCommand::Run => {
+                    IterCommand::Run => {
                         let rs_source = code_utils::read_file_contents(&build_state.source_path)?;
                         process_source(&rs_source, build_state, args, proc_flags, start)?;
                     }
-                    ReplCommand::Delete => {
+                    IterCommand::Delete => {
                         delete(build_state)?;
                     }
-                    ReplCommand::List => {
+                    IterCommand::List => {
                         list(build_state)?;
                     }
-                    ReplCommand::History => {
+                    IterCommand::History => {
                         if TermAttributes::get_or_init().color_support == ColorSupport::None {
                             println!("Sorry, TUI features require terminal color support");
                             continue;
@@ -639,10 +548,10 @@ pub fn run_repl(
                             &hist_staging_path,
                         )?;
                     }
-                    ReplCommand::Keys => {
+                    IterCommand::Keys => {
                         show_key_bindings(formatted_bindings, max_key_len);
                     }
-                    ReplCommand::Theme => {
+                    IterCommand::Theme => {
                         let term_attrs = TermAttributes::get_or_init();
                         let theme = &term_attrs.theme;
 
@@ -660,11 +569,11 @@ pub fn run_repl(
     Ok(())
 }
 
-// Process a source string through to completion according to the arguments passed in.
-//
-// # Errors
-//
-// This function will bubble up any error encountered in processing.
+/// Process a source string through to completion according to the arguments passed in.
+///
+/// # Errors
+///
+/// This function will bubble up any error encountered in processing.
 #[profiled]
 pub fn process_source(
     rs_source: &str,
@@ -677,14 +586,10 @@ pub fn process_source(
     build_state.rs_manifest = Some(rs_manifest);
     let maybe_ast = extract_ast_expr(rs_source);
     if let Ok(expr_ast) = maybe_ast {
-        build_state.ast = Some(Ast::Expr(expr_ast));
+        build_state.ast = Some(crate::Ast::Expr(expr_ast));
         process_expr(build_state, rs_source, args, proc_flags, &start)?;
     } else {
-        svprtln!(
-            Role::ERR,
-            get_verbosity(),
-            "Error parsing code: {maybe_ast:#?}"
-        );
+        sprtln!(Role::ERR, "Error parsing code: {maybe_ast:#?}");
     }
     Ok(())
 }
@@ -692,7 +597,7 @@ pub fn process_source(
 #[profiled]
 fn tui(
     initial_content: &str,
-    save_path: &mut PathBuf,
+    save_path: &Path,
     build_state: &mut BuildState,
     args: &Cli,
     proc_flags: &ProcFlags,
@@ -712,7 +617,7 @@ fn tui(
     let mut edit_data = EditData {
         return_text: true,
         initial_content: &initial_content,
-        save_path: Some(save_path.clone()),
+        save_path: Some(save_path.to_path_buf()),
         history_path: Some(&history_path),
         history: Some(history),
     };
@@ -722,10 +627,9 @@ fn tui(
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
 
-    let style = Style::for_role(Role::HD2);
     let display = KeyDisplay {
         title: "Edit TUI script.  ^d: submit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&style),
+        title_style: RataStyle::themed(Role::HD2),
         remove_keys: &[""; 0],
         add_keys: &add_keys,
     };
@@ -801,7 +705,7 @@ fn review_history(
     Ok(())
 }
 
-// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
+/// Convert the `reedline` file-backed history newline sequence <\n> into the '\n' (0xa) character for which it stands.
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
 #[profiled]
@@ -811,22 +715,21 @@ pub fn decode(input: &str) -> String {
     re.replace_all(input, lf).to_string()
 }
 
-// Edit the history.
-//
-// # Errors
-//
-// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+/// Edit the history.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[profiled]
 pub fn edit_history<R: EventReader + Debug>(
     initial_content: &str,
     staging_path: &Path,
     event_reader: &R,
 ) -> ThagResult<bool> {
-    let staging_path_buf = staging_path.to_path_buf();
     let mut edit_data = EditData {
         return_text: false,
         initial_content,
-        save_path: Some(staging_path_buf),
+        save_path: Some(staging_path.to_path_buf()),
         history_path: None,
         history: None::<History>,
     };
@@ -834,10 +737,9 @@ pub fn edit_history<R: EventReader + Debug>(
         KeyDisplayLine::new(372, "F3", "Discard saved and unsaved changes, and exit"),
         // KeyDisplayLine::new(373, "F4", "Clear text buffer (Ctrl+y or Ctrl+u to restore)"),
     ];
-    let style = Style::for_role(Role::HD2);
     let display = KeyDisplay {
-        title: "Enter / paste / edit REPL history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
-        title_style: RataStyle::from(&style),
+        title: "Enter / paste / edit iterator history.  ^d: save & exit  ^q: quit  ^s: save  F3: abandon  ^l: keys  ^t: toggle highlighting",
+        title_style: RataStyle::themed(Role::HD2),
         remove_keys: &["F7", "F8"],
         add_keys: &binding,
     };
@@ -874,11 +776,11 @@ pub fn edit_history<R: EventReader + Debug>(
     })
 }
 
-// Key handler function to be passed into `tui_edit` for editing REPL history.
-//
-// # Errors
-//
-// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
+/// Key handler function to be passed into `tui_edit` for editing history.
+///
+/// # Errors
+///
+/// This function will bubble up any i/o, `ratatui` or `crossterm` errors encountered.
 #[profiled]
 pub fn history_key_handler(
     key_event: KeyEvent,
@@ -894,7 +796,7 @@ pub fn history_key_handler(
     if !matches!(key_event.kind, KeyEventKind::Press) {
         return Ok(KeyAction::Continue);
     }
-    let maybe_save_path = &mut edit_data.save_path;
+    let maybe_save_path = &edit_data.save_path;
     let key_combination = KeyCombination::from(key_event); // Derive KeyCombination
 
     match key_combination {
@@ -902,13 +804,13 @@ pub fn history_key_handler(
         key!(esc) | key!(ctrl - c) | key!(ctrl - q) => Ok(KeyAction::Quit(*saved)),
         key!(ctrl - d) => {
             // Save logic
-            save_file(&maybe_save_path.as_mut(), textarea)?;
+            save_file(maybe_save_path.as_ref(), textarea)?;
             // println!("Saved");
             Ok(KeyAction::SaveAndExit)
         }
         key!(ctrl - s) => {
             // Save logic
-            let save_file = save_file(&maybe_save_path.as_mut(), textarea)?;
+            let save_file = save_file(maybe_save_path.as_ref(), textarea)?;
             // eprintln!("Saved {:?} to {save_file:?}", textarea.lines());
             *saved = true;
             status_message.clear();
@@ -933,11 +835,8 @@ pub fn history_key_handler(
 }
 
 #[profiled]
-fn save_file(
-    maybe_save_path: &Option<&mut PathBuf>,
-    textarea: &TextArea<'_>,
-) -> ThagResult<String> {
-    let staging_path = maybe_save_path.as_ref().ok_or("Missing save_path")?;
+fn save_file(maybe_save_path: Option<&PathBuf>, textarea: &TextArea<'_>) -> ThagResult<String> {
+    let staging_path = maybe_save_path.ok_or("Missing save_path")?;
     let staging_file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -952,8 +851,8 @@ fn save_file(
     Ok(staging_path.display().to_string())
 }
 
-// Return the maximum length of the key descriptor for a set of styled and
-// formatted key / description bindings to be displayed on screen.
+/// Return the maximum length of the key descriptor for a set of styled and
+/// formatted key / description bindings to be displayed on screen.
 #[profiled]
 fn get_max_key_len(formatted_bindings: &[(String, String)]) -> usize {
     let style = get_heading_style();
@@ -1029,13 +928,12 @@ fn get_max_cmd_len(reedline_events: &[ReedlineEvent]) -> usize {
     })
 }
 
-// Display key bindings with their descriptions.
+/// Display key bindings with their descriptions.
 #[profiled]
 pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: usize) {
     println!();
-    svprtln!(
+    sprtln!(
         Role::EMPH,
-        get_verbosity(),
         "Key bindings - subject to your terminal settings"
     );
 
@@ -1048,7 +946,7 @@ pub fn show_key_bindings(formatted_bindings: &[(String, String)], max_key_len: u
     println!();
 }
 
-// Helper function to convert `KeyModifiers` to string
+/// Helper function to convert `KeyModifiers` to string
 #[must_use]
 #[profiled]
 pub fn format_key_modifier(modifier: KeyModifiers) -> String {
@@ -1070,7 +968,7 @@ pub fn format_key_modifier(modifier: KeyModifiers) -> String {
     }
 }
 
-// Helper function to convert `KeyCode` to string
+/// Helper function to convert `KeyCode` to string
 #[must_use]
 #[profiled]
 pub fn format_key_code(key_code: KeyCode) -> String {
@@ -1105,9 +1003,9 @@ pub fn format_key_code(key_code: KeyCode) -> String {
     }
 }
 
-// Helper function to format `ReedlineEvents` other than `Edit`, and their doc comments
-// # Panics
-// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
+/// Helper function to format `ReedlineEvents` other than `Edit`, and their doc comments
+/// # Panics
+/// Will panic if it fails to split a `EVENT_DESC_MAP` entry, indicating a problem with the `EVENT_DESC_MAP`.
 #[allow(clippy::too_many_lines)]
 #[must_use]
 #[profiled]
@@ -1128,9 +1026,9 @@ pub fn format_non_edit_events(event_name: &str, max_cmd_len: usize) -> String {
     event_desc
 }
 
-// Helper function to format `EditCommand` and include its doc comments
-// # Panics
-// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
+/// Helper function to format `EditCommand` and include its doc comments
+/// # Panics
+/// Will panic if it fails to split a `CMD_DESC_MAP` entry, indicating a problem with the `CMD_DESC_MAP`.
 #[must_use]
 #[profiled]
 pub fn format_edit_commands(edit_cmds: &[EditCommand], max_cmd_len: usize) -> String {
@@ -1263,9 +1161,9 @@ fn format_cmd_desc(
     }
 }
 
-// Delete the temporary files used by the current REPL instance.
-// # Errors
-// Currently will not return any errors.
+/// Delete the temporary files used by the current iterative processor instance.
+/// # Errors
+/// Currently will not return any errors.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
@@ -1284,9 +1182,9 @@ pub fn delete(build_state: &BuildState) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of delete")))
 }
 
-// Open the generated destination Rust source code file in an editor.
-// # Errors
-// Will return `Err` if there is an error editing the file.
+/// Open the generated destination Rust source code file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
@@ -1295,9 +1193,9 @@ pub fn edit(source_path: &PathBuf) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of source edit")))
 }
 
-// Open the generated Cargo.toml file in an editor.
-// # Errors
-// Will return `Err` if there is an error editing the file.
+/// Open the generated Cargo.toml file in an editor.
+/// # Errors
+/// Will return `Err` if there is an error editing the file.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
@@ -1310,7 +1208,7 @@ pub fn toml(build_state: &BuildState) -> ThagResult<Option<String>> {
     Ok(Some(String::from("End of Cargo.toml edit")))
 }
 
-// Parse the current line. Borrowed from clap-repl crate.
+/// Parse the current line. Borrowed from clap-repl crate.
 #[must_use]
 #[profiled]
 pub fn parse_line(line: &str) -> (String, Vec<String>) {
@@ -1324,36 +1222,33 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
-// Display the REPL banner.
+/// Display the banner.
 #[profiled]
-pub fn disp_repl_banner(cmd_list: &str) {
-    svprtln!(
+pub fn disp_banner(cmd_list: &str) {
+    sprtln!(
         Role::HD1,
-        get_verbosity(),
         r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#
     );
 
     println!();
 
-    svprtln!(
+    sprtln!(
         Role::HD2,
-        get_verbosity(),
         r"Expressions in matching braces, brackets or quotes may span multiple lines."
     );
 
-    svprtln!(
+    sprtln!(
         Role::HD2,
-        get_verbosity(),
         r"Use F7 & F8 to navigate prev/next history, →  to select current. Ctrl-U: clear. Ctrl-K: delete to end."
     );
 }
 
-// Display a list of the temporary files used by the current REPL instance.
-// # Errors
-// This function will return an error in the following situations, but is not limited to just these cases:
-// The provided path doesn't exist.
-// The process lacks permissions to view the contents.
-// The path points at a non-directory file.
+/// Display a list of the temporary files used by the current iterator instance.
+/// # Errors
+/// This function will return an error in the following situations, but is not limited to just these cases:
+/// The provided path doesn't exist.
+/// The process lacks permissions to view the contents.
+/// The path points at a non-directory file.
 #[allow(clippy::unnecessary_wraps)]
 #[profiled]
 pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
@@ -1370,162 +1265,4 @@ pub fn list(build_state: &BuildState) -> ThagResult<Option<String>> {
         vprtln!(V::QQ, "No temporary files found");
     }
     Ok(Some(String::from("End of list")))
-}
-
-#[enable_profiling(no)]
-pub fn main() -> Result<(), Box<dyn Error>> {
-    {
-        #[cfg(debug_assertions)]
-        let start = Instant::now();
-        let cli = RefCell::new(get_args()); // Wrap args in a RefCell
-
-        set_verbosity(&cli.borrow())?;
-
-        configure_log();
-        #[cfg(debug_assertions)]
-        debug_timings(&start, "Configured logging");
-
-        handle(&cli);
-    }
-
-    Ok(())
-}
-
-fn handle(cli: &RefCell<thag_rs::Cli>) {
-    // Use borrow_mut to get a mutable reference
-    let result = execute(&mut cli.borrow_mut());
-    match result {
-        Ok(()) => (),
-        Err(e) => println!("{e}"),
-    }
-}
-
-pub fn execute(args: &mut Cli) -> ThagResult<()> {
-    let start = Instant::now();
-
-    // Initialize TermAttributes for message styling
-    let strategy = ColorInitStrategy::determine();
-    TermAttributes::get_or_init_with_strategy(&strategy);
-
-    let proc_flags = get_proc_flags(args)?;
-
-    // #[cfg(debug_assertions)]
-    // if log_enabled!(Debug) {
-    //     log_init_setup(start, args, &proc_flags);
-    // }
-
-    // let is_repl = args.repl;
-    // validate_args(args, &proc_flags)?;
-    let repl_source_path = {
-        let gen_repl_temp_dir_path = TMPDIR.join(REPL_SUBDIR);
-        debug_log!("repl_temp_dir = std::env::temp_dir() = {gen_repl_temp_dir_path:?}");
-
-        // Ensure REPL subdirectory exists
-        fs::create_dir_all(&gen_repl_temp_dir_path)?;
-
-        // Create rapid iteration file if necessary
-        let path = gen_repl_temp_dir_path.join(ITER_SCRIPT_NAME);
-        let _ = fs::File::create(&path)?;
-        Some(path)
-    };
-
-    let script_dir_path = resolve_script_dir_path(repl_source_path.as_ref())?;
-
-    let script_state = set_script_state(script_dir_path, repl_source_path)?;
-
-    process(&proc_flags, args, &script_state, start)
-}
-
-// Set up the processing flags from the command line arguments and pass them back.
-// # Errors
-//
-// Will return `Err` if there is an error parsing the flags to set up and internal
-// correctness chack.
-// # Panics
-//
-// Will panic if the internal correctness check fails.
-#[profiled]
-pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
-    // eprintln!("args={args:#?}");
-    let is_infer = args.infer.is_some();
-    let is_features = args.features.is_some();
-    let proc_flags = {
-        let mut proc_flags = ProcFlags::empty();
-        // eprintln!("args={args:#?}");
-        proc_flags.set(ProcFlags::GENERATE, false);
-        proc_flags.set(ProcFlags::BUILD, false);
-        proc_flags.set(ProcFlags::CHECK, args.check);
-        proc_flags.set(ProcFlags::FORCE, args.force);
-        proc_flags.set(ProcFlags::QUIET, args.quiet == 1);
-        proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
-        proc_flags.set(ProcFlags::MULTI, false);
-        proc_flags.set(ProcFlags::VERBOSE, args.verbose == 1);
-        proc_flags.set(ProcFlags::DEBUG, args.verbose >= 2);
-        proc_flags.set(ProcFlags::TIMINGS, args.timings);
-        proc_flags.set(ProcFlags::NORUN, false);
-        proc_flags.set(ProcFlags::NORMAL, args.normal_verbosity);
-        proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
-        proc_flags.set(ProcFlags::REPL, true);
-        proc_flags.set(ProcFlags::STDIN, false);
-        proc_flags.set(ProcFlags::EDIT, false);
-        proc_flags.set(ProcFlags::LOOP, false);
-        proc_flags.set(ProcFlags::EXECUTABLE, false);
-        proc_flags.set(ProcFlags::EXPAND, false);
-        proc_flags.set(ProcFlags::CARGO, false);
-        proc_flags.set(ProcFlags::INFER, is_infer);
-        proc_flags.set(ProcFlags::FEATURES, is_features);
-        proc_flags.set(ProcFlags::TEST_ONLY, false);
-        proc_flags.set(ProcFlags::TOOLS, false);
-        proc_flags.set(ProcFlags::UNQUOTE, false);
-        proc_flags.set(ProcFlags::CONFIG, false);
-
-        #[cfg(debug_assertions)]
-        {
-            // Check all good
-            let formatted = proc_flags.to_string();
-            let parsed = formatted.parse::<ProcFlags>()?;
-            assert_eq!(proc_flags, parsed);
-        }
-
-        Ok::<ProcFlags, ThagError>(proc_flags)
-    }?;
-    Ok(proc_flags)
-}
-
-fn resolve_script_dir_path(repl_source_path: Option<&PathBuf>) -> ThagResult<PathBuf> {
-    Ok(repl_source_path
-        .as_ref()
-        .ok_or("Missing path of newly created REPL source file")?
-        .parent()
-        .ok_or("Could not find parent directory of repl source file")?
-        .to_path_buf())
-}
-
-#[profiled]
-fn set_script_state(
-    script_dir_path: PathBuf,
-    repl_source_path: Option<PathBuf>,
-) -> ThagResult<ScriptState> {
-    let script_state: ScriptState = {
-        let script = repl_source_path
-            .ok_or("Missing newly created REPL source path")?
-            .display()
-            .to_string();
-        ScriptState::NamedEmpty {
-            script,
-            script_dir_path,
-        }
-    };
-    Ok(script_state)
-}
-
-fn process(
-    proc_flags: &ProcFlags,
-    args: &mut Cli,
-    script_state: &ScriptState,
-    start: Instant,
-) -> ThagResult<()> {
-    let mut build_state = BuildState::pre_configure(proc_flags, args, script_state)?;
-    debug_log!("build_state.source_path={:?}", build_state.source_path);
-    run_repl(args, proc_flags, &mut build_state, start)
 }

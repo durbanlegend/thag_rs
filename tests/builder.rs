@@ -99,12 +99,12 @@ fn test_builder_execute_dynamic_script() {
     assert!(result.is_ok());
 }
 
-// Any test of the REPL is problematic because reedline will panic
+// Any test of the iterator is problematic because reedline will panic
 // with a message that the current cursor position can't be found.
 // #[test]
 // fn test_builder_execute_repl_script() {
 // let mut cli = create_sample_cli(None);
-// cli.repl = true;
+// cli.iter = true;
 //     let result = execute(cli);
 //     assert!(result.is_ok());
 // }

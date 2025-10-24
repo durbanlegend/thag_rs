@@ -82,7 +82,7 @@ inquire_theming = ["color_detect", "inquire"]
 ## Full ratatui integration
 ratatui_support = ["ratatui", "scopeguard"]
 
-## Support for `thag` REPL
+## Support for `thag` iterator
 nu_ansi_term_support = ["nu-ansi-term"]
 
 ## Integration for terminal theming with `owo-colors`

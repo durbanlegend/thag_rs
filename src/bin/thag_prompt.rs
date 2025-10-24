@@ -253,7 +253,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !is_interactive() {
         eprintln!("Error: This tool requires an interactive terminal.");
         eprintln!("Please run it directly from a terminal, not through pipes or redirects.");
-        eprintln!("Tip: Set THAG_PROMPT_TEST=repl to test REPL mode");
+        eprintln!("Tip: Set THAG_PROMPT_TEST=iter to test rapid iteration mode");
         std::process::exit(1);
     }
 
@@ -269,7 +269,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Script mode (run a script file)",
         ],
     )
-    .with_help_message("Dynamic mode: expressions, REPL, filters, etc. Script mode: run .rs files")
+    .with_help_message(
+        "Dynamic mode: expressions, iteration mode, filters, etc. Script mode: run .rs files",
+    )
     .prompt()?;
 
     let (script_path, use_dynamic_mode) = if mode_choice == "Dynamic mode (no script needed)" {
@@ -678,7 +680,7 @@ serde = "1.0""#,
                     cmd.arg(end_val);
                 }
             }
-            "repl" => {
+            "iter" => {
                 cmd.arg("-r");
             }
             "stdin" => {
@@ -896,8 +898,8 @@ fn run_test_mode(test_mode: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::new("thag");
 
     match test_mode {
-        "repl" => {
-            cmd.arg("--repl");
+        "iter" => {
+            cmd.arg("--iter");
         }
         "expr" => {
             cmd.arg("--expr").arg("2 + 2");
@@ -1035,7 +1037,7 @@ regex = "1.11""#,
         _ => {
             eprintln!("Unknown test mode: {}", test_mode);
             eprintln!(
-                "Available modes: repl, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups, test_input_file, test_env_vars, test_env_expansion, test_verbosity_double, test_no_script_args, test_display_enhanced"
+                "Available modes: iter, expr, expr_string, expr_complex, stdin, script_with_args, filter_simple, filter_with_options, debug_groups, test_input_file, test_env_vars, test_env_expansion, test_verbosity_double, test_no_script_args, test_display_enhanced"
             );
             std::process::exit(1);
         }

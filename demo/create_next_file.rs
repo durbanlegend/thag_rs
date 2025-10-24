@@ -2,10 +2,10 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
-/// Prototype of creating files named sequentially from repl_000000.rs to
-/// repl_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
+/// Prototype of creating files named sequentially from iter_000000.rs to
+/// iter_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
 /// directory. The need is to generate well-behaved and consistent human-readable
-/// names for temporary programs generated from REPL expressions.
+/// names for temporary programs generated from rapid iteration expressions.
 //# Purpose: Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
 //# Categories: technique
 fn main() {
@@ -14,7 +14,7 @@ fn main() {
     // Ensure demo subdirectory exists
     fs::create_dir_all(&demo_dir).expect("Failed to create demo directory");
 
-    // Find existing files with the pattern repl_<nnnnnn>.rs
+    // Find existing files with the pattern iter_<nnnnnn>.rs
     let existing_files: Vec<_> = fs::read_dir(&demo_dir)
         .unwrap()
         .filter_map(|entry| {
@@ -22,10 +22,10 @@ fn main() {
             // println!("path={path:?}, path.is_file()={}, path.extension()?.to_str()={:?}, path.file_stem()?.to_str()={:?}", path.is_file(), path.extension()?.to_str(), path.file_stem()?.to_str());
             if path.is_file()
                 && path.extension()?.to_str() == Some("rs")
-                && path.file_stem()?.to_str()?.starts_with("repl_")
+                && path.file_stem()?.to_str()?.starts_with("iter_")
             {
                 let stem = path.file_stem().unwrap();
-                let num_str = stem.to_str().unwrap().trim_start_matches("repl_");
+                let num_str = stem.to_str().unwrap().trim_start_matches("iter_");
                 // println!("stem={stem:?}; num_str={num_str}");
                 if num_str.len() == 6 && num_str.chars().all(|c| c.is_numeric()) {
                     Some(num_str.parse::<u32>().unwrap())
@@ -59,7 +59,7 @@ fn main() {
 
 fn create_file(demo_dir: &Path, num: u32) {
     let padded_num = format!("{:06}", num);
-    let filename = format!("repl_{}.rs", padded_num);
+    let filename = format!("iter_{}.rs", padded_num);
     let path = demo_dir.join(&filename);
     fs::File::create(path.clone()).expect("Failed to create file");
     println!("Created file: {path:#?}");

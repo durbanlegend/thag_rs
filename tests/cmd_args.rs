@@ -57,7 +57,7 @@ fn test_cmd_args_get_proc_flags() {
             | ProcFlags::DEBUG
             | ProcFlags::VERBOSE
             | ProcFlags::TIMINGS
-            | ProcFlags::REPL
+            | ProcFlags::ITER
             | ProcFlags::EDIT
             | ProcFlags::STDIN
     ));
@@ -165,7 +165,7 @@ fn test_cmd_args_proc_flags_repl() {
     let result = get_proc_flags(&cli);
     let proc_flags = result.expect("Couldn't access ProcFlags");
     safe_eprintln!("test_cmd_args_proc_flags_repl proc_flags={proc_flags:#?}");
-    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::REPL));
+    assert!(proc_flags.contains(ProcFlags::RUN | ProcFlags::ITER));
 }
 
 #[test]

@@ -13,7 +13,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: Explore featured crate.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 // Original `reedline` crate comments:
 //
 // Create a reedline object with highlighter support.

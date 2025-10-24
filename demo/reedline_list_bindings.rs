@@ -11,7 +11,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: Explore featured crate.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use reedline::{
     get_reedline_default_keybindings, get_reedline_edit_commands,
     get_reedline_keybinding_modifiers, get_reedline_keycodes, get_reedline_prompt_edit_modes,

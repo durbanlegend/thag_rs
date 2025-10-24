@@ -60,9 +60,9 @@ DEMO_LINES=(
     ": #' Now let's run the converter:"
     "fueleconv 6.4"
     "fueleconv 30"
-    ": #' Finally let's have a quick look at the REPL:"
+    ": #' Finally let's have a quick look at the iterator:"
     "thag -r"
-    ": # The REPL is covered more fully in a separate demo"
+    ": # The iterator is covered more fully in a separate demo"
     ": # Thanks for watching!"
 )
 

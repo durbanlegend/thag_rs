@@ -670,43 +670,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/cargo_output.rs
 
 ---
 
-### Script: clap_demo.rs
-
-**Description:**  Published example from the `clap` crate.
-
- The latest version of this example is available in the [examples] folder in the `clap` repository.
- At time of writing you can run it successfully just by invoking its URL with the `thag_url` tool
- and passing the required arguments as normal, like this:
-
- ```bash
- thag_url https://github.com/clap-rs/clap/blob/master/examples/demo.rs -- --name "is this the Krusty Krab?"
- ```
-
- Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
-
- Original `clap` crate comments:
-
- Simple program to greet a person
- Simple program to greet a person
-
-**Purpose:** Demo building a repl using `clap` directly.
-
-**Crates:** `clap`
-
-**Type:** Program
-
-**Categories:** REPL, technique
-
-**Link:** [clap_demo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_demo.rs -- --name "is this the Krusty Krab?"
-```
-
----
-
 ### Script: clap_enum_strum.rs
 
 **Description:**  Exploring using clap with an enum, in conjunction with strum.
@@ -756,7 +719,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_num_arg.rs 
 
 ### Script: clap_repl_crate_rustyline.rs
 
-**Description:**  Older version of published clap_repl crate example, modified to prototype a
+**Description:**  Older version of published `clap_repl` crate example, modified to prototype a
  (dummy) Rust REPL.
 
 **Purpose:** Yet another REPL demo, this time using `rustyline`.
@@ -777,7 +740,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_
 
 ---
 
-### Script: clap_repl_diy.rs
+### Script: clap_repl_derive.rs
 
 **Description:**  Example from the clap cookbook, not using the `clap-repl` crate.
 
@@ -801,12 +764,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_crate_
 
 **Categories:** REPL, technique
 
-**Link:** [clap_repl_diy.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs)
+**Link:** [clap_repl_derive.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_derive.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_diy.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/clap_repl_derive.rs
 ```
 
 ---
@@ -1206,10 +1169,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/count_main_metho
 
 ### Script: create_next_file.rs
 
-**Description:**  Prototype of creating files named sequentially from repl_000000.rs to
- repl_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
+**Description:**  Prototype of creating files named sequentially from iter_000000.rs to
+ iter_999999.rs in a thag_rs/demo subdirectory of the OS's temporary
  directory. The need is to generate well-behaved and consistent human-readable
- names for temporary programs generated from REPL expressions.
+ names for temporary programs generated from rapid iteration expressions.
 
 **Purpose:** Demo sequential file creation and the kind of code that is well suited to generation by an LLM.
 
@@ -3824,28 +3787,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/image_to_multi_f
 
 ---
 
-### Script: in_place.rs
-
-**Description:**  Published example from `in-place crate` disemvowels the file somefile.txt.
-
-**Purpose:** Demo editing a file in place.
-
-**Crates:** `in_place`
-
-**Type:** Program
-
-**Categories:** async, crates, technique
-
-**Link:** [in_place.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs
-```
-
----
-
 ### Script: include_str.rs
 
 **Description:**  Simple demo of `std::include_str` macro showing how to includes other files in demo or neighboring
@@ -3871,8 +3812,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs
 ### Script: infer_deps.rs
 
 **Description:**  Interactively test dependency inferency. This script was arbitrarily copied from
- `demo/repl_partial_match.rs`.
- Experiment with matching REPL commands with a partial match of any length.
+ `demo/iterf_partial_match.rs`.
+ Experiment with matching repid iteration mode commands with a partial match of any length.
 
 **Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
 
@@ -3880,7 +3821,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/in_place.rs
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [infer_deps.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/infer_deps.rs)
 
@@ -3998,6 +3939,52 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/is_unit_expr.rs
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iter.rs
+```
+
+---
+
+### Script: iter_partial_match.rs
+
+**Description:**  Experiment with matching rapid iteration mode commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
+
+**Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
+
+**Crates:** `clap`, `console`, `rustyline`, `shlex`, `strum`
+
+**Type:** Program
+
+**Categories:** crates, technique
+
+**Link:** [iter_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/iter_partial_match.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iter_partial_match.rs
+```
+
+---
+
+### Script: iter_ryo.rs
+
+**Description:**  A demo of a roll-your-own iterative Rust processor. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
+ as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
+ plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
+
+**Purpose:** Demonstrate building a `thag`-style iterative Rust processor.
+
+**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `thag_styling`, `tui_textarea`
+
+**Type:** Program
+
+**Categories:** demo, technique, tui
+
+**Link:** [iter_ryo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/iter_ryo.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iter_ryo.rs
 ```
 
 ---
@@ -5570,7 +5557,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/readline_crosste
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_basic_keybindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_keybindings.rs)
 
@@ -5603,7 +5590,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_basic_k
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_completions.rs)
 
@@ -5636,7 +5623,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_complet
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_event_listener.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_listener.rs)
 
@@ -5671,7 +5658,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_event_l
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_highlighter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlighter.rs)
 
@@ -5704,7 +5691,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_highlig
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_hinter.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.rs)
 
@@ -5737,7 +5724,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_hinter.
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_history.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history.rs)
 
@@ -5773,7 +5760,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_history
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_ide_completions.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_completions.rs)
 
@@ -5807,7 +5794,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_com
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_list_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bindings.rs)
 
@@ -5821,7 +5808,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bi
 
 ### Script: reedline_multiline.rs
 
-**Description:**  Exploratory prototype of REPL support for multi-line expressions. Loosely based on the
+**Description:**  Exploratory prototype of iterative mode support for multi-line expressions. Loosely based on the
  published example `custom_prompt.rs` in `reedline` crate.
 
  The latest version of the original `custom_prompt.rs` is available in the [examples] folder
@@ -5841,7 +5828,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bi
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_multiline.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multiline.rs)
 
@@ -5863,7 +5850,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_multili
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_read_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_stdin.rs)
 
@@ -5903,13 +5890,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_read_st
  This requires you to have first installed `thag_rs` with the `tools` feature.
 
 
-**Purpose:** Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
+**Purpose:** Explore the suitability of this crate for a Rust iterative runner. Conclusion: it's more geared to commands.
 
 **Crates:** `reedline_repl_rs`
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_repl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs)
 
@@ -5943,7 +5930,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl.rs
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_repl_context.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_context.rs)
 
@@ -5957,10 +5944,10 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_co
 
 ### Script: reedline_show_bindings.rs
 
-**Description:**  Prototype of key binding display function for `reedline` REPL. This was developed
+**Description:**  Prototype of key binding display function for `reedline` iterative processor. This was developed
  by giving ChatGPT a simple spec which it flubbed, then repeatedly feeding back errors,
  manually corrected code and requests for changes until a nice simple display was
- achieved. This was then refined into the `keys` display of the `thag_rs` REPL, with
+ achieved. This was then refined into the `keys` display of the `thag_rs` iterative processor, with
  the addition of command descriptions, non-edit commands such as SearchHistory, and colour-
  coding.
 
@@ -5970,7 +5957,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_repl_co
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_show_bindings.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bindings.rs)
 
@@ -5992,7 +5979,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_show_bi
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_stdin.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.rs)
 
@@ -6023,7 +6010,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_stdin.r
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [reedline_transient_prompt.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_transient_prompt.rs)
 
@@ -6062,7 +6049,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_to
 
 ### Script: repl_block.rs
 
-**Description:**  Early proof of concept of using a different line editor for repl.rs.
+**Description:**  Early proof of concept of using a different line editor.
 
 **Purpose:** Exploration
 
@@ -6070,7 +6057,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_to
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [repl_block.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs)
 
@@ -6078,52 +6065,6 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/regex_capture_to
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_block.rs
-```
-
----
-
-### Script: repl_partial_match.rs
-
-**Description:**  Experiment with matching REPL commands with a partial match of any length. `Ctrl-d` or `quit` to exit.
-
-**Purpose:** Usability: Accept a command as long as the user has typed in enough characters to identify it uniquely.
-
-**Crates:** `clap`, `console`, `rustyline`, `shlex`, `strum`
-
-**Type:** Program
-
-**Categories:** crates, repl, technique
-
-**Link:** [repl_partial_match.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_partial_match.rs
-```
-
----
-
-### Script: repl_ryo.rs
-
-**Description:**  A demo of a roll-your-own REPL. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
- as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
- plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
-
-**Purpose:** Demonstrate building a `thag`-style REPL.
-
-**Crates:** `clap`, `edit`, `nu_ansi_term`, `ratatui`, `reedline`, `regex`, `strum`, `thag_profiler`, `thag_rs`, `thag_styling`, `tui_textarea`
-
-**Type:** Program
-
-**Categories:** demo, repl, technique, tui
-
-**Link:** [repl_ryo.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/repl_ryo.rs
 ```
 
 ---
@@ -6232,13 +6173,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustlings_smart_
 
 **Description:**  Published example from the `rustyline` crate.
 
-**Purpose:** Demo using `thag_rs` to run a basic REPL as a script.
+**Purpose:** Demo featured crate.
 
 **Crates:** `env_logger`, `rustyline`
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [rustyline_compl.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.rs)
 
@@ -6262,7 +6203,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_compl.
 
 **Type:** Program
 
-**Categories:** crates, repl, technique
+**Categories:** crates, technique
 
 **Link:** [rustyline_full.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rustyline_full.rs)
 
@@ -7124,7 +7065,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/syn_dump_syntax_
  5 + 8
  rust_code=println ! ("result={}" , 5 + 8) ;
  ```
- Fun fact: you can paste the output into any of the `expr`, `edit`, `repl` or `stdin`
+ Fun fact: you can paste the output into any of the `expr`, `edit`, `iter` or `stdin`
  modes of `thag_rs`, or even into a .rs file, and it will print out the value of the
  expression (in this case the number 13). Or you can do the same with the input (5 + 8)
  and it will do the same because `thag_rs` will detect and evaluate an expression in
@@ -8643,7 +8584,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/to_relative_path
 
 ### Script: tokio_hello_short.rs
 
-**Description:**  Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
+**Description:**  Published example from `tokio` crate, with comments removed to work with `thag_rs` `iter` feature.
  Before running, start a background server: `ncat -l 6142 &`.
 
 **Purpose:** Demo running `tokio` from `thag_rs`.
@@ -8794,7 +8735,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
 **Description:**  Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
  down to two files at a time, because it was developed to allow editing of generated code and
- cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
+ cargo.toml from the interactive mode, but was eventually dropped in favour of leaving the user to choose
  or default to a standard editor. A more minimalist version is used to edit stdin input in
  the `--edit (-d)` option of `thag_rs`.
 
@@ -8889,7 +8830,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/truecolor_test.r
 
  Not suitable for running from a URL.
 
-**Purpose:** Exploring options for editing input. e.g. for a REPL.
+**Purpose:** Exploring options for editing input. e.g. for interactive mode.
 
 **Crates:** `ratatui`, `tokio`, `tui_textarea`
 

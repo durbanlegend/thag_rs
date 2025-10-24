@@ -5,7 +5,7 @@ use tokio::net::TcpStream;
 
 use std::error::Error;
 
-/// Published example from `tokio` crate, with comments removed to work with `thag_rs` `repl` feature.
+/// Published example from `tokio` crate, with comments removed to work with `thag_rs` `iter` feature.
 /// Before running, start a background server: `ncat -l 6142 &`.
 //# Purpose: Demo running `tokio` from `thag_rs`.
 //# Categories: async, learning, technique

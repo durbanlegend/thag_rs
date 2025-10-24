@@ -59,7 +59,7 @@ readline
 readme
 repo
 repos
-rs_repl
+rs_iter
 rustc
 serde
 situ

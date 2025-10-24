@@ -1,6 +1,6 @@
 //! Introducing `thag_rs` (command `thag`) - a set of creative solutions to enhance your Rust development experience.
 //!
-//! `thag` combines a script runner, expression evaluator, and REPL into a single command, with an array of smart features.
+//! `thag` combines a script runner, expression evaluator, and iterative Rust processor into a single command, with an array of smart features.
 //!
 //! `thag`'s mission is to remove obstacles to productivity by giving you a selection of tools
 //! and examples to make it as quick and easy as possible to explore coding solutions without tedious setup.
@@ -11,7 +11,7 @@
 //!
 //! - Evaluate expressions on the fly
 //!
-//! - Interactive REPL mode for rapid prototyping
+//! - Interactive mode for rapid prototyping
 //!
 //! - Uses AST analysis to understand your code
 //!
@@ -33,7 +33,7 @@
 //!
 //! - Paste-and-run with built-in TUI editor
 //!
-//! - An evolution path for your code from REPL to edit-submit loop to saved scripts
+//! - An evolution path for your code from iterative mode to edit-submit loop to saved scripts
 //!
 //! - Edit-submit standard input
 //!
@@ -115,17 +115,17 @@ pub mod keys;
 /// Paste-and-run and standard input handling
 #[cfg(feature = "tui")]
 pub mod stdin;
-/// TUI editor for paste-and-run, stdin processing and REPL expression promotion.
+/// TUI editor for paste-and-run, stdin processing and interactive processor promotion.
 #[cfg(feature = "tui")]
 pub mod tui_editor;
 
 //-----------------------------------------------------------------------------
-// REPL functionality:
+// Iterative functionality:
 // Interactive command execution
 //-----------------------------------------------------------------------------
 /// Rapid iteration implementation
 #[cfg(feature = "iter")]
-pub mod repl;
+pub mod iter;
 
 //-----------------------------------------------------------------------------
 // Tools
@@ -221,8 +221,8 @@ pub const FLOWER_BOX_LEN: usize = 70;
 pub const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 /// Default filename for rapid iteration scripts
 pub const ITER_SCRIPT_NAME: &str = "iter_script.rs";
-/// Subdirectory name for REPL files
-pub const REPL_SUBDIR: &str = "rs_repl";
+/// Subdirectory name for iterator files
+pub const ITER_SUBDIR: &str = "rs_iter";
 /// Rust source file extension
 pub const RS_SUFFIX: &str = ".rs";
 /// Temporary directory name

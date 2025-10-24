@@ -2,7 +2,7 @@
 /// `tokio` and the `crossterm` / `ratatui` / `tui-textarea` stack. provides a blank editor
 /// screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply
 /// prints the captured data.
-//# Purpose: Exploring options for editing input. e.g. for a REPL.
+//# Purpose: Exploring options for editing input. e.g. for interactive mode.
 //# Categories: async, crates, learning, exploration, technique, tui
 ///
 /// Not suitable for running from a URL.

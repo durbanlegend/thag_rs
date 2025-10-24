@@ -11,7 +11,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: demo featured crates.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use {
     crossterm::{
         event::{poll, Event, KeyCode, KeyEvent},
@@ -31,7 +31,6 @@ fn main() -> std::io::Result<()> {
 }
 
 // **For debugging purposes only:** Track the terminal events observed by [`Reedline`] and print them.
-//# Categories: crates, repl, technique
 pub fn print_events() -> std::io::Result<()> {
     stdout().flush()?;
     terminal::enable_raw_mode()?;

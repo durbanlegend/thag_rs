@@ -28,7 +28,7 @@ thag_styling = { version = "0.2, thag-auto", features = ["full"] }
  # Full ratatui integration
  ratatui_support = ["thag_styling/ratatui_support"]
 
- # Support for thag REPL
+ # Support for thag iterator
  nu_ansi_term_support = ["thag_styling/nu_ansi_term_support"]
 
  # Crossterm integration for cross-platform terminal manipulation

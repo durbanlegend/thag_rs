@@ -630,7 +630,7 @@ pub enum KeyAction {
     SaveAndExit,
     /// Show the help screen with key bindings
     ShowHelp,
-    /// Save the current content and submit it (e.g., for REPL execution)
+    /// Save the current content and submit it (e.g., for iterator execution)
     SaveAndSubmit,
     /// Submit the current content without necessarily saving to file
     Submit,
@@ -1088,7 +1088,7 @@ pub fn highlight_selection(textarea: &mut TextArea<'_>, tui_highlight_fg: Role) 
     textarea.set_selection_style(RataStyle::themed(tui_highlight_fg).bold());
 }
 
-/// Key handler function to be passed into `tui_edit` for editing REPL history.
+/// Key handler function to be passed into `tui_edit` for editing iterator history.
 ///
 /// # Errors
 ///

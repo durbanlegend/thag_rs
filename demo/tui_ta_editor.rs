@@ -1,6 +1,6 @@
 /// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
 /// down to two files at a time, because it was developed to allow editing of generated code and
-/// cargo.toml from the REPL, but was eventually dropped in favour of leaving the user to choose
+/// cargo.toml from the interactive mode, but was eventually dropped in favour of leaving the user to choose
 /// or default to a standard editor. A more minimalist version is used to edit stdin input in
 /// the `--edit (-d)` option of `thag_rs`.
 ///

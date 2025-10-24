@@ -21,14 +21,14 @@ impl std::fmt::Display for ParseFlagsError {
 
 impl std::error::Error for ParseFlagsError {}
 
-// thag_rs script runner and REPL
+// thag_rs script runner
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Parser, Debug)]
 #[command(name = "thag_rs", version, about, long_about)]
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
-                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config"]),
+                .args(&["script", "expression", "iter", "filter", "stdin", "edit", "config"]),
         ))]
 #[command(group(
             ArgGroup::new("volume")
@@ -60,7 +60,7 @@ pub struct Cli {
     #[arg(short, long)]
     pub force: bool,
     /// Don't run the script after generating and building
-    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
+    #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "iter", "stdin"]))]
     pub norun: bool,
     /// Build executable `home_dir`/.cargo/bin/`stem` from script `stem`.rs using `cargo build --release`
     #[arg(short = 'x', long)]
@@ -73,8 +73,8 @@ pub struct Cli {
     #[arg(short, long = "expr", conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
     /// Rapid iteration mode for Rust expressions. Option: existing script name
-    #[arg(short = 'r', long = "rapid", alias = "repl", visible_alias = "iter", conflicts_with_all(["generate", "build"]))]
-    pub repl: bool,
+    #[arg(short = 'r', long = "rapid", alias = "iter", visible_alias = "iter", conflicts_with_all(["generate", "build"]))]
+    pub iter: bool,
     /// Read script from stdin
     #[arg(short, long, conflicts_with_all(["generate", "build"]))]
     pub stdin: bool,
@@ -139,7 +139,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> Result<(), Box<dyn E
             return Err(format!("Script name {script} must end in {RS_SUFFIX}").into());
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)
-        && !proc_flags.contains(ProcFlags::REPL)
+        && !proc_flags.contains(ProcFlags::ITER)
         && !proc_flags.contains(ProcFlags::STDIN)
         && !proc_flags.contains(ProcFlags::EDIT)
         && !proc_flags.contains(ProcFlags::LOOP)
@@ -164,7 +164,7 @@ bitflags! {
         const NORUN = 16;
         const EXECUTABLE = 32;
         const CHECK = 64;
-        const REPL = 128;
+        const ITER = 128;
         const EXPR = 256;
         const STDIN = 512;
         const EDIT = 1024;
@@ -237,7 +237,7 @@ pub fn get_proc_flags(args: &Cli) -> Result<ProcFlags, Box<dyn Error>> {
         }
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
         // eprintln!("After processing ALL, proc_flags={proc_flags:#?}");
-        proc_flags.set(ProcFlags::REPL, args.repl);
+        proc_flags.set(ProcFlags::ITER, args.iter);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);

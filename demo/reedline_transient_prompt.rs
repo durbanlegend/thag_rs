@@ -16,7 +16,7 @@ sqlite-dynlib = ["reedline/sqlite-dynlib"]
 /// and then rerunning the script.
 ///
 //# Purpose: Demo the use of a transient minimal prompt `! ` for returned history.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 // Create a reedline object with a transient prompt.
 // cargo run --example transient_prompt
 //

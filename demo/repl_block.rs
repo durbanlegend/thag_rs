@@ -1,6 +1,6 @@
-/// Early proof of concept of using a different line editor for repl.rs.
+/// Early proof of concept of using a different line editor.
 //# Purpose: Exploration
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use clap::{CommandFactory, Parser};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -17,8 +17,8 @@ use strum::{EnumIter, EnumString, IntoEnumIterator, IntoStaticStr};
     verbatim_doc_comment
 )] // Disable automatic help subcommand and flag
 #[strum(serialize_all = "kebab-case")]
-enum ReplCommand {
-    // Show the REPL banner
+enum IterCommand {
+    // Show the banner
     Banner,
     // Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
     Edit,
@@ -38,7 +38,7 @@ enum ReplCommand {
     Keys,
 }
 
-impl ReplCommand {
+impl IterCommand {
     fn print_help() {
         let mut command = Self::command();
         // let mut buf = Vec::new();
@@ -52,10 +52,8 @@ struct Evaluator;
 
 impl Evaluator {
     fn evaluate(&self, query: &str) -> ReplBlockResult<&str> {
-        // Ok("Hello world!")
-
-        let cmd_vec = ReplCommand::iter()
-            .map(<ReplCommand as Into<&'static str>>::into)
+        let cmd_vec = IterCommand::iter()
+            .map(<IterCommand as Into<&'static str>>::into)
             .map(String::from)
             .collect::<Vec<String>>();
 
@@ -89,43 +87,43 @@ impl Evaluator {
         };
 
         if let Some(cmd) = maybe_cmd {
-            if let Ok(repl_command) = ReplCommand::from_str(&cmd) {
+            if let Ok(iter_command) = IterCommand::from_str(&cmd) {
                 let _args = clap::Command::new("")
                     .no_binary_name(true)
                     .try_get_matches_from_mut(rest)
                     .or_else(|_| Err("clap error"));
-                match repl_command {
-                    ReplCommand::Banner => {
-                        disp_repl_banner(cmd_list);
+                match iter_command {
+                    IterCommand::Banner => {
+                        disp_banner(cmd_list);
                         return Ok("");
                     }
-                    ReplCommand::Help => {
-                        // ReplCommand::print_help();
-                        ReplCommand::print_help();
+                    IterCommand::Help => {
+                        // IterCommand::print_help();
+                        IterCommand::print_help();
                         return Ok("");
                     }
-                    ReplCommand::Edit => {
+                    IterCommand::Edit => {
                         // edit(&args, context);
                         return Ok("Placeholder for edit(&args, context)");
                     }
-                    ReplCommand::Toml => {
+                    IterCommand::Toml => {
                         // toml(&args, context)?;
                         return Ok("Placeholder for toml(&args, context)");
                     }
-                    ReplCommand::Run => {
+                    IterCommand::Run => {
                         // &history.sync();
                         // run_expr(&args, context)?;
                         return Ok("Placeholder for run_expr(&args, context)");
                     }
-                    ReplCommand::Delete => {
+                    IterCommand::Delete => {
                         // delete(&args, context)?;
                         return Ok("Placeholder for delete(&args, context)");
                     }
-                    ReplCommand::List => {
+                    IterCommand::List => {
                         // list(&args, context)?;
                         return Ok("Placeholder for kist(&args, context)");
                     }
-                    ReplCommand::History => {
+                    IterCommand::History => {
                         // edit_history(&args, context)?;
                         return Ok("Placeholder for edit_history(&args, context)");
                     }
@@ -140,9 +138,9 @@ impl Evaluator {
 fn main() -> ReplBlockResult<()> {
     let evaluator = Evaluator {};
     // |query: &str| -> ReplBlockResult<&str> { Ok("Hello world!") };
-    let path = Utf8PathBuf::try_from(env::current_dir()?)?.join(".repl.history");
+    let path = Utf8PathBuf::try_from(env::current_dir()?)?.join(".iter.history");
     ReplBuilder::default()
-        // Explicitly register .repl.history as the history file:
+        // Explicitly register .iter.history as the history file:
         .history_filepath(path)
         // Register the evaluator; the default evaluator fn is NOP
         .evaluator(|query: &str| {
@@ -171,8 +169,8 @@ pub fn parse_line(line: &str) -> (String, Vec<String>) {
     (command, args)
 }
 
-// Display the REPL banner.
-pub fn disp_repl_banner(cmd_list: &str) {
+// Display the banner.
+pub fn disp_banner(cmd_list: &str) {
     println!(r#"Enter a Rust expression (e.g., 2 + 3 or "Hi!"), or one of: {cmd_list}."#);
 
     println!(

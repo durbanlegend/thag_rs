@@ -1,4 +1,4 @@
-/// Exploratory prototype of REPL support for multi-line expressions. Loosely based on the
+/// Exploratory prototype of iterative mode support for multi-line expressions. Loosely based on the
 /// published example `custom_prompt.rs` in `reedline` crate.
 ///
 /// The latest version of the original `custom_prompt.rs` is available in the [examples] folder
@@ -12,7 +12,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: Explore options for handling multi-line expressions in a REPL.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use nu_ansi_term::{Color, Style};
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,

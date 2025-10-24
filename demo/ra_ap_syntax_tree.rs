@@ -1,3 +1,12 @@
+/*[toml]
+[dependencies]
+# Pinned to 0.0.233 because newer versions depend on smol_str 0.3.2+
+# but 1.33+ requires Rust 1.89, incompatible with our MSRV of 1.84.
+# So we either have to pin our scripts to smol_str 0.3.2 somehow or
+# stick with ra_ap_syntax no higher than 0.0.233.
+# ra_ap_syntax = "0.0.233"
+*/
+
 /// Parse and display the `rust-analyzer` (not `syn`) format syntax tree of a Rust source file.
 ///
 /// Assumes the input is a valid Rust program and that its Rust edition is 2021

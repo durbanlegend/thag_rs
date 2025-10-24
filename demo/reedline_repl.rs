@@ -23,8 +23,8 @@
 ///
 /// This requires you to have first installed `thag_rs` with the `tools` feature.
 ///
-//# Purpose: Explore the suitability of this crate for a Rust REPL. Conclusion: it's more geared to commands.
-//# Categories: crates, repl, technique
+//# Purpose: Explore the suitability of this crate for a Rust iterative runner. Conclusion: it's more geared to commands.
+//# Categories: crates, technique
 // Original `reedline-repl-rs` crate comments:
 // Subcommands example
 use reedline_repl_rs::clap::{Arg, ArgAction, ArgMatches, Command};

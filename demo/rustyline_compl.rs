@@ -4,8 +4,8 @@ rustyline = { version = "=14", features=["with-file-history", "default", "derive
 */
 
 /// Published example from the `rustyline` crate.
-//# Purpose: Demo using `thag_rs` to run a basic REPL as a script.
-//# Categories: crates, repl, technique
+//# Purpose: Demo featured crate.
+//# Categories: crates, technique
 use std::borrow::Cow::{self, Borrowed, Owned};
 
 use rustyline::completion::FilenameCompleter;

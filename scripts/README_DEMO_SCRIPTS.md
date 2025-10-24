@@ -11,7 +11,7 @@ This directory contains scripts to help with smooth live demonstrations of thag,
 **How it works:**
 - Displays each line of the demo script
 - Copies it to clipboard
-- You paste it into the REPL with Cmd-V
+- You paste it into the iterator with Cmd-V
 - Multi-line expressions wait for you to press Enter
 
 **Usage:**
@@ -59,7 +59,7 @@ bindkey '^N' demo_feed_widget  # Press Ctrl-N to advance
 
 **Best for:** Command-line demos where you want natural shell interaction and history.
 
-**Limitations:** 
+**Limitations:**
 - zsh only (won't work in bash)
 - Must be sourced, not executed
 
@@ -81,11 +81,11 @@ bindkey '^N' demo_feed_widget  # Press Ctrl-N to advance
 # When prompted, paste in demo terminal with Cmd-V
 ```
 
-**Best for:** 
+**Best for:**
 - When you need bash compatibility
 - Simple presentations without shell-specific features
 
-**Limitations:** 
+**Limitations:**
 - Single-line commands don't get added to history when pasted
 - Arrow up recalls paste command, not the actual command
 
@@ -108,7 +108,7 @@ bindkey '^N' demo_feed_widget  # Press Ctrl-N to advance
 
 **Best for:** Advanced users who want automated typing.
 
-**Limitations:** 
+**Limitations:**
 - macOS only
 - Requires terminal app detection
 - May have escaping issues with complex commands

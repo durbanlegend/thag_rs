@@ -11,7 +11,7 @@
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
 //# Purpose: demo featured crates.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 // Original `reedline` crate comments:
 //
 // Create a reedline object with tab completions support

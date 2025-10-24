@@ -1,6 +1,6 @@
 /// Exploring `reedline` crate.
 //# Purpose: explore featured crate.
-//# Categories: crates, repl, technique
+//# Categories: crates, technique
 use reedline::{
     DefaultHinter, DefaultValidator, FileBackedHistory, Prompt, PromptEditMode,
     PromptHistorySearch, PromptHistorySearchStatus, Reedline, Signal,

@@ -8,14 +8,14 @@ use std::{fmt, str};
 use thag_common::{set_global_verbosity, Verbosity, V};
 use thag_profiler::{end, profile, profiled};
 
-/// The `clap` command-line interface for the `thag_rs` script runner and REPL.
+/// The `clap` command-line interface for the `thag_rs` script runner and ITER.
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Parser, Debug)]
 #[command(name = "thag_rs", version, about, long_about/*, color = ColorChoice::Always, styles=get_styles(), next_help_heading = Some("Information Options")*/)]
 #[command(group(
             ArgGroup::new("commands")
                 .required(true)
-                .args(&["script", "expression", "repl", "filter", "stdin", "edit", "config", "clean"]),
+                .args(&["script", "expression", "iter", "filter", "stdin", "edit", "config", "clean"]),
    ))]
 #[command(group(
             ArgGroup::new("verbosity")
@@ -45,14 +45,14 @@ pub struct Cli {
     #[arg(short, long, requires = "script", help_heading = Some("Processing Options"))]
     pub force: bool,
     // /// Don't run the script after generating and building
-    // #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "repl", "stdin"]))]
+    // #[arg(short, long, conflicts_with_all(["edit", "expression", "filter", "iter", "stdin"]))]
     // pub norun: bool,
     /// Evaluate a quoted Rust expression on the fly
     #[arg(short, long = "expr", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub expression: Option<String>,
     /// Rapid iteration mode for Rust expressions, or for dynamic scripts using TUI or external editors.
     #[arg(short = 'r', long = "rapid", alias = "repl", visible_alias = "iter", help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
-    pub repl: bool,
+    pub iter: bool,
     /// Read script from stdin
     #[arg(short, long, help_heading = Some("Dynamic Options (no script)"), conflicts_with_all(["generate", "build"]))]
     pub stdin: bool,
@@ -171,7 +171,7 @@ pub fn validate_args(args: &Cli, proc_flags: &ProcFlags) -> ThagResult<()> {
             return Err(format!("Script name {script} must end in {RS_SUFFIX}").into());
         }
     } else if !proc_flags.contains(ProcFlags::EXPR)
-        && !proc_flags.contains(ProcFlags::REPL)
+        && !proc_flags.contains(ProcFlags::ITER)
         && !proc_flags.contains(ProcFlags::STDIN)
         && !proc_flags.contains(ProcFlags::EDIT)
         && !proc_flags.contains(ProcFlags::LOOP)
@@ -199,8 +199,8 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
         V::Quieter
     } else if args.normal_verbosity {
         V::Normal
-    } else if args.repl {
-        // Default to quiet mode for REPL
+    } else if args.iter {
+        // Default to quiet mode for ITER
         V::Quiet
     } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
@@ -232,8 +232,8 @@ bitflags! {
         const EXECUTABLE    = 32;
         /// Check flag
         const CHECK         = 64;
-        /// REPL flag
-        const REPL          = 128;
+        /// ITER flag
+        const ITER          = 128;
         /// Expression flag
         const EXPR          = 256;
         /// Stdin flag
@@ -325,9 +325,9 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::FORCE, args.force);
         proc_flags.set(
             ProcFlags::QUIET,
-            // Default for REPL is quiet
+            // Default for ITER is quiet
             args.quiet == 1
-                || (args.repl && !args.normal_verbosity && args.quiet == 0 && args.verbose == 0),
+                || (args.iter && !args.normal_verbosity && args.quiet == 0 && args.verbose == 0),
         );
         proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
@@ -346,7 +346,7 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         );
         proc_flags.set(ProcFlags::NORMAL, args.normal_verbosity);
         proc_flags.set(ProcFlags::RUN, !proc_flags.contains(ProcFlags::NORUN));
-        proc_flags.set(ProcFlags::REPL, args.repl);
+        proc_flags.set(ProcFlags::ITER, args.iter);
         proc_flags.set(ProcFlags::EXPR, is_expr);
         proc_flags.set(ProcFlags::STDIN, args.stdin);
         proc_flags.set(ProcFlags::EDIT, args.edit);

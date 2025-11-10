@@ -3253,9 +3253,9 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "ra-ap-rustc_lexer"
-version = "0.123.0"
+version = "0.137.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b734cfcb577d09877799a22742f1bd398be6c00bc428d9de56d48d11ece5771"
+checksum = "ac80365383a3c749f38af567fdcfaeff3fa6ea5df3846852abbce73e943921b9"
 dependencies = [
  "memchr",
  "unicode-properties",
@@ -3264,28 +3264,29 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_edition"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bdc6cbe42c63ca78611bae82bfc8db24864f33dccc813697c5fde43a0907285"
+checksum = "2a895d9ddc7de7132a9fb18a9f725018dcf4d019cddb5d4e24dc6dbb4b8ab324"
 
 [[package]]
 name = "ra_ap_parser"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a3b92b8b147c0826b83e70ad44e3c98e94201fc93e1f09396c43b4d7958c22a"
+checksum = "1dba0f5eb81ea8fbc3ca168d7f763ff4f08760155a46d5396887559b7f2ba4ff"
 dependencies = [
  "drop_bomb",
  "ra-ap-rustc_lexer",
  "ra_ap_edition",
  "rustc-literal-escaper",
  "tracing",
+ "winnow",
 ]
 
 [[package]]
 name = "ra_ap_stdx"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa770adb32896fcba934b464ac3bd179163ba2b0766e275eed5b4e262e08492b"
+checksum = "0179644e671c71f0fcb1ab5e54692c8fbcb73cff5c9952d87f3ffd0a0b40cc5f"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
@@ -3299,9 +3300,9 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_syntax"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e9e1393281ad5c635239d353ed3cfbf28c8d0af03d0c61a3b24b31d1143b17f"
+checksum = "81acf2e0cb975b4ea54f4bb021848848886699a5fe5622ce2daa4719ad992da6"
 dependencies = [
  "either",
  "itertools 0.14.0",

@@ -380,7 +380,8 @@ pub fn extract(
 /// * `THAG_DEV_PATH` - Absolute path to local `thag_rs` development directory
 /// * `THAG_GIT_REF` - Git reference (branch/tag/commit) for git dependencies
 /// * `THAG_GIT_REPO` - Git repository URL (defaults to standard `thag_rs` repo)
-/// * `CI` - Indicates CI environment
+/// * `CI` - Indicates CI environment (uses `GITHUB_WORKSPACE` for local paths)
+/// * `GITHUB_WORKSPACE` - GitHub Actions workspace path (used when `CI` is set)
 #[profiled]
 pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResult<()> {
     if let Some(ref mut rs_manifest) = build_state.rs_manifest {
@@ -472,9 +473,25 @@ fn resolve_thag_dependency(
     });
 
     // Determine dependency source based on environment
-    let is_ci = env::var("CI").is_ok();
-    let git_ref_env_var = if is_ci { "GITHUB_REF" } else { "THAG_GIT_REF" };
-    if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
+    // In CI, use GITHUB_WORKSPACE to avoid trying to fetch non-existent branches like "merge"
+    if env::var("CI").is_ok() && env::var("GITHUB_WORKSPACE").is_ok() {
+        // CI environment: use checked-out workspace
+        let workspace_path = env::var("GITHUB_WORKSPACE").unwrap();
+        let crate_path = match crate_name {
+            "thag_common" => format!("{}/thag_common", workspace_path),
+            "thag_proc_macros" => format!("{}/thag_proc_macros", workspace_path),
+            "thag_profiler" => format!("{}/thag_profiler", workspace_path),
+            "thag_styling" => format!("{}/thag_styling", workspace_path),
+            _ => workspace_path,
+        };
+
+        new_detail.path = Some(crate_path);
+        debug_log!(
+            "Using CI workspace path for {}: {:?}",
+            crate_name,
+            new_detail.path
+        );
+    } else if let Ok(dev_path) = env::var("THAG_DEV_PATH") {
         // Development: use local path
         let crate_path = match crate_name {
             "thag_common" => format!("{}/thag_common", dev_path),
@@ -486,17 +503,10 @@ fn resolve_thag_dependency(
 
         new_detail.path = Some(crate_path);
         debug_log!("Using local path for {}: {:?}", crate_name, new_detail.path);
-    } else if is_ci || env::var(git_ref_env_var).is_ok() {
-        // CI or explicit git reference: use git dependency
+    } else if let Ok(git_ref) = env::var("THAG_GIT_REF") {
+        // Explicit git reference: use git dependency
         let git_repo = env::var("THAG_GIT_REPO")
             .unwrap_or_else(|_| "https://github.com/durbanlegend/thag_rs".to_string());
-        let git_ref = env::var(git_ref_env_var).map_or_else(
-            |_| "main".to_string(),
-            |s| {
-                let var_start = s.rfind('/').map_or_else(|| 0, |pos| pos + 1);
-                s[var_start..].to_string()
-            },
-        );
 
         new_detail.git = Some(git_repo);
         new_detail.branch = Some(git_ref);

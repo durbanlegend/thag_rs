@@ -239,7 +239,7 @@ cargo_toml = { version = "0.22", optional = true }
 chrono = "0.4"
 clap = { version = "4.5", features = ["cargo", "derive"], optional = true }
 colored = { version = "3.0", optional = true }
-convert_case = { version = "0.8", optional = true }
+convert_case = { version = "0.10", optional = true }
 # NB: Required for stdin -d. Must align version with ratatui::crossterm
 crossterm = { version = "0.28", features = ["use-dev-tty"] }
 dhat = { version = "0.3", optional = true }
@@ -250,7 +250,7 @@ edit = { version = "0.1", optional = true }
 heck = { version = "0.5", optional = true }
 inquire = { version = "0.9", optional = true }
 log = "0.4"
-mockall = { version = "0.13", optional = true }
+mockall = { version = "0.14", optional = true }
 nu-ansi-term = { version = "0.50", optional = true }
 pathdiff = { version = "0.2", optional = true }
 phf = { version = "0.12", features = ["macros"] }
@@ -301,7 +301,7 @@ url = { version = "2.5", optional = true }
 warp = { version = "0.4", features = ["server"], optional = true }
 
 [dev-dependencies]
-assert_cmd = "2.0"
+assert_cmd = "2.1"
 criterion = "0.7"
 either = "1.15"
 env_logger = "0.11"

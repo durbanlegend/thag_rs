@@ -179,13 +179,12 @@ checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
 name = "assert_cmd"
-version = "2.0.17"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd389a4b2970a01282ee455294913c0a43724daedcd1a24c3eb0ec1c1320b66"
+checksum = "bcbb6924530aa9e0432442af08bbcafdad182db80d2e560da42a6d442535bf85"
 dependencies = [
  "anstyle",
  "bstr",
- "doc-comment",
  "libc",
  "predicates",
  "predicates-core",
@@ -798,6 +797,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633458d4ef8c78b72454de2d54fd6ab2e60f9e02be22f3c6104cdc8a4e0fceb9"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "coolor"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1123,12 +1131,6 @@ dependencies = [
  "quote 1.0.41",
  "syn 2.0.106",
 ]
-
-[[package]]
-name = "doc-comment"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "document-features"
@@ -2435,7 +2437,21 @@ dependencies = [
  "cfg-if",
  "downcast",
  "fragile",
- "mockall_derive",
+ "mockall_derive 0.13.1",
+ "predicates",
+ "predicates-tree",
+]
+
+[[package]]
+name = "mockall"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58d964098a5f9c6b63d0798e5372fd04708193510a7af313c22e9f29b7b620b"
+dependencies = [
+ "cfg-if",
+ "downcast",
+ "fragile",
+ "mockall_derive 0.14.0",
  "predicates",
  "predicates-tree",
 ]
@@ -2445,6 +2461,18 @@ name = "mockall_derive"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25ca3004c2efe9011bd4e461bd8256445052b9615405b4f7ea43fc8ca5c20898"
+dependencies = [
+ "cfg-if",
+ "proc-macro2 1.0.101",
+ "quote 1.0.41",
+ "syn 2.0.106",
+]
+
+[[package]]
+name = "mockall_derive"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca41ce716dda6a9be188b385aa78ee5260fc25cd3802cb2a8afdc6afbe6b6dbf"
 dependencies = [
  "cfg-if",
  "proc-macro2 1.0.101",
@@ -3260,9 +3288,9 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "ra-ap-rustc_lexer"
-version = "0.123.0"
+version = "0.137.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b734cfcb577d09877799a22742f1bd398be6c00bc428d9de56d48d11ece5771"
+checksum = "ac80365383a3c749f38af567fdcfaeff3fa6ea5df3846852abbce73e943921b9"
 dependencies = [
  "memchr",
  "unicode-properties",
@@ -3271,28 +3299,29 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_edition"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bdc6cbe42c63ca78611bae82bfc8db24864f33dccc813697c5fde43a0907285"
+checksum = "2a895d9ddc7de7132a9fb18a9f725018dcf4d019cddb5d4e24dc6dbb4b8ab324"
 
 [[package]]
 name = "ra_ap_parser"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a3b92b8b147c0826b83e70ad44e3c98e94201fc93e1f09396c43b4d7958c22a"
+checksum = "1dba0f5eb81ea8fbc3ca168d7f763ff4f08760155a46d5396887559b7f2ba4ff"
 dependencies = [
  "drop_bomb",
  "ra-ap-rustc_lexer",
  "ra_ap_edition",
  "rustc-literal-escaper",
  "tracing",
+ "winnow",
 ]
 
 [[package]]
 name = "ra_ap_stdx"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa770adb32896fcba934b464ac3bd179163ba2b0766e275eed5b4e262e08492b"
+checksum = "0179644e671c71f0fcb1ab5e54692c8fbcb73cff5c9952d87f3ffd0a0b40cc5f"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
@@ -3306,9 +3335,9 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_syntax"
-version = "0.0.301"
+version = "0.0.305"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e9e1393281ad5c635239d353ed3cfbf28c8d0af03d0c61a3b24b31d1143b17f"
+checksum = "81acf2e0cb975b4ea54f4bb021848848886699a5fe5622ce2daa4719ad992da6"
 dependencies = [
  "either",
  "itertools 0.14.0",
@@ -4257,7 +4286,7 @@ checksum = "8bf44577a1adf3dfd7fec3b8763074467e27b2ad35ff9157bc3f0a51bb0a3dd4"
 dependencies = [
  "crossterm 0.28.1",
  "log",
- "mockall",
+ "mockall 0.13.1",
  "scopeguard",
  "simplelog",
  "thiserror 2.0.17",
@@ -4318,7 +4347,7 @@ dependencies = [
  "documented",
  "edit",
  "log",
- "mockall",
+ "mockall 0.14.0",
  "parking_lot",
  "ratatui",
  "regex",
@@ -4407,7 +4436,7 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
- "convert_case 0.8.0",
+ "convert_case 0.10.0",
  "criterion",
  "crossterm 0.28.1",
  "dhat",
@@ -4421,7 +4450,7 @@ dependencies = [
  "inquire",
  "lazy_static",
  "log",
- "mockall",
+ "mockall 0.14.0",
  "nu-ansi-term",
  "once_cell",
  "pathdiff",

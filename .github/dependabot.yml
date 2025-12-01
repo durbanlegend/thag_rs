@@ -20,5 +20,8 @@ updates:
       - dependency-name: "phf"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "reedline"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]

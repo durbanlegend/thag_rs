@@ -4,6 +4,7 @@
 clap = { version = "4.5", features = ["cargo", "derive"] }
 nu-ansi-term = { version = "0.50", features = ["derive_serde_style"] }
 ratatui = { version = "0.29", features = ["crossterm"] }
+reedline = "0.43"
 strum = { version = "0.27", features = ["derive"] }
 tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
 
@@ -27,12 +28,11 @@ use clap::{CommandFactory, Parser};
 use edit::edit_file;
 use nu_ansi_term::Color as NuColor;
 use ratatui::crossterm::event::{KeyEvent, KeyEventKind};
-use ratatui::style::Color;
 use reedline::{
-    default_emacs_keybindings, ColumnarMenu, DefaultCompleter, DefaultHinter, DefaultValidator,
-    EditCommand, Emacs, ExampleHighlighter, FileBackedHistory, HistoryItem, KeyCode, KeyModifiers,
-    Keybindings, MenuBuilder, Prompt, PromptEditMode, PromptHistorySearch,
-    PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    default_emacs_keybindings, Color as ReedLineColor, ColumnarMenu, DefaultCompleter,
+    DefaultHinter, DefaultValidator, EditCommand, Emacs, ExampleHighlighter, FileBackedHistory,
+    HistoryItem, KeyCode, KeyModifiers, Keybindings, MenuBuilder, Prompt, PromptEditMode,
+    PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
 };
 use regex::Regex;
 use std::{
@@ -67,8 +67,7 @@ use thag_rs::{
 };
 use thag_styling::{
     display_terminal_attributes, display_theme_details, display_theme_roles, ColorInitStrategy,
-    Role::{self, Success},
-    Style, TermAttributes,
+    Role, Style, TermAttributes, ThemedStyle,
 };
 use tui_textarea::{Input, TextArea};
 
@@ -369,12 +368,7 @@ impl Prompt for ReplPrompt {
 
     #[profiled]
     fn get_prompt_color(&self) -> reedline::Color {
-        if let Some(color_info) = Style::for_role(Success).foreground {
-            Color::Indexed(color_info.index).into()
-        } else {
-            vprtln!(V::VV, "defaulting to Green");
-            Color::Green.into()
-        }
+        lazy_static_var!(ReedLineColor, deref, ReedLineColor::themed(Role::Success))
     }
 }
 

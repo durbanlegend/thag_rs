@@ -21,11 +21,7 @@ updates:
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "reedline"
-        update-types:
-          [
-            "version-update:semver-minor",
-            "version-update:semver-major",
-            "version-update:semver-patch",
-          ]
+        versions:
+          - ">=0.44.0"
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]

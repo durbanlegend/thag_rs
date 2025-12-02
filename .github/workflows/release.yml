@@ -43,7 +43,7 @@ on:
   pull_request:
   push:
     tags:
-      - "**[0-9]+.[0-9]+.[0-9]+*"
+      - '**[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   # Run 'dist plan' (or host) to determine what tasks we need to do
@@ -196,7 +196,7 @@ jobs:
       - id: cargo-dist
         shell: bash
         run: |
-          dist build ${{ needs.plan.outputs.tag-flag }} --output-format=json "--artifacts=global" --target=x86_64-unknown-linux-gnu > dist-manifest.json
+          dist build ${{ needs.plan.outputs.tag-flag }} --output-format=json "--artifacts=global" > dist-manifest.json
           echo "dist ran successfully"
 
           # Parse out what we just built and upload it to scratch storage

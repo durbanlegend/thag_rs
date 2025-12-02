@@ -49,6 +49,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloca"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5a7d05ea6aea7e9e64d25b9156ba2fee3fdd659e34e41063cd2fc7cd020d7f4"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -853,10 +862,11 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1c047a62b0cc3e145fa84415a3191f628e980b194c2755aa12300a4e6cbd928"
+checksum = "a0dfe5e9e71bdcf4e4954f7d14da74d1cdb92a3a07686452d1509652684b1aab"
 dependencies = [
+ "alloca",
  "anes",
  "cast",
  "ciborium",
@@ -865,6 +875,7 @@ dependencies = [
  "itertools 0.13.0",
  "num-traits",
  "oorandom",
+ "page_size",
  "plotters",
  "rayon",
  "regex",
@@ -876,9 +887,9 @@ dependencies = [
 
 [[package]]
 name = "criterion-plot"
-version = "0.6.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b1bcc0dc7dfae599d84ad0b1a55f80cde8af3725da8313b528da95ef783e338"
+checksum = "5de36c2bee19fba779808f92bf5d9b0fa5a40095c277aba10c458a12b35d21d6"
 dependencies = [
  "cast",
  "itertools 0.13.0",
@@ -2799,6 +2810,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c6901729fa79e91a0913333229e9ca5dc725089d1c363b2f4b4760709dc4a52"
 
 [[package]]
+name = "page_size"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30d5b2194ed13191c1999ae0704b7839fb18384fa22e49b57eeaa97d79ce40da"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "palette"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3288,9 +3309,9 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "ra-ap-rustc_lexer"
-version = "0.137.0"
+version = "0.139.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac80365383a3c749f38af567fdcfaeff3fa6ea5df3846852abbce73e943921b9"
+checksum = "5ec7c26e92c44d5433b29cf661faf0027e263b70a411d0f28996bd67e3bdb57e"
 dependencies = [
  "memchr",
  "unicode-properties",
@@ -3299,15 +3320,15 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_edition"
-version = "0.0.307"
+version = "0.0.308"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "827b826e17647842049aa07bb4f75d78516ddcb32d651307de6b2891d9349396"
+checksum = "b524def5f406cc8a58ed9c6090d55f76fe940ebcb42fbd02da25c6515c0c5551"
 
 [[package]]
 name = "ra_ap_parser"
-version = "0.0.307"
+version = "0.0.308"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2876e07c278c85cb458f0fe1a9679a48d561a95868e67b465fb328458506867"
+checksum = "8acc1856cd65b7b24319e739991fd73886037695a1a71ba2223cc20578408508"
 dependencies = [
  "drop_bomb",
  "ra-ap-rustc_lexer",
@@ -3319,9 +3340,9 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_stdx"
-version = "0.0.307"
+version = "0.0.308"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd94073132b765585a905d68352e5a9a0513d66e0da7186892cebc033fd347ee"
+checksum = "c6ffc0b6d8ad9d8e22357275c6c3dda98c6368a769b00207abcebbf1687f4b99"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
@@ -3335,9 +3356,9 @@ dependencies = [
 
 [[package]]
 name = "ra_ap_syntax"
-version = "0.0.307"
+version = "0.0.308"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17d3d6c19beb665511d026e513134b053282ec38e45d74f6a7a8287f79de90bc"
+checksum = "c6191e4d29d8ed1699bcfc227c74bfe6a47bc8d76d81dc2768478a2340971e13"
 dependencies = [
  "either",
  "itertools 0.14.0",
@@ -3635,9 +3656,9 @@ dependencies = [
 
 [[package]]
 name = "rowan"
-version = "0.15.15"
+version = "0.15.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32a58fa8a7ccff2aec4f39cc45bf5f985cec7125ab271cf681c279fd00192b49"
+checksum = "d4f1e4a001f863f41ea8d0e6a0c34b356d5b733db50dadab3efef640bafb779b"
 dependencies = [
  "countme",
  "hashbrown 0.14.5",

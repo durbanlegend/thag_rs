@@ -302,7 +302,7 @@ warp = { version = "0.4", features = ["server"], optional = true }
 
 [dev-dependencies]
 assert_cmd = "2.1"
-criterion = "0.7"
+criterion = "0.8"
 either = "1.15"
 env_logger = "0.11"
 lazy_static = "1.5"

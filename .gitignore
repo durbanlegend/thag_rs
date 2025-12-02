@@ -119,7 +119,7 @@ demo_color_optimization.rs
 demo_image_themes.rs
 demo_theme_to_file_don.rs
 deny.toml
-dist-workspace.toml
+
 example_sunset_theme.toml
 fix_mem_tracking.sh
 gruvbox_light.sh

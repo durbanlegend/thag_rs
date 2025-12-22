@@ -23,5 +23,8 @@ updates:
       - dependency-name: "reedline"
         versions:
           - ">=0.44.0"
+      - dependency-name: "toml_edit"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]

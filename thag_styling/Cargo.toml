@@ -42,7 +42,7 @@ palette = { version = "0.7", optional = true }
 
 [build-dependencies]
 phf = { version = "0.12", features = ["macros"] }
-tempfile = "3.20"
+tempfile = "3.24"
 thag_proc_macros = { path = "../thag_proc_macros", version = "0.2.1" }
 toml = "0.9"
 

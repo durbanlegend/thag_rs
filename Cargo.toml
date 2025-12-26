@@ -277,7 +277,7 @@ syn = { version = "2", features = [
   "visit",
   "visit-mut",
 ], optional = true }
-tempfile = { version = "3.20", optional = true }
+tempfile = { version = "3", optional = true }
 termbg = { version = "0.6", optional = true }
 terminal-light = { version = "1.8", optional = true }
 thag_common = { path = "thag_common", version = "0.2.1" }

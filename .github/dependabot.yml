@@ -20,6 +20,9 @@ updates:
       - dependency-name: "phf"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "ratatui"
+        versions:
+          - ">=0.29.0"
       - dependency-name: "reedline"
         versions:
           - ">=0.44.0"

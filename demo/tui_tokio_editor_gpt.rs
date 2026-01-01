@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+ratatui = "0.29"
+*/
+
 /// GPT-provided demo of a very basic TUI (terminal user interface) editor using
 /// `tokio` and the `crossterm` / `ratatui` / `tui-textarea` stack. provides a blank editor
 /// screen on which you can capture lines of data. `Ctrl-D` closes the editor and simply

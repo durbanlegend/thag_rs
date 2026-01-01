@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+ratatui = "0.29"
 thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */

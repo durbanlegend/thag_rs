@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+ratatui = "0.29"
+*/
+
 /// Published example from the `ratatui` crate.
 ///
 /// The latest version of this example is available in the [examples] folder in the "latest"

@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+ratatui = "0.29"
+*/
+
 /// Demo a TUI (text user interface) editor based on the featured crates. This editor is locked
 /// down to two files at a time, because it was developed to allow editing of generated code and
 /// cargo.toml from the interactive mode, but was eventually dropped in favour of leaving the user to choose

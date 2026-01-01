@@ -1,10 +1,15 @@
-use anyhow::{anyhow, Context, Result};
+/*[toml]
+[dependencies]
+ratatui = "0.29"
+*/
+
 /// A version of `thag_rs`'s `stdin` module to handle standard input editor input. Like the `colors`
 /// module, `stdin` was originally developed here as a separate script and integrated as a module later.
 ///
 /// E.g. `thag demo/stdin.rs`
 //# Purpose: Demo using `thag_rs` to develop a module outside of the project.
 //# Categories: crates, prototype, technique, tui
+use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{

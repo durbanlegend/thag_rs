@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+ratatui = "0.29"
+*/
+
 /// Published example from `tui-scrollview` crate. Toml entries from crate's Cargo.toml.
 ///
 /// Not suitable for running from a URL.

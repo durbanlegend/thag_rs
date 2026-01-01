@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+ratatui = "0.29"
+*/
+
 /// Demo a very minimal and not very useful TUI (text user interface) editor based on the featured crates.
 ///
 /// Not suitable for running from a URL.

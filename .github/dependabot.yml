@@ -26,6 +26,9 @@ updates:
       - dependency-name: "reedline"
         versions:
           - ">=0.44.0"
+      - dependency-name: "reqwest"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "tempfile"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]

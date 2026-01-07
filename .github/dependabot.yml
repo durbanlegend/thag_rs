@@ -29,6 +29,12 @@ updates:
       - dependency-name: "reqwest"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "serial_test"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "tokio"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "tempfile"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]

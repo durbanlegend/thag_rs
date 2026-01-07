@@ -50,7 +50,7 @@ thag_styling = { version = "0.2.1", path = "../thag_styling", optional = true }
 
 [dev-dependencies]
 regex = "1.11"
-serial_test = { version = "3.2", features = ["file_locks"] }
+serial_test = { version = "3.3", features = ["file_locks"] }
 smol = "2.0"
 tokio = { version = "1.36", features = ["rt", "macros", "time"] }
 async-std = { version = "1.12", features = ["attributes"] }

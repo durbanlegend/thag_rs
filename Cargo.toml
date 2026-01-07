@@ -285,7 +285,7 @@ thag_proc_macros = { path = "thag_proc_macros", version = "0.2.1" }
 thag_profiler = { path = "thag_profiler", version = "0.1.1", optional = true }
 thag_styling = { path = "thag_styling", version = "0.2.1", default-features = false, optional = true }
 tinyget = { version = "1.0", features = ["https"], optional = true }
-tokio = { version = "1.36", features = [
+tokio = { version = "1.49", features = [
   "macros",
   "rt-multi-thread",
   "time",
@@ -311,7 +311,7 @@ predicates = "3.1"
 serial_test = "3.2"
 tempfile = "3.19"
 test-generator = "0.3"
-tokio = { version = "1.36", features = ["macros", "rt", "time"] }
+tokio = { version = "1.49", features = ["macros", "rt", "time"] }
 
 [build-dependencies]
 phf = { version = "0.12", features = ["macros"] }

@@ -17,6 +17,9 @@ updates:
       - dependency-name: "colored"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "convert_case"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "crossterm"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]

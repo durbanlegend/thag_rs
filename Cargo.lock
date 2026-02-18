@@ -1693,12 +1693,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hashbrown"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
-
-[[package]]
 name = "headers"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2046,7 +2040,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b0f83760fb341a774ed326568e19f5a863af4a952def8c39f9ab92fd95b88e5"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.0",
+ "hashbrown 0.15.5",
 ]
 
 [[package]]
@@ -4378,7 +4372,7 @@ dependencies = [
  "supports-color",
  "termbg",
  "thiserror 2.0.17",
- "toml 0.9.8",
+ "toml 1.0.2+spec-1.1.0",
  "toml_edit 0.23.7",
 ]
 
@@ -4411,7 +4405,7 @@ dependencies = [
  "strict",
  "strum 0.27.2",
  "syn 2.0.106",
- "toml 0.9.8",
+ "toml 1.0.2+spec-1.1.0",
 ]
 
 [[package]]
@@ -4506,7 +4500,6 @@ dependencies = [
  "thag_styling",
  "tinyget",
  "tokio",
- "toml 0.9.8",
  "toml 1.0.2+spec-1.1.0",
  "toml_edit 0.23.7",
  "tui-textarea",
@@ -4545,7 +4538,7 @@ dependencies = [
  "thag_common",
  "thag_proc_macros",
  "thiserror 2.0.17",
- "toml 0.9.8",
+ "toml 1.0.2+spec-1.1.0",
 ]
 
 [[package]]

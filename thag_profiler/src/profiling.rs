@@ -2884,10 +2884,8 @@ pub fn clean_function_name(name: &mut str) -> String {
     while let Some(c) = chars.next() {
         if c == ':' && chars.peek() == Some(&':') {
             // Start of potential run
-            let mut colon_count = 1;
             while chars.peek() == Some(&':') {
                 chars.next();
-                colon_count += 1;
             }
             result.push_str("::");
         } else {

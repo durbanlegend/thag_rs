@@ -7,6 +7,7 @@ simplelog = { version = "0.12", optional = true }
 # - Git: Set THAG_GIT_REF=main to use git repository instead of crates.io
 # Note: Run with 'thag script.rs' not 'cargo build' to enable thag-auto processing
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+toml = "0.9"
 
 [features]
 default = ["simplelog"]
@@ -20,7 +21,6 @@ simplelog = ["dep:simplelog"]
 use edit::edit_file;
 use firestorm::{profile_fn, profile_method};
 use home;
-use log;
 use mockall::{automock, predicate::str};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};

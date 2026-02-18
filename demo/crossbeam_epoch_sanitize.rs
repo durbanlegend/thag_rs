@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+rand = "0.9"
+*/
+
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{AcqRel, Acquire, Relaxed};
 use std::sync::Arc;

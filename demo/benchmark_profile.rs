@@ -1,5 +1,6 @@
 /*[toml]
 [dependencies]
+rand = "0.9"
 thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
 
 [profile.release]

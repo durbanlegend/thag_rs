@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
+toml = "0.9"
 */
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only` `(thag -T)`.

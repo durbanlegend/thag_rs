@@ -1,6 +1,7 @@
 /*[toml]
 [dependencies]
 firestorm = { version="0.5", features=["enable_system_time"] }
+rand = "0.9"
 */
 
 /// ChagtGPT-generated profiling synchronous time profiling benchmark: `firestorm` implementation`.

@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+rand = "0.9"
+*/
+
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;

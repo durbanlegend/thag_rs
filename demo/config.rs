@@ -310,7 +310,7 @@ pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     if config_path.exists() {
         let config_str = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
         debug_log!("config_str={config_str:?}");
-        let config: Config = toml::from_str(&config_str).map_err(|e| e.to_string())å;
+        let config: Config = toml::from_str(&config_str).map_err(|e| e.to_string())?;
         debug_log!("config={config:?}");
         Ok(Some(config))
     } else {

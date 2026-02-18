@@ -140,7 +140,7 @@ impl Config {
     // This function will bubble up any errors encountered.
     pub fn load(path: &Path) -> Result<Self, ThagError> {
         let content = std::fs::read_to_string(path)?;
-        let config: Self = toml::from_str(&content)?;
+        let config: Self = toml::from_str(&content).map_err(|e| e.to_string())?;
         config.validate()?;
         validate_config_format(&content)?;
         Ok(config)

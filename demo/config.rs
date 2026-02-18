@@ -7,7 +7,6 @@ simplelog = { version = "0.12", optional = true }
 # - Git: Set THAG_GIT_REF=main to use git repository instead of crates.io
 # Note: Run with 'thag script.rs' not 'cargo build' to enable thag-auto processing
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
-toml = "0.9"
 
 [features]
 default = ["simplelog"]
@@ -309,9 +308,9 @@ pub fn load(context: &dyn Context) -> ThagResult<Option<Config>> {
     eprintln!("config_path={config_path:?}");
 
     if config_path.exists() {
-        let config_str = fs::read_to_string(config_path)?;
+        let config_str = fs::read_to_string(config_path).map_err(|e| e.to_string())?;
         debug_log!("config_str={config_str:?}");
-        let config: Config = toml::from_str(&config_str)?;
+        let config: Config = toml::from_str(&config_str).map_err(|e| e.to_string())å;
         debug_log!("config={config:?}");
         Ok(Some(config))
     } else {
@@ -370,7 +369,7 @@ fn main() -> ThagResult<()> {
         Ok(maybe_config) => {
             if let Some(config) = maybe_config {
                 svprtln!(Role::EMPH, V::QQ, "Loaded config:");
-                let toml = &toml::to_string_pretty(&config)?;
+                let toml = &toml::to_string_pretty(&config).map_err(|e| e.to_string())?;
                 for line in toml.lines() {
                     svprtln!(Role::SUCC, V::QQ, "{line}");
                 }

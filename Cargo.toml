@@ -270,7 +270,7 @@ serde_yaml_ok = { version = "0.9", optional = true }
 side-by-side-diff = { version = "0.1", optional = true }
 simplelog = { version = "0.12", optional = true }
 strict = "0.2"
-strum = { version = "0.27", features = ["derive", "phf"] }
+strum = { version = "0.28", features = ["derive", "phf"] }
 syn = { version = "2", features = [
   "extra-traits",
   "full",

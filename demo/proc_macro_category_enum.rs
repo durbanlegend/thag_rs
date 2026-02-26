@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-strum = { version = "0.27", features = ["derive", "phf"] }
+strum = { version = "0.28", features = ["derive", "phf"] }
 # The `thag` command uses the `thag-auto` keyword here to resolve dependencies automatically based on your environment:
 # - Default: Uses crates.io (no environment variables needed)
 # - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)

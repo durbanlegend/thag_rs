@@ -4,6 +4,12 @@ thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 thag_styling = { version = "0.2, thag-auto", features = ["config"] }
+
+[dependencies]
+strum = { version = "0.28", features = ["derive", "phf"] }
+
+# [features]
+# default = ["strum/phf"]     # Because `strum` omits to publish "phf" feature for discovery by cargo-lookup.
 */
 /// Demonstrates the colour and styling options of `thag_rs`.
 /// Also demos the full 256-colour palette as per `demo/colors*.rs`.

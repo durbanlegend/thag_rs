@@ -1,6 +1,6 @@
 [package]
 name = "thag_proc_macros"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "Procedural macros for the thag_rs and thag_profiler crates"
 repository = "https://github.com/durbanlegend/thag_rs"
@@ -26,7 +26,7 @@ syn = { version = "2.0", default-features = false, features = [
 toml = { version = "0.9" }
 
 [dev-dependencies]
-strum = { version = "0.27", features = ["derive", "phf"] }
+strum = { version = "0.28", features = ["derive", "phf"] }
 
 [features]
 time_profiling = []                 # New feature for conditional compilation

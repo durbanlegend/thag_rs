@@ -1,6 +1,9 @@
 /*[toml]
 [dependencies]
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
+
+[features]
+default = ["strum/phf"]     # Because `strum` omits to publish "phf" feature for discovery by cargo-lookup.
 */
 /// A version of `thag_rs`'s  now defunct `colors` module to style messages according to their type. Like the `stdin`
 /// module, `colors` was originally developed here as a separate script and integrated as a module later.

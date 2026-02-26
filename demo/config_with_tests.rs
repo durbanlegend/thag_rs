@@ -2,6 +2,9 @@
 [dependencies]
 thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
 toml = "0.9"
+
+[features]
+default = ["strum/phf"]     # Because `strum` omits to publish "phf" feature for discovery by cargo-lookup.
 */
 
 /// Demo of unit testing a non-snippet source file such as a library module using `thag --test-only` `(thag -T)`.

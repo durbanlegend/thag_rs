@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-eframe = "0.28.1"
-*/
-
 use eframe::egui;
 
 /// Published demo from the `puffin` profiling crate. The only change is to add a toml block

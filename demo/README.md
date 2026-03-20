@@ -1030,7 +1030,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/color_contrast.r
 
 **Purpose:** Develop a configuration file implementation for `thag_rs`.
 
-**Crates:** `edit`, `firestorm`, `home`, `log`, `mockall`, `serde`, `serde_with`, `thag_rs`, `toml`
+**Crates:** `edit`, `firestorm`, `home`, `mockall`, `serde`, `serde_with`, `thag_rs`, `toml`
 
 **Type:** Program
 
@@ -5271,7 +5271,8 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin
 
 ### Script: puffin_egui.rs
 
-**Description:**  Published demo from the `puffin` crate. See `demo/puffin_egui_29.rs` for a newer version.
+**Description:**  Published demo from the `puffin` profiling crate. The only change is to add a toml block
+ entry to prevent a more recent `eframe` version from clashing with `puffin`.
 
 **Purpose:** Demo featured crate.
 
@@ -5291,10 +5292,9 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
 
 ---
 
-### Script: puffin_egui_28.rs
+### Script: puffin_egui_27.rs
 
-**Description:**  Published demo from the `puffin` profiling crate. The only change is to add a toml block
- entry to prevent a more recent `eframe` version from clashing with `puffin`.
+**Description:**  Legacy published demo from the `puffin` crate. See `demo/puffin_egui.rs` for the current version.
 
 **Purpose:** Demo featured crate.
 
@@ -5304,12 +5304,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
 
 **Categories:** crates
 
-**Link:** [puffin_egui_28.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_28.rs)
+**Link:** [puffin_egui_27.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_27.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_28.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui_27.rs
 ```
 
 ---

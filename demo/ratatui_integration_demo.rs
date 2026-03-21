@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["ratatui_support"] }
+thag_styling = { version = "1, thag-auto", features = ["ratatui_support"] }
 ratatui = "0.29"
 crossterm = "0.28"
 */

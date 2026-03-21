@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features=["full_profiling", "debug_logging"] }
+thag_profiler = { version = "1, thag-auto", features=["full_profiling", "debug_logging"] }
 */
 
 /// Demo of the generate_tests function-like macro for automatic test generation.

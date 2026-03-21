@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 */
 
 /// This script demonstrates the usage of the `warn_once` pattern for suppressing repeated

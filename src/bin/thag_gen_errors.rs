@@ -2,8 +2,8 @@
 [dependencies]
 # heck = "0.5.0"
 # inquire = "0.7.5"
-# thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
+# thag_rs = { version = "1, thag-auto", default-features = false, features = ["core", "simplelog"] }
+thag_styling = { version = "1, thag-auto", default-features = false, features = ["inquire_theming"] }
 */
 
 /// Quick and easy prompted generator for new custom error types and new variants required

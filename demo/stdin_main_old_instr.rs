@@ -8,8 +8,8 @@ regex = "1.10.4"
 scopeguard = "1.2.0"
 serde = "1.0.219"
 serde_json = "1.0.132"
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 tui-textarea = { version = "0.7", features = ["search"] }
 */
 

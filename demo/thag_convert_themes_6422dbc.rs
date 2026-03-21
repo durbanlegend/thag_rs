@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Converts `base16` and `base24` themes to `thag` `toml` format. Tested on `tinted-theming` crate to date.

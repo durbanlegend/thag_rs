@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 /// Copies text input from `stdin` to the system clipboard.
 ///

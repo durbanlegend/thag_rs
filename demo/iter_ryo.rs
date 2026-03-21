@@ -8,9 +8,9 @@ reedline = "0.43"
 strum = { version = "0.27", features = ["derive"] }
 tui-textarea = { version = "0.7", features = ["crossterm", "search"] }
 
-thag_profiler = { version = "0.1, thag-auto", default-features = false }
-thag_rs = { version = "0.2, thag-auto", features = ["iter", "reedline", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
+thag_profiler = { version = "1, thag-auto", default-features = false }
+thag_rs = { version = "1, thag-auto", features = ["iter", "reedline", "simplelog"] }
+thag_styling = { version = "1, thag-auto" }
 
 [features]
 debug_logging = ["thag_rs/debug_logging"]

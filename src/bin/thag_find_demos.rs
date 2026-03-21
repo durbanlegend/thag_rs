@@ -2,8 +2,8 @@
 [dependencies]
 regex = "1.11"
 strum = { version = "0.27", features = ["derive", "phf"] }
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["ast", "simplelog", "tools"] }
+thag_proc_macros = { version = "1, thag-auto" }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["ast", "simplelog", "tools"] }
 */
 use inquire::set_global_render_config;
 /// Select demo scripts and generate and serve HTML report.

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
 /// Prototype script for `thag_get_demo_dir` - fast replacement for `thag_get_demo`

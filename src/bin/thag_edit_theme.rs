@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 inquire = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"

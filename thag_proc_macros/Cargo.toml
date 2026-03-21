@@ -1,6 +1,6 @@
 [package]
 name = "thag_proc_macros"
-version = "0.2.2"
+version = "1.0.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "Procedural macros for the thag_rs and thag_profiler crates"
 repository = "https://github.com/durbanlegend/thag_rs"

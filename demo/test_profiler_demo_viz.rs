@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["demo"] }
 */
 
 /// Test script to verify the profiler demo visualization feature works

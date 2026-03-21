@@ -6,7 +6,7 @@ simplelog = { version = "0.12", optional = true }
 # - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
 # - Git: Set THAG_GIT_REF=main to use git repository instead of crates.io
 # Note: Run with 'thag script.rs' not 'cargo build' to enable thag-auto processing
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "simplelog"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["config", "simplelog"] }
 
 [features]
 default = ["simplelog"]

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
+thag_styling = { version = "1, thag-auto", features = ["image_themes"] }
 */
 
 /// Test script to debug color selection for the morning coffee image

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+thag_styling = { version = "1, thag-auto", features = ["color_detect"] }
 */
 
 /// Comprehensive migration guide from old embedding systems to StyledString

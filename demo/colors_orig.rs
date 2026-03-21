@@ -2,7 +2,7 @@
 [dependencies]
 log = "0.4.22"
 simplelog = { version = "0.12", optional = true }
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["color_detect", "core", "simplelog"] }
 
 [features]
 default = ["simplelog"]

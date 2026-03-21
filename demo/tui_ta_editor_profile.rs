@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 ratatui = "0.29"
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 */
 
 /// A version of `tui_ta_editor_profile.rs` profiled with `thag_profiler` to demonstrate

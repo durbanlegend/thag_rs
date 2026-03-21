@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 log = "0.4"
-thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
+thag_common = { version = "1, thag-auto", features = ["color_detect"] }
 */
 
 /// A basic tool I cobbled together that uses different crates to a) test terminal

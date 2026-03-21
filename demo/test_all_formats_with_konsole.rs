@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 */
 
 /// Demo script to test all export formats including the new Konsole exporter

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 syn = { version = "2", features = ["extra-traits", "full", "parsing"] }
-thag_common = { version = "0.2, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 
 /// Tries to convert input to a `syn` abstract syntax tree (`syn::File` or `syn::Expr`).

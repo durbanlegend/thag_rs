@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog", "tools"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["core", "simplelog", "tools"] }
 */
 
 /// Test script to validate that proc macro examples work correctly.

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
+thag_styling = { version = "1, thag-auto", features = ["image_themes"] }
 */
 
 /// Dark theme tuning previewer - shows fine-tuning effects optimized for dark themes

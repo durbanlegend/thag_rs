@@ -1,6 +1,6 @@
 [package]
 name = "thag_common"
-version = "0.2.2"
+version = "1.0.0"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

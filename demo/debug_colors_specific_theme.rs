@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["full"] }
+thag_styling = { version = "1, thag-auto", features = ["full"] }
 */
 
 /// Debug demo to check specific theme loading and color values

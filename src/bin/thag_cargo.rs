@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_common = { version = "0.2, thag-auto" }
+thag_proc_macros = { version = "1, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 
 /// `thag` prompted front-end command to run Cargo commands on scripts.

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 ratatui = "0.29"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 
 #![allow(clippy::uninlined_format_args)]

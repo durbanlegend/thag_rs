@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 backtrace = "0.3"
-thag_profiler = { version = "0.1, thag-auto", features=["full_profiling"] }
+thag_profiler = { version = "1, thag-auto", features=["full_profiling"] }
 tokio = { version = "1", features = ["full"] }
 
 [profile.dev]

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
+thag_proc_macros = { version = "1, thag-auto" }
 */
 
 /// Debug styled! duplication issue

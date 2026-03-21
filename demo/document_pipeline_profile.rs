@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "debug_logging"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling", "debug_logging"] }
 
 [profile.release]
 debug-assertions = true

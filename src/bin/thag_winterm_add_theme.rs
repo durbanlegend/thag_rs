@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Windows Terminal theme installer with file navigator

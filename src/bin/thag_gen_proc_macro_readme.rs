@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", default-features = false }
+thag_styling = { version = "1, thag-auto", default-features = false }
 */
 
 /// This script generates documentation for proc macros defined in `demo/proc_macros/lib.rs`

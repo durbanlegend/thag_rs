@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto", features = ["config"] }
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_common = { version = "1, thag-auto", features = ["config"] }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Prompted config file builder for `thag`.

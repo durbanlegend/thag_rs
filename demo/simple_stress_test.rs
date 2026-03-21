@@ -1,9 +1,9 @@
 /*[toml]
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect"] }
+thag_styling = { version = "1, thag-auto", features = ["color_detect"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["config"] }
+thag_styling = { version = "1, thag-auto", features = ["config"] }
 */
 
 /// Simple stress test with raw ANSI inspection

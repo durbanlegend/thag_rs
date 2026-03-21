@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_proc_macros = { version = "1, thag-auto" }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Install generated themes for Alacritty terminal emulator

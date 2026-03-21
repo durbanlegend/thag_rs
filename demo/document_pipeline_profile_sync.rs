@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 */
 
 /// Test sync program instrumented version for `thag_profiler` testing. You can use this script and

@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", features = ["config", "simplelog"] }
-thag_styling = { version = "0.2, thag-auto" }
+thag_rs = { version = "1, thag-auto", features = ["config", "simplelog"] }
+thag_styling = { version = "1, thag-auto" }
 */
 
 /// Test script to verify the palette optimization changes

@@ -14,7 +14,7 @@ spin1 = { package = "spin", version = "0.9.8", features = ["mutex"] }
 futures-sink = { version = "0.3", default-features = false, optional = true }
 futures-core = { version = "0.3", default-features = false, optional = true }
 nanorand = { version = "0.7", features = ["getrandom"], optional = true }
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 */
 
 /// Published example from the `flume` channel crate.

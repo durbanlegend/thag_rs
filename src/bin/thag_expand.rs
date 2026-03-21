@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_common = { version = "1, thag-auto" }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Useful front-end for `thag --cargo <script> --expand`, which in turn uses `cargo-expand` to show the macro expansion

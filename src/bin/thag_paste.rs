@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 /// Writes text from the system clipboard to `stdout`.
 ///

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto" }
+thag_rs = { version = "1, thag-auto" }
 */
 
 //: Test the new verbosity setting logic

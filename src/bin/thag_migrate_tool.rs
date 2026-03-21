@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 */
 
 /// Tool to help migrate existing tools from tools/ to src/bin/ with auto-help integration.
@@ -225,7 +225,7 @@ fn transform_tool_content(content: &str) -> String {
                 // Add thag_rs import in the dependencies section
                 if let Some(toml_end) = find_toml_block_end(&lines) {
                     // Insert thag_rs dependency
-                    let deps_line = r#"thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["core", "simplelog"] }"#.to_string();
+                    let deps_line = r#"thag_rs = { version = "1, thag-auto", default-features = false, features = ["core", "simplelog"] }"#.to_string();
                     // This is a simplified approach - in practice you'd want more sophisticated TOML parsing
                     transformed.insert(toml_end, deps_line);
                 }

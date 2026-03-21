@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
+thag_proc_macros = { version = "1, thag-auto" }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
 /// Demo of invoking the Rust formatter programmatically, using `thag_proc_macros`

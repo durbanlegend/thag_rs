@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling", "demo"] }
 */
 
 /// A version of `demo/factorial_ibig_product.rs` instrumented for profiling.

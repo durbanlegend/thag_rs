@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 ratatui = "0.29"
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] }
 */
 
 /// Profiling the published example from the `ratatui` crate (`demo/ratatui_user_input.rs`)

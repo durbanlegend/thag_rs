@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["owo_colors_support"] }
+thag_styling = { version = "1, thag-auto", features = ["owo_colors_support"] }
 owo-colors = "4.1"
 */
 

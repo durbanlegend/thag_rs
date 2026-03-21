@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 /// This program exists to demonstrate the `thag_common` `auto_help` logic.
 /// Invoking it with the argument `--help/-h` will display the doc comments as help.

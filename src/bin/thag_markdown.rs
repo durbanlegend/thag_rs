@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 warp = { version = "0.4", features = ["server"] }
 */
 

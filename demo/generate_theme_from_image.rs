@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["full"] }
+thag_styling = { version = "1, thag-auto", features = ["full"] }
 */
 /// Demo of generating a `thag_styling` theme from an image.
 //# Purpose: Demo making your own themes

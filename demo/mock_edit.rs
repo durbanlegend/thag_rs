@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 crossterm = "0.28" # Specific version
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["tui", "simplelog"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["tui", "simplelog"] }
 */
 
 /// Used to debug a doctest.

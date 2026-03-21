@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 */
 /// TermAttributes context pattern demo.
 //# Purpose: Demonstrate TermAttributes context pattern for testing and temporary overrides

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["config", "core", "simplelog"] }
 toml = "0.9"
 
 [features]

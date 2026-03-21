@@ -2,7 +2,7 @@
 [dependencies]
 # Alternatively can use `use proc_macro2;` with dependency inference and default config
 proc-macro2 = { version = "1", features = ["span-locations"] }
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "debug_logging"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling", "debug_logging"] }
 */
 
 /// A version of the published example from the `syn` crate used to demonstrate profiling a dependency with `thag_profiler`.

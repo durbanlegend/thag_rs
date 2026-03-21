@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
 /// Published example from the `interactive-clap` crate. I've adapted the run instructions below for use with `thag_rs`, and added theming of the `inquire::Select` UI:

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto" }
+thag_common = { version = "1, thag-auto" }
 */
 /// `thag` front-end command to run Rust scripts from URLs provided that `thag` can figure out the dependencies.
 ///

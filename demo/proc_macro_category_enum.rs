@@ -6,7 +6,7 @@ strum = { version = "0.28", features = ["derive", "phf"] }
 # - Development: Set THAG_DEV_PATH=/absolute/path/to/thag_rs (e.g. $PWD not .)
 # - Git: Set THAG_GIT_REF=main (or other branch) to use git repository instead of crates.io
 # E.g. from `thag_rs` project dir: `THAG_DEV_PATH=$PWD thag demo/proc_macro_category_enum.rs`
-thag_proc_macros = { version = "0.2, thag-auto" }
+thag_proc_macros = { version = "1, thag-auto" }
 */
 
 /// Try generating category enum.

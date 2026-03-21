@@ -1,8 +1,8 @@
 /*[toml]
 [dependencies]
 clap = "4.5"
-thag_rs = { version = "0.2, thag-auto", default-features = false, features = ["build", "simplelog", "tools"] }
-thag_styling = { version = "0.2, thag-auto" }
+thag_rs = { version = "1, thag-auto", default-features = false, features = ["build", "simplelog", "tools"] }
+thag_styling = { version = "1, thag-auto" }
 */
 
 /// Basic prompted front-end to build and run a `thag` command.

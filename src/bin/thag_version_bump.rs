@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "1.0, thag-auto", features = ["inquire_theming"] }
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 toml_edit = "0.22"
 regex = "1.11"
 */

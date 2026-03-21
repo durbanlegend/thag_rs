@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["image_themes"] }
+thag_styling = { version = "1, thag-auto", features = ["image_themes"] }
 */
 
 /// Extreme parameter test for light themes to verify fine-tuning is working

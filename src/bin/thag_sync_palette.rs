@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["color_detect", "image_themes"] }
+thag_styling = { version = "1, thag-auto", features = ["color_detect", "image_themes"] }
 */
 /// Terminal palette synchronization using OSC sequences,
 ///

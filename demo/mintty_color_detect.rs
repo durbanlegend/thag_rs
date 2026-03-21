@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_common = { version = "0.2, thag-auto", features = ["color_detect"] }
+thag_common = { version = "1, thag-auto", features = ["color_detect"] }
 crossterm = "0.28"
 */
 

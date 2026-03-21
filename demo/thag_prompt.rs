@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
+thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] } # For optional theming of `inquire`
 */
 
 /// Early prototype of a front-end prompt for `thag`.

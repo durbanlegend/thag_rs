@@ -219,6 +219,11 @@ name = "thag_mintty_add_theme"
 path = "src/bin/thag_mintty_add_theme.rs"
 required-features = ["tools"]
 
+[[bin]]
+name = "thag_version_bump"
+path = "src/bin/thag_version_bump.rs"
+required-features = ["tools"]
+
 # [[bin]]
 # name = "thag_profile_benchmark"
 # path = "src/bin/thag_profile_benchmark.rs"

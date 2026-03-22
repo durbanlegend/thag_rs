@@ -20,7 +20,7 @@ fn main() {
     sprtln!(
         Role::Success,
         "error={}, now for some boilerplate",
-        styled!(name, italic, underline)
+        styled!("Should be underlined italic", italic, underline)
     );
 
     // Demonstrate more styling options now that we have the full implementation

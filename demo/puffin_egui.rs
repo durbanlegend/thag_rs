@@ -1,7 +1,7 @@
 use eframe::egui;
 
-/// Published demo from the `puffin` profiling crate. The only change is to add a toml block
-/// entry to prevent a more recent `eframe` version from clashing with `puffin`.
+/// Published demo from the `puffin` profiling crate.
+/// This version requires Rust 1.92 or higher.
 //# Purpose: Demo featured crate.
 //# Categories: crates
 fn main() -> eframe::Result<()> {

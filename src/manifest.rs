@@ -12,9 +12,8 @@ use serde_merge::omerge;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
 use thag_common::{debug_log, get_verbosity, re, vprtln, V};
-use thag_proc_macros::styled;
 use thag_profiler::{end, profile, profiled};
-use thag_styling::{svprtln, AnsiStyleExt, Role};
+use thag_styling::{svprtln, Role};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -558,38 +557,36 @@ with the 'thag-auto' keyword, which automatically resolves to the appropriate
 dependency source based on your environment.
 
 The most likely issue is that the version specified in the script doesn't exist
-on crates.io yet. To fix this, you have several options:
+on crates.io yet. You have several options to fix this:
 
-1. DEVELOPMENT (recommended): Set environment variable to use local path
-    {}, e.g.:
+1. WAIT: Wait for the specified version to be published to crates.io
 
+2. USE GIT: Set environment variable to use git repository
+   export THAG_GIT_REF=main
+   (or specify a different branch/tag/commit)
+
+3. DEVELOPMENT: Set environment variable to use local path (overrides git option)
+   {}, e.g.:
    {}
 
-2. GIT DEPENDENCY: Use git reference to get the latest version
-   export THAG_GIT_REF=main
+The thag-auto system tries these sources in order:
+  1. CI environment (GITHUB_WORKSPACE) - for automated testing
+  2. Local development path (THAG_DEV_PATH) - for local testing
+  3. Git repository (THAG_GIT_REF) - for unreleased versions
+  4. crates.io (default) - for published versions
 
-3. ALWAYS RUN THROUGH THAG: Use 'thag script.rs' instead of 'cargo build'
-   (This allows thag-auto processing to work properly)
-
-The thag-auto system is designed to work with crates.io by default, falling back
-to git or local paths when environment variables are set. This allows the same
-script to work in different environments without modification.
-
-For more details, see the comments in demo scripts or the thag documentation.",
+For more details, see the comments in demo scripts or the thag documentation.
+",
         if cfg!(target_os = "windows") {
             "(Assuming PowerShell:) $env:THAG_DEV_PATH = absolute\\path\\to\\thag_rs"
         } else {
             "export THAG_DEV_PATH=/absolute/path/to/thag_rs"
         },
-        styled!(
-            if cfg!(target_os = "windows") {
-                "$env:THAG_DEV_PATH = $PWD"
-            } else {
-                "export THAG_DEV_PATH=$PWD"
-            },
-            bold,
-            reversed
-        )
+        if cfg!(target_os = "windows") {
+            "$env:THAG_DEV_PATH = $PWD"
+        } else {
+            "export THAG_DEV_PATH=$PWD"
+        }
     );
 }
 

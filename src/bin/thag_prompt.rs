@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-clap = "4.5"
+clap = "4.6"
 thag_rs = { version = "1, thag-auto", default-features = false, features = ["build", "simplelog", "tools"] }
 thag_styling = { version = "1, thag-auto" }
 */

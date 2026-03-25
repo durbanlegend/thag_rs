@@ -1,7 +1,7 @@
 /*[toml]
 [dependencies]
 # Specifying these in the toml block to ensure compatibility with thag_rs's Cargo.toml.
-clap = { version = "4.5", features = ["cargo", "derive"] }
+clap = { version = "4.6", features = ["cargo", "derive"] }
 nu-ansi-term = { version = "0.50", features = ["derive_serde_style"] }
 ratatui = { version = "0.29", features = ["crossterm"] }
 reedline = "0.43"

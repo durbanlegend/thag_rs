@@ -4,7 +4,7 @@ thag_styling = { version = "1, thag-auto" }
 inquire = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 */
 /// Interactive theme editor for manual color role adjustments
 ///

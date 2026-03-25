@@ -85,7 +85,7 @@ fn heavy_hashing_work(data: &[(u32, String, u64)]) -> Vec<String> {
         .map(|(user, action, time)| {
             let mut hasher = Sha256::new();
             hasher.update(format!("{user}:{action}:{time}"));
-            format!("{:x}", hasher.finalize())
+            format!("{:x?}", hasher.finalize())
         })
         .collect()
 }

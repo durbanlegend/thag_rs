@@ -2,6 +2,158 @@
 
 All notable changes to this project will be documented in this file.
 
+# v1.0.0 (2026-03-21)
+
+## First Stable Release
+
+v1.0.0 marks the first stable release of thag_rs. The project is feature-complete, well-tested, and ready for production use. This release signals Thag's commitment to API stability and semantic versioning going forward.
+
+### Highlights
+
+- **Stable API**: All public APIs are now stable and will follow semantic versioning
+- **Production Ready**: Tested through months of use
+- **Smart Versioning**: Dependencies now use major version only (e.g., `"1"` instead of `"1.0"`) following SemVer best practices
+- **Improved Documentation**: Comprehensive release documentation and improved error messages
+
+### Breaking Changes
+
+- All workspace crates bumped to v1.0.0:
+  - `thag_rs`: 0.2.2 → 1.0.0
+  - `thag_common`: 0.2.1 → 1.0.0
+  - `thag_demo`: 0.2.1 → 1.0.0
+  - `thag_proc_macros`: 0.2.1 → 1.0.0
+  - `thag_profiler`: 0.1.1 → 1.0.0
+  - `thag_styling`: 0.2.1 → 1.0.0
+
+- Dependency version specifications:
+  - For 1.x+ versions: Use major version only (allows all 1.x.y updates automatically)
+  - For 0.x versions: Continue using major.minor (0.x allows breaking changes in minor versions)
+
+### New Features
+
+- **Version Bump Tool** (`thag_version_bump`): Automated tool for coordinated version updates across the workspace
+  - Updates all Cargo.toml files
+  - Updates all demo scripts with thag-auto dependencies
+  - Updates all tool binaries
+  - Supports dry-run mode for safe testing
+
+### Improvements
+
+- **Better Error Messages**: Clarified thag-auto help message showing:
+  - All available options (WAIT, USE GIT, DEVELOPMENT)
+  - Clear precedence order: CI → THAG_DEV_PATH → THAG_GIT_REF → crates.io
+  - Removed confusing references to `cargo build`
+
+- **Documentation**:
+  - Comprehensive release documentation and checklists
+  - Testing guide for git dependencies
+  - Improved inline documentation throughout
+
+- **MSRV**: Maintained at Rust 1.82 for broad compatibility
+  - Individual demo scripts may require newer versions (noted in comments)
+  - Example: `puffin_egui` demo requires Rust 1.92+
+
+### Maintenance
+
+- Updated all workspace dependencies
+- Fixed Cargo.toml binary entries for tool binaries
+- Updated Cargo.lock with v1.0.0 versions
+
+### Migration Guide
+
+For users upgrading from 0.2.x:
+
+1. **No code changes required** - This is primarily a version number bump to signal stability
+2. **Dependency updates**: If you use thag crates in your projects, update versions:
+   ```toml
+   # Old
+   thag_rs = "0.2"
+   
+   # New  
+   thag_rs = "1"  # Allows any 1.x.y version
+   ```
+3. **Scripts with thag-auto**: No changes needed - the version bump tool already updated them
+
+---
+
+# v0.2.1 (2025-10-17)
+
+## Major Feature Release
+
+v0.2.1 introduces significant new capabilities with three new subcrates, enhanced theming, and professional profiling support.
+
+**Note**: v0.2.0 was published with a packaging issue and immediately superseded by v0.2.1. All v0.2.0 features are included in v0.2.1.
+
+### Highlights
+
+- **New `thag_styling` subcrate**: Comprehensive terminal styling with 290+ built-in themes
+  - Support for TrueColor, ANSI 256-color, and 16-color terminals
+  - Theme system with customizable color roles
+  - Multiple terminal emulator support (Alacritty, WezTerm, Konsole, Windows Terminal, etc.)
+  - Image-based theme generation
+  - Color detection and terminal capability detection
+
+- **New `thag_profiler` subcrate**: Graphical profiling visualization
+  - Flamegraph generation for performance analysis
+  - Chrome DevTools timeline format support
+  - Hierarchical profiling with call stacks
+  - Low-overhead instrumentation
+
+- **New `thag_demo` subcrate**: Try profiling without full installation
+  - Standalone demo application for thag_profiler
+  - Interactive examples with flamegraph visualization
+  - Browsable demo catalog
+
+- **Enhanced Dependency Inference**: Smarter dependency detection
+  - Infer dependencies from more code patterns
+  - Configurable feature inclusion/exclusion
+  - Support for detailed dependency format
+
+- **URL-based Script Execution**: Run scripts directly from URLs
+  - Support for GitHub, Rust Playground, GitLab, and BitBucket
+  - Automatic URL conversion and source download
+  - Validation before execution
+
+- **97% Disk Usage Reduction**: Shared build cache across scripts
+  - Dramatically reduced storage requirements
+  - Faster builds with shared dependencies
+
+### New Command-Line Options
+
+- `--cargo (-A)`: Run any cargo subcommand against generated script
+- `--infer (-i)`: Override dependency inference level
+- `--expand (-X)`: Show script and macro-expanded source side by side
+
+### New Tools
+
+- `thag_url`: Run scripts from URLs
+- `thag_cargo`: Interactive cargo command runner for demo scripts
+- `thag_clippy`: Interactive Clippy lint selector
+- `config_builder`: Interactive config file generator
+- `filter_demos`: Fast demo script discovery and reporting
+
+### Improvements
+
+- Enhanced proc macro development support with expansion debugging
+- Better error messages for malformed scripts via rustfmt integration
+- Improved demo/README.md generation with categorization
+- Windows MSI installer improvements
+- Runtime verbosity setting via `$THAG_VERBOSITY`
+- KDE Konsole terminal support
+
+### Bug Fixes
+
+- Various Windows compatibility fixes
+- Terminal attribute and theme context improvements
+- Terminal state reset fixes
+
+### Breaking Changes
+
+- Introduction of workspace structure with subcrates may affect some workflows
+- New default feature set (can be adjusted in Cargo.toml)
+
+---
+
 # v0.1.9 (2024-12-15)
 
 ### Highlights

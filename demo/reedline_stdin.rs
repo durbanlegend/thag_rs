@@ -64,6 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 // std::process::exit(0);
                 break;
             }
+            _ => {}
         };
         input.push_str(line);
     }

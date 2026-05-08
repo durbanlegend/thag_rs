@@ -56,6 +56,7 @@ pub(crate) fn read_stdin() -> Result<String, io::Error> {
                     "Operation canceled by user",
                 ));
             }
+            Ok(_) => {}
             Err(err) => {
                 println!("Error reading line: {:?}", err);
                 return Err(io::Error::new(

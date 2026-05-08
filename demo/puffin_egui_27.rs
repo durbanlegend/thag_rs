@@ -6,6 +6,8 @@ puffin_egui = "0.27.0"
 */
 
 /// Legacy published demo from the `puffin` crate. See `demo/puffin_egui.rs` for the current version.
+/// This crate is quite volatile and subject to breaking changes, so I've pinned the demo to a specific
+/// version rather than have to keep chasing the changes.
 //# Purpose: Demo featured crate.
 //# Categories: crates
 use eframe::egui;

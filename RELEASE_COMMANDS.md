@@ -83,7 +83,7 @@ git push origin v1.0.0
 mkdir /tmp/test-thag-v1 && cd /tmp/test-thag-v1
 cargo install thag_rs --version 1.0.0
 thag --version
-echo 'println!("Hello v1.0.0!");' | thag -
+echo 'println!("Hello v1.0.0!");' | thag -s
 ```
 
 ## Rollback (if needed)
@@ -102,8 +102,8 @@ cd thag_common && cargo publish && sleep 180 && cd .. && \
 cd thag_proc_macros && cargo publish && sleep 180 && cd .. && \
 cd thag_styling && cargo publish && sleep 180 && cd .. && \
 cd thag_profiler && cargo publish && sleep 180 && cd .. && \
-cargo publish && sleep 180 && \
-cd thag_demo && cargo publish && cd ..
+cd thag_demo && cargo publish && sleep 180 && cd .. && \
+cargo publish
 ```
 
 **Note:** This assumes all crates are ready and tested. Use with caution!

@@ -31,6 +31,10 @@ path-guid = "CCDE9D5F-06C2-42C2-8BF7-6EB41E46A496"
 license = false
 eula = false
 
+# cargo-dist: build with tools feature to include all tool binaries
+[package.metadata.dist]
+features = ["tools"]
+
 [package.metadata.docs.rs]
 # features = ["document-features"]
 all-features = true

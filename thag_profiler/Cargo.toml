@@ -27,6 +27,10 @@ path-guid = "DB87B3CE-6DCB-436A-85FA-C90A0061C9B3"
 license = false
 eula = false
 
+# cargo-dist: build with tools feature to include all binaries
+[package.metadata.dist]
+features = ["tools"]
+
 [dependencies]
 backtrace = "0.3"
 chrono = "0.4"

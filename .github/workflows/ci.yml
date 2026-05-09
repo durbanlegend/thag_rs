@@ -54,5 +54,8 @@ jobs:
       - name: Build
         run: cargo build
 
+      - name: Build with tools feature
+        run: cargo build --features tools
+
       - name: Run tests
         run: cargo test --no-fail-fast -- --test-threads=1

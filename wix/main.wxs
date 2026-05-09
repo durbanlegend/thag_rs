@@ -396,6 +396,14 @@ Accepts a script file or dynamic options.'
                         <Component Id='binary34' Guid='*'>
                             <File
                                 Id='exe34'
+                                Name='thag_version_bump.exe'
+                                DiskId='1'
+                                Source='$(var.CargoTargetBinDir)\thag_version_bump.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary35' Guid='*'>
+                            <File
+                                Id='exe35'
                                 Name='thag_winterm_add_theme.exe'
                                 DiskId='1'
                                 Source='$(var.CargoTargetBinDir)\thag_winterm_add_theme.exe'
@@ -457,6 +465,7 @@ Accepts a script file or dynamic options.'
             <ComponentRef Id='binary32'/>
             <ComponentRef Id='binary33'/>
             <ComponentRef Id='binary34'/>
+            <ComponentRef Id='binary35'/>
 
             <Feature
                 Id='Environment'

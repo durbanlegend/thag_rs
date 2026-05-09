@@ -60,13 +60,13 @@ cd thag_profiler && cargo publish && cd ..
 
 # Wait 2-3 minutes...
 
-# 5. thag_demo
-cd thag_demo && cargo publish && cd ..
+# 5. thag_rs (main crate)
+cargo publish
 
 # Wait 2-3 minutes...
 
-# 6. thag_rs (main crate)
-cargo publish
+# 6. thag_demo
+cd thag_demo && cargo publish && cd ..
 ```
 
 ## Create Git Tag
@@ -102,8 +102,8 @@ cd thag_common && cargo publish && sleep 180 && cd .. && \
 cd thag_proc_macros && cargo publish && sleep 180 && cd .. && \
 cd thag_styling && cargo publish && sleep 180 && cd .. && \
 cd thag_profiler && cargo publish && sleep 180 && cd .. && \
-cd thag_demo && cargo publish && sleep 180 && cd .. && \
-cargo publish
+cargo publish && sleep 180 && \
+cd thag_demo && cargo publish && cd ..
 ```
 
 **Note:** This assumes all crates are ready and tested. Use with caution!

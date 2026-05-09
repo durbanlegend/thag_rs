@@ -12,7 +12,7 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 /// using a text editor.
 //# Purpose: Handy configuration file builder.
 //# Categories: crates, technique, tools
-use convert_case::{pattern, Converter};
+use convert_case::{Converter, Pattern};
 use documented::{Documented, DocumentedFields, DocumentedVariants};
 use inquire::{
     error::CustomUserError,
@@ -719,8 +719,8 @@ fn prompt_dependencies_config(
                         ),
                         _ => {
                             let conv = Converter::new()
-                                .set_delim(" ")
-                                .set_pattern(pattern::sentence);
+                                .set_delimiter(" ")
+                                .set_pattern(Pattern::Sentence);
                             println!(
                                 "  {:<width$}: {doc}",
                                 conv.convert(field_name),

@@ -1,6 +1,6 @@
 [package]
 name = "thag_profiler"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "A lightweight, cross-platform Rust code profiling toolkit with zero overhead when disabled"
 documentation = "https://github.com/durbanlegend/thag_rs/blob/develop/thag_profiler/README.md"

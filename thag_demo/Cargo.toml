@@ -1,6 +1,6 @@
 [package]
 name = "thag_demo"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["Don Forbes <don.forbes3@gmail.com>"]
 description = "Interactive demos for thag_rs and thag_profiler - run Rust profiling examples without installing thag"

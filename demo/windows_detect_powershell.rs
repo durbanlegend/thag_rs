@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+sysinfo = "0.38"
+*/
+
 use std::env;
 /// Prototype of PowerShell detection
 //# Purpose: Detect if we're running under PowerShell.

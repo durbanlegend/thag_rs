@@ -2,7 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
-# v1.0.0 (2026-03-21)
+# v1.0.1 (2026-05-12)
+
+## Patch Release
+
+This patch release fixes compatibility issues and improves the release workflow. Including the `tools` feature was breaking the installation process.
+
+### Bug Fixes
+
+- **Rust 1.94 Compatibility**: Pinned `sysinfo` dependency to 0.38 in `demo/windows_detect_powershell.rs` to maintain compatibility with Rust 1.94 (sysinfo 0.39+ requires Rust 1.95)
+
+### Improvements
+
+- **Release Workflow**: Updated `release.yml` via `dist init` to fix cargo-dist compatibility issues
+- All workspace crates updated to v1.0.1
+
+### Notes
+
+- The `convert_case` compatibility issue mentioned in v1.0.0 release notes was already fixed prior to v1.0.0
+- No breaking changes; safe to upgrade from v1.0.0
+
+# v1.0.0 (2026-05-09)
 
 ## First Stable Release
 

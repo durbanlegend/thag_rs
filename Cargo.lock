@@ -4547,7 +4547,6 @@ dependencies = [
  "document-features",
  "documented",
  "edit",
- "either",
  "env_logger",
  "heck",
  "inquire",

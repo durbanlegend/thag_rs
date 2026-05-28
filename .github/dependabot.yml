@@ -26,7 +26,13 @@ updates:
       - dependency-name: "dashmap"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "lazy_static"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "phf"
+        update-types:
+          ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "predicates"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "ratatui"
@@ -35,19 +41,7 @@ updates:
       - dependency-name: "reedline"
         versions:
           - ">=0.44.0"
-      - dependency-name: "reqwest"
-        update-types:
-          ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "serial_test"
-        update-types:
-          ["version-update:semver-minor", "version-update:semver-major"]
-      - dependency-name: "tokio"
-        update-types:
-          ["version-update:semver-minor", "version-update:semver-major"]
-      - dependency-name: "tempfile"
-        update-types:
-          ["version-update:semver-minor", "version-update:semver-major"]
-      - dependency-name: "toml_edit"
         update-types:
           ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "*"

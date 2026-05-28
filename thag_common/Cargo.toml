@@ -24,7 +24,7 @@ thiserror = "2.0"
 # Config feature dependencies
 edit = { version = "0.1", optional = true }
 mockall = { version = "0.14", optional = true }
-toml_edit = { version = "0.23", optional = true }
+toml_edit = { version = "0.25", optional = true }
 toml = { version = "1.1", optional = true }
 
 # Color detect feature dependencies

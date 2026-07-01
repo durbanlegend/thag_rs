@@ -8,6 +8,7 @@ use crate::{
 use cargo_lookup::{Package, Query, Release};
 use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
 use regex::Regex;
+use semver::VersionReq;
 use serde_merge::omerge;
 use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
 use syn::{parse_file, File};
@@ -423,14 +424,11 @@ pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResul
 /// that contains "`thag-auto`" as a marker
 fn should_process_thag_auto(dependency: &Dependency) -> bool {
     match dependency {
-        Dependency::Detailed(detail) => {
-            // Check if version contains our marker
-            detail
-                .version
-                .as_ref()
-                .is_some_and(|v| v.contains("thag-auto"))
-        }
-        Dependency::Simple(version) => version.contains("thag-auto"),
+        Dependency::Detailed(detail) => detail
+            .version
+            .as_ref()
+            .map_or(false, |v| v.to_string().contains("thag-auto")),
+        Dependency::Simple(vreq) => vreq.to_string().contains("thag-auto"),
         Dependency::Inherited(_) => false,
     }
 }
@@ -444,20 +442,21 @@ fn resolve_thag_dependency(
     let (base_version, features, default_features) = match original_dep {
         Dependency::Detailed(detail) => {
             let version = detail.version.as_ref().and_then(|v| {
-                // Extract real version from "version,thag-auto" format
-                if v.contains("thag-auto") {
-                    v.split(',').next().map(|s| s.trim().to_string())
+                let s = v.to_string();
+                if s.contains("thag-auto") {
+                    s.split(',').next().map(|s| s.trim().to_string())
                 } else {
-                    Some(v.clone())
+                    Some(s)
                 }
             });
             (version, detail.features.clone(), detail.default_features)
         }
-        Dependency::Simple(version) => {
-            let version = if version.contains("thag-auto") {
-                version.split(',').next().map(|s| s.trim().to_string())
+        Dependency::Simple(vreq) => {
+            let s = vreq.to_string();
+            let version = if s.contains("thag-auto") {
+                s.split(',').next().map(|s| s.trim().to_string())
             } else {
-                Some(version.clone())
+                Some(s)
             };
             (version, Vec::new(), true)
         }
@@ -525,8 +524,10 @@ fn resolve_thag_dependency(
             // .map_err(|e| ThagError::FromStr(format!("{e}").into()))?;
             // .map_err(|e| -> ThagError { format!("{e}").into() })?;
             if let Ok(Some(release)) = result {
-                let vers = release.vers;
-                new_detail.version = Some(format!("{}.{}.{}", vers.major, vers.minor, vers.patch));
+                let vers_str = format!("{}.{}.{}", vers.major, vers.minor, vers.patch);
+                new_detail.version = Some(VersionReq::parse(&vers_str).map_err(|e| {
+                    ThagError::FromStr(format!("Failed to parse version req: {e}").into())
+                })?);
                 debug_log!(
                     "Using crates.io version for {crate_name}: {:?}",
                     new_detail.version
@@ -752,8 +753,11 @@ pub fn lookup_deps(
                             features_for_inference_level
                         {
                             rs_dep_map.entry(name.clone()).or_insert_with(|| {
+                                let parsed_req = VersionReq::parse(&version)
+                                    .or_else(|_| VersionReq::parse(&format!("={}", version)))
+                                    .unwrap(); // or map error into ThagResult
                                 Dependency::Detailed(Box::new(DependencyDetail {
-                                    version: Some(version.clone()),
+                                    version: Some(parsed_req),
                                     features: final_features,
                                     default_features,
                                     ..Default::default()
@@ -787,9 +791,12 @@ pub fn lookup_deps(
 
 #[profiled]
 fn insert_simple(rs_dep_map: &mut BTreeMap<String, Dependency>, name: String, version: String) {
+    let vreq = VersionReq::parse(&version)
+        .or_else(|_| VersionReq::parse(&format!("={}", version)))
+        .expect("failed to parse version into VersionReq");
     rs_dep_map
         .entry(name)
-        .or_insert_with(|| Dependency::Simple(version));
+        .or_insert_with(|| Dependency::Simple(vreq));
 }
 
 #[profiled]
@@ -807,8 +814,9 @@ fn display_toml_info(
         // eprintln!("dep_name={dep_name}");
         let value = rs_dep_map.get(dep_name);
         match value {
-            Some(Dependency::Simple(string)) => {
-                let dep_line = format!("{dep_name} = \"{string}\"\n");
+            Some(Dependency::Simple(vreq)) => {
+                let string = vreq.to_string();
+                let dep_line = format!("{dep_name} = "{string}"\n");
                 toml_block.push_str(&dep_line);
             }
             Some(Dependency::Detailed(dep)) => {
@@ -817,6 +825,7 @@ fn display_toml_info(
                         "{dep_name} = \"{}\"\n",
                         dep.version
                             .as_ref()
+                            .map(|v| v.to_string())
                             .unwrap_or_else(|| panic!("Error unwrapping version for {dep_name}")),
                     );
                     toml_block.push_str(&dep_line);

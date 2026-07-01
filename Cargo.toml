@@ -244,7 +244,7 @@ atty = { version = "0.2", optional = true }
 backtrace = "0.3"
 bitflags = { version = "2", optional = true }
 cargo-lookup = { version = "0.1", optional = true }
-cargo_toml = { version = "0.22", optional = true }
+cargo_toml = { version = "1", optional = true }
 chrono = "0.4"
 clap = { version = "4.6", features = ["cargo", "derive"], optional = true }
 colored = { version = "3", optional = true }

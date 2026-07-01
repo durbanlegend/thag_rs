@@ -479,13 +479,13 @@ mod tests {
     edition = "2021"
 
     [dependencies]
-    serde = "1.0"
+    serde = "^1.0"
 
     [features]
     default = ["serde"]
 
     [patch.a]
-    b = "1.0"
+    b = "^1.0"
 
     [lib]
     edition = "2021"

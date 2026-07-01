@@ -6,7 +6,7 @@ use crate::{
     maybe_config, Ast, BuildState, Dependencies, Style, ThagError, ThagResult,
 };
 use cargo_lookup::{Package, Query, Release};
-use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest};
+use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest, Value};
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
@@ -344,8 +344,13 @@ pub fn extract(
 
     profile!(parse, mem_summary, time);
     let mut rs_manifest = if let Some(rs_toml_str) = maybe_rs_toml {
+        // cargo_toml v1 requires strict SemVer, so transform any
+        // 'version = "X, thag-auto"' into 'version = "X", thag-auto = "X"'
+        // before parsing.  The thag-auto field lands in
+        // DependencyDetail::unstable where should_process_thag_auto() finds it.
+        let preprocessed = preprocess_thag_auto_toml(&rs_toml_str);
         // debug_log!("rs_toml_str={rs_toml_str}");
-        Manifest::from_str(&rs_toml_str)?
+        Manifest::from_str(&preprocessed)?
     } else {
         Manifest::from_str("")?
     };
@@ -420,16 +425,15 @@ pub fn process_thag_auto_dependencies(build_state: &mut BuildState) -> ThagResul
     Ok(())
 }
 
-/// Checks if a dependency has `thag-auto` enabled by looking for a version string
-/// that contains "`thag-auto`" as a marker
+/// Checks if a dependency has `thag-auto` enabled.
+///
+/// With `cargo_toml` v1 the version field is a strict `VersionReq`, so the
+/// marker is stored in `DependencyDetail::unstable` by `preprocess_thag_auto_toml`
+/// before parsing.  A key of `"thag-auto"` in that map is the signal.
 fn should_process_thag_auto(dependency: &Dependency) -> bool {
     match dependency {
-        Dependency::Detailed(detail) => detail
-            .version
-            .as_ref()
-            .map_or(false, |v| v.to_string().contains("thag-auto")),
-        Dependency::Simple(vreq) => vreq.to_string().contains("thag-auto"),
-        Dependency::Inherited(_) => false,
+        Dependency::Detailed(detail) => detail.unstable.contains_key("thag-auto"),
+        Dependency::Simple(_) | Dependency::Inherited(_) => false,
     }
 }
 
@@ -438,27 +442,28 @@ fn resolve_thag_dependency(
     crate_name: &str,
     original_dep: &Dependency,
 ) -> ThagResult<cargo_toml::Dependency> {
-    // Extract base dependency details, preserving features and other settings
+    // Extract base dependency details, preserving features and other settings.
+    // The base version string is read from unstable["thag-auto"] where
+    // preprocess_thag_auto_toml() stored the original plain version (e.g. "1" or
+    // "1.0") before cargo_toml parsed it into a VersionReq.  Using the stored
+    // string avoids round-tripping through VersionReq::to_string() which would
+    // emit operator-prefixed forms like "^1" that break the cargo-lookup query
+    // format "crate@=version".
     let (base_version, features, default_features) = match original_dep {
         Dependency::Detailed(detail) => {
-            let version = detail.version.as_ref().and_then(|v| {
-                let s = v.to_string();
-                if s.contains("thag-auto") {
-                    s.split(',').next().map(|s| s.trim().to_string())
+            let version = detail.unstable.get("thag-auto").and_then(|v| {
+                if let Value::String(s) = v {
+                    Some(s.clone())
                 } else {
-                    Some(s)
+                    None
                 }
             });
             (version, detail.features.clone(), detail.default_features)
         }
         Dependency::Simple(vreq) => {
-            let s = vreq.to_string();
-            let version = if s.contains("thag-auto") {
-                s.split(',').next().map(|s| s.trim().to_string())
-            } else {
-                Some(s)
-            };
-            (version, Vec::new(), true)
+            // Simple deps cannot carry thag-auto (no unstable map); this arm
+            // is unreachable when called from process_thag_auto_dependencies.
+            (Some(vreq.to_string()), Vec::new(), true)
         }
         Dependency::Inherited(_) => return Ok(original_dep.clone()),
     };
@@ -590,6 +595,26 @@ For more details, see the comments in demo scripts or the thag documentation.
             "export THAG_DEV_PATH=$PWD"
         }
     );
+}
+
+/// Preprocesses a TOML block string so that `cargo_toml` v1 (which requires
+/// strict `SemVer` in the `version` field) can parse it successfully.
+///
+/// Any occurrence of `version = "X, thag-auto"` is transformed to
+/// `version = "X", thag-auto = "X"`.  The extra `thag-auto` key ends up in
+/// [`DependencyDetail::unstable`] and is later detected by
+/// [`should_process_thag_auto`].  The plain version string `"X"` is stored as
+/// the value so [`resolve_thag_dependency`] can reconstruct the cargo-lookup
+/// query without having to reverse-engineer it from [`semver::VersionReq`].
+fn preprocess_thag_auto_toml(toml_str: &str) -> String {
+    // Matches:  version = "<ver>, thag-auto"
+    // Captures: group 1 = the version part before ", thag-auto" (trimmed below)
+    let re: &Regex = re!("version\\s*=\\s*\"([^\"]+),\\s*thag-auto\"");
+    re.replace_all(toml_str, |caps: &regex::Captures| {
+        let ver = caps[1].trim();
+        format!(r#"version = "{ver}", thag-auto = "{ver}""#)
+    })
+    .into_owned()
 }
 
 #[profiled]

@@ -259,7 +259,7 @@ edit = { version = "0.1", optional = true }
 heck = { version = "0.5", optional = true }
 inquire = { version = "0.9", optional = true }
 log = "0.4"
-mockall = { version = "0.14", optional = true }
+mockall = { version = "0.15", optional = true }
 nu-ansi-term = { version = "0.50", optional = true }
 pathdiff = { version = "0.2", optional = true }
 phf = { version = "0.12", features = ["macros"] }
@@ -300,7 +300,7 @@ tokio = { version = "1", features = [
   "time",
 ], optional = true }
 toml = "1"
-toml_edit = { version = "0.23", optional = true }
+toml_edit = { version = "0.25", optional = true }
 # `tui-textarea` is used for the `tui` feature`.
 tui-textarea = { version = "0.7", features = [
   "crossterm",

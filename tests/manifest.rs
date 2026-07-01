@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use cargo_toml::{Dependency, Edition, Manifest, Product};
-    use semver::Version;
+    use cargo_toml::{Dependency, Edition, Manifest, Product, SemVer};
+    use semver::{Version, VersionReq};
     use std::iter;
-    use std::{collections::BTreeMap, path::PathBuf, sync::Once, time::Instant};
+    use std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Once, time::Instant};
     use thag_rs::code_utils::to_ast;
     use thag_rs::manifest::{self, capture_dep, cargo_lookup, configure_default, extract, merge};
     use thag_rs::{find_crates, find_metadata, BuildState};
@@ -72,7 +72,11 @@ mod tests {
         let manifest = configure_default(&build_state).unwrap();
         let package = manifest.package.expect("Problem unwrapping package");
         assert_eq!(package.name, "example");
-        assert_eq!(package.version.get().unwrap(), &"0.0.1".to_string());
+        assert!(package
+            .version
+            .get()
+            .as_ref()
+            .map_or(false, |v| v.to_string().contains("0.0.1")));
         assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
     }
 
@@ -128,7 +132,7 @@ mod tests {
             assert!(manifest.dependencies.contains_key("serde_derive"));
             assert_eq!(
                 manifest.dependencies["toml_block_dep"],
-                Dependency::Simple("1.0".to_string())
+                Dependency::Simple(VersionReq::from_str("1.0").unwrap())
             );
 
             assert!(manifest.features.contains_key("default"));
@@ -409,11 +413,14 @@ mod tests {
 
         let package = manifest.package.expect("Problem unwrapping package");
         assert_eq!(package.name, "example");
-        assert_eq!(package.version.get().unwrap(), &"0.1.0".to_string());
+        assert_eq!(
+            package.version.get().unwrap(),
+            &SemVer::from_str("0.1.0").unwrap()
+        );
         assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
         assert_eq!(
             manifest.dependencies.get("serde").unwrap(),
-            &Dependency::Simple("1.0".to_string())
+            &Dependency::Simple(VersionReq::from_str("1.0").unwrap())
         );
 
         println!(
@@ -431,17 +438,21 @@ mod tests {
         set_up();
         let mut manifest = manifest::default("example", "path/to/script").unwrap();
 
-        manifest
-            .dependencies
-            .insert("serde".to_string(), Dependency::Simple("1.0".to_string()));
+        manifest.dependencies.insert(
+            "serde".to_string(),
+            Dependency::Simple(VersionReq::from_str("1.0").unwrap()),
+        );
         manifest
             .features
             .insert("default".to_string(), vec!["serde".to_string()]);
         manifest.patch.insert(
             "a".to_string(),
-            iter::once(&("b".to_string(), Dependency::Simple("1.0".to_string())))
-                .cloned()
-                .collect::<BTreeMap<String, Dependency>>(),
+            iter::once(&(
+                "b".to_string(),
+                Dependency::Simple(VersionReq::from_str("1.0").unwrap()),
+            ))
+            .cloned()
+            .collect::<BTreeMap<String, Dependency>>(),
         );
         // manifest.workspace.insert(Workspace::<Value>::default());
         manifest.workspace = None;

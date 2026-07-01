@@ -524,6 +524,7 @@ fn resolve_thag_dependency(
             // .map_err(|e| ThagError::FromStr(format!("{e}").into()))?;
             // .map_err(|e| -> ThagError { format!("{e}").into() })?;
             if let Ok(Some(release)) = result {
+                let vers = release.vers;
                 let vers_str = format!("{}.{}.{}", vers.major, vers.minor, vers.patch);
                 new_detail.version = Some(VersionReq::parse(&vers_str).map_err(|e| {
                     ThagError::FromStr(format!("Failed to parse version req: {e}").into())
@@ -816,7 +817,7 @@ fn display_toml_info(
         match value {
             Some(Dependency::Simple(vreq)) => {
                 let string = vreq.to_string();
-                let dep_line = format!("{dep_name} = "{string}"\n");
+                let dep_line = format!("{dep_name} = \"{string}\"\n");
                 toml_block.push_str(&dep_line);
             }
             Some(Dependency::Detailed(dep)) => {

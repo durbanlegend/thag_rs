@@ -84,7 +84,7 @@ let success_color = crossterm::style::Color::themed(Role::Success);
 ```rust
 use thag_styling::Role;
 
-// Use semantic meaning, not colors
+// Use semantic category, not colors
 Role::Success    // ✓ Operations that succeed
 Role::Error      // ✗ Critical problems
 Role::Warning    // ⚠ Potential issues  

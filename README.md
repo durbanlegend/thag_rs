@@ -10,8 +10,6 @@
 
 ***thag_rs*** (command ***thag***) is a robust toolkit and playground designed to make your Rust development experience smoother and more rewarding.
 
-v0.2 brings many new features and a sleek look with themes to match your terminal preferences.
-
 ***thag*** includes:
 
   - a script runner
@@ -38,7 +36,9 @@ v0.2 brings many new features and a sleek look with themes to match your termina
 - compile-time macro expansion support for proc macro debugging
 </details>
 
-The ***core purpose of `thag`*** is straightforward: to make it easy and fun to test ideas, explore software, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
+***thag*** has sleek styling with themes to match your terminal preferences.
+
+The ***core purpose of thag*** is straightforward: to make it easy and fun to test ideas, explore software, or debug issues in Rust. It provides the tools you need to quickly experiment without the overhead of creating new projects or writing boilerplate.
 
 `thag` is largely TOML-free thanks to its ***dependency inference***, which automatically detects and configures the crates your code needs.
 
@@ -60,9 +60,9 @@ Whether you're:
 
 - Converting your scripts into lightning-fast commands
 
-`thag_rs` helps you get answers faster—from simple one-liners to complex multi-file programs.
+`thag_rs` helps you get results faster—from simple one-liners to complex multi-file programs.
 
-### New in `thag` v0.2:
+### `thag` includes:
 
 <details>
 <summary>🛜 a command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
@@ -138,15 +138,15 @@ Whether you're:
 
 </details>
 
-- A **massive improvement in space management** of compiled scripts through a shared build target architecture. All scripts now share a single build cache instead of maintaining separate `target` directories. This reduces bad-case disk usage by **97%** (from 6 GB+ to ~225 MB for ~340 scripts) in testing.
+- **Efficient space management** of compiled scripts through a shared build target architecture. All scripts share a single build cache instead of maintaining separate `target` directories.
 
-- The new target architecture also provides **significantly faster rebuilds** and a big speed-up when building scripts with shared dependencies, as dependencies are compiled once and reused across all scripts.
+- **Dependency efficiencies to speed rebuilds and dependency reuse**. Dependencies are compiled once and reused across all scripts.
 
-- The ***proc macro starter kit*** goes from being a rough sketchpad to a ***select set of useful and educational examples*** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
+- **A proc macro starter kit: a select set of useful and educational examples** with individual demo scripts and a debugging expansion option. See its README file here: [demo/proc_macros](demo/proc_macros/README.md).
 
-#### Companion Crates Released with v0.2:
+#### Companion Crates:
 
-We're also releasing three independent crates that complement thag_rs:
+The `thag` ecosystem also includes profiling and styling crates that can be used with `thag_rs` or independently in your own projects, and a demo crate:
 
   - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Learn more →](thag_profiler/README.md)
 
@@ -186,7 +186,7 @@ ___
   thag_url https://github.com/mikaelmello/inquire/blob/main/inquire/examples/render_config.rs --features=inquire/date
   ```
 
-  **New in 0.2.0:** Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (that is, most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
+  Since dependency inference has proved fast and reliable in extensive use and testing, toml block content that is no longer necessary (that is, most of it) has been removed from most demo scripts with no noticeable loss of speed. This mostly toml-free scripting is easier and more productive and removes the burden of updating dependencies, at the cost of slightly greater exposure to incompatibilities between newer versions of dependencies.
 
 - You're still in control: dependency inference (max/min/config/none) and/or toml block.
 
@@ -217,7 +217,7 @@ ___
 
 - 35 new optional commands as above
 
-- **New in 0.2.0:** Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a THAG_THEME environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
+- Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a THAG_THEME environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
@@ -262,9 +262,9 @@ $ sudo apt-get install pkg-config libssl-dev
 
 #### Downloading the starter kit (demo directory)
 
-As of 0.2.0, the `thag` tool `thag_get_demo_dir` does a fast download of the demo directory to a location of your choice. `thag` documentation assumes that demo scripts are located in a `demo` subdirectory of your current working directory, so this is recommended as the most convenient option.
+The `thag` tool `thag_get_demo_dir` does a fast download of the demo directory to a location of your choice. `thag` documentation assumes that demo scripts are located in a `demo` subdirectory of your current working directory, so this is recommended as the most convenient option.
 
-As from `v0.1.1` you can download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
+You can also download `demo.zip` from `https://github.com/durbanlegend/thag_rs/releases`.
 
 Note that you can also link to individual demo files via their links in `demo/README.md` and manually download the file from the download icon provided.
 
@@ -660,7 +660,7 @@ $ myip
 ```bash
 thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
-The `--expr` flag not only evaluatsz an expression, it also accepts a valid Rust program or set of statements.
+The `--expr` flag not only evaluates an expression, it also accepts a valid Rust program or set of statements.
 The different ways `thag` accepts code are as far as possible "orthagonal" to the common way it processes them.
 
 ### Running a script in quiet mode but with timings

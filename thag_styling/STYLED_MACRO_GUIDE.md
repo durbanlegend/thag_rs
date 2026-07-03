@@ -137,7 +137,7 @@ println!("{}", styled!("Custom color", fg = "#ff6347", bold));
 
 Use `styled!` when you need:
 - Specific colors not available in themes
-- One-off styling without semantic meaning
+- One-off styling without specifying a message category
 - Low-level control over ANSI sequences
 - Integration with existing ANSI-based code
 

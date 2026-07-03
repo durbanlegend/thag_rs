@@ -103,7 +103,7 @@ The example demonstrates styling with these semantic roles:
 1. **Consistent Theming**: All components automatically use colors that work well together
 2. **Terminal Compatibility**: Automatically adapts to terminal capabilities (true color, 256 color, basic)
 3. **Theme Switching**: Easy to change themes without modifying widget code
-4. **Semantic Meaning**: Roles convey meaning, not just appearance
+4. **Style Follows Substance**: Roles convey meaning, not just appearance
 5. **Maintainability**: Single place to define color schemes for all UI elements
 
 ### Testing

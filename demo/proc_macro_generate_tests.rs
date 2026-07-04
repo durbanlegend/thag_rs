@@ -15,11 +15,32 @@
 /// To perform the tests and see the results, simply run:
 ///
 /// ```bash
-/// thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+/// thag -T demo/proc_macro_generate_tests.rs   # Long form: --test-only
+/// ```
 ///
+/// The `-T`/`--test-only` flag must appear *before* the script path; it is a thag option,
+/// not a script argument. Anything after `--` is forwarded to the test harness, e.g.:
+///
+/// ```bash
+/// thag -T demo/proc_macro_generate_tests.rs -- --nocapture
+/// thag -T demo/proc_macro_generate_tests.rs -- test_addition   # filter by name
+/// ```
+///
+/// The generated Cargo project (source + `Cargo.toml`) persists in
+/// `$TMPDIR/thag_rs/proc_macro_generate_tests/` and is not deleted after the run.
+/// You can also invoke cargo directly there:
+///
+/// ```bash
+/// cd $TMPDIR/thag_rs/proc_macro_generate_tests
+/// cargo test
 /// ```
 ///
 /// # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+/// Or use the `--cargo` (`-A`) flag directly:
+///
+/// ```bash
+/// thag -A demo/proc_macro_generate_tests.rs test
+/// ```
 ///
 /// See also: `demo/test_profile_extract_timestamp.rs`
 //# Purpose: Demonstrate automatic test case generation from data
@@ -155,10 +176,21 @@ fn main() {
     println!("      assert_eq!(a + b, expected)");
     println!("  }}");
 
-    println!("\nTo run the generated tests:");
-    println!("  cargo test test_addition    # Run all addition tests");
-    println!("  cargo test test_string      # Run all string tests");
-    println!("  cargo test                  # Run all tests");
+    println!("\nTo run the generated tests, you can use the `thag` --test-only (-T) flag:");
+    println!("  thag -T demo/proc_macro_generate_tests.rs                         # All tests");
+    println!(
+        "  thag -T demo/proc_macro_generate_tests.rs -- test_addition        # Addition tests"
+    );
+    println!("  thag -T demo/proc_macro_generate_tests.rs -- test_string          # String tests");
+    println!("  thag -T demo/proc_macro_generate_tests.rs -- --nocapture          # Show output");
+    println!();
+    println!("  # Or you can run the tests via the `thag` --cargo (-A) flag:");
+    println!("  thag -A demo/proc_macro_generate_tests.rs test");
+    println!();
+    println!(
+        r"  # Or directly in the generated project (persists in \$TMPDIR/thag_rs/proc_macro_generate_tests/):"
+    );
+    println!(r"  cd \$TMPDIR/thag_rs/proc_macro_generate_tests && cargo test");
 
     println!("\nKey features demonstrated:");
     println!("  • Automatic test function generation");
@@ -175,7 +207,8 @@ fn main() {
     println!("  • Regression test suites");
     println!("  • Property-based testing data");
 
-    println!("\nNote: This is a demo program. The actual tests run with 'cargo test'.");
+    println!("\nNote: This is a demo program. Run the actual tests with:");
+    println!("  thag -T demo/proc_macro_generate_tests.rs");
 }
 
 #[cfg(test)]

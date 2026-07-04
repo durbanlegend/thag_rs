@@ -334,7 +334,7 @@ Instead, you can simply compile it to a fast Rust command with the --executable 
 thag --rapid                                                    # Short form: -r
 ```
 
-[![asciicast](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT.svg)](https://asciinema.org/a/Ydpea3nitN5hzsnbByF7iqICT)
+[![asciicast](https://asciinema.org/a/fsVoBuZSc1c8JwhfkTBRZxBoV.svg)](https://asciinema.org/a/fsVoBuZSc1c8JwhfkTBRZxBoV)
 
 *Click to watch: Interactive rapid iteration session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
 

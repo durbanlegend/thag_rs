@@ -18,17 +18,18 @@
 /// thag -T demo/proc_macro_generate_tests.rs   # Long form: --test-only
 /// ```
 ///
-/// The `-T`/`--test-only` flag must appear *before* the script path; it is a thag option,
-/// not a script argument. Anything after `--` is forwarded to the test harness, e.g.:
+/// `-T`/`--test-only` is a thag flag and can appear anywhere on the command line.
+/// Anything after `--` is forwarded to the test harness, e.g.:
 ///
 /// ```bash
 /// thag -T demo/proc_macro_generate_tests.rs -- --nocapture
 /// thag -T demo/proc_macro_generate_tests.rs -- test_addition   # filter by name
 /// ```
 ///
-/// The generated Cargo project (source + `Cargo.toml`) persists in
-/// `$TMPDIR/thag_rs/proc_macro_generate_tests/` and is not deleted after the run.
-/// You can also invoke cargo directly there:
+/// The generated Cargo project persists in `$TMPDIR/thag_rs/proc_macro_generate_tests/`
+/// and is not deleted after the run. Only `Cargo.toml` and `Cargo.lock` are stored there;
+/// the `[[bin]] path` in `Cargo.toml` points back to the original script file, so no
+/// source copy is made. You can invoke cargo directly in that directory:
 ///
 /// ```bash
 /// cd $TMPDIR/thag_rs/proc_macro_generate_tests

@@ -25,3 +25,5 @@ path = "lib.rs"
 [features]
 expand = []
 default = ["expand"]
+
+[workspace]

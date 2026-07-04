@@ -641,7 +641,7 @@ This panics beyond `34!` due to using Rust primitives, but see `demo/factorial_d
 
 Three `thag` features that make expressions powerful are:
 
-1. The ability to compile them with `-x` (caution: `-ex` ❌, `-xe` ✅ to make a release build.
+1. The ability to compile them with `-x` (caution: `-ex` ❌, `-xe` ✅) to make a release build.
 
 2. Dependency inference means no need to provide a Cargo.toml or other form of dependency metadata.
 
@@ -661,7 +661,7 @@ $ myip
 thag -e "$(cat demo/fizz_buzz_gpt.rs)"
 ```
 The `--expr` flag not only evaluates an expression, it also accepts a valid Rust program or set of statements.
-The different ways `thag` accepts code are as far as possible "orthagonal" to the common way it processes them.
+The different ways `thag` accepts code are as far as possible orthogonal to the common way it processes them.
 
 ### Running a script in quiet mode but with timings
 ```bash
@@ -741,7 +741,7 @@ Missing toml entries are not pulled in for crates that are only referenced by qu
 If you want to ensure that a dependency in a TOML block is up to date, you can get the latest version in copyable format by issuing `cargo search <crate> [--limit 1]` from the command line. Alternatively, comment it out temporarily with a hash (`#`) and let `thag -c` do the search for you.
 
 ## Platform Support
-This crate is designed to be cross-platform, and supports MacOS, Linux and Windows.
+``thag_rs`` is designed to be cross-platform, and supports MacOS, Linux and Windows.
 
 ### Currently tested on:
 * MacOS (M1) Sonoma, Sequoia, Tahoe.

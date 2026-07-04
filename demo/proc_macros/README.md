@@ -256,7 +256,7 @@ fn debug_operation() -> i32 {
 **Run Example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_timing.rs | less
 ```
 
 ---
@@ -368,12 +368,15 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_gener
 
 To use these macros in your project:
 
+#### Cargo.toml
 ```toml
 [dependencies]
 thag_demo_proc_macros = { path = "demo/proc_macros" }
 ```
 
 Or when using `thag_rs`:
+
+#### Script source
 
 ```rust
 // "thag_demo_proc_macros" is automatically resolved
@@ -419,16 +422,43 @@ cargo test
 ```
 
 ### Macro Expansion
-Many macros support the `expand` feature to show generated code during compilation:
-```bash
-cargo build --features expand
+
+There are two distinct expansion mechanisms, depending on the macro type.
+
+**Attribute macros** (`cached`, `timing`, `retry`) — pass `expand` as an argument directly at the call site.
+The Cargo `expand` feature has no effect on these:
+
+```rust
+#[cached(expand)]
+fn fibonacci(n: u32) -> u32 { ... }
+
+#[timing(expand)]
+fn slow_fn() -> i32 { ... }
+
+#[retry(times = 3, expand)]
+fn fallible() -> Result<String, std::io::Error> { ... }
 ```
+
+**Derive macros** (`DeriveConstructor`, `DeriveBuilder`, `DeriveDisplay`, `DeriveGetters`) — add
+`#[expand_macro]` to the annotated struct or enum. The `expand` Cargo feature is enabled by
+default, so no special build flags are needed:
+
+```rust
+#[derive(DeriveBuilder)]
+#[expand_macro]
+struct Config {
+    host: String,
+    port: u16,
+}
+```
+
+In both cases the pretty-printed generated code is written to `stderr` during compilation and
+appears in the build output.
 
 ### Example Testing
 Test individual examples (requires setting `THAG_DEV_PATH`):
 
 ```bash
 export THAG_DEV_PATH=$(pwd)  # From thag_rs root directory
-cargo run --bin thag -- demo/proc_macro_const_demo.rs
 cargo run --bin thag -- demo/proc_macro_derive_constructor.rs
 ```

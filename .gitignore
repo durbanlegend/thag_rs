@@ -8,7 +8,6 @@
 .zed/debug.json
 /target
 404.html
-Terrminal-theme_color_ref_chat_Claude.txt
 app.log
 async_docs_report.txt
 bank/
@@ -85,8 +84,7 @@ dont_track.txt
 +7659
 .bashrc
 .vale.ini
-CLAUDE.local.md
-CLAUDE.md
+
 DOCUMENTATION_REVIEW.md
 HYBRID_THEMING_SUMMARY.md
 IMAGE_THEME_GENERATION.md

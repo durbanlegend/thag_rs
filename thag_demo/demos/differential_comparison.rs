@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "1, thag-auto", features = ["time_profiling", "demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 inferno = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
 
@@ -15,7 +15,6 @@ strip = false
 //# Categories: profiling, demo, comparison, optimization, differential
 use std::io::Write;
 use std::process::{exit, Command};
-use thag_profiler::timing;
 
 // Inline visualization functionality for this demo
 mod visualization {
@@ -446,11 +445,10 @@ fn main() {
     show_interactive_differential_prompt();
 }
 
-#[timing]
 fn run_before_version() -> Result<(), Box<dyn std::error::Error>> {
     let before_script = r#"/*[toml]
 [dependencies]
-thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling", "demo"] }
 
 [profile.release]
 debug = true
@@ -461,6 +459,7 @@ strip = false
 use thag_profiler::{enable_profiling, profiled};
 
 // Not profiled directly - wrapped by demonstrate_sorting to avoid recursion detection
+#[profiled]
 fn sort(mut arr: Vec<i32>) -> Vec<i32> {
     // Inefficient bubble sort - O(n²)
     let n = arr.len();
@@ -472,12 +471,6 @@ fn sort(mut arr: Vec<i32>) -> Vec<i32> {
         }
     }
     arr
-}
-
-#[profiled]
-fn demonstrate_sorting() {
-    let test_data: Vec<i32> = (0..2000).rev().collect();
-    let _sorted = sort(test_data);
 }
 
 #[profiled]
@@ -504,9 +497,9 @@ fn lookup() {
     }
 }
 
-#[profiled]
 fn run_all_tests() {
-    demonstrate_sorting();
+    let test_data: Vec<i32> = (0..5000).rev().collect();
+    let _sorted = sort(test_data);
     string_concat();
     lookup();
 }
@@ -542,6 +535,8 @@ fn main() {
         .into());
     }
 
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("{stdout}");
     println!("✅ Before version completed successfully");
 
     // // Wait a moment to ensure all profile files are written
@@ -550,11 +545,10 @@ fn main() {
     Ok(())
 }
 
-#[timing]
 fn run_after_version() -> Result<(), Box<dyn std::error::Error>> {
     let after_script = r#"/*[toml]
 [dependencies]
-thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling", "demo"] }
 
 [profile.release]
 debug = true
@@ -566,16 +560,11 @@ use std::collections::HashMap;
 use thag_profiler::{enable_profiling, profiled};
 
 // Not profiled directly - wrapped by demonstrate_sorting to avoid recursion detection
+#[profiled]
 fn sort(mut arr: Vec<i32>) -> Vec<i32> {
     // Rust stdlib introsort - O(n log n), in-place, no extra allocations
     arr.sort_unstable();
     arr
-}
-
-#[profiled]
-fn demonstrate_sorting() {
-    let test_data: Vec<i32> = (0..2000).rev().collect();
-    let _sorted = sort(test_data);
 }
 
 #[profiled]
@@ -603,9 +592,9 @@ fn lookup() {
     }
 }
 
-#[profiled]
 fn run_all_tests() {
-    demonstrate_sorting();
+    let test_data: Vec<i32> = (0..5000).rev().collect();
+    let _sorted = sort(test_data);
     string_concat();
     lookup();
 }
@@ -640,6 +629,8 @@ fn main() {
         .into());
     }
 
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("{stdout}");
     println!("✅ After version completed successfully");
 
     // // Wait a moment to ensure all profile files are written
@@ -784,7 +775,7 @@ fn generate_and_show_differential_flamegraph() -> Result<(), Box<dyn std::error:
         println!(
             "🔍 Red bars show functions that got slower, blue bars show functions that got faster"
         );
-        println!("📊 Bar width represents the performance difference magnitude");
+        println!("📊 Bar width represents the 'after' performance");
         println!("💡 You should see dramatic improvements in sorting, string ops, and lookups!");
     }
 

@@ -193,9 +193,10 @@ pub fn analyze_profile(
                 // Skip root function if profiled
                 let n = usize::from(functions.len() > 1);
                 for &func_name in &functions[n..] {
-                    let clean_name = clean_function_name(func_name);
+                    // let clean_name = clean_function_name(func_name);
                     // eprintln!("clean_name={clean_name}, value={value}");
-                    *function_value_map.entry(clean_name).or_insert(0) += value;
+                    // *function_value_map.entry(clean_name).or_insert(0) += value;
+                    *function_value_map.entry(func_name.to_string()).or_insert(0) += value;
                 }
             }
         }
@@ -566,6 +567,7 @@ fn generate_and_show_flamegraph(
     Ok(())
 }
 
+#[allow(dead_code)]
 /// Clean function names for better display
 fn clean_function_name(name: &str) -> String {
     let clean = name.split("::").last().unwrap_or(name);

@@ -9,7 +9,7 @@ Get started with thag_styling's theme-aware terminal styling in under 5 minutes!
 ```toml
 # Cargo.toml
 [dependencies]
-thag_styling = { version = "0.2.0", features = ["crossterm_support", "color_detect"] }
+thag_styling = { version = "1", features = ["crossterm_support", "color_detect"] }
 crossterm = "0.28.1"
 ```
 
@@ -35,7 +35,7 @@ Choose the integrations you need:
 
 ```toml
 [dependencies.thag_styling]
-version = "0.2.0"
+version = "1"
 features = [
     "color_detect",         # Essential: Enables detection + theme selection
     "crossterm_support",    # Cross-platform terminal (recommended)

@@ -82,7 +82,7 @@ Here is a small sample of the 300+ built-in `thag_styling` themes, with descript
 - **Crossterm** — Terminal manipulation with themed helpers
 - **Console** — Popular styling library integration
 - **Inquire** — Theming for terminal prompts
-- **Nu-ANSI-Term** — Shell and REPL theming support
+- **Nu-ANSI-Term** — Shell and iterative mode theming support
 - **Owo-Colors** — Popular colorizing and styling crate.
 
 ### Theme Ecosystem

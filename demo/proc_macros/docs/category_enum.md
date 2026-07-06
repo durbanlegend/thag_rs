@@ -69,7 +69,7 @@ for category in categories {
 ```rust
 AST
 CLI
-REPL
+ITER
 Async
 Basic
 BigNumbers

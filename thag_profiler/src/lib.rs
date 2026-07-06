@@ -15,10 +15,10 @@
 //!
 //! ```toml
 //! # Time profiling only (default)
-//! thag_profiler = { version = "0.1.0" }
+//! thag_profiler = { version = "1" }
 //!
 //! # Full profiling with memory tracking
-//! thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
+//! thag_profiler = { version = "1", features = ["full_profiling"] }
 //! ```
 //!
 //! ## Basic Usage

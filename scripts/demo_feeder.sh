@@ -1,6 +1,6 @@
 #!/bin/bash
 lines=(
-    "# Here's a short demo of the thag REPL."
+    "# Here's a short demo of the thag ITER."
     "# Evaluating a single-line expression:"
     "# We can get as gnarly as we like. Let's compute a series of cubes:"
     '(1..=50).map(|x| x * x).filter(|x| x % 3 != 0).enumerate().map(|(i, v)| println!("{}:{}", i, v)).collect::<Vec<_>>().join(", ")'

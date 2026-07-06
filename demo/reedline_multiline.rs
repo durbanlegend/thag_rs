@@ -11,7 +11,7 @@
 ///
 /// Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 ///
-//# Purpose: Explore options for handling multi-line expressions in a REPL.
+//# Purpose: Explore options for handling multi-line expressions in iterative mode.
 //# Categories: crates, technique
 use nu_ansi_term::{Color, Style};
 use reedline::{

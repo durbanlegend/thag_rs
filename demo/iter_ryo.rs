@@ -19,7 +19,7 @@ reedline = ["thag_rs/reedline"]
 simplelog = ["thag_rs/simplelog"]
 */
 #![allow(clippy::uninlined_format_args)]
-/// A demo of a roll-your-own iterative Rust processor. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
+/// A demo of a roll-your-own iterative Rust processor. This one is based on `thag_(rs)`'s own `iter` module, so relies heavily on `thag(_rs)`
 /// as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
 /// plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
 //# Purpose: Demonstrate building a `thag`-style iterative Rust processor.
@@ -78,7 +78,7 @@ use tui_textarea::{Input, TextArea};
 //     }
 // }
 
-// Custom get_args function that automatically sets iter=true for the bank REPL
+// Custom get_args function that automatically sets iter=true for the bank ITER
 fn get_args() -> Cli {
     // Try to parse normally first
     match Cli::try_parse() {
@@ -87,7 +87,7 @@ fn get_args() -> Cli {
             cli
         }
         Err(_) => {
-            // If parsing fails (e.g., no arguments provided), create a default CLI with repl=true
+            // If parsing fails (e.g., no arguments provided), create a default CLI with iter=true
             Cli {
                 script: None,
                 features: None,
@@ -291,7 +291,7 @@ const CMD_DESCS: &[[&str; 2]; 59] = &[
 pub enum IterCommand {
     // Show the banner
     Banner,
-    // Promote the Rust expression to the TUI (Terminal user interface) repl, which can handle any script. This is a one-way process but the original expression will be saved in history.
+    // Promote the Rust expression to the TUI (Terminal user interface) iter, which can handle any script. This is a one-way process but the original expression will be saved in history.
     Tui,
     // Edit the Rust expression. Edit+run can also be used as an alternative to eval for longer snippets and programs.
     Edit,

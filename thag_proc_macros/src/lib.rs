@@ -143,7 +143,7 @@ impl Parse for AttrArgs {
 /// pub enum Category {
 ///     AST,
 ///     CLI,
-///     REPL,
+///     ITER,
 ///     Async,
 ///     Basic,
 ///     BigNumbers,
@@ -170,7 +170,7 @@ impl Parse for AttrArgs {
 ///         match s {
 ///             "AST" => Ok(Category::AST),
 ///             "CLI" => Ok(Category::CLI),
-///             "REPL" => Ok(Category::REPL),
+///             "ITER" => Ok(Category::ITER),
 ///             "Async" => Ok(Category::Async),
 ///             // ... other variants ...
 ///             _ => Err(format!("Invalid category: {s}")),
@@ -181,7 +181,7 @@ impl Parse for AttrArgs {
 /// impl Category {
 ///     pub fn all_categories() -> Vec<&'static str> {
 ///         vec![
-///             "AST", "CLI", "REPL", "Async", "Basic", "BigNumbers", "Crates",
+///             "AST", "CLI", "ITER", "Async", "Basic", "BigNumbers", "Crates",
 ///             "Educational", "ErrorHandling", "Exploration", "Macros", "Math",
 ///             "ProcMacros", "Prototype", "Recreational", "Reference", "Technique",
 ///             "Testing", "Tools", "TypeIdentification",

@@ -1,10 +1,12 @@
 # thag_profiler
 
-An accurate lightweight cross-platform profiling library for Rust applications, offering time and/or memory profiling with minimal boilerplate and your choice of color schemes.
+An accurate lightweight cross-platform profiling library and toolkit for Rust applications that aims to lower the barriers to analysing code performance.
 
-An independent offshoot of the `thag(_rs)` script runner and REPL.
+`thag_profiler` offers time and/or memory profiling with minimal instrumentation, graphical output with your choice of color schemes, and tabular reports.
 
-Why choose `thag_profiler`?:
+An independent offshoot of the `thag(_rs)` script runner, which itself uses and contains demos of `thag_profiler`.
+
+## Why choose `thag_profiler`?:**
 
  - quick and easy to set up and run
 
@@ -18,6 +20,26 @@ Why choose `thag_profiler`?:
 
  - pure Rust with no platform dependencies
 
+ A 1 minute demo and the resulting interactive flamegraph below show how quick and non-destructive it can be to profile your code.
+ 
+## Origin story
+
+I wrote `thag_profiler` because I wanted my own code to be fast, but without beating myself up in the process. Not that there weren't already good tools like `firestorm` and `dhat`, but because the solutions discussed mostly seemed to entail all manner of limitations, difficulties and platform restrictions, creating barriers that end up putting developers off using them.
+
+If I had to instrument code, the instrumentation must not slow down the code when profiling is not active. Also, there must be automated techniques for adding and removing the instrumentation.
+
+If profiling tools tended to neglect async functions or memory profiling, a lot of work was going to go into making `thag_profiler` handle them.
+
+If profiling tools tended to produce inaccurate or approximate output, `thag_profiler` was going to be as precise as I could make it (full disclosure: perfect precision is not achievable with memory profiling). I was also going to cater for a selective fully detailed memory profile option to allow drilling down into memory allocation hotspots.
+
+If profiling tools' output tended to need a lot of interpretation, `thag_profiler` was going to make it as easy as possible to visualise the results as flamegraphs (thanks to `inferno`) or as tabular reports, and keep them organised by program and date-time for as long as needed.
+
+If profiling tools tended to be confined to one platform, `thag_profiler` was going to be cross-platform.
+
+Surprisingly, all this seems to have been possible for a [grug brained developer](https://grugbrain.dev/) such as myself. With a lot of effort, testing and wrangling of Claude Sonnet, I've done about the very best job of it that I could, and I trust you may find it useful.
+
+## Overview
+
 ---
 
 [![Rust-themed flamechart](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_rust_time.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/flamechart_rust_time.svg)<br>
@@ -25,23 +47,23 @@ Why choose `thag_profiler`?:
 
 ---
 
-Instrumentation:
+### Instrumentation:
 
 - `#[enable_profiling]` attribute for your lowest-level profiled function, typically `main`
 
 - `#[profiled]` attribute for other functions
 
-- `profile!` ... `end!` macro pairs for code sections.
+- `profile!` ... `end!` macro pairs can be used for code sections.
 
   Each of these items offers a range of options for any combination of time, memory summary and memory detail profiling.
 
-Instrumentation tools:
+### Instrumentation tools:
 
 - `thag_instrument` command to add the attributes to every function and method of a .rs file
 
 - `thag_uninstrument` command to remove them.
 
-Output analysis:
+### Output analysis tool:
 
 - `thag_profile` to select, filter and display:
 
@@ -157,19 +179,19 @@ For inactive instrumentation, no features are needed:
 
 ```toml
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 ```
 
 To activate time profiling alone, you need the `time_profiling` feature:
 
 ```toml
-thag_profiler = { version = "0.1.0", features = ["time_profiling"] }
+thag_profiler = { version = "1", features = ["time_profiling"] }
 ```
 
 For comprehensive profiling (memory and optionally time), you need the `full_profiling` feature:
 
 ```toml
-thag_profiler = { version = "0.1.0", features = ["full_profiling"] }
+thag_profiler = { version = "1", features = ["full_profiling"] }
 ```
 
 Install the profiling tools:
@@ -328,14 +350,14 @@ In order to activate profiling, the desired `thag_profiler` feature - `time_prof
 
 ```toml
 [dependencies]
-thag_profiler = { version = "0.1", features = ["full_profiling"] }
+thag_profiler = { version = "1", features = ["full_profiling"] }
 ```
 
   or via a feature of your own project, with a default:
 
 ```toml
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 
 [features]
 my_profiling = ["thag_profiler/time_profiling"]
@@ -350,7 +372,7 @@ default = [my_profiling]
 
 ```toml
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 
 [features]
 my_profiling = ["thag_profiler/time_profiling"]
@@ -366,7 +388,7 @@ cargo run --features my_profiling
 
 ```toml
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 ```
 
 then run with:
@@ -391,7 +413,7 @@ cargo run --features thag_profiler/time_profiling
 ```rust
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1", features = ["time_profiling"] }
+thag_profiler = { version = "1", features = ["time_profiling"] }
 */
 ```
 
@@ -400,7 +422,7 @@ thag_profiler = { version = "0.1", features = ["time_profiling"] }
 ```toml
 /*[toml]
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 
 [features]
 my_profiling = ["thag_profiler/full_profiling"]
@@ -419,7 +441,7 @@ default = [my_profiling]
 ```toml
 /*[toml]
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 
 [features]
 # For time profiling only
@@ -441,7 +463,7 @@ cargo run bank/mem_prof.rs --features=my_profiling
 ```rust
 /*[toml]
 [dependencies]
-thag_profiler = "0.1.0"
+thag_profiler = "1"
 */
 ```
 
@@ -654,7 +676,7 @@ fn expensive_calculation() -> u64 {
 }
 ```
 
-Works with async functions too:
+Async functions:
 
 ```rust
 #[profiled]
@@ -676,9 +698,11 @@ impl MyStruct {
 
 #### Attribute Options
 
-The `#[profiled]` attribute macro accepts several arguments that configure how profiling is performed.
+The `#[profiled]` attribute macro accepts several optional arguments that configure how profiling is performed.
 
 ##### Usage
+
+Without arguments:
 
 ```rust
 #[profiled]
@@ -1125,7 +1149,7 @@ donf@MacBook-Air thag_rs %
 
 ##### A project example of detailed memory profiling
 
-Here is `thag` itself in REPL mode, profiled in the same way:
+Here is `thag` itself in iterative mode, profiled in the same way:
 
 [![Global detailed memory flamechart: thag](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.png)](https://durbanlegend.github.io/thag_rs/thag_profiler/assets/memory_flamegraph_detail_thag.svg)<br>
 *Detailed memory allocation profile in <code>inferno</code> "orange" color scheme showing all dependencies. Click on image for interactive version with clickable bars and search.*

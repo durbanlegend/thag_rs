@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling", "demo"] }
 inferno = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
 
@@ -18,7 +18,6 @@ use ibig::{ubig, UBig};
 use inferno::flamegraph::{self, color::BasicPalette, Options, Palette};
 use num_traits::identities::One;
 use std::collections::HashMap;
-use std::io::Write;
 use std::iter::successors;
 use std::thread;
 use std::time::Duration;

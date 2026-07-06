@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling", "demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling", "demo"] }
 
 [profile.release]
 debug = true
@@ -11,7 +11,6 @@ strip = false
 /// This demo demonstrates full profiling capabilities including time, memory, and detailed analysis
 //# Purpose: Demonstrate comprehensive benchmark profiling with thag_profiler
 //# Categories: profiling, demo, benchmark, performance
-use rand::{rng, Rng};
 use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -34,15 +33,14 @@ struct DataPoint {
 #[timing]
 #[profiled(time, mem_summary)]
 fn generate_test_data(count: usize) -> Vec<DataPoint> {
-    let mut rng = rng();
     let categories = vec!["A", "B", "C", "D", "E"];
 
     (0..count)
         .map(|i| DataPoint {
             id: i as u64,
-            value: rng.random_range(0.0..1000.0),
-            category: categories[rng.random_range(0..categories.len())].to_string(),
-            timestamp: rng.random_range(1_000_000..2_000_000),
+            value: rand::random_range(0.0..1000.0),
+            category: categories[rand::random_range(0..categories.len())].to_string(),
+            timestamp: rand::random_range(1_000_000..2_000_000),
         })
         .collect()
 }
@@ -148,7 +146,11 @@ fn cryptographic_hashing(data: &[String]) -> Vec<String> {
         .map(|item| {
             let mut hasher = Sha256::new();
             hasher.update(item.as_bytes());
-            format!("{:x}", hasher.finalize())
+            hasher
+                .finalize()
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<String>()
         })
         .collect()
 }

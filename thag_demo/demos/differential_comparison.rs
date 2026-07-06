@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling", "demo"] }
 inferno = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
 
@@ -38,33 +38,7 @@ mod visualization {
             after_file: &PathBuf,
             output_path: &str,
             config: super::VisualizationConfig,
-            // before_name: &str,
-            // after_name: &str,
         ) -> Result<(), Box<dyn std::error::Error>> {
-            // Generate manual differential by computing differences
-            // let before_stacks = parse_folded_file(before_file)?;
-            // let after_stacks = parse_folded_file(after_file)?;
-
-            // let diff_stacks = compute_stack_diff(&before_stacks, &after_stacks)?;
-
-            // if diff_stacks.is_empty() {
-            //     return Err("No differential data to visualize".into());
-            // }
-
-            // // Create temporary differential file
-            // let temp_path = std::env::temp_dir().join("temp_differential.folded");
-            // let mut temp_file = File::create(&temp_path)?;
-
-            // for (stack, count) in diff_stacks {
-            //     writeln!(temp_file, "{} {}", stack, count)?;
-            // }
-            // temp_file.flush()?;
-            // drop(temp_file);
-
-            // // Generate flamegraph from differential data
-            // let diff_content = std::fs::read_to_string(&temp_path)?;
-            // let stacks: Vec<String> = diff_content.lines().map(|line| line.to_string()).collect();
-
             // First, generate the differential data
             let mut diff_data = Vec::new();
             inferno::differential::from_files(
@@ -98,61 +72,6 @@ mod visualization {
 
             Ok(())
         }
-
-        // fn parse_folded_file(
-        //     file_path: &PathBuf,
-        // ) -> Result<HashMap<String, i64>, Box<dyn std::error::Error>> {
-        //     let content = std::fs::read_to_string(file_path)?;
-        //     let mut stacks = HashMap::new();
-
-        //     for line in content.lines() {
-        //         if line.trim().is_empty() {
-        //             continue;
-        //         }
-
-        //         let parts: Vec<&str> = line.split_whitespace().collect();
-        //         if parts.len() >= 2 {
-        //             let stack = parts[0].to_string();
-        //             let count: i64 = parts[1].parse().unwrap_or(0);
-        //             *stacks.entry(stack).or_insert(0) += count;
-        //         }
-        //     }
-
-        //     Ok(stacks)
-        // }
-
-        // fn compute_stack_diff(
-        //     before: &HashMap<String, i64>,
-        //     after: &HashMap<String, i64>,
-        // ) -> Result<Vec<(String, i64)>, Box<dyn std::error::Error>> {
-        //     let mut diff_stacks = Vec::new();
-        //     let mut all_stacks = std::collections::HashSet::new();
-
-        //     // Collect all unique stacks
-        //     for stack in before.keys() {
-        //         all_stacks.insert(stack.clone());
-        //     }
-        //     for stack in after.keys() {
-        //         all_stacks.insert(stack.clone());
-        //     }
-
-        //     // Calculate differences
-        //     for stack in all_stacks {
-        //         let before_count = before.get(&stack).copied().unwrap_or(0);
-        //         let after_count = after.get(&stack).copied().unwrap_or(0);
-        //         let diff = after_count - before_count;
-
-        //         // Only include stacks with significant differences
-        //         if diff != 0 {
-        //             diff_stacks.push((stack, diff));
-        //         }
-        //     }
-
-        //     // Sort by absolute difference (largest changes first)
-        //     diff_stacks.sort_by(|a, b| b.1.abs().cmp(&a.1.abs()));
-
-        //     Ok(diff_stacks)
-        // }
     }
 
     pub mod profile_analysis {
@@ -212,17 +131,6 @@ mod visualization {
 
             let mut functions: Vec<_> = function_times.into_iter().collect();
             functions.sort_by(|a, b| b.1.cmp(&a.1));
-
-            // let top_functions: Vec<_> = functions
-            //     .iter()
-            //     .take(10)
-            //     .map(|(name, time)| {
-            //         let percentage = (*time as f64 / total_duration_us as f64) * 100.0;
-            //         (name.clone(), *time, percentage)
-            //     })
-            //     .collect();
-
-            // let insights = vec!["Analysis completed".to_string()];
 
             Ok(ProfileAnalysis {
                 total_duration_us,
@@ -444,15 +352,6 @@ mod visualization {
         }
     }
 
-    // #[derive(Debug, Clone)]
-    // pub enum AnalysisType {
-    //     Single,
-    //     Differential {
-    //         before_name: String,
-    //         after_name: String,
-    //     },
-    // }
-
     pub fn find_latest_profile_files(
         pattern: &str,
         count: usize,
@@ -485,30 +384,6 @@ mod visualization {
         files.truncate(count);
         Ok(files)
     }
-
-    // pub fn open_in_browser(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    //     let full_path = std::env::current_dir()?.join(file_path);
-    //     let url = format!("file://{}", full_path.display());
-
-    //     #[cfg(target_os = "macos")]
-    //     {
-    //         std::process::Command::new("open").arg(&url).spawn()?;
-    //     }
-
-    //     #[cfg(target_os = "linux")]
-    //     {
-    //         std::process::Command::new("xdg-open").arg(&url).spawn()?;
-    //     }
-
-    //     #[cfg(target_os = "windows")]
-    //     {
-    //         std::process::Command::new("rundll32")
-    //             .args(&["url.dll,FileProtocolHandler", &url])
-    //             .spawn()?;
-    //     }
-
-    //     Ok(())
-    // }
 }
 
 use visualization::*;
@@ -575,7 +450,7 @@ fn main() {
 fn run_before_version() -> Result<(), Box<dyn std::error::Error>> {
     let before_script = r#"/*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 
 [profile.release]
 debug = true
@@ -583,11 +458,11 @@ strip = false
 */
 
 /// Comparison demo - BEFORE version with inefficient implementations
-use std::collections::HashMap;
-use thag_profiler::{enable_profiling, end, profile, profiled};
+use thag_profiler::{enable_profiling, profiled};
 
-#[profiled]
+// Not profiled directly - wrapped by demonstrate_sorting to avoid recursion detection
 fn sort(mut arr: Vec<i32>) -> Vec<i32> {
+    // Inefficient bubble sort - O(n²)
     let n = arr.len();
     for i in 0..n {
         for j in 0..n - 1 - i {
@@ -600,59 +475,40 @@ fn sort(mut arr: Vec<i32>) -> Vec<i32> {
 }
 
 #[profiled]
-fn string_concat(words: &[&str]) {
-    let concat = |words: &[&str]| {
+fn demonstrate_sorting() {
+    let test_data: Vec<i32> = (0..2000).rev().collect();
+    let _sorted = sort(test_data);
+}
+
+#[profiled]
+fn string_concat() {
+    let words = vec!["hello", "world", "test"];
+    let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
+    for _ in 0..100 {
         let mut result = String::new();
-        for word in words {
+        for word in &test_words {
             result = result + word + " ";
         }
-        result
-    };
-
-    for _ in 0..100 {
-        let _result = concat(words);
+        let _result = result;
     }
 }
 
 #[profiled]
-fn lookup(vector_data: &[(String, i32)]) {
-    let lookup = |data: &[(String, i32)], key: &str| {
-        for (k, v) in data {
-            if k == key {
-                return Some(*v);
-            }
-        }
-        None
-    };
-
+fn lookup() {
+    let mut vector_data: Vec<(String, i32)> = Vec::new();
+    for i in 0..1000 {
+        vector_data.push((format!("key_{}", i), i * 2));
+    }
     for _ in 0..1000 {
-        let _result = lookup(vector_data, "key_500");
+        let _result = vector_data.iter().find(|(k, _)| k == "key_500").map(|(_, v)| *v);
     }
 }
 
 #[profiled]
 fn run_all_tests() {
-    profile!(sort_prep);
-    let test_data: Vec<i32> = (0..1000).rev().collect();
-    end!(sort_prep);
-
-    let _sorted = sort(test_data);
-
-    profile!(concat_prep);
-    let words = vec!["hello", "world", "test"];
-    let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
-    end!(concat_prep);
-
-    string_concat(&test_words);
-
-    profile!(lookup_prep);
-    let mut vector_data = Vec::new();
-    for i in 0..1000 {
-        vector_data.push((format!("key_{}", i), i * 2));
-    }
-    end!(lookup_prep);
-
-    lookup(&vector_data);
+    demonstrate_sorting();
+    string_concat();
+    lookup();
 }
 
 #[enable_profiling(time)]
@@ -663,9 +519,10 @@ fn main() {
 }
 "#;
 
-    // Create temporary file for before script - use same name for both runs
+    // Distinct from the outer demo script; same stem as after script so thag_profile
+    // can group the two runs together for differential comparison
     let temp_dir = std::env::temp_dir();
-    let script_path = temp_dir.join("thag_demo_differential_comparison.rs");
+    let script_path = temp_dir.join("thag_diff_comparison.rs");
     std::fs::write(&script_path, before_script)?;
 
     // Run the before script using thag command
@@ -697,7 +554,7 @@ fn main() {
 fn run_after_version() -> Result<(), Box<dyn std::error::Error>> {
     let after_script = r#"/*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 
 [profile.release]
 debug = true
@@ -706,60 +563,41 @@ strip = false
 
 /// Comparison demo - AFTER version with efficient implementations
 use std::collections::HashMap;
-use thag_profiler::{enable_profiling, end, profile, profiled};
+use thag_profiler::{enable_profiling, profiled};
 
-#[profiled]
-fn sort(arr: Vec<i32>) -> Vec<i32> {
-    quicksort(arr)
-}
-
-fn quicksort(mut arr: Vec<i32>) -> Vec<i32> {
-    if arr.len() <= 1 {
-        return arr;
-    }
-    let pivot = arr.len() / 2;
-    let pivot_value = arr[pivot];
-    let len = arr.len();
-    arr.swap(pivot, len - 1);
-
-    let mut i = 0;
-    for j in 0..len - 1 {
-        if arr[j] < pivot_value {
-            arr.swap(i, j);
-            i += 1;
-        }
-    }
-    arr.swap(i, len - 1);
-
-    let (left, right) = arr.split_at_mut(i);
-    let (pivot_slice, right) = right.split_at_mut(1);
-
-    let mut left_sorted = quicksort(left.to_vec());
-    let right_sorted = quicksort(right.to_vec());
-
-    left_sorted.extend_from_slice(pivot_slice);
-    left_sorted.extend_from_slice(&right_sorted);
-    left_sorted
+// Not profiled directly - wrapped by demonstrate_sorting to avoid recursion detection
+fn sort(mut arr: Vec<i32>) -> Vec<i32> {
+    // Rust stdlib introsort - O(n log n), in-place, no extra allocations
+    arr.sort_unstable();
+    arr
 }
 
 #[profiled]
-fn string_concat(words: &[&str]) {
-    let concat = |words: &[&str]| {
-        let mut result = String::with_capacity(words.len() * 10);
-        for word in words {
+fn demonstrate_sorting() {
+    let test_data: Vec<i32> = (0..2000).rev().collect();
+    let _sorted = sort(test_data);
+}
+
+#[profiled]
+fn string_concat() {
+    let words = vec!["hello", "world", "test"];
+    let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
+    for _ in 0..100 {
+        let mut result = String::with_capacity(test_words.len() * 10);
+        for word in &test_words {
             result.push_str(word);
             result.push(' ');
         }
-        result
-    };
-
-    for _ in 0..100 {
-        let _result = concat(words);
+        let _result = result;
     }
 }
 
 #[profiled]
-fn lookup(hashmap_data: &HashMap<String, i32>) {
+fn lookup() {
+    let mut hashmap_data: HashMap<String, i32> = HashMap::new();
+    for i in 0..1000 {
+        hashmap_data.insert(format!("key_{}", i), i * 2);
+    }
     for _ in 0..1000 {
         let _result = hashmap_data.get("key_500").copied();
     }
@@ -767,27 +605,9 @@ fn lookup(hashmap_data: &HashMap<String, i32>) {
 
 #[profiled]
 fn run_all_tests() {
-    profile!(sort_prep);
-    let test_data: Vec<i32> = (0..1000).rev().collect();
-    end!(sort_prep);
-
-    let _sorted = sort(test_data);
-
-    profile!(concat_prep);
-    let words = vec!["hello", "world", "test"];
-    let test_words: Vec<&str> = words.iter().cycle().take(1000).copied().collect();
-    end!(concat_prep);
-
-    string_concat(&test_words);
-
-    profile!(lookup_prep);
-    let mut hashmap_data = HashMap::new();
-    for i in 0..1000 {
-        hashmap_data.insert(format!("key_{}", i), i * 2);
-    }
-    end!(lookup_prep);
-
-    lookup(&hashmap_data);
+    demonstrate_sorting();
+    string_concat();
+    lookup();
 }
 
 #[enable_profiling(time)]
@@ -798,9 +618,9 @@ fn main() {
 }
 "#;
 
-    // Create temporary file for after script - use same name for both runs
+    // Same stem as before script so thag_profile can group the two runs for differential
     let temp_dir = std::env::temp_dir();
-    let script_path = temp_dir.join("thag_demo_differential_comparison.rs");
+    let script_path = temp_dir.join("thag_diff_comparison.rs");
     std::fs::write(&script_path, after_script)?;
 
     // Run the after script using thag command
@@ -830,7 +650,7 @@ fn main() {
 
 fn generate_differential_analysis() -> Result<(), Box<dyn std::error::Error>> {
     // Find the most recent profile files - they should have the same base name now
-    let all_files = find_latest_profile_files("thag_demo_differential_comparison", 10)?;
+    let all_files = find_latest_profile_files("thag_diff_comparison", 10)?;
 
     // Separate exclusive files (for differential comparison)
     let mut exclusive_files = Vec::new();
@@ -892,7 +712,7 @@ fn generate_differential_analysis() -> Result<(), Box<dyn std::error::Error>> {
 
 fn generate_and_show_differential_flamegraph() -> Result<(), Box<dyn std::error::Error>> {
     // Find the profile files again
-    let all_files = find_latest_profile_files("thag_demo_differential_comparison", 10)?;
+    let all_files = find_latest_profile_files("thag_diff_comparison", 10)?;
 
     // Separate exclusive files (for differential comparison)
     let mut exclusive_files = Vec::new();

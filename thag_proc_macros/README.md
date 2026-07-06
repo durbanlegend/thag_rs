@@ -184,7 +184,7 @@ For profiling usage, see the [thag_profiler documentation](https://docs.rs/thag_
 
 `thag_proc_macros` is one component of the larger `thag_rs` toolkit:
 
-- **[thag_rs](https://crates.io/crates/thag_rs)** - The main script runner and REPL
+- **[thag_rs](https://crates.io/crates/thag_rs)** - The main script runner and iterative processor
 
 - **[thag_profiler](https://crates.io/crates/thag_profiler)** - Lightweight code profiling (main user of these macros)
 

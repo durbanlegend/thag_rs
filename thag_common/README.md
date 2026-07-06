@@ -193,7 +193,7 @@ For detailed API documentation, see [docs.rs/thag_common](https://docs.rs/thag_c
 
 `thag_common` is one component of the larger `thag_rs` toolkit:
 
-- **[thag_rs](https://crates.io/crates/thag_rs)** - The main script runner and REPL
+- **[thag_rs](https://crates.io/crates/thag_rs)** - The main script runner and iterative processor
 
 - **[thag_styling](https://crates.io/crates/thag_styling)** - Terminal styling with theme support
 

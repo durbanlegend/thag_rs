@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 
 [profile.release]
 debug = true
@@ -11,10 +11,9 @@ strip = false
 /// This demo demonstrates the "before" state for differential profiling
 //# Purpose: Demonstrate inefficient implementations for before/after comparison
 //# Categories: profiling, demo, comparison, optimization, before
-use std::collections::HashMap;
 use thag_profiler::{enable_profiling, profiled};
 
-#[profiled]
+// #[profiled] Not profiled directly because comparison_after.rs counterpart can't be because recursive.
 fn sort(mut arr: Vec<i32>) -> Vec<i32> {
     // Inefficient bubble sort implementation - O(n²)
     let n = arr.len();

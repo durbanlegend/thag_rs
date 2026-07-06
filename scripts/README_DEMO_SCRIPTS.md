@@ -4,9 +4,9 @@ This directory contains scripts to help with smooth live demonstrations of thag,
 
 ## Scripts Overview
 
-### 1. `demo_feeder.sh` - REPL Demo Helper
+### 1. `demo_feeder.sh` - ITER Demo Helper
 
-**Purpose:** For demonstrating the thag REPL with clipboard-based paste.
+**Purpose:** For demonstrating the thag ITER with clipboard-based paste.
 
 **How it works:**
 - Displays each line of the demo script
@@ -17,10 +17,10 @@ This directory contains scripts to help with smooth live demonstrations of thag,
 **Usage:**
 ```bash
 ./scripts/demo_feeder.sh
-# In REPL: Press Cmd-V to paste each line
+# In ITER: Press Cmd-V to paste each line
 ```
 
-**Best for:** REPL demonstrations where you're showing interactive features.
+**Best for:** ITER demonstrations where you're showing interactive features.
 
 ---
 
@@ -118,7 +118,7 @@ bindkey '^N' demo_feed_widget  # Press Ctrl-N to advance
 
 ## Which Script Should I Use?
 
-### For REPL Demos:
+### For ITER Demos:
 → Use `demo_feeder.sh`
 
 ### For Command-Line Demos:

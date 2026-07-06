@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling", "demo"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling", "demo"] }
 
 [profile.release]
 debug = true
@@ -8,7 +8,7 @@ strip = false
 */
 
 /// Basic profiling demo - shows how to use thag_profiler for function timing
-/// This demo demonstrates the core profiling features of thag_profiler
+/// This demo demonstrates the core profiling features of thag_profiler, and also the effectiveness of the demo #cached attribute macro
 //# Purpose: Demonstrate basic time profiling with thag_profiler
 //# Categories: profiling, demo, timing
 use ibig::{ubig, UBig};
@@ -76,8 +76,8 @@ fn fibonacci_iter(n: usize) {
 #[profiled]
 #[timing]
 fn cpu_intensive_work() {
-    let mut sum = 0u64;
-    for i in 0..1_000_000 {
+    let mut sum = 0u128;
+    for i in 0..5_000_000 {
         sum += i * i;
     }
     println!("CPU work result: {}", sum);
@@ -217,6 +217,6 @@ fn main() {
     prompted_analysis(&file!(), ProfileType::Time, AnalysisType::Flamechart);
 
     println!("✅ Demo completed!");
-    println!("📊 Check the generated flamechart files for visual analysis.");
-    println!("🔍 Use 'thag_profile' command to analyze the profiling data.");
+    println!("📊 Check the generated flamechart files for visual analysis. Don't miss fibonacci_recursions_cached - it's very small! (Tip: search for 'cached')");
+    println!("🔍 Use 'thag_profile .' command and choose this program name to analyze the profiling data.");
 }

@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_profiler = { version = "0.1, thag-auto", features = ["time_profiling"] }
+thag_profiler = { version = "1, thag-auto", features = ["time_profiling"] }
 
 [profile.release]
 debug = true
@@ -14,7 +14,7 @@ strip = false
 use std::collections::HashMap;
 use thag_profiler::{enable_profiling, profiled};
 
-#[profiled]
+// #[profiled] Not profiled directly because recursive
 fn sort(mut arr: Vec<i32>) -> Vec<i32> {
     // Efficient quicksort implementation - O(n log n)
     if arr.len() <= 1 {
@@ -39,7 +39,7 @@ fn sort(mut arr: Vec<i32>) -> Vec<i32> {
     let (pivot_slice, right) = right.split_at_mut(1);
 
     let mut left_sorted = sort(left.to_vec());
-    let mut right_sorted = sort(right.to_vec());
+    let right_sorted = sort(right.to_vec());
 
     left_sorted.extend_from_slice(pivot_slice);
     left_sorted.extend_from_slice(&right_sorted);

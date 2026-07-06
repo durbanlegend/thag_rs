@@ -5,7 +5,7 @@
 //!
 //! Usage:
 //! ```bash
-//! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- apply thag-botticelli-birth-of-venus
+//! C
 //! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- preview thag-botticelli-birth-of-venus
 //! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- reset
 //! cargo run -p thag_styling --example palette_sync_demo --features="color_detect" -- demo

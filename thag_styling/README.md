@@ -4,13 +4,25 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-An innovative terminal styling system for Rust applications across platforms.
+An innovative, lightweight and easy to use terminal styling system for Rust applications across platforms.
+
+Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. It can become very time-consuming to achieve the desired look and feel for your terminal app and to make it consistent. All this work can be in vain when your app is deployed, because colors that 'pop' against a dark background may be faint or invisible against a user's light background, and vice versa.
+
+`thag_styling` provides a higher-level API where you choose the desired impact of each message by specifying one of 14 message types. Each message type has associated style atttributes (like boldness) and a color automatically preselected from the underlying terminal theme, as auto-detected or user specified. Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you.
+
+As part of the `thag_rs` ecosystem, `thag_styling` prioritises reliability, speed and ease of use.
+
+## Origin story
+
+`thag_styling` was written in the first place to `thag` itself, because I wanted easy automated styling for `thag` and could find nothing that fitted the bill. It became a labour of love to resolve platform issues with terminal detection and rendering, efficiently integrate a substantial theme collection at compile time, and refine the API to my complete satisfaction. At some point it made sense to package it in its own crate for more general use.
+
+## Features
 
   - Automatically selects the right color and style for each message type - headings, errors, code, normal etc. - based on a popular or original theme.
 
   - Legible, elegant coloring and styling adapt automatically to fit any background color and match any terminal theme.
 
-  - Matches the current terminal theme using a THAG_THEME environment variable that you can configure in the terminal profile. The fallback is to select from your configured preferred themes by finding a best fit with the detected background color.
+  - Matches the current terminal theme using an optional THAG_THEME environment variable that you can configure in the terminal profile. The default is to select from your configured preferred themes by finding a best fit with the detected background color.
 
   - Built-in support for over 290 popular terminal themes.
 
@@ -32,7 +44,7 @@ An innovative terminal styling system for Rust applications across platforms.
 
     - Generate gorgeous `thag_styling` and terminal themes automatically from your favourite images, and tweak them if you wish.
 
-`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ curated themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Examples of built-in themes
 
@@ -98,7 +110,7 @@ Add `thag_styling` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-thag_styling = "0.2"
+thag_styling = "1"
 ```
 
 Basic usage:
@@ -122,9 +134,10 @@ fn main() {
 ## Why thag_styling?
 
 ### 🎨 **Effortless Aesthetics**
-Instead of manually selecting and coordinating colors, `thag_styling` provides carefully curated 15-color palettes that work harmoniously together. Each palette is designed with proper contrast ratios and visual hierarchy.
+Instead of manually selecting and coordinating colors, `thag_styling` provides pleasing 15-color palettes that work harmoniously together. Each palette is designed with proper contrast ratios and visual hierarchy.
 
 **Before:**
+
 ```rust
 // Manual color coordination - error prone
 println!("{}", "Error".red().bold());
@@ -134,6 +147,7 @@ println!("{}", "Success".green());
 ```
 
 **After:**
+
 ```rust
 // Semantic coordination - guaranteed harmony
 "Error".error().println();
@@ -225,7 +239,7 @@ println!("{}", styled!("Hex", fg = "#ff6347", underline));            // Hex tom
 
 When exporting themes to terminal formats, `thag_styling` automatically configures selection colors (the background and foreground colors used when you select text in your terminal). However, some terminals may require manual configuration or have specific settings to enable these colors.
 
-#### Automatic Configuration
+#### Automatic Configuration Supported For:
 
 The following terminals fully support selection color import from exported theme files:
 
@@ -235,9 +249,10 @@ The following terminals fully support selection color import from exported theme
 - **Kitty** — Selection colors import from exported config files
 - **Alacritty** — Selection colors import from YAML/TOML config files
 
-#### Manual Configuration Required
+#### Manual Configuration Required For:
 
 **iTerm2** (macOS)
+
 - Selection colors are exported and will import correctly
 - **Important:** You must enable "Use custom color for selected text" in iTerm2 preferences
   1. Open iTerm2 → Preferences → Profiles → Colors
@@ -245,11 +260,13 @@ The following terminals fully support selection color import from exported theme
   3. This enables the selection foreground color for better contrast
 
 **Apple Terminal** (macOS)
+
 - Does not support importing selection colors from theme files
 - Selection colors can be set via OSC 17 escape sequences (see below)
 - Manual configuration: Terminal → Preferences → Profiles → Text → Selection Color
 
 **KDE Konsole**
+
 - Selection colors are dynamically calculated from foreground/background colors
 - To improve visibility: Appearance → Miscellaneous → ☑ "Always invert the colors of selected text"
 - This uses reverse video for selections instead of custom colors

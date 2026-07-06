@@ -2,7 +2,7 @@
 [dependencies]
 crossterm = { version = "0.28.1" }
 thag_common = { version = "0.2, thag-auto" }
-thag_styling = { version = "0.2, thag-auto", features = ["full"] }
+thag_styling = { version = "1, thag-auto", features = ["full"] }
 
  [features]
  # default = ["full"]

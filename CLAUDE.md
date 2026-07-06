@@ -32,9 +32,9 @@ Usually thag will infer dependencies, so unless special features of dependencies
 /*[toml]
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" } # features if needed
-thag_profiler = { version = "0.1, thag-auto", features = ["full_profiling"] } # features if needed
-thag_rs = { version = "0.2, thag-auto", features = [...] }  # features if needed
-thag_styling = { version = "0.2, thag-auto", features = [...] }  # features if needed
+thag_profiler = { version = "1, thag-auto", features = ["full_profiling"] } # features if needed
+thag_rs = { version = "1, thag-auto", features = [...] }  # features if needed
+thag_styling = { version = "1, thag-auto", features = [...] }  # features if needed
 */
  ```
 The thag-auto is used by thag to decide whether to use crates.io, git or a local path. Generally as we are testing new thag functionality, any script with a thag-auto dependency should be run with the env var THAG_DEV_PATH=$PWD from the project dir. The thag-auto must be specified exactly as shown inside the quotes, and not as thag-auto = true.
@@ -50,7 +50,7 @@ Scripts that are evolved into particularly useful generic tools may be promoted 
 ```
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 */
 use thag_styling::{init_verbosity, set_verbosity, vprtln, V};
 

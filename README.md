@@ -148,9 +148,9 @@ Whether you're:
 
 The `thag` ecosystem also includes profiling and styling crates that can be used with `thag_rs` or independently in your own projects, and a demo crate:
 
-  - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Learn more →](thag_profiler/README.md)
+  - ***thag_profiler*** - A capable, easy-to-use graphical cross-platform profiler packaged as an independent lightweight library and tools. Features async support, time and memory profiling, interactive flamegraphs, and zero-cost abstraction. [Readme →](thag_profiler/README.md)
 
-  - ***thag_styling*** - A terminal styling library supporting 290+ popular themes across all major terminal emulators. Automatically adapts to your terminal's color scheme. Used by thag_rs and available for your own projects. [Learn more →](thag_styling/README.md)
+  - ***thag_styling*** - A terminal styling library supporting 290+ popular themes across all major terminal emulators. Automatically adapts to your terminal's color scheme. Used by thag_rs and available for your own projects. [Readme →](thag_styling/README.md)
 
   - ***thag_demo*** - A stand-alone companion tool that lets you preview and run `thag` demo scripts and demos of `thag_profiler`. Perfect for exploring the capabilities of the `thag` script runner, `thag_profiler` and `thag_styling`. Install with `cargo install thag_demo` or view two videos of the demo in its [Readme](thag_demo/README.md).
 

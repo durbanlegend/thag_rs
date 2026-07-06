@@ -127,7 +127,7 @@ To use `thag_styling` with `ratatui` in your own project:
 1. **Dependencies** in `Cargo.toml`:
 ```toml
 [dependencies]
-thag_styling = { version = "0.2", features = ["ratatui_support"] }
+thag_styling = { version = "1", features = ["ratatui_support"] }
 ratatui = "0.29"
 ```
 

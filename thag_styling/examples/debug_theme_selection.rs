@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 */
 
 /// Debug example to check what `ColorInitStrategy` and theme are being used
@@ -10,8 +10,8 @@ thag_styling = { version = "0.2, thag-auto" }
 ///
 /// Run with:
 /// ```bash
-/// cargo run -p thag_styling --example debug_theme_selection --features "color_detect"
-/// cargo run -p thag_styling --example debug_theme_selection --features "basic"
+/// cargo run -p thag_styling --example debug_theme_selection --features "color_detect,ratatui_support"
+/// cargo run -p thag_styling --example debug_theme_selection --features "basic,ratatui_support"
 /// ```
 use thag_styling::{paint_for_role, Role, Style, TermAttributes, ThemedStyle};
 

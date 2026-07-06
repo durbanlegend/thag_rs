@@ -5,10 +5,10 @@
 //! Run with:
 //! ```bash
 //! # Test with minimal features
-//! cargo run -p thag_styling --example diagnostic --features "basic"
+//! cargo run -p thag_styling --example diagnostic --features "basic,ratatui_support"
 //!
 //! # Test with color detection
-//! cargo run -p thag_styling --example diagnostic --features "color_detect"
+//! cargo run -p thag_styling --example diagnostic --features "color_detect,ratatui_support"
 //!
 //! # Test with integrations
 //! cargo run -p thag_styling --example diagnostic --features "color_detect,crossterm_support,ratatui_support"

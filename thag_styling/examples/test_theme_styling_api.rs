@@ -2,6 +2,8 @@
 //!
 //! This demonstrates the new Theme methods for styling text with specific roles,
 //! making it easy to use a "guest" theme instead of the active theme.
+//!
+//! Run with: `cargo run -p thag_styling --example test_theme_styling_api`
 
 use thag_styling::{ColorInitStrategy, Role, Styleable, StyledPrint, TermAttributes, Theme};
 
@@ -13,7 +15,7 @@ fn main() {
     let _attrs = TermAttributes::get_or_init_with_strategy(&strategy);
 
     // Get a theme to use for demonstration
-    let Ok(theme) = Theme::get_builtin("Basic Dark") else {
+    let Ok(theme) = Theme::get_builtin("basic_dark") else {
         println!("Could not load Basic Dark theme, using fallback");
         return;
     };

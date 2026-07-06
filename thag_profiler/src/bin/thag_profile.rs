@@ -2,7 +2,7 @@
 [dependencies]
 thag_proc_macros = { version = "0.2, thag-auto" }
 thag_profiler = { version = "1, thag-auto", features = ["analyze_tool"] }
-thag_styling = { version = "0.2, thag-auto", default-features = false, features = ["inquire_theming"] }
+thag_styling = { version = "1, thag-auto", default-features = false, features = ["inquire_theming"] }
 */
 use chrono::{DateTime, Local};
 use inferno::flamegraph::{

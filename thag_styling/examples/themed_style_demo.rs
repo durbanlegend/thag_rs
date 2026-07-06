@@ -4,7 +4,7 @@
 //! consistent, theme-aware styling across different terminal UI libraries.
 /*[toml]
 [dependencies]
-thag_styling = { version = "0.2, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 */
 //!
 //! Run with different features to see different integrations:
@@ -13,13 +13,13 @@ thag_styling = { version = "0.2, thag-auto" }
 //! cargo run -p thag_styling --example themed_style_demo --features "color_detect,crossterm_support,console_support,ratatui_support,nu_ansi_term_support"
 //!
 //! # Just crossterm (with rich colors)
-//! cargo run -p thag_styling --example themed_style_demo --features "color_detect,crossterm_support"
+//! cargo run -p thag_styling --example themed_style_demo --features "color_detect,crossterm_support,ratatui_support"
 //!
 //! # Just ratatui (with rich colors)
 //! cargo run -p thag_styling --example themed_style_demo --features "color_detect,ratatui_support"
 //!
 //! # Without color_detect (falls back to basic ANSI colors)
-//! cargo run -p thag_styling --example themed_style_demo --features "crossterm_support"
+//! cargo run -p thag_styling --example themed_style_demo --features "crossterm_support,ratatui_support"
 //! ```
 
 use thag_styling::{Role, ThemedStyle};

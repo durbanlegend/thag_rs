@@ -3,6 +3,8 @@
 //! This demonstrates both new approaches for using guest themes:
 //! 1. Direct theme methods: `theme.error("text")`
 //! 2. Context switching: `theme.with_context(|| { "text".error() })`
+//!
+//! Run with: `cargo run -p thag_styling --example test_theme_context_api`
 
 use thag_styling::{ColorInitStrategy, Styleable, StyledPrint, TermAttributes, Theme};
 

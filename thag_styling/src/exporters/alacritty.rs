@@ -84,17 +84,14 @@ impl ThemeExporter for AlacrittyExporter {
             ("green", theme.palette.success.rgb()),
             ("yellow", theme.palette.warning.rgb()),
             ("blue", theme.palette.info.rgb()),
-            ("magenta", theme.palette.error.rgb()),
+            ("magenta", theme.palette.heading1.rgb()),
             ("cyan", theme.palette.code.rgb()),
             ("white", theme.palette.normal.rgb()),
         ];
 
-        eprintln!("Normal colors:");
         for (color_name, rgb_opt) in normal_colors {
             if let Some([r, g, b]) = rgb_opt {
-                let color = &format!(r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
-                eprintln!("color={color}");
-                output.push_str(color);
+                let _ = writeln!(output, r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
             }
         }
 
@@ -114,12 +111,9 @@ impl ThemeExporter for AlacrittyExporter {
             ("white", theme.palette.quote.rgb()),
         ];
 
-        eprintln!("Bright colors:");
         for (color_name, rgb_opt) in bright_colors {
             if let Some([r, g, b]) = rgb_opt {
-                let color = &format!(r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
-                eprintln!("color={color}");
-                output.push_str(color);
+                let _ = writeln!(output, r##"{color_name} = "#{r:02x}{g:02x}{b:02x}""##);
             }
         }
 
@@ -134,7 +128,7 @@ impl ThemeExporter for AlacrittyExporter {
             ("green", theme.palette.success.rgb().map(dim_color)),
             ("yellow", theme.palette.warning.rgb().map(dim_color)),
             ("blue", theme.palette.info.rgb().map(dim_color)),
-            ("magenta", theme.palette.error.rgb().map(dim_color)),
+            ("magenta", theme.palette.heading1.rgb().map(dim_color)),
             ("cyan", theme.palette.code.rgb().map(dim_color)),
             (
                 "white",
@@ -192,13 +186,9 @@ impl ThemeExporter for AlacrittyExporter {
             .palette
             .commentary
             .rgb()
-            // .map(|[r, g, b]| (r, g, b))
             .unwrap_or_else(|| adjust_color_brightness(bg_color, 1.3));
-        let _ = writeln!(
-            output,
-            "    background: \"#{:02x}{:02x}{:02x}\"",
-            selection_bg[0], selection_bg[1], selection_bg[2]
-        );
+        let [r, g, b] = selection_bg;
+        let _ = writeln!(output, r##"background = "#{r:02x}{g:02x}{b:02x}""##);
 
         if let Some([r, g, b]) = theme.palette.normal.rgb() {
             let _ = writeln!(output, r##"text = "#{r:02x}{g:02x}{b:02x}""##);
@@ -249,8 +239,6 @@ mod tests {
 
         assert!(result.is_ok());
         let content = result.unwrap();
-
-        dbg!(&content);
 
         // Check that the content contains expected sections
         assert!(content.contains("[colors]"));

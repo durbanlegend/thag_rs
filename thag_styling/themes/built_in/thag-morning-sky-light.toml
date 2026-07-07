@@ -1,4 +1,4 @@
-name = "thag-morning-coffee-new-light"
+name = "thag-morning-sky-light"
 description = "Generated from image analysis"
 term_bg_luma = "light"
 min_color_support = "true_color"

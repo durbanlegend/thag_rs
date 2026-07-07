@@ -124,14 +124,15 @@ supports-color = "3.0"
 uninlined_format_args = "allow"
 
 # Feature-gated examples
+
+# Diagnostic tools: work with any features; ratatui/crossterm sections are #[cfg]-gated
 [[example]]
 name = "debug_theme_selection"
-required-features = ["ratatui_support"]
 
 [[example]]
 name = "diagnostic"
-required-features = ["ratatui_support"]
 
+# Ratatui-specific examples: require ratatui_support
 [[example]]
 name = "ratatui_integration_test"
 required-features = ["ratatui_support"]
@@ -140,13 +141,12 @@ required-features = ["ratatui_support"]
 name = "ratatui_theming_showcase"
 required-features = ["ratatui_support"]
 
+# Multi-integration demos: useful with basic features, richer with integration features
 [[example]]
 name = "themed_style_demo"
-required-features = ["ratatui_support"]
 
 [[example]]
 name = "zero_config"
-required-features = ["ratatui_support"]
 
 [[example]]
 name = "image_theme_generation"

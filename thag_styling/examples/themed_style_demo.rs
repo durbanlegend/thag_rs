@@ -2,10 +2,6 @@
 //!
 //! This example shows how to use `thag_styling`'s `ThemedStyle` trait to create
 //! consistent, theme-aware styling across different terminal UI libraries.
-/*[toml]
-[dependencies]
-thag_styling = { version = "1, thag-auto" }
-*/
 //!
 //! Run with different features to see different integrations:
 //! ```bash
@@ -22,7 +18,7 @@ thag_styling = { version = "1, thag-auto" }
 //! cargo run -p thag_styling --example themed_style_demo --features "crossterm_support,ratatui_support"
 //! ```
 
-use thag_styling::{Role, ThemedStyle};
+use thag_styling::Role;
 
 fn main() {
     println!("🎨 Thag Styling ThemedStyle Trait Demo\n");
@@ -109,6 +105,7 @@ fn check_theme_status() {
 fn demonstrate_crossterm() {
     use crossterm::style::ContentStyle;
     use thag_styling::integrations::crossterm_integration::{crossterm_helpers, ThemedStylize};
+    use thag_styling::ThemedStyle;
 
     println!("🔧 Crossterm Integration:\n");
 
@@ -177,6 +174,7 @@ fn demonstrate_nu_ansi_term() {
     use thag_styling::integrations::nu_ansi_term_integration::{
         reedline_helpers, NuAnsiTermStyleExt,
     };
+    use thag_styling::ThemedStyle;
 
     println!("🐚 Nu-ANSI-Term Integration:\n");
 

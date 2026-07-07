@@ -10,8 +10,13 @@ crossterm = "0.28"
 /// and `thag_styling`. It showcases various UI components styled with semantic roles
 /// and demonstrates both the `ThemedStyle` trait and extension methods.
 ///
-/// ```Rust
+/// Run as a Cargo example:
+/// ```bash
 /// cargo run -p thag_styling --example ratatui_theming_showcase --features ratatui_support
+/// ```
+/// Or run directly as a thag script (uses the embedded `[toml]` block):
+/// ```bash
+/// thag thag_styling/examples/ratatui_theming_showcase.rs
 /// ```
 //# Purpose: Comprehensive showcase of ratatui integration with thag_styling themes
 //# Categories: demo, theming, tui

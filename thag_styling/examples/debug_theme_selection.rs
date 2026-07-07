@@ -10,10 +10,10 @@ thag_styling = { version = "1, thag-auto" }
 ///
 /// Run with:
 /// ```bash
-/// cargo run -p thag_styling --example debug_theme_selection --features "color_detect,ratatui_support"
-/// cargo run -p thag_styling --example debug_theme_selection --features "basic,ratatui_support"
+/// cargo run -p thag_styling --example debug_theme_selection --features "color_detect"
+/// cargo run -p thag_styling --example debug_theme_selection --features "basic"
 /// ```
-use thag_styling::{paint_for_role, Role, Style, TermAttributes, ThemedStyle};
+use thag_styling::{paint_for_role, Role, Style, TermAttributes};
 
 #[cfg(feature = "color_detect")]
 use thag_styling::ColorInitStrategy;

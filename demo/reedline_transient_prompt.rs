@@ -1,8 +1,12 @@
 /*[toml]
+[dependencies]
+rusqlite = { version = "0.40.1", optional = true }
+serde_json = { version = "1.0.79", optional = true }
+
 [features]
-default = ["sqlite"]
-sqlite = ["reedline/sqlite"]
-sqlite-dynlib = ["reedline/sqlite-dynlib"]
+# default = ["sqlite"]
+sqlite = ["rusqlite/bundled", "serde_json"]
+sqlite-dynlib = ["rusqlite", "serde_json"]
 */
 
 /// Published demo from `reedline` crate. Shows use of toml block to specify `reedline`

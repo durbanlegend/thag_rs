@@ -1,3 +1,8 @@
+/*[toml]
+[dependencies]
+strum = { version = "0.27", features = ["derive"] }
+*/
+
 /// Published example from `reedline` crate.
 ///
 /// The latest version of this example is available in the [examples] folder in the `reedline`
@@ -13,10 +18,10 @@
 //# Purpose: Explore featured crate.
 //# Categories: crates, technique
 use reedline::{
-    get_reedline_default_keybindings, get_reedline_edit_commands,
-    get_reedline_keybinding_modifiers, get_reedline_keycodes, get_reedline_prompt_edit_modes,
-    get_reedline_reedline_events,
+    get_reedline_default_keybindings, get_reedline_keybinding_modifiers, get_reedline_keycodes,
+    EditCommandDiscriminants, PromptEditModeDiscriminants, ReedlineEventDiscriminants,
 };
+use strum::IntoEnumIterator;
 
 fn main() {
     get_all_keybinding_info();
@@ -31,8 +36,8 @@ fn get_all_keybinding_info() {
     }
 
     println!("\n--Modes--");
-    for modes in get_reedline_prompt_edit_modes().iter() {
-        println!("{modes}");
+    for modes in PromptEditModeDiscriminants::iter() {
+        println!("{modes:?}");
     }
 
     println!("\n--Key Codes--");
@@ -41,13 +46,13 @@ fn get_all_keybinding_info() {
     }
 
     println!("\n--Reedline Events--");
-    for rle in get_reedline_reedline_events().iter() {
-        println!("{rle}");
+    for rle in ReedlineEventDiscriminants::iter() {
+        println!("{rle:?}");
     }
 
     println!("\n--Edit Commands--");
-    for edit in get_reedline_edit_commands().iter() {
-        println!("{edit}");
+    for edit in EditCommandDiscriminants::iter() {
+        println!("{edit:?}");
     }
 
     println!("\n--Default Keybindings--");

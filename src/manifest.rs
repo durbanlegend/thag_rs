@@ -36,7 +36,7 @@ use crate::debug_timings;
 #[profiled]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
     // Try both original and hyphenated versions
-    let crate_variants = vec![dep_crate.clone(), dep_crate.replace('_', "-")];
+    let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
 
     for crate_name in crate_variants {
         let query: Query = match crate_name.parse() {

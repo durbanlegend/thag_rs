@@ -610,7 +610,7 @@ fn tui(
     } else {
         history.add_entry(initial_content);
         history.save_to_file(&history_path)?;
-        initial_content.clone()
+        initial_content.to_string()
     };
 
     let event_reader = CrosstermEventReader;

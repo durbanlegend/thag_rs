@@ -365,13 +365,9 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         end!(init_config_loop_assert);
 
         profile!(config_loop_assert, time);
-        let unquote = args.unquote.map_or_else(
-            || maybe_config().map_or_else(|| false, |config| config.misc.unquote),
-            |unquote| {
-                // debug_log!("args.unquote={:?}", args.unquote);
-                unquote
-            },
-        );
+        let unquote = args
+            .unquote
+            .unwrap_or_else(|| maybe_config().map_or_else(|| false, |config| config.misc.unquote));
         proc_flags.set(ProcFlags::UNQUOTE, unquote);
         proc_flags.set(ProcFlags::CONFIG, args.config);
         end!(config_loop_assert);

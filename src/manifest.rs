@@ -36,7 +36,7 @@ use crate::debug_timings;
 #[profiled]
 pub fn cargo_lookup(dep_crate: &str) -> Option<(String, String)> {
     // Try both original and hyphenated versions
-    let crate_variants = vec![dep_crate.to_string(), dep_crate.replace('_', "-")];
+    let crate_variants = vec![dep_crate.clone(), dep_crate.replace('_', "-")];
 
     for crate_name in crate_variants {
         let query: Query = match crate_name.parse() {
@@ -849,10 +849,10 @@ fn display_toml_info(
                 if dep.features.is_empty() {
                     let dep_line = format!(
                         "{dep_name} = \"{}\"\n",
-                        dep.version
-                            .as_ref()
-                            .map(|v| v.to_string())
-                            .unwrap_or_else(|| panic!("Error unwrapping version for {dep_name}")),
+                        dep.version.as_ref().map_or_else(
+                            || panic!("Error unwrapping version for {dep_name}"),
+                            |v| v.to_string()
+                        ),
                     );
                     toml_block.push_str(&dep_line);
                 } else {
@@ -935,7 +935,7 @@ fn proc_macros_magic(
         default_proc_macros_dir
     }, |proc_macros_dir| {
         svprtln!(Role::INFO, V::V, "Found {proc_macros_dir:#?}.");
-        proc_macros_dir.to_string()
+        proc_macros_dir.clone()
     });
 
     let path = PathBuf::from_str(&magic_proc_macros_dir).unwrap();

@@ -478,7 +478,7 @@ pub fn run_iter(
                     matches += 1;
                     // Selects last match
                     if matches == 1 {
-                        cmd = key.to_string();
+                        cmd = key.clone();
                     }
                     // eprintln!("key={key}, split[0]={}", split[0]);
                 }
@@ -610,7 +610,7 @@ fn tui(
     } else {
         history.add_entry(initial_content);
         history.save_to_file(&history_path)?;
-        initial_content.to_string()
+        initial_content.clone()
     };
 
     let event_reader = CrosstermEventReader;

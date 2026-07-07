@@ -89,7 +89,7 @@ fn apply_theme(theme_name: &str) {
     let mut theme = match Theme::get_builtin(theme_name) {
         Ok(theme) => theme,
         Err(e) => {
-            eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
+            eprintln!("❌ Failed to load theme '{theme_name}': {e}");
             vprtln!(
                 V::N,
                 "💡 Try running 'thag_sync_palette list' to see available themes"
@@ -108,7 +108,7 @@ fn apply_theme(theme_name: &str) {
     vprtln!(V::N, "🌈 Applying palette...");
 
     if let Err(e) = PaletteSync::apply_theme(&theme) {
-        eprintln!("❌ Failed to apply theme: {}", e);
+        eprintln!("❌ Failed to apply theme: {e}");
         process::exit(1);
     }
 
@@ -129,7 +129,7 @@ fn preview_theme(theme_name: &str) {
     let mut theme = match Theme::get_builtin(theme_name) {
         Ok(theme) => theme,
         Err(e) => {
-            eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
+            eprintln!("❌ Failed to load theme '{theme_name}': {e}");
             vprtln!(
                 V::N,
                 "💡 Try running 'thag_sync_palette list' to see available themes"
@@ -145,7 +145,7 @@ fn preview_theme(theme_name: &str) {
     }
 
     if let Err(e) = PaletteSync::preview_theme(&theme) {
-        eprintln!("❌ Failed to preview theme: {}", e);
+        eprintln!("❌ Failed to preview theme: {e}");
         process::exit(1);
     }
 
@@ -159,10 +159,7 @@ fn preview_theme(theme_name: &str) {
 
         PaletteSync::demonstrate_palette();
 
-        println!(
-            "\n🔄 To make this permanent, run: thag_sync_palette apply {}",
-            theme_name
-        );
+        println!("\n🔄 To make this permanent, run: thag_sync_palette apply {theme_name}");
         println!("🔄 To reset colors, run: thag_sync_palette reset");
     }
 }
@@ -171,7 +168,7 @@ fn reset_palette() {
     vprtln!(V::N, "🔄 Resetting terminal palette to defaults...");
 
     if let Err(e) = PaletteSync::reset_palette() {
-        eprintln!("❌ Failed to reset palette: {}", e);
+        eprintln!("❌ Failed to reset palette: {e}");
         process::exit(1);
     }
 
@@ -189,9 +186,9 @@ fn list_themes() {
     let themes = Theme::list_builtin();
     for theme_name in themes {
         if let Ok(theme) = Theme::get_builtin(&theme_name) {
-            println!("  📦 {} - {}", theme_name, theme.description);
+            println!("  📦 {theme_name} - {}", theme.description);
         } else {
-            println!("  📦 {}", theme_name);
+            println!("  📦 {theme_name}");
         }
     }
 

@@ -2080,7 +2080,7 @@ pub fn build_stack(
                 (stack_str, fn_name_str)
             })
             .map(|(stack_str, fn_name_str)| {
-                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.clon())
+                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.clone())
             })
             .chain(maybe_section_name.cloned())
             .collect::<Vec<String>>()

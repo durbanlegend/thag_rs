@@ -1,8 +1,3 @@
-/*[toml]
-[dependencies]
-thag_styling = { version = "1, thag-auto" }
-*/
-
 /// Debug example to check what `ColorInitStrategy` and theme are being used
 ///
 /// This example helps diagnose why the integration modules might not be

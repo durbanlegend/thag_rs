@@ -128,6 +128,9 @@ uninlined_format_args = "allow"
 # Diagnostic tools: work with any features; ratatui/crossterm sections are #[cfg]-gated
 [[example]]
 name = "debug_theme_selection"
+path = "examples/debug/debug_theme_selection.rs"
+
+
 
 [[example]]
 name = "diagnostic"

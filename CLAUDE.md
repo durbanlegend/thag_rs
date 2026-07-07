@@ -89,3 +89,6 @@ You can run `function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }` whi
 Each bullet point line (`- Lorem ipsum ...`) should be preceded by a blank line, other MacDown (for one) runs them together into one line. This is not necessary if the lines are bolded, e.g. `- **Lorem ipsum ...**`.
 Similarly, line consisting of ``` to mark the start of an example must also be preceded by a blank line.
 Always verify that functions exist before including them in examples.
+
+## Moving and renaming git-controlled scripts
+When moving or renaming a script that is version-controlled by git, use `git mv` instead of `mv` so that git will recognise it as the same script for purposes of tracking its history.

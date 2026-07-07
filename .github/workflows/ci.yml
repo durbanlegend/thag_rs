@@ -59,3 +59,9 @@ jobs:
 
       - name: Run tests
         run: cargo test --no-fail-fast -- --test-threads=1
+
+      - name: Test thag_styling example tests
+        run: cargo test --examples -p thag_styling --no-fail-fast --features "ratatui_support,crossterm_support,nu_ansi_term_support" -- --test-threads=1
+
+      - name: Test thag_profiler example tests
+        run: cargo test --examples -p thag_profiler --no-fail-fast -- --test-threads=1

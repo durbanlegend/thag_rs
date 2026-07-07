@@ -1,6 +1,7 @@
 *.dot
 *.folded
 *.log
+**/*.backup
 *.profraw
 .DS_Store
 .cargo/
@@ -52,12 +53,10 @@ exported_themes
 claude/thag_styling_color_conversion_process.md
 assets/base24-mbadolato-iterm2-color-schemes-master/
 thag_styling/src/image_themes/mod copy.rs
-thag_styling/themes/built_in/thag-munch-the-scream-new-light.toml
 thag_styling/README copy.md
 src/cli.rs
 catppuccin-mocha.toml
-thag_styling/themes/built_in/thag-monet-woman-with-parasol-dark.toml.backup
-thag_styling/themes/built_in/catppuccin-mocha.toml.backup
+
 demo.cast
 demo1.cast
 demo2.cast

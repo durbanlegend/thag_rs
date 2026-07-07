@@ -38,21 +38,6 @@ pub trait ThemedStyle<T> {
     fn from_thag_style(style: &Style) -> T;
 }
 
-/// Trait for libraries that support theme switching
-pub trait ThemeSwitchable {
-    /// Switch to a new theme by name
-    ///
-    /// # Arguments
-    /// * `theme_name` - Name of the theme to switch to
-    ///
-    /// # Errors
-    /// Returns an error if the theme is not found or incompatible
-    fn switch_theme(theme_name: &str) -> crate::StylingResult<()>;
-
-    /// Get the current theme name
-    fn current_theme() -> String;
-}
-
 // Feature-gated module declarations
 #[cfg(feature = "ratatui_support")]
 pub mod ratatui_integration;

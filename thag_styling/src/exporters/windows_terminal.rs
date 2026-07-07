@@ -56,7 +56,7 @@ impl ThemeExporter for WindowsTerminalExporter {
 
         // Convert to pretty-printed JSON
         serde_json::to_string_pretty(&color_scheme)
-            .map_err(|e| crate::StylingError::Generic(format!("JSON serialization error: {}", e)))
+            .map_err(|e| crate::StylingError::Generic(format!("JSON serialization error: {e}")))
     }
 
     fn file_extension() -> &'static str {
@@ -71,7 +71,7 @@ impl ThemeExporter for WindowsTerminalExporter {
 /// Format RGB color as hex string for Windows Terminal
 fn format_color(rgb_opt: Option<[u8; 3]>) -> String {
     let [r, g, b] = rgb_opt.unwrap_or([128, 128, 128]);
-    format!("#{:02X}{:02X}{:02X}", r, g, b)
+    format!("#{r:02X}{g:02X}{b:02X}")
 }
 
 #[cfg(test)]

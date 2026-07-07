@@ -505,9 +505,7 @@ impl ScriptState {
     pub fn get_script(&self) -> Option<String> {
         match self {
             Self::Anonymous => None,
-            Self::NamedEmpty { script, .. } | Self::Named { script, .. } => {
-                Some(script.to_string())
-            }
+            Self::NamedEmpty { script, .. } | Self::Named { script, .. } => Some(script.clone()),
         }
     }
     /// Return the script's directory path wrapped in an Option.
@@ -1448,7 +1446,7 @@ fn deploy_executable(build_state: &BuildState) -> ThagResult<()> {
     let executable_stem = if let Some(name) = name_option {
         name
     } else {
-        build_state.source_stem.to_string()
+        build_state.source_stem.clone()
     };
 
     let shared_target_dir = TMPDIR.join(SHARED_TARGET_SUBDIR);

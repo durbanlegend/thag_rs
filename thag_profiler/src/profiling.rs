@@ -2156,7 +2156,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
         }
         // Handle the optional append (replacing maybe_append.into_iter())
         if let Some(append_name) = maybe_append {
-            stack.push(append_name.to_string());
+            stack.push(append_name.clone());
         }
         stack
     }
@@ -2442,8 +2442,7 @@ pub fn print_all_call_stack_entries() {
 }
 
 #[allow(dead_code)]
-fn get_fn_desc_name(fn_name_str: &String) -> String {
-    // extract_fn_only(fn_name_str).map_or_else(|| fn_name_str.to_string(), |fn_only| fn_only)
+fn get_fn_desc_name(fn_name_str: &str) -> String {
     extract_fn_only(fn_name_str).unwrap_or_else(|| fn_name_str.to_string())
 }
 
@@ -3330,7 +3329,7 @@ pub fn process_profraw_to_folded(profraw_path: &str, output_path: &str) -> Profi
 
     // Write entries in their original chronological order (no sorting)
     for (stack, time_micros) in clean_times {
-        writeln!(output_file, "{} {}", stack, time_micros)
+        writeln!(output_file, "{stack} {time_micros}")
             .map_err(|e| ProfileError::General(format!("Failed to write to output file: {e}")))?;
     }
 

@@ -478,7 +478,7 @@ pub fn run_iter(
                     matches += 1;
                     // Selects last match
                     if matches == 1 {
-                        cmd = key.clone();
+                        cmd.clone_from(key);
                     }
                     // eprintln!("key={key}, split[0]={}", split[0]);
                 }

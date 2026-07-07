@@ -269,7 +269,7 @@ pub fn display_color_comparison(theme: &Theme) {
 
         for (name, ansi_index, semantic_role, style) in color_mappings {
             // Current terminal color (visual sample)
-            let terminal_sample = format!("\x1b[38;5;{}m████\x1b[0m", ansi_index);
+            let terminal_sample = format!("\x1b[38;5;{ansi_index}m████\x1b[0m");
 
             // Expected thag color with RGB info
             let rgb = style
@@ -282,10 +282,7 @@ pub fn display_color_comparison(theme: &Theme) {
                 });
 
             let thag_display = if let Some([r, g, b]) = rgb {
-                style.paint(format!(
-                    "████ #{:02x}{:02x}{:02x} ({:3},{:3},{:3})",
-                    r, g, b, r, g, b
-                ))
+                style.paint(format!("████ #{r:02x}{g:02x}{b:02x} ({r:3},{g:3},{b:3})"))
             } else {
                 "N/A".to_string()
             };

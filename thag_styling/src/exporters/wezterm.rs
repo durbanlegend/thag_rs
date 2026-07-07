@@ -191,7 +191,7 @@ impl ThemeExporter for WezTermExporter {
 
         for (index, rgb_opt) in indexed_colors {
             if let Some([r, g, b]) = rgb_opt {
-                let _ = writeln!(output, r##"{} = "#{:02x}{:02x}{:02x}""##, index, r, g, b);
+                let _ = writeln!(output, r##"{index} = "#{r:02x}{g:02x}{b:02x}""##);
             }
         }
 

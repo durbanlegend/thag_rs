@@ -187,18 +187,18 @@ fn write_color_entry(
     let green = f64::from(g) / 255.0;
     let blue = f64::from(b) / 255.0;
 
-    writeln!(output, "\t<key>{}</key>", key)?;
+    writeln!(output, "\t<key>{key}</key>")?;
     writeln!(output, "\t<dict>")?;
     writeln!(output, "\t\t<key>Alpha Component</key>")?;
     writeln!(output, "\t\t<real>1</real>")?;
     writeln!(output, "\t\t<key>Blue Component</key>")?;
-    writeln!(output, "\t\t<real>{}</real>", blue)?;
+    writeln!(output, "\t\t<real>{blue}</real>")?;
     writeln!(output, "\t\t<key>Color Space</key>")?;
     writeln!(output, "\t\t<string>P3</string>")?;
     writeln!(output, "\t\t<key>Green Component</key>")?;
-    writeln!(output, "\t\t<real>{}</real>", green)?;
+    writeln!(output, "\t\t<real>{green}</real>")?;
     writeln!(output, "\t\t<key>Red Component</key>")?;
-    writeln!(output, "\t\t<real>{}</real>", red)?;
+    writeln!(output, "\t\t<real>{red}</real>")?;
     writeln!(output, "\t</dict>")?;
 
     Ok(())

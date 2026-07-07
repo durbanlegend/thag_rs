@@ -851,7 +851,7 @@ fn display_toml_info(
                         "{dep_name} = \"{}\"\n",
                         dep.version.as_ref().map_or_else(
                             || panic!("Error unwrapping version for {dep_name}"),
-                            |v| v.to_string()
+                            std::string::ToString::to_string
                         ),
                     );
                     toml_block.push_str(&dep_line);

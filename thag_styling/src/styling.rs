@@ -195,14 +195,14 @@ impl ColorInfo {
                 } else {
                     basic_index + 90 - 8
                 };
-                format!("\x1b[{}m", code)
+                format!("\x1b[{code}m")
             }
             // 256-color support
             (
                 ColorValue::Color256 { color256 },
                 ColorSupport::TrueColor | ColorSupport::Color256,
             ) => {
-                format!("\x1b[38;5;{}m", color256)
+                format!("\x1b[38;5;{color256}m")
             }
             (
                 ColorValue::Color256 { color256 },
@@ -218,7 +218,7 @@ impl ColorInfo {
                 } else {
                     basic_index + 90 - 8
                 };
-                format!("\x1b[{}m", code)
+                format!("\x1b[{code}m")
             }
             // Basic color support
             (ColorValue::Basic { index, .. }, _) => {
@@ -227,7 +227,7 @@ impl ColorInfo {
                 } else {
                     index + 90 - 8
                 };
-                format!("\x1b[{}m", code)
+                format!("\x1b[{code}m")
             }
             // No color support
             (_, ColorSupport::None) => String::new(),
@@ -2045,8 +2045,7 @@ impl Theme {
         }
 
         Err(StylingError::FromStr(format!(
-            "Theme '{}' not found in user directories",
-            theme_name
+            "Theme '{theme_name}' not found in user directories"
         )))
     }
 
@@ -2073,8 +2072,7 @@ impl Theme {
         let dir_path = Path::new(dir);
         if !dir_path.exists() {
             return Err(StylingError::FromStr(format!(
-                "Theme directory does not exist: {}",
-                dir
+                "Theme directory does not exist: {dir}"
             )));
         }
 
@@ -2086,8 +2084,8 @@ impl Theme {
 
         // If theme name doesn't already have a variant suffix, try both
         if !theme_name.ends_with("-light") && !theme_name.ends_with("-dark") {
-            patterns.push(format!("thag-{}-light.toml", theme_name));
-            patterns.push(format!("thag-{}-dark.toml", theme_name));
+            patterns.push(format!("thag-{theme_name}-light.toml"));
+            patterns.push(format!("thag-{theme_name}-dark.toml"));
         }
 
         for pattern in patterns {
@@ -2103,8 +2101,7 @@ impl Theme {
         }
 
         Err(StylingError::FromStr(format!(
-            "Theme file for '{}' not found in directory: {}",
-            theme_name, dir
+            "Theme file for '{theme_name}' not found in directory: {dir}"
         )))
     }
 
@@ -3242,7 +3239,7 @@ pub fn display_theme_roles(theme: &Theme) {
 
         // let styled_rgb = style.paint(format!("{:?}", style.foreground.and_then(|v| v.value)));
         let padding = " ".repeat(col1_width.saturating_sub(role_name.len()));
-        let hex = rgb.map_or("N/A".to_string(), |rgb| rgb_to_hex(&rgb));
+        let hex = rgb.map_or_else(|| "N/A".to_string(), |rgb| rgb_to_hex(&rgb));
         let styled_hex = style.paint(hex);
 
         print!("\t{styled_hex} {styled_name} {padding}");
@@ -3377,7 +3374,7 @@ pub fn display_terminal_attributes(theme: &Theme) {
             "Background color",
             &term_attrs
                 .term_bg_rgb
-                .map_or("None".to_string(), dual_format_rgb),
+                .map_or_else(|| "None".to_string(), dual_format_rgb),
         ),
     ];
 
@@ -3783,7 +3780,7 @@ impl StyledString {
     pub fn to_styled(&self) -> String {
         let content_with_replaced_resets = self.replace_resets_with_style();
         let styling_prefix = self.build_styling_prefix();
-        format!("{}{}\x1b[0m", styling_prefix, content_with_replaced_resets)
+        format!("{styling_prefix}{content_with_replaced_resets}\x1b[0m")
     }
 
     /// Chain bold styling
@@ -3855,17 +3852,17 @@ pub trait StyledPrint {
 
 impl StyledPrint for StyledString {
     fn print(self) {
-        print!("{}", self);
+        print!("{self}");
     }
 
     fn println(self) {
-        println!("{}", self);
+        println!("{self}");
     }
 
     fn vprintln(self, verbosity: thag_common::Verbosity) {
         let current_verbosity = thag_common::get_verbosity();
         if verbosity <= current_verbosity {
-            println!("{}", self);
+            println!("{self}");
         }
     }
 }

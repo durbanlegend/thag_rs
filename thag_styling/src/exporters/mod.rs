@@ -140,26 +140,25 @@ pub fn export_all_formats<P: AsRef<Path>>(
         match format.export_theme(theme) {
             Ok(content) => {
                 // Handle filename conflicts between formats with same extension
+                let file_extension = format.file_extension();
                 let filename = match format {
                     ExportFormat::Alacritty => {
-                        format!("{}_alacritty.{}", base_filename, format.file_extension())
+                        format!("{base_filename}_alacritty.{file_extension}")
                     }
                     ExportFormat::WezTerm => {
-                        format!("{}_wezterm.{}", base_filename, format.file_extension())
+                        format!("{base_filename}_wezterm.{file_extension}")
                     }
-                    ExportFormat::WindowsTerminal => format!(
-                        "{}_windows_terminal.{}",
-                        base_filename,
-                        format.file_extension()
-                    ),
+                    ExportFormat::WindowsTerminal => {
+                        format!("{base_filename}_windows_terminal.{file_extension}")
+                    }
                     ExportFormat::Mintty => {
-                        if format.file_extension().is_empty() {
-                            format!("{}_mintty", base_filename)
+                        if file_extension.is_empty() {
+                            format!("{base_filename}_mintty")
                         } else {
-                            format!("{}_mintty.{}", base_filename, format.file_extension())
+                            format!("{base_filename}_mintty.{file_extension}")
                         }
                     }
-                    _ => format!("{}.{}", base_filename, format.file_extension()),
+                    _ => format!("{base_filename}.{file_extension}"),
                 };
                 let file_path = output_dir.join(filename);
 
@@ -178,9 +177,8 @@ pub fn export_all_formats<P: AsRef<Path>>(
             }
             Err(e) => {
                 eprintln!(
-                    "Warning: Failed to export {} theme: {}",
-                    format.format_name(),
-                    e
+                    "Warning: Failed to export {} theme: {e}",
+                    format.format_name()
                 );
             }
         }
@@ -232,8 +230,7 @@ fn convert_xml_plist_to_binary<P: AsRef<Path>>(path: P) -> StylingResult<()> {
     if !output.status.success() {
         let error_msg = String::from_utf8_lossy(&output.stderr);
         return Err(StylingError::FromStr(format!(
-            "plutil conversion failed: {}",
-            error_msg
+            "plutil conversion failed: {error_msg}"
         )));
     }
 

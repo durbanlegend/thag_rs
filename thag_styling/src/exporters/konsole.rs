@@ -128,8 +128,8 @@ impl ThemeExporter for KonsoleExporter {
         ];
 
         for (i, [r, g, b]) in normal_colors.iter().enumerate() {
-            let _ = writeln!(output, "[Color{}]", i);
-            let _ = writeln!(output, "Color={},{},{}", r, g, b);
+            let _ = writeln!(output, "[Color{i}]");
+            let _ = writeln!(output, "Color={r},{g},{b}");
             output.push('\n');
         }
 
@@ -216,20 +216,16 @@ impl ThemeExporter for KonsoleExporter {
         ];
 
         for (i, [r, g, b]) in bright_colors.iter().enumerate() {
-            let _ = writeln!(output, "[Color{}Intense]", i);
-            let _ = writeln!(output, "Color={},{},{}", r, g, b);
+            let _ = writeln!(output, "[Color{i}Intense]");
+            let _ = writeln!(output, "Color={r},{g},{b}");
             output.push('\n');
         }
 
         // ANSI Colors 0-7 Faint (dim colors)
         for (i, [r, g, b]) in normal_colors.iter().enumerate() {
-            let faint_color = dim_color([*r, *g, *b]);
-            let _ = writeln!(output, "[Color{}Faint]", i);
-            let _ = writeln!(
-                output,
-                "Color={},{},{}",
-                faint_color[0], faint_color[1], faint_color[2]
-            );
+            let [fr, fg, fb] = dim_color([*r, *g, *b]);
+            let _ = writeln!(output, "[Color{i}Faint]");
+            let _ = writeln!(output, "Color={fr},{fg},{fb}");
             output.push('\n');
         }
 

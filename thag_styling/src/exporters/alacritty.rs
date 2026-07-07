@@ -41,7 +41,7 @@ impl ThemeExporter for AlacrittyExporter {
 
         // Use normal text color for foreground
         if let Some([r, g, b]) = &theme.palette.normal.rgb() {
-            let _ = writeln!(output, r##"foreground = "#{:02x}{:02x}{:02x}""##, r, g, b);
+            let _ = writeln!(output, r##"foreground = "#{r:02x}{g:02x}{b:02x}""##);
         }
 
         // Bright foreground (use emphasis or fallback to normal)
@@ -51,11 +51,7 @@ impl ThemeExporter for AlacrittyExporter {
             .rgb()
             .or_else(|| theme.palette.normal.rgb())
         {
-            let _ = writeln!(
-                output,
-                r##"bright_foreground = "#{:02x}{:02x}{:02x}""##,
-                r, g, b
-            );
+            let _ = writeln!(output, r##"bright_foreground = "#{r:02x}{g:02x}{b:02x}""##);
         }
 
         // Dim foreground (use subtle or fallback to normal with reduced brightness)

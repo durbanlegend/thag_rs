@@ -4,33 +4,45 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-An innovative, lightweight and easy to use terminal styling system for Rust applications across platforms.
+An unique, lightweight and easy to use terminal styling and theming system for Rust applications across platforms.
 
-Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. It can become very time-consuming to achieve the desired look and feel for your terminal app and to make it consistent. Nesting styles can be tricky. All this work can be in vain when your app is deployed, because colors that 'pop' against a dark background may be faint or invisible against a user's light background, and vice versa.
+Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. It can become very time-consuming to achieve the desired look and feel for your terminal app and to make it internally consistent. All this work can turn out to be in vain when your app is deployed, because colors that 'pop' against a dark background may be faint or invisible against a user's light background, or the reverse.
 
-`thag_styling` provides a higher-level API where you choose the desired impact of each message by specifying one of 14 message types. Each message type has associated style atttributes (like boldness) and a color automatically preselected from the underlying terminal theme, as auto-detected or user specified. Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you. In fact `thag_styling` provides what may be unrivalled for nesting styles.
+`thag_styling` gets around this by detecting the user's terminal theme from the background color (or an override) and automatically tailoring your output colors and styles to the existing theme based on the kinds of messages you choose to display.
 
-As part of the `thag_rs` ecosystem, `thag_styling` prioritises reliability, speed and ease of use.
+`thag_styling` provides a high-level API where you choose the desired impact of each message by choosing from a comprehensive set of 14 message types. Each message type has associated style attributes (like boldness) and an appropriate color (such as a bold red shade for error, a subdued color for hints and so on) automatically preselected by `thag_styling` from the underlying terminal theme. The API is intuitive, and as if by magic your program's output will fit right in with the detected terminal theme in a legible and professional way.
+
+Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you, and indeed plenty of low-level assistance available. For instance `thag_styling` makes it straightforward to **nest styles to any depth** - something lacking in most color libraries due to underlying ANSI OSC limitations.
+
+### Example: the built-in popular dark theme Catppuccin Mocha
+
+[![catppuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catppuccin-mocha.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catppuccin-mocha.png)
+*Built-in theme <code>catppuccin-mocha</code>, converted from base24.*
+
+`thag_styling` has integrations allowing it to work seamlessly with a variety of popular crates if desired: to date `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`. `thag_rs` has demos of all of these, and uses many of them internally.
+
+In line with the `thag_rs` philosophy, `thag_styling` aims to provide something uniquely useful, without compromising on reliability, speed or ease of use.
 
 ## Origin story
 
-`thag_styling` was written in the first place to `thag` itself, because I wanted easy automated styling for `thag` and could find nothing that fitted the bill. It became a labour of love to resolve platform issues with terminal detection and rendering, efficiently integrate a substantial theme collection at compile time, and refine the API to my complete satisfaction. At some point it made sense to package it in its own crate for more general use.
+`thag_styling` was written in the first place for `thag` itself, because I wanted easy automated styling for `thag` and could find nothing that fitted the bill. It became a labour of love to resolve platform issues with terminal detection and rendering, efficiently integrate a substantial theme collection at compile time, and refine the API to my complete satisfaction. At some point it made sense to package it in its own crate for more general use.
 
 ## Features
 
-  - Automatically selects the right color and style for each message type - headings, errors, code, normal etc. - based on a popular or original theme.
+  - Automatically selects the right color and style for each message type - headings, errors, code, normal etc. - based on detecting the user's terminal theme.
 
   - Legible, elegant coloring and styling adapt automatically to fit any background color and match any terminal theme.
 
-  - Matches the current terminal theme using an optional THAG_THEME environment variable that you can configure in the terminal profile. The default is to select from your configured preferred themes by finding a best fit with the detected background color.
+  - Matches the current terminal theme by selecting from a configurable list of preferred themes, finding a best fit with the detected background color. This can be overridden using a THAG_THEME environment variable that the user can of course configure into their terminal emulator.
 
   - Built-in support for over 290 popular terminal themes.
 
-  - Minimal overhead due to compile-time resolution of built-in themes.
+  - Minimal overhead thanks to compile-time resolution of built-in themes.
 
   - Built-in integrations make it easy to apply the current terminal theme to `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`.
 
-  - Supports TrueColor, 256-color or 16-color emulators with auto-detection.
+  - Auto-detects and supports TrueColor, 256-color or 16-color emulators.
 
   - Works with the most popular terminal emulators on Mac, Windows and Linux. Tested on Alacritty, Apple Terminal, Gnome Terminal, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), VS Code, WezTerm, Windows Terminal (PowerShell, WSL Ubuntu and Command Prompt) and Zed. Should work with any emulator that supports the OSC ANSI escape sequences for color setting.
 
@@ -44,17 +56,11 @@ As part of the `thag_rs` ecosystem, `thag_styling` prioritises reliability, spee
 
     - Generate gorgeous `thag_styling` and terminal themes automatically from your favourite images, and tweak them if you wish.
 
-`thag_styling` builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+`thag_styling`'s theming builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
-## Examples of built-in themes
+## Further examples of built-in themes
 
-Here is a small sample of the 300+ built-in `thag_styling` themes, with descriptive captions. The `thag` conversion and image extraction tools automatically ensure that each message style has sufficient contrast with the background to be clearly legible.
-
-### Built-in popular dark theme: Catppuccin Mocha
-
-[![catppuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catppuccin-mocha.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catppuccin-mocha.png)
-*Built-in theme <code>catppuccin-mocha</code>, converted from base24.*
+Here is a further small sample of the 300+ built-in `thag_styling` themes, with descriptive captions. The `thag` conversion and image extraction tools automatically ensure that each message style has sufficient contrast with the background to be clearly legible.
 
 ### Built-in popular light theme: Gruvbox Light Hard
 
@@ -130,6 +136,8 @@ fn main() {
     std::path::Path::new("/usr/bin").display().code().println(); // Paths
 }
 ```
+
+If you have `thag_rs` installed, you can simply paste the above mini-program into `thag -d` and Ctrl-d to run it and see the output, tailored to the theme on your terminal emulator.
 
 ## Why thag_styling?
 
@@ -274,10 +282,12 @@ The following terminals fully support selection color import from exported theme
 #### Dynamic Selection Colors via OSC Sequences
 
 The `thag_sync_palette` tool sets selection colors dynamically using OSC escape sequences:
+
 - **OSC 17** — Sets selection background color
 - **OSC 19** — Sets selection foreground color
 
 These sequences are supported by:
+
 - ✅ Gnome Terminal
 - ✅ WezTerm
 - ✅ iTerm2
@@ -287,6 +297,7 @@ These sequences are supported by:
 - ❌ Alacritty (no OSC selection support)
 
 To apply selection colors dynamically:
+
 ```bash
 thag_sync_palette apply <theme-name>
 ```
@@ -296,6 +307,7 @@ This updates your terminal's palette including selection colors for the current 
 #### Selection Color Design
 
 All exported themes use the following color strategy for optimal readability:
+
 - **Selection Background:** Uses the theme's `commentary` color, which is automatically enhanced to provide at least 11:1 contrast ratio against the background
 - **Selection Foreground:** Uses the theme's `normal` text color for consistency
 
@@ -489,9 +501,9 @@ thag demo/styled_macro_enhanced.rs
 ls thag_styling/examples/ demo/
 ```
 
-## Theme Management Tools
+## Theme Management and Manipulation Tools
 
-`thag_styling` includes a comprehensive suite of command-line tools for theme management. These tools are part of the main `thag_rs` project and provide powerful theme generation, conversion, and management capabilities.
+`thag_styling` includes a comprehensive suite of command-line tools for theme management and manipulation. These tools are part of the main `thag_rs` project and provide powerful theme generation, conversion, and management capabilities.
 
 ### Installation
 

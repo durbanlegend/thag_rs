@@ -279,43 +279,43 @@ impl Dependencies {
         }
 
         // Apply crate-specific overrides
-        let default_features = if let Some(override_config) = self.feature_overrides.get(crate_name)
-        {
-            #[cfg(debug_assertions)]
-            debug_log!("Applying overrides for crate {}", crate_name);
+        let default_features =
+            self.feature_overrides
+                .get(crate_name)
+                .map_or(true, |override_config| {
+                    #[cfg(debug_assertions)]
+                    debug_log!("Applying overrides for crate {}", crate_name);
 
-            // Remove excluded features
-            // let before_len = filtered.len();
-            filtered.retain(|f| {
-                let keep = self.always_include_features.contains(f) || {
-                    override_config
-                        .excluded_features
-                        .as_ref()
-                        .map_or(true, |excluded_features| !excluded_features.contains(f))
-                };
-                if !keep {
-                    debug_log!("Excluding feature '{}' due to crate-specific override", f);
-                }
-                keep
-            });
+                    // Remove excluded features
+                    // let before_len = filtered.len();
+                    filtered.retain(|f| {
+                        let keep = self.always_include_features.contains(f) || {
+                            override_config
+                                .excluded_features
+                                .as_ref()
+                                .map_or(true, |excluded_features| !excluded_features.contains(f))
+                        };
+                        if !keep {
+                            debug_log!("Excluding feature '{}' due to crate-specific override", f);
+                        }
+                        keep
+                    });
 
-            // Add required features
-            if let Some(ref required_features) = &override_config.required_features {
-                for f in required_features {
-                    if f.is_empty() {
-                        continue;
+                    // Add required features
+                    if let Some(ref required_features) = &override_config.required_features {
+                        for f in required_features {
+                            if f.is_empty() {
+                                continue;
+                            }
+                            if !filtered.contains(f) {
+                                debug_log!("Adding required feature '{}'", f);
+                                filtered.push(f.clone());
+                            }
+                        }
                     }
-                    if !filtered.contains(f) {
-                        debug_log!("Adding required feature '{}'", f);
-                        filtered.push(f.clone());
-                    }
-                }
-            }
 
-            override_config.default_features.unwrap_or(true)
-        } else {
-            true
-        };
+                    override_config.default_features.unwrap_or(true)
+                });
 
         // Apply other existing filters
         if self.exclude_unstable_features {

@@ -177,7 +177,7 @@ impl ThemeExporter for KittyExporter {
         output.push_str("#\n");
         output.push_str("# black\n");
         if let Some([r, g, b]) = Some(theme.bg_rgbs[0]) {
-            let _ = writeln!(output, "color0 #{:02x}{:02x}{:02x}", r, g, b);
+            let _ = writeln!(output, "color0 #{r:02x}{g:02x}{b:02x}");
         }
         if let Some([r, g, b]) = theme
             .palette
@@ -186,7 +186,7 @@ impl ThemeExporter for KittyExporter {
             // .map(|c| (c[0], c[1], c[2]))
             .or(Some([64, 64, 64]))
         {
-            let _ = writeln!(output, "color8 #{:02x}{:02x}{:02x}", r, g, b);
+            let _ = writeln!(output, "color8 #{r:02x}{g:02x}{b:02x}");
         }
 
         output.push_str("\n# red\n");

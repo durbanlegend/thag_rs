@@ -16,7 +16,7 @@ thag_styling = { version = "1, thag-auto", features = ["config"] }
 /// context is always restored.  This works to arbitrary nesting depth.
 //# Purpose: Demo of context-preserving nested styles with StyledString
 //# Categories: concepts, prototype, styling
-use thag_styling::{ColorInitStrategy, Role, Styleable, Styler, TermAttributes};
+use thag_styling::{ColorInitStrategy, Role, Styleable, StyledString, Styler, TermAttributes};
 
 fn main() {
     TermAttributes::get_or_init_with_strategy(&ColorInitStrategy::Match);
@@ -41,10 +41,12 @@ fn main() {
     // ------------------------------------------------------------------
     // 2. Single-level nesting with thag_styling
     // ------------------------------------------------------------------
+    // All Styleable methods (.error(), .warning(), .code(), …) return a StyledString.
+    // StyledString's Display calls to_styled(), which handles inner resets before printing.
     println!("2. Single-level nesting — thag_styling handles it automatically");
 
-    let inner = "inner warning".warning();
-    let outer = format!("Error context [ {} ] back to error", inner).error();
+    let inner: StyledString = "inner warning".warning();
+    let outer: StyledString = format!("Error context [ {} ] back to error", inner).error();
     println!("   {outer}");
     println!("   Raw: {:?}\n", outer.to_styled());
 
@@ -53,7 +55,7 @@ fn main() {
     // ------------------------------------------------------------------
     println!("3. Three levels of nesting");
 
-    let level1 = "level-1 code".code();
+    let level1: StyledString = "level-1 code".code();
     let level2 = format!("level-2 success [ {} ] still success", level1).success();
     let level3 = format!("level-3 warning [ {} ] still warning", level2).warning();
     println!("   {level3}");
@@ -77,9 +79,10 @@ fn main() {
     // ------------------------------------------------------------------
     // 5. Chaining attributes on a StyledString
     // ------------------------------------------------------------------
+    // StyledString also exposes .bold(), .italic(), .dim(), .underline() for chaining.
     println!("5. Chaining .bold() / .italic() / .underline() on StyledString");
 
-    let chained = "bold italic warning".warning().bold().italic();
+    let chained: StyledString = "bold italic warning".warning().bold().italic();
     println!("   {chained}");
     println!("   Raw: {:?}\n", chained.to_styled());
 

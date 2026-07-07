@@ -469,7 +469,7 @@ pub fn rgb_to_hsl(rgb: [u8; 3]) -> [f32; 3] {
 /// Helper functions for inquire UI theming integration
 #[cfg(feature = "inquire_theming")]
 pub mod inquire_theming {
-    use super::{ColorValue, Role, TermAttributes};
+    use super::{index_to_rgb, ColorValue, Role, TermAttributes};
 
     /// Convert a thag Role to an inquire Color using the current theme
     #[must_use]

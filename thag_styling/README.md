@@ -6,9 +6,9 @@
 
 An innovative, lightweight and easy to use terminal styling system for Rust applications across platforms.
 
-Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. It can become very time-consuming to achieve the desired look and feel for your terminal app and to make it consistent. All this work can be in vain when your app is deployed, because colors that 'pop' against a dark background may be faint or invisible against a user's light background, and vice versa.
+Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. It can become very time-consuming to achieve the desired look and feel for your terminal app and to make it consistent. Nesting styles can be tricky. All this work can be in vain when your app is deployed, because colors that 'pop' against a dark background may be faint or invisible against a user's light background, and vice versa.
 
-`thag_styling` provides a higher-level API where you choose the desired impact of each message by specifying one of 14 message types. Each message type has associated style atttributes (like boldness) and a color automatically preselected from the underlying terminal theme, as auto-detected or user specified. Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you.
+`thag_styling` provides a higher-level API where you choose the desired impact of each message by specifying one of 14 message types. Each message type has associated style atttributes (like boldness) and a color automatically preselected from the underlying terminal theme, as auto-detected or user specified. Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you. In fact `thag_styling` provides what may be unrivalled for nesting styles.
 
 As part of the `thag_rs` ecosystem, `thag_styling` prioritises reliability, speed and ease of use.
 

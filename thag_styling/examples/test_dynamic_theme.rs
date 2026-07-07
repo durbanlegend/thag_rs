@@ -10,9 +10,14 @@ use thag_styling::{ColorInfo, ColorInitStrategy, Role, Style, TermAttributes};
 fn main() {
     println!("🔄 Testing Dynamic Theme Changes\n");
 
-    // Initialize with a basic theme
+    // Run the test twice under different strategies. Because TermAttributes uses a
+    // write-once OnceLock singleton, we build a fresh owned instance for each strategy
+    // and push it onto the thread-local context stack via `with_context`. Code inside
+    // the closure (and everything it calls) sees that instance via
+    // `TermAttributes::current()`.
     for strategy in [ColorInitStrategy::Default, ColorInitStrategy::Match] {
-        run_test(strategy);
+        let attrs = TermAttributes::build_from_strategy(&strategy);
+        attrs.with_context(|| run_test(&strategy));
     }
 
     println!("\n✅ Dynamic theme change test complete!");
@@ -22,19 +27,20 @@ fn main() {
     println!("   be updated or replaced without affecting other instances.");
 }
 
-fn run_test(strategy: ColorInitStrategy) {
-    let attrs = TermAttributes::get_or_init_with_strategy(&strategy);
-    let theme_name = attrs.theme.name.as_str();
-    println!("1. Using theme: {theme_name}");
+fn run_test(strategy: &ColorInitStrategy) {
+    // Use current() so we pick up the context pushed by with_context above.
+    let attrs = TermAttributes::current();
+    let theme_name = attrs.theme.name.clone();
+    println!("1. Strategy {:?} → theme: {theme_name}", strategy);
 
-    // Create a style for the Success role
+    // Create a style for the Success role (also uses current() internally via for_role / From<Role>)
     let success_style = Style::from(Role::Success);
     println!(
         "   Initial Success color ANSI: {:?}",
         success_style
             .foreground
             .as_ref()
-            .map(|c| c.to_ansi_for_support(TermAttributes::get_or_init().color_support))
+            .map(|c| c.to_ansi_for_support(attrs.color_support))
     );
 
     // Paint some text with the initial theme
@@ -55,7 +61,7 @@ fn run_test(strategy: ColorInitStrategy) {
         ([255, 0, 255], "Magenta"),
     ];
 
-    let color_support = TermAttributes::get_or_init().color_support;
+    let color_support = attrs.color_support;
     println!("color_support={color_support}");
 
     for (rgb, name) in &colors {
@@ -119,4 +125,5 @@ fn run_test(strategy: ColorInitStrategy) {
         println!("     Style 2: {:?}", c2.to_ansi_for_support(color_support));
         println!("     Style 3: {:?}", c3.to_ansi_for_support(color_support));
     }
+    println!();
 }

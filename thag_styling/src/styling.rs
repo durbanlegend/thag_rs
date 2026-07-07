@@ -529,7 +529,7 @@ impl Default for Style {
 
 impl From<Role> for Style {
     fn from(role: Role) -> Self {
-        TermAttributes::get_or_init().theme.style_for(role)
+        TermAttributes::current().theme.style_for(role)
     }
 }
 
@@ -901,6 +901,211 @@ impl TermAttributes {
         }
     }
 
+    /// Builds a new `TermAttributes` instance from the given strategy without touching the
+    /// global singleton.
+    ///
+    /// Use this together with [`with_context`](Self::with_context) to run code with a
+    /// specific strategy's settings while the global singleton remains unchanged:
+    ///
+    /// ```no_run
+    /// # use thag_styling::{TermAttributes, ColorInitStrategy};
+    /// let attrs = TermAttributes::build_from_strategy(&ColorInitStrategy::Match);
+    /// attrs.with_context(|| {
+    ///     // code here sees the Match-strategy TermAttributes via TermAttributes::current()
+    /// });
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if built-in theme loading fails (which should not happen with a correct installation).
+    #[allow(clippy::too_many_lines)]
+    pub fn build_from_strategy(strategy: &ColorInitStrategy) -> Self {
+        #[cfg(feature = "config")]
+        let Some(_config) = maybe_config() else {
+            panic!("Error initializing configuration")
+        };
+
+        match *strategy {
+            ColorInitStrategy::Configure(support, bg_luma, bg_rgb) => {
+                let theme_name = match (support, bg_luma, bg_rgb) {
+                    (_, TermBgLuma::Light, _) => "github",
+                    (
+                        ColorSupport::Basic | ColorSupport::Undetermined | ColorSupport::None,
+                        _,
+                        _,
+                    ) => "basic_dark",
+                    (_, TermBgLuma::Dark | TermBgLuma::Undetermined, _) => "espresso",
+                };
+                let theme =
+                    Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, support)
+                        .expect("Failed to load theme");
+                Self {
+                    init_strategy: strategy.clone(),
+                    how_initialized: HowInitialized::Configured,
+                    color_support: support,
+                    theme,
+                    term_bg_hex: None,
+                    term_bg_rgb: bg_rgb,
+                    term_bg_luma: match bg_luma {
+                        TermBgLuma::Light => TermBgLuma::Light,
+                        TermBgLuma::Dark | TermBgLuma::Undetermined => TermBgLuma::Dark,
+                    },
+                }
+            }
+            ColorInitStrategy::Default => {
+                let theme = Theme::get_theme_runtime_or_builtin_with_color_support(
+                    "basic_dark",
+                    ColorSupport::Basic,
+                )
+                .expect("Failed to load basic dark theme");
+                Self {
+                    init_strategy: strategy.clone(),
+                    how_initialized: HowInitialized::Defaulted,
+                    color_support: ColorSupport::Basic,
+                    term_bg_hex: None,
+                    term_bg_rgb: None,
+                    term_bg_luma: TermBgLuma::Dark,
+                    theme,
+                }
+            }
+            ColorInitStrategy::Match => {
+                #[cfg(feature = "color_detect")]
+                {
+                    // Check for THAG_THEME environment variable first
+                    if let Ok(theme_name) = std::env::var("THAG_THEME") {
+                        vprtln!(
+                            V::V,
+                            "Using THAG_THEME environment variable: {}",
+                            theme_name
+                        );
+
+                        let (color_support, term_bg_rgb_ref) =
+                            thag_common::terminal::detect_term_capabilities();
+                        let term_bg_rgb = Some(*term_bg_rgb_ref);
+                        let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
+
+                        // Load the specified theme directly (try runtime first, then builtin)
+                        let theme = Theme::get_theme_runtime_or_builtin(&theme_name)
+                            .map_or_else(|_| {
+                                vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
+                                Theme::auto_detect(*color_support, TermBgLuma::Dark, Some(term_bg_rgb_ref))
+                                    .expect("Failed to auto-detect fallback theme")
+                            }, |mut theme| {
+                                if *color_support != ColorSupport::TrueColor {
+                                    theme.convert_to_color_support(*color_support);
+                                }
+                                theme
+                            });
+
+                        // Determine theme's background luma from the theme itself
+                        let term_bg_luma = if let Some(&[r, g, b]) = theme.bg_rgbs.first() {
+                            if is_light_color([r, g, b]) {
+                                TermBgLuma::Light
+                            } else {
+                                TermBgLuma::Dark
+                            }
+                        } else if is_light_color(*term_bg_rgb_ref) {
+                            TermBgLuma::Light
+                        } else {
+                            TermBgLuma::Dark
+                        };
+
+                        return Self {
+                            init_strategy: strategy.clone(),
+                            how_initialized: HowInitialized::Detected,
+                            color_support: *color_support,
+                            term_bg_hex,
+                            term_bg_rgb,
+                            term_bg_luma,
+                            theme,
+                        };
+                    }
+
+                    // Original auto-detection logic when THAG_THEME is not set
+                    let (color_support, term_bg_rgb_ref) =
+                        thag_common::terminal::detect_term_capabilities();
+                    let term_bg_rgb = Some(*term_bg_rgb_ref);
+                    let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
+                    let term_bg_luma = if is_light_color(*term_bg_rgb_ref) {
+                        TermBgLuma::Light
+                    } else {
+                        TermBgLuma::Dark
+                    };
+                    let theme =
+                        Theme::auto_detect(*color_support, term_bg_luma, Some(term_bg_rgb_ref))
+                            .expect("Failed to auto-detect theme");
+                    Self {
+                        init_strategy: strategy.clone(),
+                        how_initialized: HowInitialized::Detected,
+                        color_support: *color_support,
+                        term_bg_hex,
+                        term_bg_rgb,
+                        term_bg_luma,
+                        theme,
+                    }
+                }
+                #[cfg(all(not(feature = "color_detect"), feature = "config"))]
+                {
+                    if let Some(config) = maybe_config() {
+                        let term_bg_rgb = config
+                            .styling
+                            .term_bg_rgb
+                            .unwrap_or_else(|| panic!("Attempted to unwrap term_bg_rgb: None"));
+                        let color_support = config.styling.color_support;
+                        let term_bg_luma = config.styling.term_bg_luma;
+                        let theme = if color_support == ColorSupport::None {
+                            Theme::get_theme_runtime_or_builtin("none")
+                                .expect("Failed to load `none` theme")
+                        } else {
+                            Theme::auto_detect(color_support, term_bg_luma, Some(&term_bg_rgb))
+                                .expect("Failed to auto-detect theme")
+                        };
+                        Self {
+                            init_strategy: strategy.clone(),
+                            how_initialized: HowInitialized::Configured,
+                            color_support,
+                            term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)),
+                            term_bg_rgb: Some(term_bg_rgb),
+                            term_bg_luma,
+                            theme,
+                        }
+                    } else {
+                        let theme = Theme::get_theme_runtime_or_builtin_with_color_support(
+                            "basic_dark",
+                            ColorSupport::Basic,
+                        )
+                        .expect("Failed to load basic dark theme");
+                        Self {
+                            init_strategy: strategy.clone(),
+                            how_initialized: HowInitialized::Defaulted,
+                            color_support: ColorSupport::Basic,
+                            term_bg_hex: None,
+                            term_bg_rgb: None,
+                            term_bg_luma: TermBgLuma::Dark,
+                            theme,
+                        }
+                    }
+                }
+                #[cfg(all(not(feature = "config"), not(feature = "color_detect")))]
+                {
+                    let theme = Theme::get_theme_runtime_or_builtin_with_color_support(
+                        "basic_dark",
+                        ColorSupport::Basic,
+                    )
+                    .expect("Failed to load basic dark theme");
+                    Self {
+                        init_strategy: strategy.clone(),
+                        how_initialized: HowInitialized::Defaulted,
+                        color_support: ColorSupport::Basic,
+                        term_bg_hex: None,
+                        term_bg_rgb: None,
+                        term_bg_luma: TermBgLuma::Dark,
+                        theme,
+                    }
+                }
+            }
+        }
+    }
+
     /// Internal initialization method - use `get_or_init()` or `get_or_init_with_strategy()` instead
     ///
     /// This function initializes the terminal attributes singleton with color support
@@ -915,187 +1120,8 @@ impl TermAttributes {
     /// # Panics
     /// * Built-in theme loading fails (which should never happen with correct installation)
     /// * Theme conversion fails during initialization
-    #[allow(clippy::too_many_lines)]
     fn initialize(strategy: &ColorInitStrategy) -> &'static Self {
-        let get_or_init = INSTANCE.get_or_init(|| -> Self {
-            #[cfg(feature = "config")]
-            let Some(_config) = maybe_config() else {
-                panic!("Error initializing configuration")
-            };
-
-            match *strategy {
-                ColorInitStrategy::Configure(support, bg_luma, bg_rgb) => {
-                    let theme_name = match (support, bg_luma, bg_rgb) {
-                        (_, TermBgLuma::Light, _) => "github",
-                        (
-                            ColorSupport::Basic | ColorSupport::Undetermined | ColorSupport::None,
-                            _,
-                            _,
-                        ) => "basic_dark",
-                        (_, TermBgLuma::Dark | TermBgLuma::Undetermined, _) => "espresso",
-                    };
-                    let theme = Theme::get_theme_runtime_or_builtin_with_color_support(theme_name, support)
-                        .expect("Failed to load theme");
-                    Self {
-                        init_strategy: strategy.clone(),
-                        how_initialized: HowInitialized::Configured,
-                        color_support: support,
-                        theme,
-                        term_bg_hex: None,
-                        term_bg_rgb: bg_rgb,
-                        term_bg_luma: match bg_luma {
-                            TermBgLuma::Light => TermBgLuma::Light,
-                            TermBgLuma::Dark | TermBgLuma::Undetermined => TermBgLuma::Dark,
-                        },
-                    }
-                }
-                ColorInitStrategy::Default => {
-                    let theme =
-                        Theme::get_theme_runtime_or_builtin_with_color_support("basic_dark", ColorSupport::Basic)
-                            .expect("Failed to load basic dark theme");
-                    Self {
-                        init_strategy: strategy.clone(),
-                        how_initialized: HowInitialized::Defaulted,
-                        color_support: ColorSupport::Basic,
-                        term_bg_hex: None,
-                        term_bg_rgb: None,
-                        term_bg_luma: TermBgLuma::Dark,
-                        theme,
-                    }
-                }
-                ColorInitStrategy::Match => {
-                    #[cfg(feature = "color_detect")]
-                    {
-                        // Check for THAG_THEME environment variable first
-                        if let Ok(theme_name) = std::env::var("THAG_THEME") {
-                            vprtln!(V::V, "Using THAG_THEME environment variable: {}", theme_name);
-
-                            let (color_support, term_bg_rgb_ref) =
-                                thag_common::terminal::detect_term_capabilities();
-                            let term_bg_rgb = Some(*term_bg_rgb_ref);
-                            let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
-
-                            // Load the specified theme directly (try runtime first, then builtin)
-                            let theme = Theme::get_theme_runtime_or_builtin(&theme_name)
-                                .map_or_else(|_| {
-                                    vprtln!(V::V, "Warning: THAG_THEME '{}' not found, falling back to auto-detection", theme_name);
-                                    Theme::auto_detect(*color_support, TermBgLuma::Dark, Some(term_bg_rgb_ref))
-                                        .expect("Failed to auto-detect fallback theme")
-                                }, |mut theme| {
-                                    if *color_support != ColorSupport::TrueColor {
-                                        theme.convert_to_color_support(*color_support);
-                                    }
-                                    theme
-                                });
-
-                            // Determine theme's background luma from the theme itself
-                            let term_bg_luma = if let Some(&[r, g, b]) = theme.bg_rgbs.first() {
-                                if is_light_color([r, g, b]) {
-                                    TermBgLuma::Light
-                                } else {
-                                    TermBgLuma::Dark
-                                }
-                            } else if is_light_color(*term_bg_rgb_ref) {
-                                TermBgLuma::Light
-                            } else {
-                                TermBgLuma::Dark
-                            };
-
-                            return Self {
-                                init_strategy: strategy.clone(),
-                                how_initialized: HowInitialized::Detected,
-                                color_support: *color_support,
-                                term_bg_hex,
-                                term_bg_rgb,
-                                term_bg_luma,
-                                theme,
-                            };
-                        }
-
-                        // Original auto-detection logic when THAG_THEME is not set
-                        let (color_support, term_bg_rgb_ref) =
-                            thag_common::terminal::detect_term_capabilities();
-                        // let term_bg_rgb_ref = terminal::get_term_bg_rgb().ok();
-                        let term_bg_rgb = Some(*term_bg_rgb_ref);
-                        let term_bg_hex = Some(rgb_to_hex(term_bg_rgb_ref));
-                        let term_bg_luma = if is_light_color(*term_bg_rgb_ref) {
-                            TermBgLuma::Light
-                        } else {
-                            TermBgLuma::Dark
-                        };
-                        let theme =
-                            Theme::auto_detect(*color_support, term_bg_luma, Some(term_bg_rgb_ref))
-                                .expect("Failed to auto-detect theme");
-                        Self {
-                            init_strategy: strategy.clone(),
-                            how_initialized: HowInitialized::Detected,
-                            color_support: *color_support,
-                            term_bg_hex,
-                            term_bg_rgb,
-                            term_bg_luma,
-                            theme,
-                        }
-                    }
-                    #[cfg(all(not(feature = "color_detect"), feature = "config"))]
-                    {
-                        if let Some(config) = maybe_config() {
-                            let term_bg_rgb = config
-                                .styling
-                                .term_bg_rgb
-                                .unwrap_or_else(|| panic!("Attempted to unwrap term_bg_rgb: None"));
-                            let color_support = config.styling.color_support;
-                            let term_bg_luma = config.styling.term_bg_luma;
-                            let theme = if color_support == ColorSupport::None {
-                                Theme::get_theme_runtime_or_builtin("none").expect("Failed to load `none` theme")
-                            } else {
-                                Theme::auto_detect(color_support, term_bg_luma, Some(&term_bg_rgb))
-                                    .expect("Failed to auto-detect theme")
-                            };
-                            Self {
-                                init_strategy: strategy.clone(),
-                                how_initialized: HowInitialized::Configured,
-                                color_support,
-                                term_bg_hex: Some(rgb_to_hex(&term_bg_rgb)),
-                                term_bg_rgb: Some(term_bg_rgb),
-                                term_bg_luma,
-                                theme,
-                            }
-                        } else {
-                            let theme = Theme::get_theme_runtime_or_builtin_with_color_support(
-                                "basic_dark",
-                                ColorSupport::Basic,
-                            )
-                            .expect("Failed to load basic dark theme");
-                            Self {
-                                init_strategy: strategy.clone(),
-                                how_initialized: HowInitialized::Defaulted,
-                                color_support: ColorSupport::Basic,
-                                term_bg_hex: None,
-                                term_bg_rgb: None,
-                                term_bg_luma: TermBgLuma::Dark,
-                                theme,
-                            }
-                        }
-                    }
-                    #[cfg(all(not(feature = "config"), not(feature = "color_detect")))]
-                    {
-                        let theme =
-                            Theme::get_theme_runtime_or_builtin_with_color_support("basic_dark", ColorSupport::Basic)
-                                .expect("Failed to load basic dark theme");
-                        Self {
-                            init_strategy: strategy.clone(),
-                            how_initialized: HowInitialized::Defaulted,
-                            color_support: ColorSupport::Basic,
-                            term_bg_hex: None,
-                            term_bg_rgb: None,
-                            term_bg_luma: TermBgLuma::Dark,
-                            theme,
-                        }
-                    }
-                }
-            }
-        });
-        get_or_init
+        INSTANCE.get_or_init(|| Self::build_from_strategy(strategy))
     }
 
     /// Checks if `TermAttributes` has been initialized

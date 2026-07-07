@@ -86,6 +86,7 @@ fn main() {
     #[cfg(feature = "crossterm_support")]
     {
         use crossterm::style::Color as CrossColor;
+        use thag_styling::ThemedStyle;
 
         println!("\n4. Crossterm integration test:");
         for role in [Role::Success, Role::Error, Role::Warning] {
@@ -98,6 +99,7 @@ fn main() {
     #[cfg(feature = "ratatui_support")]
     {
         use ratatui::style::Color as RataColor;
+        use thag_styling::ThemedStyle;
 
         println!("\n5. Ratatui integration test:");
         for role in [Role::Success, Role::Error, Role::Warning] {

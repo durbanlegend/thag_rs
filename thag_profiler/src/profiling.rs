@@ -1729,11 +1729,11 @@ impl Profile {
 
             #[cfg(not(target_os = "windows"))]
             let desc_fn_name = if section_name.is_some() && is_profiled_function(fn_name) {
-                safe_alloc!(get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.to_string()))
+                safe_alloc!(get_reg_desc_name(fn_name).unwrap_or_else(|| fn_name.clone()))
             } else if is_async {
                 safe_alloc!(format!("async::{fn_name}"))
             } else {
-                safe_alloc!(fn_name.to_string())
+                safe_alloc!(fn_name.clone())
             };
 
             #[cfg(target_os = "windows")]
@@ -1780,7 +1780,7 @@ impl Profile {
                     path,
                     section_name,
                     registered_name: stack,
-                    fn_name: fn_name.to_string(),
+                    fn_name: fn_name.clone(),
                     start_line,
                     end_line,
                     detailed_memory,
@@ -1856,7 +1856,7 @@ impl Profile {
                     path,
                     section_name,
                     registered_name: stack,
-                    fn_name: fn_name.to_string(),
+                    fn_name: fn_name.clone(),
                     start_line,
                     end_line,
                     detailed_memory,
@@ -2072,7 +2072,7 @@ pub fn build_stack(
         path.iter()
             .map(|fn_name_str| {
                 let stack_str = if vanilla_stack.is_empty() {
-                    fn_name_str.to_string()
+                    fn_name_str.clone()
                 } else {
                     format!("{vanilla_stack};{fn_name_str}")
                 };
@@ -2080,7 +2080,7 @@ pub fn build_stack(
                 (stack_str, fn_name_str)
             })
             .map(|(stack_str, fn_name_str)| {
-                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.to_string())
+                get_reg_desc_name(&stack_str).unwrap_or_else(|| fn_name_str.clon())
             })
             .chain(maybe_section_name.cloned())
             .collect::<Vec<String>>()
@@ -2145,7 +2145,7 @@ pub fn extract_path(cleaned_stack: &[String], maybe_append: Option<&String>) -> 
             }
             temp_stack_str.push_str(frame);
             if is_profiled_function(&temp_stack_str) {
-                stack.push(frame.to_string());
+                stack.push(frame.clone());
                 if !stack_str.is_empty() {
                     stack_str.push(';');
                 }

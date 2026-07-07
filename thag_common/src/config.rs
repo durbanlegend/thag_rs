@@ -278,10 +278,9 @@ impl Dependencies {
             }
         }
 
-        let mut default_features = true;
-
         // Apply crate-specific overrides
-        if let Some(override_config) = self.feature_overrides.get(crate_name) {
+        let default_features = if let Some(override_config) = self.feature_overrides.get(crate_name)
+        {
             #[cfg(debug_assertions)]
             debug_log!("Applying overrides for crate {}", crate_name);
 
@@ -313,8 +312,10 @@ impl Dependencies {
                 }
             }
 
-            default_features = override_config.default_features.unwrap_or(true);
-        }
+            override_config.default_features.unwrap_or(true)
+        } else {
+            true
+        };
 
         // Apply other existing filters
         if self.exclude_unstable_features {

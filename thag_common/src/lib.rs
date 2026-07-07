@@ -130,6 +130,7 @@ impl V {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum ColorSupport {
     /// Still to be determined or defaulted
     Undetermined = 0,
@@ -137,18 +138,13 @@ pub enum ColorSupport {
     None = 1,
     /// Basic 16-color support
     #[serde(alias = "ansi16")] // Accept old "ansi16" value
+    #[default]
     Basic = 2,
     /// Full color support, suitable for color palettes of 256 colours (8 bit) or higher.
     #[serde(alias = "xterm256")] // Accept old "256" value
     Color256 = 3,
     /// Full color support, 24 bits -> 16 million colors.
     TrueColor = 4,
-}
-
-impl Default for ColorSupport {
-    fn default() -> Self {
-        Self::Basic // Safe default when detection isn't available
-    }
 }
 
 /// Terminal background luminance detection and specification
@@ -170,19 +166,15 @@ impl Default for ColorSupport {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
+#[derive(Default)]
 pub enum TermBgLuma {
     /// Light background terminal
     Light,
     /// Dark background terminal
+    #[default]
     Dark,
     /// Let `thag` autodetect the background luminosity
     Undetermined,
-}
-
-impl Default for TermBgLuma {
-    fn default() -> Self {
-        Self::Dark // Safe default when detection isn't available
-    }
 }
 
 /// Manages user message output with verbosity control and thread-safe locking

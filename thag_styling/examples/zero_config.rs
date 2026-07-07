@@ -9,7 +9,7 @@
 /// # Or use the full feature set:
 /// cargo run -p thag_styling --example zero_config --features "full"
 /// ```
-#[cfg(feature = "ratatui_support")]
+#[cfg(all(feature = "ratatui_support", not(test)))]
 use std::error::Error;
 use std::io::{self};
 #[cfg(feature = "ratatui_support")]
@@ -123,6 +123,7 @@ fn show_cross_library_consistency() -> io::Result<()> {
         println!("    Error Style:   {error_style:?}");
         println!();
 
+        #[cfg(not(test))]
         ratatui_user_input_example();
     }
 
@@ -149,7 +150,7 @@ fn show_cross_library_consistency() -> io::Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "ratatui_support")]
+#[cfg(all(feature = "ratatui_support", not(test)))]
 #[allow(clippy::too_many_lines)]
 fn ratatui_user_input_example() {
     use ratatui::{

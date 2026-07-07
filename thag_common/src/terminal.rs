@@ -287,7 +287,7 @@ pub fn get_term_bg_rgb() -> ThagCommonResult<&'static [u8; 3]> {
                 }
                 Err(e) => {
                     vprtln!(V::V, "Both OSC 11 and termbg failed: {e}");
-                    Err(ThagCommonError::Generic(format!("Background detection failed: {}", e)))
+                    Err(ThagCommonError::Generic(format!("Background detection failed: {e}")))
                 }
             }
         }

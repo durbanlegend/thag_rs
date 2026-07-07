@@ -232,7 +232,7 @@ fn detect_tokio_main_expansion(body: &syn::Block) -> bool {
 
 #[allow(clippy::too_many_lines)]
 pub fn enable_profiling_impl(attr: TokenStream, item: TokenStream) -> TokenStream {
-    assert!(cfg!(feature = "time_profiling"));
+    const { assert!(cfg!(feature = "time_profiling")) };
 
     let args = parse_macro_input!(attr as ProfilingArgs);
 

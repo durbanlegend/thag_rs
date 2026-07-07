@@ -3759,38 +3759,23 @@ impl StyledString {
     /// that would otherwise leak from inner styled content.
     fn replace_resets_with_style(&self) -> String {
         let reset = "\x1b[0m";
-        let style_codes = self.style.to_ansi_codes();
 
         if !self.content.contains(reset) {
             return self.content.clone();
         }
 
-        // Build the replacement string with attribute resets and style codes
-        let replacement = self.build_reset_replacement(&style_codes);
-
-        // Replace all resets with our enhanced replacement
-        self.content.replace(reset, &replacement)
+        // Replace every inner reset with attribute-specific resets + outer style codes,
+        // so the outer styling context is restored after each embedded styled span.
+        self.content.replace(reset, &self.build_styling_prefix())
     }
 
-    /// Build the complete styling prefix with attribute resets
+    /// Build the ANSI prefix used both at the start of the styled output and as the
+    /// replacement for any inner reset sequences.
     ///
-    /// This creates a string that:
-    /// 1. Always resets all text attributes to prevent bleeding
-    /// 2. Applies the current style's ANSI codes
+    /// Emits `\x1b[22;23;24m` (resets bold/dim, italic, underline without touching
+    /// colours) followed by this style's ANSI colour/attribute codes.
     fn build_styling_prefix(&self) -> String {
-        let style_codes = self.style.to_ansi_codes();
-
-        // Always include full attribute reset to prevent bleeding from outer contexts
-        format!("\x1b[22;23;24m{}", style_codes)
-    }
-
-    /// Build the replacement string for inner resets
-    ///
-    /// This creates a replacement for \x1b[0m that uses the same prefix
-    /// as the main styling to ensure consistent attribute handling
-    fn build_reset_replacement(&self, _style_codes: &str) -> String {
-        // Use the same prefix as the main styling
-        self.build_styling_prefix()
+        format!("\x1b[22;23;24m{}", self.style.ansi_codes())
     }
 
     /// Convert to final styled string with proper ANSI codes
@@ -3882,54 +3867,6 @@ impl StyledPrint for StyledString {
         if verbosity <= current_verbosity {
             println!("{}", self);
         }
-    }
-}
-
-// impl StyledPrint for StyledString {
-//     fn print(self) {
-//         print!("{}", self);
-//     }
-
-//     fn println(self) {
-//         println!("{}", self);
-//     }
-
-//     fn vprintln(self, verbosity: thag_common::Verbosity) {
-//         let current_verbosity = thag_common::get_verbosity();
-//         if verbosity <= current_verbosity {
-//             println!("{}", self);
-//         }
-//     }
-// }
-
-/// Extension trait for generating ANSI codes from Style
-trait StyleAnsiExt {
-    fn to_ansi_codes(&self) -> String;
-}
-
-impl StyleAnsiExt for Style {
-    fn to_ansi_codes(&self) -> String {
-        let mut codes = String::new();
-
-        if let Some(color_info) = &self.foreground {
-            let ansi = color_info.to_ansi_for_support(TermAttributes::get_or_init().color_support);
-            codes.push_str(&ansi);
-        }
-
-        if self.bold {
-            codes.push_str("\x1b[1m");
-        }
-        if self.italic {
-            codes.push_str("\x1b[3m");
-        }
-        if self.dim {
-            codes.push_str("\x1b[2m");
-        }
-        if self.underline {
-            codes.push_str("\x1b[4m");
-        }
-
-        codes
     }
 }
 

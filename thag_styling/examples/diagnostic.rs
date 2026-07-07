@@ -300,6 +300,7 @@ fn test_strategy_comparison() {
 
     // Check raw mode status
     println!("     Raw mode status:");
+    #[cfg(feature = "crossterm_support")]
     match crossterm::terminal::is_raw_mode_enabled() {
         Ok(raw_mode) => println!("       Raw mode enabled: {}", raw_mode),
         Err(e) => {
@@ -307,6 +308,8 @@ fn test_strategy_comparison() {
             println!("       This causes fallback to (0,0,0) background!");
         }
     }
+    #[cfg(not(feature = "crossterm_support"))]
+    println!("       (crossterm_support feature not enabled — skipping raw mode check)");
 
     // Test color support detection specifically
     println!("     Color support detection:");

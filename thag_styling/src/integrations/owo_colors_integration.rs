@@ -3,14 +3,10 @@
 //! This module provides seamless integration between thag's theming system
 //! and owo-colors's styling types.
 
-#[cfg(feature = "owo_colors_support")]
 use crate::ThemedStyle;
-#[cfg(feature = "owo_colors_support")]
 use crate::{ColorInfo, ColorValue, Role, Style};
-#[cfg(feature = "owo_colors_support")]
 use owo_colors::{AnsiColors, DynColors, Style as OwoStyle, XtermColors};
 
-#[cfg(feature = "owo_colors_support")]
 impl ThemedStyle<Self> for OwoStyle {
     fn themed(role: Role) -> Self {
         let thag_style = Style::from(role);
@@ -44,7 +40,6 @@ impl ThemedStyle<Self> for OwoStyle {
     }
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl ThemedStyle<Self> for DynColors {
     fn themed(role: Role) -> Self {
         let style = Style::from(role);
@@ -67,7 +62,6 @@ impl ThemedStyle<Self> for DynColors {
 }
 
 // From implementations for owo-colors types
-#[cfg(feature = "owo_colors_support")]
 impl From<&ColorInfo> for DynColors {
     fn from(color_info: &ColorInfo) -> Self {
         match &color_info.value {
@@ -78,35 +72,30 @@ impl From<&ColorInfo> for DynColors {
     }
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl From<&Style> for OwoStyle {
     fn from(style: &Style) -> Self {
         Self::from_thag_style(style)
     }
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl From<&Role> for DynColors {
     fn from(role: &Role) -> Self {
         Self::themed(*role)
     }
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl From<Role> for DynColors {
     fn from(role: Role) -> Self {
         Self::themed(role)
     }
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl From<&Role> for OwoStyle {
     fn from(role: &Role) -> Self {
         Self::themed(*role)
     }
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl From<Role> for OwoStyle {
     fn from(role: Role) -> Self {
         Self::themed(role)
@@ -114,7 +103,6 @@ impl From<Role> for OwoStyle {
 }
 
 /// Convenience methods for owo-colors styling
-#[cfg(feature = "owo_colors_support")]
 pub trait OwoColorsStyleExt {
     /// Apply a thag role to this owo-colors style
     #[must_use]
@@ -129,7 +117,6 @@ pub trait OwoColorsStyleExt {
     fn with_thag_color(self, color_info: &ColorInfo) -> Self;
 }
 
-#[cfg(feature = "owo_colors_support")]
 impl OwoColorsStyleExt for OwoStyle {
     fn with_role(self, role: Role) -> Self {
         // Chain the themed style effects with existing style
@@ -169,7 +156,6 @@ impl OwoColorsStyleExt for OwoStyle {
 }
 
 /// Helper functions for common owo-colors use cases
-#[cfg(feature = "owo_colors_support")]
 pub mod helpers {
     use super::{Role, ThemedStyle};
     use owo_colors::Style as OwoStyle;
@@ -223,7 +209,7 @@ pub mod helpers {
     }
 }
 
-#[cfg(all(test, feature = "owo_colors_support"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{ColorInfo, ColorValue, Style};

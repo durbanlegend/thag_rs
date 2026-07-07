@@ -54,11 +54,8 @@ impl ThemeExporter for WindowsTerminalExporter {
             "brightWhite": format_color(theme.palette.quote.rgb())
         });
 
-        // Create the complete schemes array structure that can be merged into settings.json
-        let schemes_wrapper = json!(color_scheme);
-
         // Convert to pretty-printed JSON
-        serde_json::to_string_pretty(&schemes_wrapper)
+        serde_json::to_string_pretty(&color_scheme)
             .map_err(|e| crate::StylingError::Generic(format!("JSON serialization error: {}", e)))
     }
 

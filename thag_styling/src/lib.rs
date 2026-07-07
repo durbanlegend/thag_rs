@@ -287,13 +287,10 @@ pub fn display_color_comparison(theme: &Theme) {
                     r, g, b, r, g, b
                 ))
             } else {
-                // Role::Normal.dim().paint("N/A").to_string()
                 "N/A".to_string()
             };
 
-            // println!("thag_display={thag_display:?}");
             println!("{name:<20} {terminal_sample:<5}         {thag_display:<26} {semantic_role}");
-            // println!("{terminal_sample:?}\nthag_display={thag_display:?}");
         }
 
         println!();
@@ -529,7 +526,6 @@ pub mod inquire_theming {
         };
 
         // Helper function to extract RGB values from a role for color distance calculation
-        #[allow(clippy::cast_possible_truncation)]
         let get_rgb = |role: Role| -> Option<[u8; 3]> {
             let style = theme.style_for(role);
             style
@@ -537,43 +533,7 @@ pub mod inquire_theming {
                 .as_ref()
                 .and_then(|color_info| match &color_info.value {
                     ColorValue::TrueColor { rgb } => Some(*rgb),
-                    ColorValue::Color256 { color256 } => {
-                        // Convert 256-color to RGB for distance calculation
-                        let index = *color256 as usize;
-                        if index < 16 {
-                            // Standard colors
-                            let colors = [
-                                [0, 0, 0],       // Black
-                                [128, 0, 0],     // Red
-                                [0, 128, 0],     // Green
-                                [128, 128, 0],   // Yellow
-                                [0, 0, 128],     // Blue
-                                [128, 0, 128],   // Magenta
-                                [0, 128, 128],   // Cyan
-                                [192, 192, 192], // White
-                                [128, 128, 128], // Bright Black
-                                [255, 0, 0],     // Bright Red
-                                [0, 255, 0],     // Bright Green
-                                [255, 255, 0],   // Bright Yellow
-                                [0, 0, 255],     // Bright Blue
-                                [255, 0, 255],   // Bright Magenta
-                                [0, 255, 255],   // Bright Cyan
-                                [255, 255, 255], // Bright White
-                            ];
-                            colors.get(index).copied()
-                        } else if index < 232 {
-                            // 216 color cube
-                            let n = index - 16;
-                            let r = (n / 36) * 51;
-                            let g = ((n % 36) / 6) * 51;
-                            let b = (n % 6) * 51;
-                            Some([r as u8, g as u8, b as u8])
-                        } else {
-                            // Grayscale
-                            let gray = 8 + (index - 232) * 10;
-                            Some([gray as u8, gray as u8, gray as u8])
-                        }
-                    }
+                    ColorValue::Color256 { color256 } => Some(index_to_rgb(*color256)),
                     ColorValue::Basic { .. } => {
                         // Convert basic role to approximate RGB for distance calculation
                         match role {

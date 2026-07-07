@@ -223,8 +223,7 @@ fn print_theme_colors(theme: &thag_styling::Theme) {
             let rgb = match &color_info.value {
                 thag_styling::ColorValue::TrueColor { rgb } => *rgb,
                 thag_styling::ColorValue::Color256 { color256 } => {
-                    // Convert 256-color to approximate RGB
-                    color_256_to_rgb(*color256)
+                    thag_styling::index_to_rgb(*color256)
                 }
                 thag_styling::ColorValue::Basic { .. } => [128, 128, 128], // Gray fallback
             };
@@ -245,47 +244,6 @@ fn print_theme_colors(theme: &thag_styling::Theme) {
                 "  {:>12}: #{:02x}{:02x}{:02x}{}",
                 name, rgb[0], rgb[1], rgb[2], style_attrs
             );
-        }
-    }
-}
-
-#[cfg(feature = "image_themes")]
-const fn color_256_to_rgb(color: u8) -> [u8; 3] {
-    match color {
-        0..=15 => {
-            // Standard 16 colors
-            let colors = [
-                [0, 0, 0],
-                [128, 0, 0],
-                [0, 128, 0],
-                [128, 128, 0],
-                [0, 0, 128],
-                [128, 0, 128],
-                [0, 128, 128],
-                [192, 192, 192],
-                [128, 128, 128],
-                [255, 0, 0],
-                [0, 255, 0],
-                [255, 255, 0],
-                [0, 0, 255],
-                [255, 0, 255],
-                [0, 255, 255],
-                [255, 255, 255],
-            ];
-            colors[color as usize]
-        }
-        16..=231 => {
-            // 216 color cube
-            let n = color - 16;
-            let r = (n / 36) * 51;
-            let g = ((n % 36) / 6) * 51;
-            let b = (n % 6) * 51;
-            [r, g, b]
-        }
-        232..=255 => {
-            // Grayscale
-            let gray = 8 + (color - 232) * 10;
-            [gray, gray, gray]
         }
     }
 }

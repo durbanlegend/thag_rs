@@ -423,7 +423,8 @@ The theme will be applied immediately to new Konsole sessions.
 }
 
 /// Brighten a color by increasing its components
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, dead_code)]
+#[cfg(test)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn brighten_color([r, g, b]: [u8; 3]) -> [u8; 3] {
     adjust_color_brightness([r, g, b], 1.3)
 }
@@ -456,36 +457,9 @@ fn adjust_color_brightness([r, g, b]: [u8; 3], factor: f32) -> [u8; 3] {
     }
 }
 
-// /// Get the best dark color from the theme for black mapping
-// fn get_best_dark_color(theme: &Theme) -> Option<(u8, u8, u8)> {
-//     // Try background first, then subtle, then create a dark color
-//     theme
-//         .bg_rgbs
-//         .first()
-//         .copied()
-//         .or_else(|| &theme.palette.subtle).rgb()
-//         .or(Some([16, 16, 16]))
-// }
-
-// /// Extract RGB values from a Style's foreground color
-// fn get_rgb_from_style(style: &crate::Style) -> Option<(u8, u8, u8)> {
-//     style.foreground.as_ref().map(|color_info| {
-//         match &color_info.value {
-//             ColorValue::TrueColor { rgb } => (rgb[0], rgb[1], rgb[2]),
-//             ColorValue::Color256 { color256 } => {
-//                 // Convert 256-color index to approximate RGB
-//                 color_256_to_rgb(*color256)
-//             }
-//             ColorValue::Basic { index, .. } => {
-//                 // Convert basic color index to RGB
-//                 basic_color_to_rgb(*index)
-//             }
-//         }
-//     })
-// }
-
 /// Convert basic color index to RGB
-#[allow(clippy::match_same_arms, dead_code)]
+#[cfg(test)]
+#[allow(clippy::match_same_arms)]
 const fn basic_color_to_rgb(index: u8) -> [u8; 3] {
     match index {
         0 => [0, 0, 0],        // Black
@@ -509,7 +483,7 @@ const fn basic_color_to_rgb(index: u8) -> [u8; 3] {
 }
 
 /// Convert 256-color index to RGB
-#[allow(dead_code)]
+#[cfg(test)]
 const fn color_256_to_rgb(index: u8) -> [u8; 3] {
     match index {
         // Standard colors (0-15)

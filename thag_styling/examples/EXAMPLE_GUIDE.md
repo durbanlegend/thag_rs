@@ -11,7 +11,7 @@ All examples require appropriate feature flags to be enabled:
 cargo run -p thag_styling --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
 
 # Basic styling demo (no features required)
-cargo run -p thag_styling --example basic_styling -p thag_styling
+cargo run -p thag_styling --example zero_config
 
 # Integration comparisons
 cargo run -p thag_styling --example themed_style_demo --features "ratatui_support,crossterm_support" -p thag_styling
@@ -24,7 +24,7 @@ cargo run -p thag_styling --example themed_style_demo --features "ratatui_suppor
 | `ratatui_theming_showcase` | `ratatui_support` | Full TUI application demo |
 | `ratatui_integration_test` | `ratatui_support` | Integration testing/debugging |
 | `themed_style_demo` | Library-specific | Multi-library comparison |
-| `basic_styling` | None | Core functionality only |
+| `zero_config` | None | Core functionality only |
 
 ## Ratatui Integration
 

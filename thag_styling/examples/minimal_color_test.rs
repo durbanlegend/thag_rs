@@ -68,7 +68,7 @@ fn main() {
     println!("\n4. Direct raw mode test:");
     #[cfg(feature = "color_detect")]
     {
-        match ratatui::crossterm::terminal::is_raw_mode_enabled() {
+        match crossterm::terminal::is_raw_mode_enabled() {
             Ok(raw_mode) => {
                 println!("   ✅ Raw mode status: {}", raw_mode);
             }

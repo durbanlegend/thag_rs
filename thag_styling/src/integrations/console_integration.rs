@@ -127,9 +127,7 @@ pub trait ConsoleStyleExt {
 
 impl ConsoleStyleExt for ConsoleStyle {
     fn with_role(self, role: Role) -> Self {
-        // Console styles are immutable, so we need to combine them
-        // Console styles are immutable, so we need to layer them
-        // Apply the themed style over the existing style
+        // Console styles are immutable; themed style replaces the original
         // Note: Console Style doesn't expose getters for easy composition
         // Return the themed style since console doesn't support easy layering
         Self::themed(role)

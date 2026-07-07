@@ -2,7 +2,12 @@ name = "Basic Dark"
 description = "Basic dark theme for simple terminals"
 term_bg_luma = "dark"
 min_color_support = "basic"
-backgrounds = []
+backgrounds = ["#000000"]
+bg_rgbs = [[
+    0,
+    0,
+    0,
+]]
 
 [palette]
 heading1 = { ansi = "green", index = 2, style = ["bold"] } # Green

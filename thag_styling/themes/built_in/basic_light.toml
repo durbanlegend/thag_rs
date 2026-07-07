@@ -2,7 +2,12 @@ name = "Basic Light"
 description = "Basic light theme for simple terminals"
 term_bg_luma = "light"
 min_color_support = "basic"
-backgrounds = []
+backgrounds = ["#ffffff"]
+bg_rgbs = [[
+    255,
+    255,
+    255,
+]]
 
 [palette]
 # Headers and Structure

@@ -272,7 +272,8 @@ mod tests {
             | ConsoleColor::Magenta
             | ConsoleColor::Cyan
             | ConsoleColor::White
-            | ConsoleColor::Black => (),
+            | ConsoleColor::Black
+            | ConsoleColor::TrueColor(_, _, _) => (),
         }
     }
 

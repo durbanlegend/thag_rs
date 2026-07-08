@@ -292,6 +292,9 @@ impl PaletteSync {
         println!("\x1b[97m● Quote - Quoted text or citations (ANSI 15: Bright White)");
         println!();
         println!("📝 Note: Palette changes only affect this terminal session");
+        println!("         To change theme permanently, use the THAG_THEME environment variable");
+        println!("         or use thag -C to configure your preferred light and/or dark themes");
+        println!("         in rank order under the [styling] section of your config.toml");
     }
 
     /// Display current background color information

@@ -4,13 +4,13 @@
 [![Documentation](https://docs.rs/thag_styling/badge.svg)](https://docs.rs/thag_styling)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 
-An unique, lightweight and easy to use terminal styling and theming system for Rust applications across platforms.
+An unique, lightweight and easy to use terminal styling and theming system for Rust applications across platforms. `thag_styling` fulfils a need that was perhaps only obvious in hindsight.
 
-Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. It can become very time-consuming to achieve the desired look and feel for your terminal app and to make it internally consistent. All this work can turn out to be in vain when your app is deployed, because colors that 'pop' against a dark background may be faint or invisible against a user's light background, or the reverse.
+Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. But wait, the user's terminal session already has a light or dark theme, which defines the preferred color palette to use! It's not our business to override this with our own arbitrary choice of colors, nor is that a business we should want to be involved in. It can be very time-consuming to achieve the look and feel you desire for your terminal app and to make it internally consistent, only to have your app turn out ugly and partly illegible, because you overlooked the need for contrast. Light bright colors like yellow that 'pop' against a dark background may appear faint, unpleasant or often just invisible against a user's light background, and by the same token, light themes require darker colors that tend to disappear when displayed on a dark background.
 
-`thag_styling` gets around this by detecting the user's terminal theme from the background color (or an override) and automatically tailoring your output colors and styles to the existing theme based on the kinds of messages you choose to display.
+`thag_styling` gets around this by detecting the user's terminal theme from the background color (or an override) and automatically choosing output colors for you, tailored to the existing theme based on the kinds of messages you choose to display, taking into account the detected color rendering capabilities of the terminal emulator. These themes are cached compactly in a hash table at compile time, so there is no runtime performance degradation.
 
-`thag_styling` provides a high-level API where you choose the desired impact of each message by choosing from a comprehensive set of 14 message types. Each message type has associated style attributes (like boldness) and an appropriate color (such as a bold red shade for error, a subdued color for hints and so on) automatically preselected by `thag_styling` from the underlying terminal theme. The API is intuitive, and as if by magic your program's output will fit right in with the detected terminal theme in a legible and professional way.
+`thag_styling` provides a high-level API where you choose the desired impact of each message by selecting from a comprehensive set of 16 message types similar to word processor styles. Each message type has associated style attributes (like boldness) and an appropriate color (such as a bold red shade for error, a subdued color for hints and so on) automatically preselected by `thag_styling` from the underlying terminal theme. The API is intuitive, and as if by magic your program's output will fit right in with the detected terminal theme in a legible and professional way.
 
 Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you, and indeed plenty of low-level assistance available. For instance `thag_styling` makes it straightforward to **nest styles to any depth** - something lacking in most color libraries due to underlying ANSI OSC limitations.
 
@@ -26,7 +26,11 @@ In line with the `thag_rs` philosophy, `thag_styling` aims to provide something 
 
 ## Origin story
 
+In case it's not clear what `thag_styling` is all about, this potted history may help to shed some light.
+
 `thag_styling` was written in the first place for `thag` itself, because I wanted easy automated styling for `thag` and could find nothing that fitted the bill. It became a labour of love to resolve platform issues with terminal detection and rendering, efficiently integrate a substantial theme collection at compile time, and refine the API to my complete satisfaction. At some point it made sense to package it in its own crate for more general use.
+
+The first inspiration was the realisation that it's no use having a color library if you don't know what color is going to be visible, let alone decent to look at, against the user's terminal background. The second inspiration came from traditional loggers like `env_logger` or `log4j`, but extending the concept to all types of messages, in a manner analogous to the styles defined in a word processor. The third inspiration came from the idea of detecting terminal backgrounds and capabilities via ANSI commands or other means. The fourth was that the user's active terminal theme already provides the optimal color palette, and that the palette in use can be identified or considerably narrowed down just by interrogating the terminal's background color, and further resolved by configured preferences.
 
 ## Features
 
@@ -126,18 +130,41 @@ use thag_styling::{Styleable, StyledPrint};
 
 fn main() {
     // Fluent method chaining - natural and composable
-    "✅ Operation completed successfully".success().println();
-    "❌ Connection failed".error().println();
-    "⚠️  High memory usage detected".warning().println();
-    "thag --release".code().println();
+    "A Tale of Two Cities\n".heading1().println();
+    "A Story Of The French Revolution\n".heading2().println();
+    "by Charles Dickens\n".info().italic().println();
+    "Chapter 1: The Period\n".heading3().println();
+    "It was the best of times, it was the worst of times ...".normal().println();
+    println!("\n\n");
 
-    // Works with any Display type
+    "✅ Operation completed successfully".success().println();
+    println!();
+    "❌ Connection failed".error().println();
+    println!();
+    "⚠️  High memory usage detected".warning().println();
+    println!();
+    "Code sample style".code().println();
+    println!();
+    "Link style".link().println();
+    println!();
+
+    "Commentary: Works with any Display type, such as an numbers and paths:".commentary().println();
+    println!();
     42.success().println();              // Numbers
     std::path::Path::new("/usr/bin").display().code().println(); // Paths
+    println!();
+
+    println!("We can embed styles in a normal println!(), as {} and {} are embedded here", "Info style".info(), "Debug style".debug());
+    println!();
+    format!("Hint: we can nest them in another style, as {} and {} are embedded in this hint style", "Emphasis style".emphasis(), "Quote style".quote()).hint().println();
 }
 ```
 
-If you have `thag_rs` installed, you can simply paste the above mini-program into `thag -d` and Ctrl-d to run it and see the output, tailored to the theme on your terminal emulator.
+If you have `thag_rs` installed, you can simply paste the above mini-program into `thag -d` and Ctrl-d to run it and see the output, tailored to the theme on your terminal emulator. Or if you also have the `tools` feature installed, simply use `thag_paste | thag -s`.
+
+[![basic usage output](/Users/donf/projects/thag_rs/docs/thag_styling/assets/basic_usage_output.png)]
+(https://durbanlegend.github.io/thag_rs/thag_styling/assets/basic_usage_output.png)
+*Basic usage output in catppuccin-mocha theme.*
 
 ## Why thag_styling?
 
@@ -220,19 +247,19 @@ println!("{}", styled!("Hex", fg = "#ff6347", underline));            // Hex tom
 
 ## Semantic Roles
 
-`thag_styling` provides a comprehensive set of semantic roles:
+`thag_styling` provides a comprehensive set of 16 semantic roles:
 
 | Role | Purpose | Example Usage |
 |------|---------|---------------|
 | `Heading1`, `Heading2`, `Heading3` | Document structure | Section titles, command help headers |
 | `Error`, `Warning`, `Success` | Status messages | Operation results, validation feedback |
 | `Info` | General information | Status updates, notifications |
-| `Code` | Technical content | Commands, file paths, identifiers |
 | `Emphasis` | Important content | Key points, highlighted text |
-| `Normal` | Default text | Body content, descriptions |
-| `Subtle` | De-emphasized content | Timestamps, metadata, borders |
-| `Quote`, `Link` | Special content | Citations, URLs |
+| `Code` | Technical content | Commands, file paths, identifiers |
 | `Debug` | Development info | Diagnostic output, verbose logging |
+| `Normal` | Default text | Body content, descriptions |
+| `Quote`, `Link` | Special content | Citations, URLs |
+| `Subtle`, `Hint`, `Commentary` | De-emphasized content | Timestamps, metadata, borders |
 
 ## Terminal Compatibility
 
@@ -541,9 +568,12 @@ thag_gen_terminal_themes my-theme.toml --all-formats
 # Display available themes
 thag_show_themes
 
-# Apply theme and sync terminal palette
-thag_theme my-theme-name
-thag_sync_palette
+# Show theme palette and details
+thag_theme
+
+# Temporarily apply theme and sync terminal palette
+thag_sync_palette my-theme-name
+thag_sync_palette revert
 
 # Show terminal palette and compare with current theme
 thag_palette

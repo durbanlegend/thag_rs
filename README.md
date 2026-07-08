@@ -217,7 +217,8 @@ ___
 
 - 35 new optional commands as above
 
-- Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a THAG_THEME environment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
+- Gorgeous coloration and styling across the board thanks to our companion crate, [thag_styling](thag_styling/README.md). `thag_styling` supports 290+ popular themes and automatically adapts based on a 
+nvironment variable or your terminal's background color. Also available for use in your own projects, with integrations for `console`, `crossterm`, `nu-ansi-term`, `owo-colors`, and `ratatui`.
 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)

@@ -2325,6 +2325,20 @@ impl Theme {
         }
     }
 
+    /// Returns the code name of this theme as used as its key in `THEME_INDEX`
+    /// and for selection via the `THAG_THEME` environment variable or `--theme` flag.
+    ///
+    /// This is derived from the file stem of the theme's TOML file, e.g.
+    /// `gruvbox-light-hard_base16` for `themes/built_in/gruvbox-light-hard_base16.toml`.
+    #[must_use]
+    pub fn code_name(&self) -> String {
+        self.filename
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    }
+
     /// Returns information about the theme suitable for display
     #[must_use]
     pub fn info(&self) -> String {
@@ -3191,13 +3205,16 @@ pub fn display_theme_roles(theme: &Theme) {
         .unwrap_or(0)
         + 2; // Base width on raw text length
 
-    // println!("\n\tRole Styles:");
+    println!(
+        "\t{} {}",
+        theme.style_for(Role::Normal).paint("Select name:"),
+        theme.style_for(Role::Code).paint(theme.code_name())
+    );
     println!(
         "\n\t{} {}",
         theme.style_for(Role::Normal).paint("Role styles:"),
         theme.style_for(Role::Heading1).paint(&theme.name)
     );
-    // println!("\t{}", "═".repeat(80));
     println!("\t{}", "─".repeat(80));
 
     for (role_name, description) in ROLE_DOCS {

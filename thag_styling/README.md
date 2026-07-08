@@ -60,7 +60,7 @@ The first inspiration was the realisation that it's no use having a color librar
 
     - Generate gorgeous `thag_styling` and terminal themes automatically from your favourite images, and tweak them if you wish.
 
-`thag_styling`'s theming builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 15-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+`thag_styling`'s theming builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 16-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Further examples of built-in themes
 
@@ -89,7 +89,7 @@ Here is a further small sample of the 300+ built-in `thag_styling` themes, with 
 ### Core Styling System
 - **🚦 Semantic Roles** — Style by meaning (`Role::Error`, `Role::Success`) not colors
 - **🔍 Automatic Detection** — Terminal capabilities and theme selection
-- **🎨 Rich Palettes** — Coordinated 15-color schemes for TrueColor/256-color spectrums
+- **🎨 Rich Palettes** — Coordinated 16-color schemes for TrueColor/256-color spectrums
 - **👓 Proven Legibility** — Based on tested terminal themes with proper contrast
 - **🪶 Zero Overhead** — Compile-time theme resolution
 
@@ -169,7 +169,7 @@ If you have `thag_rs` installed, you can simply paste the above mini-program int
 ## Why thag_styling?
 
 ### 🎨 **Effortless Aesthetics**
-Instead of manually selecting and coordinating colors, `thag_styling` provides pleasing 15-color palettes that work harmoniously together. Each palette is designed with proper contrast ratios and visual hierarchy.
+Instead of manually selecting and coordinating colors, `thag_styling` provides pleasing 16-color palettes that work harmoniously together. Each palette is designed with proper contrast ratios and visual hierarchy.
 
 **Before:**
 

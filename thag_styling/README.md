@@ -16,8 +16,7 @@ Your code doesn't have to deal with colors or styles at all - although there's n
 
 ### Example: the built-in popular dark theme Catppuccin Mocha
 
-[![catppuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/catppuccin-mocha.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/catppuccin-mocha.png)
+![catppuccin-mocha](../docs/thag_styling/assets/catppuccin-mocha.png)
 *Built-in theme <code>catppuccin-mocha</code>, converted from base24.*
 
 `thag_styling` has integrations allowing it to work seamlessly with a variety of popular crates if desired: to date `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`. `thag_rs` has demos of all of these, and uses many of them internally.
@@ -68,20 +67,17 @@ Here is a further small sample of the 300+ built-in `thag_styling` themes, with 
 
 ### Built-in popular light theme: Gruvbox Light Hard
 
-[![gruvbox-light-hard_base16](/Users/donf/projects/thag_rs/docs/thag_styling/assets/gruvbox-light-hard_base16.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/gruvbox-light-hard_base16.png)
+![gruvbox-light-hard_base16](../docs/thag_styling/assets/gruvbox-light-hard_base16.png)
 *Built-in theme <code>gruvbox-light-hard_base16</code>, converted from base16.*
 
 ### Built-in original dark theme: Raphael's School of Athens
 
-[![thag-raphael-school-of-athens-dark](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
+![thag-raphael-school-of-athens-dark](../docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
 *Built-in theme <code>thag-raphael-school-of-athens-dark</code>, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
 
 ### Built-in original light theme: Morning Coffee Light
 
-[![thag-morning-coffee-light](/Users/donf/projects/thag_rs/docs/thag_styling/assets/thag-morning-coffee-light.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/thag-morning-coffee-light.png)
+![thag-morning-coffee-light](../docs/thag_styling/assets/thag-morning-coffee-light.png)
 *Built-in theme <code>thag-morning-coffee-light</code>, generated with `thag_image_to_theme` from a PNG of a complementary blue-brown color palette created with the Figma color wheel.*
 
 ## Features
@@ -162,8 +158,7 @@ fn main() {
 
 If you have `thag_rs` installed, you can simply paste the above mini-program into `thag -d` and Ctrl-d to run it and see the output, tailored to the theme on your terminal emulator. Or if you also have the `tools` feature installed, simply use `thag_paste | thag -s`.
 
-[![basic usage output](/Users/donf/projects/thag_rs/docs/thag_styling/assets/basic_usage_output.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/basic_usage_output.png)
+![basic usage output](../docs/thag_styling/assets/basic_usage_output.png)
 *Basic usage output in catppuccin-mocha theme.*
 
 ## Why thag_styling?
@@ -219,9 +214,8 @@ let success_gauge = Gauge::default()
 ```
 ### Example: Ratatui Theming Showcase with `dracula-base16` theme
 
-[![catppuccin-mocha](/Users/donf/projects/thag_rs/docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)]
-(https://durbanlegend.github.io/thag_rs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
-*Using thag_url with `THAG_THEME=dracula_base16` to run the Ratatui Theming Showcase straight from the repo: `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs`.*
+![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
+*Using thag_url with `THAG_THEME=dracula_base16` to run the Ratatui Theming Showcase straight from the repo: `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs`*
 
 ### Multiple API Styles
 
@@ -369,6 +363,8 @@ let theme = generate_theme_from_image("sunset.jpg", "my-sunset-theme")?;
 theme.save_to_file("themes/my-sunset-theme.toml")?;
 ```
 
+There's a convenient `thag` tool to do this: `thag_image_to_theme`, described below.
+
 ### Multi-Format Theme Export
 ```rust
 use thag_styling::{export_theme_to_file, ExportFormat};
@@ -376,12 +372,12 @@ use thag_styling::{export_theme_to_file, ExportFormat};
 let theme = Theme::load_from_file("my-theme.toml")?;
 
 // Export to various terminal formats (alphabetically)
-export_theme_to_file(&theme, "alacritty.toml", ExportFormat::Alacritty)?;
-export_theme_to_file(&theme, "iterm2.itermcolors", ExportFormat::ITerm2)?;
-export_theme_to_file(&theme, "kitty.conf", ExportFormat::Kitty)?;
-export_theme_to_file(&theme, "mintty.config", ExportFormat::Mintty)?;
-export_theme_to_file(&theme, "wezterm.toml", ExportFormat::WezTerm)?;
-export_theme_to_file(&theme, "windows-terminal.json", ExportFormat::WindowsTerminal)?;
+export_theme_to_file(&theme, ExportFormat::Alacritty, "alacritty.toml")?;
+export_theme_to_file(&theme, ExportFormat::ITerm2, "iterm2.itermcolors")?;
+export_theme_to_file(&theme, ExportFormat::Kitty, "kitty.conf")?;
+export_theme_to_file(&theme, ExportFormat::Mintty, "mintty.config")?;
+export_theme_to_file(&theme, ExportFormat::WezTerm, "wezterm.toml")?;
+export_theme_to_file(&theme, ExportFormat::WindowsTerminal, "windows-terminal.json")?;
 ```
 
 ### Runtime Palette Synchronization
@@ -553,14 +549,14 @@ cargo install --path . --features tools
 
 ### Theme Generation Tools
 ```bash
-# Generate theme from image
-thag_image_to_theme sunset.jpg my-sunset-theme
+# Generate theme from image - see illustrated example below
+thag_image_to_theme
 
 # Convert between theme formats
-thag_convert_themes input-theme.toml output-format
+thag_convert_themes
 
 # Generate terminal emulator themes
-thag_gen_terminal_themes my-theme.toml --all-formats
+thag_gen_terminal_themes
 ```
 
 ### Theme Management Tools
@@ -571,8 +567,9 @@ thag_show_themes
 # Show theme palette and details
 thag_theme
 
-# Temporarily apply theme and sync terminal palette
-thag_sync_palette my-theme-name
+# Preview or apply theme and sync terminal palette, or revert
+thag_sync_palette preview theme-name
+thag_sync_palette apply theme-name
 thag_sync_palette revert
 
 # Show terminal palette and compare with current theme
@@ -582,9 +579,9 @@ thag_palette
 thag_palette_vs_theme
 
 # Add themes to specific terminals (alphabetically)
-thag_alacritty_add_theme my-theme.toml
-thag_mintty_add_theme my-theme.toml      # Cygwin, Git Bash
-thag_winterm_add_theme my-theme.toml     # Windows Terminal
+thag_alacritty_add_theme
+thag_mintty_add_theme      # Cygwin, Git Bash
+thag_winterm_add_theme     # Windows Terminal
 ```
 
 ### Theme Development
@@ -614,12 +611,18 @@ Features:
 
 See `demo/theme_editor_demo.md` for detailed usage examples.
 
+## Example: Generating a theme from an image
 
+![Edvard Munch: The Scream](../assets/munch-the-scream.png)
+*Use `thag_image_to_theme` tool and follow the prompts*
+
+![Generated thag theme thag-munch-the-scream-dark](../docs/thag_styling/assets/thag-munch-the-scream-dark.png)
+*Theme generated from the image. Note how faithfully the theme represents the image colors.*
 
 ## Integration Examples
 
 ### Complete TUI Application
-See `examples/ratatui_theming_showcase.rs` for a 4-tab TUI demonstrating:
+See `examples/ratatui_theming_showcase.rs` above for a 4-tab TUI demonstrating:
 
 - Dashboard with metrics and progress bars
 

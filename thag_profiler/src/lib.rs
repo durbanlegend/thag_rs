@@ -309,7 +309,7 @@ pub const PROFILING_FEATURE_ENABLED: bool = true;
 #[cfg(not(feature = "time_profiling"))]
 pub const PROFILING_FEATURE_ENABLED: bool = false;
 
-/// Safe allocation macro that passes through expressions when full profiling is disabled.
+/// Safe allocation macro that passes expressions through when full profiling is disabled.
 ///
 /// When the `full_profiling` feature is not enabled, this macro simply evaluates
 /// the provided expression without any memory tracking overhead.
@@ -331,7 +331,7 @@ macro_rules! safe_alloc {
     };
 }
 
-/// Safe allocation macro that passes through expressions when full profiling is disabled.
+/// Safe allocation macro that passes expressions through when full profiling is disabled.
 ///
 /// When the `full_profiling` feature is not enabled, this macro simply evaluates
 /// the provided expression without any memory tracking overhead.

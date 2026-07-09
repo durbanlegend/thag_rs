@@ -8,11 +8,11 @@ An unique, lightweight and easy to use terminal styling and theming system for R
 
 Conventional color libraries allow you to style terminal output by manually specifying color values and style attributes. But wait, the user's terminal session already has a light or dark theme, which defines the preferred color palette to use! It's not our business to override this with our own arbitrary choice of colors, nor is that a business we should want to be involved in. It can be very time-consuming to achieve the look and feel you desire for your terminal app and to make it internally consistent, only to have your app turn out ugly and partly illegible, because you overlooked the need for contrast. Light bright colors like yellow that 'pop' against a dark background may appear faint, unpleasant or often just invisible against a user's light background, and by the same token, light themes require darker colors that tend to disappear when displayed on a dark background.
 
-`thag_styling` gets around this by detecting the user's terminal theme from the background color (or an override) and automatically choosing output colors for you, tailored to the existing theme based on the kinds of messages you choose to display, taking into account the detected color rendering capabilities of the terminal emulator. These themes are cached compactly in a hash table at compile time, so there is no runtime performance degradation.
+`thag_styling` gets around this by detecting the user's terminal theme from the background color (or an override) and automatically choosing output colors for you, tailored to the existing theme and based on the kinds of messages you choose to display, taking into account the detected color rendering capabilities of the terminal emulator. These themes are cached compactly in a hash table at compile time, so there is no runtime performance degradation.
 
 `thag_styling` provides a high-level API where you choose the desired impact of each message by selecting from a comprehensive set of 16 message types similar to word processor styles. Each message type has associated style attributes (like boldness) and an appropriate color (such as a bold red shade for error, a subdued color for hints and so on) automatically preselected by `thag_styling` from the underlying terminal theme. The API is intuitive, and as if by magic your program's output will fit right in with the detected terminal theme in a legible and professional way.
 
-Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you, and indeed plenty of low-level assistance available. For instance `thag_styling` makes it straightforward to **nest styles to any depth** - something lacking in most color libraries due to underlying ANSI OSC limitations.
+Your code doesn't have to deal with colors or styles at all - although there's nothing to stop you, and indeed plenty of low-level assistance available. `thag_styling` also makes it straightforward to **nest styles to any depth** - something lacking in most color libraries due to underlying ANSI OSC limitations.
 
 ### Example: the built-in popular dark theme Catppuccin Mocha
 
@@ -591,12 +591,9 @@ thag_winterm_add_theme my-theme.toml     # Windows Terminal
 ```bash
 # Detect terminal capabilities
 thag_detect_term
-
-# Test theme legibility
-thag_legible my-theme.toml
 ```
 
-### Theme Editor: thag_edit_theme
+#### Theme Editor: thag_edit_theme
 
 Interactive theme editor for manual color role adjustments.
 

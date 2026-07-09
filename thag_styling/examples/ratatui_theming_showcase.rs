@@ -743,7 +743,7 @@ fn render_help_popup(f: &mut Frame, area: Rect) {
         )]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "Press any key to close this help",
+            "Press h or F1 to close this help",
             Style::themed(Role::Subtle).italic(),
         )]),
         Line::from(""),

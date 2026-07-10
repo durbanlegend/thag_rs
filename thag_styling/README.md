@@ -59,7 +59,11 @@ The first inspiration was the realisation that it's no use having a color librar
 
     - Generate gorgeous `thag_styling` and terminal themes automatically from your favourite images, and tweak them if you wish.
 
-`thag_styling`'s theming builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 16-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
+  The tools themselves demonstrate the use of `thag_styling`. For instance, those that prompt for parameters use `thag_styling`'s `inquire` crate integration to replace `inquire`'s default styling.
+
+  `thag`'s own edit mode (`-d`) uses our `ratatui` inegration and the rapid iteration mode (`-r`) our `reedline` integration.
+
+  `thag_styling`'s theming builds upon the foundation of popular terminal themes like Solarized, Gruvbox, Dracula, Nord, and Base16 variants, providing a comprehensive library of **290+ popular themes** plus over a dozen original creations. Instead of hardcoding colors, you define content by *semantic category* (warnings, code, headings, and 11 other message categories), and the library automatically applies coordinated 16-color palettes that work beautifully across all terminal environments. It includes powerful tools for creating stunning new themes and exporting them to popular terminal emulators.
 
 ## Further examples of built-in themes
 
@@ -74,6 +78,10 @@ Here is a further small sample of the 300+ built-in `thag_styling` themes, with 
 
 ![thag-raphael-school-of-athens-dark](../docs/thag_styling/assets/thag-raphael-school-of-athens-dark.png)
 *Built-in theme <code>thag-raphael-school-of-athens-dark</code>, generated with `thag_image_to_theme` from a PNG of the painting by Raphael.*
+
+And the painting `thag_styling` generated it from:
+
+![Raphael: The School of Athens](../assets/raphael-school-of-athens.png)
 
 ### Built-in original light theme: Morning Coffee Light
 
@@ -150,9 +158,11 @@ fn main() {
     std::path::Path::new("/usr/bin").display().code().println(); // Paths
     println!();
 
-    println!("We can embed styles in a normal println!(), as {} and {} are embedded here", "Info style".info(), "Debug style".debug());
+    println!("We can embed styles in a normal println!(), as {} and {} are embedded here",
+        "Info style".info(), "Debug style".debug());
     println!();
-    format!("Hint: we can nest them in another style, as {} and {} are embedded in this hint style", "Emphasis style".emphasis(), "Quote style".quote()).hint().println();
+    format!("Hint: we can nest them in another style, as {} and {} are embedded in this hint style",
+        "Emphasis style".emphasis(), "Quote style".quote()).hint().println();
 }
 ```
 
@@ -212,27 +222,47 @@ let success_gauge = Gauge::default()
 
 // Cargo.toml: features = ["ratatui_support"]
 ```
-### Example: Ratatui Theming Showcase with `dracula-base16` theme
+
+### Example: Ratatui Theming Showcase
+
+*To run the Ratatui Theming Showcase straight from the repo:*
+
+*`thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs`*
+
+`thag_url` requires `thag_rs` to be installed with `--features tools`.
+
+#### Running the showcase on a terminal with `dracula-base16` theme
 
 ![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_dracula_base16.png)
-*Using thag_url with `THAG_THEME=dracula_base16` to run the Ratatui Theming Showcase straight from the repo: `thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs`*
+
+#### Running the showcase on a terminal with `atelier-seaside-light_base16` theme
+
+![ratatui theming showcase dracula-base16](../docs/thag_styling/assets/ratatui_theming_showcase_atelier_seaside_light_base16.png)
+
 
 ### Multiple API Styles
 
 ```rust
+use thag_styling::{Styleable, StyledPrint};
+
 // Method chaining (recommended)
 format!("Status: {} | Memory: {}", "OK".success(), "85%".warning())
     .info().println();
 
 // Styled print macros
-sprtln!(Role::Error, "Connection failed: {}", error_msg);
-svprtln!(Role::Debug, Verbosity::Debug, "Processing {}", item);
+use thag_styling::{sprtln, svprtln, Role, Verbosity};
+sprtln!(Role::Error, "Sample error message: {}", "Bad thing happened");
+svprtln!(Role::Debug, Verbosity::Debug, "Processing {}", "some item");
 
 // Functional style
+use thag_styling::paint_for_role;
 println!("{}", paint_for_role(Role::Code, "fn main()"));
 
 // Low-level ANSI with enhanced color support
-use thag_styling::styled;
+use thag_styling::{ansi_styling_support, styled};
+// Generate ANSI styling support - no need to import AnsiStyleExt!
+ansi_styling_support! {}
+
 println!("{}", styled!("Alert", fg = Red, bold, underline));          // Basic ANSI
 println!("{}", styled!("Custom", fg = Rgb(255, 165, 0), italic));     // RGB orange
 println!("{}", styled!("Palette", fg = Color256(93), bold));          // 256-color purple
@@ -316,6 +346,7 @@ These sequences are supported by:
 - ✅ Apple Terminal (OSC 17 only)
 - ✅ WSL Ubuntu Terminal
 - ❌ Alacritty (no OSC selection support)
+- ❌ Zed (use the Zed theme selector instead)
 
 To apply selection colors dynamically:
 
@@ -338,55 +369,52 @@ This ensures excellent visibility of selected text across all theme variants.
 
 ### Complex Nested Styling
 ```rust
-use thag_styling::{Styleable, StyledPrint};
+use thag_styling::{Styleable, StyledPrint, Verbosity};
 
 // Unlimited nesting with method chaining
 format!("Server {} responded with {} in {}ms",
-        server_name.emphasis(),
-        format!("HTTP {}", status_code.success()),  // Nested styling
-        latency.code())
+        "Some_server_name".emphasis(),
+        format!("HTTP {}", "200".success()),  // Nested styling
+        123.code())
     .info()
     .println();
 
 // Verbosity-controlled output
-format!("Debug: {}", diagnostic_data.code())
+format!("Debug: {}", "Some diagnostic data".code())
     .debug()
     .vprintln(Verbosity::Debug);
 ```
 
 ### Theme Generation from Images
-```rust
-// Generate themes from any image (requires 'image_themes' feature)
-use thag_styling::image_themes::generate_theme_from_image;
-
-let theme = generate_theme_from_image("sunset.jpg", "my-sunset-theme")?;
-theme.save_to_file("themes/my-sunset-theme.toml")?;
-```
-
-There's a convenient `thag` tool to do this: `thag_image_to_theme`, described below.
+Use the `thag` tool `thag_image_to_theme` and follow the prompts. See the sample output from Munch's _The Scream_ below.
 
 ### Multi-Format Theme Export
-```rust
-use thag_styling::{export_theme_to_file, ExportFormat};
-
-let theme = Theme::load_from_file("my-theme.toml")?;
-
-// Export to various terminal formats (alphabetically)
-export_theme_to_file(&theme, ExportFormat::Alacritty, "alacritty.toml")?;
-export_theme_to_file(&theme, ExportFormat::ITerm2, "iterm2.itermcolors")?;
-export_theme_to_file(&theme, ExportFormat::Kitty, "kitty.conf")?;
-export_theme_to_file(&theme, ExportFormat::Mintty, "mintty.config")?;
-export_theme_to_file(&theme, ExportFormat::WezTerm, "wezterm.toml")?;
-export_theme_to_file(&theme, ExportFormat::WindowsTerminal, "windows-terminal.json")?;
-```
+Use the `thag` tool `thag_gen_terminal_themes` and follow the prompts. See the sample output from generating and installing the `thag-munch-the-scream-dark` theme as an Alacritty terminal theme below.
 
 ### Runtime Palette Synchronization
 ```rust
-use thag_styling::PaletteSync;
+use std::process;
+use thag_styling::{PaletteSync, Theme};
 
 // Sync terminal palette with theme colors (programmatically)
-let sync = PaletteSync::new()?;
-sync.apply_theme_palette(&theme)?;
+let theme_name = "dracula_base16";
+let theme = match Theme::get_builtin(theme_name) {
+    Ok(theme) => theme,
+    Err(e) => {
+        eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
+        println!("💡 Try running `thag_show_themes list` to see available themes");
+        process::exit(1);
+    }
+};
+
+println!("📝 Description: {}", theme.description);
+println!("🌈 Applying palette...");
+
+if let Err(e) = PaletteSync::apply_theme(&theme) {
+    eprintln!("❌ Failed to apply theme: {}", e);
+    process::exit(1);
+}
+
 // Terminal colors now match your theme!
 ```
 
@@ -415,17 +443,24 @@ thag_sync_palette apply $THAG_THEME
 
 ### Terminal Attribute Contexts
 ```rust
-use thag_styling::{ColorSupport, TermAttributes, TermBgLuma, Theme};
+use thag_styling::{ColorSupport, Styleable, StyledPrint, TermAttributes, TermBgLuma, Theme};
 
 // Create custom terminal attributes for testing or special scenarios
-let custom_theme = Theme::get_builtin("basic_dark")?;
+let custom_theme = Theme::get_builtin("ocean_base16")?;
 let test_attrs = TermAttributes::for_testing(
-    ColorSupport::Basic,
-    Some((64, 64, 64)),  // Background RGB
+    ColorSupport::Color256,
+    Some([43, 48, 59]),  // Background RGB
     TermBgLuma::Dark,
     custom_theme,
 );
 
+let nested_theme = Theme::get_builtin("one-light")?;
+let other_attrs = TermAttributes::for_testing(
+    ColorSupport::TrueColor,
+    Some([231, 231, 233]),  // Background RGB
+    TermBgLuma::Light,
+    nested_theme,
+    );
 // Execute code with temporary attributes context
 test_attrs.with_context(|| {
     // All styling within this block uses the custom attributes
@@ -438,60 +473,65 @@ test_attrs.with_context(|| {
 
     // Contexts can be nested
     other_attrs.with_context(|| {
-        "Nested context message".success().println();
+        "This nested `one-light` theme `info` context message should show blue".info().println();
     });
 });
 
 // Global attributes restored outside context
 ```
 
+Try copying the above code fragment and running it with `thag_paste | thag -s` or pasting it into `thag -d` and running it with `Ctrl-d`.
+
 ### Theme Contexts
 ```rust
 use thag_styling::{Styleable, StyledPrint, Theme};
 
 // Load guest themes without changing the global theme
-let dark_theme = Theme::get_builtin("dracula")?;
-let light_theme = Theme::get_builtin("github")?;
+let dracula = Theme::get_builtin("dracula")?;
+let ocean = Theme::get_builtin("ocean_base16")?;
 
 // Method 1: Direct theme styling (most efficient)
-dark_theme.error("Dark theme error message").println();
-light_theme.success("Light theme success message").println();
+dracula.error("Dracula theme error message").println();
+ocean.error("Ocean theme error message").println();
 
 // Method 2: Context switching (most ergonomic for styling blocks)
-dark_theme.with_context(|| {
+dracula.with_context(|| {
     // All .role() methods now use the dark theme
-    "Error in dark theme context".error().println();
-    "Success in dark theme context".success().println();
+    "Warning in dracula context".warning().println();
+    "Success in dracula context".success().println();
 
     format!(
-        "Complex: {} | {} | {}",
-        "OK".success(),
+        "Dracula info style with basic nesting: {} | {} | {} and done",
+        "Success".success(),
         "Warning".warning(),
         "Error".error()
-    ).normal().println();
+    ).info().println();
 });
 
 // Mixed usage example
-dark_theme.with_context(|| {
+dracula.with_context(|| {
     format!(
-        "Status: {} | Config: {} | Result: {}",
-        "Running".info(),                    // Uses dark theme context
-        light_theme.code("config.toml"),    // Direct light theme method
-        "Complete".success()                 // Uses dark theme context
-    ).normal().println();                   // Uses dark theme context
+        "Dracula normal style with mixed nesting: A. {} | B. {} | C. {} and done",
+        "Dracula info".info(),                    // Uses dracula context
+        ocean.code("Ocean code"),           // Direct ocean theme method
+        "Dracula emphasis".emphasis()                 // Uses dracula context
+    ).normal().println();                   // Uses dracula context
 });
 
 // Nested theme contexts
-dark_theme.with_context(|| {
-    "Outer context (dark)".heading1().println();
+dracula.with_context(|| {
+    "Outer context (dracula) heading1".heading1().println();
 
-    light_theme.with_context(|| {
-        "Inner context (light)".heading2().println();
+    ocean.with_context(|| {
+        "Inner context (ocean) heading1".heading1().println();
     });
 
-    "Back to outer (dark)".heading2().println();
+    "Back to outer (dracula) heading1".heading1().println();
 });
 ```
+
+Try copying the above code fragment and running it on a dark terminal with `thag_paste | thag -s` or pasting it into `thag -d` and running it with `Ctrl-d`.
+
 
 ## Examples
 
@@ -505,11 +545,15 @@ The library includes comprehensive examples:
 ### Run examples
 
 ```zsh
-# Complete styling system demonstration
+# Complete styling system demonstration compared with previous API
 thag demo/styling_migration_guide.rs
 
 # Interactive TUI showcase (full-featured application)
-thag --example ratatui_theming_showcase --features "ratatui_support" -p thag_styling
+thag_url https://github.com/durbanlegend/thag_rs/blob/develop/thag_styling/examples/ratatui_theming_showcase.rs
+
+or if you have a clone of the repo:
+
+cargo run -p thag_styling --example ratatui_theming_showcase --features ratatui_support
 
 # Quick integration demo
 thag demo/ratatui_integration_demo.rs
@@ -520,8 +564,7 @@ thag demo/image_theme_generation.rs
 # Enhanced styled! macro demonstration
 thag demo/styled_macro_enhanced.rs
 
-# View all examples
-ls thag_styling/examples/ demo/
+# Check out all examples under thag_styling in the thag GitHub repo.
 ```
 
 ## Theme Management and Manipulation Tools
@@ -614,10 +657,18 @@ See `demo/theme_editor_demo.md` for detailed usage examples.
 ## Example: Generating a theme from an image
 
 ![Edvard Munch: The Scream](../assets/munch-the-scream.png)
-*Use `thag_image_to_theme` tool and follow the prompts*
+*Use `thag_image_to_theme` tool and follow the prompts.*
 
 ![Generated thag theme thag-munch-the-scream-dark](../docs/thag_styling/assets/thag-munch-the-scream-dark.png)
 *Theme generated from the image. Note how faithfully the theme represents the image colors.*
+
+## Example: Generating a terminal theme from a `thag_styling` theme
+
+*Use `thag_gen_terminal_themes` tool and follow the prompts.*
+
+*The Alacritty terminal theme below was generated from our new `thag_styling` theme `thag-munch-the-scream-dark`, and displayed with `thag_palette`. Again, it faithfully represents the colors of the original painting.* 
+
+![Alacritty "The Scream" terminal theme](../docs/thag_styling/assets/thag-munch-the-scream-dark_palette.png)
 
 ## Integration Examples
 

@@ -743,7 +743,7 @@ fn process(
     script_state: &ScriptState,
     start: Instant,
 ) -> ThagResult<()> {
-    let is_repl = args.iter;
+    let is_iter = args.iter;
     let is_expr = proc_flags.contains(ProcFlags::EXPR);
     let is_stdin = proc_flags.contains(ProcFlags::STDIN);
     let is_edit = proc_flags.contains(ProcFlags::EDIT);
@@ -751,7 +751,7 @@ fn process(
     let is_dynamic = is_expr | is_stdin | is_edit | is_loop;
 
     let mut build_state = BuildState::pre_configure(proc_flags, args, script_state)?;
-    if is_repl {
+    if is_iter {
         #[cfg(not(feature = "iter"))]
         return Err("rapid iteration requires `iter` feature".into());
         #[cfg(feature = "iter")]

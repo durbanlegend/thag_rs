@@ -200,8 +200,8 @@ pub fn set_verbosity(args: &Cli) -> ThagResult<()> {
     } else if args.normal_verbosity {
         V::Normal
     } else if args.iter {
-        // Default to quiet mode for ITER
-        V::Quiet
+        // Default to normal mode for ITER (Revert from Quiet to show signs of life in slow code)
+        V::Normal
     } else if let Some(config) = maybe_config() {
         config.logging.default_verbosity
     } else {
@@ -323,13 +323,13 @@ pub fn get_proc_flags(args: &Cli) -> ThagResult<ProcFlags> {
         proc_flags.set(ProcFlags::BUILD, args.build);
         proc_flags.set(ProcFlags::CHECK, args.check);
         proc_flags.set(ProcFlags::FORCE, args.force);
-        proc_flags.set(
-            ProcFlags::QUIET,
-            // Default for ITER is quiet
-            args.quiet == 1
-                || (args.iter && !args.normal_verbosity && args.quiet == 0 && args.verbose == 0),
-        );
-        proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
+        // proc_flags.set(
+        //     ProcFlags::QUIET,
+        //     // Default for ITER is quiet
+        //     args.quiet == 1
+        //         || (args.iter && !args.normal_verbosity && args.quiet == 0 && args.verbose == 0),
+        // );
+        // proc_flags.set(ProcFlags::QUIETER, args.quiet >= 2);
         proc_flags.set(ProcFlags::MULTI, args.multimain);
         proc_flags.set(ProcFlags::VERBOSE, args.verbose == 1);
         proc_flags.set(ProcFlags::DEBUG, args.verbose >= 2);

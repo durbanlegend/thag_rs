@@ -17,7 +17,7 @@ Instead of requiring users to import traits like `AnsiStyleExt`, the `ansi_styli
 ### Basic Setup
 
 ```rust
-use thag_proc_macros::{ansi_styling_support, styled};
+use thag_styling::{ansi_styling_support, styled};
 
 // Generate all styling support - call once per module/crate
 ansi_styling_support! {}

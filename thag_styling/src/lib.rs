@@ -59,7 +59,9 @@ pub use integrations::crossterm_integration::{CrosstermStyleExt, ThemedStylize};
 #[cfg(feature = "inquire_theming")]
 pub use inquire_theming::themed_inquire_config;
 
-pub use thag_proc_macros::{file_navigator, styled};
+pub use thag_proc_macros::{
+    ansi_styling_support, file_navigator, preload_themes, styled, PaletteMethods,
+};
 
 // Re-export image theme generation types
 #[cfg(feature = "image_themes")]

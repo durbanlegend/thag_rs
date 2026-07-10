@@ -1,4 +1,7 @@
-use crate::{StylingError, StylingResult, ThemeError};
+use crate::{
+    preload_themes, vprtln, ColorSupport, PaletteMethods, StylingError, StylingResult, TermBgLuma,
+    ThemeError, V,
+};
 
 // Type alias for compatibility with PaletteMethods proc macro
 type ThagResult<T> = StylingResult<T>;
@@ -12,8 +15,6 @@ use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::OnceLock;
 use strum::{Display, EnumIter, IntoEnumIterator};
-use thag_common::{vprtln, ColorSupport, TermBgLuma, V};
-use thag_proc_macros::{preload_themes, PaletteMethods};
 
 #[cfg(feature = "color_detect")]
 use thag_common::terminal::{self, is_light_color};

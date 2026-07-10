@@ -1,6 +1,6 @@
 /*[toml]
 [dependencies]
-thag_proc_macros = { version = "1, thag-auto" }
+thag_styling = { version = "1, thag-auto" }
 */
 
 /// Debug styled! duplication issue
@@ -8,7 +8,7 @@ thag_proc_macros = { version = "1, thag-auto" }
 /// Minimal test to isolate the double-printing problem
 //# Purpose: Debug styled! macro duplication issue
 //# Categories: debugging, styling, testing
-use thag_proc_macros::{ansi_styling_support, styled};
+use thag_styling::{ansi_styling_support, styled};
 
 // Enable the ANSI styling support
 ansi_styling_support! {}

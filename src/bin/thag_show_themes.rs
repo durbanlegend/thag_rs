@@ -185,7 +185,7 @@ fn show_terminal_instructions(theme: &Theme) {
 
     sprtln!(
         theme.style_for(Role::Normal),
-        "\tCommand-line shortcut for *nix and other OSC-compliant terminals:
+        "\tCommand-line shortcut for *nix and other OSC-compliant terminals:"
     );
     sprtln!(
         theme.style_for(Role::Code),

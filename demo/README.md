@@ -1816,7 +1816,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/debug_replace_lo
 
 **Purpose:** Debug styled! macro duplication issue
 
-**Crates:** `thag_proc_macros`
+**Crates:** `thag_styling`
 
 **Type:** Program
 
@@ -3967,7 +3967,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/iter_partial_mat
 
 ### Script: iter_ryo.rs
 
-**Description:**  A demo of a roll-your-own iterative Rust processor. This one is based on `thag_(rs)`'s own `repl` module, so relies heavily on `thag(_rs)`
+**Description:**  A demo of a roll-your-own iterative Rust processor. This one is based on `thag_(rs)`'s own `iter` module, so relies heavily on `thag(_rs)`
  as a library. Other libraries are of course available! - you just have some work to do to replace the `thag(_rs)`
  plumbing with what you want. A choice of `MIT` or `Apache 2` licences applies.
 
@@ -4492,7 +4492,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/mock_edit.rs
 **Description:**  Demo of multi-format theme export
 
  This example demonstrates how to export a thag theme to multiple terminal emulator formats
- including Alacritty, WezTerm, iTerm2, Kitty, and Windows Terminal.
+ including Alacritty, WezTerm, iTerm2, Kitty, Apple Terminal and Windows Terminal.
 
 **Purpose:** Export thag themes to multiple terminal emulator formats
 
@@ -5038,11 +5038,33 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_file_
  To perform the tests and see the results, simply run:
 
  ```bash
- thag demo/proc_macro_generate_tests.rs --testing   # Short form: -T
+ thag -T demo/proc_macro_generate_tests.rs   # Long form: --test-only
+ ```
 
+ `-T`/`--test-only` is a thag flag and can appear anywhere on the command line.
+ Anything after `--` is forwarded to the test harness, e.g.:
+
+ ```bash
+ thag -T demo/proc_macro_generate_tests.rs -- --nocapture
+ thag -T demo/proc_macro_generate_tests.rs -- test_addition   # filter by name
+ ```
+
+ The generated Cargo project persists in `$TMPDIR/thag_rs/proc_macro_generate_tests/`
+ and is not deleted after the run. Only `Cargo.toml` and `Cargo.lock` are stored there;
+ the `[[bin]] path` in `Cargo.toml` points back to the original script file, so no
+ source copy is made. You can invoke cargo directly in that directory:
+
+ ```bash
+ cd $TMPDIR/thag_rs/proc_macro_generate_tests
+ cargo test
  ```
 
  # Alternatively: you can run the tests via `thag_cargo`. Choose the script and the `test` subcommand.
+ Or use the `--cargo` (`-A`) flag directly:
+
+ ```bash
+ thag -A demo/proc_macro_generate_tests.rs test
+ ```
 
  See also: `demo/test_profile_extract_timestamp.rs`
 
@@ -5102,7 +5124,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/proc_macro_retry
 
 **Purpose:** Test the styled! macro with generated ANSI styling support.
 
-**Crates:** `thag_proc_macros`, `thag_styling`
+**Crates:** `thag_styling`
 
 **Type:** Program
 
@@ -5269,32 +5291,11 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/profiling_puffin
 
 ---
 
-### Script: puffin_egui.rs
-
-**Description:**  Published demo from the `puffin` profiling crate. The only change is to add a toml block
- entry to prevent a more recent `eframe` version from clashing with `puffin`.
-
-**Purpose:** Demo featured crate.
-
-**Crates:** `eframe`, `puffin`, `puffin_egui`
-
-**Type:** Program
-
-**Categories:** crates
-
-**Link:** [puffin_egui.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/puffin_egui.rs
-```
-
----
-
 ### Script: puffin_egui_27.rs
 
 **Description:**  Legacy published demo from the `puffin` crate. See `demo/puffin_egui.rs` for the current version.
+ This crate is quite volatile and subject to breaking changes, so I've pinned the demo to a specific
+ version rather than have to keep chasing the changes.
 
 **Purpose:** Demo featured crate.
 
@@ -5495,6 +5496,39 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_inp
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/ratatui_user_input_profile.rs
+```
+
+---
+
+### Script: rayon_pythagoras.rs
+
+**Description:**  Highly simplified version of the published benchmark from the `rayon` crate.
+ https://github.com/rayon-rs/rayon/blob/main/rayon-demo/src/pythagoras/mod.rs
+ Use Euclid's formula to count Pythagorean triples
+
+ https://en.wikipedia.org/wiki/Pythagorean_triple#Generating_a_triple
+
+ For coprime integers m and n, with m > n and m-n is odd, then
+     a = m²-n², b = 2mn, c = m²+n²
+
+ This is a coprime triple.  Multiplying by factors k covers all triples.
+ Without using rayon.
+ Using rayon
+
+**Purpose:** Demo the featured crate and the performance effect of using `rayon`.
+
+**Crates:** `num`, `rayon`, `thag_proc_macros`
+
+**Type:** Snippet
+
+**Categories:** crates, performance, timing
+
+**Link:** [rayon_pythagoras.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/rayon_pythagoras.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/rayon_pythagoras.rs
 ```
 
 ---
@@ -5790,7 +5824,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_ide_com
 
 **Purpose:** Explore featured crate.
 
-**Crates:** `reedline`
+**Crates:** `reedline`, `strum`
 
 **Type:** Program
 
@@ -5822,7 +5856,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/reedline_list_bi
  Obviously this requires you to have first installed `thag_rs` with the `tools` feature.
 
 
-**Purpose:** Explore options for handling multi-line expressions in a REPL.
+**Purpose:** Explore options for handling multi-line expressions in iterative mode.
 
 **Crates:** `nu_ansi_term`, `reedline`
 
@@ -6850,17 +6884,18 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_macro_enh
 
 ---
 
-### Script: styled_string_concept.rs
+### Script: styled_string_nesting.rs
 
-**Description:**  Concept demo for StyledString that preserves outer styling context
+**Description:**  Demonstrates how `thag_styling` handles nested styles using `StyledString`
 
- This demonstrates a potential StyledString type that could work like
- colored's ColoredString, automatically restoring outer styling after
- inner reset sequences.
- A styled string that preserves styling context like colored's ColoredString
- Extended Styleable trait that returns StyledString instead of plain String
+ Style nesting is notoriously hard in most colour libraries: an inner styled
+ string emits `\x1b[0m` (full reset) when it ends, which kills any outer
+ colour that was active.  `thag_styling` solves this transparently — every
+ `StyledString` replaces inner reset sequences with attribute-specific resets
+ (`\x1b[22;23;24m`) followed by the outer style's ANSI codes, so the outer
+ context is always restored.  This works to arbitrary nesting depth.
 
-**Purpose:** Concept for context-preserving styled strings
+**Purpose:** Demo of context-preserving nested styles with StyledString
 
 **Crates:** `thag_styling`
 
@@ -6868,12 +6903,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_macro_enh
 
 **Categories:** concepts, prototype, styling
 
-**Link:** [styled_string_concept.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_concept.rs)
+**Link:** [styled_string_nesting.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_nesting.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_concept.rs
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/styled_string_nesting.rs
 ```
 
 ---

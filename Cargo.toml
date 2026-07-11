@@ -169,6 +169,11 @@ path = "src/bin/thag_show_themes.rs"
 required-features = ["tools"]
 
 [[bin]]
+name = "thag_terminal_theme_help"
+path = "src/bin/thag_terminal_theme_help.rs"
+required-features = ["tools"]
+
+[[bin]]
 name = "thag_theme"
 path = "src/bin/thag_theme.rs"
 required-features = ["tools"]

@@ -33,7 +33,7 @@ thag_clippy --help
 The tools are organized into several categories:
 
 - **Development tools**: Code analysis, formatting, and development utilities
-- **Theme tools**: Theme conversion and management utilities  
+- **Theme tools**: Theme conversion and management utilities
 - **Documentation tools**: README generation and documentation utilities
 - **Analysis tools**: AST analysis, profiling, and debugging tools
 - **Utility tools**: General-purpose utilities and helpers

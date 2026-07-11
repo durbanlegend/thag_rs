@@ -21,6 +21,8 @@ Your code doesn't have to deal with colors or styles at all - although there's n
 
 `thag_styling` has integrations allowing it to work seamlessly with a variety of popular crates if desired: to date `crossterm`, `console`, `inquire`, `nu-ansi-term` and `reedline`, `owo-colors` and `ratatui`. `thag_rs` has demos of all of these, and uses many of them internally.
 
+`thag_styling` is also a useful resource to help you install and manage terminal themes in different terminal emulators, and even generate unique terminal themes for any supported emulator from your favourite artwork.
+
 In line with the `thag_rs` philosophy, `thag_styling` aims to provide something uniquely useful, without compromising on reliability, speed or ease of use.
 
 ## Origin story
@@ -118,6 +120,37 @@ And the painting `thag_styling` generated it from:
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 
+## Why thag_styling?
+
+### 🎨 **Effortless Aesthetics**
+Instead of manually selecting and coordinating colors, `thag_styling` provides pleasing 16-color palettes that work harmoniously together. Each palette is designed with proper contrast ratios and visual hierarchy.
+
+**Before:**
+
+```rust
+// Manual color coordination - may be jarring or illegible
+println!("{}", "Error".red().bold());
+println!("{}", "Warning".yellow());
+println!("{}", "Success".green());
+// Do these colors work well together? 🤷
+```
+
+**After:**
+
+```rust
+// Semantic coordination - guaranteed harmony
+"Error".error().println();
+"Warning".warning().println();
+"Success".success().println();
+// Perfect color coordination automatically ✨
+```
+
+### 👀 **Assured Legibility**
+All themes use proven color combinations from established terminal themes, ensuring text remains readable across different terminal backgrounds and lighting conditions.
+
+### ⚡ **Reduced Development Time**
+Focus on your application logic instead of color theory. Define content semantically once, and `thag_styling` handles the visual presentation across all terminal environments.
+
 ## Quick Start
 
 Add `thag_styling` to your `Cargo.toml`:
@@ -166,41 +199,10 @@ fn main() {
 }
 ```
 
-If you have `thag_rs` installed, you can simply paste the above mini-program into `thag -d` and Ctrl-d to run it and see the output, tailored to the theme on your terminal emulator. Or if you also have the `tools` feature installed, simply use `thag_paste | thag -s`.
+If you have `thag_rs` installed, you can simply paste the above code sample into `thag -d` and Ctrl-d to run it and see the output, tailored to the theme on your terminal emulator. Or if you also have the `tools` feature installed, it's even easier to use `thag_paste | thag -s`.
 
 ![basic usage output](../docs/thag_styling/assets/basic_usage_output.png)
 *Basic usage output in catppuccin-mocha theme.*
-
-## Why thag_styling?
-
-### 🎨 **Effortless Aesthetics**
-Instead of manually selecting and coordinating colors, `thag_styling` provides pleasing 16-color palettes that work harmoniously together. Each palette is designed with proper contrast ratios and visual hierarchy.
-
-**Before:**
-
-```rust
-// Manual color coordination - error prone
-println!("{}", "Error".red().bold());
-println!("{}", "Warning".yellow());
-println!("{}", "Success".green());
-// Do these colors work well together? 🤷
-```
-
-**After:**
-
-```rust
-// Semantic coordination - guaranteed harmony
-"Error".error().println();
-"Warning".warning().println();
-"Success".success().println();
-// Perfect color coordination automatically ✨
-```
-
-### 👀 **Assured Legibility**
-All themes use proven color combinations from established terminal themes, ensuring text remains readable across different terminal backgrounds and lighting conditions.
-
-### ⚡ **Reduced Development Time**
-Focus on your application logic instead of color theory. Define content semantically once, and `thag_styling` handles the visual presentation across all terminal environments.
 
 ## Library Integrations
 
@@ -302,11 +304,11 @@ When exporting themes to terminal formats, `thag_styling` automatically configur
 
 The following terminals fully support selection color import from exported theme files:
 
+- **Alacritty** — Selection colors import from YAML/TOML config files
+- **Kitty** — Selection colors import from exported config files
+- **Mintty** — `SelectionBackgroundColour` and `SelectionForegroundColour` are exported
 - **WezTerm** — Selection colors import automatically
 - **Windows Terminal** — `selectionBackground` is set in exported themes
-- **Mintty** — `SelectionBackgroundColour` and `SelectionForegroundColour` are exported
-- **Kitty** — Selection colors import from exported config files
-- **Alacritty** — Selection colors import from YAML/TOML config files
 
 #### Manual Configuration Required For:
 
@@ -321,7 +323,7 @@ The following terminals fully support selection color import from exported theme
 **Apple Terminal** (macOS)
 
 - Does not support importing selection colors from theme files
-- Selection colors can be set via OSC 17 escape sequences (see below)
+- Selection background can be set via OSC 17 escape sequences (see below)
 - Manual configuration: Terminal → Preferences → Profiles → Text → Selection Color
 
 **KDE Konsole**
@@ -367,24 +369,26 @@ This ensures excellent visibility of selected text across all theme variants.
 
 ## Dynamically changing theme
 
-For terminals that support dynamically changing the terminal palette via OSC 17 and OSC 19 (that is, most of them as listed in this Readme), the active theme can be changed for the duration of the current session as follows:
+For terminals that support dynamically changing the terminal palette via OSC sequences (that is, most of them as listed in this Readme), the active theme can be changed for the duration of the current session as follows:
 
 1. Change the terminal theme by using `thag_sync_palette apply <theme-name>`.
+
+    Note: A terminal theme is essentially a palette of colors, and `thag_sync_palette` uses OSC sequences to change the palette to match the chosen `thag` theme palette. Since `thag_styling` themes use a palette derived from but not identical to an the source terminal theme, this palette will be a good and pleasing approximation to the source terminal theme color palette, but does not seek to be identical. If you want identical, don't use this dynamic technique but install the terminal theme file in the emulator and restart the emulator.
+
 2. Set the the preferred `thag_styling` theme in one of two ways:
     a. `export THAG_THEME=<theme-name>`
     b. `thag -C` to add the theme to the top of the `preferred_dark` or `preferred_light` list as appropriate.
 
-For terminals that do not support OSC 17 or OSC 19, the dynamic change may work except that selections may be hard to read because these two OSC codes are required to change the selection background and selection foreground colors respectively.
+For terminals that do not support OSC 17 or OSC 19, the dynamic change may work except that selections may be hard to read because these two OSC codes are required to change the selection background and selection foreground colors respectively to ensure proper contrast between them so that selected text will be both clearly highlighted and legible.
 
 ## Terminal setup
 
-`thag_styling` has specific instructions for each environment in the `thag_gen_terminal_themes` tool.
-
->>> TODO new tool
+The `thag` tool `thag_terminal_theme_help` will display specific instructions for installing a terminal theme file in each supported environment on request. The `thag_gen_terminal_themes` tool optionally displays the same instructions after generating a terminal theme or themes.
 
 An alternative technique for any environment that suppports OSC 17 and OSC 19 as described in this Readme, you can use shell integration to automatically sync palettes dynamically on startup as per the previous paragraph:
 
 **Unix shells (~/.bashrc or ~/.zshrc):**
+
 ```bash
 if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
     export THAG_COLOR_MODE=256
@@ -398,6 +402,7 @@ fi
 ```
 
 **Windows PowerShell ($PROFILE):**
+
 ```powershell
 $env:PATH += ";C:\Users\my_name\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"
 $env:THAG_COLOR_MODE = "truecolor"
@@ -409,6 +414,7 @@ thag_sync_palette apply $THAG_THEME
 ## Advanced Features
 
 ### Complex Nested Styling
+
 ```rust
 use thag_styling::{Styleable, StyledPrint, Verbosity};
 

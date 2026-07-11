@@ -355,7 +355,7 @@ fn get_export_configuration() -> Result<ExportConfiguration, Box<dyn Error>> {
         .collect();
 
     let format_names_len = format_names.len();
-    let selected_format_names = MultiSelect::new("Select export formats:", format_names.clone())
+    let selected_format_names = MultiSelect::new("Select export format(s):", format_names.clone())
         .with_default(&(0..format_names_len).collect::<Vec<_>>()) // Select all by default
         .prompt()?;
 
@@ -414,7 +414,12 @@ fn process_theme_file(
         fs::create_dir_all(&format_dir)?;
 
         // Use simple filenames since we have subdirectories
-        let filename = format!("{}.{}", theme_base_name, format.file_extension());
+        let file_extension = format.file_extension();
+        let filename = if file_extension.is_empty() {
+            format!("{theme_base_name}")
+        } else {
+            format!("{theme_base_name}.{file_extension}")
+        };
         let output_path = format_dir.join(filename);
 
         export_theme_to_file(&theme, *format, &output_path)

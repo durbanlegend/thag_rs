@@ -217,6 +217,6 @@ fn print_usage() {
     println!("💡 This tool uses OSC sequences to update your terminal's color palette");
     println!("   in real-time. Most modern terminals support this feature.");
     println!();
-    println!("🌈 Supported terminals: WezTerm, Alacritty, iTerm2, Kitty, Windows Terminal,");
-    println!("   Gnome Terminal, and most other modern terminal emulators.");
+    println!("🌈 Supported terminals: WezTerm, Alacritty, iTerm2, Kitty, Apple Terminal (not selection foreground color),");
+    println!("   Windows Terminal, Gnome Terminal, and most other modern terminal emulators.");
 }

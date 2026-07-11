@@ -6,7 +6,8 @@ thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 /// Export `thag_styling` themes to multiple terminal emulator formats
 ///
 /// This tool exports `thag_styling` theme files to the following terminal emulator formats:
-/// `Alacritty`, `iTerm2`, `Kitty`, `Konsole`, `Mintty`, `WezTerm` and `Windows Terminal`.
+/// `Alacritty`, `Apple Terminal`, `iTerm2`, `Kitty`, `Konsole`, `Mintty`, `WezTerm`
+/// and `Windows Terminal`.
 /// Themes are exported to organized subdirectories in ./`exported_themes`/. It also
 /// optionally displays instructions for installing them into the respective emulators.
 //# Purpose: Export thag themes to multiple terminal emulator formats and display further instructions.
@@ -401,6 +402,7 @@ fn process_theme_file(
         // Always organize by format in subdirectories
         let format_dir = match format {
             ExportFormat::Alacritty => export_base_dir.join("alacritty"),
+            ExportFormat::AppleTerminal => export_base_dir.join("apple_terminal"),
             ExportFormat::ITerm2 => export_base_dir.join("iterm2"),
             ExportFormat::Kitty => export_base_dir.join("kitty"),
             ExportFormat::Konsole => export_base_dir.join("konsole"),
@@ -449,6 +451,7 @@ fn show_installation_instructions(formats: &[ExportFormat]) {
 fn get_all_export_formats() -> Vec<ExportFormat> {
     vec![
         ExportFormat::Alacritty,
+        ExportFormat::AppleTerminal,
         ExportFormat::ITerm2,
         ExportFormat::Kitty,
         ExportFormat::Konsole,
@@ -502,6 +505,7 @@ mod tests {
             .collect();
 
         assert!(format_names.contains(&"Alacritty".to_string()));
+        assert!(format_names.contains(&"Apple Terminal".to_string()));
         assert!(format_names.contains(&"WezTerm".to_string()));
         assert!(format_names.contains(&"Kitty".to_string()));
         assert!(format_names.contains(&"Mintty".to_string()));

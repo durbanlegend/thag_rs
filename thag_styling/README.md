@@ -114,7 +114,7 @@ And the painting `thag_styling` generated it from:
 ### Theme Ecosystem
 - **300+ Theme Library** — Solarized, Gruvbox, Dracula, Nord, Monokai, Cattpucin and many more
 - **Theme Generation** — From images using advanced color extraction
-- **Multi-Format Export** — Alacritty, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. Except for Konsole and Mintty, these and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, for example Apple Terminal, GNOME Terminal, VS Code and Zed.
+- **Multi-Format Export** — Alacritty, iTerm2, Kitty, KDE Konsole, Mintty (Git Bash and Cygwin), WezTerm, Windows Terminal. Except for Konsole and Mintty, these and additional OSC-compatible terminals are also supported by the `thag_sync_palette` command below, which can be invoked from the terminal profile file, for example Apple Terminal, GNOME Terminal and VS Code.
 - **Palette Sync** — Runtime terminal palette updates via OSC sequences
 - **Base16/Base24** — Converts standard Base16/Base24 themes to thag format (290+ themes included)
 
@@ -365,6 +365,47 @@ All exported themes use the following color strategy for optimal readability:
 
 This ensures excellent visibility of selected text across all theme variants.
 
+## Dynamically changing theme
+
+For terminals that support dynamically changing the terminal palette via OSC 17 and OSC 19 (that is, most of them as listed in this Readme), the active theme can be changed for the duration of the current session as follows:
+
+1. Change the terminal theme by using `thag_sync_palette apply <theme-name>`.
+2. Set the the preferred `thag_styling` theme in one of two ways:
+    a. `export THAG_THEME=<theme-name>`
+    b. `thag -C` to add the theme to the top of the `preferred_dark` or `preferred_light` list as appropriate.
+
+For terminals that do not support OSC 17 or OSC 19, the dynamic change may work except that selections may be hard to read because these two OSC codes are required to change the selection background and selection foreground colors respectively.
+
+## Terminal setup
+
+`thag_styling` has specific instructions for each environment in the `thag_gen_terminal_themes` tool.
+
+>>> TODO new tool
+
+An alternative technique for any environment that suppports OSC 17 and OSC 19 as described in this Readme, you can use shell integration to automatically sync palettes dynamically on startup as per the previous paragraph:
+
+**Unix shells (~/.bashrc or ~/.zshrc):**
+```bash
+if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
+    export THAG_COLOR_MODE=256
+    export THAG_THEME=thag-botticelli-birth-of-venus-dark
+    thag_sync_palette apply $THAG_THEME
+elif [[ "$TERM_PROGRAM" == "WezTerm" ]]; then
+    export THAG_COLOR_MODE=truecolor
+    export THAG_THEME=thag-raphael-school-of-athens-dark
+    thag_sync_palette apply $THAG_THEME
+fi
+```
+
+**Windows PowerShell ($PROFILE):**
+```powershell
+$env:PATH += ";C:\Users\my_name\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"
+$env:THAG_COLOR_MODE = "truecolor"
+$env:THAG_THEME = "thag-morning-coffee-light"
+thag_sync_palette apply $THAG_THEME
+```
+
+
 ## Advanced Features
 
 ### Complex Nested Styling
@@ -390,56 +431,6 @@ Use the `thag` tool `thag_image_to_theme` and follow the prompts. See the sample
 
 ### Multi-Format Theme Export
 Use the `thag` tool `thag_gen_terminal_themes` and follow the prompts. See the sample output from generating and installing the `thag-munch-the-scream-dark` theme as an Alacritty terminal theme below.
-
-### Runtime Palette Synchronization
-```rust
-use std::process;
-use thag_styling::{PaletteSync, Theme};
-
-// Sync terminal palette with theme colors (programmatically)
-let theme_name = "dracula_base16";
-let theme = match Theme::get_builtin(theme_name) {
-    Ok(theme) => theme,
-    Err(e) => {
-        eprintln!("❌ Failed to load theme '{}': {}", theme_name, e);
-        println!("💡 Try running `thag_show_themes list` to see available themes");
-        process::exit(1);
-    }
-};
-
-println!("📝 Description: {}", theme.description);
-println!("🌈 Applying palette...");
-
-if let Err(e) = PaletteSync::apply_theme(&theme) {
-    eprintln!("❌ Failed to apply theme: {}", e);
-    process::exit(1);
-}
-
-// Terminal colors now match your theme!
-```
-
-For terminals that don't support theme files (like Apple Terminal), you can use shell integration to automatically sync palettes on startup:
-
-**Unix shells (~/.bashrc or ~/.zshrc):**
-```bash
-if [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
-    export THAG_COLOR_MODE=256
-    export THAG_THEME=thag-botticelli-birth-of-venus-dark
-    thag_sync_palette apply $THAG_THEME
-elif [[ "$TERM_PROGRAM" == "WezTerm" ]]; then
-    export THAG_COLOR_MODE=truecolor
-    export THAG_THEME=thag-raphael-school-of-athens-dark
-    thag_sync_palette apply $THAG_THEME
-fi
-```
-
-**Windows PowerShell ($PROFILE):**
-```powershell
-$env:PATH += ";C:\Users\my_name\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin"
-$env:THAG_COLOR_MODE = "truecolor"
-$env:THAG_THEME = "thag-morning-coffee-light"
-thag_sync_palette apply $THAG_THEME
-```
 
 ### Terminal Attribute Contexts
 ```rust

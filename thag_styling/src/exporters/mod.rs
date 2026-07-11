@@ -1,12 +1,14 @@
 //! Format-specific theme export implementations.
 //!
-//! Contains exporters for `Alacritty`, `WezTerm`, `Windows Terminal`, and other terminal emulators.
+//! Contains exporters for `Alacritty`, `Apple Terminal`, `iTerm2`, `Kitty`, `Konsole`,
+//! `Mintty`, `WezTerm`, `Windows Terminal`, and other terminal emulators.
 //! Each exporter converts thag themes to the appropriate configuration format.
 
 use crate::{StylingError, StylingResult, Theme};
 use std::path::Path;
 
 pub mod alacritty;
+pub mod apple_terminal;
 pub mod iterm2;
 pub mod kitty;
 pub mod konsole;
@@ -49,6 +51,8 @@ pub enum ExportFormat {
     Mintty,
     /// `Windows Terminal` (JSON)
     WindowsTerminal,
+    /// Apple Terminal (XML plist / NSKeyedArchiver NSColor)
+    AppleTerminal,
 }
 
 impl ExportFormat {
@@ -63,6 +67,7 @@ impl ExportFormat {
             Self::Konsole,
             Self::Mintty,
             Self::WindowsTerminal,
+            Self::AppleTerminal,
         ]
     }
 
@@ -77,6 +82,7 @@ impl ExportFormat {
             Self::Konsole => konsole::KonsoleExporter::file_extension(),
             Self::Mintty => mintty::MinttyExporter::file_extension(),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::file_extension(),
+            Self::AppleTerminal => apple_terminal::AppleTerminalExporter::file_extension(),
         }
     }
 
@@ -91,6 +97,7 @@ impl ExportFormat {
             Self::Konsole => konsole::KonsoleExporter::format_name(),
             Self::Mintty => mintty::MinttyExporter::format_name(),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::format_name(),
+            Self::AppleTerminal => apple_terminal::AppleTerminalExporter::format_name(),
         }
     }
 
@@ -108,6 +115,7 @@ impl ExportFormat {
             Self::Konsole => konsole::KonsoleExporter::export_theme(theme),
             Self::Mintty => mintty::MinttyExporter::export_theme(theme),
             Self::WindowsTerminal => windows_terminal::WindowsTerminalExporter::export_theme(theme),
+            Self::AppleTerminal => apple_terminal::AppleTerminalExporter::export_theme(theme),
         }
     }
 }
@@ -157,6 +165,9 @@ pub fn export_all_formats<P: AsRef<Path>>(
                         } else {
                             format!("{base_filename}_mintty.{file_extension}")
                         }
+                    }
+                    ExportFormat::AppleTerminal => {
+                        format!("{base_filename}_apple_terminal.{file_extension}")
                     }
                     _ => format!("{base_filename}.{file_extension}"),
                 };
@@ -385,6 +396,31 @@ Alternatively, you can merge the JSON content directly into your settings.json f
 "#
             )
         }
+        ExportFormat::AppleTerminal => {
+            format!(
+                r#"# Apple Terminal Theme Installation
+
+To use this theme with Apple Terminal:
+
+1. Double-click the {theme_filename} file in Finder — Terminal will import it
+   automatically and it will appear in the Profiles list.
+
+   Alternatively:
+   - Open Terminal
+   - Go to Terminal > Settings (or Preferences) > Profiles
+   - Click the gear icon at the bottom of the profile list
+   - Choose "Import..." and select {theme_filename}
+
+2. Select the imported profile in the Profiles list and click "Default"
+   to make it the default profile.
+
+3. Open a new Terminal window to see the theme applied.
+
+Note: The theme file embeds calibrated-RGB NSColor objects as binary plists,
+which is the native format Apple Terminal expects.
+"#
+            )
+        }
         ExportFormat::Konsole => {
             format!(
                 r#"# Konsole Theme Installation
@@ -589,6 +625,7 @@ mod tests {
         assert_eq!(ExportFormat::Kitty.file_extension(), "conf");
         assert_eq!(ExportFormat::Mintty.file_extension(), "");
         assert_eq!(ExportFormat::WindowsTerminal.file_extension(), "json");
+        assert_eq!(ExportFormat::AppleTerminal.file_extension(), "terminal");
     }
 
     #[test]

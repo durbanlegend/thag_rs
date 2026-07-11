@@ -8,7 +8,7 @@
 //! # Supported Terminals
 //!
 //! Most modern terminal emulators support OSC sequences for palette updates:
-//! - `WezTerm`, `Alacritty`, `iTerm2`, `Kitty`, `Gnome Terminal`, `Windows Terminal`, etc.
+//! - `WezTerm`, `Alacritty`, `iTerm2`, `Kitty`, `Gnome Terminal`, `Apple Terminal`, `Windows Terminal`, etc.
 //!
 //! # Example
 //!

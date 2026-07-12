@@ -343,13 +343,13 @@ To use this theme with WezTerm:
 2. Add this to your wezterm.lua config file:
    ```lua
    local config = wezterm.config_builder()
-   config.color_scheme = '{theme_filename}'
+   config.color_scheme = '{TOML file internal metadata name}'
    return config
    ```
 
 3. Restart WezTerm to apply the theme.
 
-Note: The theme name should match the filename without extension.
+Note: The theme name should match the `name = ` value in the [metadata] section of the TOML file.
 WezTerm will use this TOML file format, which is different from Alacritty's TOML structure.
 "
             )

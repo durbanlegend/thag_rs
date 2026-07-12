@@ -18,8 +18,6 @@ use rayon::range::Iter;
 /// This is a coprime triple.  Multiplying by factors k covers all triples.
 use std::time::Duration;
 
-// "use thag_demo_proc_macros..." is a "magic" import that will be substituted by proc_macros.proc_macro_crate_path
-// in your config file or defaulted to "demo/proc_macros" relative to your current directory.
 use thag_proc_macros::timing;
 
 #[timing]

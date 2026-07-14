@@ -262,6 +262,7 @@ println!("{}", paint_for_role(Role::Code, "fn main()"));
 
 // Low-level ANSI with enhanced color support
 use thag_styling::{ansi_styling_support, styled};
+
 // Generate ANSI styling support - no need to import AnsiStyleExt!
 ansi_styling_support! {}
 

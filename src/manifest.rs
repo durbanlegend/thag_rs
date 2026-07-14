@@ -10,11 +10,17 @@ use cargo_toml::{Dependency, DependencyDetail, Edition, Manifest, Value};
 use regex::Regex;
 use semver::VersionReq;
 use serde_merge::omerge;
-use std::{collections::BTreeMap, env, path::PathBuf, str::FromStr, time::Instant};
+use std::{
+    collections::BTreeMap,
+    env,
+    path::{Path, PathBuf},
+    str::FromStr,
+    time::Instant,
+};
 use syn::{parse_file, File};
 use thag_common::{debug_log, get_verbosity, re, vprtln, V};
 use thag_profiler::{end, profile, profiled};
-use thag_styling::{svprtln, Role};
+use thag_styling::{svprtln, Role, Styleable, StyledPrint};
 
 #[cfg(debug_assertions)]
 use crate::debug_timings;
@@ -504,6 +510,30 @@ fn resolve_thag_dependency(
             _ => dev_path,
         };
 
+        if !(Path::new(&crate_path).exists()) {
+            let thag_dev_path = env::var("THAG_DEV_PATH")?;
+            format!("The expected crate {} is not found. Ensure that environment variable {} is correctly specified or else unset.",
+                crate_path.code(),
+                "THAG_DEV_PATH".code()
+            ).warning().println();
+            format!(
+                "The current value is {}.",
+                format!("THAG_DEV_PATH={thag_dev_path}").code()
+            )
+            .error()
+            .println();
+            display_thag_auto_help();
+            return Err(ThagError::FromStr(
+                format!(
+                    "{} not found as specified by environment variable {}.",
+                    crate_path.code(),
+                    format!("THAG_DEV_PATH={thag_dev_path}").code()
+                )
+                .error()
+                .to_styled()
+                .into(),
+            ));
+        }
         new_detail.path = Some(crate_path);
         debug_log!("Using local path for {}: {:?}", crate_name, new_detail.path);
     } else if let Ok(git_ref) = env::var("THAG_GIT_REF") {
@@ -556,7 +586,7 @@ fn display_thag_auto_help() {
         "Build failed - thag dependency issue detected"
     );
     svprtln!(
-        Role::EMPH,
+        Role::INFO,
         V::N,
         r"
 This script uses thag dependencies (thag_common, thag_rs, thag_proc_macros, thag_profiler or thag_styling)

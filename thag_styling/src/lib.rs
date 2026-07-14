@@ -530,20 +530,20 @@ pub mod inquire_theming {
             style
                 .foreground
                 .as_ref()
-                .and_then(|color_info| match &color_info.value {
-                    ColorValue::TrueColor { rgb } => Some(*rgb),
-                    ColorValue::Color256 { color256 } => Some(index_to_rgb(*color256)),
+                .map(|color_info| match &color_info.value {
+                    ColorValue::TrueColor { rgb } => *rgb,
+                    ColorValue::Color256 { color256 } => index_to_rgb(*color256),
                     ColorValue::Basic { .. } => {
                         // Convert basic role to approximate RGB for distance calculation
                         match role {
-                            Role::Error => Some([255, 0, 0]),
-                            Role::Success => Some([0, 255, 0]),
-                            Role::Warning => Some([255, 255, 0]),
-                            Role::Info => Some([0, 255, 255]),
-                            Role::Code => Some([255, 0, 255]),
-                            Role::Emphasis => Some([255, 128, 0]),
-                            Role::Heading3 => Some([128, 255, 128]),
-                            _ => Some([192, 192, 192]),
+                            Role::Error => [255, 0, 0],
+                            Role::Success => [0, 255, 0],
+                            Role::Warning => [255, 255, 0],
+                            Role::Info => [0, 255, 255],
+                            Role::Code => [255, 0, 255],
+                            Role::Emphasis => [255, 128, 0],
+                            Role::Heading3 => [128, 255, 128],
+                            _ => [192, 192, 192],
                         }
                     }
                 })

@@ -76,7 +76,7 @@ mod tests {
             .version
             .get()
             .as_ref()
-            .map_or(false, |v| v.to_string().contains("0.0.1")));
+            .is_ok_and(|v| v.to_string().contains("0.0.1")));
         assert!(matches!(package.edition.get().unwrap(), Edition::E2021));
     }
 

@@ -51,7 +51,7 @@ pub enum ExportFormat {
     Mintty,
     /// `Windows Terminal` (JSON)
     WindowsTerminal,
-    /// Apple Terminal (XML plist / NSKeyedArchiver NSColor)
+    /// `Apple Terminal` (XML plist / `NSKeyedArchiver` `NSColor`)
     AppleTerminal,
 }
 
@@ -330,9 +330,7 @@ The theme will be applied to all new Mintty windows.
 "#
             )
         }
-        ExportFormat::WezTerm => {
-            format!(
-                r"# WezTerm Theme Installation
+        ExportFormat::WezTerm => r"# WezTerm Theme Installation
 
 To use this theme with WezTerm:
 
@@ -352,8 +350,7 @@ To use this theme with WezTerm:
 Note: The theme name should match the `name = ` value in the [metadata] section of the TOML file.
 WezTerm will use this TOML file format, which is different from Alacritty's TOML structure.
 "
-            )
-        }
+        .to_string(),
         ExportFormat::ITerm2 => {
             format!(
                 r#"# iTerm2 Theme Installation

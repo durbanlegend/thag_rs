@@ -253,7 +253,7 @@ fn update_cargo_toml(
     for section in dependency_sections {
         if let Some(deps) = doc.get_mut(section).and_then(|d| d.as_table_mut()) {
             for (crate_name, _) in workspace_crates {
-                if let Some(dep_item) = deps.get_mut(*crate_name) {
+                if let Some(dep_item) = deps.get_mut(crate_name) {
                     if let Some(dep_table) = dep_item.as_inline_table_mut() {
                         if dep_table.contains_key("path") {
                             // This is a workspace dependency
@@ -313,13 +313,14 @@ fn update_scripts_in_directory(
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("rs") {
-            if update_script_toml_block(&path, version, dry_run)? {
-                if is_demo {
-                    stats.demo_scripts += 1;
-                } else {
-                    stats.tool_bins += 1;
-                }
+        if path.is_file()
+            && path.extension().and_then(|s| s.to_str()) == Some("rs")
+            && update_script_toml_block(&path, version, dry_run)?
+        {
+            if is_demo {
+                stats.demo_scripts += 1;
+            } else {
+                stats.tool_bins += 1;
             }
         }
     }

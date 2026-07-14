@@ -97,9 +97,8 @@ fn expand_script() -> Result<()> {
         ScriptMode::Interactive => {
             // Use the file selector
             let mut navigator = FileNavigator::new();
-            select_file(&mut navigator, Some("rs"), false).map_err(|e| {
-                ThagCommonError::Generic(format!("Failed to select file: {e}",).into())
-            })?
+            select_file(&mut navigator, Some("rs"), false)
+                .map_err(|e| ThagCommonError::Generic(format!("Failed to select file: {e}",)))?
         }
     };
     if !input_path.exists() {

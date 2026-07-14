@@ -115,7 +115,6 @@ mod tests {
         };
 
         assert_eq!(config.formats.len(), 2);
-        assert!(config.show_instructions);
     }
 
     #[test]

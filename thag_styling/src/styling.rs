@@ -1034,7 +1034,7 @@ impl TermAttributes {
                     let theme =
                         Theme::auto_detect(*color_support, term_bg_luma, Some(term_bg_rgb_ref))
                             .expect("Failed to auto-detect theme");
-                    return Self {
+                    Self {
                         init_strategy: strategy.clone(),
                         how_initialized: HowInitialized::Detected,
                         color_support: *color_support,
@@ -1042,7 +1042,7 @@ impl TermAttributes {
                         term_bg_rgb,
                         term_bg_luma,
                         theme,
-                    };
+                    }
                 }
                 #[cfg(all(not(feature = "color_detect"), feature = "config"))]
                 {

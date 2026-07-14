@@ -416,7 +416,7 @@ fn process_theme_file(
         // Use simple filenames since we have subdirectories
         let file_extension = format.file_extension();
         let filename = if file_extension.is_empty() {
-            format!("{theme_base_name}")
+            theme_base_name.to_string()
         } else {
             format!("{theme_base_name}.{file_extension}")
         };

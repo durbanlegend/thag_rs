@@ -443,6 +443,7 @@ fn should_process_thag_auto(dependency: &Dependency) -> bool {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 /// Resolves a thag dependency based on environment variables and context
 fn resolve_thag_dependency(
     crate_name: &str,

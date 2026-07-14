@@ -1321,8 +1321,10 @@ fn handle_build_or_check(proc_flags: &ProcFlags, build_state: &BuildState) -> Th
 
     if proc_flags.contains(ProcFlags::EXECUTABLE) {
         deploy_executable(build_state)?;
-    } else if !proc_flags.contains(ProcFlags::CHECK) {
-        // For regular builds (not check), cache the executable
+    } else if !proc_flags.contains(ProcFlags::CHECK) && !proc_flags.contains(ProcFlags::CARGO) {
+        // For regular builds (not check, not arbitrary cargo subcommands), cache the executable.
+        // CARGO mode runs user-specified subcommands (e.g. expand, clippy, tree) that don't
+        // necessarily produce a build artifact, so caching would fail.
         cache_executable(build_state)?;
     }
     Ok(())

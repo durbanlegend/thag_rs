@@ -45,11 +45,11 @@ use std::time::Instant;
 
 fn fib(k: usize, (a, b): (&UBig, &UBig)) -> (UBig, UBig) {
     if k == 0 {
-        eprintln!("Entered fib but returning (ubig!(0), ubig!(1))");
+        eprintln!("Entered fib but returning (ubig!(0), ubig!(1)))");
         return (ubig!(0), ubig!(1));
     }
     if k == 1 {
-        eprintln!("Entered fib but returning (ubig!(1), ubig!(2)");
+        eprintln!("Entered fib but returning (ubig!(1), ubig!(2))");
         return (ubig!(1), ubig!(2));
     }
 

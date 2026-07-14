@@ -343,7 +343,7 @@ To use this theme with WezTerm:
 2. Add this to your wezterm.lua config file:
    ```lua
    local config = wezterm.config_builder()
-   config.color_scheme = '{TOML file internal metadata name}'
+   config.color_scheme = '{{TOML file internal metadata name}}'
    return config
    ```
 

@@ -83,7 +83,7 @@ fn show_installation_instructions(formats: &[ExportFormat]) {
         println!("{instructions}");
 
         println!(
-            "\n💡 {} Replace {} with your actual theme filename",
+            "\n💡 {} Replace any occurrence of {} with your actual theme filename",
             "Note:".warning(),
             "<theme-name>".info()
         );

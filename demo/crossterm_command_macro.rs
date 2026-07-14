@@ -12,7 +12,6 @@ use std::io::{self, Write};
 /// Url: https://docs.rs/crossterm/latest/crossterm/
 //# Purpose: Demo `crossterm` command API.
 //# Categories: crates, technique
-use std::io::stdout;
 fn main() -> io::Result<()> {
     let mut stdout = io::stdout();
 

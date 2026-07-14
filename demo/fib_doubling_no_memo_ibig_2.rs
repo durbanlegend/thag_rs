@@ -51,7 +51,7 @@ fn fib(k: usize, (a, b): (&mut UBig, &mut UBig)) {
         return;
     }
     if k == 1 {
-        eprintln!("Entered fib but returning (ubig!(1), ubig!(2)");
+        eprintln!("Entered fib but returning (ubig!(1), ubig!(2))");
         (*a, *b) = (ubig!(1), ubig!(2));
         return;
     }

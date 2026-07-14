@@ -7,6 +7,8 @@
 /// ```bash
 /// cargo run -p thag_styling --example debug_theme_selection --features "color_detect"
 /// cargo run -p thag_styling --example debug_theme_selection --features "basic"
+/// cargo run -p thag_styling --example debug_theme_selection --features "crossterm_support"
+/// cargo run -p thag_styling --example debug_theme_selection --features "ratatui_support"
 /// ```
 use thag_styling::{paint_for_role, Role, Style, TermAttributes};
 
@@ -81,17 +83,27 @@ fn main() {
             );
         }
     }
+    println! {"\x1b[0m"};
 
     // Test 4: Check crossterm integration specifically
     #[cfg(feature = "crossterm_support")]
     {
-        use crossterm::style::Color as CrossColor;
+        use crossterm::style::{/*Attribute, */ Color as CrossColor, Stylize};
         use thag_styling::ThemedStyle;
 
         println!("\n4. Crossterm integration test:");
-        for role in [Role::Success, Role::Error, Role::Warning] {
+        for role in [
+            Role::Heading1,
+            Role::Heading2,
+            Role::Info,
+            Role::Error,
+            Role::Warning,
+        ] {
             let crossterm_color = CrossColor::themed(role);
-            println!("   - {role:12}: CrossColor = {crossterm_color:?}");
+            let styled = format!("{role} sample")
+                .with(crossterm_color)
+                /*.attribute(Attribute::Bold)*/;
+            println!("   - {role:12}: CrossColor = {crossterm_color:?}, {styled}");
         }
     }
 

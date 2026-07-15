@@ -24,7 +24,6 @@
 //# Categories: big_numbers, learning, math, recreational, technique
 //# Sample arguments: `-- 100`
 use ibig::{ubig, UBig};
-// use std::collections::HashMap;
 use std::time::Instant;
 use thag_demo_proc_macros::cached;
 
@@ -75,20 +74,6 @@ fn main() {
         .join(",");
 
     let start = Instant::now();
-
-    // // Precompute and store base Fibonacci numbers
-    // let mut memo: HashMap<usize, UBig> = HashMap::new();
-    // memo.insert(0, ubig!(0));
-    // memo.insert(1, ubig!(1));
-    // memo.insert(2, ubig!(1));
-    // memo.insert(3, ubig!(2));
-    // memo.insert(4, ubig!(3));
-    // memo.insert(5, ubig!(5));
-    // memo.insert(6, ubig!(8));
-    // memo.insert(7, ubig!(13));
-    // memo.insert(8, ubig!(21));
-    // memo.insert(9, ubig!(34));
-    // memo.insert(10, ubig!(55));
 
     let fib_n = fib(n);
 

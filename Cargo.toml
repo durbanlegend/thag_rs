@@ -259,7 +259,7 @@ crossterm = { version = "0.28", features = ["use-dev-tty"] }
 dhat = { version = "0.3", optional = true }
 dirs = "6.0"
 document-features = { version = "0.2", optional = true }
-documented = "0.9"
+documented = "0.10"
 edit = { version = "0.1", optional = true }
 heck = { version = "0.5", optional = true }
 inquire = { version = "0.9", optional = true }

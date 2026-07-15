@@ -63,8 +63,6 @@ fn main() {
         }
     }
 
-    // eprintln!("stack={stack:#?}");
-
     // Sort indices in ascending order
     let mut sorted_indices: Vec<_> = required_indices.into_iter().collect();
     sorted_indices.sort();
@@ -172,8 +170,6 @@ fn main() {
 
     let dur = start.elapsed();
     println!("Done! in {}.{}s", dur.as_secs(), dur.subsec_millis());
-
-    let fib_n = &memo[&n];
 
     let fib_n_str = fib_n.to_string();
     let l = fib_n_str.len();

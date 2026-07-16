@@ -17,14 +17,20 @@ opt-level = 3     # Apply maximum performance optimizations
 /// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`.
 //# Purpose: Prototype a markdown viewer using the `egui_commonmark` crate.
 //# Categories: crates, demo, gui, prototype, tools
+//# Usage: egui_markdown_viewer [OPTIONS] [path_to_file]
 use eframe::egui;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
 use std::path::{Path, PathBuf};
-use thag_styling::{file_navigator, themed_inquire_config};
+use thag_styling::{
+    auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
+};
 
 file_navigator! {}
 
 fn main() -> eframe::Result<()> {
+    let help = auto_help!();
+    check_help_and_exit(&help);
+
     let args: Vec<String> = env::args().collect();
 
     let selected_file: PathBuf = if args.len() > 1 {

@@ -1,10 +1,10 @@
 # thag_rs
 
-[![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://img.shields.io/crates/v/thag_rs.svg)
-[![Crates.io size](https://img.shields.io/crates/size/thag_rs.svg)](https://img.shields.io/crates/size/thag_rs.svg)
-[![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)
-[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green.svg)
-[![Dependencies](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)
+[![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://img.shields.io/crates/v/thag_rs)
+[![Crates.io size](https://img.shields.io/crates/size/thag_rs.svg)](https://img.shields.io/crates/size/thag_rs)
+[![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge)
+[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green)
+[![Dependencies](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)](https://deps.rs/repo/github/durbanlegend/thag_rs/status)
 
 
 ## Intro

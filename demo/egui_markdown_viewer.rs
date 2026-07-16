@@ -2,7 +2,7 @@
 [dependencies]
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
-egui_extras = { version = "0.35", features = ["svg_text"] }
+# egui_extras = { version = "0.35", features = ["svg_text"] } # Slow
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
@@ -77,7 +77,10 @@ fn main() -> eframe::Result<()> {
         renderer: eframe::Renderer::Wgpu,
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([800.0, 600.0])
-            .with_title(format!("Viewing: {}", canonical_initial_path.display())),
+            .with_title(format!(
+                "egui_markdown_viewer: {}",
+                canonical_initial_path.display()
+            )),
         ..Default::default()
     };
 
@@ -236,6 +239,9 @@ impl eframe::App for MarkdownApp {
 
         egui::Panel::top("nav_bar").show(ui, |ui| {
             ui.horizontal(|ui| {
+                ui.label("Theme");
+                egui_theme_switch::global_theme_switch(ui);
+                ui.separator();
                 if ui
                     .add_enabled(can_go_back, egui::Button::new("◀ Back"))
                     .on_hover_text(&back_tip)
@@ -297,7 +303,7 @@ impl eframe::App for MarkdownApp {
         if navigated {
             ui.ctx()
                 .send_viewport_cmd(egui::ViewportCommand::Title(format!(
-                    "Viewing: {}",
+                    "egui_markdown_viewer: {}",
                     self.current_file_path.display()
                 )));
         }

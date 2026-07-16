@@ -1,10 +1,15 @@
 # thag_rs
 
 [![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
+
 [![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
+
 [![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)
-<img src="https://img.shields.io/badge/rustc-stable+-green.svg" alt="supported rustc stable" />
-<a href="https://deps.rs/repo/github/durbanlegend/thag_rs"><img src="https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg" alt="dependency status"/></a>
+
+[![Rust stable](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green.svg)
+  
+![Deps.rs Repository Dependencies](https://img.shields.io/deps-rs/repo/github/durbanlegend/thag_rs)
+
 
 ## Intro
 

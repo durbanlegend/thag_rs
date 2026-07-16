@@ -19,16 +19,34 @@ opt-level = 3     # Apply maximum performance optimizations
 //# Categories: crates, demo, gui, prototype, tools
 use eframe::egui;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use thag_styling::{file_navigator, themed_inquire_config};
 
 file_navigator! {}
 
 fn main() -> eframe::Result<()> {
-    inquire::set_global_render_config(themed_inquire_config());
+    let args: Vec<String> = env::args().collect();
 
-    let mut navigator = FileNavigator::new();
-    let selected_file = select_file(&mut navigator, Some("md"), false).unwrap();
+    let selected_file: PathBuf = if args.len() > 1 {
+        let input_path = Path::new(&args[1]);
+        if !input_path.exists() {
+            eprintln!(
+                "Error: Input directory does not exist: {}",
+                input_path.display()
+            );
+            std::process::exit(1);
+        }
+        if input_path.is_dir() {
+            eprintln!("Error: Input file is a directory: {}", input_path.display());
+            std::process::exit(1);
+        }
+        input_path.to_path_buf()
+    } else {
+        inquire::set_global_render_config(themed_inquire_config());
+
+        let mut navigator = FileNavigator::new();
+        select_file(&mut navigator, Some("md"), false).unwrap()
+    };
     let selected_path = PathBuf::from(&selected_file);
     let canonical_initial_path = selected_path.canonicalize().unwrap_or(selected_path);
     // Keep the process CWD in sync with the file so egui_extras resolves

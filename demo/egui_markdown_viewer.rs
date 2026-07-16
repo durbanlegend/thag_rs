@@ -2,7 +2,6 @@
 [dependencies]
 thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
-pulldown-cmark = "0.13"
 
 [features]
 default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
@@ -15,16 +14,16 @@ opt-level = 3     # Apply maximum performance optimizations
 /// to display it. Relative links are resolved relative to the parent directory of the current markdown
 /// file, so navigation between linked documents works correctly. Supports back/forward history.
 /// We also use the `eframe` WGPU renderer for fast rendering.
-/// Image links such as `[![alt](img)](url)` are preprocessed to inject a visible `[↗ alt](url)` text
-/// link alongside the (non-clickable) image, working around a known egui_commonmark limitation where
-/// such patterns produce an invisible zero-size hyperlink.
+/// Note: `[![alt](img)](url)` image links are a known egui_commonmark limitation — the link wrapping
+/// an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
+/// add an explicit text link in the markdown below it.
 /// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`.
 //# Purpose: Prototype a markdown viewer using the `egui_commonmark` crate.
 //# Categories: crates, demo, gui, prototype, tools
 //# Usage: egui_markdown_viewer [OPTIONS] [path_to_file]
 use eframe::egui;
 use egui_commonmark::{CommonMarkCache, CommonMarkViewer};
-use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
+
 use std::path::{Path, PathBuf};
 use thag_styling::{
     auto_help, file_navigator, help_system::check_help_and_exit, themed_inquire_config,
@@ -32,69 +31,6 @@ use thag_styling::{
 
 file_navigator! {}
 
-/// Preprocesses markdown to work around egui_commonmark's handling of image links.
-///
-/// `[![alt](img)](url)` produces an invisible zero-size hyperlink because the alt text
-/// goes into `image.alt_text` rather than `link.text`, leaving the link with no
-/// renderable content. We inject `[↗ alt](url)` immediately after each such pattern
-/// so the user has a visible, clickable text link alongside the image.
-fn preprocess_markdown(content: &str) -> String {
-    // Fast path: no image links present.
-    if !content.contains("[![") {
-        return content.to_string();
-    }
-
-    // Collect (byte_end_of_link, target_url, alt_text) for each image-link.
-    let mut insertions: Vec<(usize, String, String)> = Vec::new();
-    let mut link_url: Option<String> = None;
-    let mut current_alt = String::new();
-    let mut has_image = false;
-
-    for (event, range) in Parser::new_ext(content, Options::empty()).into_offset_iter() {
-        match event {
-            Event::Start(Tag::Link { dest_url, .. }) => {
-                link_url = Some(dest_url.to_string());
-                current_alt.clear();
-                has_image = false;
-            }
-            Event::Start(Tag::Image { .. }) if link_url.is_some() => {
-                has_image = true;
-            }
-            // Alt text lives inside the Image event, not the Link event.
-            Event::Text(text) if has_image && link_url.is_some() => {
-                current_alt.push_str(&text);
-            }
-            Event::End(TagEnd::Link) if has_image => {
-                if let Some(url) = link_url.take() {
-                    insertions.push((range.end, url, current_alt.clone()));
-                }
-                has_image = false;
-            }
-            Event::End(TagEnd::Link) => {
-                link_url = None;
-            }
-            _ => {}
-        }
-    }
-
-    if insertions.is_empty() {
-        return content.to_string();
-    }
-
-    let mut result = String::with_capacity(content.len() + insertions.len() * 32);
-    let mut pos = 0;
-    for (offset, url, alt) in &insertions {
-        result.push_str(&content[pos..*offset]);
-        if alt.is_empty() {
-            result.push_str(&format!("[\u{2197} link]({url})"));
-        } else {
-            result.push_str(&format!("[\u{2197} {alt}]({url})"));
-        }
-        pos = *offset;
-    }
-    result.push_str(&content[pos..]);
-    result
-}
 
 fn main() -> eframe::Result<()> {
     let help = auto_help!();
@@ -130,13 +66,12 @@ fn main() -> eframe::Result<()> {
         let _ = std::env::set_current_dir(parent);
     }
 
-    let raw_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
+    let markdown_content = std::fs::read_to_string(&canonical_initial_path).unwrap_or_else(|_| {
         format!(
             "# Error\nFailed to read `{}`.",
             canonical_initial_path.display()
         )
     });
-    let markdown_content = preprocess_markdown(&raw_content);
 
     let options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
@@ -207,7 +142,7 @@ impl MarkdownApp {
                 if let Some(dir) = path.parent() {
                     let _ = std::env::set_current_dir(dir);
                 }
-                self.content = preprocess_markdown(&new_content);
+                self.content = new_content;
                 self.current_file_path = path;
                 // Clear the cache so egui_commonmark doesn't carry over scroll positions.
                 self.cache = CommonMarkCache::default();

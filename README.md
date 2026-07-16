@@ -1,14 +1,10 @@
 # thag_rs
 
-[![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://crates.io/crates/thag_rs)
-
-[![Crates.io size](https://img.shields.io/crates/size/thag_rs)](https://img.shields.io/crates/size/thag_rs)
-
+[![Crates.io](https://img.shields.io/crates/v/thag_rs.svg)](https://img.shields.io/crates/v/thag_rs.svg)
+[![Crates.io size](https://img.shields.io/crates/size/thag_rs.svg)](https://img.shields.io/crates/size/thag_rs.svg)
 [![Build Status](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/durbanlegend/thag_rs/actions/workflows/ci.yml/badge.svg)
-
-[![Rust stable](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green.svg)
-  
-![Deps.rs Repository Dependencies](https://img.shields.io/deps-rs/repo/github/durbanlegend/thag_rs)
+[![Rust](https://img.shields.io/badge/rustc-stable+-green.svg)](https://img.shields.io/badge/rustc-stable+-green.svg)
+[![Dependencies](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)](https://deps.rs/repo/github/durbanlegend/thag_rs/status.svg)
 
 
 ## Intro
@@ -342,7 +338,7 @@ thag --rapid                                                    # Short form: -r
 
 [![asciicast](https://asciinema.org/a/fsVoBuZSc1c8JwhfkTBRZxBoV.svg)](https://asciinema.org/a/fsVoBuZSc1c8JwhfkTBRZxBoV)
 
-*Click to watch: Interactive rapid iteration session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
+*[Click to watch](https://asciinema.org/a/fsVoBuZSc1c8JwhfkTBRZxBoV): Interactive rapid iteration session showing expression evaluation, multi-line snippets, TUI integration, and editing workflow (2:17)*
 
 (The orange flashes on the command line as I paste in input are caused by the `reedline` hinter helpfully matching the pasted input against history to offer completion hints.)
 Rapid iteration mode has file-backed searchable history and access to graphical and text-based editors such as VS Code, Zed, Helix, Vim, nano etc. via the VISUAL or EDITOR environment variables, in case its `reedline` editor falls short for a particular task. The key bindings in the latter depend on your terminal settings and you should probably not expect too much in the way of navigation shortcuts.
@@ -382,13 +378,13 @@ thag --edit                                                     # Short form: -d
 
 [![asciicast](https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY.svg)](https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY)
 
-*Click to watch: Load code from stdin, make quick edits, discover key bindings (Ctrl-L), and submit for execution*
+*[Click to watch](https://asciinema.org/a/nB3lFb6LgaHOF1s3dm5srjwyY): Load code from stdin, make quick edits, discover key bindings (Ctrl-L), and submit for execution*
 
 **Demo 2: Data Composition (1:14)**
 
 [![asciicast](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG.svg)](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG)
 
-*Click to watch: Copy lines with `thag_copy`, retrieve skeleton from history, paste clipboard contents, rearrange code with TextArea buffer (Ctrl-X/Ctrl-Y), and run*
+*[Click to watch](https://asciinema.org/a/LvSHLiZPC6lfCgSN4Q0sUJjpG): Copy lines with `thag_copy`, retrieve skeleton from history, paste clipboard contents, rearrange code with TextArea buffer (Ctrl-X/Ctrl-Y), and run*
 
 ### * With standard input into the TUI editor:
 

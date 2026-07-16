@@ -4,7 +4,7 @@ thag_proc_macros = { version = "1, thag-auto" }
 thag_styling = { version = "1, thag-auto", features = ["inquire_theming"] }
 
 [features]
-default = ["egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
+default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_commonmark/svg","egui_commonmark/fetch"]
 
 # Make sure the result runs fast
 [profile.dev]
@@ -13,6 +13,7 @@ opt-level = 3     # Apply maximum performance optimizations
 /// A basic prototype GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark`
 /// to display it. Relative links are resolved relative to the parent directory of the current markdown
 /// file, so navigation between linked documents works correctly.
+/// We also use the `eframe` WGPU renderer for fast rendering.
 /// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`.//# Purpose: Prototype a markdown viewer using the `egui_commonmark` crate.
 //# Categories: crates, demo, gui, prototype, tools
 use eframe::egui;
@@ -39,6 +40,7 @@ fn main() -> eframe::Result<()> {
 
     // Set up Native GUI Options
     let options = eframe::NativeOptions {
+        renderer: eframe::Renderer::Wgpu,
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([800.0, 600.0])
             .with_title(format!("Viewing: {}", selected_file.display())),

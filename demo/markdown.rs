@@ -1,21 +1,17 @@
 /*[toml]
 [dependencies]
 thag_common = { version = "1, thag-auto" }
-# warp = { version = "0.4", features = ["server"] }
 */
 
-/// Quick markdown viewer.
+/// Quick basic markdown viewer using the `markdown` and `webbrowser` crates.
+/// It makes no pretentions to resolving linked markdown files.
 ///
 //# Purpose: Useful tool and demo.
-//# Categories: demo, tools
-use std::env;
-use std::fs;
-use std::process;
-use thag_common::{auto_help, help_system::check_help_and_exit};
-use warp::Filter;
+//# Categories: crates, demo, tools
+use std::{env, fs, process};
+use thag_styling::{auto_help, help_system::check_help_and_exit, svprtln, Role, V};
 
-#[tokio::main]
-async fn main() {
+fn main() {
     // Check for help first - automatically extracts from source comments
     let help = auto_help!();
     check_help_and_exit(&help);
@@ -40,12 +36,18 @@ async fn main() {
     let html_content = markdown::to_html(&markdown_content);
 
     let md_html = "thag_markdown.html";
-    let _ = std::fs::write(md_html, &html_content);
-    webbrowser::open(md_html);
+    let result = std::fs::write(md_html, &html_content);
 
-    // // Serve the HTML content on a local port
-    // let html_filter = warp::any().map(move || warp::reply::html(html_content.clone()));
-    // let port = 8080;
-    // println!("Serving HTML on http://localhost:{port}");
-    // warp::serve(html_filter).run(([127, 0, 0, 1], port)).await;
+    if let Err(_e) = result {
+        svprtln!(Role::ERR, V::N, "Error writing markdown to HTML file");
+
+        std::process::exit(1);
+    }
+
+    let result = webbrowser::open(md_html);
+    if let Err(_e) = result {
+        svprtln!(Role::ERR, V::N, "Error opening HTML file in browser");
+
+        std::process::exit(1);
+    }
 }

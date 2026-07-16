@@ -230,7 +230,7 @@ pub enum IterCommand {
     Run,
     /// Delete all temporary files for the current evaluation (see `list` command)
     Delete,
-    /// List temporary files for this the current evaluation
+    /// List temporary files for the current evaluation
     List,
     /// Edit history
     History,

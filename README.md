@@ -91,51 +91,51 @@ Whether you're:
 <details>
 <summary>🛠️ over 30 other independently installable <a href="src/bin/README.md">command-line tools</a></summary>
 
-  - 🔬 AST display tool
+  - AST display tool
 
-  - 🚚 cargo runner for scripts
+  - cargo runner for scripts
 
-  - 📎 clippy runner for scripts
+  - clippy runner for scripts
 
-  - 🛰️ demo directory downloader
+  - demo directory downloader
 
-  - 🔭 demo finder
+  - demo finder
 
-  - 🐡 expander for scripts
+  - expander for scripts
 
-  - 🎛️ config file generator
+  - config file generator
 
-  - 📸 stdin to clipboard copy tool
+  - stdin to clipboard copy tool
 
-  - 🫟 clipboard to stdout paste tool
+  - clipboard to stdout paste tool
 
-  - 💥 error variant code generator
+  - error variant code generator
 
-  - 🪟 markdown viewer and GitHub markdown compatibility checker
+  - markdown viewer and GitHub markdown compatibility checker
 
-  - ❓ prompted `thag` front-end
+  - prompted `thag` front-end
 
-  - 👓 `\n` to newline unscrambler
+  - `\n` to newline unscrambler
 
-  - 🖥️ terminal characteristics detector
+  - terminal characteristics detector
 
-  - 🖼️ `thag_styling` tools, including:
+  - `thag_styling` tools, including:
 
-    - 📽️ theme display
+    - theme display
 
-    - 🐄 theme browser
+    - theme browser
 
-    - 📝 theme editor
+    - theme editor
 
-    - 🎨 terminal palette vs theme displays
+    - terminal palette vs theme displays
 
-    - 🪄 base16/24 to `thag_styling` theme converter
+    - base16/24 to `thag_styling` theme converter
 
-    - 🏞️ image to `thag_styling` theme converter
+    - image to `thag_styling` theme converter
 
-    - 👨‍🔧 `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
+    - `thag_styling` theme to terminal theme converter and installers for popular terminal emulators
 
-    - 🎏 `thag_styling` theme to terminal palette sync tool
+    - `thag_styling` theme to terminal palette sync tool
 
 </details>
 

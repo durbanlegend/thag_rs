@@ -2244,6 +2244,39 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_code_editor
 
 ---
 
+### Script: egui_markdown_viewer.rs
+
+**Description:**  A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
+ `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
+ current markdown file, so navigation between linked documents works correctly. Supports back/forward history
+ and light/dark/system theme switching via `egui_theme_switch`.
+ Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
+ an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
+ add an explicit text link in the markdown below it. You may also notice that it does not handle banners
+ well.
+ See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
+ vendored to address some issues.
+ Pending navigation action triggered by the toolbar buttons.
+ The state holder for our egui app.
+
+**Purpose:** Prototype a markdown viewer using the `egui_commonmark` crate.
+
+**Crates:** `eframe`, `egui_commonmark`, `egui_theme_switch`, `env`, `inquire`, `thag_styling`
+
+**Type:** Program
+
+**Categories:** crates, demo, gui, prototype, tools
+
+**Link:** [egui_markdown_viewer.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_viewer.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/egui_markdown_viewer.rs
+```
+
+---
+
 ### Script: enum_select.rs
 
 **Description:**  Prototype of selecting message colours by matching against different enums
@@ -2801,45 +2834,13 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_ite
 
 ---
 
-### Script: fib_doubling_iterative_purge_ibig.rs
-
-**Description:**  Very fast non-recursive calculation of an individual Fibonacci number using the
- Fibonacci doubling identity. See also `demo/fib_doubling_recursive_ibig.rs` for the
- original recursive implementation and the back story.
-
- This version is derived from `demo/fib_doubling_iterative.rs` with the following
- change: that we reduce bloat as best we can by purging redundant entries from the memo
- cache as soon as it's safe to do so.
-
-**Purpose:** Demo fast efficient Fibonacci with big numbers, no recursion, and memoization, and ChatGPT implementation.
-
-**Crates:** `ibig`
-
-**Type:** Program
-
-**Categories:** big_numbers, learning, math, recreational, technique
-
-**Link:** [fib_doubling_iterative_purge_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_ibig.rs)
-
-**Run this example:**
-
-```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_ibig.rs -- 100
-```
-
----
-
-### Script: fib_doubling_iterative_purge_rug.rs
+### Script: fib_doubling_iterative_rug.rs
 
 **Description:**  Very fast non-recursive calculation of an individual Fibonacci number using the
  Fibonacci doubling identity. See also `demo/fib_doubling_recursive.ibig.rs` for the
  original recursive implementation and the back story.
  Won't work with default Windows 11 because of `rug` crate.
  On Linux you may need to install the m4 package.
-
- This version is derived from `demo/fib_doubling_iterative.rs` with the following
- change: that we reduce bloat as best we can  by purging redundant entries from the memo
- cache as soon as it's safe to do so.
 
  **Not compatible with Windows MSVC.**
 
@@ -2855,12 +2856,12 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_ite
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_iterative_purge_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_rug.rs)
+**Link:** [fib_doubling_iterative_rug.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_rug.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_purge_rug.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_iterative_rug.rs -- 100
 ```
 
 ---
@@ -3009,7 +3010,7 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_
 
 ---
 
-### Script: fib_doubling_recursive_ibig.rs
+### Script: fib_doubling_recursive_ibig_cached.rs
 
 **Description:**  Very fast recursive calculation of an individual Fibonacci number using the
  Fibonacci doubling identity. See also `demo/fib_doubling_iterative.rs` and
@@ -3030,26 +3031,24 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_no_
  or indeed iteratively expressing it in terms of Fn-1, Fn and Fn+1, or any two
  of these since Fn+1 = Fn-1 + Fn.
 
- I suggested this to ChatGPT, as well as the idea of pre-computing and storing the
- first 10 or 100 Fibonacci numbers to save repeated recalculation. ChatGPT went
- one better by memoizing all computed numbers. As there is a great deal of repetition
- and fanning out of calls to fib(), the memoization drastically cuts down recursion.
+ Caching the recursive function gives a much simpler solution than memoization,
+ with comparable performance.
 
 
-**Purpose:** Demo fast efficient Fibonacci with big numbers, limited recursion, and memoization, and a good job by ChatGPT.
+**Purpose:** Demo fast efficient Fibonacci with big numbers and limited, cached recursion.
 
-**Crates:** `ibig`
+**Crates:** `ibig`, `thag_demo_proc_macros`
 
 **Type:** Program
 
 **Categories:** big_numbers, learning, math, recreational, technique
 
-**Link:** [fib_doubling_recursive_ibig.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig.rs)
+**Link:** [fib_doubling_recursive_ibig_cached.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig_cached.rs)
 
 **Run this example:**
 
 ```bash
-thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig.rs -- 100
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/fib_doubling_recursive_ibig_cached.rs -- 100
 ```
 
 ---
@@ -4395,6 +4394,70 @@ thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_lazy_stati
 
 ```bash
 thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/macro_print.rs
+```
+
+---
+
+### Script: markdown.rs
+
+**Description:**  Quick basic markdown viewer using the `markdown` and `webbrowser` crates.
+ It makes no pretentions to resolving linked markdown files.
+
+
+**Purpose:** Useful tool and demo.
+
+**Crates:** `markdown`, `thag_styling`, `webbrowser`
+
+**Type:** Program
+
+**Categories:** crates, demo, tools
+
+**Link:** [markdown.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown.rs
+```
+
+---
+
+### Script: markdown_git.rs
+
+**Description:**  Quick markdown viewer checks your markdown for GitHub compatibility. Opens the file with `webbrowser` to resolve local links
+ better, but this does create an annoying .html file in the local directory. It also does not claim to resolve links adequately.
+ It also requires you to provide a GitHub token.
+
+ Script generated by GitHub Copilot.
+
+ Uses the GitHub REST API endpoint `/markdown` to convert Markdown to HTML and serves the HTML using the `warp` web framework. Make sure your Markdown file is less than 400 KB, as per the API's limitations.
+
+ ### Instructions:
+
+ 1. Set the `GITHUB_TOKEN` environment variable with your GitHub token (classic or fine-grained).
+
+ 2. Run the script:
+
+    ```bash
+    thag_markdown <path_to_markdown_file>
+    ```
+
+ 3. Open `http://localhost:8080` in your browser to view the rendered HTML.
+
+**Purpose:** Useful tool and demo.
+
+**Crates:** `reqwest`, `serde_json`, `thag_common`, `thag_styling`, `tokio`, `webbrowser`
+
+**Type:** Program
+
+**Categories:** demo, tools
+
+**Link:** [markdown_git.rs](https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown_git.rs)
+
+**Run this example:**
+
+```bash
+thag_url https://github.com/durbanlegend/thag_rs/blob/main/demo/markdown_git.rs
 ```
 
 ---

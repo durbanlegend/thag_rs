@@ -66,14 +66,14 @@ Whether you're:
 ### `thag` includes:
 
 <details>
-<summary>🛜 a command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
+<summary>A command ***thag_url*** to intelligently run example scripts directly from URLs</summary>
 
   - Automatically resolves straightforward dependencies.
 
   - Default features for crates can be configured with `thag --config/-C`.
 
 <details>
-<summary>📋 Supports popular repo, playground and other URLs.</summary>
+<summary>Supports popular repo, playground and other URLs.</summary>
 
   - GitHub
 
@@ -84,12 +84,11 @@ Whether you're:
   - Rust Playground
 
   - Straightforward URLs.
-</details>
 
 </details>
 
 <details>
-<summary>🛠️ over 30 other independently installable <a href="src/bin/README.md">command-line tools</a></summary>
+<summary>Over 30 other independently installable <a href="src/bin/README.md">command-line tools</a></summary>
 
   - AST display tool
 
@@ -159,7 +158,7 @@ ___
 
 ### Features
 
-🐥 **The basics:**
+**The basics:**
 
 - Run Rust code straight from the command line or a URL.
 
@@ -175,7 +174,7 @@ ___
 
 - Loop-filter mode for data processing.
 
-💡 **Smart Features:**
+**Smart Features:**
 
 - Toml-free by default: dependency inference from imports and Rust paths (`x::y::z`).
 
@@ -224,7 +223,7 @@ nvironment variable or your terminal's background color. Also available for use 
 ![Catppuccin Mocha](assets/theme_catp_mocha.png)
 ![Gruvbox light, hard (base16)](assets/theme_gbox_lh.png)
 
-🐣 **Getting Started:**
+**Getting Started:**
 
 Jump into `thag`'s collection of 330+ sample scripts in [demo/README.md](https://github.com/durbanlegend/thag_rs/blob/main/demo/README.md) to see what's possible. A good way to do this is to install the [thag_demo](thag_demo/README.md) crate and run `thag_demo browse` to filter, select and run demo scripts from a scrollable list.
 
@@ -442,28 +441,22 @@ Loop mode also accepts the following optional arguments supplying surrounding co
 --end   (-E)    for specifying any summary or final logic to run after the loop.
 ```
 
-#### Further examples:
-
-```bash
-thag --loop 'let gt = if line.len() > 3 { count += 1; true } else { false }; let _ = println!("{gt}");' --begin 'let mut count = 0;' --end 'println!("Total: {}", count);' --toml '[dependencies]
-regex = "1.0"' < demo/hello_main.rs
-```
-
-The following example shows short forms, multi-line input and debug mode:
+Counting lines longer than 80 characters in a file:
 
 ```zsh
-thag -vv -B 'let mut min = usize::MAX;
-    let mut shortest = String::new();' \
--l '{
-            let l = line.len();
-            let is_shortest = if l < min {
-                min = l; shortest = line.to_string(); true
-            } else { false };
-            is_shortest
-        }' \
--E '
-    println!("shortest line is: {shortest} of length {min}");' < demo/hello.rs
+$ thag --quiet \
+--begin 'let mut counts = [0, 0];' \
+--loop 'if line.len() > 80 { counts[1] += 1; } else { counts[0] += 1; };' \
+--end 'println!("Normal: {}, long: {}", counts[0], counts[1]);' \
+< README.md
+   Compiling temp v0.0.1 (/var/folders/rx/mng2ds0s6y53v12znz5jhpk80000gn/T/rs_dyn)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.43s
+──────────────────────────────────────────────────────────────────────
+Normal: 687, long: 175
+──────────────────────────────────────────────────────────────────────
 ```
+
+### Using scripts in a pipeline
 
 Note: in general if you are planning to **pipe Rust output**, it's probably a good idea to use `writeln!(io::stdout(), "{...}")`,
 rather than `println!`, since (as at edition 2021) `println!` panics if it encounters an error, and this
@@ -473,6 +466,8 @@ For an example of tolerating a broken pipe, see
 `demo/thag_from_rust_script.rs`.
 
 #### Using `writeln!` with a pipe:
+
+Use `-qq` to suppress informative messages on `stdout` from thag itself.
 
 ```bash
 bash-3.2$ thag -qql 'let _ = writeln!(io::stdout(), "{i:>3}.  {line}");' < demo/hello.rs | grep Categories    # long form: --quiet --quiet --loop

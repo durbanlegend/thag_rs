@@ -11,14 +11,16 @@ default = ["eframe/wgpu", "egui_commonmark/better_syntax_highlighting","egui_com
 [profile.dev]
 opt-level = 3     # Apply maximum performance optimizations
 */
-/// A basic prototype GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark`
-/// to display it. Relative links are resolved relative to the parent directory of the current markdown
-/// file, so navigation between linked documents works correctly. Supports back/forward history.
-/// We also use the `eframe` WGPU renderer for fast rendering.
-/// Note: `[![alt](img)](url)` image links are a known egui_commonmark limitation — the link wrapping
+/// A fast little GUI markdown viewer using `inquire` to select a markdown file and `egui_commonmark` with
+/// `eframe`'s WGPU feature to render it. Relative links are resolved relative to the parent directory of the
+/// current markdown file, so navigation between linked documents works correctly. Supports back/forward history
+/// and light/dark/system theme switching via `egui_theme_switch`.
+/// Note: `[![alt](img)](url)` image links are a known `egui_commonmark` limitation — the link wrapping
 /// an image produces an invisible zero-size hyperlink. If you want a clickable link alongside an image,
-/// add an explicit text link in the markdown below it.
-/// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`.
+/// add an explicit text link in the markdown below it. You may also notice that it does not handle banners
+/// well.
+/// See the `md-viewer` crate for a professional quality installable example using `egui_commonmark`
+/// vendored to address some issues.
 //# Purpose: Prototype a markdown viewer using the `egui_commonmark` crate.
 //# Categories: crates, demo, gui, prototype, tools
 //# Usage: egui_markdown_viewer [OPTIONS] [path_to_file]
@@ -76,7 +78,7 @@ fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         renderer: eframe::Renderer::Wgpu,
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([800.0, 600.0])
+            .with_inner_size([1000.0, 700.0])
             .with_title(format!(
                 "egui_markdown_viewer: {}",
                 canonical_initial_path.display()

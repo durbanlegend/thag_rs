@@ -26,7 +26,7 @@ use thag_rs::{
     ast::{infer_deps_from_ast, infer_deps_from_source},
     auto_help, code_utils, find_crates, find_metadata,
     help_system::check_help_and_exit,
-    lazy_static_var, re, set_verbosity_from_env, svprtln, themed_inquire_config, Role, V,
+    lazy_static_var, re, set_verbosity_from_env, sveprtln, themed_inquire_config, Role, V,
 };
 
 file_navigator! {}
